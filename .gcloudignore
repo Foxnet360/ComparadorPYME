@@ -1,0 +1,17 @@
+# Strict Whitelist Strategy
+# Ignore everything by default
+*
+
+# Allow Dockerfile (Required)
+!Dockerfile
+
+# Allow Environment Variables (Required)
+!.env.local
+
+# Allow Frontend Artifacts (Recursive)
+!dist/
+
+# Allow Backend Bundle (Specific file)
+!server/
+!server/dist/
+!server/dist/bundle.js

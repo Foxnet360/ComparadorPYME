@@ -1,0 +1,5 @@
+{
+  "name": "Agente Comparador CSA",
+  "description": "Herramienta inteligente para analizar y comparar cotizaciones de seguros utilizando Gemini AI.",
+  "requestFramePermissions": []
+}
