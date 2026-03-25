@@ -11,14 +11,28 @@ export const ANALYSIS_SCHEMA = {
                     priceMonthly: { type: "NUMBER" },
                     priceAnnual: { type: "NUMBER" },
                     currency: { type: "STRING" },
-                    deductibles: { type: "STRING", description: "Formato estandarizado: 'Concepto: % Valor / Mínimo'" },
+                    deductibles: { 
+                        type: "STRING", 
+                        description: "Formato estructurado por cobertura: 'COBERTURA: % / Mín. X SMMLV (aplica sobre pérdida|valor asegurado)' - Separar cada cobertura con salto de línea"
+                    },
                     coverages: {
                         type: "ARRAY",
+                        description: "DEBE incluir TODAS las 14 coberturas de la Plantilla PYME. Usar EXACTAMENTE los nombres especificados.",
                         items: {
                             type: "OBJECT",
                             properties: {
-                                name: { type: "STRING" },
-                                value: { type: "STRING" },
+                                name: { 
+                                    type: "STRING",
+                                    description: "Usar EXACTAMENTE uno de: Incendio (Edificio y Contenidos), Lucro Cesante, Sustracción / Hurto, Equipo Eléctrico y Electrónico, Rotura de Maquinaria, Responsabilidad Civil (RCE), Vidrios Planos, Manejo Global / Infidelidad, Transporte de Mercancías, Transporte de Valores, Asistencia PYME, Asistencia Legal, Huelga, Motín, Asonada (HMACC), Terremoto y Eventos Catastróficos"
+                                },
+                                value: { 
+                                    type: "STRING",
+                                    description: "Monto asegurado o descripción. Ej: 100%, $500M, Incluido, NO ESPECIFICADO, EXCLUIDO"
+                                },
+                                deductible: {
+                                    type: "STRING",
+                                    description: "Deducible específico para esta cobertura en formato: '% / Mín. X SMMLV' o 'No aplica'"
+                                }
                             }
                         }
                     },
@@ -29,7 +43,15 @@ export const ANALYSIS_SCHEMA = {
                             properties: {
                                 level: { type: "STRING", enum: ['CRITICAL', 'WARNING', 'GOOD', 'INFO'] },
                                 title: { type: "STRING" },
-                                description: { type: "STRING" }
+                                description: { type: "STRING" },
+                                clauseReference: { 
+                                    type: "STRING", 
+                                    description: "Cita exacta del clausulado que fundamenta esta alerta (opcional pero recomendado)" 
+                                },
+                                sourceDocument: { 
+                                    type: "STRING", 
+                                    description: "Nombre del documento fuente (ej: 'Clausulado AXA PYME v2.1')" 
+                                }
                             }
                         },
                     },
@@ -46,7 +68,7 @@ export const ANALYSIS_SCHEMA = {
                     },
                     clientAnalysis: { type: "STRING" },
                     technicalAnalysis: { type: "STRING" },
-                    score: { type: "NUMBER" },
+                    score: { type: "NUMBER", description: "Score final de 0 a 100 (NO de 0 a 10). Calculado como: (coverage*0.25 + deductibles*0.20 + exclusions*0.20 + priceRatio*0.15 + sublimits*0.10 + warranties*0.10) * 10" },
                 }
             }
         },
@@ -56,7 +78,11 @@ export const ANALYSIS_SCHEMA = {
                 type: "OBJECT",
                 properties: {
                     insurer: { type: "STRING" },
-                    deductibleText: { type: "STRING" }
+                    coverageName: { type: "STRING" },
+                    percentage: { type: "STRING" },
+                    minimum: { type: "STRING" },
+                    appliesTo: { type: "STRING" },
+                    notes: { type: "STRING" }
                 }
             }
         },

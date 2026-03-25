@@ -4,11 +4,8 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import multer from 'multer';
-import { analysisController } from './controllers/analysisController';
-import { clauseController } from './controllers/clauseController';
-import { ragClauseController } from './controllers/ragClauseController';
 
-const envPath = path.resolve(__dirname, '../../.env.local');
+const envPath = path.resolve(__dirname, '../.env');
 console.log(`Loading env from: ${envPath}`);
 const result = dotenv.config({ path: envPath });
 
@@ -23,6 +20,10 @@ if (!process.env.GEMINI_API_KEY && process.env.VITE_GEMINI_API_KEY) {
     process.env.GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY;
 }
 console.log(`Gemini API Key defined: ${!!process.env.GEMINI_API_KEY}`);
+
+// Import controllers after dotenv is loaded (they depend on env vars)
+import { analysisController } from './controllers/analysisController';
+import { ragClauseController } from './controllers/ragClauseController';
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -82,20 +83,32 @@ app.post('/api/analyze-rag',
 
 app.get('/api/history', analysisController.getHistory);
 
-// Clause Library routes
-app.post('/api/clauses', upload.single('file'), clauseController.createClause);
-app.get('/api/clauses', clauseController.getClauses);
-app.get('/api/clauses/:id', clauseController.getClauseById);
-app.delete('/api/clauses/:id', clauseController.deleteClause);
-app.post('/api/clauses/:id/extract', clauseController.reExtractSections);
-app.get('/api/insurers', clauseController.getInsurers);
-
 // RAG Clause Library routes
 app.post('/api/rag/clauses', upload.single('file'), ragClauseController.indexClause);
 app.get('/api/rag/clauses', ragClauseController.listClauses);
 app.delete('/api/rag/clauses', ragClauseController.deleteClause);
+app.post('/api/rag/clauses/:id/reindex', upload.single('file'), ragClauseController.reindexClause);
 app.post('/api/rag/analyze', upload.single('file'), ragClauseController.analyzeQuote);
 app.post('/api/rag/search', ragClauseController.search);
+
+// NEW: Document Indexing routes
+import { documentController } from './controllers/documentController';
+import { searchController } from './controllers/searchController';
+
+// Document management
+app.post('/api/documents',
+    documentController.uploadMiddleware,
+    documentController.createDocument
+);
+app.get('/api/documents', documentController.listDocuments);
+app.get('/api/documents/:id', documentController.getDocument);
+app.delete('/api/documents/:id', documentController.deleteDocument);
+app.get('/api/documents/:id/chunks', documentController.getDocumentChunks);
+
+// Search routes
+app.post('/api/search', searchController.search);
+app.post('/api/search/by-coverage', searchController.searchByCoverage);
+app.post('/api/search/compare', searchController.compareDocuments);
 
 // Catch-all route to serve index.html for client-side routing
 // This must remain AT THE END, after all API routes

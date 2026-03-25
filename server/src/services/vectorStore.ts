@@ -1,9 +1,16 @@
 import { ChromaClient, Collection } from 'chromadb';
 
-const CHROMA_HOST = process.env.CHROMA_HOST || 'localhost';
+const CHROMA_HOST = process.env.CHROMA_HOST || '';
 const CHROMA_PORT = process.env.CHROMA_PORT || '8000';
 
 let chromaClient: ChromaClient | null = null;
+
+const getChromaUrl = (): string => {
+    if (CHROMA_HOST && CHROMA_HOST !== 'localhost') {
+        return `http://${CHROMA_HOST}:${CHROMA_PORT}`;
+    }
+    return 'http://localhost:8000';
+};
 
 export interface ChunkMetadata {
     insurerName: string;
@@ -29,7 +36,7 @@ export const vectorStore = {
      */
     initialize: async (): Promise<void> => {
         if (!chromaClient) {
-            const chromaUrl = `http://${CHROMA_HOST}:${CHROMA_PORT}`;
+            const chromaUrl = getChromaUrl();
             chromaClient = new ChromaClient({
                 path: chromaUrl,
             });

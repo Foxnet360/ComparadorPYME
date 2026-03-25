@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleAIFileManager, FileState } from "@google/generative-ai/server";
 import fs from 'fs';
 import { ClauseDocument } from '../types';
+import { validateAnalysis } from '../utils/analysisValidator';
 
 // Initialize Gemini lazily
 const getGenAI = () => {
@@ -114,14 +115,14 @@ export const geminiService = {
             try {
                 const genAI = getGenAI();
                 const model = genAI.getGenerativeModel({
-                    model: 'gemini-2.0-flash',
+                    model: 'models/gemini-2.5-flash',
                     generationConfig: {
                         responseMimeType: "application/json",
                         responseSchema: schema,
                     }
                 });
 
-                console.log(`Generating content with model: gemini-1.5-flash with ${fileParts.length} files`);
+                console.log(`Generating content with model: models/gemini-2.5-flash with ${fileParts.length} files`);
                 const result = await model.generateContent([
                     ...fileParts,
                     { text: prompt }
@@ -139,7 +140,9 @@ export const geminiService = {
                 }
 
                 console.log("✅ Gemini analysis successful and parsed.");
-                return JSON.parse(text);
+                const parsed = JSON.parse(text);
+                // Validar y completar coberturas
+                return validateAnalysis(parsed);
             } catch (error: any) {
                 console.log(`Debug Error Analysis - Status: ${error.status} (${typeof error.status}), Message: ${error.message}`);
 
@@ -165,7 +168,7 @@ export const geminiService = {
 
                 console.error("Error generating content:", error);
                 if (error.message?.includes("404")) {
-                    console.error("Model not found. Please check if 'gemini-2.0-flash' is available for your API key.");
+                    console.error("Model not found. Please check if 'models/gemini-2.5-flash' is available for your API key.");
                 }
                 throw error;
             }
@@ -188,7 +191,7 @@ export const geminiService = {
             try {
                 const genAI = getGenAI();
                 const model = genAI.getGenerativeModel({
-                    model: 'gemini-2.0-flash',
+                    model: 'models/gemini-2.5-flash',
                     generationConfig: {
                         responseMimeType: "application/json",
                         responseSchema: schema,
@@ -206,7 +209,7 @@ export const geminiService = {
                     contentParts.push({ text: `\n\n--- CLAUSULADOS DE REFERENCIA ---\n\n${clausesText}` });
                 }
 
-                console.log(`Generating content with model: gemini-2.0-flash (text mode, ${contentParts.length} parts)`);
+                console.log(`Generating content with model: models/gemini-2.5-flash (text mode, ${contentParts.length} parts)`);
                 const result = await model.generateContent(contentParts);
 
                 const response = result.response;
@@ -220,7 +223,9 @@ export const geminiService = {
                 }
 
                 console.log("✅ Gemini text-based analysis successful and parsed.");
-                return JSON.parse(text);
+                const parsed = JSON.parse(text);
+                // Validar y completar coberturas
+                return validateAnalysis(parsed);
             } catch (error: any) {
                 console.log(`Debug Error Analysis - Status: ${error.status} (${typeof error.status}), Message: ${error.message}`);
 
@@ -244,7 +249,7 @@ export const geminiService = {
 
                 console.error("Error generating content:", error);
                 if (error.message?.includes("404")) {
-                    console.error("Model not found. Please check if 'gemini-2.0-flash' is available for your API key.");
+                    console.error("Model not found. Please check if 'models/gemini-2.5-flash' is available for your API key.");
                 }
                 throw error;
             }

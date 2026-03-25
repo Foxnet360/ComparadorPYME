@@ -24,7 +24,7 @@ Usa Google Search para hallar el clausulado del producto específico. Úsalo par
 ### FASE 2: MAPEO ESTRICTO (PLANTILLA PYME)
 Es CRÍTICO que en el array 'coverages' uses EXACTAMENTE los siguientes nombres para la propiedad 'name'. Copia y pega. NO inventes nombres nuevos.
 
-LISTA OBLIGATORIA:
+LISTA OBLIGATORIA (14 coberturas exactas):
 1. "Incendio (Edificio y Contenidos)"
 2. "Lucro Cesante"
 3. "Sustracción / Hurto"
@@ -40,25 +40,56 @@ LISTA OBLIGATORIA:
 13. "Huelga, Motín, Asonada (HMACC)"
 14. "Terremoto y Eventos Catastróficos"
 
-*Si un ítem no aparece en la póliza, créalo con value: "NO ESPECIFICADO" o "EXCLUIDO".*
+REGLAS CRÍTICAS:
+- Usa EXACTAMENTE estos nombres en la propiedad 'name'.
+- Para cada cobertura, incluye el campo 'deductible' con formato: "% / Mín. X SMMLV (aplica sobre pérdida|valor asegurado)" o "No aplica".
+- Si un ítem no aparece en la póliza, créalo igualmente con value: "NO ESPECIFICADO" o "EXCLUIDO" y deductible vacío.
+- NUNCA omitas ninguna de las 14 coberturas.
 
-### FASE 3: SCORING MULTIDIMENSIONAL (0-10)
-Califica cada cotización en 'scoringBreakdown' (escala 1-10) según:
-1. **coverage**: Amplitud de sumas aseguradas.
-2. **deductibles**: Menor afectación al usuario (ej. sin deducible terremoto sobre valor asegurado).
-3. **exclusions**: Menos exclusiones graves = mayor puntaje.
-4. **priceRatio**: Mejor valor por dinero.
-5. **sublimits**: Menos sublímites restrictivos.
-6. **warranties**: Menos garantías de difícil cumplimiento (alarmas, celadores).
+### FASE 3: SCORING MULTIDIMENSIONAL (0-100)
+Califica cada cotización en 'scoringBreakdown' (cada dimensión en escala 0-10) según:
+1. **coverage**: Amplitud de sumas aseguradas (0-10).
+2. **deductibles**: Menor afectación al usuario (0-10).
+3. **exclusions**: Menos exclusiones graves = mayor puntaje (0-10).
+4. **priceRatio**: Mejor valor por dinero (0-10).
+5. **sublimits**: Menos sublímites restrictivos (0-10).
+6. **warranties**: Menos garantías de difícil cumplimiento (0-10).
 
-El 'score' total (0-100) debe ser un cálculo ponderado aproximado:
-(Cob*25% + Ded*20% + Exc*20% + Precio*15% + Sub*10% + Gar*10%) * 10.
+REGLA CRÍTICA PARA SCORE TOTAL (0-100):
+El score final DEBE estar entre 0 y 100, NO entre 0 y 10.
 
-### FASE 4: ALERTAS AGRUPADAS
+Fórmula obligatoria:
+1. Multiplica cada dimensión por su peso:
+   coverage * 0.25 = X1
+   deductibles * 0.20 = X2
+   exclusions * 0.20 = X3
+   priceRatio * 0.15 = X4
+   sublimits * 0.10 = X5
+   warranties * 0.10 = X6
+2. Suma: X1 + X2 + X3 + X4 + X5 + X6 = Resultado (0-10)
+3. Multiplica por 10: Resultado * 10 = SCORE FINAL (0-100)
+
+⚠️ IMPORTANTE: El valor en 'score' debe ser 0-100, NO 0-10.
+
+Ejemplo: Si todas las dimensiones son 8:
+(8*0.25 + 8*0.20 + 8*0.20 + 8*0.15 + 8*0.10 + 8*0.10) * 10 = 80
+
+Verificación: Si ves valores como 6.5 o 7.1, estás devolviendo 0-10. Multiplica por 10 para obtener 65 o 71.
+
+### FASE 4: ALERTAS AGRUPADAS CON FUNDAMENTO
 Genera alertas ('alerts') clasificadas:
 - **CRITICAL**: Deducible Terremoto sobre Valor Asegurado, Falta de Lucro Cesante, Garantías bloqueantes.
 - **WARNING**: Sublímites bajos, Prorrateo, Cláusulas confusas.
 - **GOOD**: Valores agregados, Asistencias VIP, Sin deducibles en RCE.
+
+**IMPORTANTE**: Para cada alerta CRITICAL o WARNING, incluye:
+- **clauseReference**: Cita exacta del clausulado que fundamenta la alerta (ej: "Artículo 5.2: El deducible de terremoto aplicará sobre el valor total asegurado")
+- **sourceDocument**: Nombre del documento fuente (ej: "Clausulado AXA PYME v2.1")
+
+### FASE 5: VALIDACIÓN DE COBERTURAS
+- Verifica que TODAS las 14 coberturas de la Plantilla PYME estén presentes.
+- Si una cobertura no aparece en la cotización, inclúyela con value: "NO ESPECIFICADO".
+- NO marques coberturas como "EXCLUIDO" a menos que el documento lo especifique explícitamente.
 
 ### FORMATO JSON
 Devuelve JSON válido estrictamente bajo el esquema.

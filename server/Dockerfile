@@ -1,16 +1,16 @@
-FROM node:20-alpine
+FROM node:20
 
 WORKDIR /app
 
 COPY package*.json ./
 COPY tsconfig.json ./
 
-RUN npm ci --only=production
+RUN npm install
 
 COPY dist ./dist
-COPY .env.production ./.env 2>/dev/null || true
+RUN if [ -f .env.production ]; then cp .env.production .env; fi
 
-RUN apk add --no-cache python3 make g++
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 
 EXPOSE 8080
 

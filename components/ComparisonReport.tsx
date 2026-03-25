@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { QuoteAnalysis, ComparisonReport as ReportType, AlertLevel } from '../types';
-import { Check, Award, ShieldAlert, BarChart3, AlertTriangle, AlertCircle, Info, Scale, FileDown, Layers, ListChecks, FileText, Search, User, Briefcase, Eye, ChevronDown, ChevronUp } from 'lucide-react';
+import { Check, Award, ShieldAlert, BarChart3, AlertTriangle, AlertCircle, Info, Scale, FileDown, Layers, ListChecks, FileText, Search, User, Briefcase, Eye, ChevronDown, ChevronUp, BookOpen } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend } from 'recharts';
 import { DISCLAIMER_TEXT, PLANTILLA_ITEMS } from '../constants';
 import { generatePDF } from '../services/pdfService';
+import { DeductiblesComparisonTable } from './DeductiblesComparisonTable';
+import { AuditSection } from './AuditSection';
 
 interface ComparisonReportProps {
   report: ReportType;
 }
 
 // Robust string matching
-const normalizeText = (text: string) => {
-  if (!text) return "";
+const normalizeText = (text: string | undefined | null) => {
+  if (!text || typeof text !== 'string') return "";
   return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 };
 
@@ -356,12 +358,31 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
                       });
 
                       const value = found ? found.value : 'No Especificado';
-                      const isExcluded = value.toUpperCase().includes('EXCLUI') || value.toUpperCase().includes('NO CUBRE');
-                      const isUnspecified = value.toUpperCase().includes('NO ESPECIFICADO');
+                      // Solo marcar como EXCLUIDO si el valor es EXACTAMENTE "EXCLUIDO", "NO CUBRE" o "NO APLICA"
+                      // No usar .includes() para evitar falsos positivos (ej: "NO CUBRE hasta 100M" no es excluido)
+                      const upperValue = value.toUpperCase().trim();
+                      const isExcluded = upperValue === 'EXCLUIDO' || upperValue === 'NO CUBRE' || upperValue === 'NO APLICA' || upperValue === 'EXCLUDED';
+                      const isUnspecified = upperValue === 'NO ESPECIFICADO' || upperValue === '' || upperValue === 'N/A';
+                      const citations = found?.citations || [];
 
                       return (
-                        <td key={colIdx} className={`px-6 py-4 leading-relaxed ${isExcluded ? 'text-red-500 bg-red-50/30 italic' : isUnspecified ? 'text-slate-400 italic' : 'text-slate-600'}`}>
-                          {value}
+                        <td key={colIdx} className={`px-6 py-4 leading-relaxed align-top ${isExcluded ? 'text-red-500 bg-red-50/30 italic' : isUnspecified ? 'text-slate-400 italic' : 'text-slate-600'}`}>
+                          <div className="font-medium">{value}</div>
+                          {citations.length > 0 && (
+                            <div className="mt-3 text-xs text-slate-600 bg-slate-100/80 p-2.5 border border-slate-200 rounded-md">
+                              <span className="font-semibold flex items-center mb-1.5 text-slate-700">
+                                <Info size={12} className="mr-1.5" /> Referencias RAG:
+                              </span>
+                              {citations.map((c, i) => (
+                                <div key={i} className="mb-2 last:mb-0">
+                                  <span className="italic block mb-1">"{c.text}"</span>
+                                  <div className="text-[10px] text-indigo-700 font-mono bg-indigo-50 inline-block px-1.5 py-0.5 rounded border border-indigo-100">
+                                    {c.source} {c.section ? `• Sec: ${c.section}` : ''} {c.page ? `• Pág: ${c.page}` : ''}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </td>
                       );
                     })}
@@ -375,94 +396,33 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
 
       {/* --- TAB CONTENT: DEDUCIBLES --- */}
       {activeTab === 'deducibles' && (
-        <div className="grid grid-cols-1 gap-6 animate-in fade-in duration-300">
-          {report.quotes.map((quote, idx) => (
-            <div key={idx} className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-              <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
-                <h3 className="font-bold text-lg text-slate-800">{quote.insurerName}</h3>
-                <span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded font-mono">Deducibles</span>
-              </div>
-              <div className="prose prose-sm text-slate-600 whitespace-pre-line leading-7">
-                {quote.deductibles || "No detallado."}
-              </div>
+        <div className="animate-in fade-in duration-300 space-y-6">
+          {/* Tabla Comparativa de Deducibles - Nuevo Componente */}
+          <DeductiblesComparisonTable quotes={report.quotes} />
+          
+          {/* Texto Completo de Deducibles */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+            <div className="flex items-center mb-4 pb-3 border-b border-slate-100">
+              <FileText className="mr-2 text-indigo-600" size={20} />
+              <h3 className="font-bold text-slate-800">Texto Completo de Deducibles</h3>
             </div>
-          ))}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {report.quotes.map((quote, idx) => (
+                <div key={idx} className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                  <h4 className="font-bold text-slate-700 mb-2">{quote.insurerName}</h4>
+                  <div className="prose prose-sm text-slate-600 whitespace-pre-line leading-7">
+                    {quote.deductibles || "No detallado."}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
       {/* --- TAB CONTENT: AUDITORIA (ALERTS) --- */}
       {activeTab === 'auditoria' && (
-        <div className="animate-in fade-in duration-300 space-y-6">
-          <div className="grid grid-cols-1 gap-8">
-            {report.quotes.map((quote, idx) => {
-              const alerts = quote.alerts || [];
-              const critical = alerts.filter(a => a.level === 'CRITICAL');
-              const warning = alerts.filter(a => a.level === 'WARNING');
-              const good = alerts.filter(a => a.level === 'GOOD');
-
-              return (
-                <div key={idx} className={`bg-white rounded-xl border overflow-hidden ${quote.insurerName === bestQuote.insurerName ? 'border-indigo-300 shadow-md' : 'border-slate-200 shadow-sm'}`}>
-                  <div className="bg-slate-50 p-4 border-b border-slate-100 flex justify-between items-center">
-                    <h3 className="font-bold text-xl text-slate-800">{quote.insurerName}</h3>
-                    <div className="text-sm text-slate-500">
-                      {viewMode === 'client' ? quote.clientAnalysis : quote.technicalAnalysis}
-                    </div>
-                  </div>
-
-                  <div className="p-6 space-y-4">
-                    {/* Grouped Alerts */}
-                    {critical.length > 0 && (
-                      <div>
-                        <h4 className="flex items-center text-red-700 font-bold mb-2 text-sm uppercase tracking-wide">
-                          <AlertCircle size={16} className="mr-2" /> Riesgos Críticos ({critical.length})
-                        </h4>
-                        <div className="space-y-2">
-                          {critical.map((a, i) => (
-                            <div key={i} className="bg-red-50 p-3 rounded-lg border border-red-100 text-sm text-red-900">
-                              <strong>{a.title}:</strong> {a.description}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {warning.length > 0 && (viewMode === 'technical' || warning.length <= 3) && (
-                      <div>
-                        <h4 className="flex items-center text-amber-600 font-bold mb-2 text-sm uppercase tracking-wide">
-                          <AlertTriangle size={16} className="mr-2" /> Puntos de Atención ({warning.length})
-                        </h4>
-                        <div className="space-y-2">
-                          {warning.map((a, i) => (
-                            <div key={i} className="bg-amber-50 p-3 rounded-lg border border-amber-100 text-sm text-amber-900">
-                              <strong>{a.title}:</strong> {a.description}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {good.length > 0 && (
-                      <div>
-                        <h4 className="flex items-center text-green-700 font-bold mb-2 text-sm uppercase tracking-wide">
-                          <Check size={16} className="mr-2" /> Destacados ({good.length})
-                        </h4>
-                        <div className="space-y-2">
-                          {good.map((a, i) => (
-                            <div key={i} className="bg-green-50 p-3 rounded-lg border border-green-100 text-sm text-green-900">
-                              <strong>{a.title}:</strong> {a.description}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {alerts.length === 0 && <div className="text-slate-400 italic">Sin hallazgos relevantes.</div>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <AuditSection quotes={report.quotes} viewMode={viewMode} />
       )}
 
       {/* Footer */}

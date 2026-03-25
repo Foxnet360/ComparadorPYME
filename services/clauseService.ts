@@ -80,9 +80,6 @@ export const clauseService = {
         return response.json();
     },
 
-    /**
-     * Re-extract sections for a clause
-     */
     reExtractSections: async (id: string): Promise<{ success: boolean }> => {
         const response = await fetch(`${API_BASE_URL}/clauses/${id}/extract`, {
             method: 'POST'
@@ -91,5 +88,41 @@ export const clauseService = {
             throw new Error('Failed to extract sections');
         }
         return response.json();
+    },
+
+    // --- RAG ENDPOINTS ---
+    ragCreateClause: async (file: File, metadata: { insurerName: string; documentName: string; documentType?: string }): Promise<any> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('insurerName', metadata.insurerName);
+        formData.append('documentName', metadata.documentName);
+        if (metadata.documentType) formData.append('documentType', metadata.documentType);
+
+        const response = await fetch(`${API_BASE_URL}/rag/clauses`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to index RAG clause');
+        }
+        return response.json();
+    },
+
+    ragGetClauses: async (insurerName?: string): Promise<{insurerName: string; documentName: string; chunkCount: number}[]> => {
+        const url = insurerName ? `${API_BASE_URL}/rag/clauses?insurer=${encodeURIComponent(insurerName)}` : `${API_BASE_URL}/rag/clauses`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Failed to fetch RAG clauses');
+        return response.json();
+    },
+
+    ragDeleteClause: async (insurerName: string, documentName: string): Promise<void> => {
+        const response = await fetch(`${API_BASE_URL}/rag/clauses`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ insurerName, documentName })
+        });
+        if (!response.ok) throw new Error('Failed to delete RAG clause');
     }
 };

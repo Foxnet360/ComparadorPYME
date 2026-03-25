@@ -35,8 +35,8 @@ const TechnicalDashboard: React.FC<TechnicalDashboardProps> = ({ onNewAnalysis, 
   };
 
   const filteredHistory = history.filter(item =>
-    item.clientName.toLowerCase().includes(filter.toLowerCase()) ||
-    item.bestOption.toLowerCase().includes(filter.toLowerCase())
+    (item.clientName?.toLowerCase() || '').includes(filter.toLowerCase()) ||
+    (item.bestOption?.toLowerCase() || '').includes(filter.toLowerCase())
   );
 
   // Mock data for the chart with both volume and premium value
@@ -205,14 +205,14 @@ const TechnicalDashboard: React.FC<TechnicalDashboardProps> = ({ onNewAnalysis, 
                   <td className="px-6 py-4 font-medium text-slate-800">{item.clientName}</td>
                   <td className="px-6 py-4 text-slate-500">
                     <div className="flex gap-1">
-                      {item.insurers.slice(0, 2).map((ins, i) => (
+                      {(item.insurers || []).slice(0, 2).map((ins, i) => (
                         <span key={i} className="px-2 py-0.5 bg-slate-100 rounded text-xs">{ins}</span>
                       ))}
-                      {item.insurers.length > 2 && <span className="text-xs text-slate-400">+{item.insurers.length - 2}</span>}
+                      {(item.insurers || []).length > 2 && <span className="text-xs text-slate-400">+{(item.insurers || []).length - 2}</span>}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-indigo-600 font-medium">{item.bestOption}</td>
-                  <td className="px-6 py-4 text-slate-600">${(item.premiumValue / 1000000).toFixed(2)}M</td>
+                  <td className="px-6 py-4 text-indigo-600 font-medium">{item.bestOption || '-'}</td>
+                  <td className="px-6 py-4 text-slate-600">${item.premiumValue ? (item.premiumValue / 1000000).toFixed(2) : '0.00'}M</td>
                   <td className="px-6 py-4">
                     <select
                       value={item.status}

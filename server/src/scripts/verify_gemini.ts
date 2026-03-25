@@ -28,7 +28,7 @@ const genAI = new GoogleGenerativeAI(apiKey);
 async function verify() {
     try {
         console.log("🔄 Testing Gemini API connection...");
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = genAI.getGenerativeModel({ model: "models/gemini-2.5-flash" });
 
         const prompt = "Explain what an actuary does in one sentence.";
         console.log(`📤 Sending prompt: "${prompt}"`);
@@ -46,8 +46,8 @@ async function verify() {
 
 
     } catch (error: any) {
-        if (error.message.includes("404") && error.message.includes("gemini-1.5-flash")) {
-            console.log("⚠️ 'gemini-1.5-flash' not found. Retrying with 'gemini-pro'...");
+        if (error.message.includes("404") && error.message.includes("models/gemini-2.5-flash")) {
+            console.log("⚠️ 'models/gemini-2.5-flash' not found. Retrying with 'gemini-pro'...");
             try {
                 const model = genAI.getGenerativeModel({ model: "gemini-pro" });
                 const result = await model.generateContent("Hello");
@@ -63,7 +63,7 @@ async function verify() {
         console.error(`Message: ${error.message}`);
 
         if (error.message.includes("404")) {
-            console.error("👉 Tip: Check if the model 'gemini-1.5-flash' is available for your API key or region.");
+            console.error("👉 Tip: Check if the model 'models/gemini-2.5-flash' is available for your API key or region.");
 
             // List available models
             /*

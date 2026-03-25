@@ -1,5 +1,5 @@
 import { vectorStore, ChunkMetadata, RetrievedChunk } from './vectorStore';
-import { embeddingService } from './embeddingService';
+import { embeddingService } from './vector/embeddingService';
 
 export interface RetrievalResult {
     chunks: RetrievedChunk[];

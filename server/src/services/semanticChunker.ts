@@ -1,6 +1,12 @@
+import { thesaurusService } from './normalization/thesaurusService';
+import { PageData } from './pdfExtractor';
+
+export type SectionType = 'COBERTURA' | 'EXCLUSION' | 'DEDUCIBLE' | 'CONDICION' | 'GENERAL';
+
 export interface Chunk {
     id: string;
     content: string;
+    contentNormalized: string;
     metadata: {
         chapter?: string;
         section?: string;
@@ -10,6 +16,8 @@ export interface Chunk {
         documentName?: string;
         insurerName?: string;
     };
+    coverageTags: string[];
+    sectionType: SectionType;
 }
 
 export interface ParsedSection {
@@ -21,7 +29,127 @@ export interface ParsedSection {
     pageNumber?: number;
 }
 
+// Patrones para detectar tipo de sección
+const SECTION_PATTERNS: Record<SectionType, RegExp[]> = {
+    COBERTURA: [
+        /cobertura/i,
+        /garant[ií]a/i,
+        /amparo/i,
+        /secci[oó]n.*cobertura/i,
+        /cl[aá]usula.*cobertura/i,
+    ],
+    EXCLUSION: [
+        /exclusi[oó]n/i,
+        /no.cubre/i,
+        /excluido/i,
+        /limitaci[oó]n/i,
+    ],
+    DEDUCIBLE: [
+        /deducible/i,
+        /franquicia/i,
+        /participaci[oó]n/i,
+        /prorrata/i,
+    ],
+    CONDICION: [
+        /condici[oó]n/i,
+        /requisito/i,
+        /obligaci[oó]n/i,
+        /garant[ií]a.*cumplimiento/i,
+    ],
+    GENERAL: [
+        /disposici[oó]n.general/i,
+        /definici[oó]n/i,
+        /vigencia/i,
+        /prima/i,
+    ],
+};
+
 export const semanticChunker = {
+    /**
+     * Normaliza texto (sin tildes, minúsculas)
+     */
+    normalizeText: (text: string): string => {
+        return text
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim();
+    },
+
+    /**
+     * Detecta coberturas en el texto usando el tesauro
+     */
+    detectCoverages: (text: string): string[] => {
+        const normalizedText = semanticChunker.normalizeText(text);
+        const detectedCoverages: string[] = [];
+        
+        const coberturas = thesaurusService.listCoberturas();
+        
+        for (const cobertura of coberturas) {
+            const definition = thesaurusService.getCoberturaDefinition(cobertura);
+            if (!definition) continue;
+            
+            // Verificar sinónimos
+            const sinonimos = definition.sinonimos.map(s => 
+                semanticChunker.normalizeText(s)
+            );
+            
+            // Verificar términos de búsqueda
+            const terminosBusqueda = definition.terminos_busqueda.map(t =>
+                semanticChunker.normalizeText(t)
+            );
+            
+            // Combinar todos los términos
+            const allTerms = [...sinonimos, ...terminosBusqueda];
+            
+            // Verificar si algún término aparece en el texto
+            const found = allTerms.some(term => normalizedText.includes(term));
+            
+            if (found) {
+                detectedCoverages.push(cobertura);
+            }
+        }
+        
+        return [...new Set(detectedCoverages)]; // Eliminar duplicados
+    },
+
+    /**
+     * Detecta el tipo de sección basado en patrones
+     */
+    detectSectionType: (text: string): SectionType => {
+        const normalizedText = semanticChunker.normalizeText(text);
+        const scores: Record<SectionType, number> = {
+            COBERTURA: 0,
+            EXCLUSION: 0,
+            DEDUCIBLE: 0,
+            CONDICION: 0,
+            GENERAL: 0,
+        };
+        
+        // Contar coincidencias por tipo
+        for (const [type, patterns] of Object.entries(SECTION_PATTERNS)) {
+            for (const pattern of patterns) {
+                const matches = normalizedText.match(pattern);
+                if (matches) {
+                    scores[type as SectionType] += matches.length;
+                }
+            }
+        }
+        
+        // Encontrar el tipo con mayor score
+        let maxScore = 0;
+        let detectedType: SectionType = 'GENERAL';
+        
+        for (const [type, score] of Object.entries(scores)) {
+            if (score > maxScore) {
+                maxScore = score;
+                detectedType = type as SectionType;
+            }
+        }
+        
+        return detectedType;
+    },
+
     /**
      * Detecta la estructura jerárquica del documento usando regex
      */
@@ -29,10 +157,10 @@ export const semanticChunker = {
         const sections: ParsedSection[] = [];
         
         const patterns = [
-            { regex: /CAPÍTULO\s+([IVXLCDM]+|[0-9]+)/gi, type: 'chapter' as const, level: 1 },
-            { regex: /SECCIÓN\s+([IVXLCDM]+|[0-9]+)/gi, type: 'section' as const, level: 2 },
+            { regex: /CAP[IÍ]TULO\s+([IVXLCDM]+|[0-9]+)/gi, type: 'chapter' as const, level: 1 },
+            { regex: /SECCI[OÓ]N\s+([IVXLCDM]+|[0-9]+)/gi, type: 'section' as const, level: 2 },
             { regex: /^(\d+\.\d+)\.?\s+/gm, type: 'clause' as const, level: 3 },
-            { regex: /ARTÍCULO\s+(\d+|[IVXLCDM]+)/gi, type: 'clause' as const, level: 3 },
+            { regex: /ART[IÍ]CULO\s+(\d+|[IVXLCDM]+)/gi, type: 'clause' as const, level: 3 },
             { regex: /^(\d+)\.\s+/gm, type: 'clause' as const, level: 3 },
         ];
 
@@ -56,7 +184,103 @@ export const semanticChunker = {
     },
 
     /**
-     * Crea chunks a partir de la estructura detectada
+     * Crea chunks a partir de páginas con análisis semántico
+     */
+    createChunksFromPages: (
+        pages: PageData[],
+        metadata: {
+            documentName?: string;
+            insurerName?: string;
+        }
+    ): Chunk[] => {
+        const chunks: Chunk[] = [];
+        
+        // Combinar texto de páginas consecutivas para crear chunks más grandes
+        const targetChunkSize = 800; // caracteres objetivo
+        let currentChunkText = '';
+        let currentChunkPages: number[] = [];
+        let chunkCounter = 0;
+        
+        for (const page of pages) {
+            if (!page.hasContent) continue;
+            
+            // Si agregar esta página excede el tamaño objetivo y ya tenemos contenido
+            if (currentChunkText.length > 0 && 
+                currentChunkText.length + page.text.length > targetChunkSize * 1.5) {
+                
+                // Guardar chunk actual
+                const chunk = semanticChunker.createChunk(
+                    currentChunkText,
+                    currentChunkPages,
+                    metadata,
+                    `chunk-${++chunkCounter}`
+                );
+                chunks.push(chunk);
+                
+                // Reiniciar
+                currentChunkText = page.text;
+                currentChunkPages = [page.pageNumber];
+            } else {
+                // Agregar al chunk actual
+                if (currentChunkText.length > 0) {
+                    currentChunkText += '\n\n';
+                }
+                currentChunkText += page.text;
+                currentChunkPages.push(page.pageNumber);
+            }
+        }
+        
+        // Guardar último chunk si tiene contenido
+        if (currentChunkText.length > 0) {
+            const chunk = semanticChunker.createChunk(
+                currentChunkText,
+                currentChunkPages,
+                metadata,
+                `chunk-${++chunkCounter}`
+            );
+            chunks.push(chunk);
+        }
+        
+        return chunks;
+    },
+
+    /**
+     * Crea un chunk individual con análisis completo
+     */
+    createChunk: (
+        text: string,
+        pageNumbers: number[],
+        metadata: {
+            documentName?: string;
+            insurerName?: string;
+        },
+        chunkId: string
+    ): Chunk => {
+        const normalizedText = semanticChunker.normalizeText(text);
+        const coverageTags = semanticChunker.detectCoverages(text);
+        const sectionType = semanticChunker.detectSectionType(text);
+        
+        // Extraer clauseId si existe
+        const clauseMatch = text.match(/^(\d+\.\d+)/);
+        const clauseId = clauseMatch ? clauseMatch[1] : undefined;
+        
+        return {
+            id: chunkId,
+            content: text.substring(0, 3000), // Limitar tamaño
+            contentNormalized: normalizedText.substring(0, 3000),
+            metadata: {
+                pageStart: Math.min(...pageNumbers),
+                pageEnd: Math.max(...pageNumbers),
+                clauseId,
+                ...metadata,
+            },
+            coverageTags,
+            sectionType,
+        };
+    },
+
+    /**
+     * Crea chunks a partir de la estructura detectada (método legacy)
      */
     createChunks: (
         text: string,
@@ -70,14 +294,21 @@ export const semanticChunker = {
         const structure = semanticChunker.detectStructure(text);
 
         if (structure.length === 0) {
+            // Sin estructura, crear un solo chunk
+            const coverageTags = semanticChunker.detectCoverages(text);
+            const sectionType = semanticChunker.detectSectionType(text);
+            
             return [{
                 id: 'full-doc',
-                content: text.substring(0, 5000),
+                content: text.substring(0, 3000),
+                contentNormalized: semanticChunker.normalizeText(text).substring(0, 3000),
                 metadata: {
                     pageStart: 1,
                     pageEnd: pageBoundaries.length || 1,
                     ...metadata,
                 },
+                coverageTags,
+                sectionType,
             }];
         }
 
@@ -106,9 +337,13 @@ export const semanticChunker = {
                 const clauseMatch = content.match(/^(\d+\.\d+)/);
                 const clauseId = clauseMatch ? clauseMatch[1] : undefined;
 
+                const coverageTags = semanticChunker.detectCoverages(content);
+                const sectionType = semanticChunker.detectSectionType(content);
+
                 chunks.push({
                     id: `chunk-${chunks.length + 1}`,
                     content: content.substring(0, 3000),
+                    contentNormalized: semanticChunker.normalizeText(content).substring(0, 3000),
                     metadata: {
                         chapter: currentChapter,
                         section: currentSection,
@@ -117,6 +352,8 @@ export const semanticChunker = {
                         pageEnd,
                         ...metadata,
                     },
+                    coverageTags,
+                    sectionType,
                 });
             }
         }
@@ -161,94 +398,16 @@ export const semanticChunker = {
     },
 
     /**
-     * Crea chunks con fallback LLM para documentos sin estructura
+     * Crea chunks con fallback para documentos sin estructura
      */
     createChunksWithFallback: async (
-        text: string,
+        pages: PageData[],
         metadata: {
             documentName?: string;
             insurerName?: string;
-        },
-        groqClient?: any
+        }
     ): Promise<Chunk[]> => {
-        const hasStructure = semanticChunker.detectStructure(text).length > 0;
-
-        if (hasStructure) {
-            const pages = text.split('\n\n');
-            const boundaries = semanticChunker.calculatePageBoundaries(pages);
-            return semanticChunker.createChunks(text, metadata, boundaries);
-        }
-
-        if (groqClient) {
-            return semanticChunker.createChunksWithLLM(text, metadata, groqClient);
-        }
-
-        const pages = text.split('\n\n');
-        return [{
-            id: 'full-doc',
-            content: text.substring(0, 5000),
-            metadata: {
-                pageStart: 1,
-                pageEnd: pages.length,
-                ...metadata,
-            },
-        }];
-    },
-
-    /**
-     * Usa LLM para identificar secciones en documentos sin estructura
-     */
-    createChunksWithLLM: async (
-        text: string,
-        metadata: {
-            documentName?: string;
-            insurerName?: string;
-        },
-        groqClient: any
-    ): Promise<Chunk[]> => {
-        const prompt = `Analiza el siguiente texto de un documento legal de seguro e identifica hasta 10 secciones principales. 
-Devuelve solo una lista numerada con los títulos de cada sección.
-
-Texto:
-${text.substring(0, 5000)}
-
-Devuelve el resultado en formato:
-1. [Título de sección 1]
-2. [Título de sección 2]
-...`;
-
-        try {
-            const response = await groqClient.chat.completions.create({
-                model: 'llama-3.1-8b-instant',
-                messages: [{ role: 'user', content: prompt }],
-                temperature: 0.1,
-            });
-
-            const sectionText = response.choices[0]?.message?.content || '';
-            const sectionLines = sectionText.split('\n').filter((line: string) => /^\d+\./.test(line.trim()));
-
-            const chunks: Chunk[] = sectionLines.slice(0, 10).map((line: string, index: number) => ({
-                id: `chunk-${index + 1}`,
-                content: `Sección: ${line.replace(/^\d+\.\s*/, '')}\n\n${text.substring(0, 3000)}`,
-                metadata: {
-                    pageStart: 1,
-                    pageEnd: 1,
-                    ...metadata,
-                },
-            }));
-
-            return chunks;
-        } catch (error) {
-            console.error('LLM fallback chunking failed:', error);
-            return [{
-                id: 'full-doc',
-                content: text.substring(0, 5000),
-                metadata: {
-                    pageStart: 1,
-                    pageEnd: 1,
-                    ...metadata,
-                },
-            }];
-        }
+        // Usar el nuevo método basado en páginas
+        return semanticChunker.createChunksFromPages(pages, metadata);
     },
 };

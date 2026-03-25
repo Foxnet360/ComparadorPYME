@@ -1,8 +1,17 @@
+export interface Citation {
+  text: string;
+  source: string;
+  page?: number;
+  section?: string;
+}
+
 export interface CoverageItem {
   name: string;
   value: string;
   description?: string;
   isPositive?: boolean;
+  citations?: Citation[];
+  deductible?: string;
 }
 
 export type AlertLevel = 'CRITICAL' | 'WARNING' | 'GOOD' | 'INFO';
@@ -11,6 +20,8 @@ export interface AlertItem {
   level: AlertLevel;
   title: string;
   description: string;
+  clauseReference?: string;
+  sourceDocument?: string;
 }
 
 export interface ScoringBreakdown {

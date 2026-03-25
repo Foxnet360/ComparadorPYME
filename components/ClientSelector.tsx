@@ -27,8 +27,8 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({ selectedClient, onSelec
   }, []);
 
   const filteredClients = clients.filter(c =>
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.nit.includes(searchTerm)
+    (c.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (c.nit || '').includes(searchTerm)
   );
 
   const handleCreateClient = (e: React.FormEvent) => {

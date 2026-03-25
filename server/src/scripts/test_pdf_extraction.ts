@@ -104,7 +104,8 @@ VIGENCIA: 12 meses desde la fecha de inicio
   
   try {
     // Test extraction
-    const extractedText = await pdfExtractor.extractTextFromPdf(tempPdfPath);
+    const extractionResult = await pdfExtractor.extractTextFromPdf(tempPdfPath);
+    const extractedText = extractionResult.text;
     
     if (!extractedText || extractedText.length === 0) {
       throw new Error('No text extracted from PDF');
@@ -161,7 +162,8 @@ Prima Total: $1.650.000
   fs.writeFileSync(tempPath, sampleText);
   
   try {
-    const extractedText = await pdfExtractor.extractTextFromPdf(tempPath);
+    const extractionResult = await pdfExtractor.extractTextFromPdf(tempPath);
+    const extractedText = extractionResult.text;
     
     // New approach: ~4 chars per token
     const newApproachTokens = Math.ceil(extractedText.length / 4);

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { pdfExtractor } from '../services/pdfExtractor';
 import { semanticChunker, Chunk } from '../services/semanticChunker';
-import { embeddingService } from '../services/embeddingService';
+import { embeddingService } from '../services/vector/embeddingService';
 import { vectorStore } from '../services/vectorStore';
 import { ragRetrieval } from '../services/ragRetrieval';
 import { groqService } from '../services/groqService';
@@ -76,7 +76,7 @@ export const ragClauseController = {
                             ...chunk.metadata,
                             insurerName,
                             documentName: file.originalname,
-                            documentType: documentType || 'CLAUSULADO',
+                            documentType: documentType || 'CLAUSULADO_GENERAL',
                         },
                         embedding,
                     };
@@ -156,6 +156,104 @@ export const ragClauseController = {
         } catch (error: any) {
             console.error('Error deleting clause:', error);
             res.status(500).json({ error: error.message || 'Failed to delete clause' });
+        }
+    },
+
+    /**
+     * POST /api/rag/clauses/:id/reindex - Re-index an existing clause document
+     */
+    reindexClause: async (req: Request, res: Response): Promise<void> => {
+        console.log('📥 [ragClauseController.reindexClause] Request received');
+
+        try {
+            const id = String(req.params.id);
+            const file = req.file;
+            const { insurerName, documentName, documentType } = req.body;
+
+            if (!file) {
+                res.status(400).json({ error: 'No file uploaded for re-indexing' });
+                return;
+            }
+
+            const targetInsurerName = insurerName || indexedClauses.get(id)?.insurerName;
+            const targetDocumentName = documentName || indexedClauses.get(id)?.documentName;
+
+            if (!targetInsurerName || !targetDocumentName) {
+                res.status(400).json({ error: 'Missing insurerName or documentName' });
+                return;
+            }
+
+            console.log(`🗑️ [ragClauseController] Deleting existing chunks for ${targetDocumentName}`);
+            await vectorStore.deleteDocument(targetInsurerName, targetDocumentName);
+
+            console.log(`📄 [ragClauseController] Extracting text from ${file.originalname}`);
+            const extractionResult = await pdfExtractor.extractTextFromPdf(file.path);
+
+            if (extractionResult.text.length === 0) {
+                res.status(400).json({ error: 'PDF contains no extractable text' });
+                return;
+            }
+
+            console.log(`🔀 [ragClauseController] Creating semantic chunks`);
+            const pages = extractionResult.text.split('\n\n');
+            const pageBoundaries = semanticChunker.calculatePageBoundaries(pages);
+            
+            const chunks = semanticChunker.createChunks(
+                extractionResult.text,
+                {
+                    documentName: file.originalname,
+                    insurerName: targetInsurerName,
+                },
+                pageBoundaries
+            );
+
+            console.log(`🔢 [ragClauseController] Generating embeddings for ${chunks.length} chunks`);
+            const chunksWithEmbeddings = await Promise.all(
+                chunks.map(async (chunk: Chunk, index: number) => {
+                    const embedding = await embeddingService.generateEmbedding(chunk.content);
+                    return {
+                        id: `${targetInsurerName.toLowerCase().replace(/\s+/g, '_')}_${index}`,
+                        content: chunk.content,
+                        metadata: {
+                            ...chunk.metadata,
+                            insurerName: targetInsurerName,
+                            documentName: file.originalname,
+                            documentType: documentType || 'CLAUSULADO_GENERAL',
+                        },
+                        embedding,
+                    };
+                })
+            );
+
+            console.log(`💾 [ragClauseController] Storing new chunks in vector database`);
+            await vectorStore.addChunks(targetInsurerName, chunksWithEmbeddings);
+
+            indexedClauses.set(id, {
+                id,
+                insurerName: targetInsurerName,
+                documentName: file.originalname,
+                indexedAt: new Date(),
+                chunkCount: chunks.length,
+            });
+
+            try {
+                fs.unlinkSync(file.path);
+            } catch (e) {
+                console.error('Failed to delete temp file', e);
+            }
+
+            res.status(200).json({
+                success: true,
+                clauseId: id,
+                insurerName: targetInsurerName,
+                documentName: file.originalname,
+                chunkCount: chunks.length,
+                message: 'Clause re-indexed successfully',
+            });
+
+        } catch (error: any) {
+            console.error('Error re-indexing clause:', error);
+            res.status(500).json({ error: error.message || 'Failed to re-index clause' });
         }
     },
 

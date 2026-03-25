@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { geminiService } from '../services/gemini';
 import { pdfExtractor } from '../services/pdfExtractor';
-import { clauseLibrary } from '../services/clauseLibrary';
+import { supabase } from '../config/database';
 import { ANALYSIS_SCHEMA } from '../constants/schemas';
 import fs from 'fs';
 import path from 'path';
@@ -42,29 +42,19 @@ export const analysisController = {
             // 2. Build clauses text
             let clausesText = '';
 
-            // Priority: clauseIds from library (optimized) > uploaded files (legacy)
-            if (clauseIds.length > 0) {
-                // Fetch clauses from library
-                console.log(`📚 Fetching ${clauseIds.length} clauses from library...`);
-                const libraryClauses = await Promise.all(
-                    clauseIds.map(id => clauseLibrary.getClauseById(id))
-                );
-                const validClauses = libraryClauses.filter(c => c !== null);
-                console.log(`✅ Fetched ${validClauses.length} clauses from library`);
-
-                // Build optimized text using sections
-                clausesText = geminiService.buildSectionText(validClauses as any);
-                console.log(`📊 Clauses text (sections): ${clausesText.length} chars`);
-            } else if (clauseFiles.length > 0) {
-                // Legacy: Extract from uploaded PDFs
-                console.log("📄 Extracting clauses from uploaded PDFs (legacy mode)...");
+            // Extract from uploaded clause PDFs
+            if (clauseFiles.length > 0) {
+                console.log("📄 Extracting clauses from uploaded PDFs...");
                 const extractedClauses = await pdfExtractor.processMultiplePdfs(
                     clauseFiles.map(f => ({ path: f.path, originalname: f.originalname })),
-                    'CLAUSULADO'
+                    'CLAUSULADO_GENERAL'
                 );
                 clausesText = pdfExtractor.combineExtractedTexts(extractedClauses);
                 console.log(`📊 Clauses text (full): ${clausesText.length} chars`);
             }
+            
+            // Note: clauseIds from library feature removed - Firestore clauseLibrary deprecated
+            // Future: Implement using Supabase document system if needed
 
             // 3. Cleanup temp files immediately after extraction
             [...quoteFiles, ...clauseFiles].forEach(f => {
@@ -105,22 +95,45 @@ export const analysisController = {
                 console.log('   - First quote:', JSON.stringify(result.quotes[0]).substring(0, 200) + '...');
             }
 
-            // 4. Save to Firestore (Async/Background or Await based on preference)
-            // We await to ensure we return success only if saved, or we can make it background.
-            // Given "cloud run" and potential instance termination, best to await or use Cloud Tasks (out of scope).
-            // We will await for now.
+            // 4. Save to Supabase (replaces Firestore)
             const userId = req.body.userId || 'anonymous';
             const clientName = req.body.clientName || 'Cliente';
 
-            // Validate result structure before saving (optional but safe)
+            // Save analysis to Supabase
             try {
-                // Import firestoreService dynamically if needed or at top. 
-                // We'll use the imported one.
-                const { firestoreService } = require('../services/firestore');
-                await firestoreService.saveAnalysis(userId, clientName, result);
-            } catch (saveError) {
-                console.error("Failed to save to Firestore:", saveError);
-                // We don't block response, just log.
+                console.log('💾 [Supabase] Attempting to save analysis...');
+                console.log('   - User ID:', userId);
+                console.log('   - Client:', clientName);
+                console.log('   - Has result:', !!result);
+                console.log('   - First quote score:', result.quotes?.[0]?.score);
+                
+                const insertData = {
+                    user_id: userId,
+                    client_name: clientName,
+                    analysis_result: result,
+                    recommendation: result.recommendation || null,
+                    total_score: result.quotes?.[0]?.score || null
+                };
+                
+                console.log('   - Insert data prepared:', JSON.stringify(insertData, null, 2).substring(0, 500));
+                
+                const { data, error } = await supabase
+                    .from('analysis_history' as any)
+                    .insert(insertData as any)
+                    .select();
+
+                if (error) {
+                    console.error("❌ [Supabase] Failed to save analysis:", error);
+                    console.error("   Error code:", error.code);
+                    console.error("   Error message:", error.message);
+                    console.error("   Error details:", error.details);
+                } else {
+                    console.log("✅ [Supabase] Analysis saved successfully");
+                    console.log("   - Inserted record ID:", data?.[0]?.id);
+                }
+            } catch (saveError: any) {
+                console.error("❌ [Supabase] Exception saving analysis:", saveError);
+                console.error("   Error stack:", saveError.stack);
             }
 
             res.json(result);
@@ -162,10 +175,20 @@ export const analysisController = {
                 return;
             }
 
-            // Lazy load service
-            const { firestoreService } = require('../services/firestore');
-            const history = await firestoreService.getHistoryByUser(userId);
-            res.json(history);
+            // Fetch history from Supabase (replaces Firestore)
+            const { data: history, error } = await supabase
+                .from('analysis_history' as any)
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error("Error fetching history from Supabase:", error);
+                res.status(500).json({ error: "Failed to fetch history" });
+                return;
+            }
+
+            res.json(history || []);
         } catch (error) {
             console.error("Error fetching history:", error);
             res.status(500).json({ error: "Failed to fetch history" });

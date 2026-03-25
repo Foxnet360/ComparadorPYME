@@ -1,19 +1,26 @@
-# Production Runtime - Pre-built Artifacts
-FROM node:22-slim
+# Production Stage
+FROM node:20-alpine
+
 WORKDIR /app
 
-# Set production environment
+# Copy package files and install production dependencies
+COPY package*.json ./
+COPY tsconfig.json ./
+
+# Add build tools for native modules if needed
+RUN apk add --no-cache python3 make g++
+
+RUN npm ci --only=production
+
+# Copy pre-built application
+COPY dist ./dist
+
+# Optionally copy .env.production if it exists
+COPY .env.production* ./.env
+
+# Set environment variables
 ENV NODE_ENV=production
-ENV PORT=8080
 
-# Copy bundled backend
-COPY server/dist/bundle.js ./server.js
+EXPOSE 3000
 
-# Copy pre-built frontend
-COPY dist ./public
-
-# Expose port
-EXPOSE 8080
-
-# Start command
-CMD ["node", "server.js"]
+CMD ["npm", "start"]
