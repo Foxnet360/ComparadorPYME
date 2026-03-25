@@ -3,30 +3,24 @@ import { HistoryEntry, DashboardStats, UserProfile, QuoteStatus, ComparisonRepor
 import { dbService } from "./db";
 
 const USER_KEY = 'seguro_app_user';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
-// Mock Data for initial load
+// Mock Data for initial load (fallback only)
 const MOCK_HISTORY: HistoryEntry[] = [
   { id: '1', userId: 'admin_001', date: '2023-10-15', clientName: 'Transportes Rápidos S.A.', insurers: ['Allianz', 'Chubb', 'Mapfre'], bestOption: 'Allianz', premiumValue: 45000000, status: 'SOLD' },
   { id: '2', userId: 'admin_001', date: '2023-10-20', clientName: 'Inmobiliaria El Porvenir', insurers: ['Sura', 'Bolívar', 'Zurich'], bestOption: 'Sura', premiumValue: 12500000, status: 'LOST' },
   { id: '3', userId: 'admin_001', date: '2023-11-05', clientName: 'Tecnología Global Solutions', insurers: ['AXA Colpatria', 'Chubb', 'Mapfre'], bestOption: 'Chubb', premiumValue: 28000000, status: 'SENT' },
-  { id: '4', userId: 'admin_001', date: '2023-11-12', clientName: 'Constructora Metro', insurers: ['Seguros del Estado', 'Solidaria', 'Mapfre'], bestOption: 'Mapfre', premiumValue: 156000000, status: 'DRAFT' },
-  { id: '5', userId: 'admin_001', date: '2023-11-18', clientName: 'Cadena de Restaurantes La Nonna', insurers: ['Bolívar', 'Sura', 'AXA'], bestOption: 'Bolívar', premiumValue: 8900000, status: 'SENT' },
 ];
 
 const MOCK_CLIENTS: Client[] = [
   { id: 'c1', name: 'Transportes Rápidos S.A.', nit: '900.123.456-1', contactPerson: 'Juan Pérez', industry: 'Logística', email: 'gerencia@transportesrapidos.com' },
   { id: 'c2', name: 'Inmobiliaria El Porvenir', nit: '800.987.654-2', contactPerson: 'María Gómez', industry: 'Real Estate', email: 'admin@elporvenir.co' },
-  { id: 'c3', name: 'Tecnología Global Solutions', nit: '901.555.333-3', contactPerson: 'Pedro Tech', industry: 'Tecnología', email: 'cto@globaltech.com' },
-  { id: 'c4', name: 'Constructora Metro', nit: '890.111.222-4', contactPerson: 'Ing. Carlos Ruiz', industry: 'Construcción', email: 'cruiz@metroc.com' },
-  { id: 'c5', name: 'Cadena de Restaurantes La Nonna', nit: '900.555.888-9', contactPerson: 'Luisa Fernanda', industry: 'Alimentos', email: 'compras@lanonna.com' },
-  { id: 'c6', name: 'Clínica Santa Fe', nit: '860.000.111-1', contactPerson: 'Dr. Roberto', industry: 'Salud', email: 'director@clinicasantafe.com' },
 ];
 
 export const storageService = {
   // --- AUTHENTICATION ---
 
   register: async (user: UserProfile): Promise<UserProfile> => {
-    // Check if email already exists
     const users = await dbService.getAll("users");
     if (users.find(u => u.email === user.email)) {
       throw new Error('El correo electrónico ya está registrado.');
@@ -34,17 +28,14 @@ export const storageService = {
 
     const newUser = { ...user, id: Date.now().toString() };
     await dbService.put("users", newUser);
-
-    // Auto login
     localStorage.setItem(USER_KEY, JSON.stringify(newUser));
     return newUser;
   },
 
   login: async (email: string, password: string): Promise<UserProfile> => {
-    // 1. Check Admin Hardcoded (Legacy/Backdoor)
     if (email === 'admin@seguros.com' && password === 'admin123') {
       const adminUser: UserProfile = {
-        id: 'admin_001',
+        id: '1774422600105', // Use a consistent ID that matches backend expectations
         name: 'Administrador',
         email: email,
         role: 'ADMIN',
@@ -55,7 +46,6 @@ export const storageService = {
       return adminUser;
     }
 
-    // 2. Check Registered Users in DB
     const users = await dbService.getAll("users");
     const foundUser = users.find(u => u.email === email && u.password === password);
 
@@ -69,8 +59,6 @@ export const storageService = {
 
   updateProfile: async (updatedUser: UserProfile): Promise<UserProfile> => {
     await dbService.put("users", updatedUser);
-
-    // Update current session if it matches
     const currentUser = storageService.getCurrentUser();
     if (currentUser && currentUser.id === updatedUser.id) {
       localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
@@ -91,7 +79,6 @@ export const storageService = {
   getClients: async (): Promise<Client[]> => {
     const clients = await dbService.getAll("clients");
     if (clients.length === 0) {
-      // Seed initial data
       for (const client of MOCK_CLIENTS) {
         await dbService.put("clients", client);
       }
@@ -111,46 +98,51 @@ export const storageService = {
     if (!currentUser || !currentUser.id) return [];
 
     try {
-      // 1. Try fetching from Cloud Backend
-      // We assume API is available at /api or http://localhost:8080/api (needs config)
-      // geminiService has API_BASE_URL, we should likely export it or centralized config.
-      // For now, hardcode or valid relative path if proxied.
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
-
       const response = await fetch(`${API_URL}/history?userId=${currentUser.id}`);
       if (response.ok) {
         const cloudHistory = await response.json();
-        // Return cloud history immediately
-        return cloudHistory;
+        
+        // Transform backend data (snake_case) to frontend format (camelCase)
+        const transformedHistory: HistoryEntry[] = cloudHistory.map((item: any) => {
+          const analysisResult = item.analysis_result || {};
+          const quotes = analysisResult.quotes || [];
+          const bestQuote = quotes.length > 0 
+            ? quotes.reduce((prev: any, curr: any) => ((prev?.score || 0) > (curr?.score || 0)) ? prev : curr, quotes[0])
+            : null;
+          
+          return {
+            id: item.id,
+            userId: item.user_id,
+            date: item.created_at ? item.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+            clientName: item.client_name || 'Cliente Sin Nombre',
+            insurers: quotes.map((q: any) => q.insurerName || 'Desconocido'),
+            bestOption: bestQuote?.insurerName || 'N/A',
+            premiumValue: bestQuote?.priceAnnual || 0,
+            status: 'SENT', // Default status - could be stored in DB in future
+            fullReport: analysisResult as ComparisonReport
+          };
+        });
+        
+        return transformedHistory;
       }
     } catch (e) {
       console.warn("Backend Unreachable, falling back to local storage", e);
     }
 
     // Fallback: Local Storage (IndexedDB)
-    let allHistory = await dbService.getAll("history");
-
-    // Seed mock data if empty (for demo)
-    if (allHistory.length === 0 && currentUser.role === 'ADMIN') {
-      // Original Mock Data Logic preserved for fallback
-      // ... (We could restore mock logic here but it's cleaner to return what we have)
-    }
-
-    if (currentUser.role === 'ADMIN') return allHistory;
-    return allHistory.filter(entry => entry.userId === currentUser.id);
+    return await dbService.getAll("history");
   },
 
   saveAnalysis: async (clientName: string, report: ComparisonReport) => {
     const currentUser = storageService.getCurrentUser();
     if (!currentUser) return;
 
-    // Safety check
     if (!report || !report.quotes || !Array.isArray(report.quotes) || report.quotes.length === 0) {
       console.warn("Cannot save analysis: Invalid report structure", report);
       return;
     }
 
-    // Extract details
+    // Backend already saves the analysis, we just need to update local cache
     const bestQuote = report.quotes.reduce((prev: any, curr: any) => ((prev?.score || 0) > (curr?.score || 0)) ? prev : curr, report.quotes[0]);
     const insurers = report.quotes.map((q: any) => q.insurerName || 'Desconocido');
 
@@ -170,11 +162,15 @@ export const storageService = {
   },
 
   updateStatus: async (id: string, newStatus: QuoteStatus) => {
+    // Update local storage
     const entry = await dbService.get("history", id);
     if (entry) {
       const updated = { ...entry, status: newStatus };
       await dbService.put("history", updated);
     }
+    
+    // Note: Backend doesn't have an endpoint to update status yet
+    // This would need to be implemented in the backend if we want persistence
   },
 
   getStats: async (): Promise<DashboardStats> => {
