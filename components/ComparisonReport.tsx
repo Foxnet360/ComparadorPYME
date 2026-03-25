@@ -251,28 +251,34 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
                 <Award className="mr-2 text-indigo-600" size={20} />
                 Análisis Cualitativo (Radar)
               </h3>
-              <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-                    <PolarGrid stroke="#e2e8f0" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 11 }} />
-                    <PolarRadiusAxis angle={30} domain={[0, 10]} tick={false} axisLine={false} />
-                    {report.quotes.map((q, i) => (
-                      <Radar
-                        key={i}
-                        name={q.insurerName}
-                        dataKey={q.insurerName}
-                        stroke={CHART_COLORS[i % CHART_COLORS.length]}
-                        fill={CHART_COLORS[i % CHART_COLORS.length]}
-                        fillOpacity={0.2}
+              <div className="h-[300px] w-full min-h-[300px]">
+                {report.quotes.length > 0 && radarData.some(d => Object.keys(d).length > 2) ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                      <PolarGrid stroke="#e2e8f0" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 11 }} />
+                      <PolarRadiusAxis angle={30} domain={[0, 10]} tick={false} axisLine={false} />
+                      {report.quotes.map((q, i) => (
+                        <Radar
+                          key={i}
+                          name={q.insurerName}
+                          dataKey={q.insurerName}
+                          stroke={CHART_COLORS[i % CHART_COLORS.length]}
+                          fill={CHART_COLORS[i % CHART_COLORS.length]}
+                          fillOpacity={0.2}
+                        />
+                      ))}
+                      <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                      <Tooltip
+                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                       />
-                    ))}
-                    <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                    <Tooltip
-                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    />
-                  </RadarChart>
-                </ResponsiveContainer>
+                    </RadarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-400">
+                    No hay datos suficientes para el gráfico
+                  </div>
+                )}
               </div>
             </div>
 
@@ -282,29 +288,35 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
                 <BarChart3 className="mr-2 text-indigo-600" size={20} />
                 Comparativa de Primas
               </h3>
-              <div className="h-[300px] w-full mt-4">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={priceData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                    <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
-                    <YAxis
-                      tick={{ fill: '#64748b', fontSize: 12 }}
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`}
-                    />
-                    <Tooltip
-                      cursor={{ fill: '#f8fafc' }}
-                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                      formatter={(value: number) => [`$${value.toLocaleString()}`, 'Prima Anual']}
-                    />
-                    <Bar dataKey="fullPrice" name="Precio Anual" radius={[4, 4, 0, 0]} barSize={40}>
-                      {priceData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="h-[300px] w-full mt-4 min-h-[300px]">
+                {priceData.length > 0 && priceData.some(d => d.fullPrice > 0) ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={priceData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
+                      <YAxis
+                        tick={{ fill: '#64748b', fontSize: 12 }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`}
+                      />
+                      <Tooltip
+                        cursor={{ fill: '#f8fafc' }}
+                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                        formatter={(value: number) => [`$${value.toLocaleString()}`, 'Prima Anual']}
+                      />
+                      <Bar dataKey="fullPrice" name="Precio Anual" radius={[4, 4, 0, 0]} barSize={40}>
+                        {priceData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-400">
+                    No hay datos de precios disponibles
+                  </div>
+                )}
               </div>
             </div>
           </div>

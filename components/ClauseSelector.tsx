@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Library, Upload, Check, Search } from 'lucide-react';
 import { clauseService } from '../services/clauseService';
-import { ClauseSummary, InsurerSummary } from '../types';
 
 interface ClauseSelectorProps {
     onClausesSelected: (clauseIds: string[]) => void;
@@ -9,16 +8,23 @@ interface ClauseSelectorProps {
     mode: 'library' | 'upload';
 }
 
+interface RAGClause {
+    insurerName: string;
+    documentName: string;
+    chunkCount: number;
+}
+
 export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
     onClausesSelected,
     onModeChange,
     mode
 }) => {
-    const [clauses, setClauses] = useState<ClauseSummary[]>([]);
-    const [insurers, setInsurers] = useState<InsurerSummary[]>([]);
-    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [clauses, setClauses] = useState<RAGClause[]>([]);
+    const [insurers, setInsurers] = useState<string[]>([]);
+    const [selectedItems, setSelectedItems] = useState<string[]>([]);
     const [filterInsurer, setFilterInsurer] = useState<string>('');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (mode === 'library') {
@@ -28,30 +34,34 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
 
     const loadData = async () => {
         setLoading(true);
+        setError(null);
         try {
-            const [clauseData, insurerData] = await Promise.all([
-                clauseService.getClauses(),
-                clauseService.getInsurers()
-            ]);
+            // Use RAG endpoints instead of legacy Firestore endpoints
+            const clauseData = await clauseService.ragGetClauses();
             setClauses(clauseData);
-            setInsurers(insurerData);
-        } catch (err) {
+            
+            // Extract unique insurers from clauses
+            const uniqueInsurers = [...new Set(clauseData.map(c => c.insurerName))];
+            setInsurers(uniqueInsurers);
+        } catch (err: any) {
             console.error('Error loading clauses:', err);
+            setError('Error al cargar cláusulas. El servicio puede no estar disponible.');
         } finally {
             setLoading(false);
         }
     };
 
-    const toggleClause = (id: string) => {
-        const newSelection = selectedIds.includes(id)
-            ? selectedIds.filter(x => x !== id)
-            : [...selectedIds, id];
-        setSelectedIds(newSelection);
+    const toggleClause = (insurerName: string, documentName: string) => {
+        const key = `${insurerName}::${documentName}`;
+        const newSelection = selectedItems.includes(key)
+            ? selectedItems.filter(x => x !== key)
+            : [...selectedItems, key];
+        setSelectedItems(newSelection);
         onClausesSelected(newSelection);
     };
 
     const filteredClauses = filterInsurer
-        ? clauses.filter(c => c.aseguradora === filterInsurer)
+        ? clauses.filter(c => c.insurerName === filterInsurer)
         : clauses;
 
     return (
@@ -82,6 +92,13 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
                 </button>
             </div>
 
+            {/* Error Message */}
+            {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                    {error}
+                </div>
+            )}
+
             {/* Library Mode Content */}
             {mode === 'library' && (
                 <div className="space-y-3">
@@ -95,8 +112,8 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
                         >
                             <option value="">Todas las aseguradoras</option>
                             {insurers.map(ins => (
-                                <option key={ins.aseguradora} value={ins.aseguradora}>
-                                    {ins.aseguradora} ({ins.count})
+                                <option key={ins} value={ins}>
+                                    {ins}
                                 </option>
                             ))}
                         </select>
@@ -111,44 +128,39 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
                         </div>
                     ) : (
                         <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg divide-y">
-                            {filteredClauses.map(clause => (
-                                <label
-                                    key={clause.id}
-                                    className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-50 transition-colors ${selectedIds.includes(clause.id) ? 'bg-indigo-50' : ''
-                                        }`}
-                                >
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedIds.includes(clause.id)}
-                                        onChange={() => toggleClause(clause.id)}
-                                        className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
-                                    />
-                                    <div className="flex-1 min-w-0">
-                                        <div className="font-medium text-sm text-gray-900 truncate">
-                                            {clause.aseguradora} - {clause.producto}
+                            {filteredClauses.map((clause, idx) => {
+                                const key = `${clause.insurerName}::${clause.documentName}`;
+                                return (
+                                    <label
+                                        key={idx}
+                                        className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-50 transition-colors ${selectedItems.includes(key) ? 'bg-indigo-50' : ''}`}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedItems.includes(key)}
+                                            onChange={() => toggleClause(clause.insurerName, clause.documentName)}
+                                            className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                            <div className="font-medium text-sm text-gray-900 truncate">
+                                                {clause.insurerName} - {clause.documentName}
+                                            </div>
+                                            <div className="text-xs text-gray-500 flex gap-2 items-center">
+                                                <span>{clause.chunkCount} chunks</span>
+                                                <span className="text-green-600">Indexado ✓</span>
+                                            </div>
                                         </div>
-                                        <div className="text-xs text-gray-500 flex gap-2 items-center">
-                                            <span>{clause.version}</span>
-                                            <span>•</span>
-                                            <span>~{Math.round(clause.tokensEstimados / 1000)}k tokens</span>
-                                            {clause.tieneSecciones && (
-                                                <>
-                                                    <span>•</span>
-                                                    <span className="text-green-600">Optimizado ✓</span>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                </label>
-                            ))}
+                                    </label>
+                                );
+                            })}
                         </div>
                     )}
 
                     {/* Selection Summary */}
-                    {selectedIds.length > 0 && (
+                    {selectedItems.length > 0 && (
                         <div className="flex items-center gap-2 text-sm text-indigo-600 bg-indigo-50 px-3 py-2 rounded-lg">
                             <Check size={16} />
-                            {selectedIds.length} clausulado{selectedIds.length > 1 ? 's' : ''} seleccionado{selectedIds.length > 1 ? 's' : ''}
+                            {selectedItems.length} clausulado{selectedItems.length > 1 ? 's' : ''} seleccionado{selectedItems.length > 1 ? 's' : ''}
                         </div>
                     )}
                 </div>
