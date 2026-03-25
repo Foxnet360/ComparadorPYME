@@ -134,7 +134,7 @@ Responde solo con JSON válido, sin texto adicional.`;
                         { role: 'system', content: 'Eres un experto analista de seguros. Respondes siempre en JSON válido.' },
                         { role: 'user', content: prompt }
                     ],
-                    temperature: 0.1,
+                    temperature: 0,
                     max_tokens: 4000,
                     response_format: { type: 'json_object' },
                 });

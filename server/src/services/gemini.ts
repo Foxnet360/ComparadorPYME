@@ -119,6 +119,9 @@ export const geminiService = {
                     generationConfig: {
                         responseMimeType: "application/json",
                         responseSchema: schema,
+                        temperature: 0,
+                        topP: 0,
+                        topK: 1,
                     }
                 });
 
@@ -195,6 +198,9 @@ export const geminiService = {
                     generationConfig: {
                         responseMimeType: "application/json",
                         responseSchema: schema,
+                        temperature: 0,
+                        topP: 0,
+                        topK: 1,
                     }
                 });
 

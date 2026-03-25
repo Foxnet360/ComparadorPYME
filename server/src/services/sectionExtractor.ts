@@ -79,7 +79,7 @@ export const sectionExtractor = {
                 generationConfig: {
                     responseMimeType: 'application/json',
                     responseSchema: SECTION_SCHEMA,
-                    temperature: 0.1, // Low temperature for consistency
+                    temperature: 0, // Zero temperature for maximum consistency
                 }
             });
 
