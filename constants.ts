@@ -53,6 +53,7 @@ REGLAS CRÍTICAS:
 - Para cada cobertura, incluye el campo 'deductible' con formato: "% / Mín. X SMMLV (aplica sobre pérdida|valor asegurado)" o "No aplica".
 - Si un ítem no aparece en la póliza, créalo igualmente con value: "NO ESPECIFICADO" o "EXCLUIDO" y deductible vacío.
 - NUNCA omitas ninguna de las 14 coberturas.
+- ORDEN: Presenta las 14 coberturas EXACTAMENTE en el orden de la lista anterior (1-14). NO reordenes.
 
 ### FASE 3: SCORING MULTIDIMENSIONAL (0-100)
 Califica cada cotización en 'scoringBreakdown' (cada dimensión en escala 0-10) según:
