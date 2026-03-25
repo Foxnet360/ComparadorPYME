@@ -192,7 +192,7 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose }) => {
                         </div>
                     ) : clauses.length === 0 ? (
                         <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-300 text-slate-500">
-                            No hay clausulados indexados en ChromaDB.
+                            No hay clausulados indexados en la base de datos.
                         </div>
                     ) : (
                         <div className="overflow-hidden border border-slate-200 rounded-xl">
