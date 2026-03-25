@@ -1,13 +1,14 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 if (!GEMINI_API_KEY) {
   console.error('❌ [Embedding Service] GEMINI_API_KEY not configured');
 }
 
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-// embedding-001 produce vectores de 768 dimensiones (compatible con pgvector ivfflat)
-const embeddingModel = genAI.getGenerativeModel({ model: 'embedding-001' });
+const EMBEDDING_MODEL_NAME = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
+const EMBEDDING_DIMENSIONS = 768;
+
+const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 export interface EmbeddingResult {
   embedding: number[];
@@ -17,21 +18,30 @@ export interface EmbeddingResult {
 
 export const embeddingService = {
   /**
-   * Genera embedding para un texto usando Gemini Embedding API con retry
+   * Genera embedding para un texto usando Gemini Embedding API
    */
   generateEmbedding: async (text: string, retries = 3): Promise<number[]> => {
-    // Truncar texto si es muy largo (límite de tokens)
     const truncatedText = text.slice(0, 8000);
     
     let lastError: Error | null = null;
     
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
-        const result = await embeddingModel.embedContent(truncatedText);
-        const embedding = result.embedding.values;
+        const result = await genAI.models.embedContent({
+          model: EMBEDDING_MODEL_NAME,
+          contents: [{ parts: [{ text: truncatedText }] }],
+        });
+        
+        let embedding = result.embeddings?.[0]?.values;
         
         if (!embedding || embedding.length === 0) {
           throw new Error('No embedding returned from Gemini');
+        }
+        
+        // Truncar a 768 dimensiones para compatibilidad con la base de datos
+        if (embedding.length > EMBEDDING_DIMENSIONS) {
+          console.log(`🔧 [Embedding Service] Truncating embedding from ${embedding.length} to ${EMBEDDING_DIMENSIONS} dims`);
+          embedding = embedding.slice(0, EMBEDDING_DIMENSIONS);
         }
         
         return embedding;
@@ -40,7 +50,6 @@ export const embeddingService = {
         console.warn(`⚠️ [Embedding Service] Attempt ${attempt}/${retries} failed: ${lastError.message}`);
         
         if (attempt < retries) {
-          // Esperar antes de reintentar (backoff exponencial)
           const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
@@ -57,7 +66,6 @@ export const embeddingService = {
   generateEmbeddingsBatch: async (texts: string[]): Promise<EmbeddingResult[]> => {
     const results: EmbeddingResult[] = [];
     
-    // Procesar en paralelo con límite de concurrencia
     const batchSize = 5;
     for (let i = 0; i < texts.length; i += batchSize) {
       const batch = texts.slice(i, i + batchSize);
@@ -67,7 +75,7 @@ export const embeddingService = {
           return {
             embedding,
             text,
-            model: 'embedding-001',
+            model: EMBEDDING_MODEL_NAME,
           };
         } catch (error) {
           console.error(`❌ [Embedding Service] Failed to generate embedding for text ${i + index}:`, error);
@@ -78,7 +86,6 @@ export const embeddingService = {
       const batchResults = await Promise.all(batchPromises);
       results.push(...batchResults.filter((r): r is EmbeddingResult => r !== null));
       
-      // Pequeña pausa para evitar rate limits
       if (i + batchSize < texts.length) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
@@ -91,9 +98,7 @@ export const embeddingService = {
    * Genera embedding para una consulta de búsqueda
    */
   generateQueryEmbedding: async (query: string): Promise<number[]> => {
-    // Para queries, podemos expandir con términos relacionados si es necesario
-    const enhancedQuery = query; // Aquí se podría integrar con el tesauro
-    return embeddingService.generateEmbedding(enhancedQuery);
+    return embeddingService.generateEmbedding(query);
   },
 
   /**
@@ -133,4 +138,4 @@ export const embeddingService = {
   },
 };
 
-console.log('🔢 [Embedding Service] Initialized with model: embedding-001 (768 dims)');
+console.log(`🔢 [Embedding Service] Initialized with model: ${EMBEDDING_MODEL_NAME} (${EMBEDDING_DIMENSIONS} dims)`);

@@ -1,16 +1,4 @@
-import { ChromaClient, Collection } from 'chromadb';
-
-const CHROMA_HOST = process.env.CHROMA_HOST || '';
-const CHROMA_PORT = process.env.CHROMA_PORT || '8000';
-
-let chromaClient: ChromaClient | null = null;
-
-const getChromaUrl = (): string => {
-    if (CHROMA_HOST && CHROMA_HOST !== 'localhost') {
-        return `http://${CHROMA_HOST}:${CHROMA_PORT}`;
-    }
-    return 'http://localhost:8000';
-};
+import { supabase } from '../config/database';
 
 export interface ChunkMetadata {
     insurerName: string;
@@ -30,60 +18,85 @@ export interface RetrievedChunk {
     distance: number;
 }
 
+// Helper function to extract coverage tags from content
+const extractCoverageTags = (content: string): string[] => {
+    const tags: string[] = [];
+    const coverageTerms = [
+        'daño', 'perdida', 'hurto', 'accidente', 'responsabilidad',
+        'gastos', 'medicos', 'civil', 'extracontractual'
+    ];
+    
+    const lowerContent = content.toLowerCase();
+    coverageTerms.forEach(term => {
+        if (lowerContent.includes(term)) {
+            tags.push(term);
+        }
+    });
+    
+    return tags;
+};
+
+// Helper function to detect section type
+const detectSectionType = (content: string): string | null => {
+    const lowerContent = content.toLowerCase();
+    
+    if (lowerContent.includes('exclusi')) return 'EXCLUSION';
+    if (lowerContent.includes('deducible')) return 'DEDUCIBLE';
+    if (lowerContent.includes('garantia') || lowerContent.includes('cobertura')) return 'COBERTURA';
+    if (lowerContent.includes('condicion')) return 'CONDICION';
+    
+    return 'GENERAL';
+};
+
+// Convert embedding array to PostgreSQL vector string format
+const embeddingToString = (embedding: number[]): string => {
+    return `[${embedding.join(',')}]`;
+};
+
 export const vectorStore = {
     /**
-     * Inicializa el cliente de ChromaDB
+     * Inicializa el cliente (no-op para Supabase, ya está inicializado en database.ts)
      */
     initialize: async (): Promise<void> => {
-        if (!chromaClient) {
-            const chromaUrl = getChromaUrl();
-            chromaClient = new ChromaClient({
-                path: chromaUrl,
-            });
-            console.log(`📦 [VectorStore] ChromaDB client initialized at ${chromaUrl}`);
-        }
+        // Supabase client is already initialized in database.ts
+        console.log('📦 [VectorStore] Using Supabase/pgvector');
     },
 
     /**
-     * Obtiene o crea una colección para una aseguradora
-     */
-    getCollection: async (insurerName: string): Promise<Collection> => {
-        await vectorStore.initialize();
-        
-        const collectionName = insurerName.toLowerCase().replace(/\s+/g, '_');
-        
-        try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return await chromaClient!.getOrCreateCollection({ name: collectionName } as any);
-        } catch (error) {
-            console.error(`Failed to get collection ${collectionName}:`, error);
-            throw error;
-        }
-    },
-
-    /**
-     * Agrega chunks a la colección
+     * Agrega chunks a Supabase
      */
     addChunks: async (
         insurerName: string,
         chunks: { id: string; content: string; metadata: ChunkMetadata; embedding: number[] }[]
     ): Promise<void> => {
-        const collection = await vectorStore.getCollection(insurerName);
+        // Preparar datos para Supabase
+        const records = chunks.map(chunk => ({
+            id: chunk.id,
+            document_id: chunk.metadata.clauseId || chunk.id.split('_')[0],
+            page_number: chunk.metadata.pageStart,
+            content: chunk.content,
+            content_normalized: chunk.content.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''),
+            embedding: embeddingToString(chunk.embedding),
+            metadata: chunk.metadata as any,
+            coverage_tags: extractCoverageTags(chunk.content),
+            section_type: detectSectionType(chunk.content) as any,
+        }));
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await collection.add({
-            ids: chunks.map(c => c.id),
-            embeddings: chunks.map(c => c.embedding),
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            metadatas: chunks.map(c => c.metadata as any),
-            documents: chunks.map(c => c.content),
-        });
+        // Insertar en Supabase
+        const { error } = await supabase
+            .from('chunks')
+            .upsert(records as any, { onConflict: 'id' });
 
-        console.log(`✅ [VectorStore] Added ${chunks.length} chunks for ${insurerName}`);
+        if (error) {
+            console.error('❌ [VectorStore] Error saving chunks:', error);
+            throw error;
+        }
+
+        console.log(`✅ [VectorStore] Added ${chunks.length} chunks to Supabase for ${insurerName}`);
     },
 
     /**
-     * Busca chunks similares
+     * Busca chunks similares usando pgvector
      */
     search: async (
         insurerName: string,
@@ -91,92 +104,159 @@ export const vectorStore = {
         filter?: { clauseId?: string; section?: string },
         limit: number = 5
     ): Promise<RetrievedChunk[]> => {
-        const collection = await vectorStore.getCollection(insurerName);
+        try {
+            // Intentar usar RPC para búsqueda vectorial
+            const { data, error } = await supabase
+                .rpc('match_chunks', {
+                    query_embedding: embeddingToString(queryEmbedding),
+                    match_threshold: 0.5,
+                    match_count: limit,
+                    insurer_filter: insurerName
+                } as any);
 
-        const results = await collection.query({
-            queryEmbeddings: [queryEmbedding],
-            nResults: limit,
-            where: filter,
-        });
-
-        const chunks: RetrievedChunk[] = [];
-        
-        if (results.ids && results.ids[0]) {
-            for (let i = 0; i < results.ids[0].length; i++) {
-                chunks.push({
-                    id: results.ids[0][i],
-                    content: results.documents?.[0]?.[i] || '',
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    metadata: results.metadatas?.[0]?.[i] as any as ChunkMetadata,
-                    distance: results.distances?.[0]?.[i] || 0,
-                });
+            if (error) {
+                console.warn('⚠️ [VectorStore] RPC match_chunks failed, falling back to text search:', error);
+                // Fallback: búsqueda de texto básica
+                return vectorStore.fallbackTextSearch(insurerName, filter, limit);
             }
+
+            if (!data) return [];
+
+            return (data as any[]).map((row: any) => ({
+                id: row.id,
+                content: row.content,
+                metadata: row.metadata as ChunkMetadata,
+                distance: 1 - (row.similarity || 0), // Convertir similitud a distancia
+            }));
+        } catch (error) {
+            console.error('❌ [VectorStore] Search error:', error);
+            return vectorStore.fallbackTextSearch(insurerName, filter, limit);
+        }
+    },
+
+    /**
+     * Búsqueda de fallback usando texto (sin embeddings)
+     */
+    fallbackTextSearch: async (
+        insurerName: string,
+        filter?: { clauseId?: string; section?: string },
+        limit: number = 5
+    ): Promise<RetrievedChunk[]> => {
+        console.log('🔍 [VectorStore] Using fallback text search');
+        
+        let query = supabase
+            .from('chunks')
+            .select('*')
+            .limit(limit);
+
+        if (filter?.clauseId) {
+            query = query.eq('document_id', filter.clauseId);
         }
 
-        return chunks;
+        const { data, error } = await query;
+
+        if (error) {
+            console.error('❌ [VectorStore] Fallback search error:', error);
+            return [];
+        }
+
+        return (data || []).map((row: any) => ({
+            id: row.id,
+            content: row.content,
+            metadata: row.metadata as ChunkMetadata,
+            distance: 0, // No tenemos distancia real en búsqueda de texto
+        }));
     },
 
     /**
      * Elimina todos los chunks de un documento
      */
     deleteDocument: async (insurerName: string, documentName: string): Promise<void> => {
-        const collection = await vectorStore.getCollection(insurerName);
+        // Primero obtener los IDs de los documentos que coinciden
+        const { data: documents, error: docError } = await supabase
+            .from('documents')
+            .select('id')
+            .eq('document_name', documentName);
 
-        const results = await collection.get({
-            where: { documentName },
-        });
-
-        if (results.ids && results.ids.length > 0) {
-            await collection.delete({
-                ids: results.ids,
-            });
-            console.log(`✅ [VectorStore] Deleted ${results.ids.length} chunks for ${documentName}`);
+        if (docError) {
+            console.error('❌ [VectorStore] Error finding documents:', docError);
+            throw docError;
         }
+
+        if (!documents || documents.length === 0) {
+            console.log(`⚠️ [VectorStore] No documents found with name: ${documentName}`);
+            return;
+        }
+
+        const documentIds = (documents as any[]).map(d => d.id);
+
+        // Eliminar chunks asociados
+        const { error: deleteError } = await supabase
+            .from('chunks')
+            .delete()
+            .in('document_id', documentIds);
+
+        if (deleteError) {
+            console.error('❌ [VectorStore] Error deleting chunks:', deleteError);
+            throw deleteError;
+        }
+
+        console.log(`✅ [VectorStore] Deleted chunks for ${documentName}`);
     },
 
     /**
      * Lista todos los documentos indexados
      */
     listDocuments: async (insurerName?: string): Promise<{ insurerName: string; documentName: string; chunkCount: number }[]> => {
-        await vectorStore.initialize();
-        
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const collections = await chromaClient!.listCollections() as any[];
-        const documents: { insurerName: string; documentName: string; chunkCount: number }[] = [];
+        try {
+            // Obtener documentos con conteo de chunks
+            let query = supabase
+                .from('documents')
+                .select(`
+                    id,
+                    document_name,
+                    insurers!inner(name)
+                `);
 
-        for (const coll of collections) {
-            const insurer = coll.name.replace(/_/g, ' ').toUpperCase();
+            if (insurerName) {
+                query = query.eq('insurers.name', insurerName);
+            }
+
+            const { data: documents, error: docError } = await query;
+
+            if (docError) {
+                console.error('❌ [VectorStore] Error listing documents:', docError);
+                return [];
+            }
+
+            if (!documents) return [];
+
+            // Contar chunks para cada documento
+            const result: { insurerName: string; documentName: string; chunkCount: number }[] = [];
             
-            if (insurerName && insurer !== insurerName.toUpperCase()) {
-                continue;
-            }
+            for (const doc of documents as any[]) {
+                const docId = doc.id;
+                const { count, error: countError } = await supabase
+                    .from('chunks')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('document_id', docId);
 
-            try {
-                const collection = await chromaClient!.getCollection(coll.name);
-                const results = await collection.get();
-                
-                const documentNames = new Set<string>();
-                if (results.metadatas) {
-                    for (const meta of results.metadatas as any[]) {
-                        if (meta.documentName) {
-                            documentNames.add(meta.documentName);
-                        }
-                    }
+                if (countError) {
+                    console.warn(`⚠️ [VectorStore] Error counting chunks for ${doc.document_name}:`, countError);
                 }
 
-                for (const docName of documentNames) {
-                    documents.push({
-                        insurerName: insurer,
-                        documentName: docName,
-                        chunkCount: results.ids.length,
-                    });
-                }
-            } catch (error) {
-                console.error(`Error getting collection ${coll.name}:`, error);
+                result.push({
+                    insurerName: doc.insurers?.name || 'Unknown',
+                    documentName: doc.document_name,
+                    chunkCount: count || 0,
+                });
             }
+
+            return result;
+        } catch (error) {
+            console.error('❌ [VectorStore] Error in listDocuments:', error);
+            return [];
         }
-
-        return documents;
     },
 
     /**
@@ -187,3 +267,5 @@ export const vectorStore = {
         return documents.length > 0;
     },
 };
+
+console.log('📦 [VectorStore] Initialized with Supabase/pgvector');

@@ -240,13 +240,13 @@ export class DocumentIndexingService {
       }
 
       if (existing) {
-        return existing.id;
+        return (existing as any).id;
       }
 
       // Crear nueva aseguradora
       const { data: created, error: createError } = await supabase
         .from('insurers')
-        .insert({ name })
+        .insert({ name } as any)
         .select('id')
         .single();
 
@@ -254,7 +254,7 @@ export class DocumentIndexingService {
         throw handleSupabaseError(createError);
       }
 
-      return created.id;
+      return (created as any).id;
     } catch (error) {
       console.error('❌ Error getting/creating insurer:', error);
       throw error;
@@ -284,7 +284,7 @@ export class DocumentIndexingService {
           storage_path: storagePath,
           is_active: true,
           uploaded_by: metadata.uploadedBy,
-        })
+        } as any)
         .select('id')
         .single();
 
@@ -292,7 +292,7 @@ export class DocumentIndexingService {
         throw handleSupabaseError(error);
       }
 
-      return data.id;
+      return (data as any).id;
     } catch (error) {
       console.error('❌ Error creating document record:', error);
       throw error;
@@ -317,7 +317,7 @@ export class DocumentIndexingService {
             storage_path: page.storagePath,
             width: page.width,
             height: page.height,
-          });
+          } as any);
 
         if (error) {
           console.warn(`⚠️ Error saving page image reference for page ${page.pageNumber}:`, error);
@@ -390,7 +390,7 @@ export class DocumentIndexingService {
         
         const { error } = await supabase
           .from('chunks')
-          .insert(batch);
+          .insert(batch as any);
 
         if (error) {
           console.error(`❌ Error saving chunks batch ${i}:`, error);
@@ -453,7 +453,7 @@ export class DocumentIndexingService {
         .eq('document_id', documentId);
 
       if (images && images.length > 0) {
-        const paths = images.map(img => img.storage_path);
+        const paths = (images as any[]).map(img => img.storage_path);
         await supabase.storage.from('clause-pages').remove(paths);
       }
 
