@@ -133,7 +133,8 @@ export const analysisController = {
                     console.error("   Error details:", error.details);
                 } else {
                     console.log("✅ [Supabase] Analysis saved successfully");
-                    console.log("   - Inserted record ID:", data?.[0]?.id);
+                    const savedData = data as any[];
+                    console.log("   - Inserted record ID:", savedData?.[0]?.id);
                 }
             } catch (saveError: any) {
                 console.error("❌ [Supabase] Exception saving analysis:", saveError);
