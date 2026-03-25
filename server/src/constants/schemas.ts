@@ -68,7 +68,7 @@ export const ANALYSIS_SCHEMA = {
                     },
                     clientAnalysis: { type: "STRING" },
                     technicalAnalysis: { type: "STRING" },
-                    score: { type: "NUMBER", description: "Score final de 0 a 100 (NO de 0 a 10). Calculado como: (coverage*0.25 + deductibles*0.20 + exclusions*0.20 + priceRatio*0.15 + sublimits*0.10 + warranties*0.10) * 10" },
+                    score: { type: "NUMBER", description: "Score final de 0 a 100 (NO de 0 a 10). Calculado como: (coverage*0.25 + deductibles*0.20 + exclusions*0.20 + priceRatio*0.15 + sublimits*0.10 + warranties*0.10) * 10. Debe ser un NÚMERO ENTERO redondeado al entero más cercano (ej: 72, no 72.25)" },
                 }
             }
         },

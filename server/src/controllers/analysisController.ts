@@ -107,12 +107,16 @@ export const analysisController = {
                 console.log('   - Has result:', !!result);
                 console.log('   - First quote score:', result.quotes?.[0]?.score);
                 
+                // Ensure score is an integer (round to nearest whole number)
+                const rawScore = result.quotes?.[0]?.score;
+                const totalScore = rawScore ? Math.round(rawScore) : null;
+                
                 const insertData = {
                     user_id: userId,
                     client_name: clientName,
                     analysis_result: result,
                     recommendation: result.recommendation || null,
-                    total_score: result.quotes?.[0]?.score || null
+                    total_score: totalScore
                 };
                 
                 console.log('   - Insert data prepared:', JSON.stringify(insertData, null, 2).substring(0, 500));

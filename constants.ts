@@ -79,9 +79,13 @@ Fórmula obligatoria:
 3. Multiplica por 10: Resultado * 10 = SCORE FINAL (0-100)
 
 ⚠️ IMPORTANTE: El valor en 'score' debe ser 0-100, NO 0-10.
+⚠️ FORMATO: El score debe ser un NÚMERO ENTERO (integer), NO decimal. Redondea al entero más cercano.
 
 Ejemplo: Si todas las dimensiones son 8:
 (8*0.25 + 8*0.20 + 8*0.20 + 8*0.15 + 8*0.10 + 8*0.10) * 10 = 80
+
+INCORRECTO: 72.25, 68.5, 91.75
+CORRECTO: 72, 69, 92
 
 Verificación: Si ves valores como 6.5 o 7.1, estás devolviendo 0-10. Multiplica por 10 para obtener 65 o 71.
 
