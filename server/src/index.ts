@@ -5,14 +5,27 @@ import path from 'path';
 import fs from 'fs';
 import multer from 'multer';
 
-const envPath = path.resolve(__dirname, '../.env');
-console.log(`Loading env from: ${envPath}`);
-const result = dotenv.config({ path: envPath });
+// Try multiple paths for .env file (works in dev and production)
+const possibleEnvPaths = [
+    path.resolve(process.cwd(), '.env'),
+    path.resolve(__dirname, '../.env'),
+    path.resolve(__dirname, '../../.env'),
+];
 
-if (result.error) {
-    console.warn("⚠️ Dotenv error:", result.error.message);
-} else {
-    console.log("✅ Dotenv loaded successfully:", Object.keys(result.parsed || {}).join(', '));
+let envLoaded = false;
+for (const envPath of possibleEnvPaths) {
+    if (fs.existsSync(envPath)) {
+        console.log(`✅ Loading env from: ${envPath}`);
+        const result = dotenv.config({ path: envPath });
+        if (!result.error) {
+            envLoaded = true;
+            break;
+        }
+    }
+}
+
+if (!envLoaded) {
+    console.warn("⚠️ No .env file found. Using environment variables from system.");
 }
 
 // Map VITE_ variable to standard variable if needed
