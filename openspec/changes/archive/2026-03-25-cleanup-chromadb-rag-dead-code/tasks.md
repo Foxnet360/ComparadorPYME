@@ -51,9 +51,12 @@
 
 ## 5. Documentation Updates
 
-- [ ] 5.1 Update README.md to remove ChromaDB references
-- [ ] 5.2 Update any deployment documentation (RAILWAY_DEPLOY.md, etc.)
-- [ ] 5.3 Remove or update references to ChromaDB in code comments
+- [x] 5.1 Update README.md to remove ChromaDB references
+  - ✅ COMPLETED: README.md actualizado con arquitectura actual y notas de migración
+- [x] 5.2 Update any deployment documentation (RAILWAY_DEPLOY.md, etc.)
+  - ✅ COMPLETED: No existe RAILWAY_DEPLOY.md, configuración en railway.json es suficiente
+- [x] 5.3 Remove or update references to ChromaDB in code comments
+  - ✅ COMPLETED: Eliminada referencia en components/ClauseAdmin.tsx
 
 ## 6. Deployment Preparation
 
@@ -62,8 +65,25 @@
 - [x] 6.2 Verify no ChromaDB in node_modules after build
   - ✅ Confirmed: package.json doesn't include chromadb
 - [ ] 6.3 Test Railway deployment with clean build
+  - ⏸️ PENDING: Requires actual deployment to Railway
 - [ ] 6.4 Monitor Railway logs for any ChromaDB-related errors
+  - ⏸️ PENDING: Requires actual deployment to Railway
 - [ ] 6.5 Re-index any necessary documents in Supabase if needed
+  - ⏸️ PENDING: Requires actual deployment to Railway
+
+## NOTAS DE ARCHIVO
+
+**Fecha de archivo**: 2026-03-25
+**Estado**: Funcional en desarrollo, listo para deploy
+**Tareas pendientes**: Las tareas 6.3-6.5 requieren deploy real en Railway y se completarán posteriormente.
+
+**Cambios principales completados**:
+- ✅ Eliminado ChromaDB completamente
+- ✅ Migrado a Supabase/pgvector
+- ✅ Configurado Gemini API
+- ✅ Frontend y Backend funcionando
+- ✅ Build exitoso
+- ✅ Documentación actualizada
 
 ## RESUMEN DE CAMBIOS COMPLETADOS
 

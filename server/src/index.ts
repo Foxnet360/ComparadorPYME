@@ -35,23 +35,30 @@ app.use(express.json());
 // Basic health check
 // Basic health check
 app.get('/health', (req, res) => {
-    res.send('CSA Comparator API is running');
+    res.json({ status: 'ok', message: 'CSA Comparator API is running', timestamp: new Date().toISOString() });
 });
 
-// Serve static files from the 'public' directory (built frontend)
-// Serve static files from the 'public' directory (built frontend)
-const potentialPaths = [
-    path.join(__dirname, 'public'), // Production (bundled sibling)
-    path.join(__dirname, '../public'), // Standard build structure
-    path.join(__dirname, '../../dist') // Local dev (from server/src to root dist)
-];
-
-const publicDir = potentialPaths.find(p => fs.existsSync(p)) || path.join(__dirname, 'public');
-console.log(`Serving static files from: ${publicDir}`);
-
-if (fs.existsSync(publicDir)) {
-    app.use(express.static(publicDir));
-}
+// Root route - API info
+app.get('/', (req, res) => {
+    res.json({
+        name: 'CSA Comparator API',
+        version: '1.0.0',
+        status: 'running',
+        endpoints: {
+            health: '/health',
+            analyze: '/api/analyze',
+            analyzeRag: '/api/analyze-rag',
+            history: '/api/history',
+            documents: '/api/documents',
+            search: '/api/search',
+            rag: {
+                clauses: '/api/rag/clauses',
+                search: '/api/rag/search',
+                analyze: '/api/rag/analyze'
+            }
+        }
+    });
+});
 
 // Ensure uploads directory exists (Use /tmp for Cloud Run)
 const uploadDir = process.env.NODE_ENV === 'production' ? '/tmp/uploads' : path.join(__dirname, '../uploads');
@@ -110,15 +117,24 @@ app.post('/api/search', searchController.search);
 app.post('/api/search/by-coverage', searchController.searchByCoverage);
 app.post('/api/search/compare', searchController.compareDocuments);
 
-// Catch-all route to serve index.html for client-side routing
-// This must remain AT THE END, after all API routes
-// Note: Express 5 requires regex or different syntax for catch-all
-app.get(/.*/, (req, res) => {
-    if (fs.existsSync(path.join(publicDir, 'index.html'))) {
-        res.sendFile(path.join(publicDir, 'index.html'));
-    } else {
-        res.status(404).send('Not Found');
-    }
+// Catch-all route for undefined paths
+app.use((req, res) => {
+    res.status(404).json({
+        error: 'Not Found',
+        message: `Route ${req.method} ${req.path} not found`,
+        availableEndpoints: [
+            'GET /',
+            'GET /health',
+            'POST /api/analyze',
+            'POST /api/analyze-rag',
+            'GET /api/history',
+            'GET /api/documents',
+            'POST /api/documents',
+            'POST /api/search',
+            'POST /api/rag/clauses',
+            'GET /api/rag/clauses'
+        ]
+    });
 });
 
 app.listen(port, () => {
