@@ -4,6 +4,25 @@ import fs from 'fs';
 import { ClauseDocument } from '../types';
 import { validateAnalysis } from '../utils/analysisValidator';
 
+/**
+ * Extrae y limpia JSON de la respuesta de Gemini.
+ * Elimina bloques markdown, comas finales y otros artefactos comunes.
+ */
+function cleanJsonResponse(raw: string): string {
+    let text = raw.trim();
+
+    // Extraer de bloque markdown si existe
+    const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (codeBlockMatch) {
+        text = codeBlockMatch[1].trim();
+    }
+
+    // Eliminar comas finales antes de } o ]
+    text = text.replace(/,\s*([}\]])/g, '$1');
+
+    return text;
+}
+
 // Initialize Gemini lazily
 const getGenAI = () => {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -49,12 +68,12 @@ const buildSectionText = (clauses: ClauseDocument[]): string => {
                 parts.push('\n✅ GARANTÍAS:');
                 parts.push(secciones.garantias);
             }
-            console.log(`📊 Using sections for ${aseguradora} (~${((secciones.exclusiones?.length || 0) + (secciones.deducibles?.length || 0) + (secciones.garantias?.length || 0)) / 4} tokens)`);
+
         } else {
             // Fallback to full text if no sections extracted
             parts.push('\n[CLAUSULADO COMPLETO - Secciones no extraídas]');
             parts.push(textoCompleto);
-            console.log(`⚠️ Using full text for ${aseguradora} (~${textoCompleto.length / 4} tokens)`);
+
         }
 
         parts.push('===\n');
@@ -76,7 +95,6 @@ export const geminiService = {
                 displayName,
             });
 
-            console.log(`Uploaded file ${displayName}: ${uploadResult.file.name}`);
             return uploadResult.file;
         } catch (error: any) {
             console.error("Error uploading to Gemini:", error);
@@ -86,11 +104,9 @@ export const geminiService = {
 
     waitForFilesActive: async (files: any[]) => {
         const fileManager = getFileManager();
-        console.log("Waiting for files to be processed...");
         for (const name of files.map((file) => file.name)) {
             let file = await fileManager.getFile(name);
             while (file.state === FileState.PROCESSING) {
-                process.stdout.write(".");
                 await new Promise((resolve) => setTimeout(resolve, 2000));
                 file = await fileManager.getFile(name);
             }
@@ -98,7 +114,6 @@ export const geminiService = {
                 throw new Error(`File ${file.name} failed to process`);
             }
         }
-        console.log("All files ready.");
     },
 
     analyzeQuotes: async (quoteFiles: any[], clauseFiles: any[], prompt: string, schema: any) => {
@@ -125,7 +140,6 @@ export const geminiService = {
                     }
                 });
 
-                console.log(`Generating content with model: models/gemini-2.5-flash with ${fileParts.length} files`);
                 const result = await model.generateContent([
                     ...fileParts,
                     { text: prompt }
@@ -137,18 +151,14 @@ export const geminiService = {
                 }
 
                 const text = response.text();
-                // console.log("Raw Gemini Response:", text.substring(0, 500) + "...");
                 if (!text) {
                     throw new Error("Empty text response from Gemini");
                 }
 
-                console.log("✅ Gemini analysis successful and parsed.");
-                const parsed = JSON.parse(text);
+                const parsed = JSON.parse(cleanJsonResponse(text));
                 // Validar y completar coberturas
                 return validateAnalysis(parsed);
             } catch (error: any) {
-                console.log(`Debug Error Analysis - Status: ${error.status} (${typeof error.status}), Message: ${error.message}`);
-
                 // Check multiple ways a 429 might appear
                 const isRateLimit =
                     error.status === 429 ||
@@ -186,10 +196,6 @@ export const geminiService = {
         let retries = 0;
         const maxRetries = 3;
 
-        // Log input size for monitoring
-        const totalInputChars = quotesText.length + clausesText.length + prompt.length;
-        console.log(`📊 Text-based analysis: ${totalInputChars} chars (~${Math.round(totalInputChars / 4)} tokens estimate)`);
-
         while (true) {
             try {
                 const genAI = getGenAI();
@@ -215,7 +221,6 @@ export const geminiService = {
                     contentParts.push({ text: `\n\n--- CLAUSULADOS DE REFERENCIA ---\n\n${clausesText}` });
                 }
 
-                console.log(`Generating content with model: models/gemini-2.5-flash (text mode, ${contentParts.length} parts)`);
                 const result = await model.generateContent(contentParts);
 
                 const response = result.response;
@@ -228,12 +233,10 @@ export const geminiService = {
                     throw new Error("Empty text response from Gemini");
                 }
 
-                console.log("✅ Gemini text-based analysis successful and parsed.");
-                const parsed = JSON.parse(text);
+                const parsed = JSON.parse(cleanJsonResponse(text));
                 // Validar y completar coberturas
                 return validateAnalysis(parsed);
             } catch (error: any) {
-                console.log(`Debug Error Analysis - Status: ${error.status} (${typeof error.status}), Message: ${error.message}`);
 
                 const isRateLimit =
                     error.status === 429 ||
