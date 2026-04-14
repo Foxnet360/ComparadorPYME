@@ -42,7 +42,7 @@ describe('pdfExtractor', () => {
     it('should return invalid for nonexistent file', () => {
       const result = pdfExtractor.validatePdf('non-existent-file.pdf');
       expect(result.valid).toBe(false);
-      expect(result.error).toContain('ENOENT');
+      expect(result.error).toContain('File does not exist');
     });
   });
 });
