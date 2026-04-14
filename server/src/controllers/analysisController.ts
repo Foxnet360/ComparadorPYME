@@ -28,29 +28,23 @@ export const analysisController = {
                 return;
             }
 
-            console.log(`📥 Received ${quoteFiles.length} quotes, ${clauseFiles.length} clause files, ${clauseIds.length} clause IDs`);
-
             // 1. Extract text from quote PDFs
-            console.log("📄 Extracting text from quote PDFs...");
             const extractedQuotes = await pdfExtractor.processMultiplePdfs(
                 quoteFiles.map(f => ({ path: f.path, originalname: f.originalname })),
                 'COTIZACIÓN'
             );
             const quotesText = pdfExtractor.combineExtractedTexts(extractedQuotes);
-            console.log(`✅ Extracted: ${quotesText.length} chars from quotes`);
 
             // 2. Build clauses text
             let clausesText = '';
 
             // Extract from uploaded clause PDFs
             if (clauseFiles.length > 0) {
-                console.log("📄 Extracting clauses from uploaded PDFs...");
                 const extractedClauses = await pdfExtractor.processMultiplePdfs(
                     clauseFiles.map(f => ({ path: f.path, originalname: f.originalname })),
                     'CLAUSULADO_GENERAL'
                 );
                 clausesText = pdfExtractor.combineExtractedTexts(extractedClauses);
-                console.log(`📊 Clauses text (full): ${clausesText.length} chars`);
             }
             
             // Note: clauseIds from library feature removed - Firestore clauseLibrary deprecated
@@ -87,26 +81,12 @@ export const analysisController = {
 
             const result = await geminiService.analyzeQuotesFromText(quotesText, clausesText, prompt, ANALYSIS_SCHEMA);
 
-            // DEBUG: Log result structure
-            console.log('📊 [DEBUG] Gemini result received');
-            console.log('   - typeof result:', typeof result);
-            console.log('   - result.quotes:', result?.quotes ? `Array[${result.quotes.length}]` : 'UNDEFINED');
-            if (result?.quotes?.length > 0) {
-                console.log('   - First quote:', JSON.stringify(result.quotes[0]).substring(0, 200) + '...');
-            }
-
             // 4. Save to Supabase (replaces Firestore)
             const userId = req.body.userId || 'anonymous';
             const clientName = req.body.clientName || 'Cliente';
 
             // Save analysis to Supabase
             try {
-                console.log('💾 [Supabase] Attempting to save analysis...');
-                console.log('   - User ID:', userId);
-                console.log('   - Client:', clientName);
-                console.log('   - Has result:', !!result);
-                console.log('   - First quote score:', result.quotes?.[0]?.score);
-                
                 // Ensure score is an integer (round to nearest whole number)
                 const rawScore = result.quotes?.[0]?.score;
                 const totalScore = rawScore ? Math.round(rawScore) : null;
@@ -119,8 +99,6 @@ export const analysisController = {
                     total_score: totalScore
                 };
                 
-                console.log('   - Insert data prepared:', JSON.stringify(insertData, null, 2).substring(0, 500));
-                
                 const { data, error } = await supabase
                     .from('analysis_history' as any)
                     .insert(insertData as any)
@@ -131,10 +109,6 @@ export const analysisController = {
                     console.error("   Error code:", error.code);
                     console.error("   Error message:", error.message);
                     console.error("   Error details:", error.details);
-                } else {
-                    console.log("✅ [Supabase] Analysis saved successfully");
-                    const savedData = data as any[];
-                    console.log("   - Inserted record ID:", savedData?.[0]?.id);
                 }
             } catch (saveError: any) {
                 console.error("❌ [Supabase] Exception saving analysis:", saveError);

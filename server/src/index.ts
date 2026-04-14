@@ -6,20 +6,16 @@ import fs from 'fs';
 import multer from 'multer';
 
 const envPath = path.resolve(__dirname, '../.env');
-console.log(`Loading env from: ${envPath}`);
 const result = dotenv.config({ path: envPath });
 
 if (result.error) {
     console.warn("⚠️ Dotenv error:", result.error.message);
-} else {
-    console.log("✅ Dotenv loaded successfully:", Object.keys(result.parsed || {}).join(', '));
 }
 
 // Map VITE_ variable to standard variable if needed
 if (!process.env.GEMINI_API_KEY && process.env.VITE_GEMINI_API_KEY) {
     process.env.GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY;
 }
-console.log(`Gemini API Key defined: ${!!process.env.GEMINI_API_KEY}`);
 
 // Import controllers after dotenv is loaded (they depend on env vars)
 import { analysisController } from './controllers/analysisController';
@@ -139,6 +135,4 @@ app.use((req, res) => {
 
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`API Key Loaded: ${!!process.env.GEMINI_API_KEY}`);
 });
