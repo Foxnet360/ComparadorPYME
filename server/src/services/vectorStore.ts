@@ -209,14 +209,16 @@ export const vectorStore = {
      */
     listDocuments: async (insurerName?: string): Promise<{ insurerName: string; documentName: string; chunkCount: number }[]> => {
         try {
-            // Obtener documentos con conteo de chunks
+            // Obtener documentos con conteo de chunks en una sola query (evita N+1)
             let query = supabase
                 .from('documents')
                 .select(`
                     id,
                     document_name,
-                    insurers!inner(name)
-                `);
+                    insurers!inner(name),
+                    chunks(count)
+                `)
+                .eq('is_active', true);
 
             if (insurerName) {
                 query = query.eq('insurers.name', insurerName);
@@ -231,28 +233,11 @@ export const vectorStore = {
 
             if (!documents) return [];
 
-            // Contar chunks para cada documento
-            const result: { insurerName: string; documentName: string; chunkCount: number }[] = [];
-            
-            for (const doc of documents as any[]) {
-                const docId = doc.id;
-                const { count, error: countError } = await supabase
-                    .from('chunks')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('document_id', docId);
-
-                if (countError) {
-                    console.warn(`⚠️ [VectorStore] Error counting chunks for ${doc.document_name}:`, countError);
-                }
-
-                result.push({
-                    insurerName: doc.insurers?.name || 'Unknown',
-                    documentName: doc.document_name,
-                    chunkCount: count || 0,
-                });
-            }
-
-            return result;
+            return (documents as any[]).map((doc: any) => ({
+                insurerName: doc.insurers?.name || 'Unknown',
+                documentName: doc.document_name,
+                chunkCount: doc.chunks?.[0]?.count || 0,
+            }));
         } catch (error) {
             console.error('❌ [VectorStore] Error in listDocuments:', error);
             return [];

@@ -4,7 +4,6 @@ import { semanticChunker, Chunk } from './semanticChunker';
 import { embeddingService } from './vector/embeddingService';
 import { pdfRenderer, RenderedPage } from './pdfRenderer';
 import { handleSupabaseError } from '../config/database';
-import fs from 'fs';
 
 export interface DocumentMetadata {
   insurerName: string;
@@ -51,7 +50,7 @@ export class DocumentIndexingService {
   }
 
   /**
-   * Indexa un documento PDF completo en Supabase
+   * Indexa un documento PDF completo en Supabase usando una transacción atómica
    */
   async indexDocument(
     pdfPath: string,
@@ -104,37 +103,12 @@ export class DocumentIndexingService {
       const renderedPages = await pdfRenderer.renderDocumentPages(
         pdfPath,
         insurerId,
-        'temp-doc-id' // Se actualizará después
+        'temp-doc-id'
       );
 
       console.log(`✅ Páginas renderizadas: ${renderedPages.length}`);
 
-      // 4. Crear registro del documento
-      this.reportProgress({
-        stage: 'storing',
-        message: 'Creando registro del documento',
-        percent: 35,
-      });
-
-      const documentId = await this.createDocumentRecord(
-        insurerId,
-        metadata,
-        extractionResult.metadata,
-        renderedPages
-      );
-
-      console.log(`✅ Documento creado: ${documentId}`);
-
-      // 5. Actualizar storage paths con el documentId real
-      this.reportProgress({
-        stage: 'storing',
-        message: 'Actualizando referencias de imágenes',
-        percent: 40,
-      });
-
-      await this.updatePageImageReferences(documentId, renderedPages);
-
-      // 6. Crear chunks semánticos
+      // 4. Crear chunks semánticos
       this.reportProgress({
         stage: 'chunking',
         message: 'Creando chunks semánticos',
@@ -151,7 +125,7 @@ export class DocumentIndexingService {
 
       console.log(`✅ Chunks creados: ${chunks.length}`);
 
-      // 7. Generar embeddings
+      // 5. Generar embeddings
       this.reportProgress({
         stage: 'embedding',
         message: 'Generando embeddings',
@@ -166,18 +140,58 @@ export class DocumentIndexingService {
 
       console.log(`✅ Embeddings generados: ${chunksWithEmbeddings.length}`);
 
-      // 8. Guardar chunks en base de datos
+      // 6. Preparar datos para transacción atómica
       this.reportProgress({
         stage: 'storing',
-        message: 'Guardando chunks en base de datos',
+        message: 'Preparando datos para almacenamiento atómico',
+        percent: 85,
+      });
+
+      const imagesPayload = renderedPages.map(page => ({
+        page_number: page.pageNumber,
+        storage_url: page.storageUrl,
+        storage_path: page.storagePath,
+        width: page.width,
+        height: page.height,
+      }));
+
+      const chunksPayload = chunksWithEmbeddings.map(chunk => ({
+        page_number: chunk.metadata.pageStart,
+        content: chunk.content,
+        content_normalized: chunk.contentNormalized,
+        embedding: `[${chunk.embedding.join(',')}]`,
+        metadata: chunk.metadata,
+        coverage_tags: chunk.coverageTags,
+        section_type: chunk.sectionType,
+      }));
+
+      // 7. Llamar a la transacción atómica
+      this.reportProgress({
+        stage: 'storing',
+        message: 'Guardando documento, imágenes y chunks atómicamente',
         percent: 90,
       });
 
-      await this.saveChunksToDatabase(documentId, chunksWithEmbeddings);
+      const { data: documentId, error: rpcError } = await supabase
+        .rpc('index_document_transaction', {
+          p_insurer_id: insurerId,
+          p_document_name: metadata.documentName,
+          p_document_type: metadata.documentType,
+          p_version: metadata.version || null,
+          p_total_pages: extractionResult.metadata.pageCount,
+          p_storage_path: `${insurerId}`,
+          p_uploaded_by: metadata.uploadedBy || 'anonymous',
+          p_images: imagesPayload,
+          p_chunks: chunksPayload,
+        } as any);
 
-      console.log(`✅ Chunks guardados en base de datos`);
+      if (rpcError) {
+        throw new Error(`Transacción atómica fallida: ${rpcError.message}`);
+      }
 
-      // 9. Completar
+      console.log(`✅ Documento, imágenes y chunks guardados atómicamente: ${documentId}`);
+
+      // 8. Completar
       this.reportProgress({
         stage: 'complete',
         message: 'Indexación completada',
@@ -205,9 +219,6 @@ export class DocumentIndexingService {
     } catch (error: any) {
       console.error('❌ [DocumentIndexingService] Error:', error);
       errors.push(error.message);
-
-      // Intentar rollback
-      await this.rollback(pdfPath);
 
       return {
         success: false,
@@ -262,74 +273,6 @@ export class DocumentIndexingService {
   }
 
   /**
-   * Crea el registro del documento en la base de datos
-   */
-  private async createDocumentRecord(
-    insurerId: string,
-    metadata: DocumentMetadata,
-    pdfMetadata: PDFMetadata,
-    renderedPages: RenderedPage[]
-  ): Promise<string> {
-    try {
-      const storagePath = `${insurerId}`;
-
-      const { data, error } = await supabase
-        .from('documents')
-        .insert({
-          insurer_id: insurerId,
-          document_name: metadata.documentName,
-          document_type: metadata.documentType,
-          version: metadata.version,
-          total_pages: pdfMetadata.pageCount,
-          storage_path: storagePath,
-          is_active: true,
-          uploaded_by: metadata.uploadedBy,
-        } as any)
-        .select('id')
-        .single();
-
-      if (error) {
-        throw handleSupabaseError(error);
-      }
-
-      return (data as any).id;
-    } catch (error) {
-      console.error('❌ Error creating document record:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Actualiza las referencias de imágenes con el documentId correcto
-   */
-  private async updatePageImageReferences(
-    documentId: string,
-    renderedPages: RenderedPage[]
-  ): Promise<void> {
-    try {
-      for (const page of renderedPages) {
-        const { error } = await supabase
-          .from('page_images')
-          .insert({
-            document_id: documentId,
-            page_number: page.pageNumber,
-            storage_url: page.storageUrl,
-            storage_path: page.storagePath,
-            width: page.width,
-            height: page.height,
-          } as any);
-
-        if (error) {
-          console.warn(`⚠️ Error saving page image reference for page ${page.pageNumber}:`, error);
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error updating page image references:', error);
-      // No lanzar error, solo loguear
-    }
-  }
-
-  /**
    * Genera embeddings para los chunks
    */
   private async generateEmbeddingsForChunks(
@@ -362,69 +305,6 @@ export class DocumentIndexingService {
     }
 
     return results;
-  }
-
-  /**
-   * Guarda los chunks con embeddings en la base de datos
-   */
-  private async saveChunksToDatabase(
-    documentId: string,
-    chunks: Array<Chunk & { embedding: number[] }>
-  ): Promise<void> {
-    try {
-      const chunksToInsert = chunks.map((chunk, index) => ({
-        document_id: documentId,
-        page_number: chunk.metadata.pageStart,
-        content: chunk.content,
-        content_normalized: chunk.contentNormalized,
-        embedding: chunk.embedding,
-        metadata: chunk.metadata,
-        coverage_tags: chunk.coverageTags,
-        section_type: chunk.sectionType,
-      }));
-
-      // Insertar en batches de 50
-      const batchSize = 50;
-      for (let i = 0; i < chunksToInsert.length; i += batchSize) {
-        const batch = chunksToInsert.slice(i, i + batchSize);
-        
-        const { error } = await supabase
-          .from('chunks')
-          .insert(batch as any);
-
-        if (error) {
-          console.error(`❌ Error saving chunks batch ${i}:`, error);
-          throw handleSupabaseError(error);
-        }
-
-        const percent = 90 + Math.floor((i / chunksToInsert.length) * 10);
-        this.reportProgress({
-          stage: 'storing',
-          message: `Guardando chunks ${i + 1}-${Math.min(i + batchSize, chunksToInsert.length)}/${chunksToInsert.length}`,
-          percent,
-        });
-      }
-    } catch (error) {
-      console.error('❌ Error saving chunks to database:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Realiza rollback en caso de error
-   */
-  private async rollback(pdfPath: string): Promise<void> {
-    console.log('🔄 [DocumentIndexingService] Performing rollback...');
-    
-    try {
-      // Limpiar archivo temporal si existe
-      if (fs.existsSync(pdfPath)) {
-        fs.unlinkSync(pdfPath);
-        console.log('   Temporary file cleaned up');
-      }
-    } catch (error) {
-      console.error('❌ Error during rollback:', error);
-    }
   }
 
   /**

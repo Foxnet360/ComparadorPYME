@@ -1,3 +1,4 @@
+// Schema completo original (puede ser muy grande para outputs largos)
 export const ANALYSIS_SCHEMA = {
     type: "OBJECT",
     properties: {
@@ -88,5 +89,50 @@ export const ANALYSIS_SCHEMA = {
         },
         recommendation: { type: "STRING" },
         marketAnalysis: { type: "STRING" }
+    }
+};
+
+// Schema simplificado para cuando el complejo falla por tamaño de output
+// Reduce campos opcionales y elimina arrays redundantes
+export const ANALYSIS_SCHEMA_SIMPLE = {
+    type: "OBJECT",
+    properties: {
+        quotes: {
+            type: "ARRAY",
+            items: {
+                type: "OBJECT",
+                properties: {
+                    insurerName: { type: "STRING" },
+                    policyName: { type: "STRING" },
+                    priceAnnual: { type: "NUMBER" },
+                    currency: { type: "STRING" },
+                    coverages: {
+                        type: "ARRAY",
+                        items: {
+                            type: "OBJECT",
+                            properties: {
+                                name: { type: "STRING" },
+                                value: { type: "STRING" },
+                                deductible: { type: "STRING" }
+                            }
+                        }
+                    },
+                    alerts: {
+                        type: "ARRAY",
+                        items: {
+                            type: "OBJECT",
+                            properties: {
+                                level: { type: "STRING" },
+                                title: { type: "STRING" },
+                                description: { type: "STRING" }
+                            }
+                        }
+                    },
+                    score: { type: "NUMBER" },
+                    clientAnalysis: { type: "STRING" }
+                }
+            }
+        },
+        recommendation: { type: "STRING" }
     }
 };
