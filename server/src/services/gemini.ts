@@ -362,22 +362,32 @@ export const geminiService = {
                 }
 
                 const currentSchema = useFallbackSchema && fallbackSchema ? fallbackSchema : schema;
+                const isFallback = useFallbackSchema && fallbackSchema;
                 
-                if (useFallbackSchema) {
+                if (isFallback) {
                     console.log(`🔄 [Gemini] Usando schema simplificado (fallback)...`);
                 }
 
                 const genAI = getGenAI();
+                
+                // Configuración de generation: en fallback, quitamos responseSchema 
+                // forzado para dar libertad al modelo y evitar truncamiento
+                const generationConfig: any = {
+                    responseMimeType: "application/json",
+                    temperature: 0.1,  // Ligeramente más flexible para evitar atascos
+                    topP: 0.95,
+                    topK: 40,
+                    maxOutputTokens: 8192,
+                };
+                
+                // Solo usar responseSchema en modo normal (no fallback)
+                if (!isFallback) {
+                    generationConfig.responseSchema = currentSchema;
+                }
+                
                 const model = genAI.getGenerativeModel({
                     model: 'models/gemini-2.5-flash',
-                    generationConfig: {
-                        responseMimeType: "application/json",
-                        responseSchema: schema,
-                        temperature: 0,
-                        topP: 0,
-                        topK: 1,
-                        maxOutputTokens: 8192,  // Máximo permitido para respuestas completas
-                    }
+                    generationConfig
                 });
 
                 // Build the content parts as text (no file uploads)
