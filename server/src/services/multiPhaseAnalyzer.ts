@@ -13,26 +13,26 @@ export const multiPhaseAnalyzer = {
         const startTime = Date.now();
         
         try {
-            // Fase 1: Extracción
-            const extractionResult = await quoteExtractor.extract(quotesText);
+            // Fase 1: Extracción (una por una)
+            const extractionResult = await quoteExtractor.extractAll(quotesText);
             
             if (!extractionResult.quotes || extractionResult.quotes.length === 0) {
                 throw new Error('No se pudieron extraer cotizaciones');
             }
             
             // Fase 2: Scoring
-            const scoringResult = await quoteScorer.score(extractionResult);
+            const scoringResult = await quoteScorer.scoreAll(extractionResult.quotes);
             
             // Fase 3: Narrativa
             const narrativeResult = await quoteNarrative.generate(
-                extractionResult,
+                extractionResult.quotes,
                 scoringResult
             );
             
             // Combinar resultados
             const combinedQuotes = extractionResult.quotes.map((quote, index) => ({
                 ...quote,
-                ...scoringResult.quotes[index],
+                ...scoringResult[index],
                 // Campos adicionales esperados por el frontend
                 priceMonthly: Math.round(quote.priceAnnual / 12),
                 deductibles: quote.coverages

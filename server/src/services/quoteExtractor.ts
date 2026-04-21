@@ -1,77 +1,85 @@
 /**
  * Fase 1: Extracción de datos estructurados de cotizaciones
- * Extrae datos brutos sin análisis ni scoring
+ * PROCESA UNA COTIZACIÓN POR LLAMADA para evitar truncamiento
  */
 
 import { geminiService } from './gemini';
-import { ExtractionOutput } from '../types/analysis';
+import { ExtractionOutput, ExtractedQuote } from '../types/analysis';
 
-const EXTRACTION_SCHEMA = {
+const SINGLE_QUOTE_SCHEMA = {
     type: "OBJECT",
     properties: {
-        quotes: {
+        insurerName: { type: "STRING" },
+        policyName: { type: "STRING" },
+        priceAnnual: { type: "NUMBER" },
+        currency: { type: "STRING" },
+        coverages: {
             type: "ARRAY",
             items: {
                 type: "OBJECT",
                 properties: {
-                    insurerName: { type: "STRING" },
-                    policyName: { type: "STRING" },
-                    priceAnnual: { type: "NUMBER" },
-                    currency: { type: "STRING" },
-                    coverages: {
-                        type: "ARRAY",
-                        items: {
-                            type: "OBJECT",
-                            properties: {
-                                name: { type: "STRING" },
-                                value: { type: "STRING" },
-                                deductible: { type: "STRING" }
-                            }
-                        }
-                    }
+                    name: { type: "STRING" },
+                    value: { type: "STRING" },
+                    deductible: { type: "STRING" }
                 }
             }
         }
     }
 };
 
-const EXTRACTION_PROMPT = `Extrae datos estructurados de las siguientes cotizaciones de seguros.
+const EXTRACTION_PROMPT = `Extrae datos estructurados de ESTA cotización de seguro.
 
 REGLAS:
-1. Extrae SOLO datos brutos, NO hagas análisis ni comparaciones
-2. Para cada cotización, identifica: Aseguradora, Nombre de Póliza, Prima Anual, Moneda
-3. Lista TODAS las coberturas encontradas con: nombre, valor asegurado, deducible
+1. Extrae SOLO datos brutos, NO hagas análisis
+2. Identifica: Aseguradora, Nombre de Póliza, Prima Anual, Moneda
+3. Lista las coberturas con: nombre, valor asegurado, deducible
 4. Si un valor no está especificado, usa "NO ESPECIFICADO"
 5. Si no hay deducible, usa "No aplica"
-6. Mantén los nombres originales de coberturas tal como aparecen en el documento`;
+
+Responde SOLO con el JSON solicitado, sin texto adicional.`;
 
 export const quoteExtractor = {
-    extract: async (quotesText: string): Promise<ExtractionOutput> => {
-        console.log('🔍 [Fase 1/3] Extrayendo datos de cotizaciones...');
-        
+    extractOne: async (singleQuoteText: string): Promise<ExtractedQuote> => {
         const result = await geminiService.analyzeQuotesFromText(
-            quotesText,
+            singleQuoteText,
             '',
             EXTRACTION_PROMPT,
-            EXTRACTION_SCHEMA
+            SINGLE_QUOTE_SCHEMA
         );
         
-        console.log(`✅ [Fase 1/3] Extraídas ${result.quotes?.length || 0} cotizaciones`);
-        return result as ExtractionOutput;
+        return result as ExtractedQuote;
     },
 
-    extractBatch: async (quotesTexts: string[]): Promise<ExtractionOutput> => {
-        console.log(`🔍 [Fase 1/3] Extrayendo ${quotesTexts.length} lotes de cotizaciones...`);
+    extractAll: async (combinedQuotesText: string): Promise<ExtractionOutput> => {
+        console.log('🔍 [Fase 1/3] Extrayendo datos de cotizaciones (una por una)...');
         
-        const allQuotes: ExtractionOutput['quotes'] = [];
+        // Dividir el texto combinado en cotizaciones individuales
+        // Buscando los marcadores === INICIO/FIN ===
+        const quoteRegex = /=== INICIO COTIZACIÓN: (.+?) ===([\s\S]*?)=== FIN COTIZACIÓN ===/g;
+        const matches = [...combinedQuotesText.matchAll(quoteRegex)];
         
-        for (let i = 0; i < quotesTexts.length; i++) {
-            console.log(`  Procesando lote ${i + 1}/${quotesTexts.length}...`);
-            const result = await quoteExtractor.extract(quotesTexts[i]);
-            allQuotes.push(...result.quotes);
+        const quotes: ExtractedQuote[] = [];
+        
+        if (matches.length === 0) {
+            // Si no hay marcadores, intentar procesar todo como una sola cotización
+            console.log('  No se encontraron marcadores, procesando como cotización única...');
+            const quote = await quoteExtractor.extractOne(combinedQuotesText);
+            quotes.push(quote);
+        } else {
+            for (let i = 0; i < matches.length; i++) {
+                console.log(`  Procesando cotización ${i + 1}/${matches.length}...`);
+                const quoteText = matches[i][0];
+                try {
+                    const quote = await quoteExtractor.extractOne(quoteText);
+                    quotes.push(quote);
+                } catch (error) {
+                    console.error(`  ❌ Error extrayendo cotización ${i + 1}:`, error);
+                    // Continuar con la siguiente
+                }
+            }
         }
         
-        console.log(`✅ [Fase 1/3] Total extraídas: ${allQuotes.length} cotizaciones`);
-        return { quotes: allQuotes };
+        console.log(`✅ [Fase 1/3] Extraídas ${quotes.length} cotizaciones`);
+        return { quotes };
     }
 };
