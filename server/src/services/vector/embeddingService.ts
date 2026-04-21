@@ -66,7 +66,7 @@ export const embeddingService = {
   generateEmbeddingsBatch: async (texts: string[]): Promise<EmbeddingResult[]> => {
     const results: EmbeddingResult[] = [];
     
-    const batchSize = 5;
+    const batchSize = 50;
     for (let i = 0; i < texts.length; i += batchSize) {
       const batch = texts.slice(i, i + batchSize);
       const batchPromises = batch.map(async (text, index) => {

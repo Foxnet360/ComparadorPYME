@@ -2,7 +2,8 @@ import { Request, Response } from 'express';
 import { geminiService } from '../services/gemini';
 import { pdfExtractor } from '../services/pdfExtractor';
 import { supabase } from '../config/database';
-import { ANALYSIS_SCHEMA } from '../constants/schemas';
+import { ANALYSIS_SCHEMA, ANALYSIS_SCHEMA_SIMPLE } from '../constants/schemas';
+import { optimizeContextForAnalysis } from '../services/contextOptimizer';
 import fs from 'fs';
 import path from 'path';
 
@@ -59,7 +60,18 @@ export const analysisController = {
                 }
             });
 
-            // 3. Analyze with extracted text (NOT File API)
+            // 3. Optimize context before sending to Gemini
+            // Preserves structure while reducing token usage for large documents
+            const { quotesText: optimizedQuotes, clausesText: optimizedClauses } = optimizeContextForAnalysis(
+                quotesText, 
+                clausesText,
+                {
+                    maxQuotesLength: 120000,    // ~30K tokens for quotes
+                    maxClausesLength: 80000,    // ~20K tokens for clauses
+                    maxTotalLength: 180000      // ~45K tokens total (safe limit)
+                }
+            );
+
             const prompt = `
         **CONTEXTO**: Eres un experto actuario y analista de seguros corporativos.
         
@@ -77,9 +89,16 @@ export const analysisController = {
         **TAREAS OBLIGATORIAS:**
         - Mapea las coberturas usando EXACTAMENTE los nombres de la Plantilla PYME.
         - Calcula el 'scoringBreakdown' basándote en la dureza de los deducibles y clausulados encontrados.
+        - SI EL TEXTO ESTÁ TRUNCADO o marcado con [...], ignora esas secciones truncadas.
         `;
 
-            const result = await geminiService.analyzeQuotesFromText(quotesText, clausesText, prompt, ANALYSIS_SCHEMA);
+            const result = await geminiService.analyzeQuotesFromText(
+                optimizedQuotes, 
+                optimizedClauses, 
+                prompt, 
+                ANALYSIS_SCHEMA,
+                ANALYSIS_SCHEMA_SIMPLE  // Fallback si el complejo falla por tamaño
+            );
 
             // 4. Save to Supabase (replaces Firestore)
             const userId = req.body.userId || 'anonymous';
