@@ -2,168 +2,6 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleAIFileManager, FileState } from "@google/generative-ai/server";
 import fs from 'fs';
 import { ClauseDocument } from '../types';
-import { validateAnalysis } from '../utils/analysisValidator';
-import { optimizeContextForAnalysis } from './contextOptimizer';
-
-/**
- * Extrae y limpia JSON de la respuesta de Gemini.
- * Elimina bloques markdown, comas finales, y repara JSON truncado.
- */
-function cleanJsonResponse(raw: string): string {
-    let text = raw.trim();
-
-    // Extraer de bloque markdown si existe
-    const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (codeBlockMatch) {
-        text = codeBlockMatch[1].trim();
-    }
-
-    // Eliminar comas finales antes de } o ]
-    text = text.replace(/,\s*([}\]])/g, '$1');
-
-    // Intentar reparar JSON truncado
-    text = repairTruncatedJson(text);
-
-    return text;
-}
-
-/**
- * Cuenta llaves o corchetes que NO estén dentro de strings JSON.
- * Esto evita contar { o } que aparezcan dentro de valores de texto.
- */
-function countStructuralChars(text: string, char: '{' | '}' | '[' | ']'): number {
-    let count = 0;
-    let inString = false;
-    let escaped = false;
-    
-    for (let i = 0; i < text.length; i++) {
-        const c = text[i];
-        
-        if (escaped) {
-            escaped = false;
-            continue;
-        }
-        
-        if (c === '\\') {
-            escaped = true;
-            continue;
-        }
-        
-        if (c === '"' && !inString) {
-            inString = true;
-        } else if (c === '"' && inString) {
-            inString = false;
-        } else if (!inString && c === char) {
-            count++;
-        }
-    }
-    
-    return count;
-}
-
-/**
- * Intenta reparar JSON truncado por límite de tokens.
- * Cierra strings, objetos y arrays abiertos de forma segura.
- */
-function repairTruncatedJson(text: string): string {
-    let repaired = text.trim();
-    
-    // Si ya es JSON válido, no tocar
-    try {
-        JSON.parse(repaired);
-        return repaired;
-    } catch {
-        // Continuar con reparación
-    }
-
-    // Paso 1: Si termina en medio de un string, cerrarlo
-    // Encontrar la última comilla que NO esté escapada
-    let lastUnescapedQuote = -1;
-    let inString = false;
-    let escaped = false;
-    
-    for (let i = 0; i < repaired.length; i++) {
-        const c = repaired[i];
-        if (escaped) {
-            escaped = false;
-            continue;
-        }
-        if (c === '\\') {
-            escaped = true;
-            continue;
-        }
-        if (c === '"') {
-            inString = !inString;
-            if (!inString) lastUnescapedQuote = i;
-        }
-    }
-    
-    // Si terminamos dentro de un string
-    if (inString) {
-        repaired += '"';
-    }
-
-    // Paso 2: Balancear llaves y corchetes (solo estructurales, no dentro de strings)
-    const openBraces = countStructuralChars(repaired, '{');
-    const closeBraces = countStructuralChars(repaired, '}');
-    const openBrackets = countStructuralChars(repaired, '[');
-    const closeBrackets = countStructuralChars(repaired, ']');
-    
-    // Cerrar arrays primero, luego objetos
-    for (let i = 0; i < openBrackets - closeBrackets; i++) {
-        repaired += ']';
-    }
-    for (let i = 0; i < openBraces - closeBraces; i++) {
-        repaired += '}';
-    }
-
-    // Paso 3: Si terminamos en una propiedad incompleta, eliminarla
-    // Buscar el último ',' seguido de '"key":' sin valor
-    const lastComma = repaired.lastIndexOf(',');
-    if (lastComma > 0) {
-        const afterComma = repaired.substring(lastComma + 1).trim();
-        // Patrón: "propiedad":  o "propiedad":{
-        if (afterComma.match(/^"[^"]*"\s*:\s*$/)) {
-            repaired = repaired.substring(0, lastComma);
-            // Rebalancear recursivamente
-            return repairTruncatedJson(repaired);
-        }
-    }
-
-    // Verificar si ahora es válido
-    try {
-        JSON.parse(repaired);
-        return repaired;
-    } catch {
-        // Si aún no es válido, intentar truncar al último objeto/array completo
-        const lastComplete = findLastCompleteObject(repaired);
-        if (lastComplete && lastComplete.length > 10) {
-            return lastComplete;
-        }
-    }
-
-    return repaired;
-}
-
-/**
- * Encuentra el último objeto o array JSON completo en el texto.
- * Útil cuando todo lo demás falla.
- */
-function findLastCompleteObject(text: string): string | null {
-    // Buscar el último '}' o ']' que cierre correctamente
-    for (let i = text.length - 1; i > 0; i--) {
-        if (text[i] === '}' || text[i] === ']') {
-            const candidate = text.substring(0, i + 1);
-            try {
-                JSON.parse(candidate);
-                return candidate;
-            } catch {
-                continue;
-            }
-        }
-    }
-    return null;
-}
 
 // Initialize Gemini lazily
 const getGenAI = () => {
@@ -258,13 +96,14 @@ export const geminiService = {
         }
     },
 
-    analyzeQuotes: async (quoteFiles: any[], clauseFiles: any[], prompt: string, schema: any) => {
-        // Construct parts
-        const fileParts = [
-            ...quoteFiles.map(f => ({ fileData: { fileUri: f.uri, mimeType: f.mimeType } })),
-            ...clauseFiles.map(f => ({ fileData: { fileUri: f.uri, mimeType: f.mimeType } }))
-        ];
-
+    /**
+     * Generates content using Gemini with free-text output (NO JSON schema forcing)
+     * 
+     * @param text - The text to analyze
+     * @param prompt - The extraction prompt
+     * @returns Raw text response from Gemini
+     */
+    extractText: async (text: string, prompt: string): Promise<string> => {
         let retries = 0;
         const maxRetries = 3;
 
@@ -274,17 +113,14 @@ export const geminiService = {
                 const model = genAI.getGenerativeModel({
                     model: 'models/gemini-2.5-flash',
                     generationConfig: {
-                        responseMimeType: "application/json",
-                        responseSchema: schema,
-                        temperature: 0,
-                        topP: 0,
-                        topK: 1,
+                        temperature: 0.1,
+                        maxOutputTokens: 8192,
                     }
                 });
 
                 const result = await model.generateContent([
-                    ...fileParts,
-                    { text: prompt }
+                    { text: prompt },
+                    { text: `\n\n--- DOCUMENTO ---\n\n${text}` }
                 ]);
 
                 const response = result.response;
@@ -292,16 +128,15 @@ export const geminiService = {
                     throw new Error("No response received from Gemini");
                 }
 
-                const text = response.text();
-                if (!text) {
+                const responseText = response.text();
+                if (!responseText) {
                     throw new Error("Empty text response from Gemini");
                 }
 
-                const parsed = JSON.parse(cleanJsonResponse(text));
-                // Validar y completar coberturas
-                return validateAnalysis(parsed);
+                console.log(`📄 [Gemini] Response received: ${responseText.length} chars`);
+                
+                return responseText;
             } catch (error: any) {
-                // Check multiple ways a 429 might appear
                 const isRateLimit =
                     error.status === 429 ||
                     error.status === '429' ||
@@ -316,174 +151,54 @@ export const geminiService = {
                         throw error;
                     }
                     retries++;
-                    // Wait for 20 seconds
                     await new Promise(resolve => setTimeout(resolve, 20000));
                     continue;
                 }
 
                 console.error("Error generating content:", error);
-                if (error.message?.includes("404")) {
-                    console.error("Model not found. Please check if 'models/gemini-2.5-flash' is available for your API key.");
-                }
                 throw error;
             }
         }
     },
 
     /**
-     * Analiza cotizaciones usando texto extraído (NO File API)
-     * Esto reduce significativamente el consumo de tokens (~66% menos)
-     * 
-     * Estrategia de optimización:
-     * 1. Si el contexto es muy largo, lo comprime preservando estructura crítica
-     * 2. maxOutputTokens aumentado a 8192 para respuestas completas
-     * 3. Si falla por truncamiento, reintenta con contexto más reducido
+     * Generate narrative text (recommendation, analysis) using Gemini
+     * This is the only place where we use Gemini for text generation
      */
-    analyzeQuotesFromText: async (quotesText: string, clausesText: string, prompt: string, schema: any, fallbackSchema?: any) => {
-        let retries = 0;
-        const maxRetries = 3;
-        let optimizationLevel = 0; // 0: sin optimizar, 1: normal, 2: agresivo
-        let useFallbackSchema = false;
+    generateNarrative: async (analysisData: any): Promise<{ recommendation: string; marketAnalysis: string }> => {
+        const prompt = `Basado en el siguiente análisis de cotizaciones de seguros PYME, genera una recomendación profesional y un análisis de mercado.
 
-        while (true) {
-            try {
-                // Optimizar contexto según el nivel
-                let optimizedQuotes = quotesText;
-                let optimizedClauses = clausesText;
-                
-                if (optimizationLevel > 0) {
-                    const opts = optimizationLevel === 1 
-                        ? { maxTotalLength: 150000 }  // Primera optimización
-                        : { maxTotalLength: 100000 }; // Optimización agresiva
-                    
-                    const optimized = optimizeContextForAnalysis(quotesText, clausesText, opts);
-                    optimizedQuotes = optimized.quotesText;
-                    optimizedClauses = optimized.clausesText;
-                }
+DATOS DEL ANÁLISIS:
+${JSON.stringify(analysisData, null, 2)}
 
-                const currentSchema = useFallbackSchema && fallbackSchema ? fallbackSchema : schema;
-                const isFallback = useFallbackSchema && fallbackSchema;
-                
-                if (isFallback) {
-                    console.log(`🔄 [Gemini] Usando schema simplificado (fallback)...`);
-                }
+REGLAS:
+1. recommendation (máximo 1500 caracteres):
+   - Recomienda la mejor cotización y explica por qué
+   - Menciona pros y contras de cada opción
+   - Sé específico y actionable
 
-                const genAI = getGenAI();
-                
-                // Configuración de generation: en fallback, quitamos responseSchema 
-                // forzado para dar libertad al modelo y evitar truncamiento
-                const generationConfig: any = {
-                    responseMimeType: "application/json",
-                    temperature: 0.1,  // Ligeramente más flexible para evitar atascos
-                    topP: 0.95,
-                    topK: 40,
-                    maxOutputTokens: 8192,
-                };
-                
-                // Solo usar responseSchema en modo normal (no fallback)
-                if (!isFallback) {
-                    generationConfig.responseSchema = currentSchema;
-                }
-                
-                const model = genAI.getGenerativeModel({
-                    model: 'models/gemini-2.5-flash',
-                    generationConfig
-                });
+2. marketAnalysis (máximo 1500 caracteres):
+   - Describe tendencias observadas en el mercado
+   - Comenta rangos de precios
+   - Menciona coberturas estándar vs diferenciadoras
 
-                // Build the content parts as text (no file uploads)
-                const contentParts = [
-                    { text: prompt },
-                    { text: `\n\n--- COTIZACIONES ---\n\n${optimizedQuotes}` },
-                ];
+Responde SOLO con el siguiente formato:
 
-                // Only add clauses if provided
-                if (optimizedClauses && optimizedClauses.trim().length > 0) {
-                    contentParts.push({ text: `\n\n--- CLAUSULADOS DE REFERENCIA ---\n\n${optimizedClauses}` });
-                }
+RECOMENDACIÓN:
+[tu recomendación aquí]
 
-                const result = await model.generateContent(contentParts);
+ANÁLISIS DE MERCADO:
+[tu análisis aquí]`;
 
-                const response = result.response;
-                if (!response) {
-                    throw new Error("No response received from Gemini");
-                }
-
-                const text = response.text();
-                if (!text) {
-                    throw new Error("Empty text response from Gemini");
-                }
-
-                // Log para debuggear problemas de JSON
-                console.log(`📄 [Gemini] Raw response length: ${text.length} chars`);
-                if (text.length < 500) {
-                    console.log(`📄 [Gemini] Full response: ${text}`);
-                } else {
-                    console.log(`📄 [Gemini] First 300 chars: ${text.substring(0, 300)}`);
-                    console.log(`📄 [Gemini] Last 300 chars: ${text.substring(text.length - 300)}`);
-                }
-
-                const cleaned = cleanJsonResponse(text);
-                
-                try {
-                    const parsed = JSON.parse(cleaned);
-                    // Validar y completar coberturas
-                    return validateAnalysis(parsed);
-                } catch (parseError: any) {
-                    console.error(`❌ [Gemini] JSON Parse Error: ${parseError.message}`);
-                    console.error(`❌ [Gemini] Cleaned response (last 500 chars): ${cleaned.substring(Math.max(0, cleaned.length - 500))}`);
-                    throw parseError;
-                }
-            } catch (error: any) {
-                const errorMessage = error.message || '';
-                
-                // Detectar si es error de truncamiento/JSON malformado
-                const isTruncationError = 
-                    errorMessage.includes("Unterminated string") ||
-                    errorMessage.includes("Unexpected end") ||
-                    errorMessage.includes("Unexpected token") ||
-                    (errorMessage.includes("JSON") && errorMessage.includes("position"));
-                
-                // Estrategia de fallback progresivo:
-                // 1. Primero intentar optimizar el contexto (niveles 1 y 2)
-                // 2. Luego intentar con schema simplificado
-                // 3. Finalmente, lanzar error
-                if (isTruncationError) {
-                    if (optimizationLevel < 2) {
-                        optimizationLevel++;
-                        console.log(`⚠️ Respuesta truncada detectada. Reintentando con optimización nivel ${optimizationLevel}...`);
-                        continue;
-                    } else if (fallbackSchema && !useFallbackSchema) {
-                        useFallbackSchema = true;
-                        optimizationLevel = 0; // Reset optimización para intentar con schema simple
-                        console.log(`⚠️ Respuesta truncada detectada. Reintentando con schema simplificado...`);
-                        continue;
-                    }
-                }
-
-                const isRateLimit =
-                    error.status === 429 ||
-                    error.status === '429' ||
-                    errorMessage.includes("429") ||
-                    errorMessage.includes("Quota exceeded") ||
-                    errorMessage.includes("Too Many Requests");
-
-                if (isRateLimit) {
-                    console.log(`Rate limit hit. Retry attempt ${retries + 1} of ${maxRetries}...`);
-                    if (retries >= maxRetries) {
-                        console.error("Max retries exceeded for rate limit.");
-                        throw error;
-                    }
-                    retries++;
-                    await new Promise(resolve => setTimeout(resolve, 20000));
-                    continue;
-                }
-
-                console.error("Error generating content:", error);
-                if (errorMessage.includes("404")) {
-                    console.error("Model not found. Please check if 'models/gemini-2.5-flash' is available for your API key.");
-                }
-                throw error;
-            }
-        }
+        const text = await geminiService.extractText('', prompt);
+        
+        // Simple parsing of the response
+        const recMatch = text.match(/RECOMENDACI[ÓO]N:\s*([\s\S]*?)(?=AN[ÁA]LISIS|$)/i);
+        const marketMatch = text.match(/AN[ÁA]LISIS\s+DE\s+MERCADO:\s*([\s\S]*)/i);
+        
+        return {
+            recommendation: recMatch ? recMatch[1].trim().substring(0, 1500) : 'No se pudo generar recomendación',
+            marketAnalysis: marketMatch ? marketMatch[1].trim().substring(0, 1500) : 'No se pudo generar análisis'
+        };
     }
 };
