@@ -67,7 +67,11 @@ const clauseController_1 = require("./controllers/clauseController");
 const app = (0, express_1.default)();
 const port = parseInt(process.env.PORT || '8080', 10);
 // Trigger restart: 1
-app.use((0, cors_1.default)());
+app.use((0, cors_1.default)({
+    origin: ['https://compapyme.baconhacks.com', 'http://localhost:3000', 'http://localhost:8080'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express_1.default.json());
 // Basic health check
 // Basic health check

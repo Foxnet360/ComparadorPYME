@@ -26,7 +26,11 @@ const app = express();
 const port = parseInt(process.env.PORT || '8080', 10);
 
 // Trigger restart: 1
-app.use(cors());
+app.use(cors({
+    origin: ['https://compapyme.baconhacks.com', 'http://localhost:3000', 'http://localhost:8080'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // Basic health check
