@@ -1,0 +1,500 @@
+{
+  "version": "1.0.0-colombia",
+  "last_updated": "2024-01-15",
+  "metadata": {
+    "region": "Colombia",
+    "currency": "COP",
+    "salary_reference": "SMMLV",
+    "salary_value_2024": 1300000,
+    "uvt_value_2024": 42412
+  },
+  "coberturas_plantilla": {
+    "Incendio (Edificio y Contenidos)": {
+      "id": "incendio_edificio_contenidos",
+      "sinonimos": [
+        "incendio",
+        "fuego",
+        "combustión",
+        "rayo",
+        "explosión",
+        "daño por fuego",
+        "quemadura",
+        "ignición"
+      ],
+      "terminos_busqueda": [
+        "incendio edificio",
+        "incendio contenido",
+        "daño fuego",
+        "cobertura incendio",
+        "pérdida por fuego",
+        "explosión gas"
+      ],
+      "exclusiones_comunes": [
+        "guerra",
+        "terrorismo",
+        "deterioro gradual",
+        "oxidación"
+      ],
+      "deducibles_tipicos": {
+        "porcentaje": [5, 10, 15],
+        "minimo_smmlv": [1, 2, 3]
+      }
+    },
+    "Lucro Cesante": {
+      "id": "lucro_cesante",
+      "sinonimos": [
+        "lucro cesante",
+        "pérdida de beneficios",
+        "pérdida de utilidades",
+        "interrupción de negocio",
+        "business interruption",
+        "pérdida de renta"
+      ],
+      "terminos_busqueda": [
+        "lucro cesante",
+        "pérdida beneficios",
+        "interrupción negocio",
+        "cobertura lucro"
+      ],
+      "alertas_criticas": [
+        "no incluye lucro cesante",
+        "excluido lucro cesante"
+      ]
+    },
+    "Sustracción / Hurto": {
+      "id": "sustraccion_hurto",
+      "sinonimos": [
+        "hurto",
+        "robo",
+        "sustracción",
+        "hurto simple",
+        "hurto calificado",
+        "robo con violencia",
+        "atraco",
+        "asalto",
+        "AMIT",
+        "all risk"
+      ],
+      "terminos_busqueda": [
+        "hurto mercancía",
+        "robo establecimiento",
+        "sustracción bienes",
+        "hurto simple",
+        "hurto calificado",
+        "robo con violencia",
+        "robo a mano armada"
+      ],
+      "tipos": {
+        "hurto_simple": ["hurto simple", "robo simple", "sustracción"],
+        "hurto_calificado": ["hurto calificado", "robo con violencia", "robo a mano armada", "atraco"],
+        "amit": ["amit", "all risk", "daños materiales integrales"]
+      }
+    },
+    "Equipo Eléctrico y Electrónico": {
+      "id": "equipo_electronico",
+      "sinonimos": [
+        "equipo electrónico",
+        "computadores",
+        "servidores",
+        "equipo eléctrico",
+        "maquinaria electrónica",
+        "equipos de cómputo",
+        "hardware",
+        "periféricos"
+      ],
+      "terminos_busqueda": [
+        "cobertura equipos",
+        "daño equipo electrónico",
+        "rotura equipo",
+        "equipos de cómputo",
+        "servidores"
+      ],
+      "alertas_criticas": [
+        "sublímite equipos",
+        "tope electrónica",
+        "límite equipos de cómputo"
+      ]
+    },
+    "Rotura de Maquinaria": {
+      "id": "rotura_maquinaria",
+      "sinonimos": [
+        "rotura de maquinaria",
+        "avería de maquinaria",
+        "daño a máquinas",
+        "falla mecánica",
+        "breakdown",
+        "rotura",
+        "avería"
+      ],
+      "terminos_busqueda": [
+        "rotura maquinaria",
+        "avería máquinas",
+        "daño mecánico",
+        "cobertura rotura"
+      ]
+    },
+    "Responsabilidad Civil (RCE)": {
+      "id": "responsabilidad_civil",
+      "sinonimos": [
+        "responsabilidad civil",
+        "RC",
+        "RCE",
+        "daños a terceros",
+        "civil liability",
+        "responsabilidad extracontractual"
+      ],
+      "terminos_busqueda": [
+        "responsabilidad civil",
+        "daños terceros",
+        "cobertura RC",
+        "responsabilidad patronal"
+      ],
+      "alertas_destacadas": [
+        "sin deducible RC",
+        "deducible 0% RC"
+      ]
+    },
+    "Vidrios Planos": {
+      "id": "vidrios_planos",
+      "sinonimos": [
+        "vidrios planos",
+        "vidrios y cristales",
+        "cristales",
+        "vidriería",
+        "escaparates",
+        "vitrinas"
+      ],
+      "terminos_busqueda": [
+        "vidrios planos",
+        "cristales rotos",
+        "rotura vidrios",
+        "daño cristales"
+      ]
+    },
+    "Manejo Global / Infidelidad": {
+      "id": "manejo_global_infidelidad",
+      "sinonimos": [
+        "manejo global",
+        "infidelidad",
+        "fidelidad",
+        "dishonesty",
+        "fidelity",
+        "desfalco",
+        "malversación",
+        "fraude interno",
+        "conducta desleal"
+      ],
+      "terminos_busqueda": [
+        "manejo global",
+        "infidelidad empleados",
+        "fidelidad",
+        "cobertura fidelidad",
+        "fraude empleados"
+      ]
+    },
+    "Transporte de Mercancías": {
+      "id": "transporte_mercancias",
+      "sinonimos": [
+        "transporte de mercancías",
+        "transporte de bienes",
+        "carga",
+        "goods in transit",
+        "mercancías en tránsito"
+      ],
+      "terminos_busqueda": [
+        "transporte mercancías",
+        "carga en tránsito",
+        "transporte nacional",
+        "transporte internacional"
+      ]
+    },
+    "Transporte de Valores": {
+      "id": "transporte_valores",
+      "sinonimos": [
+        "transporte de valores",
+        "valores",
+        "dinero en tránsito",
+        "cash in transit",
+        "fondos en movimiento"
+      ],
+      "terminos_busqueda": [
+        "transporte valores",
+        "dinero tránsito",
+        "valores en movimiento"
+      ]
+    },
+    "Asistencia PYME": {
+      "id": "asistencia_pyme",
+      "sinonimos": [
+        "asistencia PYME",
+        "asistencia",
+        "asistencia médica",
+        "asistencia hogar",
+        "servicios de asistencia",
+        "emergencias"
+      ],
+      "terminos_busqueda": [
+        "asistencia PYME",
+        "servicios asistencia",
+        "asistencia emergencias"
+      ]
+    },
+    "Asistencia Legal": {
+      "id": "asistencia_legal",
+      "sinonimos": [
+        "asistencia legal",
+        "defensa legal",
+        "servicios jurídicos",
+        "abogado",
+        "consultoría legal",
+        "legal assistance"
+      ],
+      "terminos_busqueda": [
+        "asistencia legal",
+        "defensa judicial",
+        "servicios legales",
+        "abogado"
+      ]
+    },
+    "Huelga, Motín, Asonada (HMACC)": {
+      "id": "huelga_motin_asonada",
+      "sinonimos": [
+        "huelga",
+        "motín",
+        "asonada",
+        "HMACC",
+        "conmoción civil",
+        "disturbios",
+        "vandalismo",
+        "daños por tumulto"
+      ],
+      "terminos_busqueda": [
+        "huelga motín",
+        "HMACC",
+        "conmoción civil",
+        "daños tumulto",
+        "vandalismo"
+      ],
+      "alertas_criticas": [
+        "excluye HMACC",
+        "no cubre huelga",
+        "excluye motín"
+      ]
+    },
+    "Terremoto y Eventos Catastróficos": {
+      "id": "terremoto_catastrofico",
+      "sinonimos": [
+        "terremoto",
+        "temblor",
+        "sismo",
+        "catástrofe natural",
+        "desastre natural",
+        "evento catastrófico",
+        "maremoto",
+        "tsunami",
+        "erupción",
+        "huracán"
+      ],
+      "terminos_busqueda": [
+        "terremoto",
+        "deducible terremoto",
+        "cobertura sismo",
+        "cobertura terremoto",
+        "evento catastrófico"
+      ],
+      "alertas_criticas": [
+        "deducible sobre valor asegurado",
+        "deducible sobre VA",
+        "exclusión terremoto"
+      ],
+      "nota_tecnica": "CRÍTICO: Verificar si el deducible es sobre el valor asegurado total (peor) o sobre la pérdida real (mejor)"
+    }
+  },
+  "deducibles": {
+    "formatos": {
+      "porcentaje": {
+        "patrones": [
+          "([0-9]+(?:\\.[0-9]+)?)%",
+          "([0-9]+(?:\\.[0-9]+)?) por ciento",
+          "prorrata del ([0-9]+(?:\\.[0-9]+)?)%"
+        ],
+        "ejemplo": "10%",
+        "rango_tipico": {
+          "min": 5,
+          "max": 20
+        }
+      },
+      "smmlv": {
+        "patrones": [
+          "([0-9]+(?:\\.[0-9]+)?)\\s*SMMLV",
+          "([0-9]+(?:\\.[0-9]+)?)\\s*salarios? mínimos?",
+          "([0-9]+(?:\\.[0-9]+)?)\\s*SMLMV"
+        ],
+        "valor_2024": 1300000,
+        "ejemplo": "2 SMMLV",
+        "rango_tipico": {
+          "min": 1,
+          "max": 10
+        }
+      },
+      "uvt": {
+        "patrones": [
+          "([0-9]+(?:\\.[0-9]+)?)\\s*UVT"
+        ],
+        "valor_2024": 42412,
+        "ejemplo": "100 UVT",
+        "rango_tipico": {
+          "min": 50,
+          "max": 500
+        }
+      },
+      "pesos": {
+        "patrones": [
+          "\\$?([0-9.,]+)\\s*(?:COP|pesos)?",
+          "([0-9.,]+)\\s*(?:millones|millon)"
+        ],
+        "ejemplo": "$2.000.000"
+      }
+    },
+    "tipo_aplicacion": {
+      "sobre_valor_asegurado": {
+        "terminos": [
+          "sobre el valor asegurado",
+          "sobre la suma asegurada",
+          "del valor total asegurado",
+          "sobre el valor total",
+          "aplicable al valor asegurado",
+          "sobre VA"
+        ],
+        "severidad": "CRITICA",
+        "descripcion": "El deducible se aplica sobre el valor total asegurado, no sobre la pérdida real. Es menos favorable al asegurado."
+      },
+      "sobre_perdida": {
+        "terminos": [
+          "sobre la pérdida",
+          "sobre el siniestro",
+          "sobre el valor de la pérdida",
+          "aplicable a la pérdida",
+          "sobre el monto del siniestro"
+        ],
+        "severidad": "BUENA",
+        "descripcion": "El deducible se aplica solo sobre la pérdida real. Es más favorable al asegurado."
+      },
+      "minimo": {
+        "terminos": [
+          "mínimo",
+          "mínimo de",
+          "no menor a",
+          "mínimo aplicable",
+          "con un mínimo"
+        ],
+        "descripcion": "Indica que hay un monto mínimo de deducible independientemente del porcentaje."
+      }
+    }
+  },
+  "terminos_legales": {
+    "condicion_general": {
+      "terminos": [
+        "clausulado general",
+        "condiciones generales",
+        "texto básico",
+        "póliza base",
+        "condiciones generales de la póliza"
+      ],
+      "prevalencia": "BAJA",
+      "descripcion": "Aplican salvo que el clausulado particular o la cotización digan lo contrario."
+    },
+    "condicion_particular": {
+      "terminos": [
+        "clausulado particular",
+        "condiciones particulares",
+        "anexo",
+        "endorso",
+        "condiciones especiales",
+        "anexos",
+        "modificaciones"
+      ],
+      "prevalencia": "ALTA",
+      "descripcion": "PREVALECE sobre las condiciones generales. Lo que diga aquí tiene prioridad."
+    },
+    "exclusion": {
+      "terminos": [
+        "excluye",
+        "exclusión",
+        "no cubre",
+        "queda excluido",
+        "excluido",
+        "no aplica",
+        "no se cubre"
+      ],
+      "severidad": "ALTA"
+    },
+    "garantia": {
+      "terminos": [
+        "garantía",
+        "warranty",
+        "condición de garantía",
+        "requisito",
+        "obligación del asegurado"
+      ],
+      "descripcion": "Condiciones que debe cumplir el asegurado para que la cobertura aplique."
+    }
+  },
+  "alertas_auditores": {
+    "criticas": [
+      {
+        "id": "DEDUCIBLE_TERREMOTO_VA",
+        "titulo": "Deducible Terremoto sobre Valor Asegurado",
+        "descripcion": "El deducible de terremoto aplica sobre el valor total asegurado, no sobre la pérdida real.",
+        "impacto": "En un siniestro total, el asegurado pierde más dinero.",
+        "recomendacion": "Negociar que aplique sobre la PÉRDIDA real en lugar del valor asegurado."
+      },
+      {
+        "id": "SIN_LUCRO_CESANTE",
+        "titulo": "Falta Cobertura de Lucro Cesante",
+        "descripcion": "La cotización no incluye cobertura de lucro cesante o interrupción de negocio.",
+        "impacto": "Si el negocio debe cerrar por un siniestro, no hay compensación por la pérdida de ingresos.",
+        "recomendacion": "Incluir lucro cesante, especialmente si el negocio depende de operaciones continuas."
+      },
+      {
+        "id": "EXCLUSION_HMACC",
+        "titulo": "Exclusión de Huelga, Motín y Asonada",
+        "descripcion": "No se cubren daños por HMACC (Huelga, Motín, Asonada y Conmoción Civil).",
+        "impacto": "Riesgo alto en zonas de inestabilidad social.",
+        "recomendacion": "Evaluar la necesidad según ubicación y tipo de negocio."
+      }
+    ],
+    "atencion": [
+      {
+        "id": "SUBLIMITE_EQUIPOS",
+        "titulo": "Sublímite en Equipos Electrónicos",
+        "descripcion": "Hay un sublímite bajo para equipos electrónicos (ej: 10% del valor asegurado).",
+        "impacto": "En caso de siniestro de equipos costosos, puede no cubrirse el total.",
+        "recomendacion": "Aumentar el sublímite o contratar cobertura específica para equipos."
+      },
+      {
+        "id": "DEDUCIBLE_ALTO_HURTO",
+        "titulo": "Deducible Alto en Hurto",
+        "descripcion": "El deducible para hurto está por encima del promedio de mercado.",
+        "impacto": "Mayor participación del asegurado en siniestros de hurto.",
+        "recomendacion": "Comparar con otras ofertas y negociar si es posible."
+      }
+    ],
+    "destacadas": [
+      {
+        "id": "DEDUCIBLE_SOBRE_PERDIDA",
+        "titulo": "Deducible sobre Pérdida (No sobre VA)",
+        "descripcion": "El deducible de terremoto u otras coberturas aplica sobre la pérdida real.",
+        "impacto": "Más favorable al asegurado. En caso de siniestro parcial, paga menos.",
+        "ventaja": "Condición preferente."
+      },
+      {
+        "id": "SIN_DEDUCIBLE_RC",
+        "titulo": "Sin Deducible en Responsabilidad Civil",
+        "descripcion": "La cobertura de RC no tiene deducible.",
+        "impacto": "El asegurado no paga nada en caso de siniertos de RC.",
+        "ventaja": "Beneficio adicional valioso."
+      }
+    ]
+  }
+}
