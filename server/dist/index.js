@@ -145,7 +145,7 @@ if (process.env.NODE_ENV === 'production') {
     if (fs_1.default.existsSync(staticPath)) {
         app.use(express_1.default.static(staticPath));
         // Serve index.html for all non-API routes (SPA support)
-        app.get('*', (req, res) => {
+        app.use((req, res) => {
             if (!req.path.startsWith('/api')) {
                 res.sendFile(path_1.default.join(staticPath, 'index.html'));
             }
