@@ -20,9 +20,10 @@ if (!process.env.GEMINI_API_KEY && process.env.VITE_GEMINI_API_KEY) {
 // Import controllers after dotenv is loaded (they depend on env vars)
 import { analysisController } from './controllers/analysisController';
 import { ragClauseController } from './controllers/ragClauseController';
+import { clauseController } from './controllers/clauseController';
 
 const app = express();
-const port = process.env.PORT || 8080;
+const port = parseInt(process.env.PORT || '8080', 10);
 
 // Trigger restart: 1
 app.use(cors());
@@ -94,6 +95,11 @@ app.post('/api/rag/clauses/:id/reindex', upload.single('file'), ragClauseControl
 app.post('/api/rag/analyze', upload.single('file'), ragClauseController.analyzeQuote);
 app.post('/api/rag/search', ragClauseController.search);
 
+// Clause Indexing routes (async RAG foundation)
+app.post('/api/clauses/index', upload.single('file'), clauseController.indexClause);
+app.get('/api/clauses/status/:jobId', clauseController.getJobStatus);
+app.get('/api/clauses/jobs', clauseController.listJobs);
+
 // NEW: Document Indexing routes
 import { documentController } from './controllers/documentController';
 import { searchController } from './controllers/searchController';
@@ -113,26 +119,46 @@ app.post('/api/search', searchController.search);
 app.post('/api/search/by-coverage', searchController.searchByCoverage);
 app.post('/api/search/compare', searchController.compareDocuments);
 
-// Catch-all route for undefined paths
-app.use((req, res) => {
-    res.status(404).json({
-        error: 'Not Found',
-        message: `Route ${req.method} ${req.path} not found`,
-        availableEndpoints: [
-            'GET /',
-            'GET /health',
-            'POST /api/analyze',
-            'POST /api/analyze-rag',
-            'GET /api/history',
-            'GET /api/documents',
-            'POST /api/documents',
-            'POST /api/search',
-            'POST /api/rag/clauses',
-            'GET /api/rag/clauses'
-        ]
+// Serve static files from frontend build in production
+if (process.env.NODE_ENV === 'production') {
+    const staticPath = path.join(__dirname, '../../dist');
+    if (fs.existsSync(staticPath)) {
+        app.use(express.static(staticPath));
+        
+        // Serve index.html for all non-API routes (SPA support)
+        app.get('*', (req, res) => {
+            if (!req.path.startsWith('/api')) {
+                res.sendFile(path.join(staticPath, 'index.html'));
+            } else {
+                res.status(404).json({
+                    error: 'Not Found',
+                    message: `Route ${req.method} ${req.path} not found`
+                });
+            }
+        });
+    }
+} else {
+    // Catch-all route for undefined paths (development)
+    app.use((req, res) => {
+        res.status(404).json({
+            error: 'Not Found',
+            message: `Route ${req.method} ${req.path} not found`,
+            availableEndpoints: [
+                'GET /',
+                'GET /health',
+                'POST /api/analyze',
+                'POST /api/analyze-rag',
+                'GET /api/history',
+                'GET /api/documents',
+                'POST /api/documents',
+                'POST /api/search',
+                'POST /api/rag/clauses',
+                'GET /api/rag/clauses'
+            ]
+        });
     });
-});
+}
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
     console.log(`Server running on port ${port}`);
 });
