@@ -12,8 +12,15 @@ RUN apk add --no-cache python3 make g++
 
 RUN npm ci --only=production
 
-# Copy pre-built application
+# Copy entry point
+COPY index.js ./
+
+# Copy pre-built frontend
 COPY dist ./dist
+
+# Copy pre-built backend
+COPY server/dist ./server/dist
+COPY server/package.json ./server/
 
 # Optionally copy .env.production if it exists
 COPY .env.production* ./.env
