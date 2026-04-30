@@ -65,7 +65,7 @@ const analysisController_1 = require("./controllers/analysisController");
 const ragClauseController_1 = require("./controllers/ragClauseController");
 const clauseController_1 = require("./controllers/clauseController");
 const app = (0, express_1.default)();
-const port = process.env.PORT || 8080;
+const port = parseInt(process.env.PORT || '8080', 10);
 // Trigger restart: 1
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
@@ -179,6 +179,6 @@ else {
         });
     });
 }
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
     console.log(`Server running on port ${port}`);
 });
