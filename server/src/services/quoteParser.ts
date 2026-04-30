@@ -4,6 +4,7 @@
  */
 
 import { thesaurusService } from './normalization/thesaurusService';
+import { semanticMatcher } from './semanticMatcher';
 
 export interface ParsedCoverage {
     name: string;           // Raw name from document
@@ -11,6 +12,17 @@ export interface ParsedCoverage {
     value: string;
     deductible: string;
     confidence: number;
+    // Semantic matching fields
+    categoryId?: number | null;
+    matchConfidence?: number;
+    matchMethod?: 'thesaurus' | 'fuzzy' | 'embedding' | 'llm' | null;
+}
+
+export interface ExpectedCoverage {
+    name: string;
+    status: 'present' | 'missing' | 'excluded';
+    value: string | null;
+    deductible: string | null;
 }
 
 export interface ParsedQuote {
@@ -23,13 +35,14 @@ export interface ParsedQuote {
     specialConditions: string[];
     rawText: string;
     parseConfidence: number;
+    expectedCoverages?: ExpectedCoverage[];
 }
 
 export const quoteParser = {
     /**
      * Main entry point: parse Gemini text output into structured quote data
      */
-    parse: (rawText: string): ParsedQuote => {
+    parse: async (rawText: string): Promise<ParsedQuote> => {
         console.log('🔍 [quoteParser] Parsing Gemini output...');
         
         const insurerName = extractField(rawText, 'ASEGURADORA:', 'PÓLIZA:');
@@ -38,7 +51,7 @@ export const quoteParser = {
         const currency = extractField(rawText, 'MONEDA:', 'VIGENCIA:');
         const validity = extractField(rawText, 'VIGENCIA:', 'COBERTURAS:');
         
-        const coverages = extractCoverages(rawText);
+        const coverages = await extractCoverages(rawText);
         const specialConditions = extractSpecialConditions(rawText);
         
         // Calculate overall parse confidence
@@ -66,17 +79,21 @@ export const quoteParser = {
     /**
      * Parse multiple quotes from combined text
      */
-    parseMultiple: (combinedText: string): ParsedQuote[] => {
+    parseMultiple: async (combinedText: string): Promise<ParsedQuote[]> => {
         // Split by quote delimiters if present
         const quoteRegex = /=== INICIO COTIZACI[ÓO]N: (.+?) ===([\s\S]*?)=== FIN COTIZACI[ÓO]N ===/g;
         const matches = [...combinedText.matchAll(quoteRegex)];
         
         if (matches.length === 0) {
             // No delimiters found, try to parse as single quote
-            return [quoteParser.parse(combinedText)];
+            return [await quoteParser.parse(combinedText)];
         }
         
-        return matches.map(match => quoteParser.parse(match[0]));
+        const quotes: ParsedQuote[] = [];
+        for (const match of matches) {
+            quotes.push(await quoteParser.parse(match[0]));
+        }
+        return quotes;
     }
 };
 
@@ -87,7 +104,7 @@ function extractField(text: string, startMarker: string, endMarker: string): str
     return match ? match[1].trim() : '';
 }
 
-function extractCoverages(text: string): ParsedCoverage[] {
+async function extractCoverages(text: string): Promise<ParsedCoverage[]> {
     const coverages: ParsedCoverage[] = [];
     
     // Look for coverage section
@@ -103,12 +120,18 @@ function extractCoverages(text: string): ParsedCoverage[] {
         const rawName = match[1].trim();
         const canonicalName = normalizeCoverageName(rawName);
         
+        // Apply semantic matching
+        const semanticMatch = await semanticMatcher.matchCoverage(rawName);
+        
         coverages.push({
             name: rawName,
-            canonicalName,
+            canonicalName: semanticMatch.canonicalName || canonicalName || rawName,
             value: match[2].trim(),
             deductible: match[3].trim(),
-            confidence: canonicalName !== rawName ? 95 : 70
+            confidence: canonicalName !== rawName ? 95 : 70,
+            categoryId: semanticMatch.categoryId,
+            matchConfidence: semanticMatch.confidence,
+            matchMethod: semanticMatch.method,
         });
     }
     

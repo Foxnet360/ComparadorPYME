@@ -1,16 +1,16 @@
-# Spec: Text Extraction from PDF
+# Spec: Text Extraction
 
 ## Capability
-Extraer texto preservando la estructura por página, detectar PDFs escaneados, y extraer metadata del documento.
+Extracción de texto de PDFs preservando estructura por página, y extracción estructurada de datos de cotizaciones con enriquecimiento semántico.
 
 ## User Story
-**Como** sistema de indexación  
-**Quiero** extraer texto de PDFs nativos manteniendo referencias de página  
-**Para** poder crear chunks semánticos precisos
+**Como** sistema de análisis
+**Quiero** extraer texto de PDFs y estructurar datos de cotizaciones
+**Para** analizar cotizaciones y comparar coberturas
 
 ## Functional Requirements
 
-### FR-1: Extracción básica de texto
+### FR-1: Extracción básica de texto de PDF
 - Usar pdfjs-dist para extraer texto
 - Preservar texto por página (no solo texto concatenado)
 - Limpiar artefactos comunes de PDF (números de página sueltos, espacios múltiples)
@@ -21,7 +21,7 @@ Extraer texto preservando la estructura por página, detectar PDFs escaneados, y
 - Reportar warning si el PDF parece ser escaneado
 - Criterio: < 200 caracteres promedio por página = posible escaneado
 
-### FR-3: Extracción de metadata
+### FR-3: Extracción de metadata del PDF
 Extraer del PDF:
 - Título (`Title`)
 - Autor (`Author`)
@@ -33,7 +33,7 @@ Extraer del PDF:
 - Fecha de modificación (`ModDate`)
 - Número de páginas
 
-### FR-4: Estructura de retorno
+### FR-4: Estructura de retorno del PDF
 ```typescript
 interface PDFExtractionResult {
   text: string;                    // Texto completo concatenado
@@ -50,6 +50,28 @@ interface PageData {
   hasContent: boolean;            // true si > 5 palabras
 }
 ```
+
+### FR-5: Extracción de datos estructurados de cotización
+El sistema SHALL extraer coberturas de cotizaciones de seguros y enriquecer cada cobertura con metadatos de categorización canónica.
+
+#### Scenario: Extracción con categorización
+- **WHEN** el sistema extrae coberturas de una cotización
+- **THEN** para cada cobertura se determina: nombre original, nombre canónico (de las 14 categorías), categoryId (1-14 o null), confianza del match (0-1), y método usado (thesaurus/fuzzy/embedding/llm)
+
+#### Scenario: Validación de salida
+- **WHEN** el sistema completa la extracción
+- **THEN** el objeto CoverageItem incluye los campos: name, value, description, isPositive, canonicalName, categoryId, matchConfidence, matchMethod
+
+### FR-6: Campos de mapeo semántico en extracción
+La extracción de texto de cotizaciones SHALL enriquecer cada cobertura con campos de categorización canónica.
+
+#### Scenario: Respuesta de API enriquecida
+- **WHEN** el endpoint `/api/analyze` procesa cotizaciones
+- **THEN** cada objeto `coverage` en la respuesta incluye: `canonicalName`, `categoryId`, `matchConfidence`, `matchMethod`
+
+#### Scenario: Compatibilidad hacia atrás
+- **WHEN** un cliente legacy consume la API
+- **THEN** los campos nuevos son adicionales y no requieren cambios en el cliente
 
 ## Non-Functional Requirements
 
@@ -105,6 +127,7 @@ cleanText(text: string): string
 ## Dependencies
 - **pdfjs-dist**: Para extracción de texto
 - **fs**: Para lectura de archivos
+- **semanticMatcher**: Para enriquecimiento semántico de coberturas
 
 ## Edge Cases
 1. PDF con páginas vacías
@@ -125,3 +148,5 @@ cleanText(text: string): string
 - [ ] Limpia artefactos del PDF
 - [ ] Maneja errores con excepciones específicas
 - [ ] Procesa PDF de 50 páginas en < 5 segundos
+- [ ] Enriquece coberturas con campos semánticos
+- [ ] Mantiene compatibilidad hacia atrás en API

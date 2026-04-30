@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ShieldCheck, UserPlus, ArrowRight, Loader2, ArrowLeft, Mail, Lock, User, Briefcase, Phone, Building } from 'lucide-react';
-import { storageService } from '../services/storageService';
+import { authService } from '../services/authService';
 import { UserProfile } from '../types';
 
 interface RegisterScreenProps {
@@ -22,6 +22,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegisterSuccess, onBa
 
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -31,6 +32,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegisterSuccess, onBa
         e.preventDefault();
         setIsLoading(true);
         setError('');
+        setSuccessMessage('');
 
         if (formData.password !== formData.confirmPassword) {
             setError('Las contraseñas no coinciden.');
@@ -38,23 +40,15 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegisterSuccess, onBa
             return;
         }
 
-        try {
-            const newUser: UserProfile = {
-                name: formData.name,
-                email: formData.email,
-                password: formData.password,
-                role: 'TECHNICAL', // Default role
-                intermediaryName: formData.intermediaryName,
-                avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name)}&background=4f46e5&color=fff`,
-                agentDetails: {
-                    phone: formData.phone,
-                    field: formData.field,
-                    bio: formData.bio
-                }
-            };
+        if (formData.password.length < 6) {
+            setError('La contraseña debe tener al menos 6 caracteres.');
+            setIsLoading(false);
+            return;
+        }
 
-            const registeredUser = await storageService.register(newUser);
-            onRegisterSuccess(registeredUser);
+        try {
+            const result = await authService.signUp(formData.email, formData.password, formData.name);
+            setSuccessMessage(result.message);
         } catch (err: any) {
             console.error(err);
             setError(err.message || 'Error al registrar usuario.');
@@ -177,6 +171,22 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegisterSuccess, onBa
                         {error && (
                             <div className="text-red-500 text-sm bg-red-50 p-3 rounded-lg border border-red-100 flex items-center">
                                 <span className="font-medium mr-1">Error:</span> {error}
+                            </div>
+                        )}
+
+                        {successMessage && (
+                            <div className="text-green-700 text-sm bg-green-50 p-3 rounded-lg border border-green-100">
+                                <span className="font-medium block mb-1">¡Registro exitoso!</span>
+                                {successMessage}
+                                <div className="mt-2">
+                                    <button
+                                        type="button"
+                                        onClick={onBackToLogin}
+                                        className="text-indigo-600 hover:text-indigo-800 font-medium text-sm underline"
+                                    >
+                                        Ir al login
+                                    </button>
+                                </div>
                             </div>
                         )}
 

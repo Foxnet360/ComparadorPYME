@@ -1,8 +1,5 @@
 import { ComparisonReport } from "../types";
-
-// Detect environment based on hostname to avoid build-time var issues
-const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_BASE_URL = isLocal ? 'http://localhost:8080/api' : '/api';
+import { API_BASE_URL } from "./apiConfig";
 
 
 export const analyzeQuotesWithGemini = async (

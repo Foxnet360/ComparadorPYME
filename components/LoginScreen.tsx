@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
-import { storageService } from '../services/storageService';
+import { authService } from '../services/authService';
 import { UserProfile } from '../types';
 
 interface LoginScreenProps {
@@ -9,8 +9,8 @@ interface LoginScreenProps {
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterClick }) => {
-  const [email, setEmail] = useState('admin@seguros.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -20,10 +20,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
     setError('');
 
     try {
-      const user = await storageService.login(email, password);
+      const user = await authService.signIn(email, password);
       onLoginSuccess(user);
-    } catch (err) {
-      setError('Credenciales incorrectas. Intenta con admin@seguros.com / admin123');
+    } catch (err: any) {
+      setError(err.message || 'Credenciales incorrectas');
     } finally {
       setIsLoading(false);
     }
@@ -138,7 +138,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
 
             <div className="mt-6 text-center">
               <span className="text-xs text-slate-400">
-                Acceso Demo: admin@seguros.com / admin123
+                Versión Beta - Acceso con email verificado
               </span>
             </div>
           </div>
