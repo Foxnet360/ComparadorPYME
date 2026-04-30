@@ -159,6 +159,13 @@ if (process.env.NODE_ENV === 'production') {
     });
 }
 
+console.log('🚀 About to start server...');
+console.log('📍 Port:', port);
+console.log('📍 Host: 0.0.0.0');
+console.log('📍 NODE_ENV:', process.env.NODE_ENV);
+console.log('📍 Static path:', path.join(__dirname, '../../dist'));
+console.log('📍 Static exists:', fs.existsSync(path.join(__dirname, '../../dist')));
+
 app.listen(port, '0.0.0.0', () => {
-    console.log(`Server running on port ${port}`);
+    console.log(`✅ Server running on port ${port}`);
 });
