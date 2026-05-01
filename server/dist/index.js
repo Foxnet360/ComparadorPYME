@@ -78,8 +78,8 @@ app.use(express_1.default.json());
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', message: 'CSA Comparator API is running', timestamp: new Date().toISOString() });
 });
-// Root route - API info
-app.get('/', (req, res) => {
+// Root route - API info (only if not serving static files)
+app.get('/api', (req, res) => {
     res.json({
         name: 'CSA Comparator API',
         version: '1.0.0',
