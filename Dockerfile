@@ -28,6 +28,7 @@ COPY .env.production* ./.env
 # Set environment variables
 ENV NODE_ENV=production
 
-EXPOSE 3000
+# Railway assigns PORT dynamically, we listen on it via process.env.PORT
+EXPOSE 8080
 
 CMD ["npm", "start"]
