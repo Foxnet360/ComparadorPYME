@@ -6,7 +6,7 @@ if (!GEMINI_API_KEY) {
 }
 
 const EMBEDDING_MODEL_NAME = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
-const EMBEDDING_DIMENSIONS = 768;
+const EMBEDDING_DIMENSIONS = 3072;
 
 const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
@@ -38,7 +38,7 @@ export const embeddingService = {
           throw new Error('No embedding returned from Gemini');
         }
         
-        // Truncar a 768 dimensiones para compatibilidad con la base de datos
+        // Truncar a 3072 dimensiones para compatibilidad con la base de datos
         if (embedding.length > EMBEDDING_DIMENSIONS) {
           console.log(`🔧 [Embedding Service] Truncating embedding from ${embedding.length} to ${EMBEDDING_DIMENSIONS} dims`);
           embedding = embedding.slice(0, EMBEDDING_DIMENSIONS);
