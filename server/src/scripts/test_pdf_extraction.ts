@@ -169,17 +169,17 @@ Prima Total: $1.650.000
     // New approach: ~4 chars per token
     const newApproachTokens = Math.ceil(extractedText.length / 4);
     
-    const reduction = ((oldApproachTokens - newApproachTokens) / oldApproachTokens * 100);
+    const reductionValue = ((oldApproachTokens - newApproachTokens) / oldApproachTokens * 100);
     
-    console.log(`  📉 Token reduction: ${formatPercentage(reduction / 100, 1)}`);
+    console.log(`  📉 Token reduction: ${formatPercentage(reductionValue / 100, 1)}`);
     console.log(`     Old (File API): ~${oldApproachTokens} tokens`);
     console.log(`     New (Text): ~${newApproachTokens} tokens`);
     
     return {
       oldApproach: oldApproachTokens,
       newApproach: newApproachTokens,
-      reduction: `${reduction}%`,
-      meetsTarget: parseFloat(reduction) >= 60,
+      reduction: `${formatPercentage(reductionValue / 100, 1)}`,
+      meetsTarget: reductionValue >= 60,
       target: '60%',
     };
   } finally {
