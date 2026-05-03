@@ -2,6 +2,7 @@ import { pdfExtractor } from './src/services/pdfExtractor';
 import { geminiService } from './src/services/gemini';
 import { normalizeCoverages, mapCoverageName } from './src/services/thesaurusMapper';
 import { PLANTILLA_ITEMS } from './src/utils/analysisValidator';
+import { formatPercentage, formatNumber } from './src/utils/formatCurrency';
 import path from 'path';
 
 const STRUCTURED_EXTRACTION_PROMPT = `Eres un extractor experto de cotizaciones de seguros PYME colombianos.
@@ -190,7 +191,7 @@ async function analyzeQuote(file: QuoteFile) {
     const status = coverage.needsReview ? '⚠️ NEEDS REVIEW' : '✅ OK';
     console.log(`   ${idx + 1}. "${coverage.rawName}"`);
     console.log(`      → Canonical: "${coverage.canonicalName}"`);
-    console.log(`      → Confidence: ${(coverage.confidence * 100).toFixed(1)}%`);
+    console.log(`      → Confidence: ${formatPercentage(coverage.confidence, 1)}`);
     console.log(`      → Matched Variant: "${coverage.matchedVariant}"`);
     console.log(`      → Status: ${status}`);
   });
@@ -251,7 +252,7 @@ async function analyzeQuote(file: QuoteFile) {
   const totalItems = PLANTILLA_ITEMS.length;
   const matchedCount = matchedItems.length;
   const missingCount = missingItems.length;
-  const matchPercentage = ((matchedCount / totalItems) * 100).toFixed(1);
+  const matchPercentage = formatPercentage(matchedCount / totalItems, 1);
 
   console.log('\n   ┌─────────────────────────────────────────────────────────────────────┐');
   console.log('   │ Frontend Item                          │ Backend Coverage         │ Match │');
@@ -269,8 +270,8 @@ async function analyzeQuote(file: QuoteFile) {
   console.log('   └─────────────────────────────────────────────────────────────────────┘');
   console.log(`\n   📊 MATCH STATISTICS:`);
   console.log(`      Total frontend items: ${totalItems}`);
-  console.log(`      Matched: ${matchedCount} (${matchPercentage}%)`);
-  console.log(`      Missing (No Especificado): ${missingCount} (${((missingCount / totalItems) * 100).toFixed(1)}%)`);
+  console.log(`      Matched: ${matchedCount} (${matchPercentage})`);
+  console.log(`      Missing (No Especificado): ${missingCount} (${formatPercentage(missingCount / totalItems, 1)})`);
 
   // Show all unique backend coverage names found
   const uniqueBackendNames = [...new Set(backendCoverageNames)];
@@ -319,7 +320,7 @@ async function main() {
   console.log('   ├──────────────────────┼────────────┼────────────┼────────────┼──────────┤');
   
   for (const result of results) {
-    console.log(`   │ ${result.filename.padEnd(20)} │ ${result.rawCoverageCount.toString().padEnd(10)} │ ${result.mappedCoverageCount.toString().padEnd(10)} │ ${result.matchedCount.toString().padEnd(10)} │ ${result.matchPercentage.toFixed(1).padEnd(7)}% │`);
+    console.log(`   │ ${result.filename.padEnd(20)} │ ${result.rawCoverageCount.toString().padEnd(10)} │ ${result.mappedCoverageCount.toString().padEnd(10)} │ ${result.matchedCount.toString().padEnd(10)} │ ${formatPercentage(result.matchPercentage / 100, 1).padEnd(8)} │`);
   }
   
   console.log('   └──────────────────────┴────────────┴────────────┴────────────┴──────────┘');

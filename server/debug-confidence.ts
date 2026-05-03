@@ -14,6 +14,7 @@ import { mapCoverageName, normalizeDeductible, loadThesaurus } from './src/servi
 import { validateQuote, ValidationResult } from './src/services/quoteValidator';
 import { calculateConfidence, getConfidenceLabel, ConfidenceBreakdown } from './src/services/confidenceScorer';
 import { ParsedQuote } from './src/services/quoteParser';
+import { formatPercentage, formatNumber } from './src/utils/formatCurrency';
 import fs from 'fs';
 import path from 'path';
 
@@ -44,7 +45,7 @@ function debugCoverageCompleteness(quote: ParsedQuote, label: string): { score: 
       return { score: 100, details };
     }
     const score = Math.min(100, (presentCount / realisticTarget) * 100);
-    details += `  → Score = min(100, (${presentCount} / ${realisticTarget}) * 100) = ${score.toFixed(2)}\n`;
+    details += `  → Score = min(100, (${presentCount} / ${realisticTarget}) * 100) = ${formatPercentage(score / 100, 2)}\n`;
     return { score, details };
   }
   
@@ -114,7 +115,7 @@ function debugNumericParseSuccess(quote: ParsedQuote, label: string): { score: n
     return { score: 0, details };
   }
   const score = (successfulParses / totalNumericFields) * 100;
-  details += `  → ${successfulParses}/${totalNumericFields} successful = ${score.toFixed(2)}\n`;
+  details += `  → ${successfulParses}/${totalNumericFields} successful = ${formatPercentage(score / 100, 2)}\n`;
   return { score, details };
 }
 
@@ -160,7 +161,7 @@ function debugValidationPassRate(validation: ValidationResult, label: string): {
   details += `    6. Warnings < 3: ${warningCount} warnings ${check6 ? '✅' : '❌'}\n`;
   
   const score = (passedChecks / totalChecks) * 100;
-  details += `  → ${passedChecks}/${totalChecks} passed = ${score.toFixed(2)}\n`;
+  details += `  → ${passedChecks}/${totalChecks} passed = ${formatPercentage(score / 100, 2)}\n`;
   return { score, details };
 }
 
@@ -239,7 +240,7 @@ function printConfidenceBreakdown(
   
   if (isStructured) {
     const bonusScore = Math.min(100, schemaScore * 1.2);
-    console.log(`  Structured extraction bonus: ${schemaScore} × 1.2 = ${bonusScore.toFixed(2)} (capped at 100)`);
+    console.log(`  Structured extraction bonus: ${schemaScore} × 1.2 = ${formatNumber(bonusScore, 2)} (capped at 100)`);
     schemaScore = bonusScore;
   }
   
@@ -251,12 +252,12 @@ function printConfidenceBreakdown(
     schemaScore * weights.schemaCompliance;
   
   console.log(`\n📐 WEIGHTED CALCULATION:`);
-  console.log(`  Coverage:     ${covResult.score.toFixed(2)} × ${weights.coverageCompleteness} = ${(covResult.score * weights.coverageCompleteness).toFixed(2)}`);
-  console.log(`  Numeric:      ${numResult.score.toFixed(2)} × ${weights.numericParseSuccess} = ${(numResult.score * weights.numericParseSuccess).toFixed(2)}`);
-  console.log(`  Validation:   ${valResult.score.toFixed(2)} × ${weights.validationPassRate} = ${(valResult.score * weights.validationPassRate).toFixed(2)}`);
-  console.log(`  Schema:       ${schemaScore.toFixed(2)} × ${weights.schemaCompliance} = ${(schemaScore * weights.schemaCompliance).toFixed(2)}`);
+  console.log(`  Coverage:     ${formatNumber(covResult.score, 2)} × ${weights.coverageCompleteness} = ${formatNumber(covResult.score * weights.coverageCompleteness, 2)}`);
+  console.log(`  Numeric:      ${formatNumber(numResult.score, 2)} × ${weights.numericParseSuccess} = ${formatNumber(numResult.score * weights.numericParseSuccess, 2)}`);
+  console.log(`  Validation:   ${formatNumber(valResult.score, 2)} × ${weights.validationPassRate} = ${formatNumber(valResult.score * weights.validationPassRate, 2)}`);
+  console.log(`  Schema:       ${formatNumber(schemaScore, 2)} × ${weights.schemaCompliance} = ${formatNumber(schemaScore * weights.schemaCompliance, 2)}`);
   console.log(`  ───────────────────────────────────────`);
-  console.log(`  Subtotal:     ${weightedScore.toFixed(2)}`);
+  console.log(`  Subtotal:     ${formatNumber(weightedScore, 2)}`);
   
   // Penalties
   const hasPremiumIssue = validation.flags.some(f => 

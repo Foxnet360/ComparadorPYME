@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { HistoryEntry, QuoteStatus, ComparisonReport } from '../types';
 import { storageService } from '../services/storageService';
 import { Plus, Search, Eye } from 'lucide-react';
+import { formatCOPMillions } from '../utils/formatCurrency';
 
 interface TechnicalDashboardProps {
   onNewAnalysis: () => void;
@@ -114,7 +115,7 @@ const TechnicalDashboard: React.FC<TechnicalDashboardProps> = ({ onNewAnalysis, 
                     </td>
                     <td className="px-6 py-4 text-indigo-600 font-medium">{item.bestOption || '-'}</td>
                     <td className="px-6 py-4 text-slate-600">
-                      ${item.premiumValue ? (item.premiumValue / 1000000).toFixed(2) : '0.00'}M
+                      {formatCOPMillions(item.premiumValue)}
                     </td>
                     <td className="px-6 py-4">
                       <select

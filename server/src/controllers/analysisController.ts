@@ -9,6 +9,7 @@ import { validateQuote, ValidationResult } from '../services/quoteValidator';
 import { calculateConfidence, ConfidenceResult } from '../services/confidenceScorer';
 import { normalizeCoverages } from '../services/thesaurusMapper';
 import { supabase } from '../config/database';
+import { formatCOP } from '../utils/formatCurrency';
 import fs from 'fs';
 
 const STRUCTURED_EXTRACTION_PROMPT = `Eres un extractor experto de cotizaciones de seguros PYME colombianos.
@@ -553,7 +554,7 @@ function generateComparison(
             ? `${reviewPrefix}Mejor opción: ${bestQuote.insurerName} con score de ${bestQuote.score}/100. ${bestQuote.clientAnalysis.substring(0, 200)}`
             : `${reviewPrefix}No se pudieron analizar las cotizaciones`,
         marketAnalysis: `Se analizaron ${quotes.length} cotizaciones de seguros PYME. ${
-            bestQuote ? `El rango de precios es de $${Math.min(...quotesWithScores.map(q => q.priceAnnual || Infinity)).toLocaleString()} a $${Math.max(...quotesWithScores.map(q => q.priceAnnual || 0)).toLocaleString()} ${bestQuote.currency}.` : ''
+            bestQuote ? `El rango de precios es de ${formatCOP(Math.min(...quotesWithScores.map(q => q.priceAnnual || Infinity)))} a ${formatCOP(Math.max(...quotesWithScores.map(q => q.priceAnnual || 0)))} ${bestQuote.currency}.` : ''
         }${hasCriticalExtraction ? ' ATENCIÓN: Algunas extracciones tienen baja confianza y requieren verificación manual.' : ''}`,
         deductibleComparison: quotesWithScores.map(q => ({
             insurer: q.insurerName,

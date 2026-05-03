@@ -6,6 +6,7 @@
 
 import { ParsedQuote } from './quoteParser';
 import { CrossReferenceResult, DiscrepancyAlert } from './crossReferenceEngine';
+import { formatNumber } from '../utils/formatCurrency';
 
 export interface ScoreWeights {
     coverage: number;
@@ -141,7 +142,7 @@ export const quoteScorer = {
         if (values.length > 0) {
             const sum = values.reduce((a, b) => a + b, 0);
             if (Math.abs(sum - 1.0) > 0.001) {
-                errors.push(`Weights must sum to 1.0, got ${sum.toFixed(3)}`);
+                errors.push(`Weights must sum to 1.0, got ${formatNumber(sum, 3)}`);
             }
         }
 
@@ -277,7 +278,7 @@ function calculatePriceScore(quote: ParsedQuote, allQuotes: ParsedQuote[]): numb
     else if (ratio <= 2.0) score = 30 - ((ratio - 1.5) / 0.5) * 30;
     else score = 0;
 
-    console.log(`💰 [quoteScorer] Price score for ${quote.insurerName}: ${Math.round(score)}/100 (ratio: ${ratio.toFixed(2)}, basis: ${comparisonBasis})`);
+    console.log(`💰 [quoteScorer] Price score for ${quote.insurerName}: ${Math.round(score)}/100 (ratio: ${formatNumber(ratio, 2)}, basis: ${comparisonBasis})`);
 
     return Math.round(clamp(score, 0, 100));
 }

@@ -7,6 +7,7 @@ import { geminiService } from './gemini';
 import { ParsedQuote } from './quoteParser';
 import { ScoringResult } from './quoteScorer';
 import { CrossReferenceResult } from './crossReferenceEngine';
+import { formatCOP } from '../utils/formatCurrency';
 
 export interface NarrativeResult {
     clientAnalysis: string;      // Client-friendly summary (< 1500 chars)
@@ -112,7 +113,7 @@ function buildNarrativePrompt(
     return NARRATIVE_PROMPT
         .replace('{insurerName}', quote.insurerName)
         .replace('{policyName}', quote.policyName)
-        .replace('{priceAnnual}', quote.priceAnnual.toLocaleString())
+        .replace('{priceAnnual}', formatCOP(quote.priceAnnual, { showSymbol: false }))
         .replace('{currency}', quote.currency)
         .replace('{coverageCount}', quote.coverages.length.toString())
         .replace('{totalScore}', scoring.totalScore.toString())
@@ -179,7 +180,7 @@ function generateFallbackNarrativeFromData(
     quote: ParsedQuote,
     scoring: ScoringResult
 ): NarrativeResult {
-    const clientAnalysis = `La cotización de ${quote.insurerName} para ${quote.policyName} presenta un score general de ${scoring.totalScore}/100. Incluye ${quote.coverages.length} coberturas con una prima anual de $${quote.priceAnnual.toLocaleString()} ${quote.currency}. ${scoring.totalScore >= 70 ? 'Es una opción competitiva en el mercado.' : 'Requiere revisión de ciertos aspectos antes de recomendar.'}`;
+    const clientAnalysis = `La cotización de ${quote.insurerName} para ${quote.policyName} presenta un score general de ${scoring.totalScore}/100. Incluye ${quote.coverages.length} coberturas con una prima anual de ${formatCOP(quote.priceAnnual)} ${quote.currency}. ${scoring.totalScore >= 70 ? 'Es una opción competitiva en el mercado.' : 'Requiere revisión de ciertos aspectos antes de recomendar.'}`;
 
     const technicalAnalysis = `Score: ${scoring.totalScore}/100. Coberturas: ${scoring.breakdown.coverage}/100. Deducibles: ${scoring.breakdown.deductibles}/100. Exclusiones: ${scoring.breakdown.exclusions}/100.`;
 

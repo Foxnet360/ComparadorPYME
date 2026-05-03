@@ -14,6 +14,7 @@ import { parseJsonWithRepair } from '../src/services/jsonRepair';
 import { mapCoverageName, normalizeDeductible, loadThesaurus } from '../src/services/thesaurusMapper';
 import { validateQuote } from '../src/services/quoteValidator';
 import { calculateConfidence, getConfidenceLabel } from '../src/services/confidenceScorer';
+import { formatPercentage } from '../src/utils/formatCurrency';
 import fs from 'fs';
 import path from 'path';
 
@@ -239,7 +240,7 @@ IMPORTANTE - FORMATO DE RESPUESTA:
       normalizedCoverages.forEach((cov: any, i: number) => {
         const arrow = cov.originalName !== cov.canonicalName ? '→' : '=';
         const status = cov.needsReview ? '⚠️' : '✅';
-        console.log(`   ${i+1}. ${status} "${cov.originalName}" ${arrow} "${cov.canonicalName}" (${(cov.confidence * 100).toFixed(0)}%)`);
+        console.log(`   ${i+1}. ${status} "${cov.originalName}" ${arrow} "${cov.canonicalName}" (${formatPercentage(cov.confidence, 0)})`);
       });
 
       // Replace with normalized
@@ -313,11 +314,11 @@ IMPORTANTE - FORMATO DE RESPUESTA:
     const mappingPass = mappingRate >= 0.8;
     pipelineResults.validations.thesaurusMapping = {
       check: 'Thesaurus mapping >= 80%',
-      value: `${(mappingRate * 100).toFixed(1)}%`,
+      value: `${formatPercentage(mappingRate, 1)}`,
       passed: mappingPass,
       status: mappingPass ? '✅ PASS' : '❌ FAIL',
     };
-    console.log(`   ${mappingPass ? '✅' : '❌'} Thesaurus mapping: ${(mappingRate * 100).toFixed(1)}% (${mappedCount}/${totalCoverages}) ${mappingPass ? '(>= 80%)' : '(< 80%)'}`);
+    console.log(`   ${mappingPass ? '✅' : '❌'} Thesaurus mapping: ${formatPercentage(mappingRate, 1)} (${mappedCount}/${totalCoverages}) ${mappingPass ? '(>= 80%)' : '(< 80%)'}`);
 
     // 5.5: Section preservation (CHUBB >= 2000 chars after preprocessing)
     const sectionPass = preprocessed.metadata.cleanedLength >= 2000;

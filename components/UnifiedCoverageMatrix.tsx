@@ -2,6 +2,7 @@ import React from 'react';
 import { QuoteAnalysis, CoverageItem } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
 import { Info, AlertTriangle, ListChecks } from 'lucide-react';
+import { formatPercentage } from '../utils/formatCurrency';
 
 interface UnifiedCoverageMatrixProps {
   quotes: QuoteAnalysis[];
@@ -129,7 +130,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                                 <div className="mt-2 flex items-center gap-2">
                                   <span 
                                     className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getConfidenceColor(coverage.matchConfidence)}`}
-                                    title={`Método: ${getMethodLabel(coverage.matchMethod)} | Confianza: ${(coverage.matchConfidence * 100).toFixed(0)}%`}
+                                    title={`Método: ${getMethodLabel(coverage.matchMethod)} | Confianza: ${formatPercentage(coverage.matchConfidence, 0)}`}
                                   >
                                     {getConfidenceLabel(coverage.matchConfidence)}
                                   </span>
