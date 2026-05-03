@@ -25,7 +25,6 @@ COPY postcss.config.cjs ./
 COPY tailwind.config.cjs ./
 
 # Variables de entorno necesarias en build time del frontend
-# Railway inyecta estas automáticamente durante el build
 ARG VITE_GEMINI_API_KEY
 ENV VITE_GEMINI_API_KEY=$VITE_GEMINI_API_KEY
 
@@ -58,10 +57,6 @@ FROM node:20-alpine AS production
 
 WORKDIR /app
 
-# Instalar solo dependencias de producción del entrypoint
-COPY package*.json ./
-RUN npm ci --only=production
-
 # Copiar entry point principal
 COPY index.js ./
 
@@ -71,6 +66,7 @@ COPY --from=frontend-builder /app/dist ./dist
 # Copiar backend compilado y sus dependencias desde stage 2
 COPY --from=backend-builder /app/server/dist ./server/dist
 COPY --from=backend-builder /app/server/package.json ./server/
+COPY --from=backend-builder /app/server/node_modules ./server/node_modules
 
 # Crear directorio de uploads
 RUN mkdir -p /tmp/uploads
