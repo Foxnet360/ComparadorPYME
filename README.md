@@ -66,15 +66,32 @@ El frontend estará en `http://localhost:3000` y el backend en `http://localhost
 
 ## Despliegue
 
-### Railway (Recomendado)
+### Railway (Recomendado) - Docker Auto-Deploy
 
-1. Push código a GitHub
-2. Crear nuevo proyecto en Railway
-3. Conectar repositorio
-4. Configurar variables de entorno en el dashboard
-5. Deploy automático
+Este proyecto usa Docker multi-stage build en Railway. El proceso es completamente automático:
 
-Ver archivo `railway.json` para configuración de build.
+1. **Push código a GitHub** (`git push origin main`)
+2. **Railway detecta el cambio** y construye automáticamente
+3. **Docker multi-stage build** compila frontend y backend
+4. **Deploy automático** sin intervención manual
+
+**No necesitas compilar localmente antes de pushear.** Railway construye todo dentro del contenedor.
+
+#### Configuración inicial
+
+1. Crear nuevo proyecto en Railway
+2. Conectar repositorio GitHub
+3. Configurar variables de entorno en el dashboard (ver lista completa en `DEPLOY.md`)
+4. Railway usará automáticamente el `Dockerfile` de la raíz
+
+#### Variables de entorno requeridas
+
+- `GEMINI_API_KEY` / `VITE_GEMINI_API_KEY`
+- `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`
+- `GROQ_API_KEY` (opcional)
+- `REGION`, `SMMLV_VALUE`, `UVT_VALUE`, `CURRENCY`
+
+Ver `DEPLOY.md` para la guía completa de despliegue y troubleshooting.
 
 ## API Endpoints
 
