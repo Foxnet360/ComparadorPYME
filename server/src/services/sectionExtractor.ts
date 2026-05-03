@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { ClauseSections } from '../types';
+import { formatPercentage } from '../utils/formatCurrency';
 
 // Schema for section extraction response
 const SECTION_SCHEMA = {
@@ -112,8 +113,8 @@ export const sectionExtractor = {
             const totalSectionChars = (sections.exclusiones?.length || 0) +
                 (sections.deducibles?.length || 0) +
                 (sections.garantias?.length || 0);
-            const reduction = ((textoCompleto.length - totalSectionChars) / textoCompleto.length * 100).toFixed(1);
-            console.log(`📊 Size reduction: ${reduction}% (${textoCompleto.length} → ${totalSectionChars} chars)`);
+            const reduction = ((textoCompleto.length - totalSectionChars) / textoCompleto.length * 100);
+            console.log(`📊 Size reduction: ${formatPercentage(reduction, 1)} (${textoCompleto.length} → ${totalSectionChars} chars)`);
 
             return sections;
 

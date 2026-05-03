@@ -12,6 +12,7 @@ import fs from 'fs';
 import path from 'path';
 import FormData from 'form-data';
 import { pdfExtractor } from '../services/pdfExtractor';
+import { formatPercentage } from '../utils/formatCurrency';
 
 const API_URL = process.env.API_URL || 'http://localhost:8080/api';
 
@@ -168,9 +169,9 @@ Prima Total: $1.650.000
     // New approach: ~4 chars per token
     const newApproachTokens = Math.ceil(extractedText.length / 4);
     
-    const reduction = ((oldApproachTokens - newApproachTokens) / oldApproachTokens * 100).toFixed(1);
+    const reduction = ((oldApproachTokens - newApproachTokens) / oldApproachTokens * 100);
     
-    console.log(`  📉 Token reduction: ${reduction}%`);
+    console.log(`  📉 Token reduction: ${formatPercentage(reduction / 100, 1)}`);
     console.log(`     Old (File API): ~${oldApproachTokens} tokens`);
     console.log(`     New (Text): ~${newApproachTokens} tokens`);
     

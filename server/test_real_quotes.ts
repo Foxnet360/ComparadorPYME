@@ -4,6 +4,7 @@ import { quoteParser } from './src/services/quoteParser.js';
 import { normalizeCoverages } from './src/services/thesaurusMapper.js';
 import { validateQuote } from './src/services/quoteValidator.js';
 import { calculateConfidence } from './src/services/confidenceScorer.js';
+import { formatPercentage } from './src/utils/formatCurrency';
 
 const PDF_FILES = [
   '/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/Ejemplos/laser-home/Cotización - MAPFRE.pdf',
@@ -58,7 +59,7 @@ async function testPdf(filePath: string) {
     console.log(`   Needs review: ${mapped.needsReview}`);
     if (mapped.normalized.length > 0) {
       mapped.normalized.slice(0, 5).forEach(c => {
-        console.log(`   • ${c.name} (confidence: ${(c.confidence * 100).toFixed(1)}%)${c.type ? ` [${c.type}]` : ''}`);
+        console.log(`   • ${c.name} (confidence: ${formatPercentage(c.confidence, 1)})${c.type ? ` [${c.type}]` : ''}`);
       });
       if (mapped.normalized.length > 5) {
         console.log(`   ... and ${mapped.normalized.length - 5} more`);

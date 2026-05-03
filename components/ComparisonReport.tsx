@@ -7,6 +7,7 @@ import { generatePDF } from '../services/pdfService';
 import { DeductiblesComparisonTable } from './DeductiblesComparisonTable';
 import { AuditSection } from './AuditSection';
 import { UnifiedCoverageMatrix } from './UnifiedCoverageMatrix';
+import { formatCOP } from '../utils/formatCurrency';
 
 interface ComparisonReportProps {
   report: ReportType;
@@ -259,7 +260,7 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-500">Prima Anual</span>
-                      <span className="font-bold text-slate-800">${(q.priceAnnual || 0).toLocaleString()}</span>
+                      <span className="font-bold text-slate-800">{formatCOP(q.priceAnnual)}</span>
                     </div>
                     <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                       <div className={`h-full rounded-full ${q.score >= 80 ? 'bg-green-500' : q.score >= 60 ? 'bg-yellow-400' : 'bg-red-400'}`} style={{ width: `${q.score}%` }}></div>
@@ -369,12 +370,12 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
                         tick={{ fill: '#64748b', fontSize: 12 }}
                         axisLine={false}
                         tickLine={false}
-                        tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`}
+                        tickFormatter={(value) => formatCOPMillions(value)}
                       />
                       <Tooltip
                         cursor={{ fill: '#f8fafc' }}
                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                        formatter={(value: number) => [`$${value.toLocaleString()}`, 'Prima Anual']}
+                        formatter={(value: number) => [formatCOP(value), 'Prima Anual']}
                       />
                       <Bar dataKey="fullPrice" name="Precio Anual" radius={[4, 4, 0, 0]} barSize={40}>
                         {priceData.map((entry, index) => (

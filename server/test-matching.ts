@@ -11,6 +11,7 @@ const envPath = path.resolve(__dirname, '.env');
 dotenv.config({ path: envPath });
 
 import { semanticMatcher } from './src/services/semanticMatcher';
+import { formatPercentage } from './src/utils/formatCurrency';
 
 async function testMatching() {
     console.log('🧪 Testing Semantic Matching with Real Coverage Names\n');
@@ -64,18 +65,18 @@ async function testMatching() {
         if (success) {
             passed++;
             console.log(`✅ "${testCase.input}"`);
-            console.log(`   → ${result.canonicalName} (confianza: ${(result.confidence * 100).toFixed(0)}%, método: ${result.method})`);
+            console.log(`   → ${result.canonicalName} (confianza: ${formatPercentage(result.confidence, 0)}, método: ${result.method})`);
         } else {
             failed++;
             console.log(`❌ "${testCase.input}"`);
             console.log(`   Esperado: categoría ${testCase.expected}`);
             console.log(`   Obtenido: ${result.categoryId !== null ? `categoría ${result.categoryId} (${result.canonicalName})` : 'sin match'}`);
-            console.log(`   Confianza: ${(result.confidence * 100).toFixed(0)}%, método: ${result.method}`);
+            console.log(`   Confianza: ${formatPercentage(result.confidence, 0)}, método: ${result.method}`);
         }
         console.log('');
     }
     
-    console.log(`\n📊 Resultados: ${passed}/${testCases.length} pasaron (${((passed/testCases.length)*100).toFixed(0)}%)`);
+    console.log(`\n📊 Resultados: ${passed}/${testCases.length} pasaron (${formatPercentage(passed/testCases.length, 0)})`);
     console.log(`   ✅ ${passed} correctos`);
     console.log(`   ❌ ${failed} incorrectos`);
     

@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { ComparisonReport, UserProfile, DashboardStats, HistoryEntry } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
+import { formatCOPMillions } from '../utils/formatCurrency';
 
 // Helper for robust string matching (ignores accents, case, whitespace)
 const normalizeText = (text: string) => {
@@ -280,7 +281,7 @@ export const generatePerformanceReport = (user: UserProfile, stats: DashboardSta
 
   drawStat("Cotizaciones", stats.totalQuotes.toString(), 14, currentY);
   drawStat("Tasa Cierre", `${stats.conversionRate}%`, 60, currentY);
-  drawStat("Primas Vendidas", `$ ${(stats.totalPremiumSold / 1000000).toFixed(1)}M`, 106, currentY);
+  drawStat("Primas Vendidas", formatCOPMillions(stats.totalPremiumSold), 106, currentY);
   drawStat("Prospectos", stats.activeProspects.toString(), 152, currentY);
 
   currentY += 40;
@@ -296,7 +297,7 @@ export const generatePerformanceReport = (user: UserProfile, stats: DashboardSta
     h.clientName,
     h.insurers.join(", "),
     h.bestOption,
-    `$ ${(h.premiumValue / 1000000).toFixed(1)}M`,
+    formatCOPMillions(h.premiumValue),
     h.status
   ]);
 
