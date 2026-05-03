@@ -64,6 +64,31 @@ npm run dev
 
 El frontend estará en `http://localhost:3000` y el backend en `http://localhost:8080`.
 
+## Contribuir / Modificar el Proyecto
+
+**IMPORTANTE:** La rama `main` está protegida y despliega automáticamente en Railway. Para hacer modificaciones:
+
+1. **Leer [CONTRIBUTING.md](CONTRIBUTING.md)** - Guía completa del flujo de trabajo
+2. **Usar ramas `feature/*`** - Nunca push directo a `main`
+3. **Probar localmente** - Antes de integrar a `main`
+4. **Seguir el skill** - Usar `.opencode/skills/modificacion/SKILL.md`
+
+### Flujo Rápido
+
+```bash
+# 1. Crear rama feature
+git checkout -b feature/mi-cambio
+
+# 2. Desarrollar y probar
+npm run build
+npm start
+
+# 3. Integrar a main
+git checkout main
+git merge feature/mi-cambio
+git push origin main  # Railway deploya automáticamente
+```
+
 ## Despliegue
 
 ### Railway (Recomendado) - Docker Auto-Deploy
