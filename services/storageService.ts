@@ -3,7 +3,9 @@ import { HistoryEntry, DashboardStats, UserProfile, QuoteStatus, ComparisonRepor
 import { dbService } from "./db";
 
 const USER_KEY = 'seguro_app_user';
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+// Use relative URL in production (same domain), localhost only in dev
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_URL = isLocal ? 'http://localhost:8080/api' : '/api';
 
 // Mock Data for initial load (fallback only)
 const MOCK_HISTORY: HistoryEntry[] = [
