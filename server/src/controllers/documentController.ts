@@ -73,7 +73,9 @@ export const documentController = {
    */
   createDocument: async (req: Request, res: Response): Promise<void> => {
     console.log('📥 [documentController.createDocument] Request received');
-    
+
+    const filePath = req.file?.path;
+
     try {
       // Verificar que hay archivo
       if (!req.file) {
@@ -88,8 +90,6 @@ export const documentController = {
       // Validar campos
       const validation = validateDocumentFields(req.body);
       if (!validation.valid) {
-        // Limpiar archivo subido
-        fs.unlinkSync(req.file.path);
         res.status(400).json({
           success: false,
           error: validation.error,
@@ -115,14 +115,7 @@ export const documentController = {
       };
 
       // Indexar documento
-      const result = await documentIndexingService.indexDocument(req.file.path, metadata);
-
-      // Limpiar archivo temporal
-      try {
-        fs.unlinkSync(req.file.path);
-      } catch (e) {
-        console.warn('Failed to cleanup temp file:', e);
-      }
+      const result = await documentIndexingService.indexDocument(filePath!, metadata);
 
       if (!result.success) {
         res.status(500).json({
@@ -144,21 +137,21 @@ export const documentController = {
 
     } catch (error: any) {
       console.error('❌ [documentController] Error:', error);
-      
-      // Limpiar archivo en caso de error
-      if (req.file?.path && fs.existsSync(req.file.path)) {
-        try {
-          fs.unlinkSync(req.file.path);
-        } catch (e) {
-          // Ignore
-        }
-      }
 
       res.status(500).json({
         success: false,
         error: 'Internal server error',
         details: error.message,
       });
+    } finally {
+      // Garantizar limpieza del archivo temporal en TODAS las ramas
+      if (filePath && fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (e) {
+          console.warn('Failed to cleanup temp file:', e);
+        }
+      }
     }
   },
 

@@ -1,8 +1,111 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { GoogleAIFileManager, FileState } from "@google/generative-ai/server";
 import fs from 'fs';
 import { ClauseDocument } from '../types';
-import { validateAnalysis } from '../utils/analysisValidator';
+import { preprocessText } from './textPreprocessor';
+import { parseJsonWithRepair } from './jsonRepair';
+import { extractAndValidatePremium, createPremiumPrompt } from './premiumExtractor';
+
+/**
+ * JSON Schema for structured quote extraction
+ * Enforces consistent output format from Gemini
+ */
+export const QuoteExtractionSchema: any = {
+  description: "Extracted insurance quote data",
+  type: "object",
+  properties: {
+    insurerName: {
+      type: "string",
+      description: "Name of the insurance company",
+      nullable: false,
+    },
+    policyName: {
+      type: "string",
+      description: "Name of the insurance product/policy",
+      nullable: false,
+    },
+    priceAnnual: {
+      type: "number",
+      description: "Annual premium amount in numeric format",
+      nullable: false,
+    },
+    currency: {
+      type: "string",
+      description: "Currency code",
+      enum: ["COP", "USD"],
+      nullable: false,
+    },
+    validityPeriod: {
+      type: "string",
+      description: "Policy validity period (e.g., '2024-01-01 - 2024-12-31')",
+      nullable: true,
+    },
+    coverages: {
+      type: "array",
+      description: "List of coverage items found in the document. Extract ALL coverages you find, even if the name doesn't match exactly the canonical list.",
+      items: {
+        type: "object",
+        properties: {
+          name: {
+            type: "string",
+            description: "Coverage name EXACTLY as it appears in the document. Do NOT modify or translate the name. Copy it verbatim from the PDF.",
+            nullable: false,
+          },
+          value: {
+            type: "string",
+            description: "Insured amount (number) or description. Use the exact value from the document.",
+            nullable: false,
+          },
+          deductible: {
+            type: "string",
+            description: "Deductible value EXACTLY as it appears in the document (e.g., '10%', '5 SMMLV', 'No aplica', 'APLICA'). Copy verbatim.",
+            nullable: false,
+          },
+        },
+        required: ["name", "value", "deductible"],
+      },
+    },
+    specialConditions: {
+      type: "array",
+      description: "Special conditions or clauses",
+      items: {
+        type: "string",
+      },
+    },
+    expectedCoverages: {
+      type: "array",
+      description: "List of all 14 expected PYME coverages with their status",
+      items: {
+        type: "object",
+        properties: {
+          name: {
+            type: "string",
+            description: "Canonical coverage name from the 14 PYME template",
+            nullable: false,
+          },
+          status: {
+            type: "string",
+            description: "Whether this coverage is present, missing, or excluded",
+            enum: ["present", "missing", "excluded"],
+            nullable: false,
+          },
+          value: {
+            type: "string",
+            description: "Insured amount if present, or reason if excluded",
+            nullable: true,
+          },
+          deductible: {
+            type: "string",
+            description: "Deductible if present",
+            nullable: true,
+          },
+        },
+        required: ["name", "status"],
+      },
+    },
+  },
+  required: ["insurerName", "policyName", "priceAnnual", "currency", "coverages", "expectedCoverages"],
+};
 
 // Initialize Gemini lazily
 const getGenAI = () => {
@@ -49,12 +152,12 @@ const buildSectionText = (clauses: ClauseDocument[]): string => {
                 parts.push('\n✅ GARANTÍAS:');
                 parts.push(secciones.garantias);
             }
-            console.log(`📊 Using sections for ${aseguradora} (~${((secciones.exclusiones?.length || 0) + (secciones.deducibles?.length || 0) + (secciones.garantias?.length || 0)) / 4} tokens)`);
+
         } else {
             // Fallback to full text if no sections extracted
             parts.push('\n[CLAUSULADO COMPLETO - Secciones no extraídas]');
             parts.push(textoCompleto);
-            console.log(`⚠️ Using full text for ${aseguradora} (~${textoCompleto.length / 4} tokens)`);
+
         }
 
         parts.push('===\n');
@@ -76,7 +179,6 @@ export const geminiService = {
                 displayName,
             });
 
-            console.log(`Uploaded file ${displayName}: ${uploadResult.file.name}`);
             return uploadResult.file;
         } catch (error: any) {
             console.error("Error uploading to Gemini:", error);
@@ -86,11 +188,9 @@ export const geminiService = {
 
     waitForFilesActive: async (files: any[]) => {
         const fileManager = getFileManager();
-        console.log("Waiting for files to be processed...");
         for (const name of files.map((file) => file.name)) {
             let file = await fileManager.getFile(name);
             while (file.state === FileState.PROCESSING) {
-                process.stdout.write(".");
                 await new Promise((resolve) => setTimeout(resolve, 2000));
                 file = await fileManager.getFile(name);
             }
@@ -98,16 +198,17 @@ export const geminiService = {
                 throw new Error(`File ${file.name} failed to process`);
             }
         }
-        console.log("All files ready.");
     },
 
-    analyzeQuotes: async (quoteFiles: any[], clauseFiles: any[], prompt: string, schema: any) => {
-        // Construct parts
-        const fileParts = [
-            ...quoteFiles.map(f => ({ fileData: { fileUri: f.uri, mimeType: f.mimeType } })),
-            ...clauseFiles.map(f => ({ fileData: { fileUri: f.uri, mimeType: f.mimeType } }))
-        ];
-
+    /**
+     * Generates content using Gemini with free-text output (NO JSON schema forcing)
+     * 
+     * @deprecated Use extractStructured() instead for better reliability and type safety
+     * @param text - The text to analyze
+     * @param prompt - The extraction prompt
+     * @returns Raw text response from Gemini
+     */
+    extractText: async (text: string, prompt: string): Promise<string> => {
         let retries = 0;
         const maxRetries = 3;
 
@@ -117,18 +218,14 @@ export const geminiService = {
                 const model = genAI.getGenerativeModel({
                     model: 'models/gemini-2.5-flash',
                     generationConfig: {
-                        responseMimeType: "application/json",
-                        responseSchema: schema,
-                        temperature: 0,
-                        topP: 0,
-                        topK: 1,
+                        temperature: 0.1,
+                        maxOutputTokens: 32768,
                     }
                 });
 
-                console.log(`Generating content with model: models/gemini-2.5-flash with ${fileParts.length} files`);
                 const result = await model.generateContent([
-                    ...fileParts,
-                    { text: prompt }
+                    { text: prompt },
+                    { text: `\n\n--- DOCUMENTO ---\n\n${text}` }
                 ]);
 
                 const response = result.response;
@@ -136,20 +233,15 @@ export const geminiService = {
                     throw new Error("No response received from Gemini");
                 }
 
-                const text = response.text();
-                // console.log("Raw Gemini Response:", text.substring(0, 500) + "...");
-                if (!text) {
+                const responseText = response.text();
+                if (!responseText) {
                     throw new Error("Empty text response from Gemini");
                 }
 
-                console.log("✅ Gemini analysis successful and parsed.");
-                const parsed = JSON.parse(text);
-                // Validar y completar coberturas
-                return validateAnalysis(parsed);
+                console.log(`📄 [Gemini] Response received: ${responseText.length} chars`);
+                
+                return responseText;
             } catch (error: any) {
-                console.log(`Debug Error Analysis - Status: ${error.status} (${typeof error.status}), Message: ${error.message}`);
-
-                // Check multiple ways a 429 might appear
                 const isRateLimit =
                     error.status === 429 ||
                     error.status === '429' ||
@@ -164,31 +256,33 @@ export const geminiService = {
                         throw error;
                     }
                     retries++;
-                    // Wait for 20 seconds
                     await new Promise(resolve => setTimeout(resolve, 20000));
                     continue;
                 }
 
                 console.error("Error generating content:", error);
-                if (error.message?.includes("404")) {
-                    console.error("Model not found. Please check if 'models/gemini-2.5-flash' is available for your API key.");
-                }
                 throw error;
             }
         }
     },
 
     /**
-     * Analiza cotizaciones usando texto extraído (NO File API)
-     * Esto reduce significativamente el consumo de tokens (~66% menos)
+     * Extract structured quote data using Gemini JSON mode
+     * Returns a typed object conforming to QuoteExtractionSchema
+     * 
+     * @param text - The text to analyze
+     * @param prompt - The extraction prompt with few-shot examples
+     * @returns Structured quote data
      */
-    analyzeQuotesFromText: async (quotesText: string, clausesText: string, prompt: string, schema: any) => {
+    extractStructured: async (text: string, prompt: string, pageCount: number = 1): Promise<any> => {
         let retries = 0;
         const maxRetries = 3;
 
-        // Log input size for monitoring
-        const totalInputChars = quotesText.length + clausesText.length + prompt.length;
-        console.log(`📊 Text-based analysis: ${totalInputChars} chars (~${Math.round(totalInputChars / 4)} tokens estimate)`);
+        // Pre-process text before extraction
+        const preprocessed = preprocessText(text, pageCount);
+        if (preprocessed.metadata.changes.length > 0) {
+            console.log(`🧹 [PreProcessor] Changes: ${preprocessed.metadata.changes.join(', ')}`);
+        }
 
         while (true) {
             try {
@@ -196,45 +290,64 @@ export const geminiService = {
                 const model = genAI.getGenerativeModel({
                     model: 'models/gemini-2.5-flash',
                     generationConfig: {
-                        responseMimeType: "application/json",
-                        responseSchema: schema,
-                        temperature: 0,
-                        topP: 0,
-                        topK: 1,
+                        temperature: 0.1,
+                        maxOutputTokens: 32768,
+                        responseMimeType: 'application/json',
+                        responseSchema: QuoteExtractionSchema,
                     }
                 });
 
-                // Build the content parts as text (no file uploads)
-                const contentParts = [
+                const result = await model.generateContent([
                     { text: prompt },
-                    { text: `\n\n--- COTIZACIONES ---\n\n${quotesText}` },
-                ];
-
-                // Only add clauses if provided
-                if (clausesText && clausesText.trim().length > 0) {
-                    contentParts.push({ text: `\n\n--- CLAUSULADOS DE REFERENCIA ---\n\n${clausesText}` });
-                }
-
-                console.log(`Generating content with model: models/gemini-2.5-flash (text mode, ${contentParts.length} parts)`);
-                const result = await model.generateContent(contentParts);
+                    { text: `\n\n--- DOCUMENTO ---\n\n${preprocessed.text}` }
+                ]);
 
                 const response = result.response;
                 if (!response) {
                     throw new Error("No response received from Gemini");
                 }
 
-                const text = response.text();
-                if (!text) {
-                    throw new Error("Empty text response from Gemini");
+                const responseText = response.text();
+                if (!responseText) {
+                    throw new Error("Empty response from Gemini");
                 }
 
-                console.log("✅ Gemini text-based analysis successful and parsed.");
-                const parsed = JSON.parse(text);
-                // Validar y completar coberturas
-                return validateAnalysis(parsed);
+                // Try to parse with automatic repair
+                const parseResult = parseJsonWithRepair(responseText);
+                
+                if (parseResult.success) {
+                    if (parseResult.wasRepaired) {
+                        console.log(`🔧 [JSON Repair] Fixed using ${parseResult.repairType}`);
+                    }
+                    
+                    const data = parseResult.data;
+                    
+                    // Try premium extraction fallback if priceAnnual is 0 or missing
+                    if (!data.priceAnnual || data.priceAnnual === 0) {
+                        console.log(`💰 [Premium] Structured extraction returned 0, trying regex fallback...`);
+                        const premiumResult = extractAndValidatePremium(0, preprocessed.text);
+                        
+                        if (premiumResult.priceAnnual > 0) {
+                            data.priceAnnual = premiumResult.priceAnnual;
+                            data.currency = premiumResult.currency;
+                            data.premiumSource = premiumResult.source;
+                            data.premiumConfidence = premiumResult.confidence;
+                            console.log(`💰 [Premium] Found via ${premiumResult.source}: ${premiumResult.priceAnnual} ${premiumResult.currency}`);
+                        } else {
+                            data.premiumSource = 'unknown';
+                            data.premiumConfidence = 0;
+                        }
+                    } else {
+                        data.premiumSource = 'structured';
+                        data.premiumConfidence = 95;
+                    }
+                    
+                    console.log(`📄 [Gemini] Structured extraction: ${data.insurerName}, ${data.coverages?.length || 0} coverages, premium: ${data.priceAnnual || 0}`);
+                    return data;
+                } else {
+                    throw new Error(`JSON parsing failed: ${parseResult.error}`);
+                }
             } catch (error: any) {
-                console.log(`Debug Error Analysis - Status: ${error.status} (${typeof error.status}), Message: ${error.message}`);
-
                 const isRateLimit =
                     error.status === 429 ||
                     error.status === '429' ||
@@ -253,12 +366,56 @@ export const geminiService = {
                     continue;
                 }
 
-                console.error("Error generating content:", error);
-                if (error.message?.includes("404")) {
-                    console.error("Model not found. Please check if 'models/gemini-2.5-flash' is available for your API key.");
+                // If JSON parsing fails or schema validation fails, throw
+                if (error.message?.includes("JSON") || error.message?.includes("schema")) {
+                    console.error("❌ [Gemini] Structured extraction failed:", error.message);
+                    throw new Error(`Structured extraction failed: ${error.message}`);
                 }
+
+                console.error("Error generating structured content:", error);
                 throw error;
             }
         }
+    },
+
+    /**
+     * Generate narrative text (recommendation, analysis) using Gemini
+     * This is the only place where we use Gemini for text generation
+     */
+    generateNarrative: async (analysisData: any): Promise<{ recommendation: string; marketAnalysis: string }> => {
+        const prompt = `Basado en el siguiente análisis de cotizaciones de seguros PYME, genera una recomendación profesional y un análisis de mercado.
+
+DATOS DEL ANÁLISIS:
+${JSON.stringify(analysisData, null, 2)}
+
+REGLAS:
+1. recommendation (máximo 1500 caracteres):
+   - Recomienda la mejor cotización y explica por qué
+   - Menciona pros y contras de cada opción
+   - Sé específico y actionable
+
+2. marketAnalysis (máximo 1500 caracteres):
+   - Describe tendencias observadas en el mercado
+   - Comenta rangos de precios
+   - Menciona coberturas estándar vs diferenciadoras
+
+Responde SOLO con el siguiente formato:
+
+RECOMENDACIÓN:
+[tu recomendación aquí]
+
+ANÁLISIS DE MERCADO:
+[tu análisis aquí]`;
+
+        const text = await geminiService.extractText('', prompt);
+        
+        // Simple parsing of the response
+        const recMatch = text.match(/RECOMENDACI[ÓO]N:\s*([\s\S]*?)(?=AN[ÁA]LISIS|$)/i);
+        const marketMatch = text.match(/AN[ÁA]LISIS\s+DE\s+MERCADO:\s*([\s\S]*)/i);
+        
+        return {
+            recommendation: recMatch ? recMatch[1].trim().substring(0, 1500) : 'No se pudo generar recomendación',
+            marketAnalysis: marketMatch ? marketMatch[1].trim().substring(0, 1500) : 'No se pudo generar análisis'
+        };
     }
 };

@@ -53,6 +53,7 @@ export const pdfExtractor = {
         console.log(`📄 [pdfExtractor] Extracting from: ${filePath}`);
 
         const warnings: string[] = [];
+        let pdfDoc: any = null;
 
         try {
             // Validar archivo existe
@@ -66,13 +67,13 @@ export const pdfExtractor = {
                 throw new PDFExtractionError(validation.error || 'Invalid PDF', 'INVALID_PDF');
             }
 
-            const dataBuffer = fs.readFileSync(filePath);
+            const dataBuffer = await fs.promises.readFile(filePath);
             const pdfBytes = new Uint8Array(dataBuffer);
             console.log(`   File size: ${dataBuffer.length} bytes`);
 
             // Cargar documento
             const loadingTask = getDocument({ data: pdfBytes });
-            const pdfDoc = await loadingTask.promise;
+            pdfDoc = await loadingTask.promise;
 
             const pageCount = pdfDoc.numPages;
             console.log(`   Pages: ${pageCount}`);
@@ -99,7 +100,7 @@ export const pdfExtractor = {
                         .join(' ')
                         .trim();
 
-                    const wordCount = pageText.split(/\s+/).filter(word => word.length > 0).length;
+                    const wordCount = pageText.split(/\s+/).filter((word: string) => word.length > 0).length;
                     const hasContent = pageText.length > 0 && wordCount > 5; // Mínimo 5 palabras
 
                     if (!hasContent) {
@@ -163,6 +164,14 @@ export const pdfExtractor = {
             }
             console.error(`❌ [pdfExtractor] Error: ${error.message}`);
             throw new PDFExtractionError(`Failed to extract PDF: ${error.message}`, 'EXTRACTION_FAILED');
+        } finally {
+            if (pdfDoc) {
+                try {
+                    await pdfDoc.destroy();
+                } catch (destroyError) {
+                    console.warn('⚠️ Error destroying PDF document:', destroyError);
+                }
+            }
         }
     },
 

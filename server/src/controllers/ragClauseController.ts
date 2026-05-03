@@ -22,8 +22,6 @@ export const ragClauseController = {
      * POST /api/rag/clauses - Upload and index a new clause document
      */
     indexClause: async (req: Request, res: Response): Promise<void> => {
-        console.log('📥 [ragClauseController.indexClause] Request received');
-
         try {
             const file = req.file;
             if (!file) {
@@ -44,7 +42,6 @@ export const ragClauseController = {
                 return;
             }
 
-            console.log(`📄 [ragClauseController] Extracting text from ${file.originalname}`);
             const extractionResult = await pdfExtractor.extractTextFromPdf(file.path);
 
             if (extractionResult.text.length === 0) {
@@ -52,7 +49,6 @@ export const ragClauseController = {
                 return;
             }
 
-            console.log(`🔀 [ragClauseController] Creating semantic chunks`);
             const pages = extractionResult.text.split('\n\n');
             const pageBoundaries = semanticChunker.calculatePageBoundaries(pages);
             
@@ -65,7 +61,6 @@ export const ragClauseController = {
                 pageBoundaries
             );
 
-            console.log(`🔢 [ragClauseController] Generating embeddings for ${chunks.length} chunks`);
             const chunksWithEmbeddings = await Promise.all(
                 chunks.map(async (chunk: Chunk, index: number) => {
                     const embedding = await embeddingService.generateEmbedding(chunk.content);
@@ -83,7 +78,6 @@ export const ragClauseController = {
                 })
             );
 
-            console.log(`💾 [ragClauseController] Storing in vector database`);
             await vectorStore.addChunks(insurerName, chunksWithEmbeddings);
 
             const clauseId = `${insurerName.toLowerCase()}_${Date.now()}`;
@@ -163,8 +157,6 @@ export const ragClauseController = {
      * POST /api/rag/clauses/:id/reindex - Re-index an existing clause document
      */
     reindexClause: async (req: Request, res: Response): Promise<void> => {
-        console.log('📥 [ragClauseController.reindexClause] Request received');
-
         try {
             const id = String(req.params.id);
             const file = req.file;
@@ -183,10 +175,8 @@ export const ragClauseController = {
                 return;
             }
 
-            console.log(`🗑️ [ragClauseController] Deleting existing chunks for ${targetDocumentName}`);
             await vectorStore.deleteDocument(targetInsurerName, targetDocumentName);
 
-            console.log(`📄 [ragClauseController] Extracting text from ${file.originalname}`);
             const extractionResult = await pdfExtractor.extractTextFromPdf(file.path);
 
             if (extractionResult.text.length === 0) {
@@ -194,7 +184,6 @@ export const ragClauseController = {
                 return;
             }
 
-            console.log(`🔀 [ragClauseController] Creating semantic chunks`);
             const pages = extractionResult.text.split('\n\n');
             const pageBoundaries = semanticChunker.calculatePageBoundaries(pages);
             
@@ -207,7 +196,6 @@ export const ragClauseController = {
                 pageBoundaries
             );
 
-            console.log(`🔢 [ragClauseController] Generating embeddings for ${chunks.length} chunks`);
             const chunksWithEmbeddings = await Promise.all(
                 chunks.map(async (chunk: Chunk, index: number) => {
                     const embedding = await embeddingService.generateEmbedding(chunk.content);
@@ -225,7 +213,6 @@ export const ragClauseController = {
                 })
             );
 
-            console.log(`💾 [ragClauseController] Storing new chunks in vector database`);
             await vectorStore.addChunks(targetInsurerName, chunksWithEmbeddings);
 
             indexedClauses.set(id, {
@@ -261,8 +248,6 @@ export const ragClauseController = {
      * POST /api/rag/analyze - Analyze a quote with RAG
      */
     analyzeQuote: async (req: Request, res: Response): Promise<void> => {
-        console.log('📥 [ragClauseController.analyzeQuote] Request received');
-
         try {
             const file = req.file;
             const { insurerName, coverageTerms } = req.body;
@@ -272,7 +257,6 @@ export const ragClauseController = {
                 return;
             }
 
-            console.log(`📄 [ragClauseController] Extracting quote text`);
             const extractionResult = await pdfExtractor.extractTextFromPdf(file.path);
 
             if (extractionResult.text.length === 0) {
@@ -284,10 +268,8 @@ export const ragClauseController = {
                 ? JSON.parse(coverageTerms as string)
                 : ['cobertura', 'exclusiones', 'deducibles', 'límites', 'condiciones'];
 
-            console.log(`🔍 [ragClauseController] Retrieving relevant chunks`);
             const retrievalResult = await ragRetrieval.retrieveWithTerms(terms, insurerName, 3);
 
-            console.log(`🤖 [ragClauseController] Analyzing with Groq`);
             const analysisResult = await groqService.analyzeQuote(
                 extractionResult.text,
                 {

@@ -1,8 +1,25 @@
 import fs from 'fs';
 import path from 'path';
 
+function resolveThesaurusPath(): string {
+  const candidates = [
+    path.join(__dirname, '../../data/thesaurus.json'),
+    path.join(__dirname, '../data/thesaurus.json'),
+    path.join(process.cwd(), 'src/data/thesaurus.json'),
+    path.join(process.cwd(), 'server/src/data/thesaurus.json'),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return candidates[0];
+}
+
 // Cargar tesauro al iniciar
-const thesaurusPath = path.join(__dirname, '../data/thesaurus.json');
+const thesaurusPath = resolveThesaurusPath();
 let thesaurusCache: ThesaurusData | null = null;
 
 export interface ThesaurusData {

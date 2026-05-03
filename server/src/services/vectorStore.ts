@@ -18,18 +18,50 @@ export interface RetrievedChunk {
     distance: number;
 }
 
-interface ChunkRecord {
-    id: string;
-    content: string;
-    metadata: ChunkMetadata;
-    embedding: number[];
-    document_id: string;
-}
+// Helper function to extract coverage tags from content
+const extractCoverageTags = (content: string): string[] => {
+    const tags: string[] = [];
+    const coverageTerms = [
+        'daño', 'perdida', 'hurto', 'accidente', 'responsabilidad',
+        'gastos', 'medicos', 'civil', 'extracontractual'
+    ];
+    
+    const lowerContent = content.toLowerCase();
+    coverageTerms.forEach(term => {
+        if (lowerContent.includes(term)) {
+            tags.push(term);
+        }
+    });
+    
+    return tags;
+};
 
-// Cache en memoria para chunks (mejora rendimiento en desarrollo)
-const chunksCache: Map<string, ChunkRecord[]> = new Map();
+// Helper function to detect section type
+const detectSectionType = (content: string): string | null => {
+    const lowerContent = content.toLowerCase();
+    
+    if (lowerContent.includes('exclusi')) return 'EXCLUSION';
+    if (lowerContent.includes('deducible')) return 'DEDUCIBLE';
+    if (lowerContent.includes('garantia') || lowerContent.includes('cobertura')) return 'COBERTURA';
+    if (lowerContent.includes('condicion')) return 'CONDICION';
+    
+    return 'GENERAL';
+};
+
+// Convert embedding array to PostgreSQL vector string format
+const embeddingToString = (embedding: number[]): string => {
+    return `[${embedding.join(',')}]`;
+};
 
 export const vectorStore = {
+    /**
+     * Inicializa el cliente (no-op para Supabase, ya está inicializado en database.ts)
+     */
+    initialize: async (): Promise<void> => {
+        // Supabase client is already initialized in database.ts
+        console.log('📦 [VectorStore] Using Supabase/pgvector');
+    },
+
     /**
      * Agrega chunks a Supabase
      */
@@ -44,27 +76,23 @@ export const vectorStore = {
             page_number: chunk.metadata.pageStart,
             content: chunk.content,
             content_normalized: chunk.content.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''),
-            embedding: chunk.embedding,
-            metadata: chunk.metadata,
+            embedding: embeddingToString(chunk.embedding),
+            metadata: chunk.metadata as any,
             coverage_tags: extractCoverageTags(chunk.content),
-            section_type: detectSectionType(chunk.content),
+            section_type: detectSectionType(chunk.content) as any,
         }));
 
         // Insertar en Supabase
         const { error } = await supabase
             .from('chunks')
-            .upsert(records, { onConflict: 'id' });
+            .upsert(records as any, { onConflict: 'id' });
 
         if (error) {
             console.error('❌ [VectorStore] Error saving chunks:', error);
             throw error;
         }
 
-        // Actualizar caché
-        const collectionName = insurerName.toLowerCase().replace(/\s+/g, '_');
-        chunksCache.set(collectionName, chunks as ChunkRecord[]);
-
-        console.log(`✅ [VectorStore] Saved ${chunks.length} chunks to Supabase for ${insurerName}`);
+        console.log(`✅ [VectorStore] Added ${chunks.length} chunks to Supabase for ${insurerName}`);
     },
 
     /**
@@ -76,34 +104,67 @@ export const vectorStore = {
         filter?: { clauseId?: string; section?: string },
         limit: number = 5
     ): Promise<RetrievedChunk[]> => {
-        // Primero intentar búsqueda vectorial con pgvector
-        let query = supabase
-            .rpc('match_chunks', {
-                query_embedding: queryEmbedding,
-                match_threshold: 0.5,
-                match_count: limit
-            });
+        try {
+            // Intentar usar RPC para búsqueda vectorial
+            const { data, error } = await supabase
+                .rpc('match_chunks', {
+                    query_embedding: embeddingToString(queryEmbedding),
+                    match_threshold: 0.5,
+                    match_count: limit,
+                    insurer_filter: insurerName
+                } as any);
 
-        // Ejecutar consulta
+            if (error) {
+                console.warn('⚠️ [VectorStore] RPC match_chunks failed, falling back to text search:', error);
+                // Fallback: búsqueda de texto básica
+                return vectorStore.fallbackTextSearch(insurerName, filter, limit);
+            }
+
+            if (!data) return [];
+
+            return (data as any[]).map((row: any) => ({
+                id: row.id,
+                content: row.content,
+                metadata: row.metadata as ChunkMetadata,
+                distance: 1 - (row.similarity || 0), // Convertir similitud a distancia
+            }));
+        } catch (error) {
+            console.error('❌ [VectorStore] Search error:', error);
+            return vectorStore.fallbackTextSearch(insurerName, filter, limit);
+        }
+    },
+
+    /**
+     * Búsqueda de fallback usando texto (sin embeddings)
+     */
+    fallbackTextSearch: async (
+        insurerName: string,
+        filter?: { clauseId?: string; section?: string },
+        limit: number = 5
+    ): Promise<RetrievedChunk[]> => {
+        console.log('🔍 [VectorStore] Using fallback text search');
+        
+        let query = supabase
+            .from('chunks')
+            .select('*')
+            .limit(limit);
+
+        if (filter?.clauseId) {
+            query = query.eq('document_id', filter.clauseId);
+        }
+
         const { data, error } = await query;
 
         if (error) {
-            console.error('❌ [VectorStore] Search error:', error);
-            
-            // Fallback: búsqueda por similitud de coseno manual
-            return await manualSimilaritySearch(insurerName, queryEmbedding, filter, limit);
-        }
-
-        if (!data || data.length === 0) {
+            console.error('❌ [VectorStore] Fallback search error:', error);
             return [];
         }
 
-        // Transformar resultados
-        return data.map((row: any) => ({
+        return (data || []).map((row: any) => ({
             id: row.id,
             content: row.content,
             metadata: row.metadata as ChunkMetadata,
-            distance: 1 - row.similarity, // Convertir similitud a distancia
+            distance: 0, // No tenemos distancia real en búsqueda de texto
         }));
     },
 
@@ -111,28 +172,33 @@ export const vectorStore = {
      * Elimina todos los chunks de un documento
      */
     deleteDocument: async (insurerName: string, documentName: string): Promise<void> => {
-        // Buscar documentos por nombre
-        const { data: docs, error: docError } = await supabase
+        // Primero obtener los IDs de los documentos que coinciden
+        const { data: documents, error: docError } = await supabase
             .from('documents')
             .select('id')
-            .ilike('document_name', `%${documentName}%`);
+            .eq('document_name', documentName);
 
-        if (docError || !docs || docs.length === 0) {
-            console.warn(`⚠️ [VectorStore] Document not found: ${documentName}`);
+        if (docError) {
+            console.error('❌ [VectorStore] Error finding documents:', docError);
+            throw docError;
+        }
+
+        if (!documents || documents.length === 0) {
+            console.log(`⚠️ [VectorStore] No documents found with name: ${documentName}`);
             return;
         }
 
-        const docIds = docs.map(d => d.id);
+        const documentIds = (documents as any[]).map(d => d.id);
 
         // Eliminar chunks asociados
-        const { error } = await supabase
+        const { error: deleteError } = await supabase
             .from('chunks')
             .delete()
-            .in('document_id', docIds);
+            .in('document_id', documentIds);
 
-        if (error) {
-            console.error('❌ [VectorStore] Error deleting chunks:', error);
-            throw error;
+        if (deleteError) {
+            console.error('❌ [VectorStore] Error deleting chunks:', deleteError);
+            throw deleteError;
         }
 
         console.log(`✅ [VectorStore] Deleted chunks for ${documentName}`);
@@ -142,155 +208,49 @@ export const vectorStore = {
      * Lista todos los documentos indexados
      */
     listDocuments: async (insurerName?: string): Promise<{ insurerName: string; documentName: string; chunkCount: number }[]> => {
-        // Obtener documentos con conteo de chunks
-        let query = supabase
-            .from('documents')
-            .select(`
-                id,
-                document_name,
-                insurer_id,
-                insurers:insurer_id (name)
-            `)
-            .eq('is_active', true);
+        try {
+            // Obtener documentos con conteo de chunks en una sola query (evita N+1)
+            let query = supabase
+                .from('documents')
+                .select(`
+                    id,
+                    document_name,
+                    insurers!inner(name),
+                    chunks(count)
+                `)
+                .eq('is_active', true);
 
-        if (insurerName) {
-            query = query.ilike('insurers.name', `%${insurerName}%`);
-        }
+            if (insurerName) {
+                query = query.eq('insurers.name', insurerName);
+            }
 
-        const { data: documents, error } = await query;
+            const { data: documents, error: docError } = await query;
 
-        if (error) {
-            console.error('❌ [VectorStore] Error listing documents:', error);
+            if (docError) {
+                console.error('❌ [VectorStore] Error listing documents:', docError);
+                return [];
+            }
+
+            if (!documents) return [];
+
+            return (documents as any[]).map((doc: any) => ({
+                insurerName: doc.insurers?.name || 'Unknown',
+                documentName: doc.document_name,
+                chunkCount: doc.chunks?.[0]?.count || 0,
+            }));
+        } catch (error) {
+            console.error('❌ [VectorStore] Error in listDocuments:', error);
             return [];
         }
-
-        if (!documents || documents.length === 0) {
-            return [];
-        }
-
-        // Obtener conteos de chunks para cada documento
-        const docIds = documents.map(d => d.id);
-        const { data: chunkCounts, error: countError } = await supabase
-            .from('chunks')
-            .select('document_id, count')
-            .in('document_id', docIds)
-            .group('document_id');
-
-        if (countError) {
-            console.error('❌ [VectorStore] Error counting chunks:', countError);
-        }
-
-        const countMap = new Map(chunkCounts?.map(c => [c.document_id, parseInt(c.count)]) || []);
-
-        return documents.map(doc => ({
-            insurerName: (doc.insurers as any)?.name || 'Unknown',
-            documentName: doc.document_name,
-            chunkCount: countMap.get(doc.id) || 0
-        }));
     },
 
     /**
-     * Limpia la caché (útil para testing)
+     * Verifica si hay documentos para una aseguradora
      */
-    clearCache: (): void => {
-        chunksCache.clear();
-        console.log('🧹 [VectorStore] Cache cleared');
-    }
+    hasDocuments: async (insurerName: string): Promise<boolean> => {
+        const documents = await vectorStore.listDocuments(insurerName);
+        return documents.length > 0;
+    },
 };
 
-// Funciones auxiliares
-
-function extractCoverageTags(content: string): string[] {
-    const tags: string[] = [];
-    const coverageKeywords = [
-        'incendio', 'lucro cesante', 'sustracción', 'hurto', 'robo',
-        'equipo eléctrico', 'electrónico', 'rotura maquinaria',
-        'responsabilidad civil', 'rc', 'vidrios', 'infidelidad',
-        'transporte', 'asistencia', 'huelga', 'terremoto'
-    ];
-    
-    const lowerContent = content.toLowerCase();
-    for (const keyword of coverageKeywords) {
-        if (lowerContent.includes(keyword)) {
-            tags.push(keyword);
-        }
-    }
-    
-    return tags;
-}
-
-function detectSectionType(content: string): string | null {
-    const lowerContent = content.toLowerCase();
-    
-    if (lowerContent.includes('exclusión') || lowerContent.includes('no cubre')) {
-        return 'EXCLUSION';
-    }
-    if (lowerContent.includes('deducible') || lowerContent.includes('franquicia')) {
-        return 'DEDUCIBLE';
-    }
-    if (lowerContent.includes('condición') || lowerContent.includes('requisito')) {
-        return 'CONDICION';
-    }
-    if (lowerContent.includes('cobertura') || lowerContent.includes('garantía')) {
-        return 'COBERTURA';
-    }
-    
-    return 'GENERAL';
-}
-
-// Búsqueda por similitud manual (fallback)
-async function manualSimilaritySearch(
-    insurerName: string,
-    queryEmbedding: number[],
-    filter?: { clauseId?: string; section?: string },
-    limit: number = 5
-): Promise<RetrievedChunk[]> {
-    console.log('⚠️ [VectorStore] Using manual similarity search (fallback)');
-    
-    // Obtener todos los chunks del caché o de Supabase
-    const collectionName = insurerName.toLowerCase().replace(/\s+/g, '_');
-    let chunks: ChunkRecord[] = [];
-    
-    if (chunksCache.has(collectionName)) {
-        chunks = chunksCache.get(collectionName)!;
-    } else {
-        // Obtener de Supabase
-        const { data, error } = await supabase
-            .from('chunks')
-            .select('id, content, metadata, embedding');
-        
-        if (!error && data) {
-            chunks = data as ChunkRecord[];
-            chunksCache.set(collectionName, chunks);
-        }
-    }
-    
-    // Calcular similitudes
-    const scored = chunks.map(chunk => ({
-        ...chunk,
-        similarity: cosineSimilarity(queryEmbedding, chunk.embedding)
-    }));
-    
-    // Ordenar por similitud
-    scored.sort((a, b) => b.similarity - a.similarity);
-    
-    // Tomar los mejores resultados
-    return scored.slice(0, limit).map(c => ({
-        id: c.id,
-        content: c.content,
-        metadata: c.metadata,
-        distance: 1 - c.similarity
-    }));
-}
-
-function cosineSimilarity(a: number[], b: number[]): number {
-    let dotProduct = 0;
-    let normA = 0;
-    let normB = 0;
-    for (let i = 0; i < a.length; i++) {
-        dotProduct += a[i] * b[i];
-        normA += a[i] * a[i];
-        normB += b[i] * b[i];
-    }
-    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-}
+console.log('📦 [VectorStore] Initialized with Supabase/pgvector');
