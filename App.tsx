@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Sparkles, MessageSquare, ShieldCheck, LogOut, LayoutDashboard, Home, BookOpen, Activity, Library } from 'lucide-react';
+import { Sparkles, MessageSquare, ShieldCheck, LogOut, LayoutDashboard, BookOpen, Activity, Library } from 'lucide-react';
 import FileUploader from './components/FileUploader';
 import ComparisonReport from './components/ComparisonReport';
 import ChatBot from './components/ChatBot';
@@ -8,7 +8,7 @@ import TechnicalDashboard from './components/TechnicalDashboard';
 import ClientSelector from './components/ClientSelector';
 import { ClauseAdmin } from './components/ClauseAdmin';
 import { ClauseSelector } from './components/ClauseSelector';
-import { analyzeQuotesWithGemini, createChatSession } from './services/geminiService';
+import { analyzeQuotesWithGemini } from './services/geminiService';
 import { storageService } from './services/storageService';
 import { ComparisonReport as ReportType, AppStatus, UserProfile, Client } from './types';
 import { Chat } from "@google/genai";

@@ -1,8 +1,22 @@
+export interface Citation {
+    text: string;
+    source: string;
+    page?: number;
+    section?: string;
+}
+
 export interface CoverageItem {
     name: string;
     value: string;
     description?: string;
     isPositive?: boolean;
+    citations?: Citation[];
+    deductible?: string;
+    // Semantic matching fields
+    canonicalName?: string;
+    categoryId?: number | null;
+    matchConfidence?: number;
+    matchMethod?: 'thesaurus' | 'fuzzy' | 'embedding' | 'llm' | null;
 }
 
 export type AlertLevel = 'CRITICAL' | 'WARNING' | 'GOOD' | 'INFO';

@@ -31,7 +31,7 @@ async function verifyConnection() {
       p_insurer_id: '00000000-0000-0000-0000-000000000000',
       p_coverage_tag: null,
       p_match_count: 1
-    });
+    } as any);
 
     if (vectorError && !vectorError.message.includes('insurer')) {
       console.error('   ❌ Error:', vectorError.message);

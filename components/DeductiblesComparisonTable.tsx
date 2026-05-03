@@ -1,23 +1,36 @@
 import React from 'react';
 import { Scale, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import { QuoteAnalysis } from '../types';
+import { PLANTILLA_ITEMS } from '../constants';
 
 interface DeductiblesComparisonTableProps {
   quotes: QuoteAnalysis[];
 }
 
+// Normalize text for comparison
+const normalizeText = (text: string | undefined | null) => {
+  if (!text || typeof text !== 'string') return "";
+  return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+};
+
 export const DeductiblesComparisonTable: React.FC<DeductiblesComparisonTableProps> = ({ quotes }) => {
-  // Extraer todas las coberturas que tienen deducibles
-  const coverageSet = new Set<string>();
-  quotes?.forEach(q => {
-    q.coverages?.forEach((c: any) => {
-      if (c.deductible && c.deductible !== 'No aplica' && c.deductible !== '' && c.name) {
-        coverageSet.add(c.name);
-      }
+  // Use canonical categories (14 fixed) instead of dynamic coverage names
+  const categories = PLANTILLA_ITEMS.map((name, index) => ({
+    id: index + 1,
+    name,
+  }));
+
+  // Helper to find coverage by category for a quote
+  const findCoverageByCategory = (quote: QuoteAnalysis, categoryId: number, categoryName: string) => {
+    return quote.coverages?.find((c: any) => {
+      // Match by categoryId (preferred)
+      if (c.categoryId === categoryId) return true;
+      // Fallback: match by canonicalName or name
+      const coverageName = c.canonicalName || c.name;
+      if (normalizeText(coverageName) === normalizeText(categoryName)) return true;
+      return false;
     });
-  });
-  
-  const coverages = Array.from(coverageSet);
+  };
   
   // Función para parsear deducible
   const parseDeductible = (deductibleText: string | undefined | null) => {
@@ -57,7 +70,12 @@ export const DeductiblesComparisonTable: React.FC<DeductiblesComparisonTableProp
     return 'neutral';
   };
   
-  if (coverages.length === 0) {
+  // Check if any quote has deductibles
+  const hasAnyDeductibles = quotes.some(q => 
+    q.coverages?.some((c: any) => c.deductible && c.deductible !== 'No aplica' && c.deductible !== '')
+  );
+  
+  if (!hasAnyDeductibles) {
     return (
       <div className="bg-slate-50 p-8 rounded-xl text-center">
         <Info className="mx-auto mb-4 text-slate-400" size={48} />
@@ -72,7 +90,7 @@ export const DeductiblesComparisonTable: React.FC<DeductiblesComparisonTableProp
       <div className="p-6 bg-gradient-to-r from-indigo-50 to-white border-b border-slate-200">
         <h3 className="font-bold text-slate-800 flex items-center text-lg">
           <Scale className="mr-3 text-indigo-600" size={24} />
-          Comparativa de Deducibles por Cobertura
+          Comparativa de Deducibles por Categoría
         </h3>
         <div className="flex flex-wrap gap-4 mt-3 text-xs">
           <div className="flex items-center gap-2">
@@ -95,7 +113,7 @@ export const DeductiblesComparisonTable: React.FC<DeductiblesComparisonTableProp
           <thead className="bg-slate-100 text-slate-700 font-bold text-xs uppercase">
             <tr>
               <th className="px-4 py-3 text-left w-56 sticky left-0 bg-slate-100 border-r border-slate-200 z-10">
-                Cobertura
+                Categoría
               </th>
               {quotes.map((q, i) => (
                 <th key={i} className="px-4 py-3 text-center min-w-[200px]">
@@ -105,13 +123,16 @@ export const DeductiblesComparisonTable: React.FC<DeductiblesComparisonTableProp
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {coverages.map((coverageName, idx) => (
-              <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+            {categories.map((category) => (
+              <tr key={category.id} className="hover:bg-slate-50/50 transition-colors">
                 <td className="px-4 py-4 font-medium text-slate-700 bg-white sticky left-0 border-r border-slate-100 z-10">
-                  {coverageName}
+                  <div className="flex items-center gap-2">
+                    <span>{category.name}</span>
+                    <span className="text-xs text-slate-400 font-normal">(#{category.id})</span>
+                  </div>
                 </td>
                 {quotes.map((q, qIdx) => {
-                  const coverage = q.coverages?.find((c: any) => c.name === coverageName);
+                  const coverage = findCoverageByCategory(q, category.id, category.name);
                   const deductible = coverage?.deductible || '';
                   const { percentage, minimum, appliesTo } = parseDeductible(deductible);
                   const severity = getSeverity(percentage, appliesTo);
@@ -125,7 +146,7 @@ export const DeductiblesComparisonTable: React.FC<DeductiblesComparisonTableProp
                   
                   return (
                     <td key={qIdx} className="px-4 py-4 text-center">
-                      {deductible ? (
+                      {deductible && deductible !== 'No aplica' ? (
                         <div className={`inline-flex flex-col items-center p-3 rounded-lg border ${severityClasses[severity]}`}>
                           {percentage && (
                             <span className="text-lg font-bold">{percentage}</span>

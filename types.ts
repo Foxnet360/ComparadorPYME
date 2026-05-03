@@ -12,6 +12,11 @@ export interface CoverageItem {
   isPositive?: boolean;
   citations?: Citation[];
   deductible?: string;
+  // Semantic matching fields
+  canonicalName?: string;
+  categoryId?: number | null;
+  matchConfidence?: number;
+  matchMethod?: 'thesaurus' | 'fuzzy' | 'embedding' | 'llm' | null;
 }
 
 export type AlertLevel = 'CRITICAL' | 'WARNING' | 'GOOD' | 'INFO';
@@ -46,6 +51,22 @@ export interface QuoteAnalysis {
   clientAnalysis: string;
   technicalAnalysis: string;
   score: number;
+  extractionConfidence?: number;
+  confidenceBreakdown?: {
+    coverageCompleteness: number;
+    numericParseSuccess: number;
+    validationPassRate: number;
+    schemaCompliance: number;
+  };
+  needsReview?: boolean;
+  isCritical?: boolean;
+  validationFlags?: Array<{
+    field: string;
+    severity: 'CRITICAL' | 'WARNING' | 'INFO';
+    message: string;
+    code: string;
+  }>;
+  validationSummary?: string;
 }
 
 export interface ComparisonReport {

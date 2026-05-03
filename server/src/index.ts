@@ -5,66 +5,61 @@ import path from 'path';
 import fs from 'fs';
 import multer from 'multer';
 
-// Try multiple paths for .env file (works in dev and production)
-const possibleEnvPaths = [
-    path.resolve(process.cwd(), '.env'),
-    path.resolve(__dirname, '../.env'),
-    path.resolve(__dirname, '../../.env'),
-];
+const envPath = path.resolve(__dirname, '../.env');
+const result = dotenv.config({ path: envPath });
 
-let envLoaded = false;
-for (const envPath of possibleEnvPaths) {
-    if (fs.existsSync(envPath)) {
-        console.log(`✅ Loading env from: ${envPath}`);
-        const result = dotenv.config({ path: envPath });
-        if (!result.error) {
-            envLoaded = true;
-            break;
-        }
-    }
-}
-
-if (!envLoaded) {
-    console.warn("⚠️ No .env file found. Using environment variables from system.");
+if (result.error) {
+    console.warn("⚠️ Dotenv error:", result.error.message);
 }
 
 // Map VITE_ variable to standard variable if needed
 if (!process.env.GEMINI_API_KEY && process.env.VITE_GEMINI_API_KEY) {
     process.env.GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY;
 }
-console.log(`Gemini API Key defined: ${!!process.env.GEMINI_API_KEY}`);
 
 // Import controllers after dotenv is loaded (they depend on env vars)
 import { analysisController } from './controllers/analysisController';
 import { ragClauseController } from './controllers/ragClauseController';
+import { clauseController } from './controllers/clauseController';
 
 const app = express();
-const port = process.env.PORT || 8080;
+const port = parseInt(process.env.PORT || '8080', 10);
 
 // Trigger restart: 1
-app.use(cors());
+app.use(cors({
+    origin: ['https://compapyme.baconhacks.com', 'http://localhost:3000', 'http://localhost:8080'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // Basic health check
 // Basic health check
 app.get('/health', (req, res) => {
-    res.send('CSA Comparator API is running');
+    res.json({ status: 'ok', message: 'CSA Comparator API is running', timestamp: new Date().toISOString() });
 });
 
-// Serve static files from the 'public' directory (built frontend)
-// Serve static files from the 'public' directory (built frontend)
-const potentialPaths = [
-    path.join(__dirname, 'public'), // Production (bundled sibling)
-    path.join(__dirname, '../public'), // Standard build structure
-    path.join(__dirname, '../../dist') // Local dev (from server/src to root dist)
-];
-
-const publicDir = potentialPaths.find(p => fs.existsSync(p)) || path.join(__dirname, 'public');
-console.log(`Serving static files from: ${publicDir}`);
-
-if (fs.existsSync(publicDir)) {
-    app.use(express.static(publicDir));
-}
+// Root route - API info (only if not serving static files)
+app.get('/api', (req, res) => {
+    res.json({
+        name: 'CSA Comparator API',
+        version: '1.0.0',
+        status: 'running',
+        endpoints: {
+            health: '/health',
+            analyze: '/api/analyze',
+            analyzeRag: '/api/analyze-rag',
+            history: '/api/history',
+            documents: '/api/documents',
+            search: '/api/search',
+            rag: {
+                clauses: '/api/rag/clauses',
+                search: '/api/rag/search',
+                analyze: '/api/rag/analyze'
+            }
+        }
+    });
+});
 
 // Ensure uploads directory exists (Use /tmp for Cloud Run)
 const uploadDir = process.env.NODE_ENV === 'production' ? '/tmp/uploads' : path.join(__dirname, '../uploads');
@@ -104,6 +99,11 @@ app.post('/api/rag/clauses/:id/reindex', upload.single('file'), ragClauseControl
 app.post('/api/rag/analyze', upload.single('file'), ragClauseController.analyzeQuote);
 app.post('/api/rag/search', ragClauseController.search);
 
+// Clause Indexing routes (async RAG foundation)
+app.post('/api/clauses/index', upload.single('file'), clauseController.indexClause);
+app.get('/api/clauses/status/:jobId', clauseController.getJobStatus);
+app.get('/api/clauses/jobs', clauseController.listJobs);
+
 // NEW: Document Indexing routes
 import { documentController } from './controllers/documentController';
 import { searchController } from './controllers/searchController';
@@ -123,19 +123,53 @@ app.post('/api/search', searchController.search);
 app.post('/api/search/by-coverage', searchController.searchByCoverage);
 app.post('/api/search/compare', searchController.compareDocuments);
 
-// Catch-all route to serve index.html for client-side routing
-// This must remain AT THE END, after all API routes
-// Note: Express 5 requires regex or different syntax for catch-all
-app.get(/.*/, (req, res) => {
-    if (fs.existsSync(path.join(publicDir, 'index.html'))) {
-        res.sendFile(path.join(publicDir, 'index.html'));
-    } else {
-        res.status(404).send('Not Found');
+// Serve static files from frontend build in production
+if (process.env.NODE_ENV === 'production') {
+    const staticPath = path.join(__dirname, '../../dist');
+    if (fs.existsSync(staticPath)) {
+        app.use(express.static(staticPath));
+        
+        // Serve index.html for all non-API routes (SPA support)
+        app.use((req, res) => {
+            if (!req.path.startsWith('/api')) {
+                res.sendFile(path.join(staticPath, 'index.html'));
+            } else {
+                res.status(404).json({
+                    error: 'Not Found',
+                    message: `Route ${req.method} ${req.path} not found`
+                });
+            }
+        });
     }
-});
+} else {
+    // Catch-all route for undefined paths (development)
+    app.use((req, res) => {
+        res.status(404).json({
+            error: 'Not Found',
+            message: `Route ${req.method} ${req.path} not found`,
+            availableEndpoints: [
+                'GET /',
+                'GET /health',
+                'POST /api/analyze',
+                'POST /api/analyze-rag',
+                'GET /api/history',
+                'GET /api/documents',
+                'POST /api/documents',
+                'POST /api/search',
+                'POST /api/rag/clauses',
+                'GET /api/rag/clauses'
+            ]
+        });
+    });
+}
 
-app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`API Key Loaded: ${!!process.env.GEMINI_API_KEY}`);
+console.log('🚀 About to start server...');
+console.log('📍 Port:', port);
+console.log('📍 Host: 0.0.0.0');
+console.log('📍 NODE_ENV:', process.env.NODE_ENV);
+console.log('📍 Static path:', path.join(__dirname, '../../dist'));
+console.log('📍 Static exists:', fs.existsSync(path.join(__dirname, '../../dist')));
+
+app.listen(port, '0.0.0.0', () => {
+    console.log(`✅ Server running on port ${port}`);
 });

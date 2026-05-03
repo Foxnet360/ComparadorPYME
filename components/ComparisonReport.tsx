@@ -6,6 +6,7 @@ import { DISCLAIMER_TEXT, PLANTILLA_ITEMS } from '../constants';
 import { generatePDF } from '../services/pdfService';
 import { DeductiblesComparisonTable } from './DeductiblesComparisonTable';
 import { AuditSection } from './AuditSection';
+import { UnifiedCoverageMatrix } from './UnifiedCoverageMatrix';
 
 interface ComparisonReportProps {
   report: ReportType;
@@ -21,6 +22,7 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
   const [activeTab, setActiveTab] = useState<'resumen' | 'coberturas' | 'deducibles' | 'auditoria'>('resumen');
   const [viewMode, setViewMode] = useState<'client' | 'technical'>('client');
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showRagReferences, setShowRagReferences] = useState(false);
   const [pdfOptions, setPdfOptions] = useState<{ title: string, logo?: string, color: [number, number, number] }>({
     title: "Reporte Ejecutivo de Seguros",
     color: [79, 70, 229]
@@ -80,6 +82,19 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
+      {/* Confidence Banner */}
+      {report.quotes.some(q => q.needsReview) && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+          <AlertTriangle className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
+          <div>
+            <h3 className="font-semibold text-amber-800">Extracción Requiere Revisión</h3>
+            <p className="text-sm text-amber-700 mt-1">
+              Algunas cotizaciones tienen baja confianza de extracción. Se recomienda verificar los datos manualmente.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header Actions & View Toggle */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200 relative">
         <div>
@@ -109,6 +124,17 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
           </div>
 
           <div className="h-6 w-px bg-slate-200 hidden sm:block"></div>
+
+          {/* RAG References Toggle */}
+          <button
+            onClick={() => setShowRagReferences(!showRagReferences)}
+            className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg transition-all shadow-sm text-sm font-medium border ${showRagReferences ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+            title="Mostrar/Ocultar referencias RAG"
+          >
+            <BookOpen size={18} />
+            <span className="hidden sm:inline">Referencias RAG</span>
+            <span className={`w-2 h-2 rounded-full ${showRagReferences ? 'bg-indigo-500' : 'bg-slate-300'}`}></span>
+          </button>
 
           <button
             onClick={() => setShowExportModal(true)}
@@ -238,6 +264,51 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
                     <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                       <div className={`h-full rounded-full ${q.score >= 80 ? 'bg-green-500' : q.score >= 60 ? 'bg-yellow-400' : 'bg-red-400'}`} style={{ width: `${q.score}%` }}></div>
                     </div>
+                    
+                    {/* Confidence Indicator */}
+                    {q.extractionConfidence !== undefined && (
+                      <div className="mt-3 pt-3 border-t border-slate-100">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-slate-500">Confianza de Extracción</span>
+                          <span className={`text-xs font-bold ${
+                            q.extractionConfidence >= 90 ? 'text-green-600' : 
+                            q.extractionConfidence >= 75 ? 'text-yellow-600' : 
+                            q.extractionConfidence >= 50 ? 'text-orange-600' : 'text-red-600'
+                          }`}>
+                            {q.extractionConfidence}/100
+                            {q.needsReview && <span className="ml-1">⚠️</span>}
+                          </span>
+                        </div>
+                        <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full ${
+                              q.extractionConfidence >= 90 ? 'bg-green-500' : 
+                              q.extractionConfidence >= 75 ? 'bg-yellow-400' : 
+                              q.extractionConfidence >= 50 ? 'bg-orange-400' : 'bg-red-400'
+                            }`} 
+                            style={{ width: `${q.extractionConfidence}%` }}
+                          ></div>
+                        </div>
+                        
+                        {/* Validation Flags */}
+                        {q.validationFlags && q.validationFlags.length > 0 && viewMode === 'technical' && (
+                          <div className="mt-2 space-y-1">
+                            {q.validationFlags.slice(0, 3).map((flag, fidx) => (
+                              <div key={fidx} className={`text-xs px-2 py-1 rounded ${
+                                flag.severity === 'CRITICAL' ? 'bg-red-50 text-red-700' :
+                                flag.severity === 'WARNING' ? 'bg-amber-50 text-amber-700' :
+                                'bg-blue-50 text-blue-700'
+                              }`}>
+                                {flag.message}
+                              </div>
+                            ))}
+                            {q.validationFlags.length > 3 && (
+                              <div className="text-xs text-slate-500">+{q.validationFlags.length - 3} más...</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -333,76 +404,11 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
 
       {/* --- TAB CONTENT: COBERTURAS --- */}
       {activeTab === 'coberturas' && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in duration-300">
-          <div className="p-6 bg-slate-50 border-b border-slate-200">
-            <h3 className="font-bold text-slate-800 flex items-center">
-              <ListChecks className="mr-2 text-indigo-600" size={20} />
-              Plantilla PYME: Comparativo Lado a Lado
-            </h3>
-            <p className="text-sm text-slate-500 mt-1">
-              Validación de los ítems esenciales del ramo. Se utiliza normalización para cruzar los datos.
-            </p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-white text-slate-600 uppercase font-bold text-xs border-b border-slate-200">
-                <tr>
-                  <th className="px-6 py-4 sticky left-0 bg-white border-r border-slate-100 min-w-[250px] shadow-[4px_0_10px_-5px_rgba(0,0,0,0.1)] z-10">
-                    Rubro Normalizado
-                  </th>
-                  {report.quotes.map((q, i) => (
-                    <th key={i} className="px-6 py-4 min-w-[220px] bg-slate-50/50">{q.insurerName}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {PLANTILLA_ITEMS.map((item, rowIdx) => (
-                  <tr key={rowIdx} className="hover:bg-slate-50/80 transition-colors group">
-                    <td className="px-6 py-4 font-semibold text-slate-700 bg-white sticky left-0 border-r border-slate-100 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)] z-10 group-hover:bg-slate-50">
-                      {item}
-                    </td>
-                    {report.quotes.map((q, colIdx) => {
-                      const found = (q.coverages || []).find(c => {
-                        if (!c.name) return false;
-                        const nItem = normalizeText(item);
-                        const nName = normalizeText(c.name);
-                        return nName === nItem || nName.includes(nItem) || nItem.includes(nName);
-                      });
-
-                      const value = found ? found.value : 'No Especificado';
-                      // Solo marcar como EXCLUIDO si el valor es EXACTAMENTE "EXCLUIDO", "NO CUBRE" o "NO APLICA"
-                      // No usar .includes() para evitar falsos positivos (ej: "NO CUBRE hasta 100M" no es excluido)
-                      const upperValue = value.toUpperCase().trim();
-                      const isExcluded = upperValue === 'EXCLUIDO' || upperValue === 'NO CUBRE' || upperValue === 'NO APLICA' || upperValue === 'EXCLUDED';
-                      const isUnspecified = upperValue === 'NO ESPECIFICADO' || upperValue === '' || upperValue === 'N/A';
-                      const citations = found?.citations || [];
-
-                      return (
-                        <td key={colIdx} className={`px-6 py-4 leading-relaxed align-top ${isExcluded ? 'text-red-500 bg-red-50/30 italic' : isUnspecified ? 'text-slate-400 italic' : 'text-slate-600'}`}>
-                          <div className="font-medium">{value}</div>
-                          {citations.length > 0 && (
-                            <div className="mt-3 text-xs text-slate-600 bg-slate-100/80 p-2.5 border border-slate-200 rounded-md">
-                              <span className="font-semibold flex items-center mb-1.5 text-slate-700">
-                                <Info size={12} className="mr-1.5" /> Referencias RAG:
-                              </span>
-                              {citations.map((c, i) => (
-                                <div key={i} className="mb-2 last:mb-0">
-                                  <span className="italic block mb-1">"{c.text}"</span>
-                                  <div className="text-[10px] text-indigo-700 font-mono bg-indigo-50 inline-block px-1.5 py-0.5 rounded border border-indigo-100">
-                                    {c.source} {c.section ? `• Sec: ${c.section}` : ''} {c.page ? `• Pág: ${c.page}` : ''}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="animate-in fade-in duration-300">
+          <UnifiedCoverageMatrix 
+            quotes={report.quotes} 
+            showRagReferences={showRagReferences}
+          />
         </div>
       )}
 

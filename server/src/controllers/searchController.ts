@@ -44,13 +44,14 @@ export const searchController = {
         p_section_types: sectionType ? [sectionType] : null,
         p_match_count: parseInt(limit),
         p_min_similarity: 0.6,
-      });
+      } as any);
 
       if (error) {
         throw handleSupabaseError(error);
       }
 
-      if (!chunks || chunks.length === 0) {
+      const chunksData = (chunks as unknown as any[]) || [];
+      if (chunksData.length === 0) {
         res.json({
           success: true,
           query,
@@ -61,13 +62,15 @@ export const searchController = {
       }
 
       // Obtener imágenes de páginas para los resultados
-      const chunkIds = chunks.map((c: any) => c.id);
-      const { data: chunksWithImages } = await supabase.rpc('get_chunks_with_images', {
+      const chunkIds = chunksData.map((c: any) => c.id);
+      const { data: chunksWithImagesRaw } = await supabase.rpc('get_chunks_with_images', {
         p_chunk_ids: chunkIds,
-      });
+      } as any);
+
+      const chunksWithImages = (chunksWithImagesRaw || []) as any[];
 
       // Combinar resultados con imágenes
-      const results = chunks.map((chunk: any) => {
+      const results = chunksData.map((chunk: any) => {
         const imageData = chunksWithImages?.find((img: any) => img.chunk_id === chunk.id);
         return {
           chunkId: chunk.id,
@@ -227,7 +230,7 @@ export const searchController = {
         p_clause_document_id: clauseDocumentId,
         p_coverage_tag: coverageTag || 'general',
         p_match_count: 5,
-      });
+      } as any);
 
       if (error) {
         throw handleSupabaseError(error);

@@ -159,9 +159,9 @@ export const semanticChunker = {
         const patterns = [
             { regex: /CAP[IÍ]TULO\s+([IVXLCDM]+|[0-9]+)/gi, type: 'chapter' as const, level: 1 },
             { regex: /SECCI[OÓ]N\s+([IVXLCDM]+|[0-9]+)/gi, type: 'section' as const, level: 2 },
-            { regex: /^(\d+\.\d+)\.?\s+/gm, type: 'clause' as const, level: 3 },
+            { regex: /^\s*(\d+\.\d+)\.?\s+/gm, type: 'clause' as const, level: 3 },
             { regex: /ART[IÍ]CULO\s+(\d+|[IVXLCDM]+)/gi, type: 'clause' as const, level: 3 },
-            { regex: /^(\d+)\.\s+/gm, type: 'clause' as const, level: 3 },
+            { regex: /^\s*(\d+)\.\s+/gm, type: 'clause' as const, level: 3 },
         ];
 
         for (const pattern of patterns) {
