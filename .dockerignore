@@ -1,0 +1,47 @@
+# Git
+.git
+.gitignore
+
+# Dependencies
+node_modules
+server/node_modules
+
+# Build outputs (se construyen dentro del contenedor)
+dist
+server/dist
+
+# Environment files (Railway inyecta las suyas)
+.env
+.env.local
+.env.*.local
+.env.docker
+server/.env
+
+# Uploads
+server/uploads
+uploads
+
+# Logs
+logs
+*.log
+
+# IDE
+.vscode
+.idea
+.DS_Store
+
+# Testing
+coverage
+*.test.ts
+*.test.tsx
+server/src/**/__tests__
+
+# Documentation (no necesaria en producción)
+*.md
+!README.md
+
+# ChromaDB
+chroma_data/
+
+# OpenSpec
+.openspec

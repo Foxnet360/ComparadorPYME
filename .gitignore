@@ -8,9 +8,10 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-# dist commented for production build
-# dist
-# dist-ssr
+# Build outputs
+dist
+dist-ssr
+server/dist
 *.local
 
 # Environment variables (SECRETS)
