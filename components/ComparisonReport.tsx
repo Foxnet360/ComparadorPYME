@@ -7,7 +7,7 @@ import { generatePDF } from '../services/pdfService';
 import { DeductiblesComparisonTable } from './DeductiblesComparisonTable';
 import { AuditSection } from './AuditSection';
 import { UnifiedCoverageMatrix } from './UnifiedCoverageMatrix';
-import { formatCOP } from '../utils/formatCurrency';
+import { formatCOP, formatCOPMillions } from '../utils/formatCurrency';
 
 interface ComparisonReportProps {
   report: ReportType;
