@@ -70,15 +70,36 @@ export const analyzeQuotesWithGemini = async (
   }
 };
 
-export const createChatSession = (initialContext?: string) => {
-  // Chat logic will be moved to backend later or kept client-side if just using context
-  // For now, let's keep it simple or mock it to avoid breaking changes immediately.
-  // Ideally, chat should also go through backend to keep API key hidden.
-  // But for this "step 1", we focus on the upload/analysis part.
+export interface ChatSession {
+  sendMessageStream: (params: { message: string }) => AsyncIterableIterator<any>;
+}
 
-  // Returning a dummy object or throwing error? 
-  // Let's implement a backend chat endpoint properly in next step if needed.
-  // For now, we might leave this as a TODO or implementing a simple backend proxy.
-  console.warn("Chat session creation needs to be migrated to backend.");
-  return null;
+export const createChatSession = (reportContext?: any): ChatSession | null => {
+  return {
+    sendMessageStream: async function* ({ message }: { message: string }) {
+      const response = await fetch(`${API_BASE_URL}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message,
+          reportContext,
+          useRAG: true
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Chat error: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      // Yield the response in the expected format
+      yield {
+        text: result.text,
+        citations: result.citations
+      };
+    }
+  };
 };
