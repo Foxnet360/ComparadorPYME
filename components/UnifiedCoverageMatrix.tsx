@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { QuoteAnalysis, CoverageItem } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
-import { Info, AlertTriangle, ListChecks } from 'lucide-react';
+import { Info, AlertTriangle, ListChecks, CheckCircle, LayoutGrid, Table as TableIcon, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatPercentage, formatCOP } from '../utils/formatCurrency';
 
 interface UnifiedCoverageMatrixProps {
@@ -77,7 +77,41 @@ const formatCoverageValue = (value: string | undefined | null): string => {
   return trimmed;
 };
 
+// Group uncategorized coverages by canonicalName suggestion
+interface GroupedCoverage {
+  canonicalName: string;
+  coverages: { quoteIdx: number; coverage: CoverageItem }[];
+}
+
+const groupUncategorizedBySemanticSimilarity = (
+  uncategorizedCoverages: { quoteIdx: number; coverage: CoverageItem }[]
+): GroupedCoverage[] => {
+  const groups: Record<string, { quoteIdx: number; coverage: CoverageItem }[]> = {};
+
+  uncategorizedCoverages.forEach((item) => {
+    const key = item.coverage.canonicalName || 'Sin clasificar';
+    if (!groups[key]) {
+      groups[key] = [];
+    }
+    groups[key].push(item);
+  });
+
+  return Object.entries(groups).map(([canonicalName, coverages]) => ({
+    canonicalName,
+    coverages,
+  }));
+};
+
+// Get icon based on confidence level
+const getConfidenceIcon = (confidence: number | undefined) => {
+  if (confidence === undefined || confidence === null) return null;
+  if (confidence >= 0.9) return <CheckCircle size={14} className="text-green-600" />;
+  if (confidence >= 0.7) return <Info size={14} className="text-yellow-600" />;
+  return <AlertTriangle size={14} className="text-red-600" />;
+};
+
 export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ quotes, showRagReferences = false }) => {
+  const [viewMode, setViewMode] = useState<'grouped' | 'matrix'>('grouped');
   // Build category index (1-14)
   const categories = PLANTILLA_ITEMS.map((name, index) => ({
     id: index + 1,
@@ -199,27 +233,155 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
       {uncategorizedCoverages.length > 0 && (
         <div className="bg-amber-50 rounded-xl border border-amber-200 shadow-sm overflow-hidden">
           <div className="p-6 bg-amber-100/50 border-b border-amber-200">
-            <h3 className="font-bold text-amber-800 flex items-center">
-              <AlertTriangle className="mr-2 text-amber-600" size={20} />
-              Coberturas No Categorizadas
-            </h3>
-            <p className="text-sm text-amber-700 mt-1">
-              Estas coberturas no pudieron ser mapeadas a ninguna categoría canónica automáticamente.
-            </p>
-          </div>
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {uncategorizedCoverages.map((item, idx) => (
-                <div key={idx} className="bg-white rounded-lg border border-amber-200 p-4">
-                  <div className="font-medium text-slate-800">{item.coverage.name}</div>
-                  <div className="text-sm text-slate-600 mt-1">{formatCoverageValue(item.coverage.value)}</div>
-                  <div className="text-xs text-slate-500 mt-2">{item.coverage.deductible && `Ded: ${formatCoverageValue(item.coverage.deductible)}`}</div>
-                  <div className="mt-2 text-xs text-amber-600 font-medium">
-                    {quotes[item.quoteIdx]?.insurerName}
-                  </div>
-                </div>
-              ))}
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-amber-800 flex items-center">
+                  <AlertTriangle className="mr-2 text-amber-600" size={20} />
+                  Coberturas No Categorizadas
+                  <span className="ml-2 text-sm font-normal text-amber-600">({uncategorizedCoverages.length})</span>
+                </h3>
+                <p className="text-sm text-amber-700 mt-1">
+                  Agrupadas por similitud semántica según el tesauro.
+                </p>
+              </div>
+              {/* View Toggle */}
+              <div className="flex bg-white rounded-lg border border-amber-300 p-1">
+                <button
+                  onClick={() => setViewMode('grouped')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    viewMode === 'grouped'
+                      ? 'bg-amber-500 text-white shadow-sm'
+                      : 'text-amber-700 hover:bg-amber-50'
+                  }`}
+                >
+                  <LayoutGrid size={16} />
+                  <span className="hidden sm:inline">Agrupada</span>
+                </button>
+                <button
+                  onClick={() => setViewMode('matrix')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    viewMode === 'matrix'
+                      ? 'bg-amber-500 text-white shadow-sm'
+                      : 'text-amber-700 hover:bg-amber-50'
+                  }`}
+                >
+                  <TableIcon size={16} />
+                  <span className="hidden sm:inline">Matriz</span>
+                </button>
+              </div>
             </div>
+          </div>
+
+          <div className="p-6">
+            {viewMode === 'grouped' ? (
+              /* Grouped View */
+              <div className="space-y-4">
+                {groupUncategorizedBySemanticSimilarity(uncategorizedCoverages).map((group, groupIdx) => (
+                  <div key={groupIdx} className="bg-white rounded-lg border border-amber-200 overflow-hidden">
+                    <div className="px-4 py-3 bg-amber-50/50 border-b border-amber-100">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-amber-800">
+                          {group.canonicalName === 'Sin clasificar' ? 'Sin clasificar' : `Sugerido: ${group.canonicalName}`}
+                        </span>
+                        <span className="text-xs text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
+                          {group.coverages.length} cobertura{group.coverages.length > 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {group.coverages.map((item, idx) => (
+                        <div key={idx} className="bg-slate-50 rounded-lg p-3 border border-slate-100 hover:shadow-md transition-shadow">
+                          <div className="flex items-start justify-between">
+                            <div className="font-medium text-slate-800 text-sm">{item.coverage.name}</div>
+                            {getConfidenceIcon(item.coverage.matchConfidence)}
+                          </div>
+                          <div className="text-sm text-slate-600 mt-1">{formatCoverageValue(item.coverage.value)}</div>
+                          {item.coverage.deductible && (
+                            <div className="text-xs text-slate-500 mt-1">
+                              Ded: {formatCoverageValue(item.coverage.deductible)}
+                            </div>
+                          )}
+                          <div className="mt-2 flex items-center gap-2 flex-wrap">
+                            {item.coverage.matchConfidence !== undefined && (
+                              <span 
+                                className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getConfidenceColor(item.coverage.matchConfidence)}`}
+                                title={`Confianza: ${formatPercentage(item.coverage.matchConfidence, 0)}`}
+                              >
+                                {formatPercentage(item.coverage.matchConfidence, 0)}
+                              </span>
+                            )}
+                            {item.coverage.matchMethod && (
+                              <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                                {getMethodLabel(item.coverage.matchMethod)}
+                              </span>
+                            )}
+                            <span className="text-xs text-amber-600 font-medium ml-auto">
+                              {quotes[item.quoteIdx]?.insurerName}
+                            </span>
+                          </div>
+                          {item.coverage.name !== item.coverage.canonicalName && item.coverage.canonicalName && (
+                            <div className="mt-1 text-xs text-slate-400 italic">
+                              → {item.coverage.canonicalName}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              /* Matrix View */
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-amber-100 text-amber-800 font-bold text-xs uppercase sticky top-0">
+                    <tr>
+                      <th className="px-4 py-3 text-left w-64 sticky left-0 bg-amber-100 border-r border-amber-200 z-10">
+                        Cobertura
+                      </th>
+                      {quotes.map((q, i) => (
+                        <th key={i} className="px-4 py-3 text-center min-w-[180px]">
+                          {q.insurerName}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-amber-100">
+                    {uncategorizedCoverages.map((item, idx) => (
+                      <tr key={idx} className="hover:bg-amber-50/30 transition-colors">
+                        <td className="px-4 py-3 bg-white sticky left-0 border-r border-amber-100 z-10">
+                          <div className="font-medium text-slate-800">{item.coverage.name}</div>
+                          <div className="text-xs text-slate-500 mt-1">
+                            {item.coverage.canonicalName && item.coverage.canonicalName !== item.coverage.name && (
+                              <span className="italic">→ {item.coverage.canonicalName}</span>
+                            )}
+                          </div>
+                          <div className="mt-1 flex items-center gap-1">
+                            {getConfidenceIcon(item.coverage.matchConfidence)}
+                            {item.coverage.matchConfidence !== undefined && (
+                              <span className="text-xs text-slate-500">
+                                {formatPercentage(item.coverage.matchConfidence, 0)}
+                              </span>
+                            )}
+                            {item.coverage.matchMethod && (
+                              <span className="text-xs text-slate-400">| {getMethodLabel(item.coverage.matchMethod)}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <div className="text-slate-700">{formatCoverageValue(item.coverage.value)}</div>
+                          {item.coverage.deductible && (
+                            <div className="text-xs text-slate-500 mt-1">
+                              Ded: {formatCoverageValue(item.coverage.deductible)}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}

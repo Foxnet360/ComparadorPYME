@@ -7,6 +7,7 @@ import { generatePDF } from '../services/pdfService';
 import { DeductiblesComparisonTable } from './DeductiblesComparisonTable';
 import { AuditSection } from './AuditSection';
 import { UnifiedCoverageMatrix } from './UnifiedCoverageMatrix';
+import { CollapsibleText } from './CollapsibleText';
 import { formatCOP, formatCOPMillions } from '../utils/formatCurrency';
 
 interface ComparisonReportProps {
@@ -419,20 +420,19 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
           {/* Tabla Comparativa de Deducibles - Nuevo Componente */}
           <DeductiblesComparisonTable quotes={report.quotes} />
           
-          {/* Texto Completo de Deducibles */}
+          {/* Texto Completo de Deducibles - Colapsable */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
             <div className="flex items-center mb-4 pb-3 border-b border-slate-100">
               <FileText className="mr-2 text-indigo-600" size={20} />
               <h3 className="font-bold text-slate-800">Texto Completo de Deducibles</h3>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-3">
               {report.quotes.map((quote, idx) => (
-                <div key={idx} className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                  <h4 className="font-bold text-slate-700 mb-2">{quote.insurerName}</h4>
-                  <div className="prose prose-sm text-slate-600 whitespace-pre-line leading-7">
+                <CollapsibleText key={idx} title={`${quote.insurerName} - Texto Original`}>
+                  <div className="prose prose-sm text-slate-600 whitespace-pre-line leading-7 bg-slate-50 p-4 rounded-lg">
                     {quote.deductibles || "No detallado."}
                   </div>
-                </div>
+                </CollapsibleText>
               ))}
             </div>
           </div>
