@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { QuoteAnalysis, CoverageItem } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
-import { Info, AlertTriangle, ListChecks, CheckCircle, LayoutGrid, Table as TableIcon, ChevronDown, ChevronUp } from 'lucide-react';
+import { Info, AlertTriangle, ListChecks, CheckCircle, LayoutGrid, Table as TableIcon, ChevronDown, ChevronUp, Trophy } from 'lucide-react';
 import { formatPercentage, formatCOP } from '../utils/formatCurrency';
+import { findWinnerByCategory } from '../utils/winnerDetection';
+import { calculateDifferences, formatDeviation, getDiffClass } from '../utils/diffHighlighting';
 
 interface UnifiedCoverageMatrixProps {
   quotes: QuoteAnalysis[];
   showRagReferences?: boolean;
+  viewMode?: 'client' | 'technical';
 }
 
 // Normalize text for comparison
@@ -110,7 +113,7 @@ const getConfidenceIcon = (confidence: number | undefined) => {
   return <AlertTriangle size={14} className="text-red-600" />;
 };
 
-export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ quotes, showRagReferences = false }) => {
+export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ quotes, showRagReferences = false, viewMode = 'technical' }) => {
   const [viewMode, setViewMode] = useState<'grouped' | 'matrix'>('grouped');
   // Build category index (1-14)
   const categories = PLANTILLA_ITEMS.map((name, index) => ({
@@ -154,76 +157,111 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {categories.map((category) => (
-                <tr key={category.id} className="hover:bg-slate-50/80 transition-colors group">
-                  <td className="px-4 md:px-6 py-3 md:py-4 font-semibold text-slate-700 bg-white sticky left-0 border-r border-slate-100 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)] z-10 group-hover:bg-slate-50">
-                    <div className="flex items-center gap-2">
-                      <span>{category.name}</span>
-                      <span className="text-xs text-slate-400 font-normal">(#{category.id})</span>
-                    </div>
-                  </td>
-                  {quotes.map((quote, colIdx) => {
-                    // Find all coverages for this category
-                    const matchingCoverages = (quote.coverages || []).filter(c => 
+              {categories.map((category) => {
+                // Calculate winner and diffs for this category
+                const winner = findWinnerByCategory(quotes, category.id, category.name);
+                const diffs = calculateDifferences(
+                  quotes.map(q => {
+                    const coverage = q.coverages?.find(c => 
                       c.categoryId === category.id || 
                       normalizeText(c.canonicalName) === normalizeText(category.name) ||
                       normalizeText(c.name) === normalizeText(category.name)
                     );
+                    return coverage?.value;
+                  })
+                );
+                
+                return (
+                  <tr key={category.id} className="hover:bg-slate-50/80 transition-colors group">
+                    <td className="px-4 md:px-6 py-3 md:py-4 font-semibold text-slate-700 bg-white sticky left-0 border-r border-slate-100 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)] z-10 group-hover:bg-slate-50">
+                      <div className="flex items-center gap-2">
+                        <span>{category.name}</span>
+                        <span className="text-xs text-slate-400 font-normal">(#{category.id})</span>
+                        {winner && (
+                          <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+                            🏆
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    {quotes.map((quote, colIdx) => {
+                      // Find all coverages for this category
+                      const matchingCoverages = (quote.coverages || []).filter(c => 
+                        c.categoryId === category.id || 
+                        normalizeText(c.canonicalName) === normalizeText(category.name) ||
+                        normalizeText(c.name) === normalizeText(category.name)
+                      );
 
-                    if (matchingCoverages.length === 0) {
+                      const isWinner = winner?.quoteIdx === colIdx;
+                      const diff = diffs.deviations[colIdx];
+                      const diffClass = diff?.isSignificant ? getDiffClass(diff.deviation, diff.isSignificant) : '';
+
+                      if (matchingCoverages.length === 0) {
+                        return (
+                          <td key={colIdx} className={`px-6 py-4 text-slate-300 italic bg-slate-50/30 ${diffClass}`}>
+                            No incluida
+                          </td>
+                        );
+                      }
+
                       return (
-                        <td key={colIdx} className="px-6 py-4 text-slate-300 italic bg-slate-50/30">
-                          No incluida
+                        <td key={colIdx} className={`px-6 py-4 align-top ${diffClass} ${isWinner ? 'bg-amber-50/50' : ''}`}>
+                          {isWinner && (
+                            <div className="flex items-center gap-1 mb-1 text-amber-600 text-xs font-medium">
+                              <Trophy size={12} />
+                              <span title={winner.reason}>Mejor opción</span>
+                            </div>
+                          )}
+                          {diff?.isSignificant && (
+                            <div className={`text-xs font-medium mb-1 ${diff.isAbove ? 'text-green-600' : 'text-red-600'}`}>
+                              {formatDeviation(diff.deviation)}
+                            </div>
+                          )}
+                          {matchingCoverages.map((coverage, covIdx) => {
+                            const upperValue = coverage.value?.toUpperCase().trim() || '';
+                            const isExcluded = upperValue === 'EXCLUIDO' || upperValue === 'NO CUBRE' || upperValue === 'NO APLICA';
+                            
+                            return (
+                              <div key={covIdx} className={`${covIdx > 0 ? 'mt-3 pt-3 border-t border-slate-100' : ''}`}>
+                                <div className={`font-medium ${isExcluded ? 'text-red-500 italic' : 'text-slate-700'}`}>
+                                  {formatCoverageValue(coverage.value)}
+                                </div>
+                                {coverage.deductible && coverage.deductible !== 'No aplica' && (
+                                  <div className="text-xs text-slate-500 mt-1">
+                                    Ded: {formatCoverageValue(coverage.deductible)}
+                                  </div>
+                                )}
+                                {/* Confidence Badge - only in technical mode */}
+                                {viewMode === 'technical' && (coverage.matchConfidence !== undefined && coverage.matchConfidence !== null) && (
+                                  <div className="mt-2 flex items-center gap-2">
+                                    <span 
+                                      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border cursor-help ${getConfidenceColor(coverage.matchConfidence)}`}
+                                      title={`Método: ${getMethodLabel(coverage.matchMethod)} | Confianza: ${formatPercentage(coverage.matchConfidence, 0)}`}
+                                    >
+                                      {getConfidenceLabel(coverage.matchConfidence)}
+                                    </span>
+                                    <span className="text-xs text-slate-400" title={coverage.name}>
+                                      {coverage.name !== coverage.canonicalName && coverage.canonicalName && (
+                                        <span className="italic">"{coverage.name}"</span>
+                                      )}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                          {matchingCoverages.length > 1 && (
+                            <div className="mt-2 text-xs text-amber-600 font-medium flex items-center gap-1">
+                              <AlertTriangle size={12} />
+                              Múltiples coberturas en esta categoría
+                            </div>
+                          )}
                         </td>
                       );
-                    }
-
-                    return (
-                      <td key={colIdx} className="px-6 py-4 align-top">
-                        {matchingCoverages.map((coverage, covIdx) => {
-                          const upperValue = coverage.value?.toUpperCase().trim() || '';
-                          const isExcluded = upperValue === 'EXCLUIDO' || upperValue === 'NO CUBRE' || upperValue === 'NO APLICA';
-                          
-                          return (
-                            <div key={covIdx} className={`${covIdx > 0 ? 'mt-3 pt-3 border-t border-slate-100' : ''}`}>
-                              <div className={`font-medium ${isExcluded ? 'text-red-500 italic' : 'text-slate-700'}`}>
-                                {formatCoverageValue(coverage.value)}
-                              </div>
-                              {coverage.deductible && coverage.deductible !== 'No aplica' && (
-                                <div className="text-xs text-slate-500 mt-1">
-                                  Ded: {formatCoverageValue(coverage.deductible)}
-                                </div>
-                              )}
-                              {/* Confidence Badge */}
-                              {(coverage.matchConfidence !== undefined && coverage.matchConfidence !== null) && (
-                                <div className="mt-2 flex items-center gap-2">
-                                  <span 
-                                    className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border cursor-help ${getConfidenceColor(coverage.matchConfidence)}`}
-                                    title={`Método: ${getMethodLabel(coverage.matchMethod)} | Confianza: ${formatPercentage(coverage.matchConfidence, 0)} | Click para más info`}
-                                  >
-                                    {getConfidenceLabel(coverage.matchConfidence)}
-                                  </span>
-                                  <span className="text-xs text-slate-400" title={coverage.name}>
-                                    {coverage.name !== coverage.canonicalName && coverage.canonicalName && (
-                                      <span className="italic">"{coverage.name}"</span>
-                                    )}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                        {matchingCoverages.length > 1 && (
-                          <div className="mt-2 text-xs text-amber-600 font-medium flex items-center gap-1">
-                            <AlertTriangle size={12} />
-                            Múltiples coberturas en esta categoría
-                          </div>
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
+                    })}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

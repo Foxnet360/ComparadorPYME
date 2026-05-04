@@ -22,6 +22,10 @@ import { analysisController } from './controllers/analysisController';
 import { ragClauseController } from './controllers/ragClauseController';
 import { clauseController } from './controllers/clauseController';
 
+// Import routes
+import auditRoutes from './routes/audit';
+import chatRoutes from './routes/chat';
+
 const app = express();
 const port = parseInt(process.env.PORT || '8080', 10);
 
@@ -52,6 +56,8 @@ app.get('/api', (req, res) => {
             history: '/api/history',
             documents: '/api/documents',
             search: '/api/search',
+            audit: '/api/audit/enrich',
+            chat: '/api/chat',
             rag: {
                 clauses: '/api/rag/clauses',
                 search: '/api/rag/search',
@@ -123,6 +129,12 @@ app.post('/api/search', searchController.search);
 app.post('/api/search/by-coverage', searchController.searchByCoverage);
 app.post('/api/search/compare', searchController.compareDocuments);
 
+// NEW: Audit enrichment routes
+app.use('/api/audit', auditRoutes);
+
+// NEW: Chat routes
+app.use('/api/chat', chatRoutes);
+
 // Serve static files from frontend build in production
 if (process.env.NODE_ENV === 'production') {
     const staticPath = path.join(__dirname, '../../dist');
@@ -156,6 +168,9 @@ if (process.env.NODE_ENV === 'production') {
                 'GET /api/documents',
                 'POST /api/documents',
                 'POST /api/search',
+                'POST /api/audit/enrich',
+                'POST /api/chat',
+                'POST /api/chat/suggestions',
                 'POST /api/rag/clauses',
                 'GET /api/rag/clauses'
             ]

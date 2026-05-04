@@ -1,147 +1,58 @@
 # Spec: Document Upload API
 
 ## Capability
-Endpoint REST para subir documentos PDF y recibir respuesta inmediata con estado de indexación.
+Endpoint REST para subir documentos PDF. En producción, los PDFs de cotizaciones se almacenan temporalmente en /tmp para procesamiento inmediato sin persistencia, mientras que los clausulados se almacenan en Supabase Storage para consulta RAG.
 
-## User Story
-**Como** agente de seguros  
-**Quiero** subir un PDF de clausulado o cotización  
-**Para** que el sistema lo indexe automáticamente y pueda usarlo en comparaciones
+## ADDED Requirements
 
-## Functional Requirements
+### Requirement: Almacenamiento temporal de cotizaciones
+Los PDFs de cotizaciones DEBEN almacenarse temporalmente en /tmp durante el procesamiento y eliminarse automáticamente después.
 
-### FR-1: Aceptar archivos PDF
-- El endpoint debe aceptar multipart/form-data
-- Campo requerido: `file` (tipo PDF)
-- Tamaño máximo: 50MB
-- Validar header de PDF (%PDF-)
+#### Scenario: Subida de cotización
+- **WHEN** un usuario sube un PDF de cotización via POST /api/analyze
+- **THEN** el sistema almacena el archivo en /tmp/uploads/
+- **AND** procesa el PDF inmediatamente (extracción, análisis, comparación)
+- **AND** elimina el archivo de /tmp al completar el análisis
+- **AND** no persiste el PDF en disco ni en base de datos
 
-### FR-2: Metadata del documento
-Campos requeridos:
-- `insurerName`: Nombre de la aseguradora (string)
-- `documentName`: Nombre descriptivo del documento (string)
-- `documentType`: Tipo de documento (enum)
-  - `CLAUSULADO_GENERAL`
-  - `CLAUSULADO_PARTICULAR`
-  - `COTIZACION`
+#### Scenario: Múltiples cotizaciones simultáneas
+- **WHEN** un usuario sube hasta 10 PDFs de cotizaciones en una sola solicitud
+- **THEN** el sistema almacena cada uno en /tmp/uploads/ con nombre único
+- **AND** procesa todos secuencialmente
+- **AND** elimina todos los archivos al finalizar
 
-Campos opcionales:
-- `version`: Versión del documento (string)
-- `uploadedBy`: ID del usuario que sube (string)
+### Requirement: Limpieza automática de archivos temporales
+El sistema DEBE garantizar que los archivos temporales se eliminen incluso si ocurre un error.
 
-### FR-3: Respuesta inmediata
-El endpoint debe retornar:
-```json
-{
-  "success": true,
-  "documentId": "uuid",
-  "insurerId": "uuid",
-  "stats": {
-    "totalPages": 50,
-    "chunksCreated": 150,
-    "imagesUploaded": 50,
-    "processingTimeMs": 45000
-  },
-  "warnings": []
-}
-```
+#### Scenario: Error durante procesamiento
+- **WHEN** ocurre un error durante el análisis de una cotización
+- **THEN** el sistema captura el error
+- **AND** elimina el archivo temporal de /tmp
+- **AND** retorna error al cliente sin dejar archivos huérfanos
 
-### FR-4: Manejo de errores
-Códigos HTTP apropiados:
-- `400` - PDF inválido o campos faltantes
-- `413` - Archivo muy grande
-- `500` - Error interno del servidor
-- `429` - Rate limit excedido
+## MODIFIED Requirements
 
-## Non-Functional Requirements
+### Requirement: Aceptar archivos PDF
+El sistema DEBE aceptar multipart/form-data para subida de PDFs.
 
-### NFR-1: Tiempo de respuesta
-- Timeout máximo: 5 minutos
-- Respuesta típica: < 2 minutos para PDF de 50 páginas
+#### Scenario: Validación de archivo de cotización
+- **WHEN** un usuario sube un PDF de cotización
+- **THEN** el sistema valida que sea un PDF real (header %PDF-)
+- **AND** verifica que el tamaño sea entre 1KB y 50MB
+- **AND** sanitiza el nombre de archivo
 
-### NFR-2: Concurrencia
-- Procesar un documento a la vez por request
-- No implementar cola (futuro)
+#### Scenario: Validación de archivo de clausulado
+- **WHEN** un usuario sube un PDF de clausulado
+- **THEN** el sistema valida que sea un PDF real
+- **AND** verifica el tamaño (hasta 100MB para clausulados extensos)
+- **AND** almacena en Supabase Storage para persistencia
 
-### NFR-3: Seguridad
-- Validar tipo de archivo
-- Sanitizar nombres de archivo
-- Rate limiting: 10 requests/minuto por IP
+## REMOVED Requirements
 
-## API Specification
+### Requirement: Almacenamiento persistente local de PDFs
+**Reason**: En producción, el almacenamiento local es efímero y no escalable. Los PDFs de cotizaciones no necesitan persistir después del análisis.
+**Migration**: Los PDFs de cotizaciones se procesan inmediatamente y se eliminan. Los clausulados se migran a Supabase Storage.
 
-### Endpoint
-```
-POST /api/documents
-Content-Type: multipart/form-data
-```
-
-### Request Example
-```bash
-curl -X POST http://localhost:8080/api/documents \
-  -F "file=@clausulado.pdf" \
-  -F "insurerName=Seguros Bolívar" \
-  -F "documentName=Clausulado Modular PYME 2024" \
-  -F "documentType=CLAUSULADO_GENERAL" \
-  -F "version=1.0"
-```
-
-### Success Response (200)
-```json
-{
-  "success": true,
-  "documentId": "550e8400-e29b-41d4-a716-446655440000",
-  "insurerId": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-  "stats": {
-    "totalPages": 50,
-    "chunksCreated": 148,
-    "imagesUploaded": 50,
-    "processingTimeMs": 45678
-  },
-  "warnings": [
-    "Page 3 has minimal extractable text"
-  ]
-}
-```
-
-### Error Response (400)
-```json
-{
-  "success": false,
-  "error": "Invalid PDF file",
-  "details": "File header does not match PDF format"
-}
-```
-
-## Validation Rules
-
-1. **File Validation**:
-   - Extensión: `.pdf` (case insensitive)
-   - Header: debe comenzar con `%PDF-`
-   - Tamaño: 1KB - 50MB
-
-2. **Field Validation**:
-   - `insurerName`: 1-200 caracteres
-   - `documentName`: 1-500 caracteres
-   - `documentType`: debe ser uno de los valores del enum
-
-3. **Duplicate Check**:
-   - No permitir documento duplicado (misma aseguradora + nombre + tipo)
-
-## Dependencies
-- **FR-1** requiere: pdfExtractor (text-extraction spec)
-- **FR-2** requiere: documentIndexingService (vector-storage spec)
-- **FR-3** requiere: pdfRenderer (page-rendering spec)
-
-## Open Questions
-1. ¿Qué hacer si el documento ya existe? ¿Sobrescribir o rechazar?
-2. ¿Necesitamos soporte para múltiples archivos simultáneos?
-3. ¿Qué información mostrar mientras procesa (progreso)?
-
-## Acceptance Criteria
-- [ ] Usuario puede subir PDF válido vía POST /api/documents
-- [ ] Sistema valida que es un PDF real
-- [ ] Sistema extrae texto y crea chunks automáticamente
-- [ ] Respuesta incluye documentId y estadísticas
-- [ ] Errores retornan mensajes claros con status code apropiado
-- [ ] Rate limiting previene abuso
+### Requirement: Directorio uploads/ persistente
+**Reason**: Los contenedores reinician y pierden archivos locales.
+**Migration**: Usar /tmp para archivos temporales de cotizaciones y Supabase Storage para clausulados.
