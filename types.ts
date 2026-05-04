@@ -84,6 +84,42 @@ export interface ChatMessage {
   text: string;
   timestamp: Date;
   isThinking?: boolean;
+  citations?: ChatCitation[];
+}
+
+export interface ChatCitation {
+  id: string;
+  insurerName: string;
+  content: string;
+  pageNumber: number;
+  similarityScore: number;
+}
+
+export interface Evidence {
+  id: string;
+  documentId: string;
+  insurerName: string;
+  sectionType: string;
+  content: string;
+  pageNumber: number;
+  similarityScore: number;
+}
+
+export interface EnrichedAlert {
+  title: string;
+  description: string;
+  level: AlertLevel;
+  insurerName: string;
+  evidence: Evidence[];
+  analysisType: 'rag_enriched' | 'quote_based';
+  businessContext?: string;
+}
+
+export interface CrossInsurerRisk {
+  riskTitle: string;
+  riskDescription: string;
+  affectedInsurers: string[];
+  severity: AlertLevel;
 }
 
 export enum AppStatus {

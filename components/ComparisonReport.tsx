@@ -8,6 +8,7 @@ import { DeductiblesComparisonTable } from './DeductiblesComparisonTable';
 import { DeductibleSummaryTable } from './DeductibleSummaryTable';
 import { AuditSection } from './AuditSection';
 import { UnifiedCoverageMatrix } from './UnifiedCoverageMatrix';
+import { ExecutiveSummary } from './ExecutiveSummary';
 import { CollapsibleText } from './CollapsibleText';
 import { formatCOP, formatCOPMillions } from '../utils/formatCurrency';
 
@@ -246,6 +247,13 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
       {/* --- TAB CONTENT: RESUMEN (DASHBOARD) --- */}
       {activeTab === 'resumen' && (
         <div className="space-y-6 animate-in fade-in duration-300">
+          
+          {/* Executive Summary */}
+          <ExecutiveSummary 
+            quotes={report.quotes} 
+            recommendation={report.recommendation}
+            onNavigate={setActiveTab}
+          />
 
           {/* Scoring Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -411,6 +419,7 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
           <UnifiedCoverageMatrix 
             quotes={report.quotes} 
             showRagReferences={showRagReferences}
+            viewMode={viewMode}
           />
         </div>
       )}

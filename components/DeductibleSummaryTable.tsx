@@ -3,6 +3,7 @@ import { Scale, AlertTriangle, CheckCircle, Info, TrendingUp, ChevronDown } from
 import { QuoteAnalysis } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
 import { formatPercentage, formatNumber } from '../utils/formatCurrency';
+import { calculateDeductibleSeverity, getSeverityWidth } from '../utils/severityCalculator';
 
 interface DeductibleSummaryTableProps {
   quotes: QuoteAnalysis[];
@@ -194,16 +195,42 @@ export const DeductibleSummaryTable: React.FC<DeductibleSummaryTableProps> = ({ 
                 {quoteData.map(({ deductible, parsed }, qIdx) => {
                   const severity = getSeverity(parsed.percentage, parsed.appliesTo);
                   
+                  const severityInfo = calculateDeductibleSeverity(deductible);
+                  
                   return (
                     <td key={qIdx} className="px-4 py-4 text-center">
                       {deductible && deductible !== 'No aplica' ? (
-                        <div className={`inline-flex flex-col items-center p-3 rounded-lg border ${severityClasses[severity]} ${hasDiffs ? 'ring-2 ring-amber-200 ring-offset-1' : ''}`}>
+                        <div className={`inline-flex flex-col items-center p-3 rounded-lg border ${severityClasses[severity]} ${hasDiffs ? 'ring-2 ring-amber-200 ring-offset-1' : ''} w-full max-w-[200px]`}>
                           <div className="flex items-center gap-2 mb-1">
                             <div className={`w-2 h-2 rounded-full ${severityDotClasses[severity]}`}></div>
                             {parsed.percentage && (
                               <span className="text-lg font-bold">{formatPercentage(parsed.percentage, 0)}</span>
                             )}
                           </div>
+                          
+                          {/* Severity Bar */}
+                          {parsed.percentage && parsed.percentage > 0 && (
+                            <div className="w-full mt-2 mb-2">
+                              <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full rounded-full transition-all ${severityInfo.color}`}
+                                  style={{ width: getSeverityWidth(parsed.percentage) }}
+                                ></div>
+                              </div>
+                              <div className="flex justify-between text-xs mt-1">
+                                <span className="text-slate-400">0%</span>
+                                <span className={`font-medium ${
+                                  severityInfo.level === 'critical' ? 'text-red-600' :
+                                  severityInfo.level === 'high' ? 'text-red-500' :
+                                  severityInfo.level === 'medium' ? 'text-amber-600' :
+                                  'text-green-600'
+                                }`}>
+                                  {severityInfo.label}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                          
                           {parsed.minimum && (
                             <span className="text-xs mt-1">Mín: {formatNumber(parsed.minimum)} SMMLV</span>
                           )}

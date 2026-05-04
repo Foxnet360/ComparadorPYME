@@ -1,0 +1,68 @@
+# GitHub Repository Settings
+# Configuración de protección de ramas para el proyecto Comparador PYME
+# 
+# NOTA: Este archivo es documentación. Para aplicar estas configuraciones:
+# 1. Ir a GitHub → Repositorio → Settings → Branches
+# 2. Crear rule para rama "main"
+# 3. Configurar las opciones listadas abajo
+
+repository:
+  # Protección de la rama main
+  default_branch: main
+  
+  # No permitir push directo a main
+  allow_squash_merge: true
+  allow_merge_commit: true
+  allow_rebase_merge: true
+  
+  # Branch protection rules
+  branches:
+    - name: main
+      protection:
+        # Requerir pull request antes de mergear (opcional para equipo de 1 persona)
+        required_pull_request_reviews:
+          required_approving_review_count: 0  # 0 para desarrollador solo
+          dismiss_stale_reviews: true
+          require_code_owner_reviews: false
+        
+        # Requerir status checks (si hay CI configurado)
+        required_status_checks:
+          strict: true
+          contexts: []
+        
+        # Restricciones de push
+        restrictions: null  # Null = no restrictions, pero requiere PR
+        
+        # No permitir force push
+        allow_force_pushes: false
+        
+        # No permitir borrar la rama
+        allow_deletions: false
+        
+        # Requerir que la rama esté actualizada antes de mergear
+        required_linear_history: false
+        
+        # Requerir firmas (opcional)
+        required_signatures: false
+
+# Labels útiles para PRs
+labels:
+  - name: "feature"
+    color: "0e8a16"
+    description: "Nueva funcionalidad"
+  
+  - name: "fix"
+    color: "d93f0b"
+    description: "Corrección de bug"
+  
+  - name: "refactor"
+    color: "fbca04"
+    description: "Refactorización"
+  
+  - name: "docs"
+    color: "0075ca"
+    description: "Documentación"
+  
+  - name: "hotfix"
+    color: "b60205"
+    description: "Corrección urgente"

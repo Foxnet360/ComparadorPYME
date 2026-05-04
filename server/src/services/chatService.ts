@@ -1,0 +1,353 @@
+/**
+ * Chat Service
+ * Processes chat messages with optional RAG integration
+ * Uses Gemini 2.5 Flash-Lite for cost efficiency
+ */
+
+import { GoogleGenAI } from '@google/genai';
+import { ragRetrievalService } from './ragRetrievalService';
+import { embeddingService } from './vector/embeddingService';
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const GEMINI_CHAT_MODEL = process.env.GEMINI_CHAT_MODEL || 'gemini-2.5-flash-lite';
+
+if (!GEMINI_API_KEY) {
+    console.error('❌ [chatService] GEMINI_API_KEY not configured');
+}
+
+const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+
+export interface ChatMessage {
+    role: 'user' | 'model';
+    text: string;
+}
+
+export interface ChatCitation {
+    id: string;
+    insurerName: string;
+    content: string;
+    pageNumber: number;
+    similarityScore: number;
+}
+
+export interface ChatResponse {
+    text: string;
+    citations: ChatCitation[];
+    tokensUsed?: number;
+    modelUsed: string;
+}
+
+/**
+ * Build system prompt for the chat
+ */
+const buildSystemPrompt = (): string => {
+    return `Eres un asistente especializado en seguros para corredores de seguros en Colombia.
+
+REGLAS ESTRICTAS:
+1. Responde ÚNICAMENTE basado en el contexto proporcionado (cotizaciones y clausulados)
+2. Si no tienes información suficiente, di "No tengo información suficiente para responder esa pregunta"
+3. Sé conciso y profesional
+4. Usa formato markdown cuando sea útil (listas, negritas)
+5. Si citas un clausulado, indica la aseguradora y página
+6. No inventes información ni hagas suposiciones
+7. Si la pregunta es sobre comparación, sé objetivo y menciona pros/contras
+8. Si la pregunta es sobre un riesgo, explica el impacto y sugiere mitigación
+
+FORMATO DE RESPUESTA:
+- Respuesta directa primero
+- Detalles de soporte después
+- Citas al final si aplica`;
+};
+
+/**
+ * Build context from report data
+ */
+const buildReportContext = (reportContext: any): string => {
+    if (!reportContext) return '';
+    
+    const quotes = reportContext.quotes || [];
+    const summary = reportContext.summary || '';
+    
+    let context = `=== CONTEXTO DEL REPORTE ===\n`;
+    
+    if (summary) {
+        context += `Resumen: ${summary}\n\n`;
+    }
+    
+    quotes.forEach((quote: any, idx: number) => {
+        context += `--- ASEGURADORA ${idx + 1}: ${quote.insurerName} ---\n`;
+        context += `Score: ${quote.score || 'N/A'}/100\n`;
+        context += `Prima Anual: ${quote.priceAnnual || 'N/A'}\n`;
+        
+        if (quote.coverages && quote.coverages.length > 0) {
+            context += `Coberturas principales:\n`;
+            quote.coverages.slice(0, 10).forEach((c: any) => {
+                context += `- ${c.name}: ${c.value}${c.deductible ? ` (Ded: ${c.deductible})` : ''}\n`;
+            });
+        }
+        
+        if (quote.alerts && quote.alerts.length > 0) {
+            context += `Alertas:\n`;
+            quote.alerts.slice(0, 5).forEach((a: any) => {
+                context += `- [${a.level}] ${a.title}: ${a.description}\n`;
+            });
+        }
+        
+        context += `\n`;
+    });
+    
+    return context;
+};
+
+/**
+ * Search RAG for relevant clauses
+ */
+const searchRAG = async (
+    message: string,
+    insurerNames: string[]
+): Promise<ChatCitation[]> => {
+    try {
+        // Generate embedding for the query
+        const queryEmbedding = await embeddingService.generateEmbedding(message);
+        
+        // Search across all insurers in the report
+        const allClauses: ChatCitation[] = [];
+        
+        for (const insurerName of insurerNames) {
+            const results = await ragRetrievalService.search(message, {
+                insurerName,
+                limit: 2
+            });
+            
+            results.forEach(clause => {
+                allClauses.push({
+                    id: clause.id,
+                    insurerName: clause.insurerName,
+                    content: clause.content,
+                    pageNumber: clause.pageNumber,
+                    similarityScore: clause.similarity
+                });
+            });
+        }
+        
+        // If no results per insurer, do general search
+        if (allClauses.length === 0) {
+            const generalResults = await ragRetrievalService.search(message, { limit: 3 });
+            generalResults.forEach(clause => {
+                allClauses.push({
+                    id: clause.id,
+                    insurerName: clause.insurerName,
+                    content: clause.content,
+                    pageNumber: clause.pageNumber,
+                    similarityScore: clause.similarity
+                });
+            });
+        }
+        
+        // Sort by similarity and deduplicate
+        const uniqueClauses = allClauses
+            .sort((a, b) => b.similarityScore - a.similarityScore)
+            .filter((clause, index, self) => 
+                index === self.findIndex(c => c.id === clause.id)
+            )
+            .slice(0, 5);
+        
+        return uniqueClauses;
+    } catch (error) {
+        console.error('❌ [chatService] RAG search error:', error);
+        return [];
+    }
+};
+
+/**
+ * Format citations for the prompt
+ */
+const formatCitationsForPrompt = (citations: ChatCitation[]): string => {
+    if (citations.length === 0) return '';
+    
+    let formatted = '\n=== CLAUSULADOS RELEVANTES ===\n';
+    
+    citations.forEach((citation, idx) => {
+        formatted += `[${idx + 1}] ${citation.insurerName} (pág. ${citation.pageNumber}):\n${citation.content}\n\n`;
+    });
+    
+    return formatted;
+};
+
+/**
+ * Count tokens roughly (approximation)
+ */
+const estimateTokens = (text: string): number => {
+    // Rough estimate: ~4 characters per token for Spanish
+    return Math.ceil(text.length / 4);
+};
+
+/**
+ * Process a chat message
+ */
+export const processChatMessage = async (
+    message: string,
+    reportContext: any,
+    useRAG: boolean = true,
+    history: ChatMessage[] = []
+): Promise<ChatResponse> => {
+    const startTime = Date.now();
+    
+    try {
+        // Build context
+        const reportCtx = buildReportContext(reportContext);
+        
+        // RAG search if enabled
+        let citations: ChatCitation[] = [];
+        let ragContext = '';
+        
+        if (useRAG && reportContext?.quotes) {
+            const insurerNames = reportContext.quotes.map((q: any) => q.insurerName).filter(Boolean);
+            citations = await searchRAG(message, insurerNames);
+            ragContext = formatCitationsForPrompt(citations);
+        }
+        
+        // Build the full prompt
+        const systemPrompt = buildSystemPrompt();
+        const fullPrompt = `${systemPrompt}\n\n${reportCtx}${ragContext}\n\n=== PREGUNTA DEL USUARIO ===\n${message}`;
+        
+        // Estimate tokens
+        const estimatedTokens = estimateTokens(fullPrompt);
+        console.log(`🤖 [chatService] Estimated prompt tokens: ${estimatedTokens}`);
+        
+        // Call Gemini
+        const model = genAI.models.generateContent({
+            model: GEMINI_CHAT_MODEL,
+            contents: [{ role: 'user', parts: [{ text: fullPrompt }] }]
+        });
+        
+        const result = await model;
+        const responseText = result.text || 'Lo siento, no pude generar una respuesta.';
+        
+        console.log(`✅ [chatService] Response generated in ${Date.now() - startTime}ms`);
+        
+        return {
+            text: responseText,
+            citations,
+            tokensUsed: estimatedTokens + estimateTokens(responseText),
+            modelUsed: GEMINI_CHAT_MODEL
+        };
+    } catch (error) {
+        console.error('❌ [chatService] Error processing message:', error);
+        
+        // Fallback to gemini-2.5-flash if flash-lite fails
+        if (GEMINI_CHAT_MODEL === 'gemini-2.5-flash-lite') {
+            console.log('🔄 [chatService] Falling back to gemini-2.5-flash...');
+            try {
+                const reportCtx = buildReportContext(reportContext);
+                const systemPrompt = buildSystemPrompt();
+                const fullPrompt = `${systemPrompt}\n\n${reportCtx}\n\n=== PREGUNTA ===\n${message}`;
+                
+                const fallbackResult = await genAI.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: [{ role: 'user', parts: [{ text: fullPrompt }] }]
+                });
+                
+                return {
+                    text: fallbackResult.text || 'Lo siento, no pude generar una respuesta.',
+                    citations: [],
+                    tokensUsed: estimateTokens(fullPrompt) + estimateTokens(fallbackResult.text || ''),
+                    modelUsed: 'gemini-2.5-flash'
+                };
+            } catch (fallbackError) {
+                console.error('❌ [chatService] Fallback also failed:', fallbackError);
+            }
+        }
+        
+        throw error;
+    }
+};
+
+/**
+ * Generate dynamic suggested questions based on report content
+ */
+export const generateSuggestedQuestions = (reportContext: any): string[] => {
+    if (!reportContext || !reportContext.quotes) {
+        return [
+            '¿Qué coberturas incluye esta póliza?',
+            '¿Cuál es el deducible promedio?',
+            '¿Qué riesgos debo considerar?'
+        ];
+    }
+    
+    const questions: string[] = [];
+    const quotes = reportContext.quotes;
+    
+    // Add questions based on alerts
+    quotes.forEach((quote: any) => {
+        if (quote.alerts && quote.alerts.length > 0) {
+            const criticalAlert = quote.alerts.find((a: any) => a.level === 'CRITICAL');
+            if (criticalAlert && questions.length < 5) {
+                questions.push(`¿Por qué ${quote.insurerName} tiene el riesgo: "${criticalAlert.title}"?`);
+            }
+            
+            const deductibleAlert = quote.alerts.find((a: any) => 
+                a.title.toLowerCase().includes('deducible') || 
+                a.description.toLowerCase().includes('deducible')
+            );
+            if (deductibleAlert && questions.length < 5) {
+                questions.push(`¿Qué deducible tiene ${quote.insurerName}?`);
+            }
+        }
+        
+        // Score-based question
+        if (quote.score !== undefined && quote.score < 70 && questions.length < 5) {
+            questions.push(`¿Qué afectó el score de ${quote.insurerName}?`);
+        }
+    });
+    
+    // Comparison questions
+    if (quotes.length >= 2) {
+        const bestQuote = quotes.reduce((prev: any, current: any) => 
+            ((prev.score || 0) > (current.score || 0)) ? prev : current
+        );
+        questions.push(`¿Por qué ${bestQuote.insurerName} es la mejor opción?`);
+        
+        // Price comparison
+        const prices = quotes.filter((q: any) => q.priceAnnual);
+        if (prices.length >= 2) {
+            const cheapest = prices.reduce((prev: any, current: any) => 
+                ((prev.priceAnnual || Infinity) < (current.priceAnnual || Infinity)) ? prev : current
+            );
+            questions.push(`¿${cheapest.insurerName} es la más económica, pero qué sacrifica?`);
+        }
+    }
+    
+    // Coverage gap questions
+    const coverageNames = new Set<string>();
+    quotes.forEach((q: any) => {
+        q.coverages?.forEach((c: any) => {
+            if (c.value && !['EXCLUIDO', 'NO CUBRE', 'NO APLICA'].includes(c.value.toUpperCase())) {
+                coverageNames.add(c.name || c.canonicalName);
+            }
+        });
+    });
+    
+    if (coverageNames.size > 0 && questions.length < 5) {
+        const coverage = Array.from(coverageNames)[0];
+        questions.push(`¿Qué cubre ${coverage}?`);
+    }
+    
+    // Ensure we have at least 3 questions
+    const defaultQuestions = [
+        '¿Qué coberturas son más importantes para mi negocio?',
+        '¿Cuál es la diferencia entre deducible sobre pérdida y sobre valor asegurado?',
+        '¿Qué debo negociar con las aseguradoras?'
+    ];
+    
+    while (questions.length < 3) {
+        questions.push(defaultQuestions[questions.length]);
+    }
+    
+    return questions.slice(0, 5);
+};
+
+export default {
+    processChatMessage,
+    generateSuggestedQuestions
+};
