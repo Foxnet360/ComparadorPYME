@@ -11,7 +11,7 @@ import { ClauseSelector } from './components/ClauseSelector';
 import { analyzeQuotesWithGemini } from './services/geminiService';
 import { storageService } from './services/storageService';
 import { ComparisonReport as ReportType, AppStatus, UserProfile, Client } from './types';
-import { Chat } from "@google/genai";
+// Chat is now handled via backend API
 
 import RegisterScreen from './components/RegisterScreen';
 import ProfileScreen from './components/ProfileScreen';
@@ -35,7 +35,6 @@ const App: React.FC = () => {
   const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
   const [report, setReport] = useState<ReportType | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
-  const [chatSession, setChatSession] = useState<Chat | null>(null);
 
   // Progress State
   const [progress, setProgress] = useState(0);
@@ -113,11 +112,6 @@ const App: React.FC = () => {
         await storageService.saveAnalysis("Cliente Desconocido", result);
       }
 
-      // Chat session temporary disable or move to backend
-      // const context = JSON.stringify(result);
-      // const session = createChatSession(context);
-      // setChatSession(session);
-
       setStatus(AppStatus.COMPLETED);
       setCurrentView('REPORT');
 
@@ -139,7 +133,6 @@ const App: React.FC = () => {
     setReport(null);
     setSelectedClient(null);
     setStatus(AppStatus.IDLE);
-    setChatSession(null);
     setChatOpen(false);
     setStatusMessage("");
     setErrorMessage("");
@@ -149,11 +142,6 @@ const App: React.FC = () => {
 
   const handleViewExistingReport = (existingReport: ReportType) => {
     setReport(existingReport);
-    // Initialize chat with this context
-    // const context = JSON.stringify(existingReport);
-    // const session = createChatSession(context);
-    // setChatSession(session);
-
     setStatus(AppStatus.COMPLETED);
     setCurrentView('REPORT');
   };
@@ -229,13 +217,15 @@ const App: React.FC = () => {
               <Library size={20} />
             </button>
 
-            {status === AppStatus.COMPLETED && (
+            {(status === AppStatus.COMPLETED || report) && (
               <button
                 onClick={() => setChatOpen(!chatOpen)}
-                className="flex items-center space-x-2 px-3 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors font-medium text-sm"
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors font-medium text-sm ${
+                  chatOpen ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                }`}
               >
                 <MessageSquare size={18} />
-                <span className="hidden sm:inline">IA</span>
+                <span className="hidden sm:inline">SeguroBot</span>
               </button>
             )}
 
@@ -426,7 +416,7 @@ const App: React.FC = () => {
 
       {/* Chat Interface */}
       <ChatBot
-        chatSession={chatSession}
+        reportContext={report || undefined}
         isOpen={chatOpen}
         onClose={() => setChatOpen(false)}
       />
