@@ -23,11 +23,11 @@
 
 ## 4. Implementar resumen estructurado de deducibles
 
-- [ ] 4.1 Crear componente `DeductibleSummaryTable` nuevo
-- [ ] 4.2 Usar `parseDeductible()` para extraer datos de cada cobertura
-- [ ] 4.3 Crear tabla comparativa con categorías como filas y aseguradoras como columnas
-- [ ] 4.4 Destacar visualmente diferencias entre aseguradoras
-- [ ] 4.5 Agregar indicadores de tipo (sobre pérdida vs sobre valor)
+- [x] 4.1 Crear componente `DeductibleSummaryTable` nuevo
+- [x] 4.2 Usar `parseDeductible()` para extraer datos de cada cobertura
+- [x] 4.3 Crear tabla comparativa con categorías como filas y aseguradoras como columnas
+- [x] 4.4 Destacar visualmente diferencias entre aseguradoras
+- [x] 4.5 Agregar indicadores de tipo (sobre pérdida vs sobre valor)
 
 ## 5. Implementar texto completo colapsable
 
@@ -39,16 +39,16 @@
 
 ## 6. Mejorar UX/UI general
 
-- [ ] 6.1 Agregar sticky headers a todas las tablas comparativas
-- [ ] 6.2 Implementar responsive design para mobile (<768px)
-- [ ] 6.3 Mejorar color coding consistente (usar mismo sistema en coberturas y deducibles)
-- [ ] 6.4 Agregar tooltips informativos en headers y badges
-- [ ] 6.5 Implementar scroll horizontal suave con indicadores visuales
+- [x] 6.1 Agregar sticky headers a todas las tablas comparativas
+- [x] 6.2 Implementar responsive design para mobile (<768px)
+- [x] 6.3 Mejorar color coding consistente (usar mismo sistema en coberturas y deducibles)
+- [x] 6.4 Agregar tooltips informativos en headers y badges
+- [x] 6.5 Implementar scroll horizontal suave con indicadores visuales
 
 ## 7. Verificación y testing
 
 - [x] 7.1 Verificar build sin errores (`npm run build`)
-- [ ] 7.2 Testear con datos de ejemplo (coberturas con y sin canonicalName)
-- [ ] 7.3 Testear responsive en diferentes tamaños de pantalla
-- [ ] 7.4 Verificar que la información del tesauro se muestra correctamente
-- [ ] 7.5 Verificar que parseDeductible funciona con textos reales
+- [x] 7.2 Testear con datos de ejemplo (coberturas con y sin canonicalName)
+- [x] 7.3 Testear responsive en diferentes tamaños de pantalla
+- [x] 7.4 Verificar que la información del tesauro se muestra correctamente
+- [x] 7.5 Verificar que parseDeductible funciona con textos reales

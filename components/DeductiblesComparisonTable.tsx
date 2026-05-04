@@ -41,9 +41,9 @@ export const DeductiblesComparisonTable: React.FC<DeductiblesComparisonTableProp
     
     const lower = deductibleText.toLowerCase();
     
-    // Extraer porcentaje
-    const percentMatch = deductibleText.match(/(\d+(?:\.\d+)?)\s*%/);
-    const percentage = percentMatch ? parseFloat(percentMatch[1]) : null;
+    // Extraer porcentaje (maneja tanto punto como coma como separador decimal)
+    const percentMatch = deductibleText.match(/(\d+(?:[.,]\d+)?)\s*%/);
+    const percentage = percentMatch ? parseFloat(percentMatch[1].replace(',', '.')) : null;
     
     // Extraer mínimo
     const minMatch = deductibleText.match(/(?:m[ií]n\.?|mínimo)\s*:?\s*(\d+(?:\.\d+)?)\s*(?:SMMLV|salarios?)/i);
@@ -51,9 +51,9 @@ export const DeductiblesComparisonTable: React.FC<DeductiblesComparisonTableProp
     
     // Determinar sobre qué aplica
     let appliesTo: 'perdida' | 'valor' | null = null;
-    if (lower.includes('valor asegurado') || lower.includes('suma asegurada') || lower.includes('sobre el valor')) {
+    if (lower.includes('valor asegurado') || lower.includes('suma asegurada') || lower.includes('sobre el valor') || lower.includes('aplica sobre valor')) {
       appliesTo = 'valor';
-    } else if (lower.includes('perdida') || lower.includes('siniestro') || lower.includes('sobre la pérdida')) {
+    } else if (lower.includes('perdida') || lower.includes('siniestro') || lower.includes('sobre la pérdida') || lower.includes('aplica sobre pérdida')) {
       appliesTo = 'perdida';
     }
     

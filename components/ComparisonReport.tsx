@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { DISCLAIMER_TEXT, PLANTILLA_ITEMS } from '../constants';
 import { generatePDF } from '../services/pdfService';
 import { DeductiblesComparisonTable } from './DeductiblesComparisonTable';
+import { DeductibleSummaryTable } from './DeductibleSummaryTable';
 import { AuditSection } from './AuditSection';
 import { UnifiedCoverageMatrix } from './UnifiedCoverageMatrix';
 import { CollapsibleText } from './CollapsibleText';
@@ -417,7 +418,10 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
       {/* --- TAB CONTENT: DEDUCIBLES --- */}
       {activeTab === 'deducibles' && (
         <div className="animate-in fade-in duration-300 space-y-6">
-          {/* Tabla Comparativa de Deducibles - Nuevo Componente */}
+          {/* Resumen Estructurado de Deducibles */}
+          <DeductibleSummaryTable quotes={report.quotes} />
+          
+          {/* Tabla Comparativa Detallada */}
           <DeductiblesComparisonTable quotes={report.quotes} />
           
           {/* Texto Completo de Deducibles - Colapsable */}
