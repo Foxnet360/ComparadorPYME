@@ -132,31 +132,31 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
     <div className="space-y-6">
       {/* Main Matrix - 14 Fixed Categories */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-6 bg-slate-50 border-b border-slate-200">
-          <h3 className="font-bold text-slate-800 flex items-center">
-            <ListChecks className="mr-2 text-indigo-600" size={20} />
+        <div className="p-4 md:p-6 bg-slate-50 border-b border-slate-200">
+          <h3 className="font-bold text-slate-800 flex items-center text-sm md:text-base">
+            <ListChecks className="mr-2 text-indigo-600 flex-shrink-0" size={20} />
             Matriz de Coberturas
           </h3>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs md:text-sm text-slate-500 mt-1">
             Comparación unificada por categorías canónicas. Las coberturas se agrupan semanticamente.
           </p>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto relative">
           <table className="w-full text-sm text-left">
-            <thead className="bg-white text-slate-600 uppercase font-bold text-xs border-b border-slate-200">
+            <thead className="bg-white text-slate-600 uppercase font-bold text-xs border-b border-slate-200 sticky top-0 z-20">
               <tr>
-                <th className="px-6 py-4 sticky left-0 bg-white border-r border-slate-100 min-w-[280px] shadow-[4px_0_10px_-5px_rgba(0,0,0,0.1)] z-10">
+                <th className="px-4 md:px-6 py-3 md:py-4 sticky left-0 bg-white border-r border-slate-100 min-w-[200px] md:min-w-[280px] shadow-[4px_0_10px_-5px_rgba(0,0,0,0.1)] z-30">
                   Categoría
                 </th>
                 {quotes.map((q, i) => (
-                  <th key={i} className="px-6 py-4 min-w-[220px] bg-slate-50/50">{q.insurerName}</th>
+                  <th key={i} className="px-4 md:px-6 py-3 md:py-4 min-w-[180px] md:min-w-[220px] bg-slate-50/50 whitespace-nowrap">{q.insurerName}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {categories.map((category) => (
                 <tr key={category.id} className="hover:bg-slate-50/80 transition-colors group">
-                  <td className="px-6 py-4 font-semibold text-slate-700 bg-white sticky left-0 border-r border-slate-100 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)] z-10 group-hover:bg-slate-50">
+                  <td className="px-4 md:px-6 py-3 md:py-4 font-semibold text-slate-700 bg-white sticky left-0 border-r border-slate-100 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)] z-10 group-hover:bg-slate-50">
                     <div className="flex items-center gap-2">
                       <span>{category.name}</span>
                       <span className="text-xs text-slate-400 font-normal">(#{category.id})</span>
@@ -198,8 +198,8 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                               {(coverage.matchConfidence !== undefined && coverage.matchConfidence !== null) && (
                                 <div className="mt-2 flex items-center gap-2">
                                   <span 
-                                    className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getConfidenceColor(coverage.matchConfidence)}`}
-                                    title={`Método: ${getMethodLabel(coverage.matchMethod)} | Confianza: ${formatPercentage(coverage.matchConfidence, 0)}`}
+                                    className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border cursor-help ${getConfidenceColor(coverage.matchConfidence)}`}
+                                    title={`Método: ${getMethodLabel(coverage.matchMethod)} | Confianza: ${formatPercentage(coverage.matchConfidence, 0)} | Click para más info`}
                                   >
                                     {getConfidenceLabel(coverage.matchConfidence)}
                                   </span>
@@ -268,9 +268,17 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                   <TableIcon size={16} />
                   <span className="hidden sm:inline">Matriz</span>
                 </button>
-              </div>
-            </div>
           </div>
+          {/* Scroll indicator for mobile */}
+          <div className="md:hidden flex items-center justify-center py-2 bg-slate-50 text-xs text-slate-500 border-t border-slate-100">
+            <span className="flex items-center gap-1">
+              <ChevronDown size={14} className="rotate-90" />
+              Desliza horizontalmente para ver más
+              <ChevronDown size={14} className="-rotate-90" />
+            </span>
+          </div>
+        </div>
+      </div>
 
           <div className="p-6">
             {viewMode === 'grouped' ? (
