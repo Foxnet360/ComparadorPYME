@@ -2,12 +2,47 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { ComparisonReport, UserProfile, DashboardStats, HistoryEntry } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
-import { formatCOPMillions } from '../utils/formatCurrency';
+import { formatCOPMillions, formatCOP, formatPercentage } from '../utils/formatCurrency';
 
 // Helper for robust string matching (ignores accents, case, whitespace)
 const normalizeText = (text: string) => {
   if (!text) return "";
   return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+};
+
+// Format coverage value for PDF (similar to UI formatting)
+const formatCoverageValuePDF = (value: string | undefined | null): string => {
+  if (!value || typeof value !== 'string') return 'NO ESPECIFICADO';
+  
+  const trimmed = value.trim();
+  const upperValue = trimmed.toUpperCase();
+  
+  // Special text values - return as-is
+  if (['EXCLUIDO', 'NO CUBRE', 'NO APLICA', 'NO ESPECIFICADO', 'INCLUIDO'].includes(upperValue)) {
+    return trimmed;
+  }
+  
+  // Handle "500M" format (millions)
+  const millionMatch = trimmed.match(/^(\d+(?:[.,]\d+)?)\s*M$/i);
+  if (millionMatch) {
+    const num = parseFloat(millionMatch[1].replace(/\./g, '').replace(',', '.'));
+    if (!isNaN(num)) {
+      return formatCOP(num * 1000000);
+    }
+  }
+  
+  // Handle values with $ sign or plain numbers
+  const dollarMatch = trimmed.match(/^\$?\s*([\d.,]+)\s*(.*)$/);
+  if (dollarMatch) {
+    const numStr = dollarMatch[1].replace(/\./g, '').replace(',', '.');
+    const num = parseFloat(numStr);
+    if (!isNaN(num) && num > 0) {
+      return formatCOP(num);
+    }
+  }
+  
+  // If nothing matched, return original value
+  return trimmed;
 };
 
 interface PDFOptions {
@@ -121,7 +156,7 @@ export const generatePDF = (report: ComparisonReport, options?: PDFOptions) => {
         return nName === nItem || nName.includes(nItem) || nItem.includes(nName);
       });
 
-      let cellValue = found ? found.value : 'NO ESPECIFICADO';
+      let cellValue = found ? formatCoverageValuePDF(found.value) : 'NO ESPECIFICADO';
       if (cellValue.length > 50) cellValue = cellValue.substring(0, 50) + "...";
 
       row.push(cellValue);

@@ -2,6 +2,7 @@ import React from 'react';
 import { Scale, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import { QuoteAnalysis } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
+import { formatPercentage, formatNumber } from '../utils/formatCurrency';
 
 interface DeductiblesComparisonTableProps {
   quotes: QuoteAnalysis[];
@@ -42,11 +43,11 @@ export const DeductiblesComparisonTable: React.FC<DeductiblesComparisonTableProp
     
     // Extraer porcentaje
     const percentMatch = deductibleText.match(/(\d+(?:\.\d+)?)\s*%/);
-    const percentage = percentMatch ? percentMatch[1] + '%' : null;
+    const percentage = percentMatch ? parseFloat(percentMatch[1]) : null;
     
     // Extraer mínimo
     const minMatch = deductibleText.match(/(?:m[ií]n\.?|mínimo)\s*:?\s*(\d+(?:\.\d+)?)\s*(?:SMMLV|salarios?)/i);
-    const minimum = minMatch ? minMatch[1] : null;
+    const minimum = minMatch ? parseFloat(minMatch[1]) : null;
     
     // Determinar sobre qué aplica
     let appliesTo: 'perdida' | 'valor' | null = null;
@@ -60,13 +61,12 @@ export const DeductiblesComparisonTable: React.FC<DeductiblesComparisonTableProp
   };
   
   // Función para determinar severidad
-  const getSeverity = (percentage: string | null, appliesTo: 'perdida' | 'valor' | null) => {
+  const getSeverity = (percentage: number | null, appliesTo: 'perdida' | 'valor' | null) => {
     if (!percentage) return 'neutral';
-    const num = parseFloat(percentage);
     
     if (appliesTo === 'valor') return 'critical';
-    if (num > 15) return 'warning';
-    if (num <= 5) return 'good';
+    if (percentage > 15) return 'warning';
+    if (percentage <= 5) return 'good';
     return 'neutral';
   };
   
@@ -149,10 +149,10 @@ export const DeductiblesComparisonTable: React.FC<DeductiblesComparisonTableProp
                       {deductible && deductible !== 'No aplica' ? (
                         <div className={`inline-flex flex-col items-center p-3 rounded-lg border ${severityClasses[severity]}`}>
                           {percentage && (
-                            <span className="text-lg font-bold">{percentage}</span>
+                            <span className="text-lg font-bold">{formatPercentage(percentage, 0)}</span>
                           )}
                           {minimum && (
-                            <span className="text-xs mt-1">Mín. {minimum} SMMLV</span>
+                            <span className="text-xs mt-1">Mín. {formatNumber(minimum)} SMMLV</span>
                           )}
                           {appliesTo === 'valor' && (
                             <span className="flex items-center gap-1 text-xs mt-2 text-red-600 font-semibold">

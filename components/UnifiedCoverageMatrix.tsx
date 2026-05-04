@@ -2,7 +2,7 @@ import React from 'react';
 import { QuoteAnalysis, CoverageItem } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
 import { Info, AlertTriangle, ListChecks } from 'lucide-react';
-import { formatPercentage } from '../utils/formatCurrency';
+import { formatPercentage, formatCOP } from '../utils/formatCurrency';
 
 interface UnifiedCoverageMatrixProps {
   quotes: QuoteAnalysis[];
@@ -40,6 +40,41 @@ const getMethodLabel = (method: string | null | undefined) => {
     case 'llm': return 'LLM';
     default: return 'N/A';
   }
+};
+
+// Format coverage value with Colombian currency format
+const formatCoverageValue = (value: string | undefined | null): string => {
+  if (!value || typeof value !== 'string') return 'NO ESPECIFICADO';
+  
+  const trimmed = value.trim();
+  const upperValue = trimmed.toUpperCase();
+  
+  // Special text values - return as-is
+  if (['EXCLUIDO', 'NO CUBRE', 'NO APLICA', 'NO ESPECIFICADO', 'INCLUIDO'].includes(upperValue)) {
+    return trimmed;
+  }
+  
+  // Handle "500M" format (millions)
+  const millionMatch = trimmed.match(/^([\d.,]+)\s*M$/i);
+  if (millionMatch) {
+    const num = parseFloat(millionMatch[1].replace(/\./g, '').replace(',', '.'));
+    if (!isNaN(num)) {
+      return formatCOP(num * 1000000);
+    }
+  }
+  
+  // Handle values with $ sign
+  const dollarMatch = trimmed.match(/^\$?\s*([\d.,]+)\s*(.*)$/);
+  if (dollarMatch) {
+    const numStr = dollarMatch[1].replace(/\./g, '').replace(',', '.');
+    const num = parseFloat(numStr);
+    if (!isNaN(num) && num > 0) {
+      return formatCOP(num);
+    }
+  }
+  
+  // If nothing matched, return original value
+  return trimmed;
 };
 
 export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ quotes, showRagReferences = false }) => {
@@ -118,11 +153,11 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                           return (
                             <div key={covIdx} className={`${covIdx > 0 ? 'mt-3 pt-3 border-t border-slate-100' : ''}`}>
                               <div className={`font-medium ${isExcluded ? 'text-red-500 italic' : 'text-slate-700'}`}>
-                                {coverage.value}
+                                {formatCoverageValue(coverage.value)}
                               </div>
                               {coverage.deductible && coverage.deductible !== 'No aplica' && (
                                 <div className="text-xs text-slate-500 mt-1">
-                                  Ded: {coverage.deductible}
+                                  Ded: {formatCoverageValue(coverage.deductible)}
                                 </div>
                               )}
                               {/* Confidence Badge */}
@@ -177,8 +212,8 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
               {uncategorizedCoverages.map((item, idx) => (
                 <div key={idx} className="bg-white rounded-lg border border-amber-200 p-4">
                   <div className="font-medium text-slate-800">{item.coverage.name}</div>
-                  <div className="text-sm text-slate-600 mt-1">{item.coverage.value}</div>
-                  <div className="text-xs text-slate-500 mt-2">{item.coverage.deductible && `Ded: ${item.coverage.deductible}`}</div>
+                  <div className="text-sm text-slate-600 mt-1">{formatCoverageValue(item.coverage.value)}</div>
+                  <div className="text-xs text-slate-500 mt-2">{item.coverage.deductible && `Ded: ${formatCoverageValue(item.coverage.deductible)}`}</div>
                   <div className="mt-2 text-xs text-amber-600 font-medium">
                     {quotes[item.quoteIdx]?.insurerName}
                   </div>
