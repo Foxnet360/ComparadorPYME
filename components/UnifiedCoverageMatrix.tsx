@@ -114,7 +114,7 @@ const getConfidenceIcon = (confidence: number | undefined) => {
 };
 
 export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ quotes, showRagReferences = false, viewMode = 'technical' }) => {
-  const [viewMode, setViewMode] = useState<'grouped' | 'matrix'>('grouped');
+  const [matrixViewMode, setMatrixViewMode] = useState<'grouped' | 'matrix'>('grouped');
   // Build category index (1-14)
   const categories = PLANTILLA_ITEMS.map((name, index) => ({
     id: index + 1,
@@ -285,9 +285,9 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
               {/* View Toggle */}
               <div className="flex bg-white rounded-lg border border-amber-300 p-1">
                 <button
-                  onClick={() => setViewMode('grouped')}
+                  onClick={() => setMatrixViewMode('grouped')}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    viewMode === 'grouped'
+                    matrixViewMode === 'grouped'
                       ? 'bg-amber-500 text-white shadow-sm'
                       : 'text-amber-700 hover:bg-amber-50'
                   }`}
@@ -296,9 +296,9 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                   <span className="hidden sm:inline">Agrupada</span>
                 </button>
                 <button
-                  onClick={() => setViewMode('matrix')}
+                  onClick={() => setMatrixViewMode('matrix')}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    viewMode === 'matrix'
+                    matrixViewMode === 'matrix'
                       ? 'bg-amber-500 text-white shadow-sm'
                       : 'text-amber-700 hover:bg-amber-50'
                   }`}
@@ -319,7 +319,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
       </div>
 
           <div className="p-6">
-            {viewMode === 'grouped' ? (
+            {matrixViewMode === 'grouped' ? (
               /* Grouped View */
               <div className="space-y-4">
                 {groupUncategorizedBySemanticSimilarity(uncategorizedCoverages).map((group, groupIdx) => (
