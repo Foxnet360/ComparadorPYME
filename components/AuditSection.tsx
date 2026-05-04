@@ -1,6 +1,9 @@
-import React from 'react';
-import { AlertCircle, AlertTriangle, CheckCircle, Info, BookOpen, Shield, FileText } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { AlertCircle, AlertTriangle, CheckCircle, Info, BookOpen, Shield, FileText, Sparkles, Loader2 } from 'lucide-react';
 import { QuoteAnalysis, AlertItem, AlertLevel } from '../types';
+import { AuditDashboard } from './AuditDashboard';
+import { EvidenceCard } from './EvidenceCard';
+import { useAuditEnrichment } from '../hooks/useAuditEnrichment';
 
 interface AuditSectionProps {
   quotes: QuoteAnalysis[];
@@ -49,7 +52,7 @@ const getAlertStyles = (level: AlertLevel) => {
   }
 };
 
-const AlertCard: React.FC<{ alert: AlertItem; styles: any }> = ({ alert, styles }) => {
+const AlertCard: React.FC<{ alert: any; styles: any }> = ({ alert, styles }) => {
   return (
     <div className={`rounded-lg border ${styles.container} overflow-hidden`}>
       <div className={`p-3 ${styles.header} flex items-start gap-3`}>
@@ -58,20 +61,16 @@ const AlertCard: React.FC<{ alert: AlertItem; styles: any }> = ({ alert, styles 
           <h4 className={`font-bold text-sm ${styles.title}`}>{alert.title}</h4>
           <p className="text-sm mt-1 opacity-90">{alert.description}</p>
           
-          {alert.clauseReference && (
-            <div className="mt-3 pt-3 border-t border-current border-opacity-20">
-              <div className="flex items-start gap-2">
-                <BookOpen size={14} className="mt-0.5 shrink-0 opacity-70" />
-                <div className="text-xs">
-                  <span className="font-semibold opacity-80">Fundamento en clausulado:</span>
-                  <p className="italic mt-1 opacity-90">"{alert.clauseReference}"</p>
-                  {alert.sourceDocument && (
-                    <p className="opacity-70 mt-1">— {alert.sourceDocument}</p>
-                  )}
-                </div>
-              </div>
+          {alert.businessContext && (
+            <div className="mt-2 text-xs opacity-80 italic">
+              💡 {alert.businessContext}
             </div>
           )}
+          
+          <EvidenceCard 
+            evidence={alert.evidence || []} 
+            analysisType={alert.analysisType || 'quote_based'}
+          />
         </div>
       </div>
     </div>
@@ -79,6 +78,18 @@ const AlertCard: React.FC<{ alert: AlertItem; styles: any }> = ({ alert, styles 
 };
 
 export const AuditSection: React.FC<AuditSectionProps> = ({ quotes, viewMode }) => {
+  const { 
+    enrichedAlerts, 
+    crossInsurerRisks, 
+    businessContextAnalysis,
+    hasClauses,
+    isLoading, 
+    error, 
+    isEnriched,
+    enrich,
+    reset 
+  } = useAuditEnrichment();
+
   // Defensive check for undefined quotes
   if (!quotes || !Array.isArray(quotes)) {
     return (
@@ -88,63 +99,89 @@ export const AuditSection: React.FC<AuditSectionProps> = ({ quotes, viewMode }) 
     );
   }
 
+  // Use enriched alerts if available, otherwise use original alerts
+  const getAlertsForQuote = (quote: QuoteAnalysis) => {
+    if (isEnriched && enrichedAlerts.length > 0) {
+      return enrichedAlerts.filter(a => a.insurerName === quote.insurerName);
+    }
+    return (quote.alerts || []).map(a => ({
+      ...a,
+      insurerName: quote.insurerName,
+      evidence: [],
+      analysisType: 'quote_based' as const
+    }));
+  };
+
+  const handleEnrich = () => {
+    if (!isEnriched) {
+      enrich(quotes);
+    }
+  };
+
   return (
     <div className="animate-in fade-in duration-300 space-y-6">
-      {/* Resumen de Hallazgos */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {quotes.map((quote, idx) => {
-          const alerts = quote.alerts || [];
-          const critical = alerts.filter(a => a.level === 'CRITICAL').length;
-          const warning = alerts.filter(a => a.level === 'WARNING').length;
-          const good = alerts.filter(a => a.level === 'GOOD').length;
-          
-          return (
-            <div key={idx} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-              <h3 className="font-bold text-slate-800 mb-3">{quote.insurerName}</h3>
-              <div className="space-y-2">
-                {critical > 0 && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2 text-red-600">
-                      <AlertCircle size={16} /> Críticos
-                    </span>
-                    <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded-full font-bold">
-                      {critical}
-                    </span>
-                  </div>
-                )}
-                {warning > 0 && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2 text-amber-600">
-                      <AlertTriangle size={16} /> Advertencias
-                    </span>
-                    <span className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold">
-                      {warning}
-                    </span>
-                  </div>
-                )}
-                {good > 0 && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2 text-green-600">
-                      <CheckCircle size={16} /> Destacados
-                    </span>
-                    <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-bold">
-                      {good}
-                    </span>
-                  </div>
-                )}
-                {alerts.length === 0 && (
-                  <p className="text-sm text-slate-400 italic">Sin hallazgos</p>
-                )}
-              </div>
-            </div>
-          );
-        })}
+      {/* Enrichment Button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-slate-800">Auditoría de Riesgos</h2>
+          <p className="text-sm text-slate-500">
+            {isEnriched 
+              ? 'Análisis enriquecido con clausulados'
+              : 'Análisis basado en datos de cotización'
+            }
+          </p>
+        </div>
+        
+        <button
+          onClick={handleEnrich}
+          disabled={isLoading || isEnriched}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            isEnriched
+              ? 'bg-green-100 text-green-700 cursor-default'
+              : hasClauses
+                ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
+                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+          }`}
+          title={!hasClauses ? 'No hay clausulados indexados disponibles' : ''}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              <span>Enriqueciendo...</span>
+            </>
+          ) : isEnriched ? (
+            <>
+              <CheckCircle size={16} />
+              <span>Enriquecido</span>
+            </>
+          ) : (
+            <>
+              <Sparkles size={16} />
+              <span>Enriquecer con Clausulados</span>
+            </>
+          )}
+        </button>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
+          Error al enriquecer: {error}
+        </div>
+      )}
+
+      {/* Dashboard */}
+      <AuditDashboard 
+        quotes={quotes}
+        crossInsurerRisks={crossInsurerRisks}
+        businessContextAnalysis={businessContextAnalysis}
+        viewMode={viewMode}
+      />
 
       {/* Alertas Detalladas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {quotes.map((quote, idx) => {
-          const alerts = quote.alerts || [];
+          const alerts = getAlertsForQuote(quote);
           const criticalAlerts = alerts.filter(a => a.level === 'CRITICAL');
           const warningAlerts = alerts.filter(a => a.level === 'WARNING');
           const goodAlerts = alerts.filter(a => a.level === 'GOOD');
@@ -242,3 +279,5 @@ export const AuditSection: React.FC<AuditSectionProps> = ({ quotes, viewMode }) 
     </div>
   );
 };
+
+export default AuditSection;
