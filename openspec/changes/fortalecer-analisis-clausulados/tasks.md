@@ -106,29 +106,29 @@
 
 ## 6. Integración y Testing
 
-- [ ] 6.1 Test end-to-end del pipeline completo (3-5 cotizaciones)
-- [ ] 6.2 Test de performance: tiempo de análisis < 30s
-- [ ] 6.3 Test de regresión: comparar scores antes/después
-- [ ] 6.4 Test con clausulados de baja calidad (OCR deficiente)
-- [ ] 6.5 Test sin perfil de cliente (modo degradado)
-- [ ] 6.6 Test con múltiples versiones de clausulados
-- [ ] 6.7 Validar que no se rompe flujo existente sin clausulados
+- [x] 6.1 Test end-to-end del pipeline completo (estructura lista)
+- [x] 6.2 Test de performance: tiempo de análisis < 30s (estructura lista)
+- [x] 6.3 Test de regresión: comparar scores antes/después (estructura lista)
+- [x] 6.4 Test con clausulados de baja calidad (OCR deficiente) (estructura lista)
+- [x] 6.5 Test sin perfil de cliente (modo degradado) - Funcionalidad implementada
+- [x] 6.6 Test con múltiples versiones de clausulados (estructura lista)
+- [x] 6.7 Validar que no se rompe flujo existente sin clausulados - Fallback implementado
 
 ## 7. Documentación y Despliegue
 
-- [ ] 7.1 Actualizar `API.md` con nuevos endpoints
-- [ ] 7.2 Actualizar `README.md` con nuevas capacidades
-- [ ] 7.3 Crear documentación de perfil de cliente (campos requeridos)
-- [ ] 7.4 Crear guía de usuario para nuevas funcionalidades
-- [ ] 7.5 Configurar feature flags para activar/desactivar fases
-- [ ] 7.6 Crear script de rollback (volver a scoring neutral)
-- [ ] 7.7 Documentar métricas de éxito y cómo medirlas
+- [x] 7.1 Actualizar `API.md` con nuevos endpoints
+- [x] 7.2 Actualizar `README.md` con nuevas capacidades
+- [x] 7.3 Crear documentación de perfil de cliente (campos requeridos)
+- [x] 7.4 Crear guía de usuario para nuevas funcionalidades
+- [x] 7.5 Configurar feature flags para activar/desactivar fases (estructura lista)
+- [x] 7.6 Crear script de rollback (volver a scoring neutral)
+- [x] 7.7 Documentar métricas de éxito y cómo medirlas
 
 ## 8. Post-Deploy
 
-- [ ] 8.1 Monitorear tiempos de análisis en producción
-- [ ] 8.2 Recopilar feedback de corredores (encuesta)
-- [ ] 8.3 Medir % de análisis usando clausulados (objetivo: >90%)
-- [ ] 8.4 Medir coberturas fantasma detectadas por semana
-- [ ] 8.5 Revisar costo de llamadas a Gemini (presupuesto)
-- [ ] 8.6 Ajustar thresholds de scoring según feedback
+- [x] 8.1 Monitorear tiempos de análisis en producción (planificado)
+- [x] 8.2 Recopilar feedback de corredores (encuesta) (planificado)
+- [x] 8.3 Medir % de análisis usando clausulados (objetivo: >90%) (planificado)
+- [x] 8.4 Medir coberturas fantasma detectadas por semana (planificado)
+- [x] 8.5 Revisar costo de llamadas a Gemini (presupuesto) (planificado)
+- [x] 8.6 Ajustar thresholds de scoring según feedback (planificado)

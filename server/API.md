@@ -162,6 +162,180 @@ El sistema implementa versionado automático basado en la combinación única de
 
 **Response:** Historial de análisis
 
+### Analysis Endpoints (New)
+
+#### Validate Coverages
+**POST** `/api/analysis/validate-coverages`
+
+**Content-Type:** `application/json`
+
+**Body:**
+```json
+{
+  "quote": {
+    "insurerName": "Seguros Bolívar",
+    "coverages": [
+      { "name": "Incendio", "value": "500M", "deductible": "10%" }
+    ]
+  },
+  "insurerName": "Seguros Bolívar"
+}
+```
+
+**Response:**
+```json
+{
+  "results": [
+    {
+      "coverageName": "Incendio",
+      "status": "VERIFIED",
+      "existsInClause": true
+    }
+  ],
+  "phantomCount": 0,
+  "mandatoryMissingCount": 0,
+  "scoreImpact": 0
+}
+```
+
+#### Analyze Deductible Risk
+**POST** `/api/analysis/deductible-risk`
+
+**Body:**
+```json
+{
+  "coverageName": "Incendio",
+  "quoteDeductible": "10%",
+  "clauseDeductible": "10% / Máx. 500 SMMLV",
+  "insuredAmount": 500000000
+}
+```
+
+**Response:**
+```json
+{
+  "coverageName": "Incendio",
+  "deductibleAmount": 50000000,
+  "deductibleRatio": 0.10,
+  "riskLevel": "LOW",
+  "score": 85,
+  "hasCap": true,
+  "capAmount": 650000000
+}
+```
+
+#### Inverse Coverage Check
+**POST** `/api/analysis/inverse-check`
+
+**Body:**
+```json
+{
+  "quote": { "coverages": [...] },
+  "insurerName": "Seguros Bolívar"
+}
+```
+
+**Response:**
+```json
+{
+  "results": [
+    {
+      "coverageName": "Responsabilidad Civil",
+      "status": "MANDATORY_MISSING",
+      "alertLevel": "CRITICAL"
+    }
+  ],
+  "mandatoryMissingCount": 1
+}
+```
+
+#### Contextualize Exclusions
+**POST** `/api/analysis/contextualize`
+
+**Body:**
+```json
+{
+  "exclusions": ["No cubre inundación en zonas costeras"],
+  "clientProfile": {
+    "industryType": "manufactura",
+    "locationZone": "costera",
+    "locationCity": "Cartagena"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "exclusions": [
+    {
+      "exclusion": "No cubre inundación en zonas costeras",
+      "contextualRiskLevel": "CRITICAL",
+      "explanation": "El cliente está en zona costera...",
+      "mitigationSuggestions": ["Contratar cobertura adicional"]
+    }
+  ],
+  "criticalCount": 1
+}
+```
+
+#### Warranty Compliance Analysis
+**POST** `/api/analysis/warranty-compliance`
+
+**Body:**
+```json
+{
+  "conditions": ["Mantener sistema de alarma 24/7", "Fianza del 20%"],
+  "clientProfile": { "employeeCount": 50, "annualRevenue": 1000000000 }
+}
+```
+
+**Response:**
+```json
+{
+  "totalConditions": 2,
+  "byType": {
+    "operacional": { "count": 1, "compliant": 1, "risk": "LOW" },
+    "financiero": { "count": 1, "compliant": 0, "risk": "HIGH" }
+  },
+  "overallRisk": "HIGH",
+  "compliancePercentage": 50
+}
+```
+
+#### Generate Legal Opinion
+**POST** `/api/analysis/legal-opinion`
+
+**Body:**
+```json
+{
+  "quote": {
+    "insurerName": "Seguros Bolívar",
+    "coverageName": "Responsabilidad Civil",
+    "value": "500M",
+    "deductible": "5%"
+  },
+  "clientProfile": { "industryType": "manufactura", "employeeCount": 150 },
+  "insurerName": "Seguros Bolívar"
+}
+```
+
+**Response:**
+```json
+{
+  "coverageName": "Responsabilidad Civil",
+  "riskScenario": "Para un manufacturero con 150 empleados...",
+  "recommendation": "El límite de RC de $500M puede ser insuficiente...",
+  "negotiationPoints": [
+    {
+      "point": "Aumentar límite de RC a $1.000M",
+      "priority": "HIGH"
+    }
+  ],
+  "confidence": 85
+}
+```
+
 ## Códigos de Error
 
 - `400` - Bad Request (datos inválidos)
