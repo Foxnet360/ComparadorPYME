@@ -32,7 +32,7 @@ export const authService = {
 
     return { 
       user: data.user, 
-      message: 'Te hemos enviado un email de confirmación. Por favor revisa tu bandeja de entrada.' 
+      message: '¡Registro exitoso! Ya puedes iniciar sesión con tu cuenta.'
     };
   },
 
@@ -49,11 +49,6 @@ export const authService = {
 
     if (!data.user) {
       throw new Error('No se pudo iniciar sesión');
-    }
-
-    // Verificar si el email está confirmado
-    if (!data.user.email_confirmed_at) {
-      throw new Error('Por favor confirma tu email antes de iniciar sesión. Revisa tu bandeja de entrada.');
     }
 
     const profile: UserProfile = {

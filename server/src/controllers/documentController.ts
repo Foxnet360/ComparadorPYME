@@ -46,7 +46,7 @@ const validateDocumentFields = (body: any): { valid: boolean; error?: string } =
     }
   }
 
-  const validTypes = ['CLAUSULADO_GENERAL', 'CLAUSULADO_PARTICULAR', 'COTIZACION'];
+  const validTypes = ['CLAUSULADO_GENERAL', 'CLAUSULADO_PARTICULAR', 'COTIZACION', 'ANEXO'];
   if (!validTypes.includes(body.documentType)) {
     return { valid: false, error: `Invalid documentType. Must be one of: ${validTypes.join(', ')}` };
   }
@@ -97,13 +97,50 @@ export const documentController = {
         return;
       }
 
-      const { insurerName, documentName, documentType, version } = req.body;
+      const { insurerName, documentName, documentType, version, productName } = req.body;
       const uploadedBy = req.body.userId || 'anonymous';
 
       console.log(`   File: ${req.file.originalname} (${req.file.size} bytes)`);
       console.log(`   Insurer: ${insurerName}`);
       console.log(`   Document: ${documentName}`);
       console.log(`   Type: ${documentType}`);
+      console.log(`   Product: ${productName || 'N/A'}`);
+
+      // Obtener o crear aseguradora
+      const insurerId = await documentIndexingService.getOrCreateInsurer(insurerName.trim());
+
+      // Verificar si existe documento activo para esta combinación (insurer + type + product)
+      let existingQuery = supabase
+        .from('documents')
+        .select('id, document_name, version')
+        .eq('insurer_id', insurerId)
+        .eq('document_type', documentType)
+        .eq('is_active', true);
+      
+      // Si hay product_name, filtrar por él también
+      if (productName) {
+        existingQuery = existingQuery.eq('product_name', productName.trim());
+      } else {
+        existingQuery = existingQuery.is('product_name', null);
+      }
+      
+      const { data: existingDoc } = await existingQuery.single() as { data: any };
+
+      let archivedDoc = null;
+      if (existingDoc) {
+        console.log(`   📁 Archivando versión anterior: ${existingDoc.document_name} (v${existingDoc.version || 'N/A'})`);
+        
+        const { error: archiveError } = await (supabase
+          .from('documents') as any)
+          .update({ is_active: false, updated_at: new Date().toISOString() })
+          .eq('id', existingDoc.id);
+
+        if (archiveError) {
+          console.warn(`   ⚠️ Error archivando documento anterior:`, archiveError);
+        } else {
+          archivedDoc = existingDoc;
+        }
+      }
 
       // Preparar metadata
       const metadata: DocumentMetadata = {
@@ -111,6 +148,7 @@ export const documentController = {
         documentName: documentName.trim(),
         documentType,
         version: version?.trim(),
+        productName: productName?.trim(),
         uploadedBy,
       };
 
@@ -133,6 +171,11 @@ export const documentController = {
         insurerId: result.insurerId,
         stats: result.stats,
         warnings: result.warnings,
+        archivedDocument: archivedDoc ? {
+          id: archivedDoc.id,
+          documentName: archivedDoc.document_name,
+          version: archivedDoc.version,
+        } : null,
       });
 
     } catch (error: any) {
@@ -162,7 +205,7 @@ export const documentController = {
     console.log('📋 [documentController.listDocuments] Request received');
     
     try {
-      const { insurerId, documentType, limit = '50', offset = '0' } = req.query;
+      const { insurerId, documentType, isActive, latest, limit = '50', offset = '0' } = req.query;
 
       let query = supabase
         .from('documents')
@@ -171,15 +214,22 @@ export const documentController = {
           document_name,
           document_type,
           version,
+          product_name,
           total_pages,
           is_active,
           created_at,
           insurers:insurer_id (id, name)
         `)
-        .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(parseInt(limit as string))
         .range(parseInt(offset as string), parseInt(offset as string) + parseInt(limit as string) - 1);
+
+      // Filtrar por estado activo
+      if (isActive === 'true') {
+        query = query.eq('is_active', true);
+      } else if (isActive === 'false') {
+        query = query.eq('is_active', false);
+      }
 
       if (insurerId) {
         query = query.eq('insurer_id', insurerId);
@@ -189,23 +239,35 @@ export const documentController = {
         query = query.eq('document_type', documentType);
       }
 
-      const { data, error, count } = await query;
+      const { data, error, count } = await query as { data: any[], error: any, count: number };
 
       if (error) {
         throw handleSupabaseError(error);
       }
 
       // Formatear respuesta
-      const documents = (data as any[])?.map((doc: any) => ({
+      let documents = (data as any[])?.map((doc: any) => ({
         id: doc.id,
         documentName: doc.document_name,
         documentType: doc.document_type,
         version: doc.version,
+        productName: doc.product_name,
         totalPages: doc.total_pages,
         isActive: doc.is_active,
         createdAt: doc.created_at,
         insurer: doc.insurers,
       })) || [];
+
+      // Si latest=true, filtrar solo la última versión activa por insurer+product+type
+      if (latest === 'true') {
+        const seen = new Set<string>();
+        documents = documents.filter((doc: any) => {
+          const key = `${doc.insurer?.id}-${doc.documentType}-${doc.productName}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return doc.isActive === true;
+        });
+      }
 
       res.json({
         success: true,

@@ -8,8 +8,9 @@ import { handleSupabaseError } from '../config/database';
 export interface DocumentMetadata {
   insurerName: string;
   documentName: string;
-  documentType: 'CLAUSULADO_GENERAL' | 'CLAUSULADO_PARTICULAR' | 'COTIZACION';
+  documentType: 'CLAUSULADO_GENERAL' | 'CLAUSULADO_PARTICULAR' | 'COTIZACION' | 'ANEXO';
   version?: string;
+  productName?: string;
   uploadedBy?: string;
 }
 
@@ -183,6 +184,7 @@ export class DocumentIndexingService {
           p_uploaded_by: metadata.uploadedBy || 'anonymous',
           p_images: imagesPayload,
           p_chunks: chunksPayload,
+          p_product_name: metadata.productName || metadata.documentName,
         } as any);
 
       if (rpcError) {
@@ -237,7 +239,7 @@ export class DocumentIndexingService {
   /**
    * Obtiene o crea una aseguradora
    */
-  private async getOrCreateInsurer(name: string): Promise<string> {
+  async getOrCreateInsurer(name: string): Promise<string> {
     try {
       // Buscar aseguradora existente
       const { data: existing, error: searchError } = await supabase
