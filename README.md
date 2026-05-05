@@ -10,6 +10,28 @@ Sistema de análisis y comparación de cotizaciones de seguros usando IA (Gemini
 - **IA**: Google Gemini API (embeddings y análisis)
 - **Vector Store**: Supabase pgvector (anteriormente ChromaDB)
 
+## Nuevas Capacidades (Fases 1-4)
+
+### Fase 1: Validación de Coberturas
+- **Validación bidireccional**: Verifica que coberturas en cotización existan en clausulado (y viceversa)
+- **Detección de coberturas fantasma**: Identifica coberturas ofrecidas pero no contempladas en clausulado
+- **Scoring obligatorio**: Los clausulados ya no son opcionales; se penaliza su ausencia
+
+### Fase 2: Riesgo de Deducibles + Cobertura Inversa + Versiones
+- **Análisis de deducibles**: Calcula deducible real vs suma asegurada, detecta topes
+- **Cobertura inversa**: Detecta coberturas obligatorias del clausulado omitidas en cotización
+- **Comparación de versiones**: Compara versiones de clausulados para detectar cambios contractuales
+
+### Fase 3: Riesgo Contextualizado + Cumplimiento de Garantías
+- **Contextualización por perfil**: Cruzar exclusiones con perfil del cliente (industria, ubicación, etc.)
+- **Análisis de garantías**: Clasificar condiciones por tipo (documental/operacional/técnica/financiera)
+- **Riesgo de incumplimiento**: Calcular probabilidad de incumplimiento por dificultad
+
+### Fase 4: Abogado Virtual RAG
+- **Opiniones legales**: Genera análisis legal personalizado combinando cotización + clausulado + perfil
+- **Puntos de negociación**: Identifica puntos específicos de negociación con la aseguradora
+- **Citas de clausulado**: Incluye referencias específicas al clausulado como evidencia
+
 ## Requisitos Previos
 
 - Node.js 18+
