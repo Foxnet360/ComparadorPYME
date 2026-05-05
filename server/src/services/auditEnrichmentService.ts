@@ -5,6 +5,7 @@
 
 import { ragRetrievalService, RetrievedClause } from './ragRetrievalService';
 import { supabase } from '../config/database';
+import { ClientProfile } from './contextualRiskAnalyzer';
 
 export interface Evidence {
     id: string;
@@ -92,7 +93,8 @@ const extractSearchTerms = (alert: any): string => {
  */
 const enrichAlert = async (
     alert: any,
-    insurerName: string
+    insurerName: string,
+    clientProfile?: ClientProfile
 ): Promise<EnrichedAlert> => {
     const searchQuery = extractSearchTerms(alert);
     
@@ -120,7 +122,7 @@ const enrichAlert = async (
             insurerName,
             evidence,
             analysisType: evidence.length > 0 ? 'rag_enriched' : 'quote_based',
-            businessContext: generateBusinessContext(alert)
+            businessContext: generateBusinessContext(alert, clientProfile)
         };
     } catch (error) {
         console.error(`❌ [auditEnrichment] Error enriching alert "${alert.title}":`, error);
@@ -131,15 +133,16 @@ const enrichAlert = async (
             insurerName,
             evidence: [],
             analysisType: 'quote_based',
-            businessContext: generateBusinessContext(alert)
+            businessContext: generateBusinessContext(alert, clientProfile)
         };
     }
 };
 
 /**
  * Generate business context for an alert
+ * Uses client profile when available for personalized context
  */
-const generateBusinessContext = (alert: any): string => {
+const generateBusinessContext = (alert: any, clientProfile?: ClientProfile): string => {
     const text = `${alert.title} ${alert.description}`.toLowerCase();
     
     if (text.includes('manufactura') || text.includes('fabricación') || text.includes('planta')) {
@@ -158,8 +161,53 @@ const generateBusinessContext = (alert: any): string => {
         return 'En transporte y logística, la cadena de suministro es crítica. Verificar cobertura de mercancías en tránsito.';
     }
     
+    // Use client profile for personalized context if available
+    if (clientProfile) {
+        const locationContext = getLocationContext(alert, clientProfile);
+        if (locationContext) return locationContext;
+        
+        const industryContext = getIndustryContext(alert, clientProfile);
+        if (industryContext) return industryContext;
+    }
+    
     return 'Este riesgo debe evaluarse según la naturaleza específica del negocio y su impacto en la operación.';
 };
+
+function getLocationContext(alert: any, profile: ClientProfile): string | null {
+    const text = `${alert.title} ${alert.description}`.toLowerCase();
+    
+    if ((text.includes('inundación') || text.includes('inundacion')) && profile.locationZone === 'costera') {
+        return 'El cliente está en zona costera con alta probabilidad de inundaciones. Esta exclusión representa un riesgo CRÍTICO específico para su ubicación.';
+    }
+    
+    if (text.includes('terremoto') && profile.locationZone === 'montana') {
+        return 'La ubicación en zona montañosa presenta riesgo sísmico elevado. Revisar cobertura de terremoto cuidadosamente.';
+    }
+    
+    if (text.includes('robo') && profile.locationZone === 'urbana') {
+        return 'En zona urbana, el riesgo de robo/hurto puede ser mayor. Verificar medidas de seguridad del local.';
+    }
+    
+    return null;
+}
+
+function getIndustryContext(alert: any, profile: ClientProfile): string | null {
+    const text = `${alert.title} ${alert.description}`.toLowerCase();
+    
+    if (text.includes('construcción') && profile.industryType === 'construccion') {
+        return 'Como empresa del sector construcción, este riesgo es inherente a su actividad principal. Revisar coberturas especializadas.';
+    }
+    
+    if ((text.includes('proveedor') || text.includes('suministro')) && profile.hasSingleSupplier) {
+        return 'El cliente depende de un único proveedor. Esta exclusión deja desprotegida una vulnerabilidad crítica de su cadena de suministro.';
+    }
+    
+    if (text.includes('equipo') && profile.industryType === 'manufactura') {
+        return 'En manufactura, el equipo es crítico para la operación. Verificar cobertura de equipo electrónico y rotura de maquinaria.';
+    }
+    
+    return null;
+}
 
 /**
  * Build cross-insurer risk comparison
@@ -217,7 +265,8 @@ const normalizeRiskKey = (title: string): string => {
  * Main enrichment function
  */
 export const enrichAuditAlerts = async (
-    quotes: any[]
+    quotes: any[],
+    clientProfile?: ClientProfile
 ): Promise<AuditEnrichmentResult> => {
     const insurerNames = quotes.map(q => q.insurerName).filter(Boolean);
     const hasClauses = await checkClausesAvailability(insurerNames);
@@ -228,7 +277,7 @@ export const enrichAuditAlerts = async (
         const alerts = quote.alerts || [];
         
         for (const alert of alerts) {
-            const enriched = await enrichAlert(alert, quote.insurerName);
+            const enriched = await enrichAlert(alert, quote.insurerName, clientProfile);
             enrichedAlerts.push(enriched);
         }
     }
