@@ -8,6 +8,8 @@ import { clauseCoverageValidator } from '../services/clauseCoverageValidator';
 import { deductibleAnalyzer } from '../services/deductibleAnalyzer';
 import { inverseCoverageChecker } from '../services/inverseCoverageChecker';
 import { clauseVersionComparator } from '../services/clauseVersionComparator';
+import { contextualRiskAnalyzer, ClientProfile } from '../services/contextualRiskAnalyzer';
+import { warrantyComplianceAnalyzer } from '../services/warrantyComplianceAnalyzer';
 
 const router = Router();
 
@@ -102,20 +104,21 @@ router.post('/inverse-check', async (req, res) => {
  */
 router.post('/contextualize', async (req, res) => {
   try {
-    const { analysisId, clientProfile } = req.body;
+    const { exclusions, clientProfile } = req.body;
     
-    if (!analysisId) {
+    if (!exclusions || !Array.isArray(exclusions)) {
       res.status(400).json({ 
-        error: 'Missing required field: analysisId' 
+        error: 'Missing required field: exclusions (array)' 
       });
       return;
     }
     
-    // TODO: Implement contextualization when contextualRiskAnalyzer service is ready
-    res.json({ 
-      status: 'not_implemented',
-      message: 'Contextual risk analysis coming in Phase 3'
-    });
+    const result = contextualRiskAnalyzer.contextualizeExclusions(
+      exclusions,
+      clientProfile as ClientProfile
+    );
+    
+    res.json(result);
   } catch (error: any) {
     console.error('❌ [analysis/contextualize] Error:', error);
     res.status(500).json({ 
@@ -131,20 +134,21 @@ router.post('/contextualize', async (req, res) => {
  */
 router.post('/warranty-compliance', async (req, res) => {
   try {
-    const { quoteId, clauseDocumentId, clientProfile } = req.body;
+    const { conditions, clientProfile } = req.body;
     
-    if (!quoteId || !clauseDocumentId) {
+    if (!conditions || !Array.isArray(conditions)) {
       res.status(400).json({ 
-        error: 'Missing required fields: quoteId, clauseDocumentId' 
+        error: 'Missing required field: conditions (array)' 
       });
       return;
     }
     
-    // TODO: Implement warranty compliance when warrantyComplianceAnalyzer service is ready
-    res.json({ 
-      status: 'not_implemented',
-      message: 'Warranty compliance analysis coming in Phase 3'
-    });
+    const result = warrantyComplianceAnalyzer.analyzeConditions(
+      conditions,
+      clientProfile
+    );
+    
+    res.json(result);
   } catch (error: any) {
     console.error('❌ [analysis/warranty-compliance] Error:', error);
     res.status(500).json({ 
