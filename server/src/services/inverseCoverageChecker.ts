@@ -110,7 +110,7 @@ async function extractClauseCoverages(insurerName: string): Promise<Array<{
       .limit(50);
     
     if (cachedCoverages && cachedCoverages.length > 0) {
-      return cachedCoverages.map(c => ({
+      return (cachedCoverages as any[]).map(c => ({
         name: c.coverage_name,
         isMandatory: c.is_mandatory,
         reference: `Page ${c.page_number}`
