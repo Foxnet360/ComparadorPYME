@@ -8,6 +8,7 @@ import { narrativeService, NarrativeResult } from '../services/narrativeService'
 import { validateQuote, ValidationResult } from '../services/quoteValidator';
 import { calculateConfidence, ConfidenceResult } from '../services/confidenceScorer';
 import { normalizeCoverages } from '../services/thesaurusMapper';
+import { clauseCoverageValidator } from '../services/clauseCoverageValidator';
 import { supabase } from '../config/database';
 import { formatCOP } from '../utils/formatCurrency';
 import fs from 'fs';
@@ -318,6 +319,29 @@ export const analysisController = {
                 }
             }
 
+            // Phase 4b: Validate coverages against clause documents
+            console.log('🔍 Phase 4b/5: Validating coverages against clause documents...');
+            const clauseValidationResults: Map<number, any> = new Map();
+            
+            for (let i = 0; i < parsedQuotes.length; i++) {
+                const quote = parsedQuotes[i];
+                console.log(`   Validating clause coverage for ${quote.insurerName}...`);
+                
+                try {
+                    const validation = await clauseCoverageValidator.validate(quote, quote.insurerName);
+                    clauseValidationResults.set(i, validation);
+                    
+                    if (!validation.hasClauseDocument) {
+                        console.log(`   ⚠️ No clause document for ${quote.insurerName}, score penalized`);
+                    } else {
+                        console.log(`   ✅ ${validation.verifiedCount} verified, ${validation.phantomCount} phantom, ${validation.mandatoryMissingCount} mandatory missing`);
+                    }
+                } catch (error) {
+                    console.error(`   ❌ Clause validation error for ${quote.insurerName}:`, error);
+                    clauseValidationResults.set(i, null);
+                }
+            }
+
             // Phase 4: Calculate scores
             console.log('📊 Phase 4/5: Calculating scores...');
             const scoringResults: Map<number, ScoringResult> = new Map();
@@ -325,9 +349,10 @@ export const analysisController = {
             for (let i = 0; i < parsedQuotes.length; i++) {
                 const quote = parsedQuotes[i];
                 const crossRefs = crossRefResults.get(i) || [];
+                const clauseValidation = clauseValidationResults.get(i)?.results;
                 
                 try {
-                    const scoring = quoteScorer.calculateScore(quote, crossRefs, parsedQuotes);
+                    const scoring = quoteScorer.calculateScore(quote, crossRefs, parsedQuotes, undefined, clauseValidation);
                     scoringResults.set(i, scoring);
                     console.log(`   ${quote.insurerName}: ${scoring.totalScore}/100`);
                 } catch (error) {

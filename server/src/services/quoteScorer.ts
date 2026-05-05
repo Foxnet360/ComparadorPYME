@@ -7,6 +7,7 @@
 import { ParsedQuote } from './quoteParser';
 import { CrossReferenceResult, DiscrepancyAlert } from './crossReferenceEngine';
 import { formatNumber } from '../utils/formatCurrency';
+import { CoverageExistenceResult } from './clauseCoverageValidator';
 
 export interface ScoreWeights {
     coverage: number;
@@ -80,7 +81,8 @@ export const quoteScorer = {
         quote: ParsedQuote,
         crossRefResults: CrossReferenceResult[],
         allQuotes: ParsedQuote[] = [],
-        customWeights?: Partial<ScoreWeights>
+        customWeights?: Partial<ScoreWeights>,
+        clauseValidation?: CoverageExistenceResult[]
     ): ScoringResult => {
         console.log(`📊 [quoteScorer] Calculating score for ${quote.insurerName}...`);
 
@@ -88,7 +90,7 @@ export const quoteScorer = {
         normalizeWeights(weights);
 
         const breakdown: ScoreBreakdown = {
-            coverage: calculateCoverageScore(quote),
+            coverage: calculateCoverageScore(quote, clauseValidation),
             deductibles: calculateDeductibleScore(crossRefResults),
             exclusions: calculateExclusionScore(crossRefResults),
             priceRatio: calculatePriceScore(quote, allQuotes),
@@ -160,7 +162,7 @@ export const quoteScorer = {
 // Individual Score Calculators
 // ====================
 
-function calculateCoverageScore(quote: ParsedQuote): number {
+function calculateCoverageScore(quote: ParsedQuote, clauseValidation?: CoverageExistenceResult[]): number {
     if (quote.coverages.length === 0) return 0;
 
     // Count how many expected coverages are present
@@ -181,11 +183,23 @@ function calculateCoverageScore(quote: ParsedQuote): number {
     const extraCoverages = Math.max(0, quote.coverages.length - EXPECTED_COVERAGES.length);
     score = Math.min(100, score + extraCoverages * 3);
 
+    // Apply clause validation penalties
+    if (clauseValidation && clauseValidation.length > 0) {
+        const phantomCount = clauseValidation.filter(v => v.status === 'PHANTOM').length;
+        const mandatoryMissingCount = clauseValidation.filter(v => v.status === 'MANDATORY_MISSING').length;
+        
+        // Penalty for phantom coverages: -15 each
+        score -= phantomCount * 15;
+        
+        // Penalty for mandatory missing coverages: -10 each
+        score -= mandatoryMissingCount * 10;
+    }
+
     return Math.round(clamp(score, 0, 100));
 }
 
 function calculateDeductibleScore(crossRefResults: CrossReferenceResult[]): number {
-    if (crossRefResults.length === 0) return 50;
+    if (crossRefResults.length === 0) return 30; // Penalized from 50 to 30 when no clause document
 
     let totalScore = 0;
     let count = 0;
@@ -220,7 +234,7 @@ function calculateDeductibleScore(crossRefResults: CrossReferenceResult[]): numb
 }
 
 function calculateExclusionScore(crossRefResults: CrossReferenceResult[]): number {
-    if (crossRefResults.length === 0) return 50;
+    if (crossRefResults.length === 0) return 30; // Penalized from 50 to 30 when no clause document
 
     let totalExclusions = 0;
     let verifiedCount = 0;
@@ -233,7 +247,7 @@ function calculateExclusionScore(crossRefResults: CrossReferenceResult[]): numbe
         totalExclusions += exclusionCount;
     }
 
-    if (verifiedCount === 0) return 50;
+    if (verifiedCount === 0) return 30; // Penalized from 50 to 30 when no clause document
 
     const avgExclusions = totalExclusions / verifiedCount;
     
@@ -284,7 +298,7 @@ function calculatePriceScore(quote: ParsedQuote, allQuotes: ParsedQuote[]): numb
 }
 
 function calculateSubLimitScore(crossRefResults: CrossReferenceResult[]): number {
-    if (crossRefResults.length === 0) return 50;
+    if (crossRefResults.length === 0) return 30; // Penalized from 50 to 30 when no clause document
 
     let restrictiveCount = 0;
     let verifiedCount = 0;
@@ -313,7 +327,7 @@ function calculateSubLimitScore(crossRefResults: CrossReferenceResult[]): number
         }
     }
 
-    if (verifiedCount === 0) return 50;
+    if (verifiedCount === 0) return 30; // Penalized from 50 to 30 when no clause document
 
     const avgRestrictive = restrictiveCount / verifiedCount;
     let score = 100 - (avgRestrictive * 25);
@@ -321,7 +335,7 @@ function calculateSubLimitScore(crossRefResults: CrossReferenceResult[]): number
 }
 
 function calculateWarrantyScore(crossRefResults: CrossReferenceResult[]): number {
-    if (crossRefResults.length === 0) return 50;
+    if (crossRefResults.length === 0) return 30; // Penalized from 50 to 30 when no clause document
 
     let totalConditions = 0;
     let verifiedCount = 0;
@@ -334,7 +348,7 @@ function calculateWarrantyScore(crossRefResults: CrossReferenceResult[]): number
         totalConditions += conditionCount;
     }
 
-    if (verifiedCount === 0) return 50;
+    if (verifiedCount === 0) return 30; // Penalized from 50 to 30 when no clause document
 
     const avgConditions = totalConditions / verifiedCount;
     

@@ -23,6 +23,7 @@ import { analysisController } from './controllers/analysisController';
 // Import routes
 import auditRoutes from './routes/audit';
 import chatRoutes from './routes/chat';
+import analysisRoutes from './routes/analysis';
 
 const app = express();
 const port = parseInt(process.env.PORT || '8080', 10);
@@ -97,6 +98,9 @@ app.post('/api/search/compare', searchController.compareDocuments);
 
 // NEW: Audit enrichment routes
 app.use('/api/audit', auditRoutes);
+
+// NEW: Analysis validation routes
+app.use('/api/analysis', analysisRoutes);
 
 // NEW: Chat routes
 app.use('/api/chat', chatRoutes);
