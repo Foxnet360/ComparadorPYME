@@ -5,6 +5,9 @@
 
 import { Router } from 'express';
 import { clauseCoverageValidator } from '../services/clauseCoverageValidator';
+import { deductibleAnalyzer } from '../services/deductibleAnalyzer';
+import { inverseCoverageChecker } from '../services/inverseCoverageChecker';
+import { clauseVersionComparator } from '../services/clauseVersionComparator';
 
 const router = Router();
 
@@ -41,20 +44,23 @@ router.post('/validate-coverages', async (req, res) => {
  */
 router.post('/deductible-risk', async (req, res) => {
   try {
-    const { coverageName, deductibleText, insuredAmount } = req.body;
+    const { coverageName, quoteDeductible, clauseDeductible, insuredAmount } = req.body;
     
-    if (!coverageName || !deductibleText || !insuredAmount) {
+    if (!coverageName || !quoteDeductible || !insuredAmount) {
       res.status(400).json({ 
-        error: 'Missing required fields: coverageName, deductibleText, insuredAmount' 
+        error: 'Missing required fields: coverageName, quoteDeductible, insuredAmount' 
       });
       return;
     }
     
-    // TODO: Implement deductible analysis when deductibleAnalyzer service is ready
-    res.json({ 
-      status: 'not_implemented',
-      message: 'Deductible risk analysis coming in Phase 2'
-    });
+    const analysis = deductibleAnalyzer.analyze(
+      coverageName,
+      quoteDeductible,
+      clauseDeductible || quoteDeductible,
+      parseFloat(insuredAmount)
+    );
+    
+    res.json(analysis);
   } catch (error: any) {
     console.error('❌ [analysis/deductible-risk] Error:', error);
     res.status(500).json({ 
@@ -70,20 +76,17 @@ router.post('/deductible-risk', async (req, res) => {
  */
 router.post('/inverse-check', async (req, res) => {
   try {
-    const { quoteId, clauseDocumentId } = req.body;
+    const { quote, insurerName } = req.body;
     
-    if (!quoteId || !clauseDocumentId) {
+    if (!quote || !insurerName) {
       res.status(400).json({ 
-        error: 'Missing required fields: quoteId, clauseDocumentId' 
+        error: 'Missing required fields: quote, insurerName' 
       });
       return;
     }
     
-    // TODO: Implement inverse check when inverseCoverageChecker service is ready
-    res.json({ 
-      status: 'not_implemented',
-      message: 'Inverse coverage check coming in Phase 2'
-    });
+    const result = await inverseCoverageChecker.checkMissingCoverages(quote, insurerName);
+    res.json(result);
   } catch (error: any) {
     console.error('❌ [analysis/inverse-check] Error:', error);
     res.status(500).json({ 
@@ -173,6 +176,32 @@ router.post('/legal-opinion', async (req, res) => {
     });
   } catch (error: any) {
     console.error('❌ [analysis/legal-opinion] Error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message 
+    });
+  }
+});
+
+/**
+ * POST /api/analysis/compare-versions
+ * Compare two versions of a clause document
+ */
+router.post('/compare-versions', async (req, res) => {
+  try {
+    const { oldDocumentId, newDocumentId } = req.body;
+    
+    if (!oldDocumentId || !newDocumentId) {
+      res.status(400).json({ 
+        error: 'Missing required fields: oldDocumentId, newDocumentId' 
+      });
+      return;
+    }
+    
+    const result = await clauseVersionComparator.compareVersions(oldDocumentId, newDocumentId);
+    res.json(result);
+  } catch (error: any) {
+    console.error('❌ [analysis/compare-versions] Error:', error);
     res.status(500).json({ 
       error: 'Internal server error',
       message: error.message 

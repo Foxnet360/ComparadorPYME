@@ -120,6 +120,27 @@ export const AuditDashboard: React.FC<AuditDashboardProps> = ({
         </div>
       )}
       
+      {/* Deductible Risk Metrics */}
+      {viewMode === 'technical' && (
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <h3 className="font-bold text-slate-800 mb-3">Riesgo de Deducibles</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+              <p className="text-sm text-green-600">Riesgo Bajo</p>
+              <p className="text-xl font-bold text-green-700">-</p>
+            </div>
+            <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
+              <p className="text-sm text-amber-600">Riesgo Medio</p>
+              <p className="text-xl font-bold text-amber-700">-</p>
+            </div>
+            <div className="bg-red-50 rounded-lg p-3 border border-red-200">
+              <p className="text-sm text-red-600">Riesgo Alto</p>
+              <p className="text-xl font-bold text-red-700">-</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Business Context */}
       {viewMode === 'technical' && businessContextAnalysis && (
         <div className="bg-blue-50 rounded-xl border border-blue-200 p-4">
