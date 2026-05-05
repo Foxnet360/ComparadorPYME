@@ -1,43 +1,43 @@
-# Clause Selector UI
-
-Capacidad de seleccionar clausulados de la biblioteca durante el análisis de cotizaciones.
-
 ## ADDED Requirements
 
-### Requirement: Selector de clausulados en flujo de análisis
+### Requirement: Select multiple clauses per insurer
+The system SHALL allow users to select multiple clause documents from the same insurer when they represent different document types or products.
 
-El sistema MUST proporcionar un selector de clausulados en el flujo de análisis de cotizaciones.
+#### Scenario: Select general and particular clauses
+- **WHEN** user is selecting clauses for analysis
+- **AND** insurer "AXA" has both General and Particular clauses available
+- **THEN** the user SHALL be able to select both
+- **AND** both SHALL be included in the analysis
 
-#### Scenario: Seleccionar clausulados pre-cargados
+#### Scenario: Visual grouping by insurer
+- **WHEN** displaying clause selection options
+- **THEN** clauses SHALL be grouped by insurer
+- **AND** each group SHALL be collapsible
+- **AND** active clauses SHALL appear first within each group
 
-- **WHEN** el usuario sube cotizaciones para análisis
-- **THEN** se MUST mostrar un selector de clausulados disponibles en la biblioteca
-- **AND** el usuario SHALL poder seleccionar múltiples clausulados relevantes
+### Requirement: Display version in selector
+The system SHALL display version information in the clause selector.
 
-#### Scenario: Análisis sin subir PDFs de clausulados
-
-- **WHEN** el usuario selecciona clausulados de la biblioteca
-- **THEN** el sistema MUST usar las secciones pre-extraídas
-- **AND** NO MUST requerir subir PDFs de clausulados
-
-### Requirement: Compatibilidad con flujo actual
-
-El sistema MUST mantener compatibilidad con el flujo tradicional de upload de clausulados.
-
-#### Scenario: Upload tradicional de clausulados
-
-- **WHEN** el usuario prefiere subir clausulados manualmente
-- **THEN** el sistema MUST permitir upload como antes
-- **AND** SHOULD ofrecer opción de guardar en biblioteca para futuro uso
+#### Scenario: Show version for each clause
+- **WHEN** displaying clause options
+- **THEN** each option SHALL show: insurer, product name, document type, version
+- **AND** indicate if it's the latest active version
 
 ## MODIFIED Requirements
 
-### Requirement: Análisis usa secciones en lugar de documentos completos
+### Requirement: Selector de clausulados en flujo de análisis
+El sistema MUST proporcionar un selector de clausulados en el flujo de análisis de cotizaciones, permitiendo selección múltiple por aseguradora.
 
-El sistema MUST optimizar el uso de tokens enviando solo secciones relevantes en lugar de documentos completos.
+#### Scenario: Seleccionar clausulados pre-cargados
+- **WHEN** el usuario sube cotizaciones para análisis
+- **THEN** se MUST mostrar un selector agrupado por aseguradora
+- **AND** el usuario SHALL poder seleccionar múltiples clausulados por aseguradora
+- **AND** se MUST mostrar la versión de cada clausulado
 
-#### Scenario: Prompt optimizado
+### Requirement: Compatibilidad con flujo actual
+El sistema MUST mantener compatibilidad con el flujo tradicional de upload de clausulados, y también permitir selección desde biblioteca con múltiples versiones.
 
-- **WHEN** se envía análisis a Gemini con clausulados de biblioteca
-- **THEN** solo se MUST enviar las secciones (exclusiones, deducibles, garantías)
-- **AND** el prompt MUST indicar que son secciones extraídas
+#### Scenario: Upload tradicional de clausulados
+- **WHEN** el usuario prefiere subir clausulados manualmente
+- **THEN** el sistema MUST permitir upload como antes
+- **AND** SHOULD ofrecer opción de guardar en biblioteca con versión

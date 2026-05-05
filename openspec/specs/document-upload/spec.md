@@ -1,58 +1,37 @@
-# Spec: Document Upload API
-
-## Capability
-Endpoint REST para subir documentos PDF. En producción, los PDFs de cotizaciones se almacenan temporalmente en /tmp para procesamiento inmediato sin persistencia, mientras que los clausulados se almacenan en Supabase Storage para consulta RAG.
-
 ## ADDED Requirements
 
-### Requirement: Almacenamiento temporal de cotizaciones
-Los PDFs de cotizaciones DEBEN almacenarse temporalmente en /tmp durante el procesamiento y eliminarse automáticamente después.
+### Requirement: Support version field in document upload
+The system SHALL accept a version field when uploading clause documents.
 
-#### Scenario: Subida de cotización
-- **WHEN** un usuario sube un PDF de cotización via POST /api/analyze
-- **THEN** el sistema almacena el archivo en /tmp/uploads/
-- **AND** procesa el PDF inmediatamente (extracción, análisis, comparación)
-- **AND** elimina el archivo de /tmp al completar el análisis
-- **AND** no persiste el PDF en disco ni en base de datos
+#### Scenario: Upload with version
+- **WHEN** uploading a clause document with version "2024.1"
+- **THEN** the system SHALL store the version in the documents table
+- **AND** display it in all listings
 
-#### Scenario: Múltiples cotizaciones simultáneas
-- **WHEN** un usuario sube hasta 10 PDFs de cotizaciones en una sola solicitud
-- **THEN** el sistema almacena cada uno en /tmp/uploads/ con nombre único
-- **AND** procesa todos secuencialmente
-- **AND** elimina todos los archivos al finalizar
+### Requirement: Auto-archive previous active version
+The system SHALL automatically archive the previous active version when uploading a new document for the same insurer, product, and type.
 
-### Requirement: Limpieza automática de archivos temporales
-El sistema DEBE garantizar que los archivos temporales se eliminen incluso si ocurre un error.
-
-#### Scenario: Error durante procesamiento
-- **WHEN** ocurre un error durante el análisis de una cotización
-- **THEN** el sistema captura el error
-- **AND** elimina el archivo temporal de /tmp
-- **AND** retorna error al cliente sin dejar archivos huérfanos
+#### Scenario: New version replaces old
+- **WHEN** uploading a document for insurer "AXA", product "PYME", type "CLAUSULADO_GENERAL"
+- **AND** an active document already exists for that combination
+- **THEN** the system SHALL archive the existing document first
+- **AND** then store and activate the new document
 
 ## MODIFIED Requirements
 
-### Requirement: Aceptar archivos PDF
-El sistema DEBE aceptar multipart/form-data para subida de PDFs.
+### Requirement: Almacenamiento de clausulados con metadata estructurada
+El sistema DEBE almacenar clausulados con metadata estructurada incluyendo versión y estado activo.
 
-#### Scenario: Validación de archivo de cotización
-- **WHEN** un usuario sube un PDF de cotización
-- **THEN** el sistema valida que sea un PDF real (header %PDF-)
-- **AND** verifica que el tamaño sea entre 1KB y 50MB
-- **AND** sanitiza el nombre de archivo
+#### Scenario: Crear nuevo clausulado en producción
+- **WHEN** un admin sube un PDF de clausulado con metadata (aseguradora, producto, versión, año)
+- **THEN** el sistema almacena el PDF en Supabase Storage
+- **AND** extrae texto y crea chunks vectorizados
+- **AND** genera hash SHA256 para detección de cambios
+- **AND** registra versión y fecha de creación en tabla documents
+- **AND** marca como is_active = true (o archiva versión anterior si existe)
 
-#### Scenario: Validación de archivo de clausulado
-- **WHEN** un usuario sube un PDF de clausulado
-- **THEN** el sistema valida que sea un PDF real
-- **AND** verifica el tamaño (hasta 100MB para clausulados extensos)
-- **AND** almacena en Supabase Storage para persistencia
-
-## REMOVED Requirements
-
-### Requirement: Almacenamiento persistente local de PDFs
-**Reason**: En producción, el almacenamiento local es efímero y no escalable. Los PDFs de cotizaciones no necesitan persistir después del análisis.
-**Migration**: Los PDFs de cotizaciones se procesan inmediatamente y se eliminan. Los clausulados se migran a Supabase Storage.
-
-### Requirement: Directorio uploads/ persistente
-**Reason**: Los contenedores reinician y pierden archivos locales.
-**Migration**: Usar /tmp para archivos temporales de cotizaciones y Supabase Storage para clausulados.
+#### Scenario: Buscar clausulados por aseguradora
+- **WHEN** se solicita lista de clausulados para una aseguradora
+- **THEN** el sistema consulta tabla documents por aseguradora
+- **AND** retorna todos los clausulados con producto, versión, estado y fecha
+- **AND** permite filtrar por is_active
