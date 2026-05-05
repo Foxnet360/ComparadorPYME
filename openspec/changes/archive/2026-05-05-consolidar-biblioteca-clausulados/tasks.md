@@ -51,9 +51,9 @@
 - [x] 6.2 Test multi-clause: Select both General and Particular for same insurer
 - [x] 6.3 Test CLI seed: Run `npm run seed:clauses` with 7 example files
 - [x] 6.4 Test RAG search: Verify archived clauses excluded from default search
-- [ ] 6.5 Test frontend: Verify ClauseAdmin shows versions correctly
-- [ ] 6.6 Test frontend: Verify ClauseSelector allows multi-select
-- [ ] 6.7 Run full audit workflow end-to-end with pre-loaded clauses
+- [x] 6.5 Test frontend: Verify ClauseAdmin shows versions correctly
+- [x] 6.6 Test frontend: Verify ClauseSelector allows multi-select
+- [x] 6.7 Run full audit workflow end-to-end with pre-loaded clauses
 
 ## 7. Cleanup & Deprecation
 
