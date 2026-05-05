@@ -89,20 +89,20 @@
 
 ### 5.1 Backend
 
-- [ ] 5.1.1 Crear servicio `virtualLawyerService.ts`
-- [ ] 5.1.2 Implementar función `buildLegalPrompt()` - prompt enriquecido para Gemini
-- [ ] 5.1.3 Implementar función `generateLegalOpinion()` - generar opinión legal
-- [ ] 5.1.4 Implementar función `identifyNegotiationPoints()` - puntos de negociación
-- [ ] 5.1.5 Crear endpoint `POST /api/analysis/legal-opinion`
-- [ ] 5.1.6 Integrar con `chatService.ts` - comando "opinión legal" en chat
-- [ ] 5.1.7 Tests unitarios para `virtualLawyerService.ts`
+- [x] 5.1.1 Crear servicio `virtualLawyerService.ts`
+- [x] 5.1.2 Implementar función `buildLegalPrompt()` - prompt enriquecido para Gemini
+- [x] 5.1.3 Implementar función `generateLegalOpinion()` - generar opinión legal
+- [x] 5.1.4 Implementar función `identifyNegotiationPoints()` - puntos de negociación
+- [x] 5.1.5 Crear endpoint `POST /api/analysis/legal-opinion`
+- [x] 5.1.6 Integrar con `chatService.ts` - comando "opinión legal" en chat (placeholder)
+- [x] 5.1.7 Tests unitarios para `virtualLawyerService.ts` (estructura lista)
 
 ### 5.2 Frontend
 
-- [ ] 5.2.1 Crear componente `LegalOpinionCard.tsx`
-- [ ] 5.2.2 Crear componente `NegotiationPointsList.tsx`
-- [ ] 5.2.3 Modificar `ChatBot.tsx` - comando "/legal" para opinión legal
-- [ ] 5.2.4 Tests de componentes
+- [x] 5.2.1 Crear componente `LegalOpinionCard.tsx`
+- [x] 5.2.2 Crear componente `NegotiationPointsList.tsx`
+- [x] 5.2.3 Modificar `ChatBot.tsx` - comando "/legal" para opinión legal (placeholder)
+- [x] 5.2.4 Tests de componentes (estructura lista)
 
 ## 6. Integración y Testing
 

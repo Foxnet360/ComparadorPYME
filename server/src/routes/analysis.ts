@@ -10,6 +10,7 @@ import { inverseCoverageChecker } from '../services/inverseCoverageChecker';
 import { clauseVersionComparator } from '../services/clauseVersionComparator';
 import { contextualRiskAnalyzer, ClientProfile } from '../services/contextualRiskAnalyzer';
 import { warrantyComplianceAnalyzer } from '../services/warrantyComplianceAnalyzer';
+import { virtualLawyerService } from '../services/virtualLawyerService';
 
 const router = Router();
 
@@ -164,20 +165,22 @@ router.post('/warranty-compliance', async (req, res) => {
  */
 router.post('/legal-opinion', async (req, res) => {
   try {
-    const { quoteId, coverageNames, clientProfile } = req.body;
+    const { quote, clientProfile, insurerName } = req.body;
     
-    if (!quoteId || !coverageNames) {
+    if (!quote || !insurerName) {
       res.status(400).json({ 
-        error: 'Missing required fields: quoteId, coverageNames' 
+        error: 'Missing required fields: quote, insurerName' 
       });
       return;
     }
     
-    // TODO: Implement legal opinion when virtualLawyerService is ready
-    res.json({ 
-      status: 'not_implemented',
-      message: 'Legal opinion generation coming in Phase 4'
-    });
+    const opinion = await virtualLawyerService.generateLegalOpinion(
+      quote,
+      clientProfile as ClientProfile,
+      insurerName
+    );
+    
+    res.json(opinion);
   } catch (error: any) {
     console.error('❌ [analysis/legal-opinion] Error:', error);
     res.status(500).json({ 
