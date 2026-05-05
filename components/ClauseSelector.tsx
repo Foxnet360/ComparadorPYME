@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Library, Upload, Check, Search } from 'lucide-react';
+import { Library, Upload, Check, ChevronDown, ChevronRight, Tag } from 'lucide-react';
 import { clauseService } from '../services/clauseService';
 
 interface ClauseSelectorProps {
@@ -8,10 +8,17 @@ interface ClauseSelectorProps {
     mode: 'library' | 'upload';
 }
 
-interface RAGClause {
-    insurerName: string;
+interface Document {
+    id: string;
     documentName: string;
-    chunkCount: number;
+    documentType: string;
+    version?: string;
+    productName?: string;
+    isActive: boolean;
+    insurer: {
+        id: string;
+        name: string;
+    };
 }
 
 export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
@@ -19,10 +26,9 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
     onModeChange,
     mode
 }) => {
-    const [clauses, setClauses] = useState<RAGClause[]>([]);
-    const [insurers, setInsurers] = useState<string[]>([]);
-    const [selectedItems, setSelectedItems] = useState<string[]>([]);
-    const [filterInsurer, setFilterInsurer] = useState<string>('');
+    const [documents, setDocuments] = useState<Document[]>([]);
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [expandedInsurers, setExpandedInsurers] = useState<Set<string>>(new Set());
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -36,33 +42,78 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
         setLoading(true);
         setError(null);
         try {
-            // Use RAG endpoints instead of legacy Firestore endpoints
-            const clauseData = await clauseService.ragGetClauses();
-            setClauses(clauseData);
+            const docs = await clauseService.getDocuments({ isActive: true });
+            setDocuments(docs);
             
-            // Extract unique insurers from clauses
-            const uniqueInsurers = [...new Set(clauseData.map(c => c.insurerName))];
-            setInsurers(uniqueInsurers);
+            // Auto-expand first insurer
+            if (docs.length > 0) {
+                setExpandedInsurers(new Set([docs[0].insurer?.name]));
+            }
         } catch (err: any) {
-            console.error('Error loading clauses:', err);
+            console.error('Error loading documents:', err);
             setError('Error al cargar cláusulas. El servicio puede no estar disponible.');
         } finally {
             setLoading(false);
         }
     };
 
-    const toggleClause = (insurerName: string, documentName: string) => {
-        const key = `${insurerName}::${documentName}`;
-        const newSelection = selectedItems.includes(key)
-            ? selectedItems.filter(x => x !== key)
-            : [...selectedItems, key];
-        setSelectedItems(newSelection);
+    const toggleDocument = (docId: string) => {
+        const newSelection = selectedIds.includes(docId)
+            ? selectedIds.filter(id => id !== docId)
+            : [...selectedIds, docId];
+        setSelectedIds(newSelection);
         onClausesSelected(newSelection);
     };
 
-    const filteredClauses = filterInsurer
-        ? clauses.filter(c => c.insurerName === filterInsurer)
-        : clauses;
+    const toggleInsurer = (insurerName: string) => {
+        const newExpanded = new Set(expandedInsurers);
+        if (newExpanded.has(insurerName)) {
+            newExpanded.delete(insurerName);
+        } else {
+            newExpanded.add(insurerName);
+        }
+        setExpandedInsurers(newExpanded);
+    };
+
+    const selectAllInInsurer = (insurerName: string, docs: Document[]) => {
+        const docIds = docs.map(d => d.id);
+        const allSelected = docIds.every(id => selectedIds.includes(id));
+        
+        let newSelection: string[];
+        if (allSelected) {
+            newSelection = selectedIds.filter(id => !docIds.includes(id));
+        } else {
+            newSelection = [...new Set([...selectedIds, ...docIds])];
+        }
+        setSelectedIds(newSelection);
+        onClausesSelected(newSelection);
+    };
+
+    // Group documents by insurer
+    const groupedDocs = documents.reduce((acc, doc) => {
+        const insurerName = doc.insurer?.name || 'Sin Aseguradora';
+        if (!acc[insurerName]) acc[insurerName] = [];
+        acc[insurerName].push(doc);
+        return acc;
+    }, {} as Record<string, Document[]>);
+
+    const getDocumentTypeLabel = (type: string) => {
+        switch (type) {
+            case 'CLAUSULADO_GENERAL': return 'General';
+            case 'CLAUSULADO_PARTICULAR': return 'Particular';
+            case 'ANEXO': return 'Anexo';
+            default: return type;
+        }
+    };
+
+    const getDocumentTypeColor = (type: string) => {
+        switch (type) {
+            case 'CLAUSULADO_GENERAL': return 'bg-blue-100 text-blue-700';
+            case 'CLAUSULADO_PARTICULAR': return 'bg-purple-100 text-purple-700';
+            case 'ANEXO': return 'bg-orange-100 text-orange-700';
+            default: return 'bg-gray-100 text-gray-600';
+        }
+    };
 
     return (
         <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -102,65 +153,102 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
             {/* Library Mode Content */}
             {mode === 'library' && (
                 <div className="space-y-3">
-                    {/* Insurer Filter */}
-                    <div className="relative">
-                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <select
-                            value={filterInsurer}
-                            onChange={(e) => setFilterInsurer(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        >
-                            <option value="">Todas las aseguradoras</option>
-                            {insurers.map(ins => (
-                                <option key={ins} value={ins}>
-                                    {ins}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* Clause List */}
                     {loading ? (
-                        <div className="text-center py-4 text-gray-500 text-sm">Cargando...</div>
-                    ) : filteredClauses.length === 0 ? (
+                        <div className="text-center py-4 text-gray-500 text-sm flex items-center justify-center gap-2">
+                            <span className="animate-spin rounded-full h-4 w-4 border-2 border-indigo-600 border-t-transparent"></span>
+                            Cargando...
+                        </div>
+                    ) : documents.length === 0 ? (
                         <div className="text-center py-4 text-gray-500 text-sm">
                             No hay clausulados en la biblioteca
                         </div>
                     ) : (
-                        <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg divide-y">
-                            {filteredClauses.map((clause, idx) => {
-                                const key = `${clause.insurerName}::${clause.documentName}`;
+                        <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg">
+                            {Object.entries(groupedDocs).map(([insurerName, docs]) => {
+                                const isExpanded = expandedInsurers.has(insurerName);
+                                const docsSelected = docs.filter(d => selectedIds.includes(d.id));
+                                const allSelected = docs.length > 0 && docsSelected.length === docs.length;
+                                const someSelected = docsSelected.length > 0 && !allSelected;
+                                
                                 return (
-                                    <label
-                                        key={idx}
-                                        className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-50 transition-colors ${selectedItems.includes(key) ? 'bg-indigo-50' : ''}`}
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedItems.includes(key)}
-                                            onChange={() => toggleClause(clause.insurerName, clause.documentName)}
-                                            className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
-                                        />
-                                        <div className="flex-1 min-w-0">
-                                            <div className="font-medium text-sm text-gray-900 truncate">
-                                                {clause.insurerName} - {clause.documentName}
-                                            </div>
-                                            <div className="text-xs text-gray-500 flex gap-2 items-center">
-                                                <span>{clause.chunkCount} chunks</span>
-                                                <span className="text-green-600">Indexado ✓</span>
-                                            </div>
+                                    <div key={insurerName} className="border-b border-gray-100 last:border-b-0">
+                                        {/* Insurer Header */}
+                                        <div 
+                                            className="flex items-center gap-2 p-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
+                                            onClick={() => toggleInsurer(insurerName)}
+                                        >
+                                            {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                                            <span className="font-medium text-sm text-gray-900">{insurerName}</span>
+                                            <span className="text-xs text-gray-500">({docs.length})</span>
+                                            <div className="flex-1"></div>
+                                            <input
+                                                type="checkbox"
+                                                checked={allSelected}
+                                                ref={el => {
+                                                    if (el) el.indeterminate = someSelected;
+                                                }}
+                                                onChange={(e) => {
+                                                    e.stopPropagation();
+                                                    selectAllInInsurer(insurerName, docs);
+                                                }}
+                                                className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                                            />
                                         </div>
-                                    </label>
+                                        
+                                        {/* Documents List */}
+                                        {isExpanded && (
+                                            <div className="divide-y divide-gray-50">
+                                                {docs.map((doc) => (
+                                                    <label
+                                                        key={doc.id}
+                                                        className={`flex items-start gap-3 p-3 cursor-pointer hover:bg-gray-50 transition-colors ${selectedIds.includes(doc.id) ? 'bg-indigo-50' : ''}`}
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedIds.includes(doc.id)}
+                                                            onChange={() => toggleDocument(doc.id)}
+                                                            className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 mt-0.5"
+                                                        />
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-medium text-sm text-gray-900 truncate">
+                                                                    {doc.documentName}
+                                                                </span>
+                                                                <span className={`text-xs px-1.5 py-0.5 rounded ${getDocumentTypeColor(doc.documentType)}`}>
+                                                                    {getDocumentTypeLabel(doc.documentType)}
+                                                                </span>
+                                                            </div>
+                                                            <div className="text-xs text-gray-500 flex gap-2 items-center mt-1">
+                                                                {doc.version && (
+                                                                    <span className="flex items-center gap-1">
+                                                                        <Tag size={10} />
+                                                                        v{doc.version}
+                                                                    </span>
+                                                                )}
+                                                                {doc.productName && (
+                                                                    <span className="text-gray-400">{doc.productName}</span>
+                                                                )}
+                                                                <span className="text-green-600 flex items-center gap-1">
+                                                                    <Check size={10} />
+                                                                    Indexado
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 );
                             })}
                         </div>
                     )}
 
                     {/* Selection Summary */}
-                    {selectedItems.length > 0 && (
+                    {selectedIds.length > 0 && (
                         <div className="flex items-center gap-2 text-sm text-indigo-600 bg-indigo-50 px-3 py-2 rounded-lg">
                             <Check size={16} />
-                            {selectedItems.length} clausulado{selectedItems.length > 1 ? 's' : ''} seleccionado{selectedItems.length > 1 ? 's' : ''}
+                            {selectedIds.length} documento{selectedIds.length > 1 ? 's' : ''} seleccionado{selectedIds.length > 1 ? 's' : ''}
                         </div>
                     )}
                 </div>
@@ -175,3 +263,5 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
         </div>
     );
 };
+
+export default ClauseSelector;

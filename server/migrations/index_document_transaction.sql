@@ -1,4 +1,5 @@
 -- Function to insert document, page images, and chunks in a single atomic transaction
+-- Updated to support product_name for multi-clause versioning
 CREATE OR REPLACE FUNCTION index_document_transaction(
     p_insurer_id UUID,
     p_document_name TEXT,
@@ -8,7 +9,8 @@ CREATE OR REPLACE FUNCTION index_document_transaction(
     p_storage_path TEXT,
     p_uploaded_by TEXT,
     p_images JSONB,
-    p_chunks JSONB
+    p_chunks JSONB,
+    p_product_name TEXT DEFAULT NULL
 ) RETURNS UUID AS $$
 DECLARE
     v_document_id UUID;
@@ -21,6 +23,7 @@ BEGIN
         document_name,
         document_type,
         version,
+        product_name,
         total_pages,
         storage_path,
         is_active,
@@ -30,6 +33,7 @@ BEGIN
         p_document_name,
         p_document_type,
         p_version,
+        COALESCE(p_product_name, p_document_name),
         p_total_pages,
         p_storage_path,
         true,

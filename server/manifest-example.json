@@ -1,0 +1,108 @@
+{
+  "entries": [
+    {
+      "filePath": "/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/comparador-csa/Ejemplos/Pachito-el-chef/CLAUSULADOS/CLAUSULADO HDI.pdf",
+      "insurerName": "HDI",
+      "documentName": "CLAUSULADO HDI",
+      "documentType": "CLAUSULADO_GENERAL",
+      "productName": "General",
+      "version": "2024.1"
+    },
+    {
+      "filePath": "/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/comparador-csa/Ejemplos/Pachito-el-chef/CLAUSULADOS/CLAUSULADO MAPFRE.pdf",
+      "insurerName": "MAPFRE",
+      "documentName": "CLAUSULADO MAPFRE",
+      "documentType": "CLAUSULADO_GENERAL",
+      "productName": "General",
+      "version": "2024.1"
+    },
+    {
+      "filePath": "/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/comparador-csa/Ejemplos/Pachito-el-chef/CLAUSULADOS/CLAUSULADO SBS.pdf",
+      "insurerName": "SBS",
+      "documentName": "CLAUSULADO SBS",
+      "documentType": "CLAUSULADO_GENERAL",
+      "productName": "General",
+      "version": "2024.1"
+    },
+    {
+      "filePath": "/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/comparador-csa/Ejemplos/Pachito-el-chef/COTIZACIONES/COTIZACION HDI.pdf",
+      "insurerName": "HDI",
+      "documentName": "COTIZACION HDI",
+      "documentType": "CLAUSULADO_PARTICULAR",
+      "productName": "General",
+      "version": "2024.1"
+    },
+    {
+      "filePath": "/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/comparador-csa/Ejemplos/Pachito-el-chef/COTIZACIONES/COTIZACION SBS.pdf",
+      "insurerName": "SBS",
+      "documentName": "COTIZACION SBS",
+      "documentType": "CLAUSULADO_PARTICULAR",
+      "productName": "General",
+      "version": "2024.1"
+    },
+    {
+      "filePath": "/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/comparador-csa/Ejemplos/laser-home/Clausulados/Clausulado - AXA Colpatria.pdf",
+      "insurerName": "AXA Colpatria",
+      "documentName": "Clausulado - AXA Colpatria",
+      "documentType": "CLAUSULADO_GENERAL",
+      "productName": "General",
+      "version": "2024.1"
+    },
+    {
+      "filePath": "/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/comparador-csa/Ejemplos/laser-home/Clausulados/Clausulado - BBVA.pdf",
+      "insurerName": "BBVA",
+      "documentName": "Clausulado - BBVA",
+      "documentType": "CLAUSULADO_GENERAL",
+      "productName": "General",
+      "version": "2024.1"
+    },
+    {
+      "filePath": "/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/comparador-csa/Ejemplos/laser-home/Clausulados/Clausulado - CHUBB.pdf",
+      "insurerName": "CHUBB",
+      "documentName": "Clausulado - CHUBB",
+      "documentType": "CLAUSULADO_GENERAL",
+      "productName": "General",
+      "version": "2024.1"
+    },
+    {
+      "filePath": "/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/comparador-csa/Ejemplos/laser-home/Clausulados/Clausulado - MAPFRE.pdf",
+      "insurerName": "MAPFRE",
+      "documentName": "Clausulado - MAPFRE",
+      "documentType": "CLAUSULADO_GENERAL",
+      "productName": "General",
+      "version": "2024.1"
+    },
+    {
+      "filePath": "/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/comparador-csa/Ejemplos/laser-home/Cotizaciones/Cotización - AXA Colpatria.pdf",
+      "insurerName": "AXA Colpatria",
+      "documentName": "Cotización - AXA Colpatria",
+      "documentType": "CLAUSULADO_PARTICULAR",
+      "productName": "General",
+      "version": "2024.1"
+    },
+    {
+      "filePath": "/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/comparador-csa/Ejemplos/laser-home/Cotizaciones/Cotización - BBVA.pdf",
+      "insurerName": "BBVA",
+      "documentName": "Cotización - BBVA",
+      "documentType": "CLAUSULADO_PARTICULAR",
+      "productName": "General",
+      "version": "2024.1"
+    },
+    {
+      "filePath": "/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/comparador-csa/Ejemplos/laser-home/Cotizaciones/Cotización - CHUBB.pdf",
+      "insurerName": "CHUBB",
+      "documentName": "Cotización - CHUBB",
+      "documentType": "CLAUSULADO_PARTICULAR",
+      "productName": "General",
+      "version": "2024.1"
+    },
+    {
+      "filePath": "/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/comparador-csa/Ejemplos/laser-home/Cotizaciones/Cotización - MAPFRE.pdf",
+      "insurerName": "MAPFRE",
+      "documentName": "Cotización - MAPFRE",
+      "documentType": "CLAUSULADO_PARTICULAR",
+      "productName": "General",
+      "version": "2024.1"
+    }
+  ]
+}

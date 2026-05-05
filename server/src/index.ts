@@ -19,8 +19,6 @@ if (!process.env.GEMINI_API_KEY && process.env.VITE_GEMINI_API_KEY) {
 
 // Import controllers after dotenv is loaded (they depend on env vars)
 import { analysisController } from './controllers/analysisController';
-import { ragClauseController } from './controllers/ragClauseController';
-import { clauseController } from './controllers/clauseController';
 
 // Import routes
 import auditRoutes from './routes/audit';
@@ -57,12 +55,7 @@ app.get('/api', (req, res) => {
             documents: '/api/documents',
             search: '/api/search',
             audit: '/api/audit/enrich',
-            chat: '/api/chat',
-            rag: {
-                clauses: '/api/rag/clauses',
-                search: '/api/rag/search',
-                analyze: '/api/rag/analyze'
-            }
+            chat: '/api/chat'
         }
     });
 });
@@ -81,36 +74,9 @@ app.post('/api/analyze',
     analysisController.uploadAndAnalyze
 );
 
-// RAG Analysis route (new)
-app.post('/api/analyze-rag',
-    upload.fields([{ name: 'quotes', maxCount: 10 }, { name: 'clauses', maxCount: 10 }]),
-    async (req, res) => {
-        try {
-            const { ragClauseController } = await import('./controllers/ragClauseController');
-            await ragClauseController.analyzeQuote(req, res);
-        } catch (error) {
-            console.error('RAG Analysis error:', error);
-            res.status(500).json({ error: 'RAG analysis failed' });
-        }
-    }
-);
-
 app.get('/api/history', analysisController.getHistory);
 
-// RAG Clause Library routes
-app.post('/api/rag/clauses', upload.single('file'), ragClauseController.indexClause);
-app.get('/api/rag/clauses', ragClauseController.listClauses);
-app.delete('/api/rag/clauses', ragClauseController.deleteClause);
-app.post('/api/rag/clauses/:id/reindex', upload.single('file'), ragClauseController.reindexClause);
-app.post('/api/rag/analyze', upload.single('file'), ragClauseController.analyzeQuote);
-app.post('/api/rag/search', ragClauseController.search);
-
-// Clause Indexing routes (async RAG foundation)
-app.post('/api/clauses/index', upload.single('file'), clauseController.indexClause);
-app.get('/api/clauses/status/:jobId', clauseController.getJobStatus);
-app.get('/api/clauses/jobs', clauseController.listJobs);
-
-// NEW: Document Indexing routes
+// Document Indexing routes
 import { documentController } from './controllers/documentController';
 import { searchController } from './controllers/searchController';
 
@@ -170,9 +136,7 @@ if (process.env.NODE_ENV === 'production') {
                 'POST /api/search',
                 'POST /api/audit/enrich',
                 'POST /api/chat',
-                'POST /api/chat/suggestions',
-                'POST /api/rag/clauses',
-                'GET /api/rag/clauses'
+                'POST /api/chat/suggestions'
             ]
         });
     });
