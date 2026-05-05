@@ -30,6 +30,9 @@ export interface CrossReferenceResult {
         deductible?: string;
         exclusions?: string[];
         conditions?: string[];
+        hasCap?: boolean;
+        capAmount?: number;
+        isMandatory?: boolean;
     };
     alerts: DiscrepancyAlert[];
     isVerified: boolean;
