@@ -49,7 +49,10 @@ export const clauseVersionComparator = {
       .eq('id', newDocumentId)
       .single();
     
-    if (!oldDoc || !newDoc) {
+    const oldDocAny = oldDoc as any;
+    const newDocAny = newDoc as any;
+    
+    if (!oldDocAny || !newDocAny) {
       throw new Error('One or both documents not found');
     }
     
@@ -67,8 +70,8 @@ export const clauseVersionComparator = {
     const diffs: ClauseVersionDiff[] = [];
     
     // Compare coverages
-    const oldCoverageMap = new Map(oldCoverages?.map(c => [c.coverage_name.toLowerCase(), c]) || []);
-    const newCoverageMap = new Map(newCoverages?.map(c => [c.coverage_name.toLowerCase(), c]) || []);
+    const oldCoverageMap = new Map((oldCoverages as any[])?.map(c => [c.coverage_name.toLowerCase(), c]) || []);
+    const newCoverageMap = new Map((newCoverages as any[])?.map(c => [c.coverage_name.toLowerCase(), c]) || []);
     
     // Check for new coverages
     for (const [name, newCov] of newCoverageMap) {
@@ -103,8 +106,8 @@ export const clauseVersionComparator = {
         const oldExclusions = oldCov.exclusions || [];
         const newExclusions = newCov.exclusions || [];
         
-        const addedExclusions = newExclusions.filter(e => !oldExclusions.includes(e));
-        const removedExclusions = oldExclusions.filter(e => !newExclusions.includes(e));
+        const addedExclusions = newExclusions.filter((e: string) => !oldExclusions.includes(e));
+        const removedExclusions = oldExclusions.filter((e: string) => !newExclusions.includes(e));
         
         for (const exclusion of addedExclusions) {
           diffs.push({
@@ -149,10 +152,10 @@ export const clauseVersionComparator = {
     console.log(`✅ [clauseVersionComparator] Found ${diffs.length} differences`);
     
     return {
-      oldVersion: oldDoc.version || 'unknown',
-      newVersion: newDoc.version || 'unknown',
-      insurerName: oldDoc.insurer_name || 'Unknown',
-      productName: oldDoc.product_name || 'Unknown',
+      oldVersion: oldDocAny.version || 'unknown',
+      newVersion: newDocAny.version || 'unknown',
+      insurerName: oldDocAny.insurer_name || 'Unknown',
+      productName: oldDocAny.product_name || 'Unknown',
       diffs,
       favorableCount,
       unfavorableCount,
@@ -181,7 +184,7 @@ export const clauseVersionComparator = {
       throw error;
     }
     
-    return data || [];
+    return (data as any[]) || [];
   }
 };
 

@@ -157,11 +157,13 @@ function parseDeductible(deductibleText: string): ParsedDeductible {
     type = 'PERCENTAGE';
   }
   
-  // Check for SMMLV: "5 SMMLV", "2 SM"
-  const smmlvMatch = text.match(/(\d+)\s*(?:smmlv|sm)/);
-  if (smmlvMatch) {
-    amount = parseFloat(smmlvMatch[1]);
-    type = 'SMMLV';
+  // Check for SMMLV: "5 SMMLV", "2 SM" (only if no percentage found)
+  if (type === 'UNKNOWN') {
+    const smmlvMatch = text.match(/(\d+)\s*(?:smmlv|sm)/);
+    if (smmlvMatch) {
+      amount = parseFloat(smmlvMatch[1]);
+      type = 'SMMLV';
+    }
   }
   
   // Check for fixed amount: "$500,000", "500000"

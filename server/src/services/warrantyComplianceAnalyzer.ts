@@ -153,7 +153,7 @@ function analyzeSingleCondition(
   
   // Adjust difficulty based on client profile
   if (clientProfile) {
-    if (type === 'FINANCIERO' && clientProfile.annualRevenue < 100000000) {
+    if (type === 'FINANCIERO' && (clientProfile.annualRevenue || 0) < 100000000) {
       difficulty = 'HARD'; // Financial conditions are harder for small businesses
     }
     
