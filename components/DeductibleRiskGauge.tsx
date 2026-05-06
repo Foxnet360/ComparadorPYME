@@ -70,7 +70,7 @@ export const DeductibleRiskGauge: React.FC<DeductibleRiskGaugeProps> = ({
           className={`absolute h-full ${getBgColor()} transition-all duration-500`}
           style={{ width: `${Math.min(percentage, 100)}%` }}
         />
-        <!-- Markers -->
+        {/* Markers */}
         <div className="absolute top-0 bottom-0 w-0.5 bg-slate-300" style={{ left: '10%' }} />
         <div className="absolute top-0 bottom-0 w-0.5 bg-slate-300" style={{ left: '15%' }} />
       </div>

@@ -157,6 +157,76 @@ El sistema implementa versionado automático basado en la combinación única de
 
 **Response:** Análisis completo con comparación
 
+```json
+{
+  "quotes": [
+    {
+      "insurerName": "Seguros Bolívar",
+      "policyName": "Empresarial Plus",
+      "priceAnnual": 8500000,
+      "currency": "COP",
+      "score": 85,
+      "coverages": [...],
+      "alerts": [...],
+      "clauseValidation": {
+        "hasClauseDocument": true,
+        "verifiedCount": 12,
+        "phantomCount": 1,
+        "mandatoryMissingCount": 0,
+        "optionalMissingCount": 0,
+        "scoreImpact": 0
+      },
+      "deductibleAnalysis": [
+        {
+          "coverage": "Incendio",
+          "level": "MEDIUM",
+          "riskScore": 65
+        }
+      ],
+      "contextualRisk": {
+        "businessType": "Retail",
+        "risks": ["Robo nocturno"]
+      },
+      "warrantyCompliance": {
+        "compliant": true,
+        "violations": []
+      },
+      "legalOpinion": [
+        {
+          "title": "Opinión RC",
+          "text": "Cobertura adecuada..."
+        }
+      ]
+    }
+  ],
+  "recommendation": "Mejor opción: Seguros Bolívar con score de 85/100...",
+  "marketAnalysis": "Se analizaron 2 cotizaciones...",
+  "deductibleComparison": [...],
+  "timestamp": "2026-05-06T11:00:00.000Z",
+  "analysisVersion": "2.0-rag"
+}
+```
+
+**Campos nuevos (opcionales - backward compatible):**
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `clauseValidation` | object | Validación de coberturas contra clausulado |
+| `clauseValidation.hasClauseDocument` | boolean | Si existe clausulado para la aseguradora |
+| `clauseValidation.verifiedCount` | number | Coberturas verificadas en clausulado |
+| `clauseValidation.phantomCount` | number | Coberturas "fantasma" (ofrecidas pero no en clausulado) |
+| `clauseValidation.mandatoryMissingCount` | number | Coberturas obligatorias omitidas |
+| `clauseValidation.optionalMissingCount` | number | Coberturas opcionales omitidas |
+| `deductibleAnalysis` | array | Análisis de riesgo por deducible |
+| `deductibleAnalysis[].coverage` | string | Nombre de la cobertura |
+| `deductibleAnalysis[].level` | string | Nivel de riesgo: LOW, MEDIUM, HIGH |
+| `deductibleAnalysis[].riskScore` | number | Puntaje de riesgo (0-100) |
+| `contextualRisk` | object | Riesgos contextualizados por perfil del cliente |
+| `warrantyCompliance` | object | Cumplimiento de garantías y condiciones |
+| `legalOpinion` | array | Opiniones legales generadas por IA |
+
+**Nota:** Los campos nuevos solo aparecen cuando `VITE_ENABLE_ADVANCED_ANALYSIS=true` y existen datos de análisis avanzado. Clientes antiguos pueden ignorarlos sin problemas.
+
 #### Get History
 **GET** `/api/history?userId=test`
 

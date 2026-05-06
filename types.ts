@@ -67,6 +67,133 @@ export interface QuoteAnalysis {
     code: string;
   }>;
   validationSummary?: string;
+  // Advanced analysis fields (optional, backward compatible)
+  clauseValidation?: ClauseValidationResult;
+  deductibleAnalysis?: DeductibleAnalysis[];
+  contextualRisk?: ContextualRisk;
+  warrantyCompliance?: WarrantyCompliance;
+  legalOpinion?: LegalOpinion[];
+}
+
+// --- ADVANCED ANALYSIS TYPES (INTEGRACIÓN CLAUSULADOS) ---
+
+export interface ClauseValidationResult {
+  hasClauseDocument: boolean;
+  verifiedCount: number;
+  phantomCount: number;
+  mandatoryMissingCount: number;
+  optionalMissingCount: number;
+  scoreImpact: number;
+  results?: Array<{
+    coverageName: string;
+    status: 'VERIFIED' | 'PHANTOM' | 'MANDATORY_MISSING' | 'OPTIONAL_MISSING';
+    isMandatory: boolean;
+    alertLevel?: 'CRITICAL' | 'WARNING' | 'INFO';
+  }>;
+}
+
+export interface DeductibleAnalysis {
+  coverageName: string;
+  quoteDeductible: string;
+  clauseDeductible: string;
+  insuredAmount: number;
+  deductibleAmount: number;
+  deductibleRatio: number;
+  hasCap: boolean;
+  capAmount?: number;
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  score: number;
+  recommendation?: string;
+}
+
+export interface ContextualRisk {
+  exclusions: Array<{
+    exclusion: string;
+    baseRiskLevel: 'HIGH' | 'MEDIUM' | 'LOW';
+    contextualRiskLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+    explanation: string;
+    mitigationSuggestions: string[];
+  }>;
+  criticalCount: number;
+  highCount: number;
+  mediumCount: number;
+  lowCount: number;
+  hasProfile: boolean;
+}
+
+export interface WarrantyCompliance {
+  totalConditions: number;
+  overallRisk: 'LOW' | 'MEDIUM' | 'HIGH';
+  compliancePercentage: number;
+  byType: {
+    documental: { count: number; compliant: number; risk: 'LOW' | 'MEDIUM' | 'HIGH' };
+    operacional: { count: number; compliant: number; risk: 'LOW' | 'MEDIUM' | 'HIGH' };
+    tecnico: { count: number; compliant: number; risk: 'LOW' | 'MEDIUM' | 'HIGH' };
+    financiero: { count: number; compliant: number; risk: 'LOW' | 'MEDIUM' | 'HIGH' };
+  };
+  highRiskConditions: Array<{
+    text: string;
+    type: string;
+    difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+    complianceRisk: 'LOW' | 'MEDIUM' | 'HIGH';
+  }>;
+}
+
+export interface LegalOpinion {
+  coverageName: string;
+  riskScenario: string;
+  clauseInterpretation: string;
+  recommendation: string;
+  negotiationPoints: Array<{
+    point: string;
+    rationale: string;
+    expectedOutcome: string;
+    priority: 'HIGH' | 'MEDIUM' | 'LOW';
+  }>;
+  citations: Array<{
+    text: string;
+    section: string;
+    pageNumber: number;
+    documentName: string;
+  }>;
+  confidence: number;
+}
+
+export interface QuoteAnalysis {
+  insurerName: string;
+  policyName: string;
+  priceMonthly: number;
+  priceAnnual: number;
+  currency: string;
+  deductibles: string;
+  coverages: CoverageItem[];
+  alerts: AlertItem[];
+  scoringBreakdown: ScoringBreakdown;
+  clientAnalysis: string;
+  technicalAnalysis: string;
+  score: number;
+  extractionConfidence?: number;
+  confidenceBreakdown?: {
+    coverageCompleteness: number;
+    numericParseSuccess: number;
+    validationPassRate: number;
+    schemaCompliance: number;
+  };
+  needsReview?: boolean;
+  isCritical?: boolean;
+  validationFlags?: Array<{
+    field: string;
+    severity: 'CRITICAL' | 'WARNING' | 'INFO';
+    message: string;
+    code: string;
+  }>;
+  validationSummary?: string;
+  // Advanced analysis fields (optional, backward compatible)
+  clauseValidation?: ClauseValidationResult;
+  deductibleAnalysis?: DeductibleAnalysis[];
+  contextualRisk?: ContextualRisk;
+  warrantyCompliance?: WarrantyCompliance;
+  legalOpinion?: LegalOpinion[];
 }
 
 export interface ComparisonReport {

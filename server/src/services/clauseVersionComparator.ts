@@ -169,7 +169,7 @@ export const clauseVersionComparator = {
    */
   getVersionHistory: async (insurerName: string, productName?: string) => {
     let query = supabase
-      .from('documents')
+      .from('document_insurer_view')
       .select('*')
       .eq('insurer_name', insurerName)
       .order('created_at', { ascending: false });

@@ -10,7 +10,7 @@ Sistema de análisis y comparación de cotizaciones de seguros usando IA (Gemini
 - **IA**: Google Gemini API (embeddings y análisis)
 - **Vector Store**: Supabase pgvector (anteriormente ChromaDB)
 
-## Nuevas Capacidades (Fases 1-4)
+## Nuevas Capacidades (Fases 1-5)
 
 ### Fase 1: Validación de Coberturas
 - **Validación bidireccional**: Verifica que coberturas en cotización existan en clausulado (y viceversa)
@@ -31,6 +31,14 @@ Sistema de análisis y comparación de cotizaciones de seguros usando IA (Gemini
 - **Opiniones legales**: Genera análisis legal personalizado combinando cotización + clausulado + perfil
 - **Puntos de negociación**: Identifica puntos específicos de negociación con la aseguradora
 - **Citas de clausulado**: Incluye referencias específicas al clausulado como evidencia
+
+### Fase 5: Integración de Análisis Avanzado (Visible)
+- **Pestaña "Análisis Avanzado"**: Nueva pestaña condicional que aparece cuando hay datos avanzados
+- **Validación de coberturas en Dashboard**: Métricas de verificadas/fantasma/omitidas en tiempo real
+- **Riesgo de deducibles visual**: Indicadores LOW/MEDIUM/HIGH por cobertura
+- **Opiniones legales visibles**: Tarjetas con análisis legal y puntos de negociación
+- **Backward compatible**: Clientes antiguos ignoran campos nuevos sin errores
+- **Feature flag controlado**: Rollout gradual via `VITE_ENABLE_ADVANCED_ANALYSIS`
 
 ## Requisitos Previos
 
@@ -139,6 +147,14 @@ Este proyecto usa Docker multi-stage build en Railway. El proceso es completamen
 - `REGION`, `SMMLV_VALUE`, `UVT_VALUE`, `CURRENCY`
 
 Ver `DEPLOY.md` para la guía completa de despliegue y troubleshooting.
+
+### Activar Análisis Avanzado
+
+1. Configurar variable de entorno: `VITE_ENABLE_ADVANCED_ANALYSIS=true`
+2. Asegurar que existan clausulados en la base de datos: `npm run seed:clauses`
+3. La pestaña "Análisis Avanzado" aparecerá automáticamente cuando hay datos
+
+**Rollback rápido:** Cambiar `VITE_ENABLE_ADVANCED_ANALYSIS=false` y redeploy.
 
 ## API Endpoints
 
