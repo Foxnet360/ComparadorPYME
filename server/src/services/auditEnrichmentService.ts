@@ -46,10 +46,12 @@ export interface CrossInsurerRisk {
  */
 export const checkClausesAvailability = async (insurerNames: string[]): Promise<boolean> => {
     try {
+        // Check documents table for clause documents from these insurers
         const { data, error } = await supabase
-            .from('clause_documents')
-            .select('insurer_name')
-            .in('insurer_name', insurerNames)
+            .from('documents')
+            .select('id')
+            .in('document_type', ['CLAUSULADO_GENERAL', 'CLAUSULADO_PARTICULAR'])
+            .eq('is_active', true)
             .limit(1);
         
         if (error) {

@@ -31,6 +31,7 @@ export const clauseIndexer = {
             insurerName: string;
             documentType: string;
             documentName: string;
+            documentId?: string;
         }
     ): Promise<string> => {
         const jobId = generateJobId();
@@ -78,6 +79,7 @@ async function processClauseDocument(
         insurerName: string;
         documentType: string;
         documentName: string;
+        documentId?: string;
     }
 ): Promise<void> {
     const job = jobStore.get(jobId);
@@ -92,27 +94,36 @@ async function processClauseDocument(
 
         const extraction = await pdfExtractor.extractTextFromPdf(pdfPath);
         
-        // Step 2: Create document record
+        // Step 2: Get or create document record
         job.progress = 20;
         job.message = 'Creating document record...';
         jobStore.set(jobId, job);
 
-        const { data: docData, error: docError } = await supabase
-            .from('documents')
-            .insert({
-                insurer_id: await getOrCreateInsurer(metadata.insurerName),
-                document_name: metadata.documentName,
-                document_type: metadata.documentType,
-                total_pages: extraction.pages.length,
-                storage_path: pdfPath,
-                is_active: true
-            } as any)
-            .select()
-            .single();
-
-        if (docError) throw docError;
+        let documentId: string;
         
-        const documentId = (docData as any).id;
+        if (metadata.documentId) {
+            // Use existing document ID
+            documentId = metadata.documentId;
+            console.log(`📄 [clauseIndexer] Using existing document: ${documentId}`);
+        } else {
+            // Create new document record
+            const { data: docData, error: docError } = await supabase
+                .from('documents')
+                .insert({
+                    insurer_id: await getOrCreateInsurer(metadata.insurerName),
+                    document_name: metadata.documentName,
+                    document_type: metadata.documentType,
+                    total_pages: extraction.pages.length,
+                    storage_path: pdfPath,
+                    is_active: true
+                } as any)
+                .select()
+                .single();
+
+            if (docError) throw docError;
+            documentId = (docData as any).id;
+        }
+        
         job.documentId = documentId;
 
         // Step 3: Create chunks
@@ -137,6 +148,11 @@ async function processClauseDocument(
             chunks.map(async (chunk, index) => {
                 const embedding = await embeddingService.generateEmbedding(chunk.content);
                 
+                // Truncate to 768 dimensions for clause_chunks compatibility
+                const truncatedEmbedding = embedding.length > 768 
+                    ? embedding.slice(0, 768) 
+                    : embedding;
+                
                 return {
                     document_id: documentId,
                     insurer_name: metadata.insurerName,
@@ -144,7 +160,7 @@ async function processClauseDocument(
                     section_type: chunk.sectionType,
                     coverage_tags: chunk.coverageTags,
                     content: chunk.content,
-                    embedding,
+                    embedding: truncatedEmbedding,
                     page_number: chunk.metadata.pageStart,
                     chunk_level: 2 // Chapter/section level
                 };
