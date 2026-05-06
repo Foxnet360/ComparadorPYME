@@ -154,6 +154,57 @@ Si el deploy falla:
 
 ---
 
+## Fix de Indexación Dual de Clausulados
+
+### Problema
+
+Los clausulados subidos se indexaban en `documents` + `chunks` pero NO en `clause_chunks` + `clause_coverages`. Esto causaba que:
+- El análisis avanzado no encontrara datos
+- El chatbot respondiera "no tengo suficiente información"
+- Los servicios RAG no tuvieran contexto de clausulados
+
+### Solución Implementada
+
+1. **Modificación del flujo de upload** (`documentController.ts`):
+   - Después de indexar en `documents`, detecta si es `CLAUSULADO_GENERAL` o `CLAUSULADO_PARTICULAR`
+   - Ejecuta automáticamente `clauseIndexer.startIndexing()` con el `documentId` existente
+   - Los errores en clauseIndexer se loguean pero NO afectan la respuesta al usuario
+
+2. **Compatibilidad de embeddings** (`clauseIndexer.ts`):
+   - `DocumentIndexingService` genera embeddings de 3072 dims (Gemini)
+   - `clause_chunks` usa 768 dims (límite HNSW)
+   - **Solución**: Truncar embeddings a 768 dims antes de insertar en `clause_chunks`
+
+3. **Corrección de referencias** (`auditEnrichmentService.ts`):
+   - Cambiada referencia a tabla inexistente `clause_documents` → `documents`
+   - Corregido error PGRST205
+
+4. **Script de re-indexación** (`scripts/reindex-clauses.ts`):
+   - Re-indexa clausulados existentes (SBS, HDI) sin re-upload
+   - Descarga PDFs desde Supabase Storage y ejecuta clauseIndexer
+
+### Verificación Post-Deploy
+
+```bash
+# Verificar que clause_chunks tiene datos
+SELECT COUNT(*) FROM clause_chunks;
+
+# Verificar función RPC
+SELECT * FROM match_clauses(
+    ARRAY(SELECT random() FROM generate_series(1, 768))::vector,
+    'responsabilidad civil', NULL, NULL, NULL, 5
+);
+```
+
+### Logs a Monitorear
+
+Buscar en Railway Dashboard:
+- `✅ [documentController] Clause indexing job started:` - Indexación dual exitosa
+- `⚠️ [documentController] Clause indexing failed` - Errores (no críticos)
+- `✅ [clauseIndexer] Job completed:` - Indexación completada
+
+---
+
 ## Schema de Base de Datos
 
 ### Vista `document_insurer_view`
