@@ -100,44 +100,59 @@ export const AuditDashboard: React.FC<AuditDashboardProps> = ({
       </div>
 
       {/* Coverage Validation Metrics */}
-      {viewMode === 'technical' && (
+      {viewMode === 'technical' && quotes.some(q => q.clauseValidation) && (
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <h3 className="font-bold text-slate-800 mb-3">Validación de Coberturas</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-              <p className="text-sm text-green-600">Verificadas</p>
-              <p className="text-xl font-bold text-green-700">-</p>
-            </div>
-            <div className="bg-red-50 rounded-lg p-3 border border-red-200">
-              <p className="text-sm text-red-600">Fantasma</p>
-              <p className="text-xl font-bold text-red-700">-</p>
-            </div>
-            <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
-              <p className="text-sm text-amber-600">Oblig. Omitidas</p>
-              <p className="text-xl font-bold text-amber-700">-</p>
-            </div>
+            {quotes.filter(q => q.clauseValidation).map((quote, idx) => (
+              <React.Fragment key={idx}>
+                <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                  <p className="text-sm text-green-600">Verificadas ({quote.insurerName.substring(0, 10)})</p>
+                  <p className="text-xl font-bold text-green-700">{quote.clauseValidation!.verifiedCount}</p>
+                </div>
+                <div className="bg-red-50 rounded-lg p-3 border border-red-200">
+                  <p className="text-sm text-red-600">Fantasma ({quote.insurerName.substring(0, 10)})</p>
+                  <p className="text-xl font-bold text-red-700">{quote.clauseValidation!.phantomCount}</p>
+                </div>
+                <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
+                  <p className="text-sm text-amber-600">Oblig. Omitidas ({quote.insurerName.substring(0, 10)})</p>
+                  <p className="text-xl font-bold text-amber-700">{quote.clauseValidation!.mandatoryMissingCount}</p>
+                </div>
+              </React.Fragment>
+            ))}
           </div>
         </div>
       )}
       
       {/* Deductible Risk Metrics */}
-      {viewMode === 'technical' && (
+      {viewMode === 'technical' && quotes.some(q => q.deductibleAnalysis) && (
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <h3 className="font-bold text-slate-800 mb-3">Riesgo de Deducibles</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-              <p className="text-sm text-green-600">Riesgo Bajo</p>
-              <p className="text-xl font-bold text-green-700">-</p>
-            </div>
-            <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
-              <p className="text-sm text-amber-600">Riesgo Medio</p>
-              <p className="text-xl font-bold text-amber-700">-</p>
-            </div>
-            <div className="bg-red-50 rounded-lg p-3 border border-red-200">
-              <p className="text-sm text-red-600">Riesgo Alto</p>
-              <p className="text-xl font-bold text-red-700">-</p>
-            </div>
-          </div>
+          {quotes.filter(q => q.deductibleAnalysis).map((quote, idx) => {
+            const lowRisk = quote.deductibleAnalysis!.filter(d => d.riskLevel === 'LOW').length;
+            const mediumRisk = quote.deductibleAnalysis!.filter(d => d.riskLevel === 'MEDIUM').length;
+            const highRisk = quote.deductibleAnalysis!.filter(d => d.riskLevel === 'HIGH').length;
+            
+            return (
+              <div key={idx} className="mb-4">
+                <p className="text-sm text-slate-500 mb-2">{quote.insurerName}</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                    <p className="text-sm text-green-600">Riesgo Bajo</p>
+                    <p className="text-xl font-bold text-green-700">{lowRisk}</p>
+                  </div>
+                  <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
+                    <p className="text-sm text-amber-600">Riesgo Medio</p>
+                    <p className="text-xl font-bold text-amber-700">{mediumRisk}</p>
+                  </div>
+                  <div className="bg-red-50 rounded-lg p-3 border border-red-200">
+                    <p className="text-sm text-red-600">Riesgo Alto</p>
+                    <p className="text-xl font-bold text-red-700">{highRisk}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 

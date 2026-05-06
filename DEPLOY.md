@@ -31,6 +31,7 @@ Configura estas variables en el [dashboard de Railway](https://railway.app):
 
 ### Frontend (Build Time)
 - `VITE_GEMINI_API_KEY` - Mismo valor que GEMINI_API_KEY (usado durante build)
+- `VITE_ENABLE_ADVANCED_ANALYSIS` - Activar análisis avanzado (`true`/`false`)
 
 **Nota:** Railway inyecta estas variables automáticamente tanto en build time como en runtime.
 
@@ -109,7 +110,42 @@ docker run -p 8080:8080 --env-file .env comparador-csa
 
 ---
 
+## Feature Flags
+
+### `VITE_ENABLE_ADVANCED_ANALYSIS`
+
+Controla la visibilidad de las capacidades de análisis avanzado:
+
+- **`false`** (default): Solo muestra análisis básico (backward compatible)
+- **`true`**: Activa pestaña "Análisis Avanzado" con:
+  - Validación de coberturas contra clausulados
+  - Análisis de riesgo de deducibles
+  - Riesgos contextualizados por perfil de cliente
+  - Cumplimiento de garantías
+  - Opiniones legales con puntos de negociación
+
+**Configuración:** Variable en Railway Dashboard (se aplica en build time).
+
+### Rollout Gradual Recomendado
+
+1. **Deploy con flag = false** (seguro, sin cambios visibles)
+2. **Staging:** Cambiar a `true` para testing interno
+3. **Producción 10%:** Activar para usuarios beta
+4. **Producción 50%:** Si no hay errores en 48h
+5. **Producción 100%:** Después de 1 semana estable
+
 ## Rollback
+
+### Rollback Rápido (Feature Flag)
+
+Si el análisis avanzado causa problemas:
+
+1. **Railway Dashboard → Variables**
+2. **Cambiar `VITE_ENABLE_ADVANCED_ANALYSIS` = `false`**
+3. **Redeploy** (Railway reconstruye automáticamente)
+4. **Efecto inmediato**: La UI vuelve al modo básico sin afectar el backend
+
+### Rollback Completo (Deployment)
 
 Si el deploy falla:
 
@@ -117,6 +153,53 @@ Si el deploy falla:
 2. **Opción Git:** Revertir el commit en GitHub, Railway hará deploy automático del estado anterior
 
 ---
+
+## Schema de Base de Datos
+
+### Vista `document_insurer_view`
+
+Vista que une `documents` con `insurers` para exponer `insurer_name` sin modificar la tabla original.
+
+**Propósito:**
+- Permite a los servicios de análisis avanzado obtener el nombre de la aseguradora
+- No requiere modificar la tabla `documents` (backward compatible)
+- Se actualiza automáticamente cuando cambian los datos subyacentes
+
+**SQL:**
+```sql
+CREATE OR REPLACE VIEW document_insurer_view AS
+SELECT d.*, i.name as insurer_name
+FROM documents d
+JOIN insurers i ON d.insurer_id = i.id;
+```
+
+**Uso en el código:**
+```typescript
+// En vez de:
+// SELECT * FROM documents WHERE insurer_name = 'Bolívar'
+
+// Usar:
+// SELECT * FROM document_insurer_view WHERE insurer_name = 'Bolívar'
+```
+
+### Tabla `clause_chunks`
+
+Almacena chunks vectorizados de clausulados para búsqueda semántica (RAG).
+
+| Columna | Tipo | Descripción |
+|---------|------|-------------|
+| `id` | uuid | Primary key |
+| `document_id` | uuid | FK a documents |
+| `content` | text | Texto del chunk |
+| `embedding` | vector(768) | Embedding del chunk |
+| `metadata` | jsonb | Metadatos adicionales |
+| `created_at` | timestamp | Fecha de creación |
+
+**Funciones:**
+- `match_clauses(query_embedding, match_threshold, match_count)` - Búsqueda semántica
+- `match_documents(query_embedding, match_threshold, match_count)` - Búsqueda en documentos
+
+**Seed inicial:** Ejecutar `npm run seed:clauses` para cargar clausulados base.
 
 ## Monitoreo
 

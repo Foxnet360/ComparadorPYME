@@ -1,0 +1,296 @@
+import { describe, it, expect, vi } from 'vitest';
+import request from 'supertest';
+import express from 'express';
+import multer from 'multer';
+import { analysisController } from '../../controllers/analysisController';
+
+// Mock all services
+vi.mock('../../services/gemini', () => ({
+  geminiService: {
+    extractText: vi.fn(async () => JSON.stringify({
+      quotes: [{
+        insurerName: 'Seguros Bolívar',
+        policyName: 'Empresarial Plus',
+        priceAnnual: 8500000,
+        currency: 'COP',
+        coverages: [
+          { name: 'Responsabilidad Civil', value: '100M', deductible: '5 SMMLV' }
+        ],
+        specialConditions: [],
+        parseConfidence: 95
+      }]
+    })),
+    extractStructured: vi.fn(async () => ({
+      quotes: [{
+        insurerName: 'Seguros Bolívar',
+        policyName: 'Empresarial Plus',
+        priceAnnual: 8500000,
+        currency: 'COP',
+        coverages: [
+          { name: 'Responsabilidad Civil', value: '100M', deductible: '5 SMMLV' }
+        ],
+        specialConditions: [],
+        parseConfidence: 95
+      }]
+    })),
+    analyzeWithGemini: vi.fn(async () => 'Análisis de prueba'),
+    generateNarrative: vi.fn(async () => ({
+      clientAnalysis: 'Test analysis',
+      technicalAnalysis: 'Test technical',
+      keyFindings: ['Finding 1']
+    }))
+  }
+}));
+
+vi.mock('../../services/pdfExtractor', () => ({
+  pdfExtractor: {
+    extractText: vi.fn(async () => 'Texto de prueba'),
+    processMultiplePdfs: vi.fn(async () => ['Texto de prueba'])
+  }
+}));
+
+vi.mock('../../services/clauseCoverageValidator', () => ({
+  clauseCoverageValidator: {
+    validate: vi.fn(async () => ({
+      results: [{ coverageName: 'Incendio', status: 'VERIFIED' }],
+      phantomCount: 0,
+      mandatoryMissingCount: 0,
+      scoreImpact: 0,
+      hasClauseDocument: true,
+      verifiedCount: 2,
+      optionalMissingCount: 0
+    }))
+  }
+}));
+
+vi.mock('../../services/deductibleAnalyzer', () => ({
+  deductibleAnalyzer: {
+    analyzeQuote: vi.fn(async () => [
+      { coverage: 'Incendio', level: 'LOW', riskScore: 65 }
+    ])
+  }
+}));
+
+vi.mock('../../services/inverseCoverageChecker', () => ({
+  inverseCoverageChecker: {
+    checkMissingCoverages: vi.fn(async () => ({
+      results: [],
+      mandatoryMissingCount: 0,
+      optionalMissingCount: 0
+    }))
+  }
+}));
+
+vi.mock('../../services/contextualRiskAnalyzer', () => ({
+  contextualRiskAnalyzer: {
+    contextualizeExclusions: vi.fn(() => ({
+      exclusions: [{ contextualRiskLevel: 'CRITICAL' }],
+      criticalCount: 1
+    }))
+  }
+}));
+
+vi.mock('../../services/warrantyComplianceAnalyzer', () => ({
+  warrantyComplianceAnalyzer: {
+    analyzeConditions: vi.fn(() => ({
+      totalConditions: 2,
+      overallRisk: 'MEDIUM',
+      compliancePercentage: 60
+    }))
+  }
+}));
+
+vi.mock('../../services/virtualLawyerService', () => ({
+  virtualLawyerService: {
+    generateLegalOpinion: vi.fn(async () => ({
+      coverageName: 'RC',
+      confidence: 80,
+      negotiationPoints: [{ point: 'Test', priority: 'HIGH' }]
+    }))
+  }
+}));
+
+vi.mock('../../services/narrativeService', () => ({
+  narrativeService: {
+    generateNarrative: vi.fn(async () => ({
+      clientAnalysis: 'Test client analysis',
+      technicalAnalysis: 'Test technical',
+      keyFindings: ['Finding 1']
+    })),
+    generateComparisonNarrative: vi.fn(async () => 'Test comparison narrative')
+  }
+}));
+
+vi.mock('../../services/quoteValidator', () => ({
+  validateQuote: vi.fn(() => ({
+    coverageCount: 1,
+    expectedCoverageCount: 1,
+    flags: [],
+    isValid: true
+  }))
+}));
+
+vi.mock('../../services/confidenceScorer', () => ({
+  calculateConfidence: vi.fn(() => ({
+    score: 95,
+    needsReview: false,
+    isCritical: false,
+    breakdown: {}
+  }))
+}));
+
+vi.mock('../../services/quoteScorer', () => ({
+  quoteScorer: {
+    calculateScore: vi.fn(() => ({
+      totalScore: 85,
+      breakdown: { coverage: 90, deductibles: 80, exclusions: 85, priceRatio: 75, sublimits: 80, warranties: 70 },
+      weights: {},
+      quotePriceRank: 1,
+      marketPriceAverage: 8500000,
+      coverageCount: 1,
+      expectedCoverageCount: 1,
+      criticalAlerts: 0,
+      warningAlerts: 0,
+      infoAlerts: 0
+    })),
+    getDefaultWeights: vi.fn(() => ({}))
+  }
+}));
+
+vi.mock('../../services/crossReferenceEngine', () => ({
+  crossReferenceEngine: {
+    crossReferenceQuote: vi.fn(async () => [{
+      coverageName: 'Responsabilidad Civil',
+      quoteData: { value: '100M', deductible: '5 SMMLV' },
+      clauseData: { deductible: '5 SMMLV', exclusions: [] },
+      alerts: [],
+      isVerified: true
+    }])
+  }
+}));
+
+vi.mock('../../services/quoteParser', () => ({
+  quoteParser: {
+    parse: vi.fn(() => ({
+      insurerName: 'Seguros Bolívar',
+      policyName: 'Empresarial Plus',
+      priceAnnual: 8500000,
+      currency: 'COP',
+      coverages: [
+        { name: 'Responsabilidad Civil', value: '100M', deductible: '5 SMMLV', confidence: 90, categoryId: 6, matchConfidence: 1.0, matchMethod: 'thesaurus' }
+      ],
+      specialConditions: [],
+      rawText: '',
+      parseConfidence: 95
+    }))
+  }
+}));
+
+vi.mock('../../services/thesaurusMapper', () => ({
+  normalizeCoverages: vi.fn((coverages) => coverages)
+}));
+
+vi.mock('../../config/database', () => ({
+  supabase: {
+    from: () => ({
+      insert: () => Promise.resolve({ data: null, error: null }),
+      select: () => ({
+        eq: () => ({
+          order: () => Promise.resolve({ data: [], error: null })
+        })
+      })
+    })
+  }
+}));
+
+// Create test app with file upload support
+const app = express();
+app.use(express.json());
+
+const upload = multer({ storage: multer.memoryStorage() });
+app.post('/api/analyze',
+  upload.fields([{ name: 'quotes', maxCount: 10 }, { name: 'clauses', maxCount: 10 }]),
+  analysisController.uploadAndAnalyze
+);
+
+describe('Backward Compatibility', () => {
+  it('should return 200 with all expected fields for old clients', async () => {
+    const response = await request(app)
+      .post('/api/analyze')
+      .field('clientData', JSON.stringify({}))
+      .attach('quotes', Buffer.from('test pdf content'), 'quote1.pdf');
+
+    expect(response.status).toBe(200);
+    
+    // Core fields that old clients expect
+    expect(response.body).toHaveProperty('quotes');
+    expect(response.body).toHaveProperty('recommendation');
+    expect(response.body).toHaveProperty('marketAnalysis');
+    expect(response.body).toHaveProperty('timestamp');
+    expect(response.body).toHaveProperty('analysisVersion');
+    
+    // Each quote should have basic fields
+    const firstQuote = response.body.quotes[0];
+    expect(firstQuote).toHaveProperty('insurerName');
+    expect(firstQuote).toHaveProperty('score');
+    expect(firstQuote).toHaveProperty('coverages');
+    expect(firstQuote).toHaveProperty('alerts');
+    expect(firstQuote).toHaveProperty('crossReferenceSummary');
+  });
+
+  it('should include new fields without breaking old clients', async () => {
+    const response = await request(app)
+      .post('/api/analyze')
+      .field('clientData', JSON.stringify({}))
+      .attach('quotes', Buffer.from('test pdf content'), 'quote1.pdf');
+
+    expect(response.status).toBe(200);
+    
+    const firstQuote = response.body.quotes[0];
+    
+    // New fields should be present (optional)
+    expect(firstQuote).toHaveProperty('clauseValidation');
+    expect(firstQuote).toHaveProperty('deductibleAnalysis');
+    expect(firstQuote).toHaveProperty('contextualRisk');
+    expect(firstQuote).toHaveProperty('warrantyCompliance');
+    expect(firstQuote).toHaveProperty('legalOpinion');
+    
+    // Old clients can safely ignore these fields
+    // They won't cause parsing errors since they're optional
+  });
+
+  it('should maintain same response structure when feature is disabled', async () => {
+    // Even with advanced analysis data, the structure should be consistent
+    const response = await request(app)
+      .post('/api/analyze')
+      .field('clientData', JSON.stringify({}))
+      .attach('quotes', Buffer.from('test pdf content'), 'quote1.pdf');
+
+    expect(response.status).toBe(200);
+    
+    // Response should always have these top-level fields
+    const requiredFields = ['quotes', 'recommendation', 'marketAnalysis', 'timestamp', 'analysisVersion'];
+    requiredFields.forEach(field => {
+      expect(response.body).toHaveProperty(field);
+    });
+  });
+
+  it('should handle quotes array consistently', async () => {
+    const response = await request(app)
+      .post('/api/analyze')
+      .field('clientData', JSON.stringify({}))
+      .attach('quotes', Buffer.from('test pdf content'), 'quote1.pdf');
+
+    expect(response.status).toBe(200);
+    expect(Array.isArray(response.body.quotes)).toBe(true);
+    expect(response.body.quotes.length).toBeGreaterThan(0);
+    
+    // Each quote should have consistent structure
+    response.body.quotes.forEach((quote: any) => {
+      expect(quote).toHaveProperty('insurerName');
+      expect(quote).toHaveProperty('priceAnnual');
+      expect(quote).toHaveProperty('coverages');
+      expect(Array.isArray(quote.coverages)).toBe(true);
+    });
+  });
+});

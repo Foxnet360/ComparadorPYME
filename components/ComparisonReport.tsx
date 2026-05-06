@@ -10,7 +10,15 @@ import { AuditSection } from './AuditSection';
 import { UnifiedCoverageMatrix } from './UnifiedCoverageMatrix';
 import { ExecutiveSummary } from './ExecutiveSummary';
 import { CollapsibleText } from './CollapsibleText';
+import { CoverageValidationMatrix } from './CoverageValidationMatrix';
+import { DeductibleRiskGauge } from './DeductibleRiskGauge';
+import { ContextualExclusionCard } from './ContextualExclusionCard';
+import { WarrantyComplianceDashboard } from './WarrantyComplianceDashboard';
+import { LegalOpinionCard } from './LegalOpinionCard';
+import { NegotiationPointsList } from './NegotiationPointsList';
+import { InverseCoverageAlert } from './InverseCoverageAlert';
 import { formatCOP, formatCOPMillions } from '../utils/formatCurrency';
+import { isAdvancedAnalysisEnabled } from '../config/features';
 
 interface ComparisonReportProps {
   report: ReportType;
@@ -23,7 +31,12 @@ const normalizeText = (text: string | undefined | null) => {
 };
 
 const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
-  const [activeTab, setActiveTab] = useState<'resumen' | 'coberturas' | 'deducibles' | 'auditoria'>('resumen');
+  const [activeTab, setActiveTab] = useState<'resumen' | 'coberturas' | 'deducibles' | 'auditoria' | 'analisis-avanzado'>('resumen');
+  
+  // Check if advanced analysis is enabled via feature flag and any quote has data
+  const hasAdvancedAnalysis = isAdvancedAnalysisEnabled() && report.quotes.some(q => 
+    q.clauseValidation || q.deductibleAnalysis || q.contextualRisk || q.warrantyCompliance || q.legalOpinion
+  );
   const [viewMode, setViewMode] = useState<'client' | 'technical'>('client');
   const [showExportModal, setShowExportModal] = useState(false);
   const [showRagReferences, setShowRagReferences] = useState(false);
@@ -242,6 +255,11 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
         <button onClick={() => setActiveTab('auditoria')} className={`flex items-center space-x-2 pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'auditoria' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
           <ShieldAlert size={18} /><span>Auditoría de Riesgos</span>
         </button>
+        {hasAdvancedAnalysis && (
+          <button onClick={() => setActiveTab('analisis-avanzado')} className={`flex items-center space-x-2 pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'analisis-avanzado' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+            <BookOpen size={18} /><span>Análisis Avanzado</span>
+          </button>
+        )}
       </div>
 
       {/* --- TAB CONTENT: RESUMEN (DASHBOARD) --- */}
@@ -455,6 +473,83 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
       {/* --- TAB CONTENT: AUDITORIA (ALERTS) --- */}
       {activeTab === 'auditoria' && (
         <AuditSection quotes={report.quotes} viewMode={viewMode} />
+      )}
+
+      {/* --- TAB CONTENT: ANÁLISIS AVANZADO --- */}
+      {activeTab === 'analisis-avanzado' && hasAdvancedAnalysis && (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Coverage Validation */}
+            {report.quotes.some(q => q.clauseValidation) && (
+              <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Validación de Coberturas</h3>
+                {report.quotes.filter(q => q.clauseValidation).map((quote, idx) => (
+                  <CoverageValidationMatrix key={idx} quote={quote} />
+                ))}
+              </div>
+            )}
+            
+            {/* Deductible Risk */}
+            {report.quotes.some(q => q.deductibleAnalysis) && (
+              <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Riesgo de Deducibles</h3>
+                {report.quotes.filter(q => q.deductibleAnalysis).map((quote, idx) => (
+                  <DeductibleRiskGauge key={idx} quote={quote} />
+                ))}
+              </div>
+            )}
+            
+            {/* Contextual Risk */}
+            {report.quotes.some(q => q.contextualRisk) && (
+              <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Riesgo Contextualizado</h3>
+                {report.quotes.filter(q => q.contextualRisk).map((quote, idx) => (
+                  <ContextualExclusionCard key={idx} quote={quote} />
+                ))}
+              </div>
+            )}
+            
+            {/* Warranty Compliance */}
+            {report.quotes.some(q => q.warrantyCompliance) && (
+              <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Cumplimiento de Garantías</h3>
+                {report.quotes.filter(q => q.warrantyCompliance).map((quote, idx) => (
+                  <WarrantyComplianceDashboard key={idx} quote={quote} />
+                ))}
+              </div>
+            )}
+            
+            {/* Legal Opinion */}
+            {report.quotes.some(q => q.legalOpinion) && (
+              <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Asesoría Legal</h3>
+                {report.quotes.filter(q => q.legalOpinion).map((quote, idx) => (
+                  <LegalOpinionCard key={idx} quote={quote} />
+                ))}
+              </div>
+            )}
+            
+            {/* Inverse Coverage */}
+            {report.quotes.some(q => q.clauseValidation?.mandatoryMissingCount > 0) && (
+              <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Coberturas Omitidas</h3>
+                {report.quotes.filter(q => q.clauseValidation?.mandatoryMissingCount > 0).map((quote, idx) => (
+                  <InverseCoverageAlert key={idx} quote={quote} />
+                ))}
+              </div>
+            )}
+            
+            {/* Negotiation Points */}
+            {report.quotes.some(q => q.legalOpinion?.some(lo => lo.negotiationPoints.length > 0)) && (
+              <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Puntos de Negociación</h3>
+                {report.quotes.filter(q => q.legalOpinion?.some(lo => lo.negotiationPoints.length > 0)).map((quote, idx) => (
+                  <NegotiationPointsList key={idx} quote={quote} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Footer */}

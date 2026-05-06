@@ -9,9 +9,27 @@ import { validateQuote, ValidationResult } from '../services/quoteValidator';
 import { calculateConfidence, ConfidenceResult } from '../services/confidenceScorer';
 import { normalizeCoverages } from '../services/thesaurusMapper';
 import { clauseCoverageValidator } from '../services/clauseCoverageValidator';
+import { deductibleAnalyzer } from '../services/deductibleAnalyzer';
+import { inverseCoverageChecker } from '../services/inverseCoverageChecker';
+import { contextualRiskAnalyzer } from '../services/contextualRiskAnalyzer';
+import { warrantyComplianceAnalyzer } from '../services/warrantyComplianceAnalyzer';
+import { virtualLawyerService } from '../services/virtualLawyerService';
 import { supabase } from '../config/database';
 import { formatCOP } from '../utils/formatCurrency';
 import fs from 'fs';
+
+// Helper to call service with timeout
+const callWithTimeout = async <T>(promise: Promise<T>, timeoutMs: number = 5000, fallback: T): Promise<T> => {
+  const timeout = new Promise<never>((_, reject) => 
+    setTimeout(() => reject(new Error('Timeout')), timeoutMs)
+  );
+  try {
+    return await Promise.race([promise, timeout]);
+  } catch (error) {
+    console.warn(`⚠️ Service call timed out or failed:`, error);
+    return fallback;
+  }
+};
 
 const STRUCTURED_EXTRACTION_PROMPT = `Eres un extractor experto de cotizaciones de seguros PYME colombianos.
 
@@ -386,6 +404,74 @@ export const analysisController = {
                 }
             }
 
+            // Phase 5b: Advanced analysis (parallel with timeout)
+            console.log('🔬 Phase 5b/5: Running advanced analysis...');
+            const advancedAnalysisResults: Map<number, any> = new Map();
+            
+            for (let i = 0; i < parsedQuotes.length; i++) {
+                const quote = parsedQuotes[i];
+                const clauseValidation = clauseValidationResults.get(i);
+                
+                try {
+                    // Run advanced analyses in parallel with 5s timeout each
+                    const [deductibleAnalysis, inverseCheck, contextualRisk, warrantyCompliance, legalOpinion] = await Promise.allSettled([
+                        callWithTimeout(
+                            Promise.resolve(deductibleAnalyzer.analyzeQuote(quote, new Map())),
+                            5000,
+                            null
+                        ),
+                        callWithTimeout(
+                            inverseCoverageChecker.checkMissingCoverages(quote, quote.insurerName),
+                            5000,
+                            null
+                        ),
+                        req.body.clientProfile ? callWithTimeout(
+                            Promise.resolve(contextualRiskAnalyzer.contextualizeExclusions(
+                                quote.specialConditions || [],
+                                req.body.clientProfile
+                            )),
+                            3000,
+                            null
+                        ) : Promise.resolve(null),
+                        callWithTimeout(
+                            Promise.resolve(warrantyComplianceAnalyzer.analyzeConditions(
+                                quote.specialConditions || []
+                            )),
+                            3000,
+                            null
+                        ),
+                        req.body.clientProfile ? callWithTimeout(
+                            virtualLawyerService.generateOpinions(
+                                quote.coverages.map(c => ({
+                                    insurerName: quote.insurerName,
+                                    coverageName: c.canonicalName || c.name,
+                                    value: c.value,
+                                    deductible: c.deductible || 'No especificado',
+                                    exclusions: quote.specialConditions || []
+                                })),
+                                req.body.clientProfile,
+                                quote.insurerName
+                            ),
+                            8000,
+                            null
+                        ) : Promise.resolve(null)
+                    ]);
+                    
+                    advancedAnalysisResults.set(i, {
+                        deductibleAnalysis: deductibleAnalysis.status === 'fulfilled' ? deductibleAnalysis.value : null,
+                        inverseCheck: inverseCheck.status === 'fulfilled' ? inverseCheck.value : null,
+                        contextualRisk: contextualRisk.status === 'fulfilled' ? contextualRisk.value : null,
+                        warrantyCompliance: warrantyCompliance.status === 'fulfilled' ? warrantyCompliance.value : null,
+                        legalOpinion: legalOpinion.status === 'fulfilled' ? legalOpinion.value : null
+                    });
+                    
+                    console.log(`   ✅ Advanced analysis for ${quote.insurerName} completed`);
+                } catch (error) {
+                    console.error(`   ❌ Advanced analysis error for ${quote.insurerName}:`, error);
+                    advancedAnalysisResults.set(i, null);
+                }
+            }
+
             // Cleanup temp files
             quoteFiles.forEach(f => {
                 try {
@@ -403,7 +489,9 @@ export const analysisController = {
                 narrativeResults,
                 crossRefResults,
                 validationResults,
-                confidenceResults
+                confidenceResults,
+                clauseValidationResults,
+                advancedAnalysisResults
             );
 
             // Save to Supabase
@@ -492,13 +580,15 @@ export const analysisController = {
     }
 };
 
-function generateComparison(
+export function generateComparison(
     quotes: ParsedQuote[],
     scoringResults: Map<number, ScoringResult>,
     narrativeResults: Map<number, NarrativeResult>,
     crossRefResults: Map<number, CrossReferenceResult[]>,
     validationResults: Map<number, ValidationResult>,
-    confidenceResults: Map<number, ConfidenceResult>
+    confidenceResults: Map<number, ConfidenceResult>,
+    clauseValidationResults?: Map<number, any>,
+    advancedAnalysisResults?: Map<number, any>
 ) {
     const quotesWithScores = quotes.map((quote, index) => {
         const scoring = scoringResults.get(index);
@@ -516,6 +606,8 @@ function generateComparison(
         
         const validation = validationResults.get(index);
         const confidence = confidenceResults.get(index);
+        const clauseValidation = clauseValidationResults?.get(index);
+        const advancedAnalysis = advancedAnalysisResults?.get(index);
         
         return {
             insurerName: quote.insurerName,
@@ -560,7 +652,19 @@ function generateComparison(
             needsReview: confidence?.needsReview || false,
             isCritical: confidence?.isCritical || false,
             validationFlags: validation?.flags || [],
-            validationSummary: validation ? `${validation.coverageCount}/${validation.expectedCoverageCount} coberturas` : ''
+            validationSummary: validation ? `${validation.coverageCount}/${validation.expectedCoverageCount} coberturas` : '',
+            clauseValidation: clauseValidation ? {
+                hasClauseDocument: clauseValidation.hasClauseDocument,
+                verifiedCount: clauseValidation.verifiedCount,
+                phantomCount: clauseValidation.phantomCount,
+                mandatoryMissingCount: clauseValidation.mandatoryMissingCount,
+                optionalMissingCount: clauseValidation.optionalMissingCount,
+                scoreImpact: clauseValidation.scoreImpact
+            } : undefined,
+            deductibleAnalysis: advancedAnalysis?.deductibleAnalysis,
+            contextualRisk: advancedAnalysis?.contextualRisk,
+            warrantyCompliance: advancedAnalysis?.warrantyCompliance,
+            legalOpinion: advancedAnalysis?.legalOpinion
         };
     });
 
