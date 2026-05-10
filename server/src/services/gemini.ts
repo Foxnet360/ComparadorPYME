@@ -287,8 +287,12 @@ export const geminiService = {
         while (true) {
             try {
                 const genAI = getGenAI();
+                const extractionModel = process.env.USE_PRO_MODEL === 'true' 
+                    ? 'models/gemini-2.5-pro' 
+                    : 'models/gemini-2.5-flash';
+                console.log(`🤖 [Gemini] Using model: ${extractionModel} for extraction`);
                 const model = genAI.getGenerativeModel({
-                    model: 'models/gemini-2.5-flash',
+                    model: extractionModel,
                     generationConfig: {
                         temperature: 0.1,
                         maxOutputTokens: 32768,

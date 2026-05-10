@@ -35,9 +35,9 @@ export const ragRetrievalService = {
         // Generate embedding for the query
         const queryEmbedding = await embeddingService.generateEmbedding(query);
 
-        // Call the hybrid search RPC
+        // Call the unified hybrid search RPC
         const { data, error } = await supabase
-            .rpc('match_clauses', {
+            .rpc('match_chunks_unified', {
                 query_embedding: queryEmbedding,
                 query_text: query,
                 insurer_filter: insurerName || null,
@@ -81,7 +81,7 @@ export const ragRetrievalService = {
         const queryEmbedding = await embeddingService.generateEmbedding(query);
 
         const { data, error } = await supabase
-            .rpc('match_clauses_vector', {
+            .rpc('match_chunks_vector_unified', {
                 query_embedding: queryEmbedding,
                 insurer_filter: insurerName || null,
                 coverage_filter: coverageTags || null,
@@ -121,7 +121,7 @@ export const ragRetrievalService = {
         const { insurerName, sectionType, limit = 3 } = options;
 
         const { data, error } = await supabase
-            .rpc('get_clauses_by_coverage', {
+            .rpc('get_chunks_by_coverage_unified', {
                 coverage_name: coverageName,
                 insurer_filter: insurerName || null,
                 section_filter: sectionType || null,

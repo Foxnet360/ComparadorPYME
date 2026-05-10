@@ -14,6 +14,7 @@ import { inverseCoverageChecker } from '../services/inverseCoverageChecker';
 import { contextualRiskAnalyzer } from '../services/contextualRiskAnalyzer';
 import { warrantyComplianceAnalyzer } from '../services/warrantyComplianceAnalyzer';
 import { virtualLawyerService } from '../services/virtualLawyerService';
+import { insurerProfileService } from '../services/insurerProfileService';
 import { supabase } from '../config/database';
 import { formatCOP } from '../utils/formatCurrency';
 import fs from 'fs';
@@ -181,12 +182,20 @@ export const analysisController = {
                 console.log(`   Quote ${i + 1}/${extractedQuotes.length}: ${quote.filename}`);
                 
                 try {
+                    // Detect insurer and get profile
+                    const detectedInsurer = insurerProfileService.detectInsurer(quote.text);
+                    const profile = insurerProfileService.getProfile(detectedInsurer);
+                    console.log(`   🔍 Detected insurer: ${detectedInsurer} (${profile.displayName})`);
+                    
+                    // Build prompt with profile
+                    const extractionPrompt = `${STRUCTURED_EXTRACTION_PROMPT}\n\n${profile.promptTemplate}\n\n${profile.fewShotExamples.join('\n\n')}`;
+                    
                     // Try structured extraction first (JSON mode)
                     let parsed: ParsedQuote;
                     try {
                         const structuredResult = await geminiService.extractStructured(
                             quote.text,
-                            STRUCTURED_EXTRACTION_PROMPT,
+                            extractionPrompt,
                             quote.metadata?.pageCount || 1
                         );
                         

@@ -7,6 +7,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { ragRetrievalService } from './ragRetrievalService';
 import { embeddingService } from './vector/embeddingService';
+import { supabase } from '../config/database';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const GEMINI_CHAT_MODEL = process.env.GEMINI_CHAT_MODEL || 'gemini-2.5-flash-lite';
@@ -183,17 +184,151 @@ const estimateTokens = (text: string): number => {
 };
 
 /**
- * Process a chat message
+ * Create or get chat thread
+ */
+export const getOrCreateThread = async (
+    userId: string,
+    reportId?: string
+): Promise<string> => {
+    try {
+        // Try to find existing active thread for this report
+        if (reportId) {
+            const { data: existing } = await supabase
+                .from('chat_threads')
+                .select('id')
+                .eq('user_id', userId)
+                .eq('report_id', reportId)
+                .order('updated_at', { ascending: false })
+                .limit(1);
+            
+            if (existing && existing.length > 0) {
+                return (existing[0] as any).id;
+            }
+        }
+        
+        // Create new thread
+        const { data, error } = await supabase
+            .from('chat_threads')
+            .insert({
+                user_id: userId,
+                report_id: reportId,
+                title: reportId ? 'Análisis de cotización' : 'Nueva conversación'
+            } as any)
+            .select()
+            .single();
+        
+        if (error) throw error;
+        return (data as any).id;
+    } catch (error) {
+        console.error('❌ [chatService] Error creating thread:', error);
+        throw error;
+    }
+};
+
+/**
+ * Save message to database
+ */
+export const saveMessage = async (
+    threadId: string,
+    role: 'user' | 'model',
+    content: string,
+    citations: ChatCitation[] = [],
+    modelUsed?: string,
+    tokensUsed?: number
+): Promise<void> => {
+    try {
+        await supabase
+            .from('chat_messages')
+            .insert({
+                thread_id: threadId,
+                role,
+                content,
+                citations: citations.length > 0 ? citations : null,
+                model_used: modelUsed,
+                tokens_used: tokensUsed
+            } as any);
+    } catch (error) {
+        console.error('❌ [chatService] Error saving message:', error);
+    }
+};
+
+/**
+ * Get conversation history
+ */
+export const getConversationHistory = async (
+    threadId: string,
+    limit: number = 10
+): Promise<ChatMessage[]> => {
+    try {
+        const { data, error } = await supabase
+            .from('chat_messages')
+            .select('role, content')
+            .eq('thread_id', threadId)
+            .order('created_at', { ascending: false })
+            .limit(limit);
+        
+        if (error) throw error;
+        
+        return (data || []).map((msg: any) => ({
+            role: msg.role,
+            text: msg.content
+        })).reverse();
+    } catch (error) {
+        console.error('❌ [chatService] Error getting history:', error);
+        return [];
+    }
+};
+
+/**
+ * Build prompt with conversation history
+ */
+const buildPromptWithHistory = (
+    systemPrompt: string,
+    reportCtx: string,
+    ragContext: string,
+    history: ChatMessage[],
+    currentMessage: string
+): string => {
+    let prompt = `${systemPrompt}\n\n${reportCtx}${ragContext}\n\n`;
+    
+    if (history.length > 0) {
+        prompt += '=== HISTORIAL DE CONVERSACIÓN ===\n';
+        history.forEach(msg => {
+            prompt += `${msg.role === 'user' ? 'Usuario' : 'Asistente'}: ${msg.text}\n`;
+        });
+        prompt += '\n';
+    }
+    
+    prompt += `=== PREGUNTA ACTUAL ===\n${currentMessage}`;
+    
+    return prompt;
+};
+
+/**
+ * Process a chat message with persistence
  */
 export const processChatMessage = async (
     message: string,
     reportContext: any,
     useRAG: boolean = true,
-    history: ChatMessage[] = []
+    userId: string = 'anonymous',
+    threadId?: string
 ): Promise<ChatResponse> => {
     const startTime = Date.now();
     
     try {
+        // Get or create thread
+        const activeThreadId = threadId || await getOrCreateThread(
+            userId, 
+            reportContext?.id
+        );
+        
+        // Save user message
+        await saveMessage(activeThreadId, 'user', message);
+        
+        // Get conversation history
+        const history = await getConversationHistory(activeThreadId, 10);
+        
         // Build context
         const reportCtx = buildReportContext(reportContext);
         
@@ -207,9 +342,15 @@ export const processChatMessage = async (
             ragContext = formatCitationsForPrompt(citations);
         }
         
-        // Build the full prompt
+        // Build the full prompt with history
         const systemPrompt = buildSystemPrompt();
-        const fullPrompt = `${systemPrompt}\n\n${reportCtx}${ragContext}\n\n=== PREGUNTA DEL USUARIO ===\n${message}`;
+        const fullPrompt = buildPromptWithHistory(
+            systemPrompt,
+            reportCtx,
+            ragContext,
+            history,
+            message
+        );
         
         // Estimate tokens
         const estimatedTokens = estimateTokens(fullPrompt);
@@ -223,6 +364,16 @@ export const processChatMessage = async (
         
         const result = await model;
         const responseText = result.text || 'Lo siento, no pude generar una respuesta.';
+        
+        // Save model response
+        await saveMessage(
+            activeThreadId,
+            'model',
+            responseText,
+            citations,
+            GEMINI_CHAT_MODEL,
+            estimatedTokens + estimateTokens(responseText)
+        );
         
         console.log(`✅ [chatService] Response generated in ${Date.now() - startTime}ms`);
         
