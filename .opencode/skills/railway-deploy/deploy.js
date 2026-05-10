@@ -40,6 +40,34 @@ function checkDependencies() {
   return true;
 }
 
+function checkLockFile() {
+  log('\n🔒 Verificando package-lock.json...', YELLOW);
+  
+  try {
+    // Check if package-lock.json exists
+    if (!fs.existsSync('package-lock.json')) {
+      log('❌ No existe package-lock.json', RED);
+      log('💡 Solucion: Corre "npm install" para generarlo', YELLOW);
+      return false;
+    }
+    
+    // Try npm ci to verify lock file is in sync
+    execSync('npm ci --dry-run', { stdio: 'pipe' });
+    log('✅ package-lock.json sincronizado', GREEN);
+    return true;
+  } catch (error) {
+    log('❌ package-lock.json desincronizado con package.json', RED);
+    log('💡 Solucion:', YELLOW);
+    log('   1. rm -rf node_modules package-lock.json', YELLOW);
+    log('   2. npm install', YELLOW);
+    log('   3. git add package-lock.json', YELLOW);
+    log('   4. git commit -m "fix: regenerate lock file"', YELLOW);
+    log('   5. git push origin main', YELLOW);
+    log('\n⚠️  NO uses --legacy-peer-deps, puede corromper el lock file', YELLOW);
+    return false;
+  }
+}
+
 function runBuild() {
   log('\n🔨 Corriendo build local...', YELLOW);
   
@@ -84,6 +112,11 @@ log('===========================', YELLOW);
 
 const depsOk = checkDependencies();
 if (!depsOk) {
+  process.exit(1);
+}
+
+const lockOk = checkLockFile();
+if (!lockOk) {
   process.exit(1);
 }
 
