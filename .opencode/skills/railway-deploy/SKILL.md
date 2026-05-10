@@ -56,6 +56,7 @@ Ejecuta este skill cuando quieras deployar a Railway:
 - Modulos no encontrados (faltan en package.json raiz)
 - Errores de tipo 'unknown' en catch blocks
 - Errores de TypeScript en backend (cd server && tsc)
+- **package-lock.json desincronizado** (causa fallo en `npm ci` en Railway)
 
 ## Comandos
 
