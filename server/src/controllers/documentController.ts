@@ -3,7 +3,6 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { documentIndexingService, DocumentMetadata } from '../services/documentIndexingService';
-import { clauseIndexer } from '../services/clauseIndexer';
 import { supabase } from '../config/database';
 import { handleSupabaseError } from '../config/database';
 
@@ -164,29 +163,6 @@ export const documentController = {
           warnings: result.warnings,
         });
         return;
-      }
-
-      // Index in clause_chunks for advanced analysis (async, non-blocking)
-      if (result.success && result.documentId) {
-        const isClause = documentType === 'CLAUSULADO_GENERAL' || documentType === 'CLAUSULADO_PARTICULAR';
-        
-        if (isClause) {
-          console.log(`   🔍 [documentController] Triggering clause indexing for document ${result.documentId}`);
-          
-          try {
-            const clauseJobId = await clauseIndexer.startIndexing(filePath!, {
-              insurerName: insurerName.trim(),
-              documentType,
-              documentName: documentName.trim(),
-              documentId: result.documentId,
-            });
-            
-            console.log(`   ✅ [documentController] Clause indexing job started: ${clauseJobId}`);
-          } catch (clauseError) {
-            // Log but don't fail the upload
-            console.warn(`   ⚠️ [documentController] Clause indexing failed (non-critical):`, clauseError);
-          }
-        }
       }
 
       res.status(201).json({

@@ -4,7 +4,8 @@
  */
 
 import { Router } from 'express';
-import { processChatMessage, generateSuggestedQuestions } from '../services/chatService';
+import { processChatMessage, generateSuggestedQuestions, getConversationHistory, getOrCreateThread } from '../services/chatService';
+import { supabase } from '../config/database';
 
 const router = Router();
 
@@ -61,11 +62,15 @@ router.post('/', async (req, res) => {
         
         console.log(`💬 [chatRoute] Message: "${message.substring(0, 50)}..." | RAG: ${useRAG !== false}`);
         
+        const userId = req.body.userId || 'anonymous';
+        const threadId = req.body.threadId;
+        
         const result = await processChatMessage(
             message,
             reportContext,
             useRAG !== false, // default to true
-            history || []
+            userId,
+            threadId
         );
         
         console.log(`✅ [chatRoute] Response generated | Tokens: ${result.tokensUsed || 'unknown'} | Model: ${result.modelUsed}`);
@@ -96,6 +101,52 @@ router.post('/suggestions', async (req, res) => {
         res.status(500).json({
             error: 'Internal Server Error',
             message: 'Failed to generate suggestions'
+        });
+    }
+});
+
+/**
+ * GET /api/chat/threads
+ * List chat threads for a user
+ */
+router.get('/threads', async (req, res) => {
+    try {
+        const userId = req.query.userId as string || 'anonymous';
+        
+        const { data, error } = await supabase
+            .from('chat_threads')
+            .select('*')
+            .eq('user_id', userId)
+            .order('updated_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        res.json({ threads: data || [] });
+    } catch (error) {
+        console.error('❌ [chatRoute] List threads error:', error);
+        res.status(500).json({
+            error: 'Internal Server Error',
+            message: 'Failed to list threads'
+        });
+    }
+});
+
+/**
+ * GET /api/chat/threads/:id/messages
+ * Get messages for a specific thread
+ */
+router.get('/threads/:id/messages', async (req, res) => {
+    try {
+        const threadId = req.params.id;
+        
+        const messages = await getConversationHistory(threadId, 50);
+        
+        res.json({ messages });
+    } catch (error) {
+        console.error('❌ [chatRoute] Get messages error:', error);
+        res.status(500).json({
+            error: 'Internal Server Error',
+            message: 'Failed to get messages'
         });
     }
 });
