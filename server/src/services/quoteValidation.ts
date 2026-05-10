@@ -42,12 +42,12 @@ export function validateQuoteExtraction(data: any): {
   success: false; 
   errors: string[];
 } {
-  try {
-    const validated = QuoteExtractionSchema.parse(data);
-    return { success: true, data: validated };
-    } catch (error) {
+    try {
+        const validated = QuoteExtractionSchema.parse(data);
+        return { success: true, data: validated };
+    } catch (error: unknown) {
         if (error instanceof z.ZodError) {
-            const errors = error.issues.map((e: any) => `${e.path.join('.')}: ${e.message}`);
+            const errors = error.issues.map((e: z.ZodIssue) => `${e.path.join('.')}: ${e.message}`);
             return { success: false, errors };
         }
         return { success: false, errors: ['Unknown validation error'] };
@@ -68,9 +68,9 @@ export function validateQuoteExtractionLoose(data: any): {
     try {
         const validated = QuoteExtractionSchema.passthrough().parse(data);
         return { success: true, data: validated as ValidatedQuote };
-    } catch (error) {
+    } catch (error: unknown) {
         if (error instanceof z.ZodError) {
-            const errors = error.issues.map((e: any) => `${e.path.join('.')}: ${e.message}`);
+            const errors = error.issues.map((e: z.ZodIssue) => `${e.path.join('.')}: ${e.message}`);
             return { success: false, errors };
         }
         return { success: false, errors: ['Unknown validation error'] };

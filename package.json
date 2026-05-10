@@ -12,7 +12,8 @@
     "start": "node index.js",
     "server:dev": "cd server && ts-node --transpile-only src/index.ts",
     "seed:clauses": "cd server && ts-node --transpile-only src/scripts/seedClauses.ts",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "deploy": "node .opencode/skills/railway-deploy/deploy.js"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -41,7 +42,8 @@
     "react-dom": "^19.2.5",
     "react-markdown": "^10.1.0",
     "recharts": "^3.8.1",
-    "sharp": "^0.34.5"
+    "sharp": "^0.34.5",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
