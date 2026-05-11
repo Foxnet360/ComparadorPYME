@@ -23,6 +23,7 @@
     "@google/genai": "^1.46.0",
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.105.1",
+    "@types/ws": "^8.18.1",
     "axios": "^1.13.5",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
@@ -43,6 +44,7 @@
     "react-markdown": "^10.1.0",
     "recharts": "^3.8.1",
     "sharp": "^0.34.5",
+    "ws": "^8.20.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
