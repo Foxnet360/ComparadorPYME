@@ -106,12 +106,18 @@ SALIDA ESPERADA:
    - Fijo: "5 SMMLV" o "$500.000"
    - No aplica: "No aplica"
 
-5. Formato de valores de cobertura:
-   - Usa el formato exacto del documento: "$500.000.000" o "500M" o "10%"
+5. SEPARACIÓN CRÍTICA - Valor vs Deducible:
+   - El campo "value" DEBE contener SOLO el monto asegurado (ej: "$500.000.000", "500M", "Incluido")
+   - El campo "deductible" DEBE contener SOLO la cuota de participación (ej: "10%", "5 SMMLV", "No aplica")
+   - NUNCA mezcles ambos campos. Si ves "RC: $300M (ded 10%)", value="$300M", deductible="10%"
+   - Valores sospechosos para verificación: RC o Incendio menores a $100M
+
+6. Formato de valores de cobertura:
+   - Usa el formato exacto del documento: "$500.000.000" o "500M"
    - NO inventes valores. Si no está claro, usa "NO ESPECIFICADO"
    - Para RC e Incendio, valores menores a $100M son sospechosos - verifica
 
-6. Prima anual: Extrae solo el número entero (ej: 8500000), sin símbolos ni puntos.
+7. Prima anual: Extrae solo el número entero (ej: 8500000), sin símbolos ni puntos.
 
 6. expectedCoverages: Incluye TODAS las 14 coberturas canónicas con su estado:
    - "present": La cobertura aparece en el documento
@@ -228,6 +234,23 @@ export const analysisController = {
                                 console.log(`      - ${v.coverageName}: ${v.message}`);
                             });
                         }
+                        
+                        // Validate that value and deductible are not mixed
+                        normalizedCoverages.normalized.forEach(c => {
+                            const valueStr = String(c.value || '').toLowerCase();
+                            const dedStr = String(c.deductible || '').toLowerCase();
+                            
+                            // Check if deductible contains a large number (possible value)
+                            const dedHasLargeNumber = dedStr.match(/\$?\s*[\d.,]+\s*(?:millones|millon|m|smmlv)?/i);
+                            if (dedHasLargeNumber && c.deductible.length > 15) {
+                                console.log(`   ⚠️ Possible value/deductible mix in ${c.name}: deductible="${c.deductible}"`);
+                            }
+                            
+                            // Check if value contains deductible-like text
+                            if (valueStr.includes('%') || valueStr.includes('smmlv') || valueStr.includes('deducible')) {
+                                console.log(`   ⚠️ Possible deductible in value field for ${c.name}: value="${c.value}"`);
+                            }
+                        });
                         
                         // Convert structured result to ParsedQuote format
                         parsed = {
