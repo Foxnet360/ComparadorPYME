@@ -3,12 +3,9 @@ import autoTable from 'jspdf-autotable';
 import { ComparisonReport, UserProfile, DashboardStats, HistoryEntry } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
 import { formatCOPMillions, formatCOP, formatPercentage } from '../utils/formatCurrency';
+import { normalizeText } from '../utils/textUtils';
 
 // Helper for robust string matching (ignores accents, case, whitespace)
-const normalizeText = (text: string) => {
-  if (!text) return "";
-  return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-};
 
 // Format coverage value for PDF (similar to UI formatting)
 const formatCoverageValuePDF = (value: string | undefined | null): string => {

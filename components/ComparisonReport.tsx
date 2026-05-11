@@ -19,16 +19,11 @@ import { NegotiationPointsList } from './NegotiationPointsList';
 import { InverseCoverageAlert } from './InverseCoverageAlert';
 import { formatCOP, formatCOPMillions } from '../utils/formatCurrency';
 import { isAdvancedAnalysisEnabled } from '../config/features';
+import { normalizeText } from '../utils/textUtils';
 
 interface ComparisonReportProps {
   report: ReportType;
 }
-
-// Robust string matching
-const normalizeText = (text: string | undefined | null) => {
-  if (!text || typeof text !== 'string') return "";
-  return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-};
 
 const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
   const [activeTab, setActiveTab] = useState<'resumen' | 'coberturas' | 'deducibles' | 'auditoria' | 'analisis-avanzado'>('resumen');
