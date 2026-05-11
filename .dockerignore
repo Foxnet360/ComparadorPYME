@@ -39,6 +39,8 @@ server/src/**/__tests__
 # Documentation (no necesaria en producción)
 *.md
 !README.md
+!tesauro(pyme).md
+!tesauro-extensiones.md
 
 # ChromaDB
 chroma_data/
