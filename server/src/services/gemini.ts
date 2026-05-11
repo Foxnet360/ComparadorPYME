@@ -287,8 +287,8 @@ export const geminiService = {
         while (true) {
             try {
                 const genAI = getGenAI();
-                const extractionModel = process.env.USE_PRO_MODEL === 'true' 
-                    ? 'models/gemini-2.5-pro' 
+                const extractionModel = process.env.GEMINI_MODEL 
+                    ? `models/${process.env.GEMINI_MODEL}`
                     : 'models/gemini-2.5-flash';
                 console.log(`🤖 [Gemini] Using model: ${extractionModel} for extraction`);
                 const model = genAI.getGenerativeModel({

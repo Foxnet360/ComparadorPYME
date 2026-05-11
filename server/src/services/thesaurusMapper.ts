@@ -498,6 +498,11 @@ export function normalizeDeductible(deductible: string): {
     return { normalized: 'No aplica', needsReview: false };
   }
 
+  // Handle "Sin deducible" or "No tiene deducible"
+  if (/^(sin\s+deducible|no\s*tiene\s*deducible)/i.test(trimmed)) {
+    return { normalized: 'Sin deducible', needsReview: false };
+  }
+
   // Handle "No aplica Deducible" → extract "No aplica"
   const noAplicaMatch = trimmed.match(/^(no\s*aplica)\s*(?:deducible)?/i);
   if (noAplicaMatch) {
@@ -515,13 +520,15 @@ export function normalizeDeductible(deductible: string): {
   }
 
   // Handle percentage with context: "10% / Mín. 2 SMMLV (aplica sobre pérdida)"
-  const percentWithContext = trimmed.match(/(\d+%)\s*(?:\/\s*.*)?/);
+  // Also handles: "10 % PERD Min 1 (SMMLV)", "5% PERD Min 2 SMMLV Max 50 SMMLV"
+  // Handle decimal percentages: "12,5%" or "12.5%"
+  const percentWithContext = trimmed.match(/([\d.,]+\s*%)\s*(.*)/);
   if (percentWithContext) {
-    const context = trimmed.replace(percentWithContext[1], '').trim();
+    const context = percentWithContext[2].trim();
     // Include context in normalized string for frontend severity parsing
     const normalizedWithContext = context 
-      ? `${percentWithContext[1]} ${context}` 
-      : percentWithContext[1];
+      ? `${percentWithContext[1].replace(/\s+/g, '')} ${context}` 
+      : percentWithContext[1].replace(/\s+/g, '');
     return {
       normalized: normalizedWithContext,
       context: context || undefined,

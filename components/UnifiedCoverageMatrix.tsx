@@ -18,6 +18,42 @@ const normalizeText = (text: string | undefined | null) => {
   return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 };
 
+// Fuzzy matching helper for when thesaurus doesn't load (categoryId is undefined)
+const fuzzyMatchCoverage = (coverageName: string, categoryName: string): boolean => {
+  const normCoverage = normalizeText(coverageName);
+  const normCategory = normalizeText(categoryName);
+  
+  // Exact match
+  if (normCoverage === normCategory) return true;
+  
+  // Contains match
+  if (normCoverage.includes(normCategory) || normCategory.includes(normCoverage)) return true;
+  
+  // Common abbreviations and variations
+  const variations: Record<string, string[]> = {
+    'responsabilidad civil (rce)': ['rc', 'rce', 'responsabilidad civil', 'rc extracontractual'],
+    'incendio (edificio y contenidos)': ['incendio', 'edificio', 'contenidos', 'incendio y rayo'],
+    'lucro cesante': ['lucro', 'cesante', 'perdida de beneficios', 'interrupcion de negocios'],
+    'sustraccion / hurto': ['sustraccion', 'hurto', 'robo', 'atraco', 'amit'],
+    'equipo electrico y electronico': ['equipo electronico', 'equipo electrico', 'corto circuito'],
+    'rotura de maquinaria': ['rotura', 'maquinaria', 'rm'],
+    'transporte de mercancias': ['transporte', 'mercancias', 'transito'],
+    'huelga, motin, asonada (hmacc)': ['huelga', 'motin', 'asonada', 'hmacc', 'hmac'],
+    'terremoto y eventos catastroficos': ['terremoto', 'catastroficos', 'eventos de la naturaleza'],
+  };
+  
+  // Check if coverage matches any variation of the category
+  for (const [canonical, variants] of Object.entries(variations)) {
+    if (normCategory.includes(canonical) || canonical.includes(normCategory)) {
+      if (variants.some(v => normCoverage.includes(v) || v.includes(normCoverage))) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
+};
+
 // Get confidence badge color
 const getConfidenceColor = (confidence: number | undefined) => {
   if (confidence === undefined || confidence === null) return 'bg-gray-100 text-gray-600';
@@ -186,11 +222,22 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                     </td>
                     {quotes.map((quote, colIdx) => {
                       // Find all coverages for this category
-                      const matchingCoverages = (quote.coverages || []).filter(c => 
-                        c.categoryId === category.id || 
-                        normalizeText(c.canonicalName) === normalizeText(category.name) ||
-                        normalizeText(c.name) === normalizeText(category.name)
-                      );
+                      const matchingCoverages = (quote.coverages || []).filter(c => {
+                        // Primary: match by categoryId (when thesaurus loaded)
+                        if (c.categoryId === category.id) return true;
+                        
+                        // Secondary: match by canonical name
+                        if (normalizeText(c.canonicalName) === normalizeText(category.name)) return true;
+                        
+                        // Tertiary: match by original name
+                        if (normalizeText(c.name) === normalizeText(category.name)) return true;
+                        
+                        // Fallback: fuzzy matching when thesaurus didn't load (categoryId is undefined)
+                        if (!c.categoryId && fuzzyMatchCoverage(c.name, category.name)) return true;
+                        if (!c.categoryId && c.canonicalName && fuzzyMatchCoverage(c.canonicalName, category.name)) return true;
+                        
+                        return false;
+                      });
 
                       const isWinner = winner?.quoteIdx === colIdx;
                       const diff = diffs.deviations[colIdx];
