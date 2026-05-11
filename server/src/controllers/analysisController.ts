@@ -240,14 +240,33 @@ export const analysisController = {
                             const valueStr = String(c.value || '').toLowerCase();
                             const dedStr = String(c.deductible || '').toLowerCase();
                             
-                            // Check if deductible contains a large number (possible value)
-                            const dedHasLargeNumber = dedStr.match(/\$?\s*[\d.,]+\s*(?:millones|millon|m|smmlv)?/i);
-                            if (dedHasLargeNumber && c.deductible.length > 15) {
-                                console.log(`   ⚠️ Possible value/deductible mix in ${c.name}: deductible="${c.deductible}"`);
+                            // Skip validation for known valid deductible patterns
+                            const isValidDeductiblePattern = 
+                                /^\d+\s*%/i.test(c.deductible) || // Starts with number+% (e.g., "10% PERD...")
+                                /smmlv/i.test(c.deductible) || // Contains SMMLV
+                                /^aplica$/i.test(c.deductible) || // Just "Aplica"
+                                /^no\s+aplica$/i.test(c.deductible) || // "No aplica"
+                                /^sin\s+deducible$/i.test(c.deductible) || // "Sin deducible"
+                                /^incluid[oa]$/i.test(c.deductible) || // "Incluido/a"
+                                /^no\s+especificad[oa]$/i.test(c.deductible); // "No especificado"
+                            
+                            if (!isValidDeductiblePattern) {
+                                // Only flag if deductible looks like a monetary value
+                                const looksLikeValue = /^\$?[\d.,]+\s*(?:millones|millon|m)?$/i.test(c.deductible);
+                                if (looksLikeValue && c.deductible.length > 3) {
+                                    console.log(`   ⚠️ Possible value/deductible mix in ${c.name}: deductible="${c.deductible}"`);
+                                }
                             }
                             
                             // Check if value contains deductible-like text
-                            if (valueStr.includes('%') || valueStr.includes('smmlv') || valueStr.includes('deducible')) {
+                            // But allow: "100% de suma asegurada", "Seguro al 100%", etc.
+                            const isPercentageValue = 
+                                valueStr.includes('suma asegurada') ||
+                                valueStr.includes('seguro al') ||
+                                valueStr.includes('% del valor') ||
+                                /^\d+\s*%\s*(?:de|del)/i.test(c.value || '');
+                            
+                            if (!isPercentageValue && (valueStr.includes('smmlv') || valueStr.includes('deducible'))) {
                                 console.log(`   ⚠️ Possible deductible in value field for ${c.name}: value="${c.value}"`);
                             }
                         });
