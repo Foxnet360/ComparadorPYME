@@ -112,8 +112,14 @@ describe('thesaurusMapper', () => {
 
     it('should handle fixed amounts', () => {
       const result = normalizeDeductible('$500,000');
-      expect(result.normalized).toBe('$500.000');
+      expect(result.normalized).toBe('$500000');
       expect(result.needsReview).toBe(false);
+    });
+
+    it('should not interpret small numbers as fixed amounts without $', () => {
+      const result = normalizeDeductible('10');
+      expect(result.normalized).toBe('10');
+      expect(result.needsReview).toBe(true);
     });
 
     it('should handle empty string', () => {

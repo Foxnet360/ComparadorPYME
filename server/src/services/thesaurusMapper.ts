@@ -30,22 +30,55 @@ let thesaurusCache: ThesaurusEntry[] | null = null;
  * Load thesaurus from file
  * Parses the markdown thesaurus file into structured format
  */
+/**
+ * Find thesaurus files by checking multiple possible paths
+ */
+function findThesaurusPaths(): { main: string | null; extensions: string | null } {
+  const possiblePaths = [
+    process.cwd(),
+    path.resolve(process.cwd(), '..'),
+    path.resolve(process.cwd(), '..', '..'),
+    path.resolve(__dirname, '..', '..'),
+    path.resolve(__dirname, '..'),
+  ];
+
+  let mainPath: string | null = null;
+  let extensionsPath: string | null = null;
+
+  for (const basePath of possiblePaths) {
+    if (!mainPath) {
+      const candidate = path.join(basePath, 'tesauro(pyme).md');
+      if (fs.existsSync(candidate)) {
+        mainPath = candidate;
+      }
+    }
+    if (!extensionsPath) {
+      const candidate = path.join(basePath, 'tesauro-extensiones.md');
+      if (fs.existsSync(candidate)) {
+        extensionsPath = candidate;
+      }
+    }
+    if (mainPath && extensionsPath) break;
+  }
+
+  return { main: mainPath, extensions: extensionsPath };
+}
+
 export function loadThesaurus(): ThesaurusEntry[] {
   if (thesaurusCache) return thesaurusCache;
 
-  const thesaurusPath = path.join(process.cwd(), '..', 'tesauro(pyme).md');
-  const extensionsPath = path.join(process.cwd(), '..', 'tesauro-extensiones.md');
-  
+  const paths = findThesaurusPaths();
   let entries: ThesaurusEntry[] = [];
 
   // Load main thesaurus
-  if (!fs.existsSync(thesaurusPath)) {
+  if (!paths.main) {
     console.warn('Thesaurus file not found, using built-in thesaurus');
     entries = getBuiltInThesaurus();
   } else {
     try {
-      const content = fs.readFileSync(thesaurusPath, 'utf-8');
+      const content = fs.readFileSync(paths.main, 'utf-8');
       entries = parseThesaurusMarkdown(content);
+      console.log(`📚 [Thesaurus] Loaded ${entries.length} entries from ${paths.main}`);
     } catch (error) {
       console.warn('Failed to load thesaurus, using built-in:', error);
       entries = getBuiltInThesaurus();
@@ -53,12 +86,12 @@ export function loadThesaurus(): ThesaurusEntry[] {
   }
 
   // Load extensions if available
-  if (fs.existsSync(extensionsPath)) {
+  if (paths.extensions) {
     try {
-      const extContent = fs.readFileSync(extensionsPath, 'utf-8');
+      const extContent = fs.readFileSync(paths.extensions, 'utf-8');
       const extEntries = parseExtensionMarkdown(extContent);
       entries = [...entries, ...extEntries];
-      console.log(`📚 [Thesaurus] Loaded ${extEntries.length} extension entries`);
+      console.log(`📚 [Thesaurus] Loaded ${extEntries.length} extension entries from ${paths.extensions}`);
     } catch (error) {
       console.warn('Failed to load thesaurus extensions:', error);
     }
@@ -502,10 +535,11 @@ export function normalizeDeductible(deductible: string): {
     return { normalized: `${smmlvMatch[1]} SMMLV`, needsReview: false };
   }
 
-  // Handle fixed amount: "$500,000" or "500000"
-  const fixedMatch = trimmed.match(/(?:\$\s*)?(\d{1,3}(?:,\d{3})*|\d+)/);
+  // Handle fixed amount: "$500,000" or "$500000" (must have $ or be at least 5 digits)
+  const fixedMatch = trimmed.match(/(?:\$\s*)(\d{1,3}(?:[,\.]\d{3})*|\d{5,})/);
   if (fixedMatch) {
-    return { normalized: `$${fixedMatch[1].replace(/,/g, '.')}`, needsReview: false };
+    const cleanNumber = fixedMatch[1].replace(/[,\.]/g, '');
+    return { normalized: `$${cleanNumber}`, needsReview: false };
   }
 
   // Unknown format
