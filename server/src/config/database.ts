@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '../types/database';
+import WebSocket from 'ws';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -11,6 +12,11 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   throw new Error('Supabase configuration incomplete');
 }
 
+// Opciones para Node.js 20 (sin WebSocket nativo)
+const realtimeOptions = {
+  transport: WebSocket as any,
+};
+
 // Cliente con Service Role (privilegios completos - solo backend)
 export const supabase: SupabaseClient<Database> = createClient<Database>(
   SUPABASE_URL,
@@ -19,7 +25,8 @@ export const supabase: SupabaseClient<Database> = createClient<Database>(
     auth: {
       autoRefreshToken: false,
       persistSession: false
-    }
+    },
+    realtime: realtimeOptions
   }
 );
 
@@ -32,7 +39,8 @@ export const supabaseAnon = process.env.SUPABASE_ANON_KEY
         auth: {
           autoRefreshToken: false,
           persistSession: false
-        }
+        },
+        realtime: realtimeOptions
       }
     )
   : null;
