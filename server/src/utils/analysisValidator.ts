@@ -16,15 +16,9 @@ export const PLANTILLA_ITEMS = [
   "Terremoto y Eventos Catastróficos"
 ];
 
-// Normalizar texto para comparación
-const normalizeText = (text: string) => {
-  if (!text) return "";
-  return text.toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9\s]/g, "") // Mantener espacios para mejor matching
-    .trim();
-};
+import { normalizeText } from './textUtils';
+
+// Normalizar texto para comparación (stripNonAlphanumeric para matching más robusto)
 
 // Mapeo de variantes comunes a nombres estándar - EXPANDIDO
 const COVERAGE_VARIANTS: Record<string, string[]> = {
@@ -115,8 +109,8 @@ export const validateAndCompleteCoverages = (coverages: any[], insurerName?: str
     // Buscar coincidencia exacta primero
     let matched = coverages.find((c, idx) => {
       if (usedOriginalIndices.has(idx)) return false;
-      const normalizedInput = normalizeText(c.name);
-      const normalizedStandard = normalizeText(standardName);
+      const normalizedInput = normalizeText(c.name, true);
+      const normalizedStandard = normalizeText(standardName, true);
       return normalizedInput === normalizedStandard;
     });
     
@@ -125,9 +119,9 @@ export const validateAndCompleteCoverages = (coverages: any[], insurerName?: str
       const variants = COVERAGE_VARIANTS[standardName] || [];
       matched = coverages.find((c, idx) => {
         if (usedOriginalIndices.has(idx)) return false;
-        const normalizedInput = normalizeText(c.name);
+        const normalizedInput = normalizeText(c.name, true);
         return variants.some(v => {
-          const normalizedVariant = normalizeText(v);
+          const normalizedVariant = normalizeText(v, true);
           return normalizedInput.includes(normalizedVariant) || normalizedVariant.includes(normalizedInput);
         });
       });

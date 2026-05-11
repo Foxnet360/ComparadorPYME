@@ -3,16 +3,11 @@ import { Scale, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import { QuoteAnalysis } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
 import { formatPercentage, formatNumber } from '../utils/formatCurrency';
+import { normalizeText } from '../utils/textUtils';
 
 interface DeductiblesComparisonTableProps {
   quotes: QuoteAnalysis[];
 }
-
-// Normalize text for comparison
-const normalizeText = (text: string | undefined | null) => {
-  if (!text || typeof text !== 'string') return "";
-  return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-};
 
 export const DeductiblesComparisonTable: React.FC<DeductiblesComparisonTableProps> = ({ quotes }) => {
   // Use canonical categories (14 fixed) instead of dynamic coverage names

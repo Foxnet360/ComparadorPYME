@@ -4,6 +4,7 @@ import { QuoteAnalysis } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
 import { formatPercentage, formatNumber } from '../utils/formatCurrency';
 import { calculateDeductibleSeverity, getSeverityWidth } from '../utils/severityCalculator';
+import { normalizeText } from '../utils/textUtils';
 
 interface DeductibleSummaryTableProps {
   quotes: QuoteAnalysis[];
@@ -47,7 +48,7 @@ const getSeverity = (percentage: number | null, appliesTo: 'perdida' | 'valor' |
 };
 
 // Check if values differ between insurers for the same category
-const hasDifferences = (values: Array<{ percentage: number | null; minimum: number | null; appliesTo: string | null }>) => {
+const hasDifferences = (values: Array<{ percentage: number | null; minimum: number | null; appliesTo: string | null; hasData?: boolean }>) => {
   const validValues = values.filter(v => v.hasData);
   if (validValues.length <= 1) return false;
   
@@ -74,12 +75,6 @@ export const DeductibleSummaryTable: React.FC<DeductibleSummaryTableProps> = ({ 
       if (normalizeText(coverageName) === normalizeText(categoryName)) return true;
       return false;
     });
-  };
-  
-  // Normalize text for comparison
-  const normalizeText = (text: string | undefined | null) => {
-    if (!text || typeof text !== 'string') return "";
-    return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
   };
   
   // Check if any quote has deductibles

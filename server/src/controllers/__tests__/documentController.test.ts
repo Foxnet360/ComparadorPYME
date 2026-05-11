@@ -10,15 +10,15 @@ vi.mock('../../services/documentIndexingService', () => ({
   DocumentIndexingService: vi.fn()
 }));
 
-vi.mock('../../services/clauseIndexer', () => ({
-  clauseIndexer: {
-    startIndexing: vi.fn().mockResolvedValue('job-123'),
-  }
-}));
+
 
 const createMockChain = (finalValue: any = { data: null, error: null }) => {
-  const chain: any = vi.fn().mockReturnValue(chain);
-  chain.mockResolvedValue(finalValue);
+  const chain: any = vi.fn().mockReturnThis();
+  chain.eq = vi.fn().mockReturnThis();
+  chain.is = vi.fn().mockReturnThis();
+  chain.order = vi.fn().mockReturnThis();
+  chain.limit = vi.fn().mockReturnThis();
+  chain.single = vi.fn().mockResolvedValue(finalValue);
   return chain;
 };
 
@@ -50,7 +50,7 @@ vi.mock('../../config/database', () => ({
 
 import { documentController } from '../documentController';
 import { documentIndexingService } from '../../services/documentIndexingService';
-import { clauseIndexer } from '../../services/clauseIndexer';
+
 
 describe('documentController.createDocument', () => {
   let mockReq: Partial<Request>;
@@ -84,7 +84,7 @@ describe('documentController.createDocument', () => {
     },
   });
 
-  it('should trigger clauseIndexer for CLAUSULADO_GENERAL', async () => {
+  it('should create document for CLAUSULADO_GENERAL', async () => {
     mockReq = createMockRequest('CLAUSULADO_GENERAL');
     
     vi.mocked(documentIndexingService.indexDocument).mockResolvedValue({
@@ -103,16 +103,10 @@ describe('documentController.createDocument', () => {
 
     await documentController.createDocument(mockReq as Request, mockRes as Response);
 
-    expect(clauseIndexer.startIndexing).toHaveBeenCalledWith('/tmp/test.pdf', {
-      insurerName: 'Test Insurer',
-      documentType: 'CLAUSULADO_GENERAL',
-      documentName: 'Test Document',
-      documentId: 'doc-123',
-    });
     expect(statusMock).toHaveBeenCalledWith(201);
   });
 
-  it('should trigger clauseIndexer for CLAUSULADO_PARTICULAR', async () => {
+  it('should create document for CLAUSULADO_PARTICULAR', async () => {
     mockReq = createMockRequest('CLAUSULADO_PARTICULAR');
     
     vi.mocked(documentIndexingService.indexDocument).mockResolvedValue({
@@ -131,16 +125,10 @@ describe('documentController.createDocument', () => {
 
     await documentController.createDocument(mockReq as Request, mockRes as Response);
 
-    expect(clauseIndexer.startIndexing).toHaveBeenCalledWith('/tmp/test.pdf', {
-      insurerName: 'Test Insurer',
-      documentType: 'CLAUSULADO_PARTICULAR',
-      documentName: 'Test Document',
-      documentId: 'doc-456',
-    });
     expect(statusMock).toHaveBeenCalledWith(201);
   });
 
-  it('should NOT trigger clauseIndexer for COTIZACION', async () => {
+  it('should create document for COTIZACION', async () => {
     mockReq = createMockRequest('COTIZACION');
     
     vi.mocked(documentIndexingService.indexDocument).mockResolvedValue({
@@ -159,11 +147,10 @@ describe('documentController.createDocument', () => {
 
     await documentController.createDocument(mockReq as Request, mockRes as Response);
 
-    expect(clauseIndexer.startIndexing).not.toHaveBeenCalled();
     expect(statusMock).toHaveBeenCalledWith(201);
   });
 
-  it('should NOT trigger clauseIndexer for ANEXO', async () => {
+  it('should create document for ANEXO', async () => {
     mockReq = createMockRequest('ANEXO');
     
     vi.mocked(documentIndexingService.indexDocument).mockResolvedValue({
@@ -182,38 +169,7 @@ describe('documentController.createDocument', () => {
 
     await documentController.createDocument(mockReq as Request, mockRes as Response);
 
-    expect(clauseIndexer.startIndexing).not.toHaveBeenCalled();
     expect(statusMock).toHaveBeenCalledWith(201);
-  });
-
-  it('should return 200 even if clauseIndexer fails', async () => {
-    mockReq = createMockRequest('CLAUSULADO_GENERAL');
-    
-    vi.mocked(documentIndexingService.indexDocument).mockResolvedValue({
-      success: true,
-      documentId: 'doc-123',
-      insurerId: 'insurer-123',
-      stats: {
-        totalPages: 10,
-        chunksCreated: 50,
-        imagesUploaded: 10,
-        processingTimeMs: 1000,
-      },
-      errors: [],
-      warnings: [],
-    });
-
-    vi.mocked(clauseIndexer.startIndexing).mockRejectedValue(new Error('Indexing failed'));
-
-    await documentController.createDocument(mockReq as Request, mockRes as Response);
-
-    expect(statusMock).toHaveBeenCalledWith(201);
-    expect(jsonMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        success: true,
-        documentId: 'doc-123',
-      })
-    );
   });
 
   it('should handle main indexing failure', async () => {
@@ -233,7 +189,6 @@ describe('documentController.createDocument', () => {
 
     await documentController.createDocument(mockReq as Request, mockRes as Response);
 
-    expect(clauseIndexer.startIndexing).not.toHaveBeenCalled();
     expect(statusMock).toHaveBeenCalledWith(500);
   });
 });

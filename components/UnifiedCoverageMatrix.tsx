@@ -5,18 +5,13 @@ import { Info, AlertTriangle, ListChecks, CheckCircle, LayoutGrid, Table as Tabl
 import { formatPercentage, formatCOP } from '../utils/formatCurrency';
 import { findWinnerByCategory } from '../utils/winnerDetection';
 import { calculateDifferences, formatDeviation, getDiffClass } from '../utils/diffHighlighting';
+import { normalizeText } from '../utils/textUtils';
 
 interface UnifiedCoverageMatrixProps {
   quotes: QuoteAnalysis[];
   showRagReferences?: boolean;
   viewMode?: 'client' | 'technical';
 }
-
-// Normalize text for comparison
-const normalizeText = (text: string | undefined | null) => {
-  if (!text || typeof text !== 'string') return "";
-  return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-};
 
 // Fuzzy matching helper for when thesaurus doesn't load (categoryId is undefined)
 const fuzzyMatchCoverage = (coverageName: string, categoryName: string): boolean => {
