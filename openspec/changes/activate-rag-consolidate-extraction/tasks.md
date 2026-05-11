@@ -3,9 +3,9 @@
 - [x] 1.1 Ejecutar script `scripts/reindex-clauses.ts` para reindexar SBS y HDI en tabla `chunks`
 - [x] 1.2 Subir clausulados de ejemplo adicionales (MAPFRE, BBVA, AXA, CHUBB, Bolívar) vía API
 - [x] 1.3 Verificar que `chunks` tiene datos para todas las aseguradoras (query COUNT)
-- [ ] 1.4 Probar búsqueda RAG con queries de ejemplo: "Responsabilidad Civil deducible", "Incendio exclusión"
-- [ ] 1.5 Verificar que chat responde con datos reales de clausulados (no "no tengo información")
-- [ ] 1.6 Documentar clausulados indexados y su estado en README
+- [x] 1.4 Probar búsqueda RAG con queries de ejemplo: "Responsabilidad Civil deducible", "Incendio exclusión"
+- [x] 1.5 Verificar que chat responde con datos reales de clausulados (no "no tengo información")
+- [x] 1.6 Documentar clausulados indexados y su estado en README
 
 ## 2. Fase 2: Consolidar Arquitectura Vectorial
 
@@ -58,11 +58,11 @@
 
 ## 6. Documentación y Rollout
 
-- [ ] 6.1 Actualizar `API.md` con endpoints nuevos de chat
-- [ ] 6.2 Actualizar `DEPLOY.md` con pasos de migración SQL
-- [ ] 6.3 Documentar perfiles de extracción soportados
-- [ ] 6.4 Crear script de verificación post-deploy (`npm run verify:rag`)
-- [ ] 6.5 Deploy a staging con feature flags apagados
-- [ ] 6.6 Activar feature flags en staging y testear
-- [ ] 6.7 Deploy a producción con monitoreo
-- [ ] 6.8 Monitorear métricas: precisión de extracción, uso de tokens, errores RAG
+- [x] 6.1 Actualizar `API.md` con endpoints nuevos de chat
+- [x] 6.2 Actualizar `DEPLOY.md` con pasos de migración SQL
+- [x] 6.3 Documentar perfiles de extracción soportados
+- [x] 6.4 Crear script de verificación post-deploy (`scripts/verify-deploy.ts`)
+- [x] 6.5 Deploy a staging con feature flags apagados
+- [x] 6.6 Activar feature flags en staging y testear
+- [x] 6.7 Deploy a producción con monitoreo
+- [x] 6.8 Monitorear métricas: precisión de extracción, uso de tokens, errores RAG
