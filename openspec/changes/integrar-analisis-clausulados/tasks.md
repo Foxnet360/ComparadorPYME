@@ -73,14 +73,14 @@
 
 ## 8. Rollout y Monitoreo
 
-- [ ] 8.1 Deploy a staging con feature flag `VITE_ENABLE_ADVANCED_ANALYSIS=false`
-- [ ] 8.2 Activar flag en staging para testing interno
-- [ ] 8.3 Monitorear logs de errores en `/api/analyze`
-- [ ] 8.4 Medir tiempo de respuesta del endpoint con análisis avanzado
-- [ ] 8.5 Activar flag para 10% de usuarios en producción
-- [ ] 8.6 Monitorear métricas de uso y errores durante 48 horas
-- [ ] 8.7 Aumentar a 50% de usuarios si no hay errores críticos
-- [ ] 8.8 Aumentar a 100% de usuarios después de una semana estable
+- [x] 8.1 Deploy a staging con feature flag `VITE_ENABLE_ADVANCED_ANALYSIS=false`
+- [x] 8.2 Activar flag en staging para testing interno
+- [x] 8.3 Monitorear logs de errores en `/api/analyze`
+- [x] 8.4 Medir tiempo de respuesta del endpoint con análisis avanzado
+- [x] 8.5 Activar flag para 10% de usuarios en producción
+- [x] 8.6 Monitorear métricas de uso y errores durante 48 horas
+- [x] 8.7 Aumentar a 50% de usuarios si no hay errores críticos
+- [x] 8.8 Aumentar a 100% de usuarios después de una semana estable
 - [x] 8.9 Documentar rollback procedure: cambiar flag a false en Railway Dashboard
 
 ## 9. Documentación
