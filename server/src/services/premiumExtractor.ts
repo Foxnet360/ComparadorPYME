@@ -138,3 +138,156 @@ export function extractAndValidatePremium(
     isSuspect: false,
   };
 }
+
+// ==================== V2: Premium Breakdown Extraction ====================
+
+export interface PremiumBreakdown {
+  netPremium: number;
+  fees: number;
+  taxes: number;
+  otherCharges: number;
+  totalPayable: number;
+  currency: string;
+  periodicity: string;
+}
+
+export interface PerCoveragePremium {
+  coverageName: string;
+  premium: number;
+}
+
+export interface PremiumValidationResult {
+  isValid: boolean;
+  isConsistent: boolean;
+  perCoverageSumMatches: boolean;
+  warnings: string[];
+}
+
+/**
+ * Extract premium breakdown with all components
+ */
+export function extractPremiumBreakdown(data: any): PremiumBreakdown {
+  const premium = data.premium || {};
+  
+  return {
+    netPremium: premium.netPremium || 0,
+    fees: premium.fees || 0,
+    taxes: premium.taxes || 0,
+    otherCharges: premium.otherCharges || 0,
+    totalPayable: premium.totalPayable || 0,
+    currency: premium.currency || 'COP',
+    periodicity: premium.periodicity || 'ANUAL',
+  };
+}
+
+/**
+ * Extract per-coverage premiums from raw coverages
+ */
+export function extractPerCoveragePremiums(rawCoverages: any[]): PerCoveragePremium[] {
+  return rawCoverages
+    .filter((c: any) => c.premium && c.premium > 0)
+    .map((c: any) => ({
+      coverageName: c.rawName || c.name || 'Unknown',
+      premium: c.premium,
+    }));
+}
+
+/**
+ * Validate premium consistency (sum of components should equal total)
+ */
+export function validatePremiumConsistency(breakdown: PremiumBreakdown): PremiumValidationResult {
+  const warnings: string[] = [];
+  
+  // Check if components sum to total
+  const sum = breakdown.netPremium + breakdown.fees + breakdown.taxes + breakdown.otherCharges;
+  const isConsistent = Math.abs(sum - breakdown.totalPayable) <= (breakdown.totalPayable * 0.01); // ±1% tolerance
+  
+  if (!isConsistent && breakdown.totalPayable > 0) {
+    warnings.push(`Desglose inconsistente: ${sum} ≠ ${breakdown.totalPayable}`);
+  }
+  
+  // Validate individual components
+  if (breakdown.netPremium <= 0 && breakdown.totalPayable > 0) {
+    warnings.push('Prima neta no encontrada');
+  }
+  
+  return {
+    isValid: breakdown.totalPayable > 0,
+    isConsistent,
+    perCoverageSumMatches: true, // Will be checked separately
+    warnings,
+  };
+}
+
+/**
+ * Validate that per-coverage premiums sum to net premium
+ */
+export function validatePerCoverageSum(
+  perCoveragePremiums: PerCoveragePremium[],
+  netPremium: number
+): PremiumValidationResult {
+  const warnings: string[] = [];
+  
+  if (perCoveragePremiums.length === 0 || netPremium <= 0) {
+    return {
+      isValid: true,
+      isConsistent: true,
+      perCoverageSumMatches: true,
+      warnings: [],
+    };
+  }
+  
+  const sum = perCoveragePremiums.reduce((total, p) => total + p.premium, 0);
+  const matches = Math.abs(sum - netPremium) <= (netPremium * 0.1); // ±10% tolerance
+  
+  if (!matches) {
+    warnings.push(`Primas por cobertura (${sum}) no cuadran con prima neta (${netPremium})`);
+  }
+  
+  return {
+    isValid: true,
+    isConsistent: true,
+    perCoverageSumMatches: matches,
+    warnings,
+  };
+}
+
+/**
+ * Normalize currency code
+ */
+export function normalizeCurrency(currency: string): string {
+  const upper = currency.toUpperCase();
+  if (upper.includes('COP') || upper.includes('PESO')) return 'COP';
+  if (upper.includes('USD') || upper.includes('DÓLAR') || upper.includes('DOLAR')) return 'USD';
+  return 'COP';
+}
+
+/**
+ * Normalize periodicity
+ */
+export function normalizePeriodicity(periodicity: string): string {
+  const upper = periodicity.toUpperCase();
+  if (upper.includes('ANUAL') || upper.includes('ANUAL')) return 'ANUAL';
+  if (upper.includes('SEMESTRAL')) return 'SEMESTRAL';
+  if (upper.includes('TRIMESTRAL')) return 'TRIMESTRAL';
+  if (upper.includes('MENSUAL')) return 'MENSUAL';
+  return 'ANUAL';
+}
+
+/**
+ * Complete premium validation pipeline
+ */
+export function validatePremiumBreakdown(
+  breakdown: PremiumBreakdown,
+  perCoveragePremiums: PerCoveragePremium[]
+): PremiumValidationResult {
+  const consistencyResult = validatePremiumConsistency(breakdown);
+  const sumResult = validatePerCoverageSum(perCoveragePremiums, breakdown.netPremium);
+  
+  return {
+    isValid: consistencyResult.isValid,
+    isConsistent: consistencyResult.isConsistent,
+    perCoverageSumMatches: sumResult.perCoverageSumMatches,
+    warnings: [...consistencyResult.warnings, ...sumResult.warnings],
+  };
+}

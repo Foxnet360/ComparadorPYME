@@ -7,8 +7,116 @@ import { parseJsonWithRepair } from './jsonRepair';
 import { extractAndValidatePremium, createPremiumPrompt } from './premiumExtractor';
 
 /**
- * JSON Schema for structured quote extraction
+ * JSON Schema V2 for flexible quote extraction
+ * Captures raw document structure without forcing 14 canonical coverages
+ */
+export const QuoteExtractionSchemaV2: any = {
+  description: "Extracted insurance quote data with flexible structure",
+  type: SchemaType.OBJECT,
+  properties: {
+    insurerName: {
+      type: SchemaType.STRING,
+      description: "Name of the insurance company",
+      nullable: false,
+    },
+    policyName: {
+      type: SchemaType.STRING,
+      description: "Name of the insurance product/policy",
+      nullable: false,
+    },
+    validityPeriod: {
+      type: SchemaType.STRING,
+      description: "Policy validity period",
+      nullable: true,
+    },
+    premium: {
+      type: SchemaType.OBJECT,
+      description: "Premium breakdown",
+      properties: {
+        netPremium: { type: SchemaType.NUMBER, description: "Net premium amount" },
+        fees: { type: SchemaType.NUMBER, description: "Expedition fees" },
+        taxes: { type: SchemaType.NUMBER, description: "Taxes (IVA)" },
+        otherCharges: { type: SchemaType.NUMBER, description: "Other charges (assistance, digital emission, etc.)" },
+        totalPayable: { type: SchemaType.NUMBER, description: "Total amount to pay" },
+        currency: { type: SchemaType.STRING, description: "Currency code" },
+        periodicity: { type: SchemaType.STRING, description: "Payment periodicity" },
+      },
+      required: ["totalPayable", "currency"],
+    },
+    insuredAssets: {
+      type: SchemaType.ARRAY,
+      description: "Insurable assets from the quote",
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          assetType: { type: SchemaType.STRING, description: "Type of asset (e.g., EDIFICIOS, CONTENIDOS)" },
+          value: { type: SchemaType.NUMBER, description: "Insured value" },
+          notes: { type: SchemaType.STRING, nullable: true },
+        },
+      },
+    },
+    rawCoverages: {
+      type: SchemaType.ARRAY,
+      description: "Coverages as they appear in the document",
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          section: { type: SchemaType.STRING, description: "Section name (e.g., DAÑOS MATERIALES)", nullable: true },
+          rawName: { type: SchemaType.STRING, description: "Exact coverage name from document" },
+          insuredAmount: { type: SchemaType.NUMBER, description: "Insured amount", nullable: true },
+          deductible: { type: SchemaType.STRING, description: "Deductible text as appears", nullable: true },
+          premium: { type: SchemaType.NUMBER, description: "Premium for this coverage", nullable: true },
+          notes: { type: SchemaType.STRING, nullable: true },
+        },
+        required: ["rawName"],
+      },
+    },
+    subLimits: {
+      type: SchemaType.ARRAY,
+      description: "Sub-limits separated from main coverages",
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          parentCoverage: { type: SchemaType.STRING, description: "Parent coverage name" },
+          name: { type: SchemaType.STRING, description: "Sub-limit name" },
+          limit: { type: SchemaType.NUMBER, description: "Sub-limit amount" },
+          deductible: { type: SchemaType.STRING, nullable: true },
+        },
+        required: ["parentCoverage", "name", "limit"],
+      },
+    },
+    generalDeductibles: {
+      type: SchemaType.ARRAY,
+      description: "General deductibles by section/type",
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          appliesTo: { type: SchemaType.STRING, description: "What this deductible applies to" },
+          deductibleText: { type: SchemaType.STRING, description: "Deductible text" },
+        },
+        required: ["appliesTo", "deductibleText"],
+      },
+    },
+    specialConditions: {
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING },
+    },
+    exclusions: {
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING },
+    },
+    warranties: {
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING },
+    },
+  },
+  required: ["insurerName", "policyName", "premium", "rawCoverages"],
+};
+
+/**
+ * JSON Schema for structured quote extraction (Legacy V1)
  * Enforces consistent output format from Gemini
+ * @deprecated Use QuoteExtractionSchemaV2 for flexible extraction
  */
 export const QuoteExtractionSchema: any = {
   description: "Extracted insurance quote data",
@@ -196,6 +304,166 @@ export const geminiService = {
             }
             if (file.state !== FileState.ACTIVE) {
                 throw new Error(`File ${file.name} failed to process`);
+            }
+        }
+    },
+
+    deleteFile: async (fileName: string) => {
+        try {
+            const fileManager = getFileManager();
+            await fileManager.deleteFile(fileName);
+            console.log(`🗑️ [Gemini] Deleted file: ${fileName}`);
+        } catch (error: any) {
+            console.warn(`⚠️ [Gemini] Failed to delete file ${fileName}:`, error.message);
+        }
+    },
+
+    /**
+     * Extract structured data from PDF using multimodal vision
+     * Uploads PDF to Gemini File API and processes with vision
+     */
+    extractFromPdfWithVision: async (
+        pdfPath: string,
+        prompt: string,
+        filename: string
+    ): Promise<any> => {
+        let uploadedFile: any = null;
+        let retries = 0;
+        const maxRetries = 3;
+
+        while (true) {
+            try {
+                console.log(`📤 [Gemini] Uploading PDF: ${filename}`);
+                
+                // Upload PDF
+                uploadedFile = await geminiService.uploadFile(
+                    pdfPath,
+                    'application/pdf',
+                    filename
+                );
+
+                // Wait for processing
+                console.log(`⏳ [Gemini] Waiting for file processing...`);
+                await geminiService.waitForFilesActive([uploadedFile]);
+                console.log(`✅ [Gemini] File ready: ${uploadedFile.name}`);
+
+                // Extract using multimodal model
+                const genAI = getGenAI();
+                const extractionModel = process.env.GEMINI_MODEL 
+                    ? `models/${process.env.GEMINI_MODEL}`
+                    : 'models/gemini-2.5-pro';
+                
+                console.log(`🤖 [Gemini] Using model: ${extractionModel} for PDF extraction`);
+                
+                const model = genAI.getGenerativeModel({
+                    model: extractionModel,
+                    generationConfig: {
+                        temperature: 0.1,
+                        maxOutputTokens: 32768,
+                        responseMimeType: 'application/json',
+                        responseSchema: QuoteExtractionSchemaV2,
+                    }
+                });
+
+                const result = await model.generateContent([
+                    { text: prompt },
+                    {
+                        fileData: {
+                            fileUri: uploadedFile.uri,
+                            mimeType: 'application/pdf',
+                        }
+                    }
+                ]);
+
+                const response = result.response;
+                if (!response) {
+                    throw new Error("No response received from Gemini");
+                }
+
+                const responseText = response.text();
+                if (!responseText) {
+                    throw new Error("Empty response from Gemini");
+                }
+
+                // Parse JSON
+                const parseResult = parseJsonWithRepair(responseText);
+                
+                if (parseResult.success) {
+                    console.log(`📄 [Gemini] PDF extraction: ${parseResult.data.insurerName}, ${parseResult.data.rawCoverages?.length || 0} coverages`);
+                    return parseResult.data;
+                } else {
+                    throw new Error(`JSON parsing failed: ${parseResult.error}`);
+                }
+
+            } catch (error: any) {
+                const isRateLimit =
+                    error.status === 429 ||
+                    error.status === '429' ||
+                    error.message?.includes("429") ||
+                    error.message?.includes("Quota exceeded") ||
+                    error.message?.includes("Too Many Requests");
+
+                if (isRateLimit) {
+                    const backoffMs = Math.min(20000 * Math.pow(2, retries), 120000);
+                    console.log(`Rate limit hit. Retry attempt ${retries + 1} of ${maxRetries} (backoff: ${backoffMs}ms)...`);
+                    if (retries >= maxRetries) {
+                        console.error("Max retries exceeded for rate limit.");
+                        throw error;
+                    }
+                    retries++;
+                    await new Promise(resolve => setTimeout(resolve, backoffMs));
+                    continue;
+                }
+
+                console.error("❌ [Gemini] PDF extraction failed:", error);
+                throw error;
+            } finally {
+                // Always cleanup uploaded file
+                if (uploadedFile?.name) {
+                    await geminiService.deleteFile(uploadedFile.name);
+                }
+            }
+        }
+    },
+
+    /**
+     * Retry wrapper with exponential backoff for any async function
+     */
+    withRetry: async <T>(
+        fn: () => Promise<T>,
+        options: {
+            maxRetries?: number;
+            baseDelay?: number;
+            maxDelay?: number;
+            shouldRetry?: (error: any) => boolean;
+        } = {}
+    ): Promise<T> => {
+        const {
+            maxRetries = 3,
+            baseDelay = 2000,
+            maxDelay = 120000,
+            shouldRetry = (error: any) => {
+                return error.status === 429 ||
+                    error.status === '429' ||
+                    error.message?.includes("429") ||
+                    error.message?.includes("Quota exceeded") ||
+                    error.message?.includes("Too Many Requests");
+            }
+        } = options;
+
+        let retries = 0;
+        while (true) {
+            try {
+                return await fn();
+            } catch (error: any) {
+                if (!shouldRetry(error) || retries >= maxRetries) {
+                    throw error;
+                }
+                
+                const delay = Math.min(baseDelay * Math.pow(2, retries), maxDelay);
+                console.log(`🔄 [Retry] Attempt ${retries + 1}/${maxRetries} after ${delay}ms`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                retries++;
             }
         }
     },

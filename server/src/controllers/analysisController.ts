@@ -20,6 +20,15 @@ import { formatCOP } from '../utils/formatCurrency';
 import { validateCoverageValues } from '../services/coverageValueValidator';
 import fs from 'fs';
 
+// NEW: Multimodal extraction imports
+import { detectFormatFamily, extractForDetection } from '../services/formatDetector';
+import { buildPromptForFamily } from '../services/promptBuilder';
+import { buildCanonicalCoverages } from '../services/coverageNormalizer';
+import { extractPremiumBreakdown, extractPerCoveragePremiums, validatePremiumBreakdown, normalizeCurrency, normalizePeriodicity } from '../services/premiumExtractor';
+
+// Feature flag for multimodal extraction
+const USE_MULTIMODAL = process.env.ENABLE_MULTIMODAL_EXTRACTION === 'true';
+
 // Helper to call service with timeout
 const callWithTimeout = async <T>(promise: Promise<T>, timeoutMs: number = 5000, fallback: T): Promise<T> => {
   const timeout = new Promise<never>((_, reject) => 
@@ -163,6 +172,187 @@ REGLAS:
 n3. Extrae TODAS las coberturas que encuentres, sin omitir ninguna
 4. Sé preciso con los valores numéricos y porcentajes`;
 
+/**
+ * Process a single quote using multimodal extraction
+ */
+async function processQuoteMultimodal(
+  quoteFile: Express.Multer.File,
+  index: number,
+  total: number
+): Promise<ParsedQuote> {
+  console.log(`   Quote ${index + 1}/${total}: ${quoteFile.originalname}`);
+  
+  try {
+    // Phase 1: Detect format family (quick text extraction)
+    console.log(`   📋 Phase 1: Detecting format...`);
+    const quickText = extractForDetection(
+      await pdfExtractor.extractTextFromPdf(quoteFile.path).then(r => r.text),
+      2000
+    );
+    const formatResult = detectFormatFamily(quickText);
+    console.log(`   ✅ Format detected: ${formatResult.family} (${formatResult.confidence}% confidence)`);
+    
+    // Phase 2: Build specialized prompt
+    console.log(`   📝 Phase 2: Building specialized prompt...`);
+    const prompt = buildPromptForFamily(formatResult.family, {
+      pageCount: formatResult.pageCount,
+      hasTables: formatResult.hasTables,
+    });
+    
+    // Phase 3: Extract using multimodal vision
+    console.log(`   🔍 Phase 3: Extracting with multimodal vision...`);
+    const extracted = await geminiService.extractFromPdfWithVision(
+      quoteFile.path,
+      prompt,
+      quoteFile.originalname
+    );
+    
+    // Phase 4: Normalize coverages
+    console.log(`   🔄 Phase 4: Normalizing coverages...`);
+    const normalizationResult = await buildCanonicalCoverages(
+      extracted.rawCoverages || [],
+      extracted.insuredAssets || [],
+      extracted.generalDeductibles || []
+    );
+    
+    // Phase 5: Extract premium breakdown
+    console.log(`   💰 Phase 5: Extracting premium breakdown...`);
+    const premiumBreakdown = extractPremiumBreakdown(extracted);
+    const perCoveragePremiums = extractPerCoveragePremiums(extracted.rawCoverages || []);
+    const premiumValidation = validatePremiumBreakdown(premiumBreakdown, perCoveragePremiums);
+    
+    if (premiumValidation.warnings.length > 0) {
+      console.log(`   ⚠️ Premium warnings: ${premiumValidation.warnings.join(', ')}`);
+    }
+    
+    // Build ParsedQuote from normalized data
+    const parsed: ParsedQuote = {
+      insurerName: extracted.insurerName || 'NO ESPECIFICADO',
+      policyName: extracted.policyName || 'NO ESPECIFICADO',
+      priceAnnual: premiumBreakdown.totalPayable || 0,
+      currency: normalizeCurrency(premiumBreakdown.currency),
+      coverages: normalizationResult.canonicalCoverages.map(c => ({
+        name: c.name,
+        canonicalName: c.name,
+        value: c.insuredAmount ? c.insuredAmount.toString() : 'NO ESPECIFICADO',
+        deductible: c.deductible || 'NO ESPECIFICADO',
+        confidence: c.confidence,
+      })),
+      validityPeriod: extracted.validityPeriod,
+      specialConditions: [
+        ...(extracted.specialConditions || []),
+        ...(premiumValidation.warnings),
+        ...(normalizationResult.needsReview ? ['Algunas coberturas necesitan revisión'] : []),
+      ],
+      rawText: JSON.stringify(extracted),
+      parseConfidence: normalizationResult.totalConfidence,
+      expectedCoverages: normalizationResult.canonicalCoverages.map(c => ({
+        name: c.name,
+        status: c.status,
+        value: c.insuredAmount ? c.insuredAmount.toString() : null,
+        deductible: c.deductible,
+      })),
+    };
+    
+    console.log(`   ✅ Multimodal extraction: ${parsed.insurerName}, ${parsed.coverages.length} coverages, premium: ${parsed.priceAnnual}`);
+    return parsed;
+    
+  } catch (error: any) {
+    console.error(`   ❌ Multimodal extraction failed:`, error.message);
+    throw error;
+  }
+}
+
+/**
+ * Process a single quote using legacy text-based extraction
+ */
+async function processQuoteLegacy(
+  quote: any,
+  index: number,
+  total: number
+): Promise<ParsedQuote> {
+  console.log(`   Quote ${index + 1}/${total}: ${quote.filename}`);
+  
+  try {
+    // Detect insurer and get profile
+    const detectedInsurer = insurerProfileService.detectInsurer(quote.text);
+    const profile = insurerProfileService.getProfile(detectedInsurer);
+    console.log(`   🔍 Detected insurer: ${detectedInsurer} (${profile.displayName})`);
+    
+    // Build prompt with profile
+    const extractionPrompt = `${STRUCTURED_EXTRACTION_PROMPT}\n\n${profile.promptTemplate}\n\n${profile.fewShotExamples.join('\n\n')}`;
+    
+    // Try structured extraction first (JSON mode)
+    let parsed: ParsedQuote;
+    try {
+      const structuredResult = await geminiService.extractStructured(
+        quote.text,
+        extractionPrompt,
+        quote.metadata?.pageCount || 1
+      );
+      
+      // Normalize coverages using thesaurus
+      const normalizedCoverages = normalizeCoverages(
+        (structuredResult.coverages || []).map((c: any) => ({
+          name: c.name,
+          value: c.value,
+          deductible: c.deductible
+        }))
+      );
+      
+      if (normalizedCoverages.needsReview) {
+        console.log(`   ⚠️ Some coverages need review after thesaurus normalization`);
+      }
+      
+      // Convert structured result to ParsedQuote format
+      parsed = {
+        insurerName: structuredResult.insurerName || 'NO ESPECIFICADO',
+        policyName: structuredResult.policyName || 'NO ESPECIFICADO',
+        priceAnnual: structuredResult.priceAnnual || 0,
+        currency: structuredResult.currency || 'COP',
+        coverages: normalizedCoverages.normalized.map(c => ({
+          name: c.name,
+          canonicalName: c.name,
+          value: c.value,
+          deductible: c.deductible,
+          confidence: Math.round(c.confidence * 100)
+        })),
+        validityPeriod: structuredResult.validityPeriod,
+        specialConditions: structuredResult.specialConditions || [],
+        rawText: JSON.stringify(structuredResult),
+        parseConfidence: normalizedCoverages.needsReview ? 75 : 95
+      };
+      
+      console.log(`   ✅ Structured extraction: ${parsed.insurerName}, ${parsed.coverages.length} coverages`);
+    } catch (structuredError) {
+      // Fallback to legacy text extraction
+      console.warn(`   ⚠️ Structured extraction failed, falling back to text mode:`, (structuredError as Error).message);
+      
+      const geminiResponse = await geminiService.extractText(
+        quote.text,
+        EXTRACTION_PROMPT
+      );
+      
+      parsed = await quoteParser.parse(geminiResponse);
+      console.log(`   ✅ Fallback parsing: ${parsed.insurerName}, ${parsed.coverages.length} coverages, confidence: ${parsed.parseConfidence}%`);
+    }
+    
+    return parsed;
+  } catch (error) {
+    console.error(`   ❌ Error processing quote ${index + 1}:`, error);
+    return {
+      insurerName: quote.filename || 'Unknown',
+      policyName: 'Error en procesamiento',
+      priceAnnual: 0,
+      currency: 'COP',
+      coverages: [],
+      specialConditions: [`Error: ${(error as Error).message}`],
+      rawText: quote.text?.substring(0, 500) || '',
+      parseConfidence: 0
+    };
+  }
+}
+
 export const analysisController = {
     uploadAndAnalyze: async (req: Request, res: Response): Promise<void> => {
         const startTime = Date.now();
@@ -177,17 +367,43 @@ export const analysisController = {
             }
 
             console.log(`📄 Processing ${quoteFiles.length} quotes...`);
+            console.log(`🔧 Pipeline: ${USE_MULTIMODAL ? 'Multimodal (V2)' : 'Legacy (V1)'}`);
 
-            // Phase 1: Extract text from quote PDFs
-            console.log('📑 Phase 1/5: Extracting text from PDFs...');
-            const extractedQuotes = await pdfExtractor.processMultiplePdfs(
-                quoteFiles.map(f => ({ path: f.path, originalname: f.originalname })),
-                'COTIZACIÓN'
-            );
+            let parsedQuotes: ParsedQuote[] = [];
 
-            // Phase 2: Process each quote individually with Gemini
-            console.log('🤖 Phase 2/5: Extracting structured data with Gemini...');
-            const parsedQuotes: ParsedQuote[] = [];
+            if (USE_MULTIMODAL) {
+                // NEW: Multimodal extraction pipeline
+                console.log('🤖 Using multimodal extraction with Gemini 2.5 Pro...');
+                
+                for (let i = 0; i < quoteFiles.length; i++) {
+                    try {
+                        const parsed = await processQuoteMultimodal(quoteFiles[i], i, quoteFiles.length);
+                        parsedQuotes.push(parsed);
+                    } catch (error: any) {
+                        console.error(`   ❌ Error processing quote ${i + 1}:`, error);
+                        // Fallback to legacy pipeline
+                        console.log(`   🔄 Falling back to legacy pipeline...`);
+                        const fallback = await processQuoteLegacy(quoteFiles[i], i, quoteFiles.length);
+                        parsedQuotes.push(fallback);
+                    }
+                }
+            } else {
+                // LEGACY: Text-based extraction pipeline
+                // Phase 1: Extract text from quote PDFs
+                console.log('📑 Phase 1/5: Extracting text from PDFs...');
+                const extractedQuotes = await pdfExtractor.processMultiplePdfs(
+                    quoteFiles.map(f => ({ path: f.path, originalname: f.originalname })),
+                    'COTIZACIÓN'
+                );
+
+                // Phase 2: Process each quote individually with Gemini
+                console.log('🤖 Phase 2/5: Extracting structured data with Gemini...');
+                
+                for (let i = 0; i < extractedQuotes.length; i++) {
+                    const parsed = await processQuoteLegacy(extractedQuotes[i], i, extractedQuotes.length);
+                    parsedQuotes.push(parsed);
+                }
+            }
             
             for (let i = 0; i < extractedQuotes.length; i++) {
                 const quote = extractedQuotes[i];
