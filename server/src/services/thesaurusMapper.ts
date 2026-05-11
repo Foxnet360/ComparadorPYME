@@ -519,6 +519,11 @@ export function normalizeDeductible(deductible: string): {
     return { normalized: 'Incluido', needsReview: false };
   }
 
+  // Handle "No especificado" or "No especificada"
+  if (/^no\s+especificad[oa]/i.test(trimmed)) {
+    return { normalized: 'No especificado', needsReview: false };
+  }
+
   // Handle percentage with context: "10% / Mín. 2 SMMLV (aplica sobre pérdida)"
   // Also handles: "10 % PERD Min 1 (SMMLV)", "5% PERD Min 2 SMMLV Max 50 SMMLV"
   // Handle decimal percentages: "12,5%" or "12.5%"
