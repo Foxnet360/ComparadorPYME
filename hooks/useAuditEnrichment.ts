@@ -55,7 +55,13 @@ export const useAuditEnrichment = () => {
       });
 
       if (!response.ok) {
-        throw new Error(`Server error: ${response.statusText}`);
+        if (response.status === 413) {
+          throw new Error('El reporte es demasiado grande para enriquecer. Intenta con menos cotizaciones o recarga la página.');
+        }
+        if (response.status === 429) {
+          throw new Error('Demasiadas solicitudes. Espera un momento e intenta de nuevo.');
+        }
+        throw new Error(`Error del servidor (${response.status}): ${response.statusText}`);
       }
 
       const result = await response.json();

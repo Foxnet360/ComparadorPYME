@@ -168,6 +168,10 @@ export const insurerProfileService = {
    * Detect insurer from PDF text
    */
   detectInsurer(text: string): string {
+    if (!text || typeof text !== 'string') {
+      console.warn('⚠️ [insurerProfileService] No text provided for insurer detection');
+      return 'GENERIC';
+    }
     const upperText = text.toUpperCase();
     
     for (const [name, profile] of PROFILES) {

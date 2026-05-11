@@ -17,6 +17,7 @@ import { virtualLawyerService } from '../services/virtualLawyerService';
 import { insurerProfileService } from '../services/insurerProfileService';
 import { supabase } from '../config/database';
 import { formatCOP } from '../utils/formatCurrency';
+import { validateCoverageValues } from '../services/coverageValueValidator';
 import fs from 'fs';
 
 // Helper to call service with timeout
@@ -105,7 +106,12 @@ SALIDA ESPERADA:
    - Fijo: "5 SMMLV" o "$500.000"
    - No aplica: "No aplica"
 
-5. Prima anual: Extrae solo el número, sin símbolos de moneda.
+5. Formato de valores de cobertura:
+   - Usa el formato exacto del documento: "$500.000.000" o "500M" o "10%"
+   - NO inventes valores. Si no está claro, usa "NO ESPECIFICADO"
+   - Para RC e Incendio, valores menores a $100M son sospechosos - verifica
+
+6. Prima anual: Extrae solo el número entero (ej: 8500000), sin símbolos ni puntos.
 
 6. expectedCoverages: Incluye TODAS las 14 coberturas canónicas con su estado:
    - "present": La cobertura aparece en el documento
@@ -210,6 +216,17 @@ export const analysisController = {
                         
                         if (normalizedCoverages.needsReview) {
                             console.log(`   ⚠️ Some coverages need review after thesaurus normalization`);
+                        }
+                        
+                        // Validate coverage values for absurd values
+                        const coverageValidation = validateCoverageValues(
+                            normalizedCoverages.normalized.map(c => ({ name: c.name, value: c.value }))
+                        );
+                        if (coverageValidation.length > 0) {
+                            console.log(`   ⚠️ Coverage value issues detected:`);
+                            coverageValidation.forEach(v => {
+                                console.log(`      - ${v.coverageName}: ${v.message}`);
+                            });
                         }
                         
                         // Convert structured result to ParsedQuote format

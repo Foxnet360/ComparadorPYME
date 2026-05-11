@@ -113,7 +113,10 @@ export const AuditSection: React.FC<AuditSectionProps> = ({ quotes, viewMode }) 
   };
 
   const handleEnrich = () => {
-    if (!isEnriched) {
+    if (error) {
+      // Retry on error
+      enrich(quotes);
+    } else if (!isEnriched) {
       enrich(quotes);
     }
   };
@@ -134,20 +137,27 @@ export const AuditSection: React.FC<AuditSectionProps> = ({ quotes, viewMode }) 
         
         <button
           onClick={handleEnrich}
-          disabled={isLoading || isEnriched}
+          disabled={isLoading || (!error && isEnriched)}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            isEnriched
-              ? 'bg-green-100 text-green-700 cursor-default'
-              : hasClauses
-                ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
-                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+            error
+              ? 'bg-red-100 text-red-700 hover:bg-red-200'
+              : isEnriched
+                ? 'bg-green-100 text-green-700 cursor-default'
+                : hasClauses
+                  ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
+                  : 'bg-slate-100 text-slate-400 cursor-not-allowed'
           }`}
-          title={!hasClauses ? 'No hay clausulados indexados disponibles' : ''}
+          title={!hasClauses ? 'No hay clausulados indexados disponibles' : error ? 'Click para reintentar' : ''}
         >
           {isLoading ? (
             <>
               <Loader2 size={16} className="animate-spin" />
               <span>Enriqueciendo...</span>
+            </>
+          ) : error ? (
+            <>
+              <AlertCircle size={16} />
+              <span>Reintentar</span>
             </>
           ) : isEnriched ? (
             <>
@@ -165,8 +175,19 @@ export const AuditSection: React.FC<AuditSectionProps> = ({ quotes, viewMode }) 
 
       {/* Error Message */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
-          Error al enriquecer: {error}
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="text-red-600 mt-0.5 flex-shrink-0" size={18} />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-800">Error al enriquecer análisis</p>
+              <p className="text-sm text-red-700 mt-1">{error}</p>
+              {error.includes('demasiado grande') && (
+                <p className="text-xs text-red-600 mt-2">
+                  💡 Tip: Intenta analizar menos cotizaciones a la vez o recarga la página.
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
