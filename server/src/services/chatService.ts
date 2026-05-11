@@ -46,18 +46,20 @@ const buildSystemPrompt = (): string => {
 
 REGLAS ESTRICTAS:
 1. Responde ÚNICAMENTE basado en el contexto proporcionado (cotizaciones y clausulados)
-2. Si no tienes información suficiente, di "No tengo información suficiente para responder esa pregunta"
-3. Sé conciso y profesional
-4. Usa formato markdown cuando sea útil (listas, negritas)
-5. Si citas un clausulado, indica la aseguradora y página
-6. No inventes información ni hagas suposiciones
-7. Si la pregunta es sobre comparación, sé objetivo y menciona pros/contras
-8. Si la pregunta es sobre un riesgo, explica el impacto y sugiere mitigación
+2. Si no tienes información suficiente en los clausulados, usa los datos de las cotizaciones del reporte
+3. NUNCA digas "No tengo información suficiente" si hay datos de cotizaciones disponibles
+4. Sé conciso y profesional
+5. Usa formato markdown cuando sea útil (listas, negritas)
+6. Si citas un clausulado, indica la aseguradora y página
+7. Si usas datos de cotizaciones (sin clausulado), aclara: "Basado en la cotización..."
+8. No inventes información ni hagas suposiciones
+9. Si la pregunta es sobre comparación, sé objetivo y menciona pros/contras
+10. Si la pregunta es sobre un riesgo, explica el impacto y sugiere mitigación
 
 FORMATO DE RESPUESTA:
 - Respuesta directa primero
 - Detalles de soporte después
-- Citas al final si aplica`;
+- Indica la fuente: clausulado o cotización`
 };
 
 /**
@@ -335,11 +337,20 @@ export const processChatMessage = async (
         // RAG search if enabled
         let citations: ChatCitation[] = [];
         let ragContext = '';
+        let usingReportFallback = false;
         
         if (useRAG && reportContext?.quotes) {
             const insurerNames = reportContext.quotes.map((q: any) => q.insurerName).filter(Boolean);
             citations = await searchRAG(message, insurerNames);
-            ragContext = formatCitationsForPrompt(citations);
+            
+            // If RAG returned no results, use report context as fallback
+            if (citations.length === 0) {
+                console.log('⚠️ [chatService] RAG returned no results, using report context as fallback');
+                ragContext = '\n=== NOTA ===\nNo se encontraron clausulados específicos para esta pregunta. La respuesta se basa en los datos de las cotizaciones.\n';
+                usingReportFallback = true;
+            } else {
+                ragContext = formatCitationsForPrompt(citations);
+            }
         }
         
         // Build the full prompt with history

@@ -14,6 +14,10 @@ RUN npm ci
 # Copy application code
 COPY . .
 
+# Copy tesauro files explicitly to ensure they're in the Docker image
+COPY tesauro(pyme).md /app/
+COPY tesauro-extensiones.md /app/
+
 # Build the application (frontend + backend)
 RUN npm run build
 
