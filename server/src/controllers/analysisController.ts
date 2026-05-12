@@ -27,7 +27,8 @@ import { buildCanonicalCoverages } from '../services/coverageNormalizer';
 import { extractPremiumBreakdown, extractPerCoveragePremiums, validatePremiumBreakdown, normalizeCurrency, normalizePeriodicity } from '../services/premiumExtractor';
 
 // Feature flag for multimodal extraction
-const USE_MULTIMODAL = process.env.ENABLE_MULTIMODAL_EXTRACTION === 'true';
+// Deploy al 100% - V2 activo por defecto
+const USE_MULTIMODAL = process.env.ENABLE_MULTIMODAL_EXTRACTION !== 'false';
 
 // Helper to call service with timeout
 const callWithTimeout = async <T>(promise: Promise<T>, timeoutMs: number = 5000, fallback: T): Promise<T> => {

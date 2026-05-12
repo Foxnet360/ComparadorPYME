@@ -48,8 +48,9 @@ export const FEATURES = {
    * Enable multimodal PDF extraction using Gemini 2.5 Pro vision
    * When true: uses File API + vision for better table extraction
    * When false: uses legacy text-based extraction
+   * Default: true (V2 deployed at 100%)
    */
-  MULTIMODAL_EXTRACTION: import.meta.env.VITE_ENABLE_MULTIMODAL_EXTRACTION === 'true',
+  MULTIMODAL_EXTRACTION: import.meta.env.VITE_ENABLE_MULTIMODAL_EXTRACTION !== 'false',
 };
 
 /**
