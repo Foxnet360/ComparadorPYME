@@ -269,6 +269,13 @@ async function processQuoteMultimodalInternal(
         deductible: c.deductible || getDeductibleFallback(c.name, normalizationResult.generalDeductibles),
         confidence: c.confidence,
       })),
+      uncategorizedCoverages: normalizationResult.uncategorizedCoverages?.map(c => ({
+        name: c.name,
+        canonicalName: c.name,
+        value: c.insuredAmount ? c.insuredAmount.toString() : 'NO ESPECIFICADO',
+        deductible: c.deductible || 'NO ESPECIFICADO',
+        confidence: c.confidence,
+      })),
       validityPeriod: extracted.validityPeriod,
       specialConditions: [
         ...(extracted.specialConditions || []),

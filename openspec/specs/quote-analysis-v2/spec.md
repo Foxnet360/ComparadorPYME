@@ -1,61 +1,92 @@
 # Spec: Quote Analysis V2
 
 ## Capability
-Análisis de cotizaciones usando extracción de texto libre de Gemini seguida de parsing determinístico local, sin forzar JSON schema.
+Análisis de cotizaciones usando extracción multimodal de PDFs con Gemini 2.5 Pro, reemplazando la extracción de texto plano actual.
 
 ## User Story
 **Como** usuario del comparador
-**Quiero** analizar cotizaciones de seguros de forma confiable
-**Para** obtener un análisis completo sin errores de truncamiento
+**Quiero** analizar cotizaciones de seguros de forma confiable y rápida
+**Para** obtener comparaciones precisas de primas, coberturas y deducibles
 
-## Functional Requirements
+## MODIFIED Requirements
 
-### FR-1: Text-based quote analysis
-The system SHALL analyze insurance quotes using text-based extraction from Gemini followed by local deterministic parsing.
+### Requirement: Text-based quote analysis
+The system SHALL analyze insurance quotes using **multimodal PDF extraction** followed by post-normalization, instead of text-based extraction with deterministic parsing.
 
 #### Scenario: Single quote analysis
 - **WHEN** a user uploads a quote PDF
-- **THEN** the system extracts text from the PDF
-- **AND** sends it to Gemini with a free-text prompt
-- **AND** parses the response using regex and thesaurus normalization
-- **AND** returns structured quote data
+- **THEN** the system SHALL:
+  1. Detect format family (format-family-detection)
+  2. Upload PDF to Gemini File API (multimodal-pdf-extraction)
+  3. Extract structured data with specialized prompt (multimodal-pdf-extraction)
+  4. Normalize coverages to canonical categories (coverage-post-normalization)
+  5. Return structured quote data with 14 canonical coverages
+- **AND** processing time SHALL be < 5 minutes per quote
 
 #### Scenario: Multiple quote comparison
 - **WHEN** a user uploads 3-5 quote PDFs
-- **THEN** the system processes each quote individually
-- **AND** combines results into a comparative analysis
-- **AND** generates scoring and narrative
+- **THEN** the system SHALL process each quote **sequentially** (not in parallel)
+- **AND** results SHALL be combined into a comparative analysis
+- **AND** total processing time SHALL be < 5 minutes for all quotes
+- **AND** scoring SHALL be based on canonical coverages with per-coverage premiums
 
 #### Scenario: Quote with clauses cross-reference
 - **WHEN** a quote is analyzed and clauses exist for that insurer
-- **THEN** the system retrieves relevant clause sections via RAG
-- **AND** cross-references deductibles and exclusions
-- **AND** includes discrepancies in the analysis
+- **THEN** the system SHALL retrieve relevant clause sections via RAG **asynchronously**
+- **AND** cross-reference deductibles and exclusions
+- **AND** include discrepancies in the analysis
+- **AND** RAG SHALL NOT block the main extraction pipeline
 
-### FR-2: No forced JSON output
-The system SHALL NOT force Gemini to output JSON for quote analysis.
+### Requirement: No forced JSON output
+The system SHALL NOT force Gemini to output JSON for quote analysis **when using multimodal extraction**.
 
 #### Scenario: Gemini call configuration
 - **WHEN** the system calls Gemini for quote extraction
-- **THEN** the call does NOT include responseSchema
-- **AND** does NOT include responseMimeType: "application/json"
-- **AND** Gemini generates free text with structural markers
+- **THEN** the call SHALL include responseSchema and responseMimeType: "application/json"
+- **AND** Gemini SHALL generate structured JSON conforming to QuoteExtractionSchemaV2
+- **AND** this is enforced by the schema, not by prompt text
 
-### FR-3: Deterministic output
+### Requirement: Deterministic output
 The system SHALL produce consistent, reproducible analysis results.
 
 #### Scenario: Repeated analysis
 - **WHEN** the same quote is analyzed twice
-- **THEN** the extracted data is identical (assuming no prompt changes)
-- **AND** the scoring is identical (rule-based)
-- **AND** only the narrative may vary slightly (Gemini text generation)
+- **THEN** the extracted data SHALL be identical (assuming no prompt changes)
+- **AND** the scoring SHALL be identical (rule-based)
+- **AND** the narrative may vary slightly (Gemini text generation)
+
+## REMOVED Requirements
+
+### Requirement: Free-text extraction with regex parsing
+**Reason**: Replaced by multimodal extraction with structured JSON schema
+**Migration**: The deterministic parser (quoteParser.ts) is deprecated. Use the new coverage-post-normalization service instead.
+
+### Requirement: Text extraction from PDF with structural markers
+**Reason**: Multimodal extraction handles structure natively without text markers
+**Migration**: PDFs are now uploaded directly to Gemini without intermediate text extraction for analysis.
+
+## ADDED Requirements
+
+### Requirement: Format-specific extraction
+The system SHALL use specialized prompts based on detected format family.
+
+#### Scenario: HDI extraction
+- **WHEN** format family is TABLE-DOUBLE
+- **THEN** the prompt SHALL instruct Gemini that deductibles are on a separate page
+- **AND** the prompt SHALL ask to relate general deductibles to specific coverages
+
+#### Scenario: CHUBB extraction
+- **WHEN** format family is TABLE-INTEGRATED
+- **THEN** the prompt SHALL instruct Gemini to extract sub-límites separately
+- **AND** the prompt SHALL identify parent coverage for each sub-límite
+
+#### Scenario: MAPFRE extraction
+- **WHEN** format family is SECTIONS
+- **THEN** the prompt SHALL instruct Gemini that each section contains multiple coverages
+- **AND** the prompt SHALL ask to list all coverages included in each section
 
 ## Dependencies
-- Servicio de extracción de texto de PDF
-- Deterministic Quote Parser
-- Rule-Based Scoring Engine
-- RAG Retrieval (opcional, para cross-reference)
-
-## Non-Functional Requirements
-- Tiempo de análisis < 10 segundos por cotización
-- Determinismo: scoring reproducible entre ejecuciones
+- `multimodal-pdf-extraction` for PDF extraction
+- `format-family-detection` for prompt selection
+- `coverage-post-normalization` for canonical mapping
+- `premium-breakdown-extraction` for prima analysis
