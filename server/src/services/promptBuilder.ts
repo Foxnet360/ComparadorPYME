@@ -24,9 +24,10 @@ Este PDF tiene el formato "Tabla Doble" típico de HDI y similares:
 
 REGLAS CRÍTICAS:
 1. EXTRAER TODAS las filas de la tabla de coberturas de la página 1
-2. Los deducibles NO están en la tabla de coberturas, están en la página 2
+2. Los deducibles NO están en la tabla de coberturas, están en la página 2 - REVISAR TODAS LAS PÁGINAS
 3. Relaciona deducibles generales con coberturas por el nombre de la sección
-4. Si una cobertura no tiene deducible específico, busca en la tabla de deducibles generales
+4. Si una cobertura no tiene deducible específico, busca en la tabla de deducibles generales de la página 2
+5. IMPORTANTE: Si no encuentras deducible en ninguna página, usa "No aplica" para servicios (Asistencia PYME, Legal) o busca en cláusulas
 5. EXTRAER primas por cobertura si aparecen (algunas cotizaciones las muestran)
 6. La sección "RESPONSABILIDAD CIVIL" tiene sub-límites que van en subLimits
 7. Los valores "INCLUIDO" son coberturas sin suma asegurada numérica`,
@@ -79,10 +80,12 @@ Este PDF tiene el formato "Tabla Integrada" típico de CHUBB y similares:
 REGLAS CRÍTICAS:
 1. Extraer TODAS las filas de la tabla, incluyendo las marcadas "(Sublímite)"
 2. Los sub-límites van en el array subLimits con parentCoverage
-3. Deducibles que dicen "$ 0,00 No aplica Deducible" → deductible: "No aplica"
-4. Deducibles que dicen "5,00 % del Siniestro, Mínimo 1 SMMLV" → dejar texto completo
-5. Coberturas que dicen "Aplica según cobertura afectada" → nota especial
-6. El "Amparo Básico Todo Riesgo" cubre múltiples coberturas`,
+3. REVISAR TODAS LAS PÁGINAS del documento para encontrar deducibles (pueden estar en sección de condiciones o cláusulas)
+4. Deducibles que dicen "$ 0,00 No aplica Deducible" → deductible: "No aplica"
+5. Deducibles que dicen "5,00 % del Siniestro, Mínimo 1 SMMLV" → dejar texto completo
+6. Coberturas que dicen "Aplica según cobertura afectada" → nota especial
+7. El "Amparo Básico Todo Riesgo" cubre múltiples coberturas
+8. IMPORTANTE: Si no encuentras deducible en ninguna página, usa "No aplica" para servicios (Asistencia PYME, Legal) o busca en cláusulas`,
     formatInstructions: `FORMATO DE SALIDA:
 {
   "insurerName": "CHUBB SEGUROS COLOMBIA S.A.",
@@ -133,7 +136,9 @@ REGLAS CRÍTICAS:
 2. El valor asegurado de la sección aplica a TODAS las coberturas de esa sección
 3. Analizar la descripción para identificar coberturas incluidas
 4. Ejemplo: "SECCION PRIMERA - AMPARO BASICO" incluye Incendio, Explosión, etc.
-5. Los deducibles están en formato "10 % PERD Min 1 (SMMLV)"`,
+5. Los deducibles están en formato "10 % PERD Min 1 (SMMLV)"
+6. REVISAR TODAS LAS PÁGINAS para deducibles - cada sección puede tener su propio deducible
+7. IMPORTANTE: Si no encuentras deducible, usa "No aplica" para servicios (Asistencia PYME, Legal) o busca en cláusulas finales`,
     formatInstructions: `FORMATO DE SALIDA:
 {
   "insurerName": "MAPFRE SEGUROS",
@@ -176,7 +181,8 @@ REGLAS CRÍTICAS:
 2. Leer cada párrafo descriptivo para identificar coberturas
 3. El valor asegurado total está en la carátula
 4. Distribuir valores de bienes asegurables entre coberturas según corresponda
-5. Buscar deducibles en todo el documento (pueden estar en cláusulas)`,
+5. REVISAR TODAS LAS PÁGINAS para deducibles - buscar en cláusulas, condiciones especiales, y anexos
+6. IMPORTANTE: Si no encuentras deducible, usa "No aplica" para servicios (Asistencia PYME, Legal) o busca en sección de deducibles`,
     formatInstructions: `FORMATO DE SALIDA:
 {
   "insurerName": "AXA COLPATRIA",
@@ -223,7 +229,9 @@ REGLAS CRÍTICAS:
 2. Extraer la prima de cada cobertura
 3. El valor asegurado puede no estar visible - dejar como null
 4. Extraer impuestos (IVA) desglosados
-5. La prima total es la suma de primas + impuestos`,
+5. REVISAR TODAS LAS PÁGINAS para deducibles - pueden estar en columna separada de la tabla o en cláusulas
+6. IMPORTANTE: Si no encuentras deducible, usa "No aplica" para servicios (Asistencia PYME, Legal) o busca en sección de condiciones
+7. La prima total es la suma de primas + impuestos`,
     formatInstructions: `FORMATO DE SALIDA:
 {
   "insurerName": "SBS SEGUROS COLOMBIA S.A.",
@@ -265,7 +273,8 @@ REGLAS CRÍTICAS:
 2. La prima está desglosada: VALOR DE LA PRIMA + ASISTENCIA + EMISIÓN + IVA = TOTAL
 3. Extraer TODOS los componentes del desglose
 4. Buscar valores asegurados en cualquier parte
-5. Buscar deducibles en cláusulas o condiciones`,
+5. REVISAR TODAS LAS PÁGINAS para deducibles - buscar en cláusulas, condiciones especiales, y páginas finales
+6. IMPORTANTE: Si no encuentras deducible, usa "No aplica" para servicios (Asistencia PYME, Legal) o busca en sección de condiciones`,
     formatInstructions: `FORMATO DE SALIDA:
 {
   "insurerName": "BOLIVAR",

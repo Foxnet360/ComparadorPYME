@@ -147,14 +147,16 @@ export function validateDeductibleFormat(deductible: string): ValidationFlag | n
     return null; // Empty is acceptable
   }
 
-  if (deductible.toLowerCase() === 'no aplica') {
+  // Valid text values that indicate no deductible
+  const noDeductibleValues = ['no aplica', 'sin deducible', 'aplica', 'incluido', 'no especificado'];
+  if (noDeductibleValues.includes(deductible.toLowerCase())) {
     return null;
   }
 
-  // Check for percentage format (e.g., "10%", "10% / Mín. 2 SMMLV")
-  const percentageMatch = deductible.match(/(\d+(?:\.\d+)?)\s*%/);
-  if (percentageMatch) {
-    const percentage = parseFloat(percentageMatch[1]);
+  // Check for percentage format with minimum (e.g., "10% PERD Min 1 SMMLV", "5% del siniestro, mínimo 1 SMMLV")
+  const percentageWithMinMatch = deductible.match(/(\d+(?:\.\d+)?)\s*%\s*(?:PERD|del\s*siniestro|sobre\s*(?:el\s*)?valor|del\s*valor)?[\s,]*(?:m[ií]nimo|m[ií]n|min)?\s*(?:(\d+)\s*(?:SMMLV|SM))?/i);
+  if (percentageWithMinMatch) {
+    const percentage = parseFloat(percentageWithMinMatch[1]);
     if (percentage > HIGH_DEDUCTIBLE_PERCENTAGE) {
       return {
         field: 'deductible',
@@ -166,19 +168,40 @@ export function validateDeductibleFormat(deductible: string): ValidationFlag | n
     return null;
   }
 
-  // Check for SMMLV format (e.g., "5 SMMLV", "2 SM")
+  // Check for simple percentage format (e.g., "10%", "10 %")
+  const simplePercentageMatch = deductible.match(/(\d+(?:\.\d+)?)\s*%/);
+  if (simplePercentageMatch) {
+    const percentage = parseFloat(simplePercentageMatch[1]);
+    if (percentage > HIGH_DEDUCTIBLE_PERCENTAGE) {
+      return {
+        field: 'deductible',
+        severity: 'WARNING',
+        message: `Deducible de ${percentage}% es inusualmente alto`,
+        code: 'DEDUCTIBLE_HIGH_PERCENTAGE'
+      };
+    }
+    return null;
+  }
+
+  // Check for SMMLV format (e.g., "5 SMMLV", "2 SM", "1 SMMLV")
   const smmlvMatch = deductible.match(/(\d+)\s*(?:SMMLV|SM)/i);
   if (smmlvMatch) {
     return null;
   }
 
-  // Check for fixed amount (e.g., "$500,000", "500000")
-  const fixedMatch = deductible.match(/[$\s]*(\d+(?:[.,]\d+)*)/);
-  if (fixedMatch) {
+  // Check for fixed amount with currency (e.g., "$500,000", "$500.000", "500000 COP")
+  const fixedAmountMatch = deductible.match(/[$\s]*(\d{1,3}(?:[.,]\d{3})+|\d+)(?:\s*COP)?/i);
+  if (fixedAmountMatch) {
     return null;
   }
 
-  // Unrecognized format
+  // Check for plain number (e.g., "500000")
+  const plainNumberMatch = deductible.match(/^\d+$/);
+  if (plainNumberMatch) {
+    return null;
+  }
+
+  // Unrecognized format - log but don't flag as error
   return {
     field: 'deductible',
     severity: 'INFO',
