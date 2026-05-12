@@ -43,6 +43,13 @@ export const FEATURES = {
    * Shows AI-generated legal analysis and negotiation suggestions
    */
   LEGAL_OPINION: import.meta.env.VITE_ENABLE_ADVANCED_ANALYSIS === 'true',
+  
+  /**
+   * Enable multimodal PDF extraction using Gemini 2.5 Pro vision
+   * When true: uses File API + vision for better table extraction
+   * When false: uses legacy text-based extraction
+   */
+  MULTIMODAL_EXTRACTION: import.meta.env.VITE_ENABLE_MULTIMODAL_EXTRACTION === 'true',
 };
 
 /**

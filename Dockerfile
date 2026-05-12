@@ -5,6 +5,9 @@ WORKDIR /app
 # Install build dependencies for native modules
 RUN apk add --no-cache python3 make g++
 
+# Install canvas dependencies (optional, suppresses pdfjs-dist warnings)
+RUN apk add --no-cache cairo-dev pango-dev pixman-dev
+
 # Copy package files
 COPY package*.json ./
 
