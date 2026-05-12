@@ -10,6 +10,11 @@ export interface AuditEnrichmentState {
   isLoading: boolean;
   error: string | null;
   isEnriched: boolean;
+  progress: {
+    current: number;
+    total: number;
+    percentage: number;
+  } | null;
 }
 
 export const useAuditEnrichment = () => {
@@ -20,7 +25,8 @@ export const useAuditEnrichment = () => {
     hasClauses: false,
     isLoading: false,
     error: null,
-    isEnriched: false
+    isEnriched: false,
+    progress: null
   });
 
   const enrich = useCallback(async (quotes: any[]) => {
@@ -35,7 +41,8 @@ export const useAuditEnrichment = () => {
           ...parsed,
           isLoading: false,
           error: null,
-          isEnriched: true
+          isEnriched: true,
+          progress: null
         });
         return;
       } catch (e) {
@@ -43,7 +50,7 @@ export const useAuditEnrichment = () => {
       }
     }
 
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
+    setState(prev => ({ ...prev, isLoading: true, error: null, progress: { current: 0, total: 0, percentage: 0 } }));
 
     try {
       const response = await fetch(`${API_BASE_URL}/audit/enrich`, {
@@ -73,7 +80,8 @@ export const useAuditEnrichment = () => {
         hasClauses: result.hasClauses || false,
         isLoading: false,
         error: null,
-        isEnriched: true
+        isEnriched: true,
+        progress: result.progress || null
       };
 
       // Cache results
@@ -91,7 +99,8 @@ export const useAuditEnrichment = () => {
         ...prev,
         isLoading: false,
         error: error instanceof Error ? error.message : 'Failed to enrich audit',
-        isEnriched: false
+        isEnriched: false,
+        progress: null
       }));
     }
   }, []);
@@ -104,7 +113,8 @@ export const useAuditEnrichment = () => {
       hasClauses: false,
       isLoading: false,
       error: null,
-      isEnriched: false
+      isEnriched: false,
+      progress: null
     });
   }, []);
 

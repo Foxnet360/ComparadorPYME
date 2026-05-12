@@ -32,7 +32,14 @@ export interface AuditEnrichmentResult {
     hasClauses: boolean;
     crossInsurerRisks: CrossInsurerRisk[];
     businessContextAnalysis: string;
+    progress?: {
+        current: number;
+        total: number;
+        percentage: number;
+    };
 }
+
+export type ProgressCallback = (current: number, total: number) => void;
 
 export interface CrossInsurerRisk {
     riskTitle: string;
@@ -268,10 +275,15 @@ const normalizeRiskKey = (title: string): string => {
  */
 export const enrichAuditAlerts = async (
     quotes: any[],
-    clientProfile?: ClientProfile
+    clientProfile?: ClientProfile,
+    onProgress?: ProgressCallback
 ): Promise<AuditEnrichmentResult> => {
     const insurerNames = quotes.map(q => q.insurerName).filter(Boolean);
     const hasClauses = await checkClausesAvailability(insurerNames);
+    
+    // Calculate total alerts for progress tracking
+    const totalAlerts = quotes.reduce((sum, q) => sum + (q.alerts || []).length, 0);
+    let processedCount = 0;
     
     const enrichedAlerts: EnrichedAlert[] = [];
     
@@ -281,6 +293,12 @@ export const enrichAuditAlerts = async (
         for (const alert of alerts) {
             const enriched = await enrichAlert(alert, quote.insurerName, clientProfile);
             enrichedAlerts.push(enriched);
+            
+            // Report progress
+            processedCount++;
+            if (onProgress) {
+                onProgress(processedCount, totalAlerts);
+            }
         }
     }
     
@@ -305,7 +323,12 @@ export const enrichAuditAlerts = async (
         enrichedAlerts,
         hasClauses,
         crossInsurerRisks,
-        businessContextAnalysis
+        businessContextAnalysis,
+        progress: {
+            current: processedCount,
+            total: totalAlerts,
+            percentage: totalAlerts > 0 ? Math.round((processedCount / totalAlerts) * 100) : 100
+        }
     };
 };
 

@@ -34,7 +34,6 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
   );
   const [viewMode, setViewMode] = useState<'client' | 'technical'>('client');
   const [showExportModal, setShowExportModal] = useState(false);
-  const [showRagReferences, setShowRagReferences] = useState(false);
   const [pdfOptions, setPdfOptions] = useState<{ title: string, logo?: string, color: [number, number, number] }>({
     title: "Reporte Ejecutivo de Seguros",
     color: [79, 70, 229]
@@ -136,17 +135,6 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
           </div>
 
           <div className="h-6 w-px bg-slate-200 hidden sm:block"></div>
-
-          {/* RAG References Toggle */}
-          <button
-            onClick={() => setShowRagReferences(!showRagReferences)}
-            className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg transition-all shadow-sm text-sm font-medium border ${showRagReferences ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
-            title="Mostrar/Ocultar referencias RAG"
-          >
-            <BookOpen size={18} />
-            <span className="hidden sm:inline">Referencias RAG</span>
-            <span className={`w-2 h-2 rounded-full ${showRagReferences ? 'bg-indigo-500' : 'bg-slate-300'}`}></span>
-          </button>
 
           <button
             onClick={() => setShowExportModal(true)}
@@ -431,7 +419,6 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
         <div className="animate-in fade-in duration-300">
           <UnifiedCoverageMatrix 
             quotes={report.quotes} 
-            showRagReferences={showRagReferences}
             viewMode={viewMode}
           />
         </div>

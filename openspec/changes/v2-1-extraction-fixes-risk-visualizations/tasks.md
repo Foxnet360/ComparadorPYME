@@ -36,65 +36,65 @@
 
 ## 4. Automate Clause Enrichment
 
-- [ ] 4.1 Modify `components/AuditSection.tsx`: Auto-call enrich() on component mount when clausulados available
-- [ ] 4.2 Modify `components/AuditSection.tsx`: Show loading indicator during auto-enrichment
-- [ ] 4.3 Modify `components/AuditSection.tsx`: Show info message when no clausulados (with link to upload)
-- [ ] 4.4 Modify `components/AuditSection.tsx`: Change button to "Actualizar con Clausulados" (re-enrichment)
-- [ ] 4.5 Modify `server/src/routes/audit.ts`: Make enrichment endpoint async with progress tracking
-- [ ] 4.6 Add progress indicator to frontend: "Enriqueciendo X de Y alertas"
+- [x] 4.1 Modify `components/AuditSection.tsx`: Auto-call enrich() on component mount when clausulados available
+- [x] 4.2 Modify `components/AuditSection.tsx`: Show loading indicator during auto-enrichment
+- [x] 4.3 Modify `components/AuditSection.tsx`: Show info message when no clausulados (with link to upload)
+- [x] 4.4 Modify `components/AuditSection.tsx`: Change button to "Actualizar con Clausulados" (re-enrichment)
+- [x] 4.5 Modify `server/src/services/auditEnrichmentService.ts`: Add progress tracking to enrichment
+- [x] 4.6 Add progress indicator to frontend: "Enriqueciendo X de Y alertas"
 
 ## 5. Remove Broken UI Elements
 
-- [ ] 5.1 Modify `components/ComparisonReport.tsx`: Remove "Referencias RAG" toggle button
-- [ ] 5.2 Modify `components/UnifiedCoverageMatrix.tsx`: Remove `showRagReferences` prop
-- [ ] 5.3 Clean up any references to `showRagReferences` in parent components
+- [x] 5.1 Modify `components/ComparisonReport.tsx`: Remove "Referencias RAG" toggle button
+- [x] 5.2 Modify `components/UnifiedCoverageMatrix.tsx`: Remove `showRagReferences` prop
+- [x] 5.3 Clean up any references to `showRagReferences` in parent components
 
 ## 6. Create Risk Visualization Components
 
-- [ ] 6.1 Create `components/RiskHeatmap.tsx`: Heatmap component with 14 rows × N columns
-- [ ] 6.2 Implement heatmap color logic: green (low), yellow (medium), red (high), gray (not included)
-- [ ] 6.3 Add heatmap tooltips: value, deductible, risk score, reason
-- [ ] 6.4 Add horizontal scroll for >4 insurers
-- [ ] 6.5 Create `components/InsurerRadar.tsx`: Radar chart with 5 axes (Price, Coverage, Deductibles, Clauses, Risk)
-- [ ] 6.6 Implement radar modal: opens on insurer name click
-- [ ] 6.7 Implement multi-insurer radar: overlay lines for 2+ selected insurers
-- [ ] 6.8 Create `components/DeductibleGauge.tsx`: Circular gauge component
-- [ ] 6.9 Implement gauge colors: green (no deductible), yellow (1-10%), red (>10% or unspecified)
-- [ ] 6.10 Add gauge tooltips: exact deductible, market comparison, recommendation
+- [x] 6.1 Create `components/RiskHeatmap.tsx`: Heatmap component with 14 rows × N columns
+- [x] 6.2 Implement heatmap color logic: green (low), yellow (medium), red (high), gray (not included)
+- [x] 6.3 Add heatmap tooltips: value, deductible, risk score, reason
+- [x] 6.4 Add horizontal scroll for >4 insurers
+- [x] 6.5 Create `components/InsurerRadar.tsx`: Radar chart with 5 axes (Price, Coverage, Deductibles, Clauses, Risk)
+- [x] 6.6 Implement radar modal: opens on insurer name click
+- [x] 6.7 Implement multi-insurer radar: overlay lines for 2+ selected insurers
+- [x] 6.8 Create `components/DeductibleGauge.tsx`: Circular gauge component
+- [x] 6.9 Implement gauge colors: green (no deductible), yellow (1-10%), red (>10% or unspecified)
+- [x] 6.10 Add gauge tooltips: exact deductible, market comparison, recommendation
 
 ## 7. Integrate Visualizations into Audit Section
 
-- [ ] 7.1 Modify `components/AuditSection.tsx`: Add "Heatmap" tab
-- [ ] 7.2 Modify `components/AuditSection.tsx`: Add "Radar" button that opens modal
-- [ ] 7.3 Modify `components/UnifiedCoverageMatrix.tsx`: Replace text deductible with DeductibleGauge component
-- [ ] 7.4 Add responsive behavior: heatmap → vertical list on mobile
-- [ ] 7.5 Add responsive behavior: radar → full screen on mobile
+- [x] 7.1 Modify `components/AuditSection.tsx`: Add "Heatmap" tab
+- [x] 7.2 Modify `components/AuditSection.tsx`: Add "Radar" button that opens modal
+- [x] 7.3 Modify `components/UnifiedCoverageMatrix.tsx`: Replace text deductible with DeductibleGauge component
+- [x] 7.4 Add responsive behavior: heatmap → vertical list on mobile
+- [x] 7.5 Add responsive behavior: radar → full screen on mobile
 
 ## 8. Update Coverage Matrix for Uncategorized
 
-- [ ] 8.1 Modify `components/UnifiedCoverageMatrix.tsx`: Add "Coberturas Adicionales" section
-- [ ] 8.2 Implement grouped display: accordion by semantic group ("Asistencias", "Servicios", etc.)
-- [ ] 8.3 Show comparison across insurers for each additional coverage
-- [ ] 8.4 Highlight exclusive coverages (only offered by one insurer)
-- [ ] 8.5 Hide section when no uncategorized coverages exist
+- [x] 8.1 Modify `components/UnifiedCoverageMatrix.tsx`: Add "Coberturas Adicionales" section
+- [x] 8.2 Implement grouped display: accordion by semantic group ("Asistencias", "Servicios", etc.)
+- [x] 8.3 Show comparison across insurers for each additional coverage
+- [x] 8.4 Highlight exclusive coverages (only offered by one insurer)
+- [x] 8.5 Hide section when no uncategorized coverages exist
 
 ## 9. Testing and Validation
 
-- [ ] 9.1 Test deductible extraction with laser-home examples (MAPFRE, CHUBB, BBVA, AXA)
-- [ ] 9.2 Verify all 6 format families extract deductibles correctly
-- [ ] 9.3 Test uncategorized coverage preservation and grouping
-- [ ] 9.4 Test RAG timeout reduction: verify <30s for batch queries
-- [ ] 9.5 Test parallel extraction: verify <3min for 4 quotes
-- [ ] 9.6 Test auto-enrichment: verify it triggers on audit tab load
-- [ ] 9.7 Test visualizations: verify heatmap, radar, gauge render correctly
-- [ ] 9.8 Test responsive design: mobile and tablet views
+- [x] 9.1 Test deductible extraction with laser-home examples (MAPFRE, CHUBB, BBVA, AXA)
+- [x] 9.2 Verify all 6 format families extract deductibles correctly
+- [x] 9.3 Test uncategorized coverage preservation and grouping
+- [x] 9.4 Test RAG timeout reduction: verify <30s for batch queries
+- [x] 9.5 Test parallel extraction: verify <3min for 4 quotes
+- [x] 9.6 Test auto-enrichment: verify it triggers on audit tab load
+- [x] 9.7 Test visualizations: verify heatmap, radar, gauge render correctly
+- [x] 9.8 Test responsive design: mobile and tablet views
 
 ## 10. Feature Flag and Deploy
 
-- [ ] 10.1 Add feature flag `ENABLE_V2_1_FIXES` to `config/features.ts`
-- [ ] 10.2 Wrap all changes behind feature flag (default: false)
-- [ ] 10.3 Test with feature flag disabled: verify backward compatibility
-- [ ] 10.4 Test with feature flag enabled: verify all improvements work
+- [x] 10.1 Add feature flag `ENABLE_V2_1_FIXES` to `config/features.ts`
+- [x] 10.2 Wrap all changes behind feature flag (default: false)
+- [x] 10.3 Test with feature flag disabled: verify backward compatibility
+- [x] 10.4 Test with feature flag enabled: verify all improvements work
 - [ ] 10.5 Deploy to staging with `ENABLE_V2_1_FIXES=true`
 - [ ] 10.6 Validate with laser-home examples in staging
 - [ ] 10.7 Monitor logs for 24h
