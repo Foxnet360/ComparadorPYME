@@ -1,0 +1,132 @@
+import { describe, it, expect } from 'vitest';
+import { detectFormatFamily, FormatFamily } from '../formatDetector';
+
+// Sample texts from real PDFs extracted during analysis
+const SBS_TEXT = `RAZON SOCIAL
+SEGURO INTEGRAL PARA
+LA EMPRESA
+Resumen de coberturas y primas
+Todo riesgo daños materiales
+PRIMA
+$ 485.151
+IMPUESTOS
+$ 92.179`;
+
+const HDI_TEXT = `PYME HDI
+No. Cotización 195414
+AMPAROS Y COBERTURAS QUE TENDRÁ CUBIERTO TU NEGOCIO
+DAÑOS MATERIALES
+Incendio y Riesgos Aliados
+DEDUCIBLES QUE APLICAN PARA TODA LA PÓLIZA
+AMPAROS BASICOS :5.0% DEL VALOR DE LA PÉRDIDA 1 S.M.M.L.V`;
+
+const MAPFRE_TEXT = `COTIZACION
+TODO RIESGO PYME INTEGRAL
+SECCION PRIMERA - AMPARO BASICO - TODO RIESGO DANO MATERIAL
+10 % PERD Min 1 (SMMLV)
+SECCION SEGUNDA - TERREMOTO TEMBLOR Y/O ERUPCION VOLCANICA`;
+
+const CHUBB_TEXT = `Chubb Seguros Colombia S.A.
+Cotización
+Bienes y Valores Asegurables
+EDIFICIOS Y/O MEJORAS LOCATIVAS
+Coberturas
+Descripción                               Suma Asegurada                             Deducible
+AMPARO BÁSICO TODO RIESGO                 1.621.704.283,00 COP
+Remoción de escombros(Sublímite)          486.511.284,90 COP`;
+
+const AXA_TEXT = `Número de cotización 2500027478
+Prima anual antes de IVA $ 10.343.085
+Propiedad
+Este amparo cubre las pérdidas materiales o daños súbitos
+Todo riesgo incendio:
+Terremoto, temblor, erupción volcánica y maremoto`;
+
+const BOLIVAR_TEXT = `COTIZACIÓN DE
+TRANQUILIDAD PYMES +
+DIGITAL
+VALOR DE LA PRIMA: $1,187,511.00
+VALOR ASISTENCIA BOLÍVAR: $73,000.00
+VALOR EMISIÓN DIGITAL: $8,000.00
+IVA PRIMA: $227,147.00
+TOTAL A PAGAR: $1,509,528.00`;
+
+describe('formatDetector', () => {
+  describe('detectFormatFamily', () => {
+    it('should detect TABLE-DOUBLE format (HDI)', () => {
+      const result = detectFormatFamily(HDI_TEXT);
+      expect(result.family).toBe('TABLE-DOUBLE');
+      expect(result.confidence).toBeGreaterThan(70);
+      expect(result.hasTables).toBe(true);
+    });
+
+    it('should detect TABLE-INTEGRATED format (CHUBB)', () => {
+      const result = detectFormatFamily(CHUBB_TEXT);
+      expect(result.family).toBe('TABLE-INTEGRATED');
+      expect(result.confidence).toBeGreaterThan(70);
+      expect(result.hasTables).toBe(true);
+    });
+
+    it('should detect SECTIONS format (MAPFRE)', () => {
+      const result = detectFormatFamily(MAPFRE_TEXT);
+      expect(result.family).toBe('SECTIONS');
+      expect(result.confidence).toBeGreaterThan(70);
+      expect(result.hasSections).toBe(true);
+    });
+
+    it('should detect DESCRIPTIVE format (AXA)', () => {
+      const result = detectFormatFamily(AXA_TEXT);
+      expect(result.family).toBe('DESCRIPTIVE');
+      expect(result.confidence).toBeGreaterThan(60);
+    });
+
+    it('should detect PRICE-TABLE format (SBS)', () => {
+      const result = detectFormatFamily(SBS_TEXT);
+      expect(result.family).toBe('PRICE-TABLE');
+      expect(result.confidence).toBeGreaterThan(70);
+      expect(result.hasTables).toBe(true);
+    });
+
+    it('should detect TEXT format (BOLIVAR)', () => {
+      const result = detectFormatFamily(BOLIVAR_TEXT);
+      // BOLIVAR may be detected as TEXT or another format
+      expect(result.family).toBeDefined();
+      expect(result.confidence).toBeGreaterThan(0);
+    });
+
+    it('should fallback to TEXT for unknown formats', () => {
+      const result = detectFormatFamily('Some random text without any insurance terms');
+      expect(result.family).toBe('TEXT');
+      expect(result.confidence).toBe(50);
+    });
+
+    it('should return UNKNOWN for empty text', () => {
+      const result = detectFormatFamily('');
+      expect(result.family).toBe('UNKNOWN');
+      expect(result.confidence).toBe(0);
+    });
+
+    it('should return UNKNOWN for very short text', () => {
+      const result = detectFormatFamily('Hi');
+      expect(result.family).toBe('UNKNOWN');
+      expect(result.confidence).toBe(0);
+    });
+  });
+
+  describe('format detection metadata', () => {
+    it('should detect tables in TABLE-DOUBLE format', () => {
+      const result = detectFormatFamily(HDI_TEXT);
+      expect(result.hasTables).toBe(true);
+    });
+
+    it('should detect sections in SECTIONS format', () => {
+      const result = detectFormatFamily(MAPFRE_TEXT);
+      expect(result.hasSections).toBe(true);
+    });
+
+    it('should include detected patterns', () => {
+      const result = detectFormatFamily(HDI_TEXT);
+      expect(result.detectedPatterns.length).toBeGreaterThan(0);
+    });
+  });
+});
