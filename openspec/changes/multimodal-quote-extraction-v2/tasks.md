@@ -37,8 +37,13 @@
 
 ## 10. Deploy y Monitoreo
 
-- [ ] 10.1 Agregar `canvas` como optional dependency en Dockerfile
-- [ ] 10.2 Implementar feature flag `VITE_ENABLE_MULTIMODAL_EXTRACTION`
+- [x] 10.1 Agregar `canvas` como optional dependency en Dockerfile
+  - Added cairo-dev, pango-dev, pixman-dev to Alpine packages
+  - Suppresses pdfjs-dist DOMMatrix/Path2D warnings
+- [x] 10.2 Implementar feature flag `VITE_ENABLE_MULTIMODAL_EXTRACTION`
+  - Added MULTIMODAL_EXTRACTION to FEATURES config
+  - Uses VITE_ENABLE_MULTIMODAL_EXTRACTION env var
+  - Backend uses ENABLE_MULTIMODAL_EXTRACTION env var
 - [ ] 10.3 Deploy a staging con feature flag desactivado
 - [ ] 10.4 Activar feature flag para 10% de usuarios
 - [ ] 10.5 Monitorear logs por 48 horas
