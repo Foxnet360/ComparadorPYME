@@ -193,21 +193,35 @@ export const ragRetrievalService = {
 
     /**
      * Check if an insurer has indexed clauses (pre-flight check)
+     * Uses clause_chunks table (correct schema) with fallback to documents table
      */
     checkInsurerHasClauses: async (insurerName: string): Promise<boolean> => {
         try {
-            const { data, error } = await supabase
-                .from('chunks')
+            // First try clause_chunks (correct table with insurer_name column)
+            const { data: clauseData, error: clauseError } = await supabase
+                .from('clause_chunks')
                 .select('id')
                 .eq('insurer_name', insurerName)
                 .limit(1);
 
-            if (error) {
-                console.error('❌ [ragRetrieval] Error checking clauses:', error);
-                return false;
+            if (!clauseError && clauseData && clauseData.length > 0) {
+                return true;
             }
 
-            return data && data.length > 0;
+            // Fallback: check documents table for clause documents
+            const { data: docData, error: docError } = await supabase
+                .from('documents')
+                .select('id, insurer_id')
+                .in('document_type', ['CLAUSULADO_GENERAL', 'CLAUSULADO_PARTICULAR'])
+                .eq('is_active', true)
+                .limit(1);
+
+            if (!docError && docData && docData.length > 0) {
+                console.log(`⚠️ [ragRetrieval] No chunks for ${insurerName} but documents exist. Consider indexing.`);
+                return true;
+            }
+
+            return false;
         } catch (error) {
             console.error('❌ [ragRetrieval] Exception checking clauses:', error);
             return false;

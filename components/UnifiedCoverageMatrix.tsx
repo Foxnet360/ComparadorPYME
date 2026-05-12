@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { QuoteAnalysis, CoverageItem } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
 import { Info, AlertTriangle, ListChecks, CheckCircle, LayoutGrid, Table as TableIcon, ChevronDown, ChevronUp, Trophy } from 'lucide-react';
-import { DeductibleGauge } from './DeductibleGauge';
+import { DeductibleBadge } from './DeductibleBadge';
 import { formatPercentage, formatCOP } from '../utils/formatCurrency';
 import { findWinnerByCategory } from '../utils/winnerDetection';
 import { calculateDifferences, formatDeviation, getDiffClass } from '../utils/diffHighlighting';
@@ -286,8 +286,8 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                                   {formatCoverageValue(coverage.value)}
                                 </div>
                                 {coverage.deductible && coverage.deductible !== 'No aplica' && (
-                                  <div className="mt-2">
-                                    <DeductibleGauge deductible={coverage.deductible} size={50} />
+                                  <div className="mt-1">
+                                    <DeductibleBadge deductible={coverage.deductible} />
                                   </div>
                                 )}
                                 {/* Confidence Badge - only in technical mode */}
@@ -413,8 +413,8 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                           </div>
                           <div className="text-sm text-slate-600 mt-1">{formatCoverageValue(item.coverage.value)}</div>
                           {item.coverage.deductible && (
-                            <div className="mt-2">
-                              <DeductibleGauge deductible={item.coverage.deductible} size={50} />
+                            <div className="mt-1">
+                              <DeductibleBadge deductible={item.coverage.deductible} />
                             </div>
                           )}
                           <div className="mt-2 flex items-center gap-2 flex-wrap">
@@ -498,8 +498,8 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                         <td className="px-4 py-3 text-center">
                           <div className="text-slate-700">{formatCoverageValue(item.coverage.value)}</div>
                           {item.coverage.deductible && (
-                            <div className="mt-2 flex justify-center">
-                              <DeductibleGauge deductible={item.coverage.deductible} size={50} />
+                            <div className="mt-1 flex justify-center">
+                              <DeductibleBadge deductible={item.coverage.deductible} />
                             </div>
                           )}
                         </td>

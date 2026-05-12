@@ -50,23 +50,35 @@ export interface CrossInsurerRisk {
 
 /**
  * Check if clause documents exist for given insurers
+ * Checks clause_chunks first (correct schema), then falls back to documents table
  */
 export const checkClausesAvailability = async (insurerNames: string[]): Promise<boolean> => {
     try {
-        // Check documents table for clause documents from these insurers
-        const { data, error } = await supabase
+        // First try clause_chunks (correct table with insurer_name)
+        const { data: clauseData, error: clauseError } = await supabase
+            .from('clause_chunks')
+            .select('id')
+            .in('insurer_name', insurerNames)
+            .limit(1);
+        
+        if (!clauseError && clauseData && clauseData.length > 0) {
+            return true;
+        }
+        
+        // Fallback: check documents table for clause documents
+        const { data: docData, error: docError } = await supabase
             .from('documents')
             .select('id')
             .in('document_type', ['CLAUSULADO_GENERAL', 'CLAUSULADO_PARTICULAR'])
             .eq('is_active', true)
             .limit(1);
         
-        if (error) {
-            console.error('❌ [auditEnrichment] Error checking clauses:', error);
+        if (docError) {
+            console.error('❌ [auditEnrichment] Error checking clauses:', docError);
             return false;
         }
         
-        return data && data.length > 0;
+        return docData && docData.length > 0;
     } catch (error) {
         console.error('❌ [auditEnrichment] Exception checking clauses:', error);
         return false;

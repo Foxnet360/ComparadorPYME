@@ -397,7 +397,78 @@ export const AuditSection: React.FC<AuditSectionProps> = ({ quotes, viewMode }) 
                       </div>
                     )}
 
-                    {alerts.length === 0 && (
+                    {/* Quote-based Audit Summary */}
+                    {quote.quoteAudit && (
+                      <div className="mt-4 pt-4 border-t border-slate-200">
+                        <h4 className="flex items-center gap-2 text-indigo-700 font-bold mb-2 text-sm uppercase tracking-wide">
+                          <Shield size={16} />
+                          Análisis de Cotización
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            quote.quoteAudit.overallRiskScore >= 80 ? 'bg-green-100 text-green-700' :
+                            quote.quoteAudit.overallRiskScore >= 60 ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>
+                            Score: {quote.quoteAudit.overallRiskScore}/100
+                          </span>
+                        </h4>
+                        
+                        {/* Missing Coverages */}
+                        {quote.quoteAudit.missingCoverages.length > 0 && (
+                          <div className="mb-3">
+                            <p className="text-xs font-medium text-slate-600 mb-1">Coberturas Faltantes ({quote.quoteAudit.missingCoverages.length}):</p>
+                            <div className="flex flex-wrap gap-1">
+                              {quote.quoteAudit.missingCoverages.slice(0, 5).map((mc, i) => (
+                                <span key={i} className={`text-xs px-2 py-0.5 rounded ${
+                                  mc.impact === 'HIGH' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
+                                }`}>
+                                  {mc.categoryName}
+                                </span>
+                              ))}
+                              {quote.quoteAudit.missingCoverages.length > 5 && (
+                                <span className="text-xs text-slate-500">+{quote.quoteAudit.missingCoverages.length - 5} más</span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Deductible Risks */}
+                        {quote.quoteAudit.deductibleRisks.filter(r => r.riskLevel === 'HIGH' || r.riskLevel === 'CRITICAL').length > 0 && (
+                          <div className="mb-3">
+                            <p className="text-xs font-medium text-slate-600 mb-1">Riesgos de Deducibles:</p>
+                            <div className="space-y-1">
+                              {quote.quoteAudit.deductibleRisks
+                                .filter(r => r.riskLevel === 'HIGH' || r.riskLevel === 'CRITICAL')
+                                .slice(0, 3)
+                                .map((dr, i) => (
+                                  <div key={i} className="flex items-center gap-2 text-xs">
+                                    <span className={`w-2 h-2 rounded-full ${
+                                      dr.riskLevel === 'CRITICAL' ? 'bg-red-500' : 'bg-orange-500'
+                                    }`} />
+                                    <span className="text-slate-700">{dr.coverageName}:</span>
+                                    <span className="font-medium text-slate-900">{dr.deductible}</span>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Special Conditions */}
+                        {quote.quoteAudit.specialConditions.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium text-slate-600 mb-1">Condiciones Especiales ({quote.quoteAudit.specialConditions.length}):</p>
+                            <div className="space-y-1">
+                              {quote.quoteAudit.specialConditions.slice(0, 3).map((sc, i) => (
+                                <div key={i} className="text-xs text-slate-600 bg-slate-50 p-2 rounded">
+                                  {sc.text.substring(0, 100)}{sc.text.length > 100 ? '...' : ''}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {alerts.length === 0 && !quote.quoteAudit && (
                       <div className="text-center py-8">
                         <FileText className="mx-auto mb-2 text-slate-300" size={48} />
                         <p className="text-slate-400">Sin hallazgos relevantes para esta cotización.</p>

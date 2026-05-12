@@ -27,6 +27,7 @@ import { buildPromptForFamily } from '../services/promptBuilder';
 import { buildCanonicalCoverages } from '../services/coverageNormalizer';
 import { extractPremiumBreakdown, extractPerCoveragePremiums, validatePremiumBreakdown, normalizeCurrency, normalizePeriodicity } from '../services/premiumExtractor';
 import { getDeductibleFallback } from '../services/deductibleResolver';
+import quoteBasedAuditor from '../services/quoteBasedAuditor';
 
 // Feature flag for multimodal extraction
 // Deploy al 100% - V2 activo por defecto
@@ -943,7 +944,31 @@ export function generateComparison(
             deductibleAnalysis: advancedAnalysis?.deductibleAnalysis,
             contextualRisk: advancedAnalysis?.contextualRisk,
             warrantyCompliance: advancedAnalysis?.warrantyCompliance,
-            legalOpinion: advancedAnalysis?.legalOpinion
+            legalOpinion: advancedAnalysis?.legalOpinion,
+            // Quote-based audit (independent of RAG)
+            quoteAudit: (() => {
+                const audit = quoteBasedAuditor.auditQuote({
+                    insurerName: quote.insurerName,
+                    policyName: quote.policyName,
+                    priceAnnual: quote.priceAnnual,
+                    currency: quote.currency,
+                    coverages: quote.coverages,
+                    alerts: [],
+                    scoringBreakdown: scoring?.breakdown,
+                    clientAnalysis: narrative?.clientAnalysis || '',
+                    technicalAnalysis: narrative?.technicalAnalysis || '',
+                    score: scoring?.totalScore || 0,
+                    deductibles: quote.coverages.map(c => c.deductible).join('; '),
+                    rawText: quote.rawText
+                } as any);
+                return {
+                    deductibleRisks: audit.deductibleRisks,
+                    missingCoverages: audit.missingCoverages,
+                    specialConditions: audit.specialConditions,
+                    overallRiskScore: audit.overallRiskScore,
+                    summary: audit.summary
+                };
+            })()
         };
     });
 
