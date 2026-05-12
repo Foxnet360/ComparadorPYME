@@ -49,4 +49,10 @@
 - [ ] 10.5 Monitorear logs por 48 horas
 - [ ] 10.6 Comparar métricas antes/después
 - [ ] 10.7 Rollout gradual a 100%
-- [ ] 10.8 Documentar nuevo pipeline en README
+- [x] 10.8 Documentar nuevo pipeline en README
+  - Added "Extracción Multimodal" section to README.md
+  - Documented 6 format families with examples
+  - Feature flag configuration
+  - V2 vs V1 comparison table
+  - Performance metrics
+  - Service architecture diagram
