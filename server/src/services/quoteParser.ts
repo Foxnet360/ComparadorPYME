@@ -1,6 +1,12 @@
 /**
  * Deterministic parser for insurance quote extraction
  * Converts Gemini text output into structured data using regex
+ * 
+ * @deprecated This parser is deprecated in favor of multimodal extraction
+ * Use coverageNormalizer.ts for post-processing of AI-extracted data
+ * Kept as emergency fallback when Gemini File API is unavailable
+ * @see extractFromPdfWithVision() in gemini.ts
+ * @see buildCanonicalCoverages() in coverageNormalizer.ts
  */
 
 import { thesaurusService } from './normalization/thesaurusService';
@@ -41,6 +47,7 @@ export interface ParsedQuote {
 export const quoteParser = {
     /**
      * Main entry point: parse Gemini text output into structured quote data
+     * @deprecated Use multimodal extraction with coverage normalization instead
      */
     parse: async (rawText: string): Promise<ParsedQuote> => {
         console.log('🔍 [quoteParser] Parsing Gemini output...');
@@ -78,6 +85,7 @@ export const quoteParser = {
 
     /**
      * Parse multiple quotes from combined text
+     * @deprecated Use processQuoteMultimodal() or processQuoteLegacy() instead
      */
     parseMultiple: async (combinedText: string): Promise<ParsedQuote[]> => {
         // Split by quote delimiters if present

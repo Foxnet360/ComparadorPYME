@@ -62,16 +62,16 @@
   - [x] 6.1.2 Definir `QuoteExtractionSchemaV2`
   - [x] 6.1.3 Mantener `extractText()` como fallback
   - [x] 6.1.4 Actualizar manejo de errores
-- [ ] 6.2 Renombrar `insurerProfileService.ts` → `formatFamilyService.ts`
-  - [ ] 6.2.1 Reemplazar perfiles por prompts de familia
-  - [ ] 6.2.2 Actualizar exports y referencias
-- [ ] 6.3 Deprecar `quoteParser.ts`
-  - [ ] 6.3.1 Mover funciones útiles a `coverageNormalizer`
-  - [ ] 6.3.2 Agregar `@deprecated` JSDoc
-  - [ ] 6.3.3 Mantener como fallback de emergencia
-- [ ] 6.4 Ampliar `thesaurusMapper.ts`
-  - [ ] 6.4.1 Agregar variantes encontradas en logs ("Sin deducible", etc.)
-  - [ ] 6.4.2 Agregar mapeo de sub-límites a coberturas padre
+- [x] 6.2 Renombrar `insurerProfileService.ts` → `formatFamilyService.ts`
+  - [x] 6.2.1 Reemplazar perfiles por prompts de familia
+  - [x] 6.2.2 Actualizar exports y referencias
+- [x] 6.3 Deprecar `quoteParser.ts`
+  - [x] 6.3.1 Mover funciones útiles a `coverageNormalizer`
+  - [x] 6.3.2 Agregar `@deprecated` JSDoc
+  - [x] 6.3.3 Mantener como fallback de emergencia
+- [x] 6.4 Ampliar `thesaurusMapper.ts`
+  - [x] 6.4.1 Agregar variantes encontradas en logs ("Sin deducible", etc.)
+  - [x] 6.4.2 Agregar mapeo de sub-límites a coberturas padre
 
 ## 7. Actualización del Controller de Análisis
 
@@ -82,8 +82,8 @@
   - [x] 7.1.4 Fase 4: Normalizar coberturas
   - [x] 7.1.5 Fase 5: Validar y comparar
 - [x] 7.2 Implementar pipeline secuencial por cotización (no paralelo)
-- [ ] 7.3 Hacer RAG asíncrono (no bloquear extracción principal)
-- [ ] 7.4 Agregar timeout de 5 minutos por cotización
+- [x] 7.3 Hacer RAG asíncrono (no bloquear extracción principal)
+- [x] 7.4 Agregar timeout de 5 minutos por cotización
 - [x] 7.5 Implementar fallback a extracción texto si File API falla
 
 ## 8. Actualización de Tipos y Interfaces

@@ -375,6 +375,42 @@ function getBuiltInThesaurus(): ThesaurusEntry[] {
       variants: ["Valores en Tránsito", "Transporte de Dinero"],
       category: "Patrimoniales",
     },
+    // Sub-límites comunes
+    {
+      canonicalName: "Remoción de Escombros",
+      variants: ["Remoción de escombros", "Remocion de escombros", "Escombros"],
+      category: "Sub-límites",
+      type: 'sub-limit',
+      parentCoverage: "Incendio (Edificio y Contenidos)",
+    },
+    {
+      canonicalName: "Honorarios Profesionales",
+      variants: ["Honorarios profesionales", "Gastos profesionales", "Honorarios"],
+      category: "Sub-límites",
+      type: 'sub-limit',
+      parentCoverage: "Incendio (Edificio y Contenidos)",
+    },
+    {
+      canonicalName: "Gastos de Extinción",
+      variants: ["Gastos de extinción", "Extinción de siniestro", "Gastos para extinción"],
+      category: "Sub-límites",
+      type: 'sub-limit',
+      parentCoverage: "Incendio (Edificio y Contenidos)",
+    },
+    {
+      canonicalName: "Flete Aéreo",
+      variants: ["Flete aéreo", "Flete expreso", "Transporte aéreo"],
+      category: "Sub-límites",
+      type: 'sub-limit',
+      parentCoverage: "Incendio (Edificio y Contenidos)",
+    },
+    {
+      canonicalName: "Preservación de Bienes",
+      variants: ["Preservación de bienes", "Gastos para preservación"],
+      category: "Sub-límites",
+      type: 'sub-limit',
+      parentCoverage: "Incendio (Edificio y Contenidos)",
+    },
   ];
 }
 /**
@@ -446,9 +482,19 @@ export function normalizeDeductible(deductible: string): {
     return { normalized: 'No aplica', needsReview: false };
   }
 
-  // Handle "Sin deducible" or "No tiene deducible"
-  if (/^(sin\s+deducible|no\s*tiene\s*deducible)/i.test(trimmed)) {
+  // Handle "Sin deducible" or "No tiene deducible" or "NO APLICA DEDUCIBLE"
+  if (/^(sin\s+deducible|no\s*tiene\s*deducible|no\s*aplica\s*deducible)/i.test(trimmed)) {
     return { normalized: 'Sin deducible', needsReview: false };
+  }
+
+  // Handle "DEDUCIBLE: SIN" variant
+  if (/^sin$/i.test(trimmed) || /^sin\s*deducible$/i.test(trimmed)) {
+    return { normalized: 'Sin deducible', needsReview: false };
+  }
+
+  // Handle "NO TIENE" or "NO POSEE" deductible
+  if (/^(no\s*tiene|no\s*poss?ee|no\s*aplica)/i.test(trimmed)) {
+    return { normalized: 'No aplica', needsReview: false };
   }
 
   // Handle "No aplica Deducible" → extract "No aplica"

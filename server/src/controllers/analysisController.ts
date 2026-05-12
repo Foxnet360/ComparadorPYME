@@ -173,9 +173,38 @@ n3. Extrae TODAS las coberturas que encuentres, sin omitir ninguna
 4. Sé preciso con los valores numéricos y porcentajes`;
 
 /**
+ * Timeout wrapper for quote processing
+ */
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  errorMessage: string
+): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
+    )
+  ]);
+}
+
+/**
  * Process a single quote using multimodal extraction
+ * Timeout: 5 minutes per quote
  */
 async function processQuoteMultimodal(
+  quoteFile: Express.Multer.File,
+  index: number,
+  total: number
+): Promise<ParsedQuote> {
+  return withTimeout(
+    processQuoteMultimodalInternal(quoteFile, index, total),
+    5 * 60 * 1000, // 5 minutes
+    `Quote processing timeout (${quoteFile.originalname})`
+  );
+}
+
+async function processQuoteMultimodalInternal(
   quoteFile: Express.Multer.File,
   index: number,
   total: number
@@ -265,8 +294,21 @@ async function processQuoteMultimodal(
 
 /**
  * Process a single quote using legacy text-based extraction
+ * Timeout: 5 minutes per quote
  */
 async function processQuoteLegacy(
+  quote: any,
+  index: number,
+  total: number
+): Promise<ParsedQuote> {
+  return withTimeout(
+    processQuoteLegacyInternal(quote, index, total),
+    5 * 60 * 1000, // 5 minutes
+    `Quote processing timeout (legacy) (${quote.filename || 'unknown'})`
+  );
+}
+
+async function processQuoteLegacyInternal(
   quote: any,
   index: number,
   total: number
@@ -591,17 +633,24 @@ export const analysisController = {
                 }
             }
 
-            // Phase 4: Cross-reference with RAG clause library
-            console.log('🔍 Phase 4/5: Cross-referencing with clause library...');
+            // Phase 4: Cross-reference with RAG clause library (ASYNC - non-blocking)
+            console.log('🔍 Phase 4/5: Cross-referencing with clause library (async)...');
             const crossRefResults: Map<number, CrossReferenceResult[]> = new Map();
+            const clauseValidationResults: Map<number, any> = new Map();
             
-            for (let i = 0; i < parsedQuotes.length; i++) {
-                const quote = parsedQuotes[i];
-                console.log(`   Cross-referencing ${quote.insurerName}...`);
+            // Fire all RAG requests in parallel with timeout
+            const ragPromises = parsedQuotes.map(async (quote, i) => {
+                const startRag = Date.now();
                 
                 try {
+                    // Cross-reference with timeout
                     if (quote.coverages.length > 0) {
-                        const results = await crossReferenceEngine.crossReferenceQuote(quote);
+                        const results = await Promise.race([
+                            crossReferenceEngine.crossReferenceQuote(quote),
+                            new Promise<never>((_, reject) => 
+                                setTimeout(() => reject(new Error('RAG timeout')), 10000)
+                            )
+                        ]);
                         crossRefResults.set(i, results);
                         
                         const alertCounts = results.reduce((acc, r) => {
@@ -610,38 +659,46 @@ export const analysisController = {
                             return acc;
                         }, { critical: 0, warning: 0 });
                         
-                        console.log(`   ✅ Found ${results.length} coverage matches, ${alertCounts.critical} critical, ${alertCounts.warning} warnings`);
+                        console.log(`   ✅ ${quote.insurerName}: ${results.length} matches, ${alertCounts.critical} critical, ${alertCounts.warning} warnings (${Date.now() - startRag}ms)`);
                     } else {
                         crossRefResults.set(i, []);
-                        console.log(`   ⚠️ No coverages to cross-reference`);
                     }
-                } catch (error) {
-                    console.error(`   ❌ Cross-reference error for ${quote.insurerName}:`, error);
-                    crossRefResults.set(i, []);
-                }
-            }
-
-            // Phase 4b: Validate coverages against clause documents
-            console.log('🔍 Phase 4b/5: Validating coverages against clause documents...');
-            const clauseValidationResults: Map<number, any> = new Map();
-            
-            for (let i = 0; i < parsedQuotes.length; i++) {
-                const quote = parsedQuotes[i];
-                console.log(`   Validating clause coverage for ${quote.insurerName}...`);
-                
-                try {
-                    const validation = await clauseCoverageValidator.validate(quote, quote.insurerName);
-                    clauseValidationResults.set(i, validation);
                     
-                    if (!validation.hasClauseDocument) {
-                        console.log(`   ⚠️ No clause document for ${quote.insurerName}, score penalized`);
-                    } else {
-                        console.log(`   ✅ ${validation.verifiedCount} verified, ${validation.phantomCount} phantom, ${validation.mandatoryMissingCount} mandatory missing`);
+                    // Clause validation with timeout
+                    try {
+                        const validation = await Promise.race([
+                            clauseCoverageValidator.validate(quote, quote.insurerName),
+                            new Promise<never>((_, reject) => 
+                                setTimeout(() => reject(new Error('Clause validation timeout')), 8000)
+                            )
+                        ]);
+                        clauseValidationResults.set(i, validation);
+                        
+                        if (!validation.hasClauseDocument) {
+                            console.log(`   ⚠️ ${quote.insurerName}: No clause document, score penalized`);
+                        } else {
+                            console.log(`   ✅ ${quote.insurerName}: ${validation.verifiedCount} verified, ${validation.phantomCount} phantom`);
+                        }
+                    } catch (clauseError) {
+                        console.warn(`   ⚠️ ${quote.insurerName}: Clause validation failed or timed out`);
+                        clauseValidationResults.set(i, null);
                     }
+                    
                 } catch (error) {
-                    console.error(`   ❌ Clause validation error for ${quote.insurerName}:`, error);
+                    console.error(`   ❌ RAG error for ${quote.insurerName}:`, error);
+                    crossRefResults.set(i, []);
                     clauseValidationResults.set(i, null);
                 }
+            });
+            
+            // Wait for all RAG operations with overall timeout
+            try {
+                await Promise.race([
+                    Promise.all(ragPromises),
+                    new Promise<void>((resolve) => setTimeout(resolve, 30000)) // 30s overall RAG timeout
+                ]);
+            } catch (error) {
+                console.warn('⚠️ Some RAG operations failed or timed out');
             }
 
             // Phase 4: Calculate scores
