@@ -73,6 +73,29 @@ export interface QuoteAnalysis {
   contextualRisk?: ContextualRisk;
   warrantyCompliance?: WarrantyCompliance;
   legalOpinion?: LegalOpinion[];
+  // Quote-based audit results (independent of RAG)
+  quoteAudit?: {
+    deductibleRisks: Array<{
+      coverageName: string;
+      deductible: string;
+      riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+      score: number;
+      recommendation: string;
+    }>;
+    missingCoverages: Array<{
+      categoryName: string;
+      categoryId: number;
+      impact: 'HIGH' | 'MEDIUM';
+      reason: string;
+    }>;
+    specialConditions: Array<{
+      text: string;
+      impact: 'CRITICAL' | 'WARNING' | 'INFO';
+      coverageName?: string;
+    }>;
+    overallRiskScore: number;
+    summary: string;
+  };
 }
 
 // --- ADVANCED ANALYSIS TYPES (INTEGRACIÓN CLAUSULADOS) ---
