@@ -260,8 +260,8 @@ export function deriveInsuredAmounts(
     // Special cases
     if (!derivedAmount) {
       if (canonicalName.includes('INCENDIO') || canonicalName.includes('DAÑO MATERIAL')) {
-        const buildingAssets = insuredAssets.filter(a =
-          ['EDIFICIOS', 'INMUEBLES', 'CONTENIDOS', 'MUEBLES'].some(t =
+        const buildingAssets = insuredAssets.filter(a =>
+          ['EDIFICIOS', 'INMUEBLES', 'CONTENIDOS', 'MUEBLES'].some(t =>
             a.assetType.toUpperCase().includes(t)
           )
         );

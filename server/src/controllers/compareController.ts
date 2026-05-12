@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import { Request, Response } from 'express';
 import { geminiService } from '../services/gemini';
 import { pdfExtractor } from '../services/pdfExtractor';
 import { quoteParser, ParsedQuote } from '../services/quoteParser';
@@ -32,7 +31,7 @@ export async function compareExtraction(req: Request, res: Response) {
 
       try {
         const textResult = await pdfExtractor.extractTextFromPdf(file.path);
-        v1Result = await quoteParser.parseQuote(textResult.text, file.originalname);
+        v1Result = await quoteParser.parse(textResult.text);
       } catch (error: any) {
         v1Error = error.message;
       }
