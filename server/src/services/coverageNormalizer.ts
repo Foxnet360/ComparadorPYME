@@ -7,6 +7,7 @@ import { semanticMatcher, SemanticMatchResult, CANONICAL_CATEGORIES } from './se
 import { thesaurusService } from './normalization/thesaurusService';
 import { normalizeText } from '../utils/textUtils';
 import { levenshteinDistance } from '../utils/stringUtils';
+import { groupUncategorizedCoverages } from './semanticGrouper';
 
 export type CoverageStatus = 'present' | 'missing' | 'excluded';
 
@@ -18,9 +19,10 @@ export interface CanonicalCoverage {
   premium: number | null;
   confidence: number;
   rawNames: string[];
-  matchMethod: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'implicit' | 'derived' | null;
+  matchMethod: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'implicit' | 'derived' | 'semantic-group' | null;
   needsReview: boolean;
   notes?: string;
+  categoryId?: string;
 }
 
 export interface RawCoverage {
@@ -401,6 +403,7 @@ export async function buildCanonicalCoverages(
         rawNames: explicitMatches.map(m => m.coverage.rawName),
         matchMethod: best.method as any,
         needsReview: best.confidence < 70,
+        categoryId: category.id.toString(),
       });
       
       totalConfidence += best.confidence;
@@ -422,6 +425,7 @@ export async function buildCanonicalCoverages(
         matchMethod: 'implicit',
         needsReview: true,
         notes: `Cobertura implícita en: ${bestImplicit.rawName}`,
+        categoryId: category.id.toString(),
       });
       
       totalConfidence += bestImplicit.confidence;
@@ -439,6 +443,7 @@ export async function buildCanonicalCoverages(
         rawNames: [],
         matchMethod: null,
         needsReview: false,
+        categoryId: category.id.toString(),
       });
     }
   }
@@ -447,12 +452,43 @@ export async function buildCanonicalCoverages(
     .filter(c => c.status === 'missing')
     .map(c => c.name);
   
+  // Collect uncategorized coverages (those that didn't match any canonical category)
+  const rawUncategorized = mapped
+    .filter(m => m.canonicalName === null)
+    .map(m => m.coverage)
+    // Filter out empty coverages (no value and no premium)
+    .filter(c => c.insuredAmount !== null || c.premium !== null);
+  
+  // Group uncategorized coverages by semantic similarity
+  const grouped = groupUncategorizedCoverages(rawUncategorized);
+  
+  // Flatten groups into CanonicalCoverage array with categoryId
+  const uncategorizedCoverages: CanonicalCoverage[] = [];
+  for (const group of grouped) {
+    for (const coverage of group.coverages) {
+      uncategorizedCoverages.push({
+        name: coverage.rawName,
+        status: 'present' as CoverageStatus,
+        insuredAmount: coverage.insuredAmount,
+        deductible: coverage.deductible,
+        premium: coverage.premium,
+        confidence: 0,
+        rawNames: [coverage.rawName],
+        matchMethod: 'semantic-group',
+        needsReview: true,
+        notes: `Grupo: ${group.name}`,
+        categoryId: group.id,
+      });
+    }
+  }
+  
   const avgConfidence = canonicalCoverages.length > 0 
     ? totalConfidence / canonicalCoverages.filter(c => c.status === 'present').length 
     : 0;
   
   return {
     canonicalCoverages,
+    uncategorizedCoverages,
     missingCoverages,
     needsReview,
     totalConfidence: Math.round(avgConfidence),

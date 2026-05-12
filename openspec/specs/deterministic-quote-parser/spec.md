@@ -1,63 +1,56 @@
 # Spec: Deterministic Quote Parser
 
 ## Capability
-Parser determinístico local que convierte salida de texto libre de Gemini en datos estructurados de cotizaciones usando regex y normalización con thesaurus.
+Parser determinístico que convierte salida de texto libre de Gemini en datos estructurados usando regex y normalización con tesauro. **DEPRECATED** - Reemplazado por extracción multimodal con post-normalización.
 
 ## User Story
-**Como** sistema de análisis
-**Quiero** extraer datos estructurados de la respuesta de texto de Gemini
-**Para** evitar problemas de truncamiento de JSON
+**Como** sistema de análisis (legado)
+**Quiero** extraer datos estructurados de respuestas de texto de Gemini
+**Para** casos de fallback donde la extracción multimodal no está disponible
 
-## Functional Requirements
+## REMOVED Requirements
 
-### FR-1: Regex-based text parsing
-The system SHALL parse Gemini's text output using deterministic regex patterns to extract structured data.
+### Requirement: Regex-based text parsing
+**Reason**: Replaced by multimodal PDF extraction with structured JSON schema. Regex parsing cannot handle tabular structures and produces inconsistent results.
+**Migration**: Use `multimodal-pdf-extraction` for all new extractions. This parser remains as emergency fallback only.
 
-#### Scenario: Extracting insurer name
+#### Scenario: Extracting insurer name (DEPRECATED)
 - **WHEN** Gemini output contains "ASEGURADORA: HDI SEGUROS COLOMBIA S.A."
 - **THEN** the parser extracts "HDI SEGUROS COLOMBIA S.A."
 - **AND** stores it in the insurerName field
+- **STATUS**: Use `multimodal-pdf-extraction` instead
 
-#### Scenario: Extracting coverages
+#### Scenario: Extracting coverages (DEPRECATED)
 - **WHEN** Gemini output contains a list of coverages with values and deductibles
 - **THEN** the parser extracts each coverage as a structured object
 - **AND** handles variations in formatting (bullets, numbers, indentation)
+- **STATUS**: Use `multimodal-pdf-extraction` instead
 
-#### Scenario: Handling missing sections
-- **WHEN** a section like "CONDICIONES ESPECIALES" is missing from the output
-- **THEN** the parser continues without error
-- **AND** sets that section to empty array or null
+### Requirement: Thesaurus normalization (MOVED)
+**Reason**: Normalización de nombres de coberturas ahora es responsabilidad de `coverage-post-normalization`
+**Migration**: Use `coverage-post-normalization.mapRawToCanonical()` en lugar de `quoteParser.normalizeCoverageName()`
 
-### FR-2: Thesaurus normalization
-The system SHALL normalize extracted coverage names using the existing thesaurus.
+### Requirement: Parser confidence scoring (DEPRECATED)
+**Reason**: La confianza ahora se calcula en post-normalización basada en método de matching (thesaurus, fuzzy, embedding, llm)
+**Migration**: Use confidence scores from `coverage-post-normalization` results
 
-#### Scenario: Known synonym match
-- **WHEN** the parser extracts "Inmuebles y mejoras locativas"
-- **THEN** the thesaurus matches it to "Incendio (Edificio y Contenidos)"
-- **AND** stores both the raw name and the canonical name
+## ADDED Requirements
 
-#### Scenario: Partial match
-- **WHEN** the parser extracts "Seguro de Incendio para Edificios"
-- **THEN** the thesaurus finds partial match with "Incendio (Edificio y Contenidos)"
-- **AND** stores the canonical name with confidence score
+### Requirement: Emergency fallback parsing
+The system SHALL retain deterministic parsing as emergency fallback when multimodal extraction is unavailable.
 
-#### Scenario: No match found
-- **WHEN** the parser extracts a coverage not in the thesaurus
-- **THEN** the system stores the raw name
-- **AND** flags it for manual review and thesaurus update
+#### Scenario: Multimodal service unavailable
+- **WHEN** Gemini File API returns error or is unreachable
+- **THEN** the system SHALL fallback to text extraction + deterministic parsing
+- **AND** the analysis SHALL be marked with "needsReview: true"
+- **AND** a warning SHALL be logged: "Fallback to text extraction due to: {error}"
 
-### FR-3: Parser confidence scoring
-The system SHALL assign confidence scores to parsed fields.
-
-#### Scenario: High confidence
-- **WHEN** a field matches expected pattern exactly
-- **THEN** confidence is 95-100%
-
-#### Scenario: Low confidence
-- **WHEN** a field is ambiguous or partially matched
-- **THEN** confidence is below 70%
-- **AND** the system flags it for review in the analysis
+#### Scenario: PDF text extraction
+- **WHEN** fallback is activated
+- **THEN** the system SHALL use pdfjs-dist to extract text
+- **AND** send text to Gemini with free-text prompt
+- **AND** parse response with deterministic parser
 
 ## Dependencies
-- Thesaurus de coberturas (thesaurus.json)
-- Servicio de normalización de texto
+- `text-based-quote-extraction` (legacy) for fallback
+- `multimodal-pdf-extraction` (preferred)

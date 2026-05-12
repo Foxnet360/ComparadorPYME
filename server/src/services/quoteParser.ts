@@ -37,6 +37,7 @@ export interface ParsedQuote {
     priceAnnual: number;
     currency: string;
     coverages: ParsedCoverage[];
+    uncategorizedCoverages?: ParsedCoverage[];
     validityPeriod?: string;
     specialConditions: string[];
     rawText: string;

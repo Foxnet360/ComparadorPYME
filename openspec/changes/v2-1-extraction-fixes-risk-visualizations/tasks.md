@@ -15,13 +15,13 @@
 
 ## 2. Preserve Uncategorized Coverages
 
-- [ ] 2.1 Modify `server/src/services/coverageNormalizer.ts`: Add `uncategorizedCoverages` array to return type
-- [ ] 2.2 Modify `server/src/services/coverageNormalizer.ts`: Preserve non-canonical coverages instead of discarding
-- [ ] 2.3 Modify `server/src/services/coverageNormalizer.ts`: Filter out empty coverages (insuredAmount=0 AND premium=0)
-- [ ] 2.4 Create `server/src/services/semanticGrouper.ts`: New service to group uncategorized coverages by semantic similarity
-- [ ] 2.5 Implement grouping logic in `semanticGrouper.ts`: "Asistencias", "Servicios", "Amparos Adicionales", "Otros"
-- [ ] 2.6 Modify `server/src/services/coverageNormalizer.ts`: Assign categoryId, matchConfidence, matchMethod to ALL coverages (canonical + uncategorized)
-- [ ] 2.7 Modify `server/src/controllers/analysisController.ts`: Include `uncategorizedCoverages` in response JSON
+- [x] 2.1 Modify `server/src/services/coverageNormalizer.ts`: Add `uncategorizedCoverages` array to return type
+- [x] 2.2 Modify `server/src/services/coverageNormalizer.ts`: Preserve non-canonical coverages instead of discarding
+- [x] 2.3 Modify `server/src/services/coverageNormalizer.ts`: Filter out empty coverages (insuredAmount=0 AND premium=0)
+- [x] 2.4 Create `server/src/services/semanticGrouper.ts`: New service to group uncategorized coverages by semantic similarity
+- [x] 2.5 Implement grouping logic in `semanticGrouper.ts`: "Asistencias", "Servicios", "Amparos Adicionales", "Otros"
+- [x] 2.6 Modify `server/src/services/coverageNormalizer.ts`: Assign categoryId, matchConfidence, matchMethod to ALL coverages (canonical + uncategorized)
+- [x] 2.7 Modify `server/src/controllers/analysisController.ts`: Include `uncategorizedCoverages` in response JSON
 
 ## 3. Optimize RAG Performance
 
