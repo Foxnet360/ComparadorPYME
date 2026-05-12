@@ -25,6 +25,7 @@ import { detectFormatFamily, extractForDetection } from '../services/formatDetec
 import { buildPromptForFamily } from '../services/promptBuilder';
 import { buildCanonicalCoverages } from '../services/coverageNormalizer';
 import { extractPremiumBreakdown, extractPerCoveragePremiums, validatePremiumBreakdown, normalizeCurrency, normalizePeriodicity } from '../services/premiumExtractor';
+import { getDeductibleFallback } from '../services/deductibleResolver';
 
 // Feature flag for multimodal extraction
 // Deploy al 100% - V2 activo por defecto
@@ -265,7 +266,7 @@ async function processQuoteMultimodalInternal(
         name: c.name,
         canonicalName: c.name,
         value: c.insuredAmount ? c.insuredAmount.toString() : 'NO ESPECIFICADO',
-        deductible: c.deductible || 'NO ESPECIFICADO',
+        deductible: c.deductible || getDeductibleFallback(c.name, normalizationResult.generalDeductibles),
         confidence: c.confidence,
       })),
       validityPeriod: extracted.validityPeriod,

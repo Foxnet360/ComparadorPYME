@@ -45,9 +45,11 @@ export interface GeneralDeductible {
 
 export interface NormalizationResult {
   canonicalCoverages: CanonicalCoverage[];
+  uncategorizedCoverages?: CanonicalCoverage[];
   missingCoverages: string[];
   needsReview: boolean;
   totalConfidence: number;
+  generalDeductibles?: Array<{ appliesTo: string; deductibleText: string }>;
 }
 
 // Asset type mapping to canonical coverage
@@ -454,6 +456,7 @@ export async function buildCanonicalCoverages(
     missingCoverages,
     needsReview,
     totalConfidence: Math.round(avgConfidence),
+    generalDeductibles,
   };
 }
 
