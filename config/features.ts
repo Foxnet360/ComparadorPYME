@@ -51,6 +51,15 @@ export const FEATURES = {
    * Default: true (V2 deployed at 100%)
    */
   MULTIMODAL_EXTRACTION: import.meta.env.VITE_ENABLE_MULTIMODAL_EXTRACTION !== 'false',
+  
+  /**
+   * Enable V2.1 fixes: deductible extraction, uncategorized coverages,
+   * RAG optimization, auto-enrichment, risk visualizations
+   * When true: all V2.1 improvements are active
+   * When false: backward compatible with V2 behavior
+   * Default: false (requires explicit enable)
+   */
+  V2_1_FIXES: import.meta.env.VITE_ENABLE_V2_1_FIXES === 'true',
 };
 
 /**
@@ -58,6 +67,15 @@ export const FEATURES = {
  */
 export const isAdvancedAnalysisEnabled = (): boolean => {
   return FEATURES.ADVANCED_ANALYSIS;
+};
+
+/**
+ * Check if V2.1 fixes are enabled
+ * Controls deductible extraction, uncategorized coverages,
+ * RAG optimization, auto-enrichment, and risk visualizations
+ */
+export const isV21FixesEnabled = (): boolean => {
+  return FEATURES.V2_1_FIXES;
 };
 
 /**

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { QuoteAnalysis, CoverageItem } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
 import { Info, AlertTriangle, ListChecks, CheckCircle, LayoutGrid, Table as TableIcon, ChevronDown, ChevronUp, Trophy } from 'lucide-react';
+import { DeductibleGauge } from './DeductibleGauge';
 import { formatPercentage, formatCOP } from '../utils/formatCurrency';
 import { findWinnerByCategory } from '../utils/winnerDetection';
 import { calculateDifferences, formatDeviation, getDiffClass } from '../utils/diffHighlighting';
@@ -9,7 +10,6 @@ import { normalizeText } from '../utils/textUtils';
 
 interface UnifiedCoverageMatrixProps {
   quotes: QuoteAnalysis[];
-  showRagReferences?: boolean;
   viewMode?: 'client' | 'technical';
 }
 
@@ -144,7 +144,7 @@ const getConfidenceIcon = (confidence: number | undefined) => {
   return <AlertTriangle size={14} className="text-red-600" />;
 };
 
-export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ quotes, showRagReferences = false, viewMode = 'technical' }) => {
+export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ quotes, viewMode = 'technical' }) => {
   const [matrixViewMode, setMatrixViewMode] = useState<'grouped' | 'matrix'>('grouped');
   // Build category index (1-14)
   const categories = PLANTILLA_ITEMS.map((name, index) => ({
@@ -161,6 +161,23 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
       }
     });
   });
+
+  // Detect exclusive coverages (only offered by one insurer)
+  const getExclusiveCoverages = (): { quoteIdx: number; coverage: CoverageItem }[] => {
+    const coverageCount: Record<string, number> = {};
+    
+    uncategorizedCoverages.forEach((item) => {
+      const key = normalizeText(item.coverage.name);
+      coverageCount[key] = (coverageCount[key] || 0) + 1;
+    });
+    
+    return uncategorizedCoverages.filter((item) => {
+      const key = normalizeText(item.coverage.name);
+      return coverageCount[key] === 1;
+    });
+  };
+
+  const exclusiveCoverages = getExclusiveCoverages();
 
   return (
     <div className="space-y-6">
@@ -269,8 +286,8 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                                   {formatCoverageValue(coverage.value)}
                                 </div>
                                 {coverage.deductible && coverage.deductible !== 'No aplica' && (
-                                  <div className="text-xs text-slate-500 mt-1">
-                                    Ded: {formatCoverageValue(coverage.deductible)}
+                                  <div className="mt-2">
+                                    <DeductibleGauge deductible={coverage.deductible} size={50} />
                                   </div>
                                 )}
                                 {/* Confidence Badge - only in technical mode */}
@@ -377,16 +394,27 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                       </div>
                     </div>
                     <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {group.coverages.map((item, idx) => (
-                        <div key={idx} className="bg-slate-50 rounded-lg p-3 border border-slate-100 hover:shadow-md transition-shadow">
+                      {group.coverages.map((item, idx) => {
+                        const isExclusive = exclusiveCoverages.some(ec => 
+                          ec.coverage.name === item.coverage.name && ec.quoteIdx === item.quoteIdx
+                        );
+                        return (
+                        <div key={idx} className={`bg-slate-50 rounded-lg p-3 border hover:shadow-md transition-shadow ${isExclusive ? 'border-indigo-300 bg-indigo-50/30' : 'border-slate-100'}`}>
                           <div className="flex items-start justify-between">
-                            <div className="font-medium text-slate-800 text-sm">{item.coverage.name}</div>
+                            <div className="flex items-center gap-2">
+                              <div className="font-medium text-slate-800 text-sm">{item.coverage.name}</div>
+                              {isExclusive && (
+                                <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">
+                                  Exclusiva
+                                </span>
+                              )}
+                            </div>
                             {getConfidenceIcon(item.coverage.matchConfidence)}
                           </div>
                           <div className="text-sm text-slate-600 mt-1">{formatCoverageValue(item.coverage.value)}</div>
                           {item.coverage.deductible && (
-                            <div className="text-xs text-slate-500 mt-1">
-                              Ded: {formatCoverageValue(item.coverage.deductible)}
+                            <div className="mt-2">
+                              <DeductibleGauge deductible={item.coverage.deductible} size={50} />
                             </div>
                           )}
                           <div className="mt-2 flex items-center gap-2 flex-wrap">
@@ -413,7 +441,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                             </div>
                           )}
                         </div>
-                      ))}
+                      );})}
                     </div>
                   </div>
                 ))}
@@ -435,10 +463,21 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-amber-100">
-                    {uncategorizedCoverages.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-amber-50/30 transition-colors">
+                    {uncategorizedCoverages.map((item, idx) => {
+                      const isExclusive = exclusiveCoverages.some(ec => 
+                        ec.coverage.name === item.coverage.name && ec.quoteIdx === item.quoteIdx
+                      );
+                      return (
+                      <tr key={idx} className={`hover:bg-amber-50/30 transition-colors ${isExclusive ? 'bg-indigo-50/30' : ''}`}>
                         <td className="px-4 py-3 bg-white sticky left-0 border-r border-amber-100 z-10">
-                          <div className="font-medium text-slate-800">{item.coverage.name}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="font-medium text-slate-800">{item.coverage.name}</div>
+                            {isExclusive && (
+                              <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">
+                                Exclusiva
+                              </span>
+                            )}
+                          </div>
                           <div className="text-xs text-slate-500 mt-1">
                             {item.coverage.canonicalName && item.coverage.canonicalName !== item.coverage.name && (
                               <span className="italic">→ {item.coverage.canonicalName}</span>
@@ -459,13 +498,13 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                         <td className="px-4 py-3 text-center">
                           <div className="text-slate-700">{formatCoverageValue(item.coverage.value)}</div>
                           {item.coverage.deductible && (
-                            <div className="text-xs text-slate-500 mt-1">
-                              Ded: {formatCoverageValue(item.coverage.deductible)}
+                            <div className="mt-2 flex justify-center">
+                              <DeductibleGauge deductible={item.coverage.deductible} size={50} />
                             </div>
                           )}
                         </td>
                       </tr>
-                    ))}
+                    );})}
                   </tbody>
                 </table>
               </div>
