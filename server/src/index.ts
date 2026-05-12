@@ -19,6 +19,7 @@ if (!process.env.GEMINI_API_KEY && process.env.VITE_GEMINI_API_KEY) {
 
 // Import controllers after dotenv is loaded (they depend on env vars)
 import { analysisController } from './controllers/analysisController';
+import { compareExtraction } from './controllers/compareController';
 
 // Import routes
 import auditRoutes from './routes/audit';
@@ -47,12 +48,17 @@ app.get('/health', (req, res) => {
 app.get('/api', (req, res) => {
     res.json({
         name: 'CSA Comparator API',
-        version: '1.0.0',
+        version: '2.0.0',
         status: 'running',
+        features: {
+            multimodalExtraction: true,
+            legacyFallback: true
+        },
         endpoints: {
             health: '/health',
             analyze: '/api/analyze',
             analyzeRag: '/api/analyze-rag',
+            compareExtraction: '/api/compare-extraction (V1 vs V2)',
             history: '/api/history',
             documents: '/api/documents',
             search: '/api/search',
@@ -69,6 +75,12 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 const upload = multer({ dest: uploadDir });
+
+// Compare V1 vs V2 endpoint
+app.post('/api/compare-extraction',
+    upload.array('quotes', 10),
+    compareExtraction
+);
 
 // Analysis routes
 app.post('/api/analyze',
@@ -135,6 +147,7 @@ if (process.env.NODE_ENV === 'production') {
                 'GET /health',
                 'POST /api/analyze',
                 'POST /api/analyze-rag',
+                'POST /api/compare-extraction (V1 vs V2)',
                 'GET /api/history',
                 'GET /api/documents',
                 'POST /api/documents',
