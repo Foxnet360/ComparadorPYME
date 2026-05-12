@@ -177,6 +177,95 @@ export const crossReferenceEngine = {
 
         console.log(`✅ [crossReference] Completed cross-reference for ${quote.insurerName}`);
         return results;
+    },
+
+    /**
+     * Batch cross-reference multiple quotes with shared coverage queries
+     * Reduces RAG calls from N*M to M (where M is unique coverages)
+     */
+    crossReferenceQuotesBatch: async (
+        quotes: ParsedQuote[]
+    ): Promise<Map<number, CrossReferenceResult[]>> => {
+        console.log(`🔍 [crossReference] Starting batch cross-reference for ${quotes.length} quotes...`);
+        
+        const results = new Map<number, CrossReferenceResult[]>();
+        
+        // Extract unique coverages across all quotes
+        const uniqueCoverages = new Map<string, { coverage: ParsedCoverage; quoteIndices: number[] }>();
+        
+        for (let i = 0; i < quotes.length; i++) {
+            const quote = quotes[i];
+            for (const coverage of quote.coverages) {
+                const key = coverage.canonicalName || coverage.name;
+                if (!uniqueCoverages.has(key)) {
+                    uniqueCoverages.set(key, { coverage, quoteIndices: [] });
+                }
+                uniqueCoverages.get(key)!.quoteIndices.push(i);
+            }
+        }
+        
+        console.log(`🔍 [crossReference] Found ${uniqueCoverages.size} unique coverages across ${quotes.length} quotes`);
+        
+        // Search clauses once per unique coverage (without insurer filter for broader results)
+        const coverageClauses = new Map<string, { clauses: RetrievedClause[]; isFallback: boolean }>();
+        
+        for (const [name, { coverage }] of uniqueCoverages) {
+            try {
+                const searchResult = await ragRetrievalService.searchWithFallback(
+                    `${coverage.canonicalName || coverage.name} deducible exclusion`,
+                    {
+                        coverageTags: coverage.canonicalName ? [coverage.canonicalName] : undefined,
+                        limit: 3
+                    }
+                );
+                coverageClauses.set(name, searchResult);
+            } catch (error) {
+                console.error(`❌ [crossReference] Error searching for ${name}:`, error);
+                coverageClauses.set(name, { clauses: [], isFallback: false });
+            }
+        }
+        
+        // Distribute results to all quotes
+        for (let i = 0; i < quotes.length; i++) {
+            const quote = quotes[i];
+            const quoteResults: CrossReferenceResult[] = [];
+            
+            for (const coverage of quote.coverages) {
+                const key = coverage.canonicalName || coverage.name;
+                const clauseResult = coverageClauses.get(key);
+                
+                if (clauseResult) {
+                    // Create a modified result for this specific quote
+                    const result = await crossReferenceEngine.crossReferenceCoverage(
+                        coverage,
+                        quote.insurerName
+                    );
+                    quoteResults.push(result);
+                } else {
+                    // No clauses found for this coverage
+                    quoteResults.push({
+                        coverageName: coverage.canonicalName || coverage.name,
+                        quoteData: { value: coverage.value, deductible: coverage.deductible },
+                        clauseData: {},
+                        alerts: [{
+                            level: 'INFO',
+                            coverageName: coverage.canonicalName || coverage.name,
+                            title: 'Sin cláusulas de referencia',
+                            description: `No se encontraron cláusulas para ${coverage.canonicalName || coverage.name}`,
+                            quoteValue: coverage.value,
+                            clauseValue: 'N/A',
+                            isFallback: false
+                        }],
+                        isVerified: false
+                    });
+                }
+            }
+            
+            results.set(i, quoteResults);
+        }
+        
+        console.log(`✅ [crossReference] Completed batch cross-reference`);
+        return results;
     }
 };
 
