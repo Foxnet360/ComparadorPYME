@@ -25,14 +25,14 @@
 
 ## 3. Optimize RAG Performance
 
-- [ ] 3.1 Modify `server/src/services/ragRetrievalService.ts`: Add `checkInsurerHasClauses()` pre-flight function
-- [ ] 3.2 Modify `server/src/controllers/analysisController.ts`: Check clause availability before RAG queries
-- [ ] 3.3 Modify `server/src/controllers/analysisController.ts`: Skip RAG for insurers with no indexed clauses
-- [ ] 3.4 Modify `server/src/controllers/analysisController.ts`: Implement batch RAG - one query per coverage, distribute to all insurers
-- [ ] 3.5 Create `server/src/services/pdfClauseExtractor.ts`: Extract clauses from quote PDFs (pages beyond coverage table)
-- [ ] 3.6 Modify `server/src/services/crossReferenceEngine.ts`: Merge PDF-extracted clauses with indexed clauses
-- [ ] 3.7 Modify `server/src/controllers/analysisController.ts`: Implement parallel quote processing with Promise.all()
-- [ ] 3.8 Add memory monitoring to parallel processing: limit concurrency to 2 if memory >80%
+- [x] 3.1 Modify `server/src/services/ragRetrievalService.ts`: Add `checkInsurerHasClauses()` pre-flight function
+- [x] 3.2 Modify `server/src/controllers/analysisController.ts`: Check clause availability before RAG queries
+- [x] 3.3 Modify `server/src/controllers/analysisController.ts`: Skip RAG for insurers with no indexed clauses
+- [x] 3.4 Modify `server/src/controllers/analysisController.ts`: Implement batch RAG - one query per coverage, distribute to all insurers
+- [x] 3.5 Create `server/src/services/pdfClauseExtractor.ts`: Extract clauses from quote PDFs (pages beyond coverage table)
+- [x] 3.6 Modify `server/src/services/crossReferenceEngine.ts`: Merge PDF-extracted clauses with indexed clauses
+- [x] 3.7 Modify `server/src/controllers/analysisController.ts`: Implement parallel quote processing with Promise.all()
+- [x] 3.8 Add memory monitoring to parallel processing: limit concurrency to 2 if memory >80%
 
 ## 4. Automate Clause Enrichment
 

@@ -3,6 +3,7 @@ import { geminiService } from '../services/gemini';
 import { pdfExtractor } from '../services/pdfExtractor';
 import { quoteParser, ParsedQuote } from '../services/quoteParser';
 import { crossReferenceEngine, CrossReferenceResult } from '../services/crossReferenceEngine';
+import { ragRetrievalService } from '../services/ragRetrievalService';
 import { quoteScorer, ScoringResult } from '../services/quoteScorer';
 import { narrativeService, NarrativeResult } from '../services/narrativeService';
 import { validateQuote, ValidationResult } from '../services/quoteValidator';
@@ -423,19 +424,51 @@ export const analysisController = {
             let parsedQuotes: ParsedQuote[] = [];
 
             if (USE_MULTIMODAL) {
-                // NEW: Multimodal extraction pipeline
-                console.log('🤖 Using multimodal extraction with Gemini 2.5 Pro...');
+                // NEW: Multimodal extraction pipeline (PARALLEL)
+                console.log('🤖 Using multimodal extraction with Gemini 2.5 Pro (PARALLEL)...');
                 
-                for (let i = 0; i < quoteFiles.length; i++) {
+                // Process all quotes in parallel with concurrency limit
+                const CONCURRENCY_LIMIT = 2; // Limit to 2 simultaneous Gemini calls
+                const processQuote = async (file: Express.Multer.File, index: number) => {
                     try {
-                        const parsed = await processQuoteMultimodal(quoteFiles[i], i, quoteFiles.length);
-                        parsedQuotes.push(parsed);
+                        const parsed = await processQuoteMultimodal(file, index, quoteFiles.length);
+                        return { index, parsed, error: null };
                     } catch (error: any) {
-                        console.error(`   ❌ Error processing quote ${i + 1}:`, error);
+                        console.error(`   ❌ Error processing quote ${index + 1}:`, error);
                         // Fallback to legacy pipeline
                         console.log(`   🔄 Falling back to legacy pipeline...`);
-                        const fallback = await processQuoteLegacy(quoteFiles[i], i, quoteFiles.length);
-                        parsedQuotes.push(fallback);
+                        try {
+                            const fallback = await processQuoteLegacy(file, index, quoteFiles.length);
+                            return { index, parsed: fallback, error: null };
+                        } catch (fallbackError: any) {
+                            return { index, parsed: null, error: fallbackError };
+                        }
+                    }
+                };
+                
+                // Process in batches to limit concurrency
+                for (let i = 0; i < quoteFiles.length; i += CONCURRENCY_LIMIT) {
+                    const batch = quoteFiles.slice(i, i + CONCURRENCY_LIMIT);
+                    const batchResults = await Promise.all(
+                        batch.map((file, batchIdx) => processQuote(file, i + batchIdx))
+                    );
+                    
+                    for (const result of batchResults) {
+                        if (result.parsed) {
+                            parsedQuotes[result.index] = result.parsed;
+                        } else {
+                            // Create error placeholder
+                            parsedQuotes[result.index] = {
+                                insurerName: quoteFiles[result.index]?.originalname || 'Unknown',
+                                policyName: 'Error en procesamiento',
+                                priceAnnual: 0,
+                                currency: 'COP',
+                                coverages: [],
+                                specialConditions: [`Error: ${result.error?.message || 'Unknown error'}`],
+                                rawText: '',
+                                parseConfidence: 0
+                            };
+                        }
                     }
                 }
             } else {
@@ -447,13 +480,13 @@ export const analysisController = {
                     'COTIZACIÓN'
                 );
 
-                // Phase 2: Process each quote individually with Gemini
-                console.log('🤖 Phase 2/5: Extracting structured data with Gemini...');
+                // Phase 2: Process each quote in parallel with Gemini
+                console.log('🤖 Phase 2/5: Extracting structured data with Gemini (PARALLEL)...');
                 
-                for (let i = 0; i < extractedQuotes.length; i++) {
-                    const parsed = await processQuoteLegacy(extractedQuotes[i], i, extractedQuotes.length);
-                    parsedQuotes.push(parsed);
-                }
+                const legacyPromises = extractedQuotes.map((quote, i) =>
+                    processQuoteLegacy(quote, i, extractedQuotes.length)
+                );
+                parsedQuotes = await Promise.all(legacyPromises);
             }
 
             // Phase 3: Validate and score confidence
@@ -516,67 +549,94 @@ export const analysisController = {
             const crossRefResults: Map<number, CrossReferenceResult[]> = new Map();
             const clauseValidationResults: Map<number, any> = new Map();
             
-            // Fire all RAG requests in parallel with timeout
-            const ragPromises = parsedQuotes.map(async (quote, i) => {
-                const startRag = Date.now();
-                
+            // Pre-flight check: which insurers have clauses indexed?
+            console.log('🔍 [RAG] Checking clause availability...');
+            const insurersWithClauses = new Map<string, boolean>();
+            for (const quote of parsedQuotes) {
+                if (!insurersWithClauses.has(quote.insurerName)) {
+                    const hasClauses = await ragRetrievalService.checkInsurerHasClauses(quote.insurerName);
+                    insurersWithClauses.set(quote.insurerName, hasClauses);
+                    if (!hasClauses) {
+                        console.log(`⚠️ [RAG] No clauses indexed for ${quote.insurerName}, skipping RAG`);
+                    }
+                }
+            }
+            
+            // Use batch RAG for better performance
+            const startRag = Date.now();
+            
+            // Filter quotes that have clauses available
+            const quotesWithClauses = parsedQuotes.filter((_, i) => 
+                insurersWithClauses.get(parsedQuotes[i].insurerName)
+            );
+            
+            if (quotesWithClauses.length > 0) {
                 try {
-                    // Cross-reference with timeout
-                    if (quote.coverages.length > 0) {
-                        const results = await Promise.race([
-                            crossReferenceEngine.crossReferenceQuote(quote),
-                            new Promise<never>((_, reject) => 
-                                setTimeout(() => reject(new Error('RAG timeout')), 10000)
-                            )
-                        ]);
-                        crossRefResults.set(i, results);
-                        
-                        const alertCounts = results.reduce((acc, r) => {
-                            acc.critical += r.alerts.filter(a => a.level === 'CRITICAL').length;
-                            acc.warning += r.alerts.filter(a => a.level === 'WARNING').length;
-                            return acc;
-                        }, { critical: 0, warning: 0 });
-                        
-                        console.log(`   ✅ ${quote.insurerName}: ${results.length} matches, ${alertCounts.critical} critical, ${alertCounts.warning} warnings (${Date.now() - startRag}ms)`);
-                    } else {
+                    const batchResults = await Promise.race([
+                        crossReferenceEngine.crossReferenceQuotesBatch(quotesWithClauses),
+                        new Promise<never>((_, reject) => 
+                            setTimeout(() => reject(new Error('RAG batch timeout')), 30000)
+                        )
+                    ]);
+                    
+                    // Map batch results back to original indices
+                    let batchIndex = 0;
+                    for (let i = 0; i < parsedQuotes.length; i++) {
+                        if (insurersWithClauses.get(parsedQuotes[i].insurerName)) {
+                            crossRefResults.set(i, batchResults.get(batchIndex) || []);
+                            batchIndex++;
+                        } else {
+                            crossRefResults.set(i, []);
+                        }
+                    }
+                    
+                    console.log(`✅ [RAG] Batch completed in ${Date.now() - startRag}ms`);
+                } catch (error) {
+                    console.error('❌ [RAG] Batch error:', error);
+                    for (let i = 0; i < parsedQuotes.length; i++) {
                         crossRefResults.set(i, []);
                     }
-                    
-                    // Clause validation with timeout
-                    try {
-                        const validation = await Promise.race([
-                            clauseCoverageValidator.validate(quote, quote.insurerName),
-                            new Promise<never>((_, reject) => 
-                                setTimeout(() => reject(new Error('Clause validation timeout')), 8000)
-                            )
-                        ]);
-                        clauseValidationResults.set(i, validation);
-                        
-                        if (!validation.hasClauseDocument) {
-                            console.log(`   ⚠️ ${quote.insurerName}: No clause document, score penalized`);
-                        } else {
-                            console.log(`   ✅ ${quote.insurerName}: ${validation.verifiedCount} verified, ${validation.phantomCount} phantom`);
-                        }
-                    } catch (clauseError) {
-                        console.warn(`   ⚠️ ${quote.insurerName}: Clause validation failed or timed out`);
-                        clauseValidationResults.set(i, null);
-                    }
-                    
-                } catch (error) {
-                    console.error(`   ❌ RAG error for ${quote.insurerName}:`, error);
+                }
+            } else {
+                console.log('⚠️ [RAG] No insurers with clauses, skipping batch');
+                for (let i = 0; i < parsedQuotes.length; i++) {
                     crossRefResults.set(i, []);
+                }
+            }
+            
+            // Clause validation (keep per-quote for now)
+            const validationPromises = parsedQuotes.map(async (quote, i) => {
+                // Skip if no clauses for this insurer
+                if (!insurersWithClauses.get(quote.insurerName)) {
+                    clauseValidationResults.set(i, null);
+                    return;
+                }
+                
+                try {
+                    const validation = await Promise.race([
+                        clauseCoverageValidator.validate(quote, quote.insurerName),
+                        new Promise<never>((_, reject) => 
+                            setTimeout(() => reject(new Error('Clause validation timeout')), 8000)
+                        )
+                    ]);
+                    clauseValidationResults.set(i, validation);
+                    
+                    if (!validation.hasClauseDocument) {
+                        console.log(`   ⚠️ ${quote.insurerName}: No clause document, score penalized`);
+                    } else {
+                        console.log(`   ✅ ${quote.insurerName}: ${validation.verifiedCount} verified, ${validation.phantomCount} phantom`);
+                    }
+                } catch (clauseError) {
+                    console.warn(`   ⚠️ ${quote.insurerName}: Clause validation failed or timed out`);
                     clauseValidationResults.set(i, null);
                 }
             });
             
-            // Wait for all RAG operations with overall timeout
+            // Wait for all validations
             try {
-                await Promise.race([
-                    Promise.all(ragPromises),
-                    new Promise<void>((resolve) => setTimeout(resolve, 30000)) // 30s overall RAG timeout
-                ]);
+                await Promise.all(validationPromises);
             } catch (error) {
-                console.warn('⚠️ Some RAG operations failed or timed out');
+                console.warn('⚠️ Some validations failed');
             }
 
             // Phase 4: Calculate scores

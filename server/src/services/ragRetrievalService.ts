@@ -189,5 +189,28 @@ export const ragRetrievalService = {
         // No insurer specified, do general search
         const results = await ragRetrievalService.search(query, { coverageTags, limit });
         return { clauses: results, isFallback: false };
+    },
+
+    /**
+     * Check if an insurer has indexed clauses (pre-flight check)
+     */
+    checkInsurerHasClauses: async (insurerName: string): Promise<boolean> => {
+        try {
+            const { data, error } = await supabase
+                .from('chunks')
+                .select('id')
+                .eq('insurer_name', insurerName)
+                .limit(1);
+
+            if (error) {
+                console.error('❌ [ragRetrieval] Error checking clauses:', error);
+                return false;
+            }
+
+            return data && data.length > 0;
+        } catch (error) {
+            console.error('❌ [ragRetrieval] Exception checking clauses:', error);
+            return false;
+        }
     }
 };
