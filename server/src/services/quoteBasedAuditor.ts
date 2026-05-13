@@ -77,12 +77,35 @@ export interface SpecialCondition {
   coverageName?: string;
 }
 
+export interface NegotiationPoint {
+  type: 'deductible' | 'coverage' | 'price';
+  title: string;
+  description: string;
+  priority: 'HIGH' | 'MEDIUM' | 'LOW';
+  potentialSavings?: string;
+}
+
+export interface CompetitiveAdvantage {
+  type: 'exclusive_coverage' | 'better_price' | 'better_deductible' | 'more_coverages';
+  description: string;
+}
+
+export interface ProfileRecommendation {
+  profile: string; // e.g., 'restaurant', 'retail', 'manufacturing', 'office'
+  priorityCoverages: string[];
+  recommendation: string;
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+}
+
 export interface QuoteAuditResult {
   insurerName: string;
   deductibleRisks: DeductibleRisk[];
   missingCoverages: MissingCoverage[];
   specialConditions: SpecialCondition[];
   alerts: AlertItem[];
+  negotiationPoints: NegotiationPoint[];
+  competitiveAdvantages: CompetitiveAdvantage[];
+  profileRecommendations: ProfileRecommendation[];
   overallRiskScore: number; // 0-100
   summary: string;
 }
@@ -355,13 +378,246 @@ const generateAlerts = (
 };
 
 /**
+ * Detect negotiation points for a single quote
+ */
+const detectNegotiationPoints = (quote: QuoteAnalysis, allQuotes: QuoteAnalysis[]): NegotiationPoint[] => {
+  const points: NegotiationPoint[] = [];
+  
+  // 1. High deductibles compared to market average
+  const deductibleRisks = (quote.coverages || []).map(analyzeDeductible);
+  const highDeductibleRisks = deductibleRisks.filter(r => r.riskLevel === 'HIGH' || r.riskLevel === 'CRITICAL');
+  
+  if (highDeductibleRisks.length > 0) {
+    for (const risk of highDeductibleRisks.slice(0, 2)) {
+      points.push({
+        type: 'deductible',
+        title: `Negociar deducible de ${risk.coverageName}`,
+        description: `El deducible actual (${risk.deductible}) es elevado. Solicitar reducción al estándar de mercado.`,
+        priority: risk.riskLevel === 'CRITICAL' ? 'HIGH' : 'MEDIUM',
+        potentialSavings: 'Reducción de 10-30% en siniestros menores'
+      });
+    }
+  }
+  
+  // 2. Price comparison - if this is the most expensive
+  const avgPrice = allQuotes.reduce((sum, q) => sum + (q.priceAnnual || 0), 0) / allQuotes.length;
+  if (quote.priceAnnual > avgPrice * 1.15) {
+    const savings = Math.round(((quote.priceAnnual - avgPrice) / quote.priceAnnual) * 100);
+    points.push({
+      type: 'price',
+      title: 'Prima por encima del promedio',
+      description: `Esta cotización es ${savings}% más cara que el promedio. Negociar descuento o mejorar coberturas.`,
+      priority: 'MEDIUM',
+      potentialSavings: `Hasta ${savings}% de reducción de prima`
+    });
+  }
+  
+  // 3. Missing critical coverages
+  const missing = detectMissingCoverages(quote);
+  const highImpactMissing = missing.filter(m => m.impact === 'HIGH');
+  if (highImpactMissing.length > 0) {
+    points.push({
+      type: 'coverage',
+      title: 'Solicitar coberturas críticas faltantes',
+      description: `Faltan ${highImpactMissing.length} coberturas esenciales: ${highImpactMissing.slice(0, 3).map(m => m.categoryName).join(', ')}`,
+      priority: 'HIGH',
+      potentialSavings: 'Evitar exposición significativa'
+    });
+  }
+  
+  return points;
+};
+
+/**
+ * Detect competitive advantages compared to other quotes
+ */
+const detectCompetitiveAdvantages = (quote: QuoteAnalysis, allQuotes: QuoteAnalysis[]): CompetitiveAdvantage[] => {
+  const advantages: CompetitiveAdvantage[] = [];
+  
+  if (!allQuotes || allQuotes.length < 2) return advantages;
+  
+  // 1. Better price
+  const prices = allQuotes.map(q => q.priceAnnual || 0).filter(p => p > 0);
+  const minPrice = Math.min(...prices);
+  if (quote.priceAnnual === minPrice && prices.length > 1) {
+    const savings = Math.round(((prices.reduce((a, b) => a + b, 0) / prices.length - minPrice) / (prices.reduce((a, b) => a + b, 0) / prices.length)) * 100);
+    advantages.push({
+      type: 'better_price',
+      description: `Prima más baja del mercado (${savings}% bajo el promedio)`
+    });
+  }
+  
+  // 2. More coverages
+  const coverageCounts = allQuotes.map(q => ({
+    insurer: q.insurerName,
+    count: (q.coverages || []).filter(c => c.value && c.value !== 'NO ASEGURADO').length
+  }));
+  const maxCoverages = Math.max(...coverageCounts.map(c => c.count));
+  const quoteCoverageCount = (quote.coverages || []).filter(c => c.value && c.value !== 'NO ASEGURADO').length;
+  if (quoteCoverageCount === maxCoverages && coverageCounts.filter(c => c.count === maxCoverages).length === 1) {
+    advantages.push({
+      type: 'more_coverages',
+      description: `Mayor cantidad de coberturas incluidas (${quoteCoverageCount} coberturas)`
+    });
+  }
+  
+  // 3. Better deductibles
+  const deductibleScores = allQuotes.map(q => {
+    const risks = (q.coverages || []).map(analyzeDeductible);
+    return {
+      insurer: q.insurerName,
+      avgScore: risks.length > 0 ? risks.reduce((sum, r) => sum + r.score, 0) / risks.length : 0
+    };
+  });
+  const maxDeductibleScore = Math.max(...deductibleScores.map(d => d.avgScore));
+  const quoteDeductibleScore = deductibleScores.find(d => d.insurer === quote.insurerName)?.avgScore || 0;
+  if (quoteDeductibleScore === maxDeductibleScore && deductibleScores.filter(d => d.avgScore === maxDeductibleScore).length === 1) {
+    advantages.push({
+      type: 'better_deductible',
+      description: 'Mejores condiciones de deducibles del mercado'
+    });
+  }
+  
+  // 4. Exclusive coverages (coverages that only this insurer has)
+  const quoteCoverageNames = (quote.coverages || []).map(c => c.name?.toLowerCase() || '');
+  const otherQuotes = allQuotes.filter(q => q.insurerName !== quote.insurerName);
+  const otherCoverageNames = new Set(otherQuotes.flatMap(q => (q.coverages || []).map(c => c.name?.toLowerCase() || '')));
+  
+  const exclusiveCoverages = quoteCoverageNames.filter(name => !otherCoverageNames.has(name) && name.length > 0);
+  if (exclusiveCoverages.length > 0) {
+    advantages.push({
+      type: 'exclusive_coverage',
+      description: `Coberturas exclusivas: ${exclusiveCoverages.slice(0, 2).join(', ')}${exclusiveCoverages.length > 2 ? '...' : ''}`
+    });
+  }
+  
+  return advantages;
+};
+
+/**
+ * Detect profile-based recommendations
+ * Analyzes coverage gaps based on industry profile
+ */
+const detectProfileRecommendations = (quote: QuoteAnalysis): ProfileRecommendation[] => {
+  const recommendations: ProfileRecommendation[] = [];
+  const coverageNames = (quote.coverages || []).map(c => c.name?.toLowerCase() || '');
+  
+  // Helper to check if coverage exists
+  const hasCoverage = (keywords: string[]): boolean => {
+    return coverageNames.some(name => keywords.some(kw => name.includes(kw.toLowerCase())));
+  };
+  
+  // Restaurant profile
+  const restaurantKeywords = ['restaurant', 'restaurante', 'cocina', 'alimentos', 'comida'];
+  const isRestaurant = restaurantKeywords.some(kw => quote.rawText?.toLowerCase().includes(kw) || quote.policyName?.toLowerCase().includes(kw));
+  
+  if (isRestaurant) {
+    const missingCritical: string[] = [];
+    if (!hasCoverage(['responsabilidad civil', 'rce', 'rc'])) missingCritical.push('Responsabilidad Civil');
+    if (!hasCoverage(['incendio', 'edificio'])) missingCritical.push('Incendio');
+    if (!hasCoverage(['equipo electrico', 'equipo electronico'])) missingCritical.push('Equipo Eléctrico');
+    
+    recommendations.push({
+      profile: 'Restaurante',
+      priorityCoverages: ['Responsabilidad Civil', 'Incendio', 'Equipo Eléctrico'],
+      recommendation: missingCritical.length > 0 
+        ? `Para restaurantes, las coberturas críticas son RC (clientes), Incendio (cocina) y Equipo Eléctrico (neveras). Faltan: ${missingCritical.join(', ')}`
+        : '✅ Restaurante: Todas las coberturas críticas están incluidas',
+      riskLevel: missingCritical.length > 1 ? 'HIGH' : missingCritical.length > 0 ? 'MEDIUM' : 'LOW'
+    });
+  }
+  
+  // Retail profile
+  const retailKeywords = ['retail', 'comercio', 'tienda', 'almacen', 'inventario', 'mercancia'];
+  const isRetail = retailKeywords.some(kw => quote.rawText?.toLowerCase().includes(kw) || quote.policyName?.toLowerCase().includes(kw));
+  
+  if (isRetail) {
+    const missingCritical: string[] = [];
+    if (!hasCoverage(['sustraccion', 'hurto', 'robo'])) missingCritical.push('Sustracción/Hurto');
+    if (!hasCoverage(['transporte'])) missingCritical.push('Transporte de Mercancías');
+    if (!hasCoverage(['responsabilidad civil', 'rce', 'rc'])) missingCritical.push('Responsabilidad Civil');
+    
+    recommendations.push({
+      profile: 'Comercio/Retail',
+      priorityCoverages: ['Sustracción', 'Transporte', 'Responsabilidad Civil'],
+      recommendation: missingCritical.length > 0 
+        ? `Para comercio, priorizar Sustracción (inventario), Transporte (mercancías) y RC (clientes). Faltan: ${missingCritical.join(', ')}`
+        : '✅ Comercio: Todas las coberturas críticas están incluidas',
+      riskLevel: missingCritical.length > 1 ? 'HIGH' : missingCritical.length > 0 ? 'MEDIUM' : 'LOW'
+    });
+  }
+  
+  // Manufacturing profile
+  const manufacturingKeywords = ['manufactura', 'fabrica', 'produccion', 'industria', 'planta'];
+  const isManufacturing = manufacturingKeywords.some(kw => quote.rawText?.toLowerCase().includes(kw) || quote.policyName?.toLowerCase().includes(kw));
+  
+  if (isManufacturing) {
+    const missingCritical: string[] = [];
+    if (!hasCoverage(['rotura de maquinaria', 'maquinaria'])) missingCritical.push('Rotura de Maquinaria');
+    if (!hasCoverage(['lucro cesante', 'perdida de beneficios'])) missingCritical.push('Lucro Cesante');
+    if (!hasCoverage(['responsabilidad civil', 'rce'])) missingCritical.push('Responsabilidad Civil');
+    
+    recommendations.push({
+      profile: 'Manufactura',
+      priorityCoverages: ['Rotura de Maquinaria', 'Lucro Cesante', 'Responsabilidad Civil'],
+      recommendation: missingCritical.length > 0 
+        ? `Para manufactura, priorizar Rotura de Maquinaria, Lucro Cesante (paradas) y RC. Faltan: ${missingCritical.join(', ')}`
+        : '✅ Manufactura: Todas las coberturas críticas están incluidas',
+      riskLevel: missingCritical.length > 1 ? 'HIGH' : missingCritical.length > 0 ? 'MEDIUM' : 'LOW'
+    });
+  }
+  
+  // Office/Service profile
+  const officeKeywords = ['oficina', 'consultoria', 'servicios', 'profesional', 'tecnologia'];
+  const isOffice = officeKeywords.some(kw => quote.rawText?.toLowerCase().includes(kw) || quote.policyName?.toLowerCase().includes(kw));
+  
+  if (isOffice) {
+    const missingCritical: string[] = [];
+    if (!hasCoverage(['equipo electronico', 'equipo electrico'])) missingCritical.push('Equipo Electrónico');
+    if (!hasCoverage(['responsabilidad civil', 'rce'])) missingCritical.push('Responsabilidad Civil');
+    if (!hasCoverage(['incendio'])) missingCritical.push('Incendio');
+    
+    recommendations.push({
+      profile: 'Oficina/Servicios',
+      priorityCoverages: ['Equipo Electrónico', 'Responsabilidad Civil', 'Incendio'],
+      recommendation: missingCritical.length > 0 
+        ? `Para oficinas, priorizar Equipo Electrónico (computadores), RC (errores profesionales) e Incendio. Faltan: ${missingCritical.join(', ')}`
+        : '✅ Oficina: Todas las coberturas críticas están incluidas',
+      riskLevel: missingCritical.length > 1 ? 'HIGH' : missingCritical.length > 0 ? 'MEDIUM' : 'LOW'
+    });
+  }
+  
+  // If no profile detected, add generic recommendation
+  if (recommendations.length === 0) {
+    const missingCritical: string[] = [];
+    if (!hasCoverage(['incendio'])) missingCritical.push('Incendio');
+    if (!hasCoverage(['responsabilidad civil', 'rce'])) missingCritical.push('Responsabilidad Civil');
+    if (!hasCoverage(['sustraccion', 'hurto'])) missingCritical.push('Sustracción');
+    
+    if (missingCritical.length > 0) {
+      recommendations.push({
+        profile: 'General',
+        priorityCoverages: ['Incendio', 'Responsabilidad Civil', 'Sustracción'],
+        recommendation: `Coberturas fundamentales para cualquier negocio: ${missingCritical.join(', ')}. Considerar su inclusión.`,
+        riskLevel: 'MEDIUM'
+      });
+    }
+  }
+  
+  return recommendations;
+};
+
+/**
  * Main audit function - analyzes a single quote
  */
-export const auditQuote = (quote: QuoteAnalysis): QuoteAuditResult => {
+export const auditQuote = (quote: QuoteAnalysis, allQuotes: QuoteAnalysis[] = []): QuoteAuditResult => {
   const deductibleRisks = (quote.coverages || []).map(analyzeDeductible);
   const missingCoverages = detectMissingCoverages(quote);
   const specialConditions = extractSpecialConditions(quote);
   const alerts = generateAlerts(deductibleRisks, missingCoverages, specialConditions);
+  const negotiationPoints = detectNegotiationPoints(quote, allQuotes);
+  const competitiveAdvantages = detectCompetitiveAdvantages(quote, allQuotes);
+  const profileRecommendations = detectProfileRecommendations(quote);
 
   // Calculate overall risk score
   const deductibleScore = deductibleRisks.length > 0 
@@ -390,7 +646,19 @@ export const auditQuote = (quote: QuoteAnalysis): QuoteAuditResult => {
   if (missingCoverages.length > 0) {
     summary += `Faltan ${missingCoverages.length} coberturas canónicas. `;
   }
-  if (alerts.length === 0) {
+  if (negotiationPoints.length > 0) {
+    summary += `${negotiationPoints.length} puntos de negociación. `;
+  }
+  if (competitiveAdvantages.length > 0) {
+    summary += `${competitiveAdvantages.length} ventajas competitivas. `;
+  }
+  if (profileRecommendations.length > 0) {
+    const highRiskRecs = profileRecommendations.filter(r => r.riskLevel === 'HIGH');
+    if (highRiskRecs.length > 0) {
+      summary += `${highRiskRecs.length} recomendación(es) de perfil de alto riesgo. `;
+    }
+  }
+  if (alerts.length === 0 && negotiationPoints.length === 0 && profileRecommendations.filter(r => r.riskLevel === 'HIGH').length === 0) {
     summary += 'Sin hallazgos significativos. Cotización completa.';
   }
 
@@ -400,6 +668,9 @@ export const auditQuote = (quote: QuoteAnalysis): QuoteAuditResult => {
     missingCoverages,
     specialConditions,
     alerts,
+    negotiationPoints,
+    competitiveAdvantages,
+    profileRecommendations,
     overallRiskScore: Math.round(overallRiskScore),
     summary
   };

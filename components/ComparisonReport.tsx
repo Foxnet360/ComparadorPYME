@@ -12,6 +12,7 @@ import { ExecutiveSummary } from './ExecutiveSummary';
 import { CollapsibleText } from './CollapsibleText';
 import { CoverageValidationMatrix } from './CoverageValidationMatrix';
 import { DeductibleRiskGauge } from './DeductibleRiskGauge';
+import { DeductibleMatrix } from './DeductibleMatrix';
 import { ContextualExclusionCard } from './ContextualExclusionCard';
 import { WarrantyComplianceDashboard } from './WarrantyComplianceDashboard';
 import { LegalOpinionCard } from './LegalOpinionCard';
@@ -45,11 +46,18 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
 
   const bestQuote = report.quotes.reduce((prev, current) => ((prev.score || 0) > (current.score || 0)) ? prev : current, report.quotes[0]);
 
+  // IVA toggle state
+  const [showIva, setShowIva] = useState(false);
+  const IVA_RATE = 0.19;
+
   // Data for Bar Chart (Price)
-  const priceData = report.quotes.map(q => ({
-    name: (q.insurerName || 'Desconocido').substring(0, 15),
-    fullPrice: q.priceAnnual || (q.priceMonthly ? q.priceMonthly * 12 : 0),
-  }));
+  const priceData = report.quotes.map(q => {
+    const basePrice = q.priceAnnual || (q.priceMonthly ? q.priceMonthly * 12 : 0);
+    return {
+      name: (q.insurerName || 'Desconocido').substring(0, 15),
+      fullPrice: showIva ? Math.round(basePrice * (1 + IVA_RATE)) : basePrice,
+    };
+  });
 
   // Data for Radar Chart (Scoring Dimensions)
   const radarData = [
@@ -265,16 +273,31 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
                   {isBest && <div className="absolute top-0 right-0 bg-indigo-600 text-white text-xs px-2 py-1 rounded-bl-lg rounded-tr-lg font-bold">MEJOR OPCIÓN</div>}
                   <h3 className="text-lg font-bold text-slate-800 mb-2">{q.insurerName}</h3>
                   <div className="flex items-end gap-2 mb-4">
-                    <span className={`text-4xl font-bold ${isBest ? 'text-indigo-600' : 'text-slate-700'}`}>{q.score}</span>
+                    <span className={`text-4xl font-bold ${isBest ? 'text-indigo-600' : 'text-slate-700'}`}>{q.dataQualityScore || q.score}</span>
                     <span className="text-sm text-slate-400 mb-1">/ 100</span>
                   </div>
+                  
+                  {/* Verification Confidence Badge */}
+                  {q.verificationConfidence !== undefined && q.verificationConfidence > 0 && (
+                    <div className="mb-3 flex items-center gap-2">
+                      <span className="text-xs text-slate-500">Verificación:</span>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                        q.verificationConfidence >= 80 ? 'bg-green-100 text-green-700' : 
+                        q.verificationConfidence >= 50 ? 'bg-yellow-100 text-yellow-700' : 
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        {q.verificationConfidence}/100
+                      </span>
+                    </div>
+                  )}
+                  
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-500">Prima Anual</span>
                       <span className="font-bold text-slate-800">{formatCOP(q.priceAnnual)}</span>
                     </div>
                     <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full ${q.score >= 80 ? 'bg-green-500' : q.score >= 60 ? 'bg-yellow-400' : 'bg-red-400'}`} style={{ width: `${q.score}%` }}></div>
+                      <div className={`h-full rounded-full ${(q.dataQualityScore || q.score) >= 80 ? 'bg-green-500' : (q.dataQualityScore || q.score) >= 60 ? 'bg-yellow-400' : 'bg-red-400'}`} style={{ width: `${q.dataQualityScore || q.score}%` }}></div>
                     </div>
                     
                     {/* Confidence Indicator */}
@@ -334,8 +357,8 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
                 <Award className="mr-2 text-indigo-600" size={20} />
                 Análisis Cualitativo (Radar)
               </h3>
-              <div className="h-[300px] w-full min-h-[300px]">
-                {report.quotes.length > 0 && radarData.some(d => Object.keys(d).length > 2) ? (
+              <div className="h-[300px] w-full min-h-[300px]" style={{ minWidth: '300px' }}>
+                {activeTab === 'resumen' && report.quotes.length > 0 && radarData.some(d => Object.keys(d).length > 2) ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                       <PolarGrid stroke="#e2e8f0" />
@@ -367,12 +390,26 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
 
             {/* Bar Chart: Price Analysis */}
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
-              <h3 className="text-lg font-bold text-slate-800 mb-2 w-full flex items-center">
-                <BarChart3 className="mr-2 text-indigo-600" size={20} />
-                Comparativa de Primas
-              </h3>
-              <div className="h-[300px] w-full mt-4 min-h-[300px]">
-                {priceData.length > 0 && priceData.some(d => d.fullPrice > 0) ? (
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-bold text-slate-800 flex items-center">
+                  <BarChart3 className="mr-2 text-indigo-600" size={20} />
+                  Comparativa de Primas
+                </h3>
+                <button
+                  onClick={() => setShowIva(!showIva)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    showIva 
+                      ? 'bg-indigo-100 text-indigo-700 border border-indigo-300' 
+                      : 'bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200'
+                  }`}
+                  title={showIva ? 'Mostrar sin IVA' : 'Mostrar con IVA (19%)'}
+                >
+                  <span>{showIva ? 'Con IVA (19%)' : 'Sin IVA'}</span>
+                  <span className={`w-2 h-2 rounded-full ${showIva ? 'bg-indigo-500' : 'bg-slate-400'}`} />
+                </button>
+              </div>
+              <div className="h-[300px] w-full mt-4 min-h-[300px]" style={{ minWidth: '300px' }}>
+                {activeTab === 'resumen' && priceData.length > 0 && priceData.some(d => d.fullPrice > 0) ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={priceData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -427,6 +464,9 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
       {/* --- TAB CONTENT: DEDUCIBLES --- */}
       {activeTab === 'deducibles' && (
         <div className="animate-in fade-in duration-300 space-y-6">
+          {/* Deductible Matrix - Structured Comparison */}
+          <DeductibleMatrix quotes={report.quotes} />
+          
           {/* Resumen Estructurado de Deducibles */}
           <DeductibleSummaryTable quotes={report.quotes} />
           

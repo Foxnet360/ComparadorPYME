@@ -5,6 +5,7 @@
 
 import { supabase } from '../config/database';
 import { embeddingService } from './vector/embeddingService';
+import { insurerNameNormalizer } from './insurerNameNormalizer';
 
 export interface RetrievedClause {
     id: string;
@@ -17,6 +18,23 @@ export interface RetrievedClause {
     similarity: number;
 }
 
+// Minimum similarity threshold for RAG retrieval
+const MIN_SIMILARITY_THRESHOLD = 0.7;
+
+interface RagPerformanceLog {
+    operation: string;
+    insurerName?: string;
+    query: string;
+    durationMs: number;
+    chunksReturned: number;
+    avgSimilarity: number;
+    timestamp: string;
+}
+
+const logRagPerformance = (log: RagPerformanceLog) => {
+    console.log(`📊 [RAG Perf] ${log.operation} | Insurer: ${log.insurerName || 'N/A'} | Chunks: ${log.chunksReturned} | AvgSim: ${log.avgSimilarity.toFixed(3)} | Duration: ${log.durationMs}ms`);
+};
+
 export const ragRetrievalService = {
     /**
      * Hybrid search: combines vector similarity and full-text search
@@ -28,9 +46,20 @@ export const ragRetrievalService = {
             coverageTags?: string[];
             sectionType?: string;
             limit?: number;
+            minSimilarity?: number;
         } = {}
     ): Promise<RetrievedClause[]> => {
-        const { insurerName, coverageTags, sectionType, limit = 5 } = options;
+        const startTime = Date.now();
+        let { insurerName, coverageTags, sectionType, limit = 15, minSimilarity = MIN_SIMILARITY_THRESHOLD } = options;
+        
+        // Normalize insurer name before searching
+        if (insurerName) {
+            const normalized = insurerNameNormalizer.normalize(insurerName);
+            if (normalized !== insurerName) {
+                console.log(`🔄 [ragRetrieval] Normalized insurer name: "${insurerName}" → "${normalized}"`);
+                insurerName = normalized;
+            }
+        }
 
         // Generate embedding for the query
         const queryEmbedding = await embeddingService.generateEmbedding(query);
@@ -48,12 +77,32 @@ export const ragRetrievalService = {
 
         if (error) {
             console.error('❌ [ragRetrieval] Hybrid search error:', error);
+            logRagPerformance({
+                operation: 'search',
+                insurerName,
+                query,
+                durationMs: Date.now() - startTime,
+                chunksReturned: 0,
+                avgSimilarity: 0,
+                timestamp: new Date().toISOString()
+            });
             return [];
         }
 
-        if (!data) return [];
+        if (!data) {
+            logRagPerformance({
+                operation: 'search',
+                insurerName,
+                query,
+                durationMs: Date.now() - startTime,
+                chunksReturned: 0,
+                avgSimilarity: 0,
+                timestamp: new Date().toISOString()
+            });
+            return [];
+        }
 
-        return (data as any[]).map(row => ({
+        const results = (data as any[]).map(row => ({
             id: row.id,
             documentId: row.document_id,
             insurerName: row.insurer_name,
@@ -63,6 +112,22 @@ export const ragRetrievalService = {
             pageNumber: row.page_number,
             similarity: row.similarity
         }));
+
+        const avgSimilarity = results.length > 0 
+            ? results.reduce((sum, r) => sum + r.similarity, 0) / results.length 
+            : 0;
+
+        logRagPerformance({
+            operation: 'search',
+            insurerName,
+            query,
+            durationMs: Date.now() - startTime,
+            chunksReturned: results.length,
+            avgSimilarity,
+            timestamp: new Date().toISOString()
+        });
+
+        return results;
     },
 
     /**
@@ -76,7 +141,17 @@ export const ragRetrievalService = {
             limit?: number;
         } = {}
     ): Promise<RetrievedClause[]> => {
-        const { insurerName, coverageTags, limit = 5 } = options;
+        const startTime = Date.now();
+        let { insurerName, coverageTags, limit = 5 } = options;
+        
+        // Normalize insurer name before searching
+        if (insurerName) {
+            const normalized = insurerNameNormalizer.normalize(insurerName);
+            if (normalized !== insurerName) {
+                console.log(`🔄 [ragRetrieval] Normalized insurer name: "${insurerName}" → "${normalized}"`);
+                insurerName = normalized;
+            }
+        }
 
         const queryEmbedding = await embeddingService.generateEmbedding(query);
 
@@ -90,12 +165,32 @@ export const ragRetrievalService = {
 
         if (error) {
             console.error('❌ [ragRetrieval] Vector search error:', error);
+            logRagPerformance({
+                operation: 'vectorSearch',
+                insurerName,
+                query,
+                durationMs: Date.now() - startTime,
+                chunksReturned: 0,
+                avgSimilarity: 0,
+                timestamp: new Date().toISOString()
+            });
             return [];
         }
 
-        if (!data) return [];
+        if (!data) {
+            logRagPerformance({
+                operation: 'vectorSearch',
+                insurerName,
+                query,
+                durationMs: Date.now() - startTime,
+                chunksReturned: 0,
+                avgSimilarity: 0,
+                timestamp: new Date().toISOString()
+            });
+            return [];
+        }
 
-        return (data as any[]).map(row => ({
+        const results = (data as any[]).map(row => ({
             id: row.id,
             documentId: row.document_id,
             insurerName: row.insurer_name,
@@ -105,6 +200,22 @@ export const ragRetrievalService = {
             pageNumber: row.page_number,
             similarity: row.similarity
         }));
+
+        const avgSimilarity = results.length > 0
+            ? results.reduce((sum, r) => sum + r.similarity, 0) / results.length
+            : 0;
+
+        logRagPerformance({
+            operation: 'vectorSearch',
+            insurerName,
+            query,
+            durationMs: Date.now() - startTime,
+            chunksReturned: results.length,
+            avgSimilarity,
+            timestamp: new Date().toISOString()
+        });
+
+        return results;
     },
 
     /**
@@ -118,7 +229,17 @@ export const ragRetrievalService = {
             limit?: number;
         } = {}
     ): Promise<RetrievedClause[]> => {
-        const { insurerName, sectionType, limit = 3 } = options;
+        const startTime = Date.now();
+        let { insurerName, sectionType, limit = 3 } = options;
+        
+        // Normalize insurer name before searching
+        if (insurerName) {
+            const normalized = insurerNameNormalizer.normalize(insurerName);
+            if (normalized !== insurerName) {
+                console.log(`🔄 [ragRetrieval] Normalized insurer name: "${insurerName}" → "${normalized}"`);
+                insurerName = normalized;
+            }
+        }
 
         const { data, error } = await supabase
             .rpc('get_chunks_by_coverage_unified', {
@@ -130,12 +251,32 @@ export const ragRetrievalService = {
 
         if (error) {
             console.error('❌ [ragRetrieval] Coverage search error:', error);
+            logRagPerformance({
+                operation: 'getByCoverage',
+                insurerName,
+                query: coverageName,
+                durationMs: Date.now() - startTime,
+                chunksReturned: 0,
+                avgSimilarity: 0,
+                timestamp: new Date().toISOString()
+            });
             return [];
         }
 
-        if (!data) return [];
+        if (!data) {
+            logRagPerformance({
+                operation: 'getByCoverage',
+                insurerName,
+                query: coverageName,
+                durationMs: Date.now() - startTime,
+                chunksReturned: 0,
+                avgSimilarity: 0,
+                timestamp: new Date().toISOString()
+            });
+            return [];
+        }
 
-        return (data as any[]).map(row => ({
+        const results = (data as any[]).map(row => ({
             id: row.id,
             documentId: row.document_id,
             insurerName: row.insurer_name,
@@ -143,12 +284,36 @@ export const ragRetrievalService = {
             coverageTags: row.coverage_tags || [],
             content: row.content,
             pageNumber: row.page_number,
-            similarity: 1.0 // Exact match
+            similarity: row.similarity
         }));
+
+        // Filter by minimum similarity threshold
+        const filteredResults = results.filter(r => r.similarity >= minSimilarity);
+        
+        if (filteredResults.length === 0 && results.length > 0) {
+            console.warn(`⚠️ [ragRetrieval] All chunks below threshold (${minSimilarity}). Best: ${results[0].similarity.toFixed(3)}`);
+        }
+
+        const avgSimilarity = results.length > 0
+            ? results.reduce((sum, r) => sum + r.similarity, 0) / results.length
+            : 0;
+
+        logRagPerformance({
+            operation: 'getByCoverage',
+            insurerName,
+            query: coverageName,
+            durationMs: Date.now() - startTime,
+            chunksReturned: filteredResults.length,
+            avgSimilarity,
+            timestamp: new Date().toISOString()
+        });
+
+        return filteredResults;
     },
 
     /**
-     * Search with cross-insurer fallback
+     * Search with cross-insurer fallback - DISABLED
+     * Cross-insurer fallback removed to prevent hallucinations from irrelevant clauses
      */
     searchWithFallback: async (
         query: string,
@@ -160,34 +325,13 @@ export const ragRetrievalService = {
     ): Promise<{ clauses: RetrievedClause[]; isFallback: boolean }> => {
         const { insurerName, coverageTags, limit = 5 } = options;
 
-        // First try: search with insurer filter
-        if (insurerName) {
-            const results = await ragRetrievalService.search(query, {
-                insurerName,
-                coverageTags,
-                limit
-            });
+        // Search with insurer filter only - no fallback
+        const results = await ragRetrievalService.search(query, {
+            insurerName,
+            coverageTags,
+            limit
+        });
 
-            if (results.length > 0) {
-                return { clauses: results, isFallback: false };
-            }
-
-            // Fallback: search without insurer filter
-            console.log(`⚠️ [ragRetrieval] No clauses found for ${insurerName}, trying cross-insurer search...`);
-            
-            const fallbackResults = await ragRetrievalService.search(query, {
-                coverageTags,
-                limit
-            });
-
-            return { 
-                clauses: fallbackResults, 
-                isFallback: fallbackResults.length > 0 
-            };
-        }
-
-        // No insurer specified, do general search
-        const results = await ragRetrievalService.search(query, { coverageTags, limit });
         return { clauses: results, isFallback: false };
     },
 
@@ -197,11 +341,17 @@ export const ragRetrievalService = {
      */
     checkInsurerHasClauses: async (insurerName: string): Promise<boolean> => {
         try {
+            // Normalize insurer name before checking
+            const normalizedName = insurerNameNormalizer.normalize(insurerName);
+            if (normalizedName !== insurerName) {
+                console.log(`🔄 [ragRetrieval] Normalized insurer name for clause check: "${insurerName}" → "${normalizedName}"`);
+            }
+            
             // First try clause_chunks (correct table with insurer_name column)
             const { data: clauseData, error: clauseError } = await supabase
                 .from('clause_chunks')
                 .select('id')
-                .eq('insurer_name', insurerName)
+                .eq('insurer_name', normalizedName)
                 .limit(1);
 
             if (!clauseError && clauseData && clauseData.length > 0) {

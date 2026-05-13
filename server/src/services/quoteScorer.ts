@@ -29,6 +29,8 @@ export interface ScoreBreakdown {
 
 export interface ScoringResult {
     totalScore: number;
+    dataQualityScore: number;
+    verificationConfidence: number;
     breakdown: ScoreBreakdown;
     weights: ScoreWeights;
     quotePriceRank: number;
@@ -98,7 +100,38 @@ export const quoteScorer = {
             warranties: calculateWarrantyScore(crossRefResults)
         };
 
-        // Calculate weighted total
+        // Calculate Data Quality Score (always calculable)
+        const dataQualityWeights = {
+            coverage: 0.35,
+            deductibles: 0.25,
+            priceRatio: 0.40,
+            exclusions: 0,
+            sublimits: 0,
+            warranties: 0
+        };
+        const dataQualityScore = Math.round(
+            breakdown.coverage * dataQualityWeights.coverage +
+            breakdown.deductibles * dataQualityWeights.deductibles +
+            breakdown.priceRatio * dataQualityWeights.priceRatio
+        );
+
+        // Calculate Verification Confidence (requires RAG)
+        const hasRagData = crossRefResults.length > 0;
+        const verificationWeights = {
+            exclusions: 0.40,
+            sublimits: 0.30,
+            warranties: 0.30,
+            coverage: 0,
+            deductibles: 0,
+            priceRatio: 0
+        };
+        const verificationConfidence = hasRagData ? Math.round(
+            breakdown.exclusions * verificationWeights.exclusions +
+            breakdown.sublimits * verificationWeights.sublimits +
+            breakdown.warranties * verificationWeights.warranties
+        ) : 0;
+
+        // Calculate weighted total (legacy total score for backwards compatibility)
         const totalScore = Math.round(
             breakdown.coverage * weights.coverage +
             breakdown.deductibles * weights.deductibles +
@@ -116,6 +149,8 @@ export const quoteScorer = {
 
         const result: ScoringResult = {
             totalScore: clamp(totalScore, 0, 100),
+            dataQualityScore: clamp(dataQualityScore, 0, 100),
+            verificationConfidence: clamp(verificationConfidence, 0, 100),
             breakdown,
             weights,
             quotePriceRank: rank,
@@ -199,7 +234,7 @@ function calculateCoverageScore(quote: ParsedQuote, clauseValidation?: CoverageE
 }
 
 function calculateDeductibleScore(crossRefResults: CrossReferenceResult[]): number {
-    if (crossRefResults.length === 0) return 30; // Penalized from 50 to 30 when no clause document
+    if (crossRefResults.length === 0) return 60; // Neutral score when no RAG data available
 
     let totalScore = 0;
     let count = 0;
@@ -234,7 +269,7 @@ function calculateDeductibleScore(crossRefResults: CrossReferenceResult[]): numb
 }
 
 function calculateExclusionScore(crossRefResults: CrossReferenceResult[]): number {
-    if (crossRefResults.length === 0) return 30; // Penalized from 50 to 30 when no clause document
+    if (crossRefResults.length === 0) return 60; // Neutral score when no RAG data available
 
     let totalExclusions = 0;
     let verifiedCount = 0;
@@ -247,7 +282,7 @@ function calculateExclusionScore(crossRefResults: CrossReferenceResult[]): numbe
         totalExclusions += exclusionCount;
     }
 
-    if (verifiedCount === 0) return 30; // Penalized from 50 to 30 when no clause document
+    if (verifiedCount === 0) return 60; // Neutral score when no RAG data available
 
     const avgExclusions = totalExclusions / verifiedCount;
     
@@ -298,7 +333,7 @@ function calculatePriceScore(quote: ParsedQuote, allQuotes: ParsedQuote[]): numb
 }
 
 function calculateSubLimitScore(crossRefResults: CrossReferenceResult[]): number {
-    if (crossRefResults.length === 0) return 30; // Penalized from 50 to 30 when no clause document
+    if (crossRefResults.length === 0) return 60; // Neutral score when no RAG data available
 
     let restrictiveCount = 0;
     let verifiedCount = 0;
@@ -327,7 +362,7 @@ function calculateSubLimitScore(crossRefResults: CrossReferenceResult[]): number
         }
     }
 
-    if (verifiedCount === 0) return 30; // Penalized from 50 to 30 when no clause document
+    if (verifiedCount === 0) return 60; // Neutral score when no RAG data available
 
     const avgRestrictive = restrictiveCount / verifiedCount;
     let score = 100 - (avgRestrictive * 25);
@@ -335,7 +370,7 @@ function calculateSubLimitScore(crossRefResults: CrossReferenceResult[]): number
 }
 
 function calculateWarrantyScore(crossRefResults: CrossReferenceResult[]): number {
-    if (crossRefResults.length === 0) return 30; // Penalized from 50 to 30 when no clause document
+    if (crossRefResults.length === 0) return 60; // Neutral score when no RAG data available
 
     let totalConditions = 0;
     let verifiedCount = 0;
@@ -348,7 +383,7 @@ function calculateWarrantyScore(crossRefResults: CrossReferenceResult[]): number
         totalConditions += conditionCount;
     }
 
-    if (verifiedCount === 0) return 30; // Penalized from 50 to 30 when no clause document
+    if (verifiedCount === 0) return 60; // Neutral score when no RAG data available
 
     const avgConditions = totalConditions / verifiedCount;
     

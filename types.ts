@@ -17,6 +17,10 @@ export interface CoverageItem {
   categoryId?: number | null;
   matchConfidence?: number;
   matchMethod?: 'thesaurus' | 'fuzzy' | 'embedding' | 'llm' | null;
+  // Value source tracking (anti-hallucination)
+  valueSource?: 'extracted' | 'calculated' | 'inferred';
+  // Sublimit information (optional)
+  sublimit?: string;
 }
 
 export type AlertLevel = 'CRITICAL' | 'WARNING' | 'GOOD' | 'INFO';
@@ -51,6 +55,9 @@ export interface QuoteAnalysis {
   clientAnalysis: string;
   technicalAnalysis: string;
   score: number;
+  dataQualityScore?: number;
+  verificationConfidence?: number;
+  isRagAvailable?: boolean;
   extractionConfidence?: number;
   confidenceBreakdown?: {
     coverageCompleteness: number;
@@ -73,6 +80,15 @@ export interface QuoteAnalysis {
   contextualRisk?: ContextualRisk;
   warrantyCompliance?: WarrantyCompliance;
   legalOpinion?: LegalOpinion[];
+  // Dual extraction validation for critical coverages
+  dualExtractionValidation?: Array<{
+    coverageName: string;
+    firstExtraction: { value: string; deductible: string; confidence: number };
+    secondExtraction: { value: string; deductible: string; confidence: number };
+    discrepancy: number;
+    isDiscrepancy: boolean;
+    recommendation: string;
+  }>;
   // Quote-based audit results (independent of RAG)
   quoteAudit?: {
     deductibleRisks: Array<{
@@ -93,6 +109,26 @@ export interface QuoteAnalysis {
       impact: 'CRITICAL' | 'WARNING' | 'INFO';
       coverageName?: string;
     }>;
+    negotiationPoints: Array<{
+      type: 'deductible' | 'coverage' | 'price';
+      title: string;
+      description: string;
+      priority: 'HIGH' | 'MEDIUM' | 'LOW';
+      potentialSavings?: string;
+    }
+    >;
+    competitiveAdvantages: Array<{
+      type: 'exclusive_coverage' | 'better_price' | 'better_deductible' | 'more_coverages';
+      description: string;
+    }
+    >;
+    profileRecommendations: Array<{
+      profile: string;
+      priorityCoverages: string[];
+      recommendation: string;
+      riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+    }
+    >;
     overallRiskScore: number;
     summary: string;
   };
@@ -195,6 +231,9 @@ export interface QuoteAnalysis {
   clientAnalysis: string;
   technicalAnalysis: string;
   score: number;
+  dataQualityScore?: number;
+  verificationConfidence?: number;
+  isRagAvailable?: boolean;
   extractionConfidence?: number;
   confidenceBreakdown?: {
     coverageCompleteness: number;

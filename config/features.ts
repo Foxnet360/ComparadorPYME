@@ -60,6 +60,15 @@ export const FEATURES = {
    * Default: false (requires explicit enable)
    */
   V2_1_FIXES: import.meta.env.VITE_ENABLE_V2_1_FIXES === 'true',
+  
+  /**
+   * Enable V2.2 fixes: RAG precision, anti-hallucination, scoring defaults,
+   * deductible matrix, audit business context, premium IVA toggle
+   * When true: all V2.2 improvements are active
+   * When false: backward compatible with V2.1 behavior
+   * Default: false (requires explicit enable)
+   */
+  V2_2_FIXES: import.meta.env.VITE_ENABLE_V2_2_FIXES === 'true',
 };
 
 /**
@@ -76,6 +85,15 @@ export const isAdvancedAnalysisEnabled = (): boolean => {
  */
 export const isV21FixesEnabled = (): boolean => {
   return FEATURES.V2_1_FIXES;
+};
+
+/**
+ * Check if V2.2 fixes are enabled
+ * Controls RAG precision, anti-hallucination, scoring defaults,
+ * deductible matrix, audit business context, premium IVA toggle
+ */
+export const isV22FixesEnabled = (): boolean => {
+  return FEATURES.V2_2_FIXES;
 };
 
 /**
