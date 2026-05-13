@@ -19,6 +19,8 @@ import { insurerProfileService } from '../services/insurerProfileService';
 import { supabase } from '../config/database';
 import { formatCOP } from '../utils/formatCurrency';
 import { validateCoverageValues } from '../services/coverageValueValidator';
+import { validateCoverageValues as validateValueSources } from '../services/valueValidationService';
+import { dualExtractionService, DualExtractionResult } from '../services/dualExtractionService';
 import fs from 'fs';
 
 // NEW: Multimodal extraction imports
@@ -144,7 +146,22 @@ SALIDA ESPERADA:
      { "name": "Transporte de Mercancías", "status": "excluded", "value": "No contratado", "deductible": null }
    ]
 
-7. Devuelve SOLO el JSON, sin texto adicional.`;
+### REGLAS ANTI-ALUCINACIÓN
+
+8. SI NO ENCUENTRAS el valor literal en el documento:
+   - Usa EXACTAMENTE "NO ESPECIFICADO" para el campo "value"
+   - NO calcules, infieras ni inventes valores
+   - Ejemplo: Si el documento dice "Incendio: A consultar" → value="NO ESPECIFICADO", NO inventes un número
+
+9. Verificación de valores numéricos:
+   - Si el documento NO muestra un número específico (ej: "A convenir", "Según valor declarado", "Variable"), usa "NO ESPECIFICADO"
+   - NO conviertas textos descriptivos en números
+
+10. Consistencia obligatoria:
+   - Revisa que los valores que extraigas aparezcan literalmente en el documento
+   - Si un valor parece "demasiado redondo" (ej: exactamente $10.000.000, $100.000.000) y no está explícito, verifica y marca como "NO ESPECIFICADO" si no está claro
+
+11. Devuelve SOLO el JSON, sin texto adicional.`;
 
 // Legacy prompt for fallback
 const EXTRACTION_PROMPT = `Eres un extractor de datos de cotizaciones de seguros PYME.
@@ -490,6 +507,60 @@ export const analysisController = {
                 parsedQuotes = await Promise.all(legacyPromises);
             }
 
+            // Phase 2.5: Validate coverage values against raw text (anti-hallucination)
+            console.log('🔍 Phase 2.5/5: Validating coverage values against raw text...');
+            for (let i = 0; i < parsedQuotes.length; i++) {
+                const quote = parsedQuotes[i];
+                if (quote.rawText) {
+                    const valueValidations = validateValueSources(
+                        quote.coverages.map(c => ({ name: c.name, value: c.value })),
+                        quote.rawText
+                    );
+                    
+                    valueValidations.forEach((validation, idx) => {
+                        if (quote.coverages[idx]) {
+                            quote.coverages[idx].valueSource = validation.validation.source;
+                            if (validation.validation.source === 'inferred' && !validation.validation.isValid) {
+                                console.warn(`⚠️ [ValueValidation] ${quote.insurerName} - ${validation.coverageName}: ${validation.validation.reason}`);
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Phase 2.6: Dual extraction validation for critical coverages
+            console.log('🔍 Phase 2.6/5: Validating critical coverages with dual extraction...');
+            const dualExtractionResults: Map<number, DualExtractionResult[]> = new Map();
+            
+            for (let i = 0; i < parsedQuotes.length; i++) {
+                const quote = parsedQuotes[i];
+                if (quote.rawText && quote.coverages.length > 0) {
+                    const dualResults = dualExtractionService.validateCriticalCoverages(
+                        quote.coverages.map(c => ({ 
+                            name: c.name, 
+                            value: c.value, 
+                            deductible: c.deductible,
+                            confidence: c.confidence 
+                        })),
+                        quote.rawText
+                    );
+                    
+                    if (dualResults.length > 0) {
+                        dualExtractionResults.set(i, dualResults);
+                        
+                        const discrepancies = dualResults.filter(r => r.isDiscrepancy);
+                        if (discrepancies.length > 0) {
+                            console.warn(`⚠️ [DualExtraction] ${quote.insurerName}: ${discrepancies.length} discrepancias detectadas`);
+                            discrepancies.forEach(d => {
+                                console.warn(`   - ${d.coverageName}: ${d.discrepancy.toFixed(1)}% diferencia`);
+                            });
+                        } else {
+                            console.log(`✅ [DualExtraction] ${quote.insurerName}: Todas las coberturas críticas verificadas`);
+                        }
+                    }
+                }
+            }
+
             // Phase 3: Validate and score confidence
             console.log('✅ Phase 3/5: Validating extractions and calculating confidence...');
             const validationResults: Map<number, ValidationResult> = new Map();
@@ -550,9 +621,10 @@ export const analysisController = {
             const crossRefResults: Map<number, CrossReferenceResult[]> = new Map();
             const clauseValidationResults: Map<number, any> = new Map();
             
-            // Pre-flight check: which insurers have clauses indexed?
-            console.log('🔍 [RAG] Checking clause availability...');
-            const insurersWithClauses = new Map<string, boolean>();
+    // Pre-flight check: which insurers have clauses indexed?
+    console.log('🔍 [RAG] Checking clause availability...');
+    const insurersWithClauses = new Map<string, boolean>();
+    const isRagAvailable = new Map<number, boolean>(); // Track RAG availability per quote index
             for (const quote of parsedQuotes) {
                 if (!insurersWithClauses.has(quote.insurerName)) {
                     const hasClauses = await ragRetrievalService.checkInsurerHasClauses(quote.insurerName);
@@ -561,6 +633,12 @@ export const analysisController = {
                         console.log(`⚠️ [RAG] No clauses indexed for ${quote.insurerName}, skipping RAG`);
                     }
                 }
+            }
+            
+            // Track RAG availability for each quote
+            for (let i = 0; i < parsedQuotes.length; i++) {
+                const quote = parsedQuotes[i];
+                isRagAvailable.set(i, insurersWithClauses.get(quote.insurerName) || false);
             }
             
             // Use batch RAG for better performance
@@ -868,7 +946,8 @@ export function generateComparison(
     validationResults: Map<number, ValidationResult>,
     confidenceResults: Map<number, ConfidenceResult>,
     clauseValidationResults?: Map<number, any>,
-    advancedAnalysisResults?: Map<number, any>
+    advancedAnalysisResults?: Map<number, any>,
+    dualExtractionResults?: Map<number, DualExtractionResult[]>
 ) {
     const quotesWithScores = quotes.map((quote, index) => {
         const scoring = scoringResults.get(index);
@@ -907,7 +986,11 @@ export function generateComparison(
                 matchMethod: c.matchMethod
             })),
             score: scoring?.totalScore || 0,
+            dataQualityScore: scoring?.dataQualityScore || 0,
+            verificationConfidence: scoring?.verificationConfidence || 0,
+            isRagAvailable: insurersWithClauses.get(quote.insurerName) || false,
             parseConfidence: quote.parseConfidence,
+            dualExtractionValidation: dualExtractionResults.get(index) || [],
             specialConditions: quote.specialConditions,
             scoringBreakdown: scoring?.breakdown || {
                 coverage: 0,
@@ -960,11 +1043,13 @@ export function generateComparison(
                     score: scoring?.totalScore || 0,
                     deductibles: quote.coverages.map(c => c.deductible).join('; '),
                     rawText: quote.rawText
-                } as any);
+                } as any, quotes);
                 return {
                     deductibleRisks: audit.deductibleRisks,
                     missingCoverages: audit.missingCoverages,
                     specialConditions: audit.specialConditions,
+                    negotiationPoints: audit.negotiationPoints,
+                    competitiveAdvantages: audit.competitiveAdvantages,
                     overallRiskScore: audit.overallRiskScore,
                     summary: audit.summary
                 };

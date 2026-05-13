@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Enriquecimiento RAG de alertas
 El sistema DEBE buscar automáticamente en clausulados indexados para fundamentar cada alerta generada durante el análisis.
@@ -8,11 +8,13 @@ El sistema DEBE buscar automáticamente en clausulados indexados para fundamenta
 - **THEN** el sistema busca en Supabase chunks relacionados a "deducible terremoto"
 - **AND** encuentra el chunk: "Art. 5.2: El deducible será del 15% sobre el valor total asegurado"
 - **AND** agrega la cita como evidence con similitud score
+- **AND** incluye contexto de negocio: "Este deducible está por encima del promedio de mercado (10%). Oportunidad de negociación."
 
 #### Scenario: Alerta sin clausulado disponible
 - **WHEN** una alerta no tiene clausulado indexado para esa aseguradora
 - **THEN** el sistema marca la alerta como "Análisis inferido de cotización"
 - **AND** proporciona contexto técnico basado en datos extraídos
+- **AND** proporciona contexto de negocio cuando sea posible (benchmarks del mercado)
 
 ### Requirement: Evidence Cards
 El sistema DEBE mostrar tarjetas de evidencia con la cita del clausulado.
@@ -50,82 +52,21 @@ El sistema DEBE incluir análisis comparativo entre aseguradoras en la sección 
 - **THEN** se muestra análisis de "Coberturas exclusivas" que solo esta aseguradora ofrece
 - **AND** se muestra análisis de "Coberturas faltantes" vs la competencia
 
-#### Scenario: Price/coverage ratio comparison
-- **WHEN** comparando precios entre aseguradoras
-- **THEN** se muestra ranking de relación precio/cobertura
-- **AND** se identifica la aseguradora con mejor valor
-
 ### Requirement: Negotiation points
 El sistema DEBE identificar puntos de negociación específicos para cada cotización.
 
 #### Scenario: Negotiable deductible
 - **WHEN** un deducible es 50% más alto que el promedio del mercado
 - **THEN** la auditoría muestra: "Punto de negociación: Solicitar reducción de deducible"
-- **AND** incluye potencial de ahorro estimado
 
 #### Scenario: Missing high-impact coverage
 - **WHEN** una cobertura crítica (Incendio, RC, Hurto) está ausente
 - **THEN** la auditoría muestra: "Oportunidad: Negociar inclusión de [cobertura]"
 
-#### Scenario: Price negotiation
-- **WHEN** una cotización es 15% más cara que el promedio
-- **THEN** se sugiere: "Negociar descuento o mejorar coberturas"
-
 ### Requirement: Client profile recommendations
 El sistema DEBE personalizar recomendaciones según el perfil del cliente.
 
-#### Scenario: Restaurant profile
+#### Scenario: Profile-aware priorities
 - **WHEN** el perfil del cliente indica "restaurante"
 - **THEN** la auditoría prioriza alertas relacionadas con RC, Incendio, y Equipo Eléctrico
 - **AND** proporciona recomendaciones específicas para el sector
-
-#### Scenario: Retail store profile
-- **WHEN** el perfil del cliente indica "tienda" o "retail"
-- **THEN** la auditoría prioriza: Sustracción/Hurto, Transporte de Mercancías, y RC
-
-#### Scenario: Manufacturing profile
-- **WHEN** el perfil del cliente indica "manufactura" o "fábrica"
-- **THEN** la auditoría prioriza: Rotura de Maquinaria, Lucro Cesante, RC
-
-#### Scenario: Office/Service profile
-- **WHEN** el perfil del cliente indica "oficina" o "servicios"
-- **THEN** la auditoría prioriza: Equipo Electrónico, RC, Incendio
-
-## MODIFIED Requirements
-
-### Requirement: Enriquecimiento automático al cargar auditoría
-**Reason**: Users forget to click the manual button, missing valuable analysis context
-
-#### Scenario: Auto-enrich on audit tab load
-- **WHEN** the user navigates to the "Auditoría de Riesgos" tab
-- **AND** clausulados are available for at least one insurer in the analysis
-- **THEN** the system SHALL automatically call the enrichment endpoint
-- **AND** display a loading indicator: "Enriqueciendo análisis con clausulados..."
-- **AND** upon completion, show enriched alerts without requiring user action
-
-#### Scenario: Graceful handling when no clausulados
-- **WHEN** the user navigates to the "Auditoría de Riesgos" tab
-- **AND** no clausulados are indexed for any insurer
-- **THEN** the system SHALL display an informational message
-- **AND** the message SHALL read: "Análisis basado en datos de cotización. Suba clausulados para enriquecer el análisis."
-- **AND** the message SHALL include a link to the document upload page
-
-#### Scenario: Re-enrichment button
-- **WHEN** enrichment has completed automatically
-- **THEN** a button "Actualizar con Clausulados" SHALL be available
-- **AND** clicking it SHALL re-run enrichment (useful if new clausulados were uploaded)
-- **AND** the button SHALL be disabled during enrichment
-
-### Requirement: Asynchronous enrichment with progress
-**Reason**: Previous synchronous enrichment blocked the UI
-
-#### Scenario: Async enrichment
-- **WHEN** enrichment starts
-- **THEN** the system SHALL process alerts asynchronously
-- **AND** the user SHALL be able to view non-enriched alerts immediately
-- **AND** enriched alerts SHALL appear as they complete
-
-#### Scenario: Progress indicator
-- **WHEN** enrichment is in progress
-- **THEN** a progress bar SHALL show "Enriqueciendo X de Y alertas"
-- **AND** completed alerts SHALL be marked with a check icon

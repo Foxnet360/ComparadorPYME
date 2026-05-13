@@ -22,6 +22,8 @@ export interface ParsedCoverage {
     categoryId?: number | null;
     matchConfidence?: number;
     matchMethod?: 'thesaurus' | 'fuzzy' | 'embedding' | 'llm' | null;
+    // Value source tracking (anti-hallucination)
+    valueSource?: 'extracted' | 'calculated' | 'inferred';
 }
 
 export interface ExpectedCoverage {
@@ -122,11 +124,12 @@ async function extractCoverages(text: string): Promise<ParsedCoverage[]> {
     
     // Pattern: - Name: Value
     //   Deducible: X%
-    const coverageRegex = /^-\s+([^:]+):\s*([^\n]+)\n\s*Deducible:\s*([^\n]+)/gm;
+    //   Sublímite: Y (optional)
+    const coverageRegex = /^(\s+)?-\s+([^:]+):\s*([^\n]+)\n\s*Deducible:\s*([^\n]+)(?:\n\s*Subl[ií]mite:\s*([^\n]+))?/gm;
     let match;
     
     while ((match = coverageRegex.exec(coverageSection)) !== null) {
-        const rawName = match[1].trim();
+        const rawName = match[2].trim();
         const canonicalName = normalizeCoverageName(rawName);
         
         // Apply semantic matching
@@ -135,13 +138,35 @@ async function extractCoverages(text: string): Promise<ParsedCoverage[]> {
         coverages.push({
             name: rawName,
             canonicalName: semanticMatch.canonicalName || canonicalName || rawName,
-            value: match[2].trim(),
-            deductible: match[3].trim(),
+            value: match[3].trim(),
+            deductible: match[4].trim(),
+            sublimit: match[5] ? match[5].trim() : undefined,
             confidence: canonicalName !== rawName ? 95 : 70,
             categoryId: semanticMatch.categoryId,
             matchConfidence: semanticMatch.confidence,
             matchMethod: semanticMatch.method,
         });
+    }
+    
+    // Fallback: try simpler pattern without sublimit
+    if (coverages.length === 0) {
+        const simpleRegex = /^(\s+)?-\s+([^:]+):\s*([^\n]+)\n\s*Deducible:\s*([^\n]+)/gm;
+        while ((match = simpleRegex.exec(coverageSection)) !== null) {
+            const rawName = match[2].trim();
+            const canonicalName = normalizeCoverageName(rawName);
+            const semanticMatch = await semanticMatcher.matchCoverage(rawName);
+            
+            coverages.push({
+                name: rawName,
+                canonicalName: semanticMatch.canonicalName || canonicalName || rawName,
+                value: match[3].trim(),
+                deductible: match[4].trim(),
+                confidence: canonicalName !== rawName ? 95 : 70,
+                categoryId: semanticMatch.categoryId,
+                matchConfidence: semanticMatch.confidence,
+                matchMethod: semanticMatch.method,
+            });
+        }
     }
     
     return coverages;

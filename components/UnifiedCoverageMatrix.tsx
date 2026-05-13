@@ -284,6 +284,12 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                               <div key={covIdx} className={`${covIdx > 0 ? 'mt-3 pt-3 border-t border-slate-100' : ''}`}>
                                 <div className={`font-medium ${isExcluded ? 'text-red-500 italic' : 'text-slate-700'}`}>
                                   {formatCoverageValue(coverage.value)}
+                                  {coverage.valueSource === 'calculated' && (
+                                    <span className="ml-1 text-xs" title="Valor calculado o inferido">🧮</span>
+                                  )}
+                                  {coverage.valueSource === 'inferred' && (
+                                    <span className="ml-1 text-xs" title="Valor derivado de cálculo">💡</span>
+                                  )}
                                 </div>
                                 {coverage.deductible && coverage.deductible !== 'No aplica' && (
                                   <div className="mt-1">
@@ -447,7 +453,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                 ))}
               </div>
             ) : (
-              /* Matrix View */
+              /* Matrix View - Fixed N×M */
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-amber-100 text-amber-800 font-bold text-xs uppercase sticky top-0">
@@ -463,48 +469,66 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-amber-100">
-                    {uncategorizedCoverages.map((item, idx) => {
-                      const isExclusive = exclusiveCoverages.some(ec => 
-                        ec.coverage.name === item.coverage.name && ec.quoteIdx === item.quoteIdx
-                      );
-                      return (
-                      <tr key={idx} className={`hover:bg-amber-50/30 transition-colors ${isExclusive ? 'bg-indigo-50/30' : ''}`}>
-                        <td className="px-4 py-3 bg-white sticky left-0 border-r border-amber-100 z-10">
-                          <div className="flex items-center gap-2">
-                            <div className="font-medium text-slate-800">{item.coverage.name}</div>
-                            {isExclusive && (
-                              <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">
-                                Exclusiva
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-xs text-slate-500 mt-1">
-                            {item.coverage.canonicalName && item.coverage.canonicalName !== item.coverage.name && (
-                              <span className="italic">→ {item.coverage.canonicalName}</span>
-                            )}
-                          </div>
-                          <div className="mt-1 flex items-center gap-1">
-                            {getConfidenceIcon(item.coverage.matchConfidence)}
-                            {item.coverage.matchConfidence !== undefined && (
-                              <span className="text-xs text-slate-500">
-                                {formatPercentage(item.coverage.matchConfidence, 0)}
-                              </span>
-                            )}
-                            {item.coverage.matchMethod && (
-                              <span className="text-xs text-slate-400">| {getMethodLabel(item.coverage.matchMethod)}</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <div className="text-slate-700">{formatCoverageValue(item.coverage.value)}</div>
-                          {item.coverage.deductible && (
-                            <div className="mt-1 flex justify-center">
-                              <DeductibleBadge deductible={item.coverage.deductible} />
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    );})}
+                    {/* Group by coverage name to show N×M matrix */}
+                    {(() => {
+                      // Group coverages by name
+                      const coverageGroups = new Map<string, typeof uncategorizedCoverages>();
+                      uncategorizedCoverages.forEach(item => {
+                        const key = item.coverage.name;
+                        if (!coverageGroups.has(key)) {
+                          coverageGroups.set(key, []);
+                        }
+                        coverageGroups.get(key)!.push(item);
+                      });
+                      
+                      return Array.from(coverageGroups.entries()).map(([coverageName, items], idx) => {
+                        const isExclusive = items.length === 1;
+                        return (
+                          <tr key={idx} className={`hover:bg-amber-50/30 transition-colors ${isExclusive ? 'bg-indigo-50/30' : ''}`}>
+                            <td className="px-4 py-3 bg-white sticky left-0 border-r border-amber-100 z-10">
+                              <div className="flex items-center gap-2">
+                                <div className="font-medium text-slate-800">{coverageName}</div>
+                                {isExclusive && (
+                                  <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">
+                                    Exclusiva
+                                  </span>
+                                )}
+                              </div>
+                              {items[0]?.coverage.canonicalName && items[0].coverage.canonicalName !== coverageName && (
+                                <div className="text-xs text-slate-500 mt-1 italic">
+                                  → {items[0].coverage.canonicalName}
+                                </div>
+                              )}
+                            </td>
+                            {quotes.map((quote, quoteIdx) => {
+                              const item = items.find(i => i.quoteIdx === quoteIdx);
+                              return (
+                                <td key={quoteIdx} className="px-4 py-3 text-center">
+                                  {item ? (
+                                    <>
+                                      <div className="text-slate-700">{formatCoverageValue(item.coverage.value)}</div>
+                                      {item.coverage.deductible && (
+                                        <div className="mt-1 flex justify-center">
+                                          <DeductibleBadge deductible={item.coverage.deductible} />
+                                        </div>
+                                      )}
+                                      <div className="mt-1 flex items-center justify-center gap-1">
+                                        {getConfidenceIcon(item.coverage.matchConfidence)}
+                                        {item.coverage.matchMethod && (
+                                          <span className="text-xs text-slate-400">{getMethodLabel(item.coverage.matchMethod)}</span>
+                                        )}
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <span className="text-slate-300 italic">No incluida</span>
+                                  )}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      });
+                    })()}
                   </tbody>
                 </table>
               </div>

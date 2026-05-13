@@ -1,7 +1,7 @@
 # Spec: Coverage Post-Normalization
 
 ## Capability
-Mapeo de coberturas extraídas en formato crudo a las 14 categorías canónicas PYME mediante tesauro, embeddings semánticos y detección de coberturas implícitas.
+Mapeo de coberturas extraídas en formato crudo a las 14 categorías canónicas PYME mediante tesauro, embeddings semánticos y detección de coberturas implícitas, preservando coberturas no canónicas con categorización semántica.
 
 ## User Story
 **Como** sistema de análisis
@@ -107,6 +107,39 @@ The system SHALL produce an array of exactly 14 canonical coverages with statuse
 - **WHEN** the PDF explicitly states a coverage is excluded
 - **THEN** status SHALL be "excluded"
 - **AND** notes SHALL include the exclusion reason
+
+## MODIFIED Requirements
+
+### Requirement: Preserve uncategorized coverages
+**Reason**: Previous implementation silently discarded non-canonical coverages, causing empty views for some insurers
+
+#### Scenario: Preserve non-canonical coverages
+- **WHEN** raw coverages do not match any of the 14 canonical categories
+- **THEN** the system SHALL add them to `uncategorizedCoverages` array
+- **AND** assign semantic group using embedding similarity ("asistencias", "amparos-adicionales", "servicios-profesionales", "otros")
+- **AND** include metadata: rawName, insuredAmount, deductible, premium, groupId, matchConfidence
+
+#### Scenario: Filter empty uncategorized
+- **WHEN** an uncategorized coverage has insuredAmount = 0 AND premium = 0
+- **THEN** the system MAY omit it from `uncategorizedCoverages`
+- **AND** log the omission for debugging
+
+### Requirement: Assign category metadata to all coverages
+**Reason**: Frontend requires categoryId, matchConfidence, and matchMethod for ALL coverages to render correctly
+
+#### Scenario: Canonical coverage metadata
+- **WHEN** a coverage maps to a canonical category
+- **THEN** the system SHALL set:
+  - categoryId: canonical category ID (e.g., "incendio", "lucro-cesante")
+  - matchConfidence: confidence score (0-1)
+  - matchMethod: "thesaurus" | "fuzzy" | "embedding" | "llm" | "implicit"
+
+#### Scenario: Uncategorized coverage metadata
+- **WHEN** a coverage is placed in semantic group
+- **THEN** the system SHALL set:
+  - categoryId: group ID (e.g., "asistencias", "amparos-adicionales")
+  - matchConfidence: embedding similarity score (0-1)
+  - matchMethod: "semantic-group"
 
 ## Dependencies
 - `multimodal-pdf-extraction` for raw coverage data

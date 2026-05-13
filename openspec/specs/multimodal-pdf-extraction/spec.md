@@ -98,6 +98,21 @@ The system SHALL delete uploaded files from Gemini File API after extraction.
 
 ## MODIFIED Requirements
 
+### Requirement: Deductible field is mandatory
+**Reason**: Previous schema allowed null deductibles causing "NO ESPECIFICADO" fallback
+
+#### Scenario: Deductible must be extracted
+- **WHEN** the schema defines the deductible field
+- **THEN** it SHALL NOT be nullable
+- **AND** the description SHALL instruct: "Extract deductible for this coverage. If no deductible applies, use 'No aplica'. If not found in main table, search all pages including clauses and conditions."
+
+#### Scenario: Multi-page deductible search
+- **WHEN** a PDF has deductibles on page 2+ (e.g., HDI format)
+- **THEN** the prompt SHALL explicitly instruct Gemini to review ALL pages
+- **AND** the prompt SHALL mention: "Deductibles may be in a separate table, clauses section, or conditions page"
+
+## REMOVED Requirements
+
 ### Requirement: Text-based extraction
 **Reason**: Replaced by multimodal PDF extraction for better accuracy with tables
 **Migration**: Use multimodal extraction for all new quote processing. Text extraction remains as fallback for edge cases.

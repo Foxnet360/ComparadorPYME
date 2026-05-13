@@ -169,7 +169,14 @@ export const InsurerRadar: React.FC<InsurerRadarProps> = ({ quotes, isOpen, onCl
                     />
                   )
                 ))}
-                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                <Legend 
+                  wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }}
+                  formatter={(value: string) => {
+                    // Truncate long insurer names
+                    const maxLength = 15;
+                    return value.length > maxLength ? value.substring(0, maxLength) + '...' : value;
+                  }}
+                />
                 <Tooltip
                   contentStyle={{ 
                     borderRadius: '8px', 

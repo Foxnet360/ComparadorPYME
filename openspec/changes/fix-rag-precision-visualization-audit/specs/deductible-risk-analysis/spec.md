@@ -1,33 +1,31 @@
-## Capability
+## MODIFIED Requirements
 
-Análisis de riesgo de deducibles considerando la suma asegurada, topes máximos, y proporción del valor asegurado. Detecta deducibles que parecen favorables pero tienen topes restrictivos o representan un porcentaje alto del valor asegurado.
-
-## User Story
-
-**Como** corredor de seguros
-**Quiero** entender el riesgo real de los deducibles considerando el valor asegurado
-**Para** detectar deducibles aparentemente bajos pero prohibitivos en caso de siniestro
-
-## Functional Requirements
-
-### FR-1: Cálculo de deducible real
-
+### Requirement: Cálculo de deducible real
 El sistema DEBE calcular el monto real del deducible basado en el valor asegurado y las condiciones del clausulado.
 
 #### Scenario: Deducible con tope máximo
 - **WHEN** el clausulado establece "10% / Mín. 2 SMMLV / Máx. 500 SMMLV"
 - **AND** el valor asegurado es $5.000.000.000
-- **THEN** el deducible real es el mínimo entre: 10% de $5B ($500M) y tope de 500 SMMLV (~$500M)
-- **AND** el deducible efectivo es ~$500M
+- **THEN** el deducible real es el mínimo entre: 10% de $5B ($500M) y tope de 500 SMMLV (~$650M)
+- **AND** el deducible efectivo es $500M (porque es menor que el tope)
+- **AND** se registra que el tope NO fue aplicado (deducible natural < tope)
 
 #### Scenario: Deducible sin tope
 - **WHEN** el clausulado establece "15% sobre valor asegurado"
 - **AND** el valor asegurado es $10.000.000.000
 - **THEN** el deducible real es $1.500.000.000
 - **AND** se genera alerta **WARNING**: "Deducible sin tope máximo representa 15% del valor asegurado"
+- **AND** se sugiere: "Solicitar tope máximo para limitar exposición en siniestros grandes"
 
-### FR-2: Proporción de riesgo
+#### Scenario: Deducible con tope aplicado
+- **WHEN** el clausulado establece "20% / Máx. 100 SMMLV"
+- **AND** el valor asegurado es $10.000.000.000
+- **THEN** el 20% sería $2.000.000.000
+- **AND** el tope es 100 SMMLV (~$130.000.000)
+- **AND** el deducible efectivo es $130.000.000 (tope aplicado)
+- **AND** se genera alerta **INFO**: "Tope de deducible aplicado: $130M en lugar de $2B (20%)"
 
+### Requirement: Proporción de riesgo
 El sistema DEBE calcular la proporción del deducible respecto al valor asegurado y clasificar el riesgo.
 
 #### Scenario: Riesgo bajo
@@ -45,35 +43,36 @@ El sistema DEBE calcular la proporción del deducible respecto al valor asegurad
 - **THEN** riesgo = **HIGH**
 - **AND** score de deductibles = 0-49
 
-### FR-3: Comparativa de deducibles
-
+### Requirement: Comparativa de deducibles
 El sistema DEBE permitir comparar deducibles entre aseguradoras considerando el valor real (no solo el porcentaje).
 
 #### Scenario: Comparativa con valores diferentes
 - **WHEN** Aseguradora A ofrece "10% / Máx. 300 SMMLV" sobre $5B
 - **AND** Aseguradora B ofrece "15% / Sin tope" sobre $3B
 - **THEN** se muestra:
-  - A: Deducible real = $300M (6% del valor)
-  - B: Deducible real = $450M (15% del valor)
+  - A: Deducible real = $300M (6% del valor) | Tope aplicado
+  - B: Deducible real = $450M (15% del valor) | Sin tope
 
-### FR-4: Impacto de sublímites en cálculo de deducibles
+## ADDED Requirements
+
+### Requirement: Sublimit impact on deductible calculation
 El sistema DEBE considerar sublímites de cobertura al calcular el riesgo total.
 
-#### Scenario: Cobertura con sublímite bajo
+#### Scenario: Coverage with low sublimit
 - **WHEN** Incendio tiene valor asegurado de $500M
 - **AND** sublímite por evento es $100M
 - **THEN** el análisis muestra: "ALERTA: Sublímite por evento ($100M) es 20% del valor asegurado"
 - **AND** el riesgo se clasifica como HIGH independientemente del deducible
 
-#### Scenario: Límite agregado excedido
+#### Scenario: Aggregate limit warning
 - **WHEN** la suma de valores asegurados excede el límite agregado de la póliza
 - **THEN** se genera alerta **CRITICAL**: "Exposición total ($X) excede límite agregado ($Y)"
 - **AND** se recomienda: "Solicitar aumento de límite agregado o cobertura adicional"
 
-### FR-5: Seguimiento y visualización de topes
+### Requirement: Cap tracking and display
 El sistema DEBE rastrear y mostrar explícitamente los topes aplicados a deducibles.
 
-#### Scenario: Información de tope máximo
+#### Scenario: Display cap information
 - **WHEN** un deducible tiene tope máximo
 - **THEN** el análisis muestra:
   - Deducible nominal: 20%
@@ -81,7 +80,7 @@ El sistema DEBE rastrear y mostrar explícitamente los topes aplicados a deducib
   - Deducible efectivo: $500M (porque 20% de $2.5B = $500M < tope)
   - Tope aplicado: No
 
-#### Scenario: Tope aplicado
+#### Scenario: Cap applied
 - **WHEN** un deducible tiene tope máximo que se aplica
 - **THEN** el análisis muestra:
   - Deducible nominal: 20%
@@ -90,44 +89,3 @@ El sistema DEBE rastrear y mostrar explícitamente los topes aplicados a deducib
   - Deducible efectivo: $130M
   - Tope aplicado: Sí (ahorro de $1.870M vs deducible nominal)
   - Score mejora por aplicación de tope
-
-## Dependencies
-- `clause-coverage-validation`: Requiere coberturas validadas primero
-- `coverage-value-formatting`: Parseo de valores asegurados
-
-## Data Model
-
-```typescript
-interface DeductibleAnalysis {
-  coverageName: string;
-  quoteDeductible: string;
-  clauseDeductible: string;
-  insuredAmount: number;
-  deductibleAmount: number;
-  deductibleRatio: number;
-  hasCap: boolean;
-  capAmount?: number;
-  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
-  score: number;
-}
-```
-
-## API
-
-```
-POST /api/analysis/deductible-risk
-Request:
-{
-  quoteId: string,
-  coverageName: string,
-  deductibleText: string,
-  insuredAmount: number
-}
-
-Response:
-{
-  analysis: DeductibleAnalysis,
-  alertLevel?: 'CRITICAL' | 'WARNING' | 'INFO',
-  recommendation?: string
-}
-```

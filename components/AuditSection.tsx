@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AlertCircle, AlertTriangle, CheckCircle, Info, Shield, FileText, Sparkles, Loader2, RefreshCw, LayoutGrid, Radar } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle, Info, Shield, FileText, Sparkles, Loader2, RefreshCw, LayoutGrid, Radar, Handshake, Trophy, TrendingDown } from 'lucide-react';
 import { QuoteAnalysis, AlertItem, AlertLevel } from '../types';
 import { AuditDashboard } from './AuditDashboard';
 import { EvidenceCard } from './EvidenceCard';
@@ -399,7 +399,7 @@ export const AuditSection: React.FC<AuditSectionProps> = ({ quotes, viewMode }) 
 
                     {/* Quote-based Audit Summary */}
                     {quote.quoteAudit && (
-                      <div className="mt-4 pt-4 border-t border-slate-200">
+                      <div className="mt-4 pt-4 border-t border-slate-200 space-y-4">
                         <h4 className="flex items-center gap-2 text-indigo-700 font-bold mb-2 text-sm uppercase tracking-wide">
                           <Shield size={16} />
                           Análisis de Cotización
@@ -460,6 +460,61 @@ export const AuditSection: React.FC<AuditSectionProps> = ({ quotes, viewMode }) 
                               {quote.quoteAudit.specialConditions.slice(0, 3).map((sc, i) => (
                                 <div key={i} className="text-xs text-slate-600 bg-slate-50 p-2 rounded">
                                   {sc.text.substring(0, 100)}{sc.text.length > 100 ? '...' : ''}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Negotiation Points */}
+                        {quote.quoteAudit.negotiationPoints && quote.quoteAudit.negotiationPoints.length > 0 && (
+                          <div>
+                            <h5 className="flex items-center gap-2 text-amber-700 font-bold mb-2 text-xs uppercase tracking-wide">
+                              <Handshake size={14} />
+                              Puntos de Negociación
+                            </h5>
+                            <div className="space-y-2">
+                              {quote.quoteAudit.negotiationPoints.slice(0, 3).map((np, i) => (
+                                <div key={i} className="bg-amber-50 border border-amber-200 rounded p-2">
+                                  <div className="flex items-start gap-2">
+                                    <TrendingDown size={14} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                                    <div>
+                                      <p className="text-xs font-semibold text-amber-800">{np.title}</p>
+                                      <p className="text-xs text-amber-700 mt-0.5">{np.description}</p>
+                                      {np.potentialSavings && (
+                                        <p className="text-xs text-amber-600 mt-1 font-medium">
+                                          💰 {np.potentialSavings}
+                                        </p>
+                                      )}
+                                      <span className={`inline-block mt-1 text-xs px-1.5 py-0.5 rounded ${
+                                        np.priority === 'HIGH' ? 'bg-red-100 text-red-700' :
+                                        np.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700' :
+                                        'bg-green-100 text-green-700'
+                                      }`}>
+                                        {np.priority}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Competitive Advantages */}
+                        {quote.quoteAudit.competitiveAdvantages && quote.quoteAudit.competitiveAdvantages.length > 0 && (
+                          <div>
+                            <h5 className="flex items-center gap-2 text-green-700 font-bold mb-2 text-xs uppercase tracking-wide">
+                              <Trophy size={14} />
+                              Ventajas Competitivas
+                            </h5>
+                            <div className="space-y-2">
+                              {quote.quoteAudit.competitiveAdvantages.slice(0, 3).map((ca, i) => (
+                                <div key={i} className="bg-green-50 border border-green-200 rounded p-2">
+                                  <div className="flex items-start gap-2">
+                                    <Trophy size={14} className="text-green-600 mt-0.5 flex-shrink-0" />
+                                    <p className="text-xs text-green-800">{ca.description}</p>
+                                  </div>
                                 </div>
                               ))}
                             </div>

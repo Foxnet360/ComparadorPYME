@@ -1,16 +1,6 @@
-# Spec: Unified Coverage Matrix
+## MODIFIED Requirements
 
-## Capability
-Visualización de comparación de cotizaciones en una matriz de 14 categorías fijas con indicadores de confianza, manejo de coberturas no categorizadas agrupadas, y visualización de deducibles con gauges.
-
-## User Story
-**Como** usuario del comparador
-**Quiero** ver todas las coberturas organizadas en categorías estándar
-**Para** comparar fácilmente qué incluye cada aseguradora
-
-## ADDED Requirements
-
-### FR-1: Matriz de comparación unificada
+### Requirement: Matriz de comparación unificada
 El frontend SHALL renderizar la comparación de coberturas en una matriz de exactamente 14 filas fijas, una por cada categoría canónica de la Plantilla PYME.
 
 #### Scenario: Visualización de 14 categorías
@@ -19,13 +9,13 @@ El frontend SHALL renderizar la comparación de coberturas en una matriz de exac
 
 #### Scenario: Cobertura presente
 - **WHEN** una cotización incluye una cobertura que mapea a una categoría
-- **THEN** la celda muestra el valor asegurado, deducible, y badge de confianza del match
+- **THEN** la celda muestra el valor asegurado, deducible, badge de confianza del match, Y badge de origen del valor
 
 #### Scenario: Cobertura ausente
 - **WHEN** una cotización NO incluye una cobertura para una categoría
 - **THEN** la celda muestra "No incluida" en gris claro
 
-### FR-2: Indicadores de confianza visual
+### Requirement: Indicadores de confianza visual
 Cada celda de cobertura SHALL mostrar el nivel de confianza del match semántico mediante badges de color.
 
 #### Scenario: Confianza alta
@@ -44,32 +34,31 @@ Cada celda de cobertura SHALL mostrar el nivel de confianza del match semántico
 - **WHEN** el usuario hace hover sobre una celda de cobertura
 - **THEN** el tooltip muestra el nombre original extraído del PDF, el nombre canónico, el método de match usado, Y la fuente del valor (extraído/calculado/inferido)
 
-### FR-3: Sección de coberturas no categorizadas
-El frontend SHALL mostrar coberturas que no pudieron mapearse a ninguna categoría canónica en una sección separada agrupada por tipo.
+### Requirement: Sección de coberturas no categorizadas
+El frontend SHALL mostrar coberturas que no pudieron mapearse a ninguna categoría en una sección separada.
 
 #### Scenario: Coberturas sin match
-- **WHEN** hay coberturas con categoryId que NO es de las 14 canónicas
-- **THEN** se muestran en una sección "Coberturas Adicionales" debajo de la matriz principal
-- **AND** están agrupadas por tipo: "Asistencias", "Servicios", "Amparos Adicionales", "Otros"
-- **AND** cada grupo es expandible/collapsible
+- **WHEN** hay coberturas con categoryId null
+- **THEN** se muestran en una sección "Coberturas No Categorizadas" debajo de la matriz principal, con fondo amarillo claro
 
 #### Scenario: Sin coberturas no categorizadas
-- **WHEN** todas las coberturas tienen categoryId de las 14 canónicas
-- **THEN** la sección "Coberturas Adicionales" no se muestra
+- **WHEN** todas las coberturas tienen categoryId asignado
+- **THEN** la sección "Coberturas No Categorizadas" no se muestra
 
-#### Scenario: Coberturas adicionales por aseguradora
-- **WHEN** el usuario expande un grupo de coberturas adicionales
-- **THEN** se muestra tabla con columnas por aseguradora
-- **AND** cada celda muestra si la aseguradora ofrece esa cobertura adicional
+#### Scenario: Vista matriz de no categorizadas
+- **WHEN** el usuario selecciona vista "Matriz" en coberturas no categorizadas
+- **THEN** se muestra una tabla con filas = coberturas únicas y columnas = TODAS las aseguradoras
+- **AND** si una aseguradora no tiene esa cobertura, la celda muestra "No incluida"
+- **AND** si múltiples aseguradoras tienen la misma cobertura, se muestran en sus respectivas columnas
 
-### FR-4: Manejo de múltiples coberturas por categoría
+### Requirement: Manejo de múltiples coberturas por categoría
 El frontend SHALL manejar el caso donde una cotización tiene múltiples coberturas que mapean a la misma categoría canónica.
 
 #### Scenario: Múltiples coberturas en misma categoría
 - **WHEN** una cotización tiene 2+ coberturas con el mismo categoryId
 - **THEN** la celda muestra ambas coberturas separadas por línea divisoria, con indicador "Múltiples coberturas"
 
-### FR-5: Responsive design
+### Requirement: Responsive design
 La matriz unificada SHALL ser usable en pantallas de diferentes tamaños.
 
 #### Scenario: Scroll horizontal
@@ -80,7 +69,9 @@ La matriz unificada SHALL ser usable en pantallas de diferentes tamaños.
 - **WHEN** el ancho de pantalla es < 768px
 - **THEN** la tabla cambia a tarjetas apiladas por categoría, mostrando una aseguradora por tarjeta
 
-### FR-6: Value source indicators
+## ADDED Requirements
+
+### Requirement: Value source indicators
 El frontend SHALL display indicators showing the source of extracted coverage values.
 
 #### Scenario: Extracted value
@@ -97,7 +88,7 @@ El frontend SHALL display indicators showing the source of extracted coverage va
 - **THEN** a lightbulb icon (💡) is displayed next to the value
 - **AND** tooltip explains: "Valor derivado de cálculo basado en el documento"
 
-### FR-7: Sublimit indicators in matrix cells
+### Requirement: Sublimit indicators in matrix cells
 El frontend SHALL display sublimit information in coverage matrix cells when available.
 
 #### Scenario: Sublimit present
@@ -110,41 +101,3 @@ El frontend SHALL display sublimit information in coverage matrix cells when ava
 - **WHEN** a deductible has a cap (e.g., "Máx. 500 SMMLV")
 - **THEN** a cap indicator is shown next to the deductible badge
 - **AND** the effective deductible is calculated and displayed
-
-## MODIFIED Requirements
-
-### FR-8: Visualización de deducibles con gauge
-**Reason**: Previous text-only deductible display was confusing and error-prone
-
-#### Scenario: Gauge verde (sin deducible)
-- **WHEN** un deducible es "No aplica", "Sin deducible", "Incluido", "Aplica"
-- **THEN** se muestra indicador circular verde
-- **AND** tooltip muestra "Sin deducible / Incluido"
-
-#### Scenario: Gauge amarillo (deducible moderado)
-- **WHEN** un deducible es porcentaje entre 1% y 10%
-- **THEN** se muestra indicador circular amarillo
-- **AND** tooltip muestra deducible exacto
-
-#### Scenario: Gauge rojo (alto deducible)
-- **WHEN** un deducible es > 10% o "NO ESPECIFICADO"
-- **THEN** se muestra indicador circular rojo
-- **AND** tooltip muestra deducible exacto o alerta "No especificado"
-
-#### Scenario: Gauge con valor monetario
-- **WHEN** un deducible es monto fijo (ej: "5 SMMLV")
-- **THEN** se muestra indicador circular con color según monto relativo al mercado
-- **AND** tooltip muestra monto exacto y comparativa
-
-### FR-9: Eliminación de toggle RAG
-**Reason**: Toggle "Referencias RAG" existed but did nothing - caused user confusion
-
-#### Scenario: No RAG toggle
-- **WHEN** el usuario ve el reporte de comparación
-- **THEN** NO hay botón toggle "Referencias RAG"
-- **AND** las referencias de clausulado se muestran en la pestaña Auditoría, no en la matriz
-
-## Dependencies
-- Componente ComparisonReport
-- Datos de cotizaciones con campos de mapeo semántico
-- Recharts para gauges (radial chart)
