@@ -24,6 +24,8 @@ export interface ParsedCoverage {
     matchMethod?: 'thesaurus' | 'fuzzy' | 'embedding' | 'llm' | null;
     // Value source tracking (anti-hallucination)
     valueSource?: 'extracted' | 'calculated' | 'inferred';
+    // Sublimit information (optional)
+    sublimit?: string;
 }
 
 export interface ExpectedCoverage {

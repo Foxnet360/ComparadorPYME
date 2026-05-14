@@ -158,7 +158,7 @@ function parseNarrativeResponse(response: string): NarrativeResult {
     if (!clientAnalysis) {
         return generateFallbackNarrativeFromData(
             { insurerName: '', policyName: '', priceAnnual: 0, currency: 'COP', coverages: [], specialConditions: [], rawText: '', parseConfidence: 0 },
-            { totalScore: 0, breakdown: { coverage: 0, deductibles: 0, exclusions: 0, priceRatio: 0, sublimits: 0, warranties: 0 }, weights: { coverage: 0.25, deductibles: 0.2, exclusions: 0.2, priceRatio: 0.15, sublimits: 0.1, warranties: 0.1 }, quotePriceRank: 0, marketPriceAverage: 0, coverageCount: 0, expectedCoverageCount: 0, criticalAlerts: 0, warningAlerts: 0, infoAlerts: 0 }
+            { totalScore: 0, dataQualityScore: 0, verificationConfidence: 0, breakdown: { coverage: 0, deductibles: 0, exclusions: 0, priceRatio: 0, sublimits: 0, warranties: 0 }, weights: { coverage: 0.25, deductibles: 0.2, exclusions: 0.2, priceRatio: 0.15, sublimits: 0.1, warranties: 0.1 }, quotePriceRank: 0, marketPriceAverage: 0, coverageCount: 0, expectedCoverageCount: 0, criticalAlerts: 0, warningAlerts: 0, infoAlerts: 0 }
         );
     }
 
