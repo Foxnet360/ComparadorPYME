@@ -848,8 +848,10 @@ export const analysisController = {
                 crossRefResults,
                 validationResults,
                 confidenceResults,
+                insurersWithClauses,
                 clauseValidationResults,
-                advancedAnalysisResults
+                advancedAnalysisResults,
+                dualExtractionResults
             );
 
             // Save to Supabase
@@ -945,6 +947,7 @@ export function generateComparison(
     crossRefResults: Map<number, CrossReferenceResult[]>,
     validationResults: Map<number, ValidationResult>,
     confidenceResults: Map<number, ConfidenceResult>,
+    insurersWithClauses: Map<string, boolean>,
     clauseValidationResults?: Map<number, any>,
     advancedAnalysisResults?: Map<number, any>,
     dualExtractionResults?: Map<number, DualExtractionResult[]>
@@ -990,7 +993,7 @@ export function generateComparison(
             verificationConfidence: scoring?.verificationConfidence || 0,
             isRagAvailable: insurersWithClauses.get(quote.insurerName) || false,
             parseConfidence: quote.parseConfidence,
-            dualExtractionValidation: dualExtractionResults.get(index) || [],
+            dualExtractionValidation: dualExtractionResults?.get(index) || [],
             specialConditions: quote.specialConditions,
             scoringBreakdown: scoring?.breakdown || {
                 coverage: 0,
@@ -1043,7 +1046,7 @@ export function generateComparison(
                     score: scoring?.totalScore || 0,
                     deductibles: quote.coverages.map(c => c.deductible).join('; '),
                     rawText: quote.rawText
-                } as any, quotes);
+                } as any, quotes as any);
                 return {
                     deductibleRisks: audit.deductibleRisks,
                     missingCoverages: audit.missingCoverages,
@@ -1088,6 +1091,8 @@ export function generateComparison(
 function createDefaultScoringResult(quote: ParsedQuote): ScoringResult {
     return {
         totalScore: 0,
+        dataQualityScore: 0,
+        verificationConfidence: 0,
         breakdown: {
             coverage: 0,
             deductibles: 0,

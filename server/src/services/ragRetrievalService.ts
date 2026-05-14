@@ -288,10 +288,10 @@ export const ragRetrievalService = {
         }));
 
         // Filter by minimum similarity threshold
-        const filteredResults = results.filter(r => r.similarity >= minSimilarity);
+        const filteredResults = results.filter(r => r.similarity >= MIN_SIMILARITY_THRESHOLD);
         
         if (filteredResults.length === 0 && results.length > 0) {
-            console.warn(`⚠️ [ragRetrieval] All chunks below threshold (${minSimilarity}). Best: ${results[0].similarity.toFixed(3)}`);
+            console.warn(`⚠️ [ragRetrieval] All chunks below threshold (${MIN_SIMILARITY_THRESHOLD}). Best: ${results[0].similarity.toFixed(3)}`);
         }
 
         const avgSimilarity = results.length > 0
