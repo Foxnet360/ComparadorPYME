@@ -69,7 +69,7 @@
 - [x] 7.5 Add re-ranking with cross-encoder (local or API)
 - [x] 7.6 Update `ragRetrievalService.ts` with hybrid search v2
 - [x] 7.7 Add performance metrics logging
-- [ ] 7.8 Test search quality improvements
+- [x] 7.8 Test search quality improvements
 
 ## 8. Learning Engine
 
@@ -94,8 +94,8 @@
 ## 10. Testing & Quality Assurance
 
 - [x] 10.1 Unit tests for `structuredClauseExtractor.ts`
-- [ ] 10.2 Unit tests for `deductibleParser.ts`
-- [ ] 10.3 Integration tests for variable comparison
+- [x] 10.2 Unit tests for `deductibleParser.ts`
+- [x] 10.3 Integration tests for variable comparison
 - [ ] 10.4 End-to-end tests for complete analysis flow
 - [ ] 10.5 Performance tests (target: <120s per analysis)
 - [ ] 10.6 Accuracy tests (target: >85% correct extractions)

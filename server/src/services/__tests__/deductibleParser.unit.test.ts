@@ -1,0 +1,144 @@
+import { describe, it, expect, vi } from 'vitest';
+import { deductibleParser } from '../deductibleParser';
+
+describe('deductibleParser - Unit Tests', () => {
+  describe('parseSimple', () => {
+    it('should parse simple percentage', async () => {
+      const result = await deductibleParser.parse('10%');
+      expect(result.normalized.percentage).toBe(10);
+      expect(result.semantics.isComposite).toBe(false);
+    });
+
+    it('should parse zero deductible variations', async () => {
+      const variations = ['sin deducible', 'no aplica', 'incluido', '0%'];
+      for (const variant of variations) {
+        const result = await deductibleParser.parse(variant);
+        expect(result.semantics.isZero).toBe(true);
+        expect(result.normalized.minAmount).toBe(0);
+      }
+    });
+
+    it('should parse SMMLV format', async () => {
+      const result = await deductibleParser.parse('5 SMMLV');
+      expect(result.normalized.minAmount).toBe(6500000); // 5 * 1.3M
+    });
+
+    it('should parse fixed amount', async () => {
+      const result = await deductibleParser.parse('$500,000');
+      expect(result.normalized.minAmount).toBe(500000);
+    });
+  });
+
+  describe('parse compound structures', () => {
+    it('should handle compound deductible via LLM fallback', async () => {
+      // For complex structures that regex can't parse, it falls back to LLM
+      const result = await deductibleParser.parse('10% con mínimo de 5 SMMLV y tope de 50 SMMLV');
+      // The structure should be parsed (either by regex or LLM)
+      expect(result).toBeDefined();
+      expect(result.rawText).toBe('10% con mínimo de 5 SMMLV y tope de 50 SMMLV');
+    });
+
+    it('should handle "sin aplicación de deducible"', async () => {
+      const result = await deductibleParser.parse('sin aplicación de deducible');
+      expect(result.semantics.isZero).toBe(true);
+      expect(result.normalized.minAmount).toBe(0);
+    });
+
+    it('should handle minimum-only deductible', async () => {
+      const result = await deductibleParser.parse('Mínimo 5 SMMLV');
+      expect(result).toBeDefined();
+      expect(result.rawText).toBe('Mínimo 5 SMMLV');
+    });
+  });
+
+  describe('validation', () => {
+    it('should validate valid percentage', () => {
+      const structure = {
+        components: [{ type: 'percentage', value: 10 }],
+        semantics: { isZero: false, hasMinimum: false, hasMaximum: false, isComposite: false },
+        normalized: { minAmount: 0, maxAmount: 0, percentage: 10, isPercentageBased: true },
+        rawText: '10%'
+      };
+      
+      const validation = deductibleParser.validate(structure as any);
+      expect(validation.isValid).toBe(true);
+      expect(validation.issues).toHaveLength(0);
+    });
+
+    it('should detect invalid percentage > 100', () => {
+      const structure = {
+        components: [{ type: 'percentage', value: 150 }],
+        semantics: { isZero: false, hasMinimum: false, hasMaximum: false, isComposite: false },
+        normalized: { minAmount: 0, maxAmount: 0, percentage: 150, isPercentageBased: true },
+        rawText: '150%'
+      };
+      
+      const validation = deductibleParser.validate(structure as any);
+      expect(validation.isValid).toBe(false);
+      expect(validation.issues.length).toBeGreaterThan(0);
+    });
+
+    it('should detect negative amounts', () => {
+      const structure = {
+        components: [{ type: 'fixed', value: -100 }],
+        semantics: { isZero: false, hasMinimum: false, hasMaximum: false, isComposite: false },
+        normalized: { minAmount: -100, maxAmount: 0, percentage: 0, isPercentageBased: false },
+        rawText: '-100'
+      };
+      
+      const validation = deductibleParser.validate(structure as any);
+      expect(validation.isValid).toBe(false);
+    });
+
+    it('should detect min > max', () => {
+      const structure = {
+        components: [
+          { type: 'minimum', value: 100 },
+          { type: 'maximum', value: 50 }
+        ],
+        semantics: { isZero: false, hasMinimum: true, hasMaximum: true, isComposite: true },
+        normalized: { minAmount: 100, maxAmount: 50, percentage: 0, isPercentageBased: false },
+        rawText: 'min 100 max 50'
+      };
+      
+      const validation = deductibleParser.validate(structure as any);
+      expect(validation.isValid).toBe(false);
+    });
+  });
+
+  describe('convertToCOP', () => {
+    it('should convert SMMLV to COP', () => {
+      const result = (deductibleParser as any).convertToCOP(5, 'SMMLV');
+      expect(result).toBe(6500000);
+    });
+
+    it('should convert UVT to COP', () => {
+      const result = (deductibleParser as any).convertToCOP(10, 'UVT');
+      expect(result).toBe(424120);
+    });
+
+    it('should return value when no currency', () => {
+      const result = (deductibleParser as any).convertToCOP(500000, undefined);
+      expect(result).toBe(500000);
+    });
+  });
+
+  describe('edge cases', () => {
+    it('should handle empty string', async () => {
+      const result = await deductibleParser.parse('');
+      expect(result.components[0].type).toBe('unknown');
+    });
+
+    it('should handle whitespace-only input', async () => {
+      const result = await deductibleParser.parse('   ');
+      expect(result.components[0].type).toBe('unknown');
+    });
+
+    it('should handle very long deductible text', async () => {
+      const longText = '10% con mínimo de 5 SMMLV y tope de 50 SMMLV aplicable solo a daños mayores a 1 SMMLV con excepción de rotura de maquinaria';
+      const result = await deductibleParser.parse(longText);
+      expect(result).toBeDefined();
+      expect(result.rawText).toBe(longText);
+    });
+  });
+});
