@@ -36,6 +36,7 @@ export interface ChatResponse {
     citations: ChatCitation[];
     tokensUsed?: number;
     modelUsed: string;
+    source?: 'rag' | 'ontology' | 'fallback' | 'direct';
 }
 
 /**
@@ -524,7 +525,11 @@ export const processChatMessage = async (
             text: responseText,
             citations,
             tokensUsed: estimatedTokens + estimateTokens(responseText),
-            modelUsed: GEMINI_CHAT_MODEL
+            modelUsed: GEMINI_CHAT_MODEL,
+            source: sourcesUsed.includes('quote') ? 'direct' :
+                    sourcesUsed.includes('structured') ? 'rag' :
+                    sourcesUsed.includes('rag') ? 'rag' :
+                    sourcesUsed.includes('general') ? 'fallback' : 'fallback'
         };
     } catch (error) {
         console.error('❌ [chatService] Error processing message:', error);
@@ -537,7 +542,8 @@ export const processChatMessage = async (
                     text: `📄 Según la cotización:\n\n${quoteResult.data}\n\n⚠️ Nota: Esta respuesta se basa únicamente en los datos de la cotización.`,
                     citations: [],
                     tokensUsed: 0,
-                    modelUsed: 'fallback-quote-data'
+                    modelUsed: 'fallback-quote-data',
+                    source: 'direct'
                 };
             }
         } catch (fallbackError) {

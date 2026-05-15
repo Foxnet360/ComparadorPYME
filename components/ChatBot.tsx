@@ -84,7 +84,8 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
         role: 'model', 
         text: result.text || 'Lo siento, no pude generar una respuesta.',
         timestamp: new Date(),
-        citations: result.citations
+        citations: result.citations,
+        source: result.source || (useRAG ? 'rag' : 'direct')
       };
       
       setMessages(prev => [...prev, modelMessage]);
@@ -146,6 +147,21 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
                 </div>
               ) : (
                 <div>
+                  {msg.source && msg.role === 'model' && (
+                    <div className="flex items-center gap-1 mb-2">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        msg.source === 'rag' ? 'bg-blue-100 text-blue-700' :
+                        msg.source === 'ontology' ? 'bg-purple-100 text-purple-700' :
+                        msg.source === 'fallback' ? 'bg-amber-100 text-amber-700' :
+                        'bg-slate-100 text-slate-600'
+                      }`}>
+                        {msg.source === 'rag' ? 'RAG' :
+                         msg.source === 'ontology' ? 'Ontología' :
+                         msg.source === 'fallback' ? 'Fallback' :
+                         'Directo'}
+                      </span>
+                    </div>
+                  )}
                   <ReactMarkdown 
                     components={{
                       ul: ({node, ...props}) => <ul className="list-disc pl-4 my-1" {...props} />,

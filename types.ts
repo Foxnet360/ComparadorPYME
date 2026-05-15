@@ -274,6 +274,7 @@ export interface ChatMessage {
   timestamp: Date;
   isThinking?: boolean;
   citations?: ChatCitation[];
+  source?: 'rag' | 'ontology' | 'fallback' | 'direct';
 }
 
 export interface ChatCitation {
