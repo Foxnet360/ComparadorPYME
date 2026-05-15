@@ -498,5 +498,184 @@ export const ragRetrievalService = {
             console.error('❌ [ragRetrieval] Exception checking clauses:', error);
             return false;
         }
+    },
+
+    /**
+     * Re-rank results using cross-encoder approach
+     * Computes more accurate relevance scores by comparing query+chunk pairs
+     */
+    reRankResults: async (
+        query: string,
+        results: RetrievedClause[],
+        options: {
+            topK?: number;
+        } = {}
+    ): Promise<RetrievedClause[]> => {
+        const { topK = Math.min(results.length, 10) } = options;
+        
+        if (results.length <= 1) return results;
+        
+        console.log(`🔄 [ragRetrieval] Re-ranking ${results.length} results...`);
+        const startTime = Date.now();
+        
+        try {
+            // Generate query embedding once
+            const queryEmbedding = await embeddingService.generateEmbedding(query);
+            
+            // Re-score each result by computing cross-encoder similarity
+            // In a full implementation, this would use a dedicated cross-encoder model
+            // Here we use a refined embedding similarity as a proxy
+            const reScored = await Promise.all(
+                results.map(async (result) => {
+                    // Create a combined query+chunk text for better semantic matching
+                    const combinedText = `${query} ${result.content}`;
+                    const combinedEmbedding = await embeddingService.generateEmbedding(combinedText);
+                    
+                    // Cross-encoder score: similarity between query and combined representation
+                    const crossScore = embeddingService.cosineSimilarity(queryEmbedding, combinedEmbedding);
+                    
+                    // Blend original similarity with cross-encoder score
+                    const blendedScore = (result.similarity * 0.4) + (crossScore * 0.6);
+                    
+                    return {
+                        ...result,
+                        similarity: Math.min(blendedScore, 1.0) // Cap at 1.0
+                    };
+                })
+            );
+            
+            // Sort by re-ranked score and return topK
+            const ranked = reScored
+                .sort((a, b) => b.similarity - a.similarity)
+                .slice(0, topK);
+            
+            console.log(`✅ [ragRetrieval] Re-ranking complete: ${results.length} → ${ranked.length} results (${Date.now() - startTime}ms)`);
+            
+            return ranked;
+        } catch (error) {
+            console.error('❌ [ragRetrieval] Re-ranking error:', error);
+            // Fallback: return original results sorted by original score
+            return results
+                .sort((a, b) => b.similarity - a.similarity)
+                .slice(0, topK);
+        }
+    },
+
+    /**
+     * Parent-child retrieval (Hybrid Search V2 Enhancement)
+     * Retrieves child chunks and fetches their parent context for better understanding
+     */
+    searchWithParentContext: async (
+        query: string,
+        options: {
+            insurerName?: string;
+            coverageTags?: string[];
+            sectionType?: string;
+            limit?: number;
+            minSimilarity?: number;
+            parentContextRatio?: number; // How many parent chunks to include (0-1)
+        } = {}
+    ): Promise<RetrievedClause[]> => {
+        const startTime = Date.now();
+        const { 
+            insurerName, 
+            coverageTags, 
+            sectionType, 
+            limit = 10, 
+            minSimilarity = MIN_SIMILARITY_THRESHOLD,
+            parentContextRatio = 0.3 // Include 30% parent context by default
+        } = options;
+        
+        console.log(`🔍 [ragRetrieval] Parent-child search: "${query}"`);
+        
+        // Step 1: Search for child chunks (specific passages)
+        const childResults = await ragRetrievalService.searchWithExpansion(query, {
+            insurerName,
+            coverageTags,
+            sectionType,
+            limit: Math.ceil(limit * 0.7), // 70% child chunks
+            minSimilarity
+        });
+        
+        if (childResults.length === 0) {
+            return [];
+        }
+        
+        // Step 2: Extract parent document IDs from child results
+        const parentDocIds = [...new Set(childResults.map(r => r.documentId))];
+        
+        // Step 3: Fetch parent chunks (broader context) for these documents
+        const parentLimit = Math.max(1, Math.ceil(limit * parentContextRatio));
+        const parentResults: RetrievedClause[] = [];
+        
+        for (const docId of parentDocIds.slice(0, 3)) { // Limit to top 3 documents
+            try {
+                const { data, error } = await supabase
+                    .rpc('get_parent_chunks', {
+                        document_id: docId,
+                        section_filter: sectionType || null,
+                        match_count: Math.ceil(parentLimit / parentDocIds.length)
+                    } as any);
+                
+                if (error) {
+                    console.warn(`⚠️ [ragRetrieval] Error fetching parent chunks for doc ${docId}:`, error);
+                    continue;
+                }
+                
+                if (data) {
+                    const parents = (data as any[]).map(row => ({
+                        id: row.id,
+                        documentId: row.document_id,
+                        insurerName: row.insurer_name,
+                        sectionType: row.section_type,
+                        coverageTags: row.coverage_tags || [],
+                        content: row.content,
+                        pageNumber: row.page_number,
+                        similarity: 0.85 // Parent chunks get high base similarity
+                    }));
+                    parentResults.push(...parents);
+                }
+            } catch (error) {
+                console.warn(`⚠️ [ragRetrieval] Error in parent retrieval for doc ${docId}:`, error);
+            }
+        }
+        
+        // Step 4: Merge child and parent results
+        // Mark parent chunks to distinguish them
+        const markedParents = parentResults.map(p => ({
+            ...p,
+            content: `[CONTEXTO GENERAL] ${p.content}`,
+            similarity: p.similarity * 0.9 // Slightly lower priority than direct matches
+        }));
+        
+        // Combine and deduplicate
+        const combined = [...childResults, ...markedParents];
+        const seen = new Set<string>();
+        const uniqueResults = combined
+            .filter(r => {
+                if (seen.has(r.id)) return false;
+                seen.add(r.id);
+                return true;
+            })
+            .sort((a, b) => b.similarity - a.similarity)
+            .slice(0, limit);
+        
+        const avgSimilarity = uniqueResults.length > 0
+            ? uniqueResults.reduce((sum, r) => sum + r.similarity, 0) / uniqueResults.length
+            : 0;
+        
+        logRagPerformance({
+            operation: 'searchWithParentContext',
+            insurerName,
+            query,
+            durationMs: Date.now() - startTime,
+            chunksReturned: uniqueResults.length,
+            avgSimilarity,
+            timestamp: new Date().toISOString()
+        });
+        
+        console.log(`✅ [ragRetrieval] Parent-child search: ${childResults.length} children + ${markedParents.length} parents = ${uniqueResults.length} total`);
+        
+        return uniqueResults;
     }
 };
