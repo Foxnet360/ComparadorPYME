@@ -16,7 +16,7 @@
 - [x] 2.4 Add validation against raw text for extracted data
 - [x] 2.5 Implement storage function for structured clauses
 - [x] 2.6 Create endpoint `/api/clauses/structured` for extraction
-- [ ] 2.7 Test extraction with sample clause PDFs (CHUBB, MAPFRE, BBVA, AXA)
+- [x] 2.7 Test extraction with sample clause PDFs (CHUBB, MAPFRE, BBVA, AXA)
 
 ## 3. Semantic Coverage Ontology
 
@@ -99,7 +99,7 @@
 - [x] 10.4 End-to-end tests for complete analysis flow
 - [x] 10.5 Performance tests (target: <120s per analysis)
 - [x] 10.6 Accuracy tests (target: >85% correct extractions)
-- [ ] 10.7 Load tests for concurrent analyses
+- [x] 10.7 Load tests for concurrent analyses
 
 ## 11. Documentation & Deployment
 
