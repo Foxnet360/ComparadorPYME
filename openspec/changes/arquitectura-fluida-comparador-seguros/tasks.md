@@ -96,9 +96,9 @@
 - [x] 10.1 Unit tests for `structuredClauseExtractor.ts`
 - [x] 10.2 Unit tests for `deductibleParser.ts`
 - [x] 10.3 Integration tests for variable comparison
-- [ ] 10.4 End-to-end tests for complete analysis flow
-- [ ] 10.5 Performance tests (target: <120s per analysis)
-- [ ] 10.6 Accuracy tests (target: >85% correct extractions)
+- [x] 10.4 End-to-end tests for complete analysis flow
+- [x] 10.5 Performance tests (target: <120s per analysis)
+- [x] 10.6 Accuracy tests (target: >85% correct extractions)
 - [ ] 10.7 Load tests for concurrent analyses
 
 ## 11. Documentation & Deployment
