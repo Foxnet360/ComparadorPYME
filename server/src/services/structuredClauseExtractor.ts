@@ -138,14 +138,15 @@ export const structuredClauseExtractor = {
           document_type: structured.documentType,
           extracted_data: structured,
           document_id: documentId
-        })
+        } as any)
         .select('id')
         .single();
       
       if (error) throw error;
       
-      console.log(`✅ [StructuredExtractor] Stored clause with ID: ${data.id}`);
-      return data.id;
+      const resultId = (data as any)?.id;
+      console.log(`✅ [StructuredExtractor] Stored clause with ID: ${resultId}`);
+      return resultId;
       
     } catch (error) {
       console.error('❌ [StructuredExtractor] Storage failed:', error);
@@ -166,12 +167,13 @@ export const structuredClauseExtractor = {
           p_insurer_name: insurerName,
           p_coverage_name: coverageName,
           match_count: 1
-        });
+        } as any);
       
       if (error) throw error;
-      if (!data || data.length === 0) return null;
+      const dataList = (data || []) as any[];
+      if (dataList.length === 0) return null;
       
-      return data[0].extracted_data as StructuredClause;
+      return dataList[0].extracted_data as StructuredClause;
       
     } catch (error) {
       console.error('❌ [StructuredExtractor] Search failed:', error);
@@ -191,10 +193,11 @@ export const structuredClauseExtractor = {
         .rpc('get_clause_deductible', {
           p_insurer_name: insurerName,
           p_coverage_name: coverageName
-        });
+        } as any);
       
       if (error) throw error;
-      if (!data || data.length === 0) return null;
+      const dataList = (data || []) as any[];
+      if (dataList.length === 0) return null;
       
       return data[0];
       

@@ -47,7 +47,11 @@ export const deductibleAnalyzer = {
     const clauseStructure = clauseDeductibleText ? await deductibleParser.parse(clauseDeductibleText) : null;
     
     // Use clause deductible as source of truth (or quote if clause not available)
-    const effectiveStructure = clauseStructure?.normalized.minAmount > 0 ? clauseStructure : quoteStructure;
+    const effectiveStructure = (clauseStructure?.normalized?.minAmount || 0) > 0 ? clauseStructure : quoteStructure;
+    
+    if (!effectiveStructure || !effectiveStructure.normalized) {
+      throw new Error('Failed to parse deductible structure');
+    }
     
     // Calculate deductible amount based on structure
     let deductibleAmount = 0;
@@ -58,7 +62,7 @@ export const deductibleAnalyzer = {
       const calculatedAmount = (effectiveStructure.normalized.percentage / 100) * insuredAmount;
       deductibleAmount = Math.min(
         effectiveStructure.normalized.maxAmount || Infinity,
-        Math.max(effectiveStructure.normalized.minAmount, calculatedAmount)
+        Math.max(effectiveStructure.normalized.minAmount || 0, calculatedAmount)
       );
       
       // Check if there's a cap
@@ -67,7 +71,7 @@ export const deductibleAnalyzer = {
         capAmount = effectiveStructure.normalized.maxAmount;
       }
     } else {
-      deductibleAmount = effectiveStructure.normalized.minAmount;
+      deductibleAmount = effectiveStructure.normalized.minAmount || 0;
     }
     
     // Calculate ratio
@@ -132,10 +136,10 @@ export const deductibleAnalyzer = {
   /**
    * Batch analyze all deductibles in a quote
    */
-  analyzeQuote: (
+  analyzeQuote: async (
     quote: any,
     clauseDeductibles: Map<string, string>
-  ): DeductibleAnalysis[] => {
+  ): Promise<DeductibleAnalysis[]> => {
     const results: DeductibleAnalysis[] = [];
     
     for (const coverage of quote.coverages || []) {
@@ -143,7 +147,7 @@ export const deductibleAnalyzer = {
       const insuredAmount = parseInsuredAmount(coverage.value);
       
       if (insuredAmount > 0) {
-        const analysis = deductibleAnalyzer.analyze(
+        const analysis = await deductibleAnalyzer.analyze(
           coverage.name,
           coverage.deductible || 'No especificado',
           clauseDed,

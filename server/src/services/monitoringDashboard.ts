@@ -49,12 +49,13 @@ export const monitoringDashboard = {
     
     try {
       // Get analysis metrics from database
-      const { data: analyses, error: analysisError } = await supabase
+      const { data: analysesRaw, error: analysisError } = await supabase
         .from('analysis_logs')
         .select('duration_ms, status, error_type')
         .gte('created_at', oneHourAgo.toISOString());
 
       if (analysisError) throw analysisError;
+      const analyses = (analysesRaw || []) as any[];
 
       // Calculate metrics
       const totalAnalyses = analyses?.length || 0;
@@ -154,7 +155,7 @@ export const monitoringDashboard = {
         status,
         error_type: errorType,
         created_at: new Date().toISOString()
-      });
+      } as any);
     } catch (error) {
       console.error('❌ [Monitoring] Error logging analysis:', error);
     }
@@ -205,7 +206,7 @@ export const monitoringDashboard = {
 
       if (error) throw error;
 
-      const mappings = data || [];
+      const mappings = (data || []) as any[];
       const total = mappings.length;
       
       if (total === 0) {

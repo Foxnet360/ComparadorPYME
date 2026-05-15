@@ -83,7 +83,7 @@ export const variableComparator = {
     
     const groups = await coverageOntology.groupCoverages(
       allCoverages.map(c => ({
-        name: c.rawName || c.displayName,
+        name: c.rawName || c.displayName || 'Unknown',
         insurerName: c.insurerName
       }))
     );

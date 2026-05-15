@@ -47,7 +47,27 @@ const INSURER_VARIANTS: Record<string, Record<string, string[]>> = {
   }
 };
 
-export const queryExpander = {
+interface QueryExpander {
+  expand(query: string, options?: {
+    includeSynonyms?: boolean;
+    includeRelated?: boolean;
+    includeInsurerVariants?: boolean;
+    insurerName?: string;
+    maxExpansions?: number;
+  }): ExpandedQuery[];
+  expandBatch(queries: string[], options?: Parameters<QueryExpander['expand']>[1]): Map<string, ExpandedQuery[]>;
+  getUniqueQueries(expansions: ExpandedQuery[]): string[];
+  mergeResults<T extends { id: string; score?: number }>(
+    results: Map<string, T[]>,
+    expansions: ExpandedQuery[],
+    maxResults?: number
+  ): T[];
+  getSynonyms(term: string): string[];
+  getRelatedTerms(term: string): string[];
+  getInsurerVariants(term: string, insurerName: string): string[];
+}
+
+export const queryExpander: QueryExpander = {
   /**
    * Expand a search query with synonyms and related terms
    */
@@ -148,7 +168,7 @@ export const queryExpander = {
    */
   expandBatch(
     queries: string[],
-    options: Parameters<typeof queryExpander.expand>[1] = {}
+    options: Parameters<QueryExpander['expand']>[1] = {}
   ): Map<string, ExpandedQuery[]> {
     const results = new Map<string, ExpandedQuery[]>();
     
@@ -202,6 +222,31 @@ export const queryExpander = {
         ...s.item,
         score: s.totalScore
       }));
+  },
+
+  /**
+   * Get synonyms for a term
+   */
+  getSynonyms(term: string): string[] {
+    const normalized = term.toLowerCase();
+    return TERM_MAPPINGS[normalized] || [];
+  },
+
+  /**
+   * Get related terms
+   */
+  getRelatedTerms(term: string): string[] {
+    const normalized = term.toLowerCase();
+    return TERM_MAPPINGS[normalized] || [];
+  },
+
+  /**
+   * Get insurer-specific variants
+   */
+  getInsurerVariants(term: string, insurerName: string): string[] {
+    const normalized = term.toLowerCase();
+    const insurerKey = insurerName.toUpperCase() as keyof typeof INSURER_VARIANTS;
+    return INSURER_VARIANTS[insurerKey]?.[normalized] || [];
   }
 };
 
