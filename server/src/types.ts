@@ -12,11 +12,46 @@ export interface CoverageItem {
     isPositive?: boolean;
     citations?: Citation[];
     deductible?: string;
-    // Semantic matching fields
+    // Legacy semantic matching fields (kept for backward compatibility)
     canonicalName?: string;
     categoryId?: number | null;
     matchConfidence?: number;
     matchMethod?: 'thesaurus' | 'fuzzy' | 'embedding' | 'llm' | null;
+    // New fluid architecture fields
+    semanticGroups?: Array<{
+        groupId: string;
+        groupName: string;
+        confidence: number;
+    }>;
+    isComposite?: boolean;
+    components?: string[];
+    // Structured variables
+    insuredAmount?: {
+        value: number;
+        currency: string;
+        rawText: string;
+    };
+    deductibleStructure?: {
+        components: Array<{
+            type: string;
+            value: number;
+            currency?: string;
+        }>;
+        normalized: {
+            minAmount: number;
+            maxAmount: number;
+            percentage: number;
+            isPercentageBased: boolean;
+        };
+        rawText: string;
+    };
+    sublimit?: {
+        value: number;
+        type: string;
+        rawText: string;
+    };
+    exclusions?: string[];
+    conditions?: string[];
 }
 
 export type AlertLevel = 'CRITICAL' | 'WARNING' | 'GOOD' | 'INFO';
@@ -99,4 +134,130 @@ export interface ClauseDocument {
 export interface InsurerSummary {
     aseguradora: string;
     count: number;
+}
+
+// ============================================
+// Fluid Architecture Types (New)
+// ============================================
+
+export interface SemanticGroup {
+    id: string;
+    name: string;
+    level: 1 | 2 | 3;
+    parentId?: string;
+    childrenIds: string[];
+    aliases: string[];
+    riskType: string;
+    typicalDeductible?: string;
+}
+
+export interface ProbabilisticMapping {
+    rawName: string;
+    insurerName?: string;
+    groups: Array<{
+        groupId: string;
+        confidence: number;
+    }>;
+    isComposite: boolean;
+    components?: string[];
+    confidence: number;
+}
+
+export interface VariableComparison {
+    groupName: string;
+    groupId: string;
+    variables: Array<{
+        insurerName: string;
+        rawName: string;
+        insuredAmount?: {
+            value: number;
+            currency: string;
+            rawText: string;
+        };
+        deductible?: {
+            components: Array<{
+                type: string;
+                value: number;
+                currency?: string;
+            }>;
+            normalized: {
+                minAmount: number;
+                maxAmount: number;
+                percentage: number;
+            };
+            rawText: string;
+        };
+        sublimit?: {
+            value: number;
+            type: string;
+            rawText: string;
+        };
+        exclusions: string[];
+        conditions: string[];
+        confidence: number;
+    }>;
+    analysis: {
+        bestInsuredAmount?: string;
+        bestDeductible?: string;
+        mostComprehensive?: string;
+        bestPrice?: string;
+    };
+    exclusiveCoverages: Array<{
+        insurerName: string;
+        rawName: string;
+    }>;
+}
+
+export interface StructuredClause {
+    insurer: string;
+    product: string;
+    documentType: 'CLAUSULADO_GENERAL' | 'CLAUSULADO_PARTICULAR';
+    coverages: Array<{
+        name: string;
+        description: string;
+        insuredAmount?: string;
+        deductible?: {
+            components: Array<{
+                type: string;
+                value: number;
+                currency?: string;
+            }>;
+            rawText: string;
+        };
+        sublimit?: string;
+        exclusions: string[];
+        conditions: string[];
+        sourcePage: number;
+    }>;
+    generalExclusions: string[];
+    generalConditions: string[];
+    definitions: Record<string, string>;
+}
+
+export interface DeductibleBenchmark {
+    name: string;
+    data: {
+        type: string;
+        value: number;
+        min?: string;
+    };
+    notes: string;
+}
+
+export interface ChatSource {
+    type: 'quote' | 'structured_clause' | 'rag' | 'general';
+    data: string;
+    insurerName?: string;
+    pageNumber?: number;
+}
+
+export interface UserCorrection {
+    id?: string;
+    rawName: string;
+    insurerName?: string;
+    systemMapping: string;
+    userCorrection: string;
+    correctionType: 'coverage_mapping' | 'deductible' | 'exclusion' | 'value';
+    quoteId?: string;
+    createdAt?: Date;
 }

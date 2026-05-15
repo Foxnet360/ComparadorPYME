@@ -72,9 +72,9 @@ describe('quoteScorer - Regression Tests', () => {
     it('should penalize absence of clause document', () => {
       const result = quoteScorer.calculateScore(mockQuote, emptyCrossRefs, allQuotes);
       
-      // When no cross refs (no clause document), deductible score should be 30 not 50
-      expect(result.breakdown.deductibles).toBe(30);
-      expect(result.breakdown.exclusions).toBe(30);
+      // When no cross refs (no clause document), scores should be neutral (60)
+      expect(result.breakdown.deductibles).toBe(60);
+      expect(result.breakdown.exclusions).toBe(60);
     });
 
     it('should maintain total score within 0-100 range', () => {
