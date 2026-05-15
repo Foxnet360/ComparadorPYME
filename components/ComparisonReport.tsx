@@ -18,6 +18,7 @@ import { WarrantyComplianceDashboard } from './WarrantyComplianceDashboard';
 import { LegalOpinionCard } from './LegalOpinionCard';
 import { NegotiationPointsList } from './NegotiationPointsList';
 import { InverseCoverageAlert } from './InverseCoverageAlert';
+import { CorrectionUI } from './CorrectionUI';
 import { formatCOP, formatCOPMillions } from '../utils/formatCurrency';
 import { isAdvancedAnalysisEnabled } from '../config/features';
 import { normalizeText } from '../utils/textUtils';
@@ -345,6 +346,21 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
                       </div>
                     )}
                   </div>
+                  
+                  {/* Correction UI */}
+                  {viewMode === 'technical' && (
+                    <CorrectionUI 
+                      quote={q} 
+                      onCorrection={(correction) => {
+                        console.log('Correction submitted:', {
+                          insurer: q.insurerName,
+                          ...correction
+                        });
+                        // TODO: Send to learning engine API
+                        alert(`Corrección guardada para ${q.insurerName}: ${correction.field}`);
+                      }}
+                    />
+                  )}
                 </div>
               );
             })}

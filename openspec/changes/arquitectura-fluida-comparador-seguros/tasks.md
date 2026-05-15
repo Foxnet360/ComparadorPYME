@@ -58,7 +58,7 @@
 - [x] 6.5 Add fallback logic (never respond "I don't have information")
 - [x] 6.6 Create system prompt template for triple source
 - [x] 6.7 Add tests for chat with missing RAG data
-- [ ] 6.8 Update frontend chat UI to show source labels
+- [x] 6.8 Update frontend chat UI to show source labels
 
 ## 7. Query Expansion & Hybrid Search
 
@@ -79,7 +79,7 @@
 - [x] 8.4 Add embedding retraining trigger (batch process)
 - [x] 8.5 Implement correction effectiveness tracking
 - [x] 8.6 Create monthly accuracy report generator
-- [ ] 8.7 Add correction UI to analysis results page
+- [x] 8.7 Add correction UI to analysis results page
 
 ## 9. Integration & Refactoring
 

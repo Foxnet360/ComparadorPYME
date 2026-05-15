@@ -211,20 +211,20 @@ const VariableComparisonMatrix: React.FC<VariableComparisonMatrixProps> = ({ com
                               <div className="mt-2">
                                 <span className="text-xs text-slate-500">Exclusiones: </span>
                                 <span className="text-xs text-red-600">{variable.exclusions.join(', ')}</span>
-                              㰣>
+                              </div>
                             )}
                             
                             {variable.conditions.length > 0 && (
-                              㰣>
+                              <div className="mt-2">
                                 <span className="text-xs text-slate-500">Condiciones: </span>
                                 <span className="text-xs text-slate-700">{variable.conditions.join(', ')}</span>
-                              㰣>
+                              </div>
                             )}
-                          㰣>
+                          </div>
                         ))}
                         
                         {comparison.exclusiveCoverages.length > 0 && (
-                          㰣>
+                          <div className="mt-3">
                             <div className="flex items-center gap-2 text-amber-700 bg-amber-50 p-3 rounded-lg">
                               <AlertTriangle size={16} />
                               <span className="text-sm font-medium">
@@ -232,25 +232,25 @@ const VariableComparisonMatrix: React.FC<VariableComparisonMatrixProps> = ({ com
                                   `${e.rawName} (${e.insurerName})`
                                 ).join(', ')}
                               </span>
-                            㰣>
-                          㰣>
+                            </div>
+                          </div>
                         )}
-                      㰣>
-                    㰣>
-                  㰣>
+                      </div>
+                    </td>
+                  </tr>
                 )}
-              㰣>
+              </React.Fragment>
             ))}
-          㰣>
-        㰣>
-      㰣>
+          </tbody>
+        </table>
+      </div>
       
       {filteredComparisons.length === 0 && (
         <div className="p-8 text-center text-slate-500">
           No se encontraron diferencias entre las cotizaciones.
-        㰣>
+        </div>
       )}
-    㰣>
+    </div>
   );
 };
 
