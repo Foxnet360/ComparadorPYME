@@ -68,6 +68,16 @@ app.get('/api', (req, res) => {
     });
 });
 
+// Feature flags endpoint
+import { featureFlags } from './config/featureFlags';
+app.get('/api/features', (req, res) => {
+    res.json({
+        flags: featureFlags.getFlags(),
+        legacyMode: featureFlags.isLegacyMode(),
+        environment: process.env.NODE_ENV || 'development'
+    });
+});
+
 // Ensure uploads directory exists (Use /tmp for Cloud Run)
 const uploadDir = process.env.NODE_ENV === 'production' ? '/tmp/uploads' : path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadDir)) {
@@ -117,6 +127,10 @@ app.use('/api/analysis', analysisRoutes);
 
 // NEW: Chat routes
 app.use('/api/chat', chatRoutes);
+
+// NEW: Monitoring routes
+import monitoringRoutes from './routes/monitoring';
+app.use('/api/monitoring', monitoringRoutes);
 
 // Serve static files from frontend build in production
 if (process.env.NODE_ENV === 'production') {

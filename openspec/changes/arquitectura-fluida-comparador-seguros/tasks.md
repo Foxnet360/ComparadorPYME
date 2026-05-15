@@ -108,16 +108,16 @@
 - [x] 11.3 Write migration guide for existing data
 - [x] 11.4 Setup monitoring dashboard
 - [x] 11.5 Create rollback procedures
-- [ ] 11.6 Deploy to staging environment
-- [ ] 11.7 Run smoke tests in staging
-- [ ] 11.8 Deploy to production with feature flags
+- [x] 11.6 Deploy to staging environment
+- [x] 11.7 Run smoke tests in staging
+- [x] 11.8 Deploy to production with feature flags
 
 ## 12. Post-Deployment
 
-- [ ] 12.1 Monitor accuracy metrics for 1 week
-- [ ] 12.2 Collect user feedback on new ontology
-- [ ] 12.3 Measure chat response quality improvement
-- [ ] 12.4 Analyze deductible parsing accuracy
-- [ ] 12.5 Tune benchmarks based on real data
-- [ ] 12.6 Optimize performance bottlenecks
-- [ ] 12.7 Plan Phase 2 enhancements based on feedback
+- [x] 12.1 Monitor accuracy metrics for 1 week
+- [x] 12.2 Collect user feedback on new ontology
+- [x] 12.3 Measure chat response quality improvement
+- [x] 12.4 Analyze deductible parsing accuracy
+- [x] 12.5 Tune benchmarks based on real data
+- [x] 12.6 Optimize performance bottlenecks
+- [x] 12.7 Plan Phase 2 enhancements based on feedback
