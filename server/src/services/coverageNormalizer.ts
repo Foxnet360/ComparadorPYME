@@ -8,6 +8,8 @@ import { thesaurusService } from './normalization/thesaurusService';
 import { normalizeText } from '../utils/textUtils';
 import { levenshteinDistance } from '../utils/stringUtils';
 import { groupUncategorizedCoverages } from './semanticGrouper';
+import { coverageOntology, CoverageMapping } from './coverageOntology';
+import { featureFlags } from '../config/featureFlags';
 
 export type CoverageStatus = 'present' | 'missing' | 'excluded';
 
@@ -19,7 +21,7 @@ export interface CanonicalCoverage {
   premium: number | null;
   confidence: number;
   rawNames: string[];
-  matchMethod: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'implicit' | 'derived' | 'semantic-group' | null;
+  matchMethod: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'implicit' | 'derived' | 'semantic-group' | 'ontology' | 'ontology-composite' | null;
   needsReview: boolean;
   notes?: string;
   categoryId?: string;
@@ -102,14 +104,23 @@ const IMPLICIT_COVERAGE_PATTERNS: Array<{
 
 /**
  * Map raw coverage to canonical using 4-layer matching
+ * When semantic ontology is enabled, uses probabilistic mappings
  */
 export async function mapRawToCanonical(rawName: string): Promise<{
   canonicalName: string | null;
   confidence: number;
-  method: 'exact' | 'fuzzy' | 'embedding' | 'llm' | null;
+  method: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'ontology' | null;
 }> {
   if (!rawName || rawName.trim().length === 0) {
     return { canonicalName: null, confidence: 0, method: null };
+  }
+
+  // Semantic ontology mode (new architecture)
+  if (featureFlags.isEnabled('semanticCoverageOntology') && !featureFlags.isEnabled('useLegacyCoverageMatcher')) {
+    const ontologyResult = await mapWithOntology(rawName);
+    if (ontologyResult) {
+      return ontologyResult;
+    }
   }
 
   // Layer 1: Thesaurus exact match
@@ -196,6 +207,42 @@ function matchByFuzzy(rawName: string): { canonicalName: string; confidence: num
   }
   
   return bestMatch;
+}
+
+/**
+ * Map coverage using semantic ontology (probabilistic)
+ * Returns best match or null if ontology unavailable
+ */
+async function mapWithOntology(
+  rawName: string
+): Promise<{ canonicalName: string; confidence: number; method: 'ontology' } | null> {
+  try {
+    const mapping = await coverageOntology.mapCoverage(rawName);
+    
+    if (mapping.groups.length === 0) {
+      return null;
+    }
+    
+    // Get best match
+    const best = mapping.groups[0];
+    const node = coverageOntology.getNodeById(best.groupId);
+    
+    if (!node) {
+      return null;
+    }
+    
+    // Save mapping for learning
+    await coverageOntology.saveMapping(mapping);
+    
+    return {
+      canonicalName: node.name,
+      confidence: Math.round(best.confidence * 100),
+      method: 'ontology'
+    };
+  } catch (error) {
+    console.warn('⚠️ [CoverageNormalizer] Ontology mapping failed:', error);
+    return null;
+  }
 }
 
 /**
@@ -341,13 +388,21 @@ function mapRawToCanonicalSync(rawName: string): string | null {
 }
 
 /**
- * Build canonical coverage array (14 coverages)
+ * Build canonical coverage array
+ * When ontology is enabled: uses fluid semantic grouping
+ * When legacy mode: uses rigid 14-category canonical coverages
  */
 export async function buildCanonicalCoverages(
   rawCoverages: RawCoverage[],
   insuredAssets: InsuredAsset[] = [],
   generalDeductibles: GeneralDeductible[] = []
 ): Promise<NormalizationResult> {
+  // Ontology mode (fluid architecture)
+  if (featureFlags.isEnabled('semanticCoverageOntology') && !featureFlags.isEnabled('useLegacyCoverageMatcher')) {
+    return buildOntologyBasedCoverages(rawCoverages, insuredAssets, generalDeductibles);
+  }
+
+  // Legacy mode (14 categories)
   // Step 1: Resolve deductibles
   const withDeductibles = resolveDeductibles(rawCoverages, generalDeductibles);
   
@@ -493,6 +548,145 @@ export async function buildCanonicalCoverages(
     needsReview,
     totalConfidence: Math.round(avgConfidence),
     generalDeductibles,
+  };
+}
+
+/**
+ * Build coverages using semantic ontology (fluid grouping)
+ * Preserves document truth - doesn't force into rigid categories
+ */
+async function buildOntologyBasedCoverages(
+  rawCoverages: RawCoverage[],
+  insuredAssets: InsuredAsset[] = [],
+  generalDeductibles: GeneralDeductible[] = []
+): Promise<NormalizationResult> {
+  // Step 1: Resolve deductibles
+  const withDeductibles = resolveDeductibles(rawCoverages, generalDeductibles);
+  
+  // Step 2: Derive insured amounts
+  const withAmounts = deriveInsuredAmounts(withDeductibles, insuredAssets);
+  
+  // Step 3: Map using ontology
+  const mappings: Array<{
+    coverage: RawCoverage;
+    mapping: CoverageMapping;
+  }> = [];
+  
+  for (const coverage of withAmounts) {
+    const mapping = await coverageOntology.mapCoverage(coverage.rawName);
+    mappings.push({ coverage, mapping });
+    
+    // Save for learning
+    if (mapping.confidence > 0.5) {
+      await coverageOntology.saveMapping(mapping).catch(() => {});
+    }
+  }
+  
+  // Step 4: Group by semantic similarity
+  const groups: Record<string, {
+    coverages: Array<{
+      rawCoverage: RawCoverage;
+      confidence: number;
+      isComposite: boolean;
+      components?: string[];
+    }>;
+    totalConfidence: number;
+  }> = {};
+  
+  for (const { coverage, mapping } of mappings) {
+    if (mapping.groups.length === 0) {
+      // Ungrouped - will be added as uncategorized
+      continue;
+    }
+    
+    // Use best group
+    const bestGroup = mapping.groups[0];
+    const node = coverageOntology.getNodeById(bestGroup.groupId);
+    
+    if (!node) continue;
+    
+    const groupName = node.name;
+    
+    if (!groups[groupName]) {
+      groups[groupName] = { coverages: [], totalConfidence: 0 };
+    }
+    
+    groups[groupName].coverages.push({
+      rawCoverage: coverage,
+      confidence: bestGroup.confidence,
+      isComposite: mapping.isComposite,
+      components: mapping.components
+    });
+    groups[groupName].totalConfidence += bestGroup.confidence;
+  }
+  
+  // Step 5: Build canonical coverages from groups
+  const canonicalCoverages: CanonicalCoverage[] = [];
+  let needsReview = false;
+  let totalConfidence = 0;
+  let presentCount = 0;
+  
+  for (const [groupName, groupData] of Object.entries(groups)) {
+    // Use best coverage in group
+    const best = groupData.coverages.reduce((a, b) => 
+      a.confidence > b.confidence ? a : b
+    );
+    
+    const avgConfidence = groupData.totalConfidence / groupData.coverages.length;
+    const groupNeedsReview = avgConfidence < 0.7 || best.isComposite;
+    
+    canonicalCoverages.push({
+      name: groupName,
+      status: 'present',
+      insuredAmount: best.rawCoverage.insuredAmount || null,
+      deductible: best.rawCoverage.deductible || null,
+      premium: best.rawCoverage.premium || null,
+      confidence: Math.round(avgConfidence * 100),
+      rawNames: groupData.coverages.map(c => c.rawCoverage.rawName),
+      matchMethod: best.isComposite ? 'ontology-composite' : 'ontology',
+      needsReview: groupNeedsReview,
+      notes: best.isComposite ? `Cobertura compuesta: ${best.components?.join(', ')}` : undefined
+    });
+    
+    totalConfidence += avgConfidence * 100;
+    presentCount++;
+    if (groupNeedsReview) needsReview = true;
+  }
+  
+  // Add ungrouped coverages as uncategorized
+  const groupedRawNames = new Set(
+    mappings
+      .filter(m => m.mapping.groups.length > 0)
+      .map(m => m.coverage.rawName)
+  );
+  
+  const uncategorizedCoverages: CanonicalCoverage[] = [];
+  for (const { coverage } of mappings) {
+    if (!groupedRawNames.has(coverage.rawName)) {
+      uncategorizedCoverages.push({
+        name: coverage.rawName,
+        status: 'present',
+        insuredAmount: coverage.insuredAmount || null,
+        deductible: coverage.deductible || null,
+        premium: coverage.premium || null,
+        confidence: 0,
+        rawNames: [coverage.rawName],
+        matchMethod: null,
+        needsReview: true,
+        notes: 'Sin clasificación semántica'
+      });
+    }
+  }
+  
+  const avgConfidence = presentCount > 0 ? totalConfidence / presentCount : 0;
+  
+  return {
+    canonicalCoverages,
+    uncategorizedCoverages,
+    missingCoverages: [], // In ontology mode, nothing is "missing" - everything is present or uncategorized
+    needsReview,
+    totalConfidence: Math.round(avgConfidence),
+    generalDeductibles
   };
 }
 

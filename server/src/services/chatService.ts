@@ -1,13 +1,13 @@
 /**
- * Chat Service
- * Processes chat messages with optional RAG integration
- * Uses Gemini 2.5 Flash-Lite for cost efficiency
+ * Chat Service - Triple Source Implementation
+ * Prioritizes: 1. Quote Data > 2. Structured Clauses > 3. General Knowledge
  */
 
 import { GoogleGenAI } from '@google/genai';
 import { ragRetrievalService } from './ragRetrievalService';
 import { embeddingService } from './vector/embeddingService';
 import { supabase } from '../config/database';
+import { structuredClauseExtractor } from './structuredClauseExtractor';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const GEMINI_CHAT_MODEL = process.env.GEMINI_CHAT_MODEL || 'gemini-2.5-flash-lite';
@@ -39,27 +39,38 @@ export interface ChatResponse {
 }
 
 /**
- * Build system prompt for the chat
+ * Build system prompt for Triple Source chat
  */
-const buildSystemPrompt = (): string => {
+const buildSystemPromptTripleSource = (): string => {
     return `Eres un asistente especializado en seguros para corredores de seguros en Colombia.
 
+TRIPLE FUENTE DE VERDAD (en orden de prioridad):
+1. 📄 DATOS DE COTIZACIÓN (Primera fuente): Datos extraídos directamente del PDF de la cotización. Siempre disponibles y precisos.
+2. 📋 CLAUSULADOS ESTRUCTURADOS (Segunda fuente): Información legal de condiciones generales/particulares. Disponible si está indexado.
+3. ℹ️ CONOCIMIENTO GENERAL (Tercera fuente): Conocimiento del modelo sobre seguros PYME en Colombia. Usar con cautela y solo cuando las fuentes 1 y 2 no tengan la respuesta.
+
 REGLAS ESTRICTAS:
-1. Responde ÚNICAMENTE basado en el contexto proporcionado (cotizaciones y clausulados)
-2. Si no tienes información suficiente en los clausulados, usa los datos de las cotizaciones del reporte
-3. NUNCA digas "No tengo información suficiente" si hay datos de cotizaciones disponibles
-4. Sé conciso y profesional
-5. Usa formato markdown cuando sea útil (listas, negritas)
-6. Si citas un clausulado, indica la aseguradora y página
-7. Si usas datos de cotizaciones (sin clausulado), aclara: "Basado en la cotización..."
-8. No inventes información ni hagas suposiciones
-9. Si la pregunta es sobre comparación, sé objetivo y menciona pros/contras
-10. Si la pregunta es sobre un riesgo, explica el impacto y sugiere mitigación
+1. SIEMPRE prioriza los datos de cotización sobre el conocimiento general
+2. Si no encuentras en clausulados pero hay datos de cotización, responde con los datos de cotización
+3. Indica la fuente de cada información: 📄 (cotización), 📋 (clausulado), ℹ️ (conocimiento general)
+4. NUNCA digas "No tengo información suficiente" si hay datos de cotización disponibles
+5. Sé conciso y profesional
+6. Usa formato markdown cuando sea útil (listas, negritas)
+7. No inventes información ni hagas suposiciones
+8. Si la pregunta es sobre comparación, sé objetivo y menciona pros/contras
+9. Si hay inconsistencia entre cotización y clausulado, ALERTA al usuario
 
 FORMATO DE RESPUESTA:
+- Indica la fuente al inicio: 📄, 📋, o ℹ️
 - Respuesta directa primero
-- Detalles de soporte después
-- Indica la fuente: clausulado o cotización`
+- Detalles de soporte después`;
+};
+
+/**
+ * Legacy system prompt (for backward compatibility)
+ */
+const buildSystemPrompt = (): string => {
+    return buildSystemPromptTripleSource();
 };
 
 /**
@@ -103,17 +114,114 @@ const buildReportContext = (reportContext: any): string => {
 };
 
 /**
- * Search RAG for relevant clauses
+ * Search quote data for relevant information (Primary Source)
+ */
+const searchQuoteData = (
+    message: string,
+    reportContext: any
+): { data: string; source: string; insurerName?: string } | null => {
+    try {
+        const quotes = reportContext?.quotes || [];
+        const messageLower = message.toLowerCase();
+        
+        // Search for insurer mentions
+        const mentionedInsurer = quotes.find((q: any) => 
+            messageLower.includes(q.insurerName?.toLowerCase())
+        );
+        
+        if (mentionedInsurer) {
+            // Search for coverage mentions in the message
+            const coverage = mentionedInsurer.coverages?.find((c: any) => 
+                messageLower.includes(c.name?.toLowerCase()) ||
+                messageLower.includes(c.canonicalName?.toLowerCase())
+            );
+            
+            if (coverage) {
+                return {
+                    data: `Cobertura: ${coverage.name}\nValor: ${coverage.value}\nDeducible: ${coverage.deductible || 'No especificado'}`,
+                    source: 'quote',
+                    insurerName: mentionedInsurer.insurerName
+                };
+            }
+            
+            // Return general quote info
+            return {
+                data: `Aseguradora: ${mentionedInsurer.insurerName}\nPrima: ${mentionedInsurer.priceAnnual}\nCoberturas: ${mentionedInsurer.coverages?.length || 0}`,
+                source: 'quote',
+                insurerName: mentionedInsurer.insurerName
+            };
+        }
+        
+        // Search across all quotes for coverage type
+        for (const quote of quotes) {
+            const coverage = quote.coverages?.find((c: any) => 
+                messageLower.includes(c.name?.toLowerCase()) ||
+                messageLower.includes(c.canonicalName?.toLowerCase())
+            );
+            
+            if (coverage) {
+                return {
+                    data: `${quote.insurerName}: ${coverage.name} - ${coverage.value} (Ded: ${coverage.deductible || 'N/A'})`,
+                    source: 'quote',
+                    insurerName: quote.insurerName
+                };
+            }
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('❌ [chatService] Quote search error:', error);
+        return null;
+    }
+};
+
+/**
+ * Search structured clauses (Secondary Source)
+ */
+const searchStructuredClauses = async (
+    message: string,
+    insurerNames: string[]
+): Promise<ChatCitation[]> => {
+    try {
+        const allClauses: ChatCitation[] = [];
+        
+        for (const insurerName of insurerNames) {
+            // Try structured clause search first
+            const structured = await structuredClauseExtractor.searchClause(insurerName);
+            
+            if (structured) {
+                // Find relevant coverage in structured data
+                const relevantCoverage = structured.coverages.find(c => 
+                    message.toLowerCase().includes(c.name.toLowerCase())
+                );
+                
+                if (relevantCoverage) {
+                    allClauses.push({
+                        id: `structured-${insurerName}`,
+                        insurerName,
+                        content: `${relevantCoverage.name}: ${relevantCoverage.description}\nDeducible: ${JSON.stringify(relevantCoverage.deductible)}`,
+                        pageNumber: relevantCoverage.sourcePage,
+                        similarityScore: 0.95
+                    });
+                }
+            }
+        }
+        
+        return allClauses;
+    } catch (error) {
+        console.error('❌ [chatService] Structured clause search error:', error);
+        return [];
+    }
+};
+
+/**
+ * Search RAG for relevant clauses (Tertiary Source)
  */
 const searchRAG = async (
     message: string,
     insurerNames: string[]
 ): Promise<ChatCitation[]> => {
     try {
-        // Generate embedding for the query
-        const queryEmbedding = await embeddingService.generateEmbedding(message);
-        
-        // Search across all insurers in the report
         const allClauses: ChatCitation[] = [];
         
         for (const insurerName of insurerNames) {
@@ -133,29 +241,7 @@ const searchRAG = async (
             });
         }
         
-        // If no results per insurer, do general search
-        if (allClauses.length === 0) {
-            const generalResults = await ragRetrievalService.search(message, { limit: 3 });
-            generalResults.forEach(clause => {
-                allClauses.push({
-                    id: clause.id,
-                    insurerName: clause.insurerName,
-                    content: clause.content,
-                    pageNumber: clause.pageNumber,
-                    similarityScore: clause.similarity
-                });
-            });
-        }
-        
-        // Sort by similarity and deduplicate
-        const uniqueClauses = allClauses
-            .sort((a, b) => b.similarityScore - a.similarityScore)
-            .filter((clause, index, self) => 
-                index === self.findIndex(c => c.id === clause.id)
-            )
-            .slice(0, 5);
-        
-        return uniqueClauses;
+        return allClauses;
     } catch (error) {
         console.error('❌ [chatService] RAG search error:', error);
         return [];
@@ -307,7 +393,8 @@ const buildPromptWithHistory = (
 };
 
 /**
- * Process a chat message with persistence
+ * Process a chat message with Triple Source priority
+ * 1. Quote Data (Primary) > 2. Structured Clauses (Secondary) > 3. RAG (Tertiary)
  */
 export const processChatMessage = async (
     message: string,
@@ -334,31 +421,63 @@ export const processChatMessage = async (
         // Build context
         const reportCtx = buildReportContext(reportContext);
         
-        // RAG search if enabled
+        // TRIPLE SOURCE SEARCH
         let citations: ChatCitation[] = [];
-        let ragContext = '';
-        let usingReportFallback = false;
+        let sourceContext = '';
+        let sourcesUsed: string[] = [];
         
-        if (useRAG && reportContext?.quotes) {
+        if (reportContext?.quotes) {
             const insurerNames = reportContext.quotes.map((q: any) => q.insurerName).filter(Boolean);
-            citations = await searchRAG(message, insurerNames);
             
-            // If RAG returned no results, use report context as fallback
-            if (citations.length === 0) {
-                console.log('⚠️ [chatService] RAG returned no results, using report context as fallback');
-                ragContext = '\n=== NOTA ===\nNo se encontraron clausulados específicos para esta pregunta. La respuesta se basa en los datos de las cotizaciones.\n';
-                usingReportFallback = true;
-            } else {
-                ragContext = formatCitationsForPrompt(citations);
+            // SOURCE 1: Quote Data (Primary)
+            console.log('🔍 [chatService] Searching quote data...');
+            const quoteResult = searchQuoteData(message, reportContext);
+            
+            if (quoteResult) {
+                sourceContext += `\n=== DATOS DE COTIZACIÓN ===\n${quoteResult.data}\n`;
+                sourcesUsed.push('quote');
+                console.log('✅ [chatService] Found in quote data');
+            }
+            
+            // SOURCE 2: Structured Clauses (Secondary)
+            if (useRAG) {
+                console.log('🔍 [chatService] Searching structured clauses...');
+                const structuredCitations = await searchStructuredClauses(message, insurerNames);
+                
+                if (structuredCitations.length > 0) {
+                    sourceContext += formatCitationsForPrompt(structuredCitations);
+                    citations.push(...structuredCitations);
+                    sourcesUsed.push('structured');
+                    console.log(`✅ [chatService] Found ${structuredCitations.length} structured clauses`);
+                }
+            }
+            
+            // SOURCE 3: RAG (Tertiary) - only if no structured results
+            if (useRAG && structuredCitations.length === 0) {
+                console.log('🔍 [chatService] Searching RAG...');
+                const ragCitations = await searchRAG(message, insurerNames);
+                
+                if (ragCitations.length > 0) {
+                    sourceContext += formatCitationsForPrompt(ragCitations);
+                    citations.push(...ragCitations);
+                    sourcesUsed.push('rag');
+                    console.log(`✅ [chatService] Found ${ragCitations.length} RAG results`);
+                }
+            }
+            
+            // If no sources found but quote data exists, use general quote context
+            if (sourcesUsed.length === 0 && quoteResult === null) {
+                sourceContext = '\n=== NOTA ===\nNo se encontraron datos específicos para esta pregunta, pero hay cotizaciones disponibles para consulta general.\n';
+                sourcesUsed.push('general');
             }
         }
         
         // Build the full prompt with history
-        const systemPrompt = buildSystemPrompt();
+        const systemPrompt = buildSystemPromptTripleSource();
         const fullPrompt = buildPromptWithHistory(
             systemPrompt,
             reportCtx,
-            ragContext,
+            sourceContext,
             history,
             message
         );
@@ -374,7 +493,20 @@ export const processChatMessage = async (
         });
         
         const result = await model;
-        const responseText = result.text || 'Lo siento, no pude generar una respuesta.';
+        let responseText = result.text || 'Lo siento, no pude generar una respuesta.';
+        
+        // Add source attribution if not already present
+        if (!responseText.includes('📄') && !responseText.includes('📋') && !responseText.includes('ℹ️')) {
+            const sourceLabels: Record<string, string> = {
+                'quote': '📄 Según la cotización',
+                'structured': '📋 Según clausulado estructurado',
+                'rag': '📋 Según clausulado',
+                'general': 'ℹ️ Información general'
+            };
+            
+            const primarySource = sourcesUsed[0] || 'general';
+            responseText = `${sourceLabels[primarySource]}\n\n${responseText}`;
+        }
         
         // Save model response
         await saveMessage(
@@ -386,7 +518,7 @@ export const processChatMessage = async (
             estimatedTokens + estimateTokens(responseText)
         );
         
-        console.log(`✅ [chatService] Response generated in ${Date.now() - startTime}ms`);
+        console.log(`✅ [chatService] Response generated in ${Date.now() - startTime}ms (sources: ${sourcesUsed.join(', ')})`);
         
         return {
             text: responseText,
@@ -397,28 +529,19 @@ export const processChatMessage = async (
     } catch (error) {
         console.error('❌ [chatService] Error processing message:', error);
         
-        // Fallback to gemini-2.5-flash if flash-lite fails
-        if (GEMINI_CHAT_MODEL === 'gemini-2.5-flash-lite') {
-            console.log('🔄 [chatService] Falling back to gemini-2.5-flash...');
-            try {
-                const reportCtx = buildReportContext(reportContext);
-                const systemPrompt = buildSystemPrompt();
-                const fullPrompt = `${systemPrompt}\n\n${reportCtx}\n\n=== PREGUNTA ===\n${message}`;
-                
-                const fallbackResult = await genAI.models.generateContent({
-                    model: 'gemini-2.5-flash',
-                    contents: [{ role: 'user', parts: [{ text: fullPrompt }] }]
-                });
-                
+        // Fallback: Always try to answer with quote data
+        try {
+            const quoteResult = searchQuoteData(message, reportContext);
+            if (quoteResult) {
                 return {
-                    text: fallbackResult.text || 'Lo siento, no pude generar una respuesta.',
+                    text: `📄 Según la cotización:\n\n${quoteResult.data}\n\n⚠️ Nota: Esta respuesta se basa únicamente en los datos de la cotización.`,
                     citations: [],
-                    tokensUsed: estimateTokens(fullPrompt) + estimateTokens(fallbackResult.text || ''),
-                    modelUsed: 'gemini-2.5-flash'
+                    tokensUsed: 0,
+                    modelUsed: 'fallback-quote-data'
                 };
-            } catch (fallbackError) {
-                console.error('❌ [chatService] Fallback also failed:', fallbackError);
             }
+        } catch (fallbackError) {
+            console.error('❌ [chatService] Quote fallback failed:', fallbackError);
         }
         
         throw error;

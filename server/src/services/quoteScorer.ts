@@ -8,6 +8,9 @@ import { ParsedQuote } from './quoteParser';
 import { CrossReferenceResult, DiscrepancyAlert } from './crossReferenceEngine';
 import { formatNumber } from '../utils/formatCurrency';
 import { CoverageExistenceResult } from './clauseCoverageValidator';
+import { variableComparator } from './variableComparator';
+import { deductibleParser } from './deductibleParser';
+import { featureFlags } from '../config/featureFlags';
 
 export interface ScoreWeights {
     coverage: number;
@@ -78,15 +81,21 @@ const MARKET_PRICE_BENCHMARK = 8500000; // ~8.5M COP annual
 export const quoteScorer = {
     /**
      * Calculate complete score for a quote
+     * Uses variable comparison engine when enabled
      */
-    calculateScore: (
+    calculateScore: async (
         quote: ParsedQuote,
         crossRefResults: CrossReferenceResult[],
         allQuotes: ParsedQuote[] = [],
         customWeights?: Partial<ScoreWeights>,
         clauseValidation?: CoverageExistenceResult[]
-    ): ScoringResult => {
+    ): Promise<ScoringResult> => {
         console.log(`📊 [quoteScorer] Calculating score for ${quote.insurerName}...`);
+
+        // Use variable comparison engine when enabled
+        if (featureFlags.isEnabled('variableComparisonEngine') && allQuotes.length > 1) {
+            return await quoteScorer.calculateScoreWithVariables(quote, crossRefResults, allQuotes, customWeights, clauseValidation);
+        }
 
         const weights = { ...DEFAULT_WEIGHTS, ...customWeights };
         normalizeWeights(weights);
@@ -161,6 +170,79 @@ export const quoteScorer = {
         };
 
         console.log(`✅ [quoteScorer] Score for ${quote.insurerName}: ${result.totalScore}/100`);
+        return result;
+    },
+
+    /**
+     * Calculate score using variable comparison engine
+     * Provides more granular scoring based on direct variable comparison
+     */
+    calculateScoreWithVariables: async (
+        quote: ParsedQuote,
+        crossRefResults: CrossReferenceResult[],
+        allQuotes: ParsedQuote[],
+        customWeights?: Partial<ScoreWeights>,
+        clauseValidation?: CoverageExistenceResult[]
+    ): Promise<ScoringResult> => {
+        console.log(`📊 [quoteScorer] Calculating variable-based score for ${quote.insurerName}...`);
+
+        const weights = { ...DEFAULT_WEIGHTS, ...customWeights };
+        normalizeWeights(weights);
+
+        // Calculate variable-based scores
+        const variableScores = await calculateVariableBasedScores(quote, allQuotes, crossRefResults);
+
+        const breakdown: ScoreBreakdown = {
+            coverage: variableScores.coverageScore,
+            deductibles: variableScores.deductibleScore,
+            exclusions: calculateExclusionScore(crossRefResults),
+            priceRatio: calculatePriceScore(quote, allQuotes),
+            sublimits: calculateSubLimitScore(crossRefResults),
+            warranties: calculateWarrantyScore(crossRefResults)
+        };
+
+        // Calculate data quality score
+        const dataQualityScore = Math.round(
+            breakdown.coverage * 0.35 +
+            breakdown.deductibles * 0.25 +
+            breakdown.priceRatio * 0.40
+        );
+
+        // Calculate verification confidence
+        const hasRagData = crossRefResults.length > 0;
+        const verificationConfidence = hasRagData ? Math.round(
+            breakdown.exclusions * 0.40 +
+            breakdown.sublimits * 0.30 +
+            breakdown.warranties * 0.30
+        ) : 0;
+
+        // Calculate weighted total
+        const totalScore = Math.round(
+            breakdown.coverage * weights.coverage +
+            breakdown.deductibles * weights.deductibles +
+            breakdown.exclusions * weights.exclusions +
+            breakdown.priceRatio * weights.priceRatio +
+            breakdown.sublimits * weights.sublimits +
+            breakdown.warranties * weights.warranties
+        );
+
+        const alertCounts = countAlerts(crossRefResults);
+        const { rank, average } = calculatePriceRank(quote, allQuotes);
+
+        const result: ScoringResult = {
+            totalScore: clamp(totalScore, 0, 100),
+            dataQualityScore: clamp(dataQualityScore, 0, 100),
+            verificationConfidence: clamp(verificationConfidence, 0, 100),
+            breakdown,
+            weights,
+            quotePriceRank: rank,
+            marketPriceAverage: average,
+            coverageCount: quote.coverages.length,
+            expectedCoverageCount: EXPECTED_COVERAGES.length,
+            ...alertCounts
+        };
+
+        console.log(`✅ [quoteScorer] Variable-based score for ${quote.insurerName}: ${result.totalScore}/100`);
         return result;
     },
 
@@ -475,4 +557,69 @@ function normalizeWeights(weights: ScoreWeights): void {
             weights[key] = weights[key] / sum;
         }
     }
+}
+
+/**
+ * Calculate scores based on direct variable comparison between quotes
+ */
+async function calculateVariableBasedScores(
+    quote: ParsedQuote,
+    allQuotes: ParsedQuote[],
+    crossRefResults: CrossReferenceResult[]
+): Promise<{ coverageScore: number; deductibleScore: number }> {
+    // Coverage score: compare number and breadth of coverages
+    const maxCoverages = Math.max(...allQuotes.map(q => q.coverages.length));
+    const coverageScore = maxCoverages > 0 
+        ? Math.round((quote.coverages.length / maxCoverages) * 100)
+        : 50;
+
+    // Deductible score: compare deductibles using semantic parser
+    let deductibleScore = 70; // Default neutral
+    
+    if (crossRefResults.length > 0) {
+        let totalDedScore = 0;
+        let dedCount = 0;
+        
+        for (const result of crossRefResults) {
+            if (!result.quoteData.deductible || result.quoteData.deductible === 'No aplica') continue;
+            
+            try {
+                const quoteDed = deductibleParser.parse(result.quoteData.deductible);
+                
+                // Find best deductible among all quotes for this coverage
+                const coverageName = result.coverageName;
+                const allDeds = allQuotes.flatMap(q => 
+                    q.coverages
+                        .filter(c => (c.canonicalName || c.name) === coverageName)
+                        .map(c => c.deductible)
+                        .filter((d): d is string => !!d && d !== 'No aplica')
+                );
+                
+                if (allDeds.length > 1) {
+                    const parsedDeds: Array<{ normalized: { minAmount: number; percentage: number } }> = await Promise.all(allDeds.map(d => deductibleParser.parse(d)));
+                    const minDed = Math.min(...parsedDeds.map(d => d.normalized.minAmount || d.normalized.percentage || Infinity));
+                    const quoteMin = quoteDed.normalized.minAmount || quoteDed.normalized.percentage || Infinity;
+                    
+                    if (quoteMin === minDed) {
+                        totalDedScore += 100; // Best deductible
+                    } else if (quoteMin <= minDed * 1.2) {
+                        totalDedScore += 80; // Within 20%
+                    } else if (quoteMin <= minDed * 1.5) {
+                        totalDedScore += 60; // Within 50%
+                    } else {
+                        totalDedScore += 40; // Much worse
+                    }
+                    dedCount++;
+                }
+            } catch (error) {
+                console.warn(`⚠️ [quoteScorer] Failed to parse deductible: ${result.quoteData.deductible}`);
+            }
+        }
+        
+        if (dedCount > 0) {
+            deductibleScore = Math.round(totalDedScore / dedCount);
+        }
+    }
+
+    return { coverageScore, deductibleScore };
 }

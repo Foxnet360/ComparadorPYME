@@ -1,8 +1,11 @@
 /**
  * Deductible Analyzer
  * Analyzes deductible risk considering insured amount, caps, and proportions
- * Detects deductibles that seem low but have restrictive caps or represent high % of insured value
+ * Uses the new semantic deductible parser for compound structures
  */
+
+import { deductibleParser } from './deductibleParser';
+import { deductibleBenchmarks } from './deductibleBenchmarks';
 
 export interface DeductibleAnalysis {
   coverageName: string;
@@ -16,6 +19,11 @@ export interface DeductibleAnalysis {
   riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
   score: number;                // 0-100
   recommendation?: string;
+  benchmark?: {
+    benchmark: string;
+    assessment: string;
+    notes: string;
+  };
 }
 
 // SMMLV value (approximate, should be configurable)
@@ -24,47 +32,52 @@ const SMMLV_VALUE = 1300000; // ~1.3M COP
 export const deductibleAnalyzer = {
   /**
    * Analyze deductible risk for a specific coverage
+   * Uses the new semantic deductible parser for compound structures
    */
-  analyze: (
+  analyze: async (
     coverageName: string,
     quoteDeductibleText: string,
     clauseDeductibleText: string,
     insuredAmount: number
-  ): DeductibleAnalysis => {
+  ): Promise<DeductibleAnalysis> => {
     console.log(`💰 [deductibleAnalyzer] Analyzing deductible for ${coverageName}...`);
     
-    // Parse clause deductible
-    const clauseParsed = parseDeductible(clauseDeductibleText);
-    const quoteParsed = parseDeductible(quoteDeductibleText);
+    // Parse using new semantic parser
+    const quoteStructure = await deductibleParser.parse(quoteDeductibleText);
+    const clauseStructure = clauseDeductibleText ? await deductibleParser.parse(clauseDeductibleText) : null;
     
     // Use clause deductible as source of truth (or quote if clause not available)
-    const effectiveDeductible = clauseParsed.amount > 0 ? clauseParsed : quoteParsed;
+    const effectiveStructure = clauseStructure?.normalized.minAmount > 0 ? clauseStructure : quoteStructure;
     
-    // Calculate deductible amount
+    // Calculate deductible amount based on structure
     let deductibleAmount = 0;
-    
-    if (effectiveDeductible.type === 'PERCENTAGE') {
-      deductibleAmount = (effectiveDeductible.amount / 100) * insuredAmount;
-    } else if (effectiveDeductible.type === 'SMMLV') {
-      deductibleAmount = effectiveDeductible.amount * SMMLV_VALUE;
-    } else if (effectiveDeductible.type === 'FIXED') {
-      deductibleAmount = effectiveDeductible.amount;
-    }
-    
-    // Apply cap if exists
     let hasCap = false;
     let capAmount: number | undefined;
     
-    if (clauseParsed.capAmount > 0) {
-      hasCap = true;
-      capAmount = clauseParsed.capAmount;
-      if (capAmount < deductibleAmount) {
-        deductibleAmount = capAmount;
+    if (effectiveStructure.normalized.isPercentageBased && insuredAmount > 0) {
+      const calculatedAmount = (effectiveStructure.normalized.percentage / 100) * insuredAmount;
+      deductibleAmount = Math.min(
+        effectiveStructure.normalized.maxAmount || Infinity,
+        Math.max(effectiveStructure.normalized.minAmount, calculatedAmount)
+      );
+      
+      // Check if there's a cap
+      if (effectiveStructure.normalized.maxAmount > 0 && effectiveStructure.normalized.maxAmount < calculatedAmount) {
+        hasCap = true;
+        capAmount = effectiveStructure.normalized.maxAmount;
       }
+    } else {
+      deductibleAmount = effectiveStructure.normalized.minAmount;
     }
     
     // Calculate ratio
     const deductibleRatio = insuredAmount > 0 ? deductibleAmount / insuredAmount : 0;
+    
+    // Evaluate against benchmarks
+    const benchmark = deductibleBenchmarks.evaluate(coverageName, {
+      percentage: effectiveStructure.normalized.percentage,
+      minAmount: effectiveStructure.normalized.minAmount
+    });
     
     // Determine risk level
     let riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
@@ -81,15 +94,24 @@ export const deductibleAnalyzer = {
       score = Math.max(0, 50 - Math.round((deductibleRatio - 0.15) / 0.05 * 50));
     }
     
+    // Adjust score based on benchmark
+    if (benchmark.benchmark === 'excellent') {
+      score = Math.min(100, score + 10);
+    } else if (benchmark.benchmark === 'poor') {
+      score = Math.max(0, score - 15);
+    }
+    
     // Generate recommendation
     let recommendation: string | undefined;
     if (riskLevel === 'HIGH') {
-      recommendation = `El deducible representa el ${(deductibleRatio * 100).toFixed(1)}% del valor asegurado ($${formatCurrency(deductibleAmount)}). Considerar negociar reducción o buscar alternativas.`;
+      recommendation = `El deducible representa el ${(deductibleRatio * 100).toFixed(1)}% del valor asegurado ($${formatCurrency(deductibleAmount)}). ${benchmark.notes}`;
     } else if (!hasCap && deductibleRatio > 0.10) {
-      recommendation = `Deducible sin tope máximo. En caso de siniestro con valor alto, el deducible podría ser significativo.`;
+      recommendation = `Deducible sin tope máximo. ${benchmark.notes}`;
+    } else if (benchmark.benchmark === 'excellent') {
+      recommendation = `✅ Deducible favorable. ${benchmark.notes}`;
     }
     
-    console.log(`✅ [deductibleAnalyzer] Risk: ${riskLevel}, Score: ${score}/100`);
+    console.log(`✅ [deductibleAnalyzer] Risk: ${riskLevel}, Score: ${score}/100, Benchmark: ${benchmark.assessment}`);
     
     return {
       coverageName,
@@ -102,7 +124,8 @@ export const deductibleAnalyzer = {
       capAmount,
       riskLevel,
       score: Math.min(100, score),
-      recommendation
+      recommendation,
+      benchmark
     };
   },
   

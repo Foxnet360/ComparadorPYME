@@ -5,6 +5,9 @@
 
 import { ragRetrievalService, RetrievedClause } from './ragRetrievalService';
 import { ParsedCoverage, ParsedQuote } from './quoteParser';
+import { structuredClauseExtractor } from './structuredClauseExtractor';
+import { deductibleParser } from './deductibleParser';
+import { featureFlags } from '../config/featureFlags';
 
 export type AlertLevel = 'CRITICAL' | 'WARNING' | 'INFO' | 'GOOD';
 
@@ -41,8 +44,26 @@ export interface CrossReferenceResult {
 export const crossReferenceEngine = {
     /**
      * Cross-reference a single coverage against clause documents
+     * Uses structured data when available, falls back to RAG
      */
     crossReferenceCoverage: async (
+        coverage: ParsedCoverage,
+        insurerName: string
+    ): Promise<CrossReferenceResult> => {
+        // Use structured clause extraction when enabled
+        if (featureFlags.isEnabled('structuredClauseExtraction')) {
+            return crossReferenceEngine.crossReferenceCoverageStructured(coverage, insurerName);
+        }
+
+        // Legacy RAG-based cross-reference
+        return crossReferenceCoverageLegacy(coverage, insurerName);
+    },
+
+    /**
+     * Cross-reference using structured clause data (new architecture)
+     * Compares variables directly: value, deductible structure, exclusions, conditions
+     */
+    crossReferenceCoverageStructured: async (
         coverage: ParsedCoverage,
         insurerName: string
     ): Promise<CrossReferenceResult> => {
@@ -58,22 +79,29 @@ export const crossReferenceEngine = {
         };
 
         try {
-            // Retrieve clause sections for this coverage
-            const { clauses, isFallback } = await ragRetrievalService.searchWithFallback(
-                `${coverage.canonicalName} deducible exclusion`,
-                {
-                    insurerName,
-                    coverageTags: coverage.canonicalName ? [coverage.canonicalName] : undefined,
-                    limit: 3
-                }
+            // Search for structured clause data
+            const structuredClause = await structuredClauseExtractor.searchClause(
+                insurerName,
+                coverage.canonicalName || coverage.name
             );
 
-            if (clauses.length === 0) {
+            if (!structuredClause) {
+                // Fall back to legacy RAG-based cross-reference
+                return crossReferenceCoverageLegacy(coverage, insurerName);
+            }
+
+            // Find matching coverage in structured data
+            const matchingCoverage = structuredClause.coverages.find(c =>
+                c.name.toLowerCase().includes((coverage.canonicalName || coverage.name).toLowerCase()) ||
+                (coverage.canonicalName || coverage.name).toLowerCase().includes(c.name.toLowerCase())
+            );
+
+            if (!matchingCoverage) {
                 result.alerts.push({
                     level: 'INFO',
                     coverageName: result.coverageName,
-                    title: 'Sin cláusulas de referencia',
-                    description: `No se encontraron cláusulas para ${result.coverageName}. No se puede verificar la información.`,
+                    title: 'Cobertura no encontrada en clausulado',
+                    description: `La cobertura ${result.coverageName} no aparece en el clausulado estructurado de ${insurerName}.`,
                     quoteValue: coverage.value,
                     clauseValue: 'N/A',
                     isFallback: false
@@ -81,77 +109,93 @@ export const crossReferenceEngine = {
                 return result;
             }
 
-            // Extract clause data
-            const clauseData = extractClauseData(clauses, coverage.canonicalName || coverage.name);
-            result.clauseData = clauseData;
+            // Populate structured clause data
+            result.clauseData = {
+                value: matchingCoverage.insuredAmount,
+                deductible: matchingCoverage.deductible?.rawText,
+                exclusions: [...matchingCoverage.exclusions, ...structuredClause.generalExclusions],
+                conditions: [...matchingCoverage.conditions, ...structuredClause.generalConditions],
+                isMandatory: false
+            };
             result.isVerified = true;
 
-            // Compare deductibles
+            // Semantic deductible comparison
             if (coverage.deductible && coverage.deductible !== 'No aplica' && coverage.deductible !== 'NO ESPECIFICADO') {
-                const quoteDeductible = parseDeductible(coverage.deductible);
-                const clauseDeductible = clauseData.deductible ? parseDeductible(clauseData.deductible) : null;
+                const quoteDeductibleStructure = await deductibleParser.parse(coverage.deductible);
+                const matchingDeductible = matchingCoverage.deductible;
+                const clauseDeductibleStructure = matchingDeductible
+                    ? await deductibleParser.parse(matchingDeductible.rawText)
+                    : null;
 
-                if (clauseDeductible && quoteDeductible && quoteDeductible < clauseDeductible) {
+                if (clauseDeductibleStructure && matchingDeductible) {
+                    const comparison = compareDeductibleStructures(
+                        quoteDeductibleStructure,
+                        clauseDeductibleStructure
+                    );
+
+                    if (comparison.isBetter) {
+                        result.alerts.push({
+                            level: 'GOOD',
+                            coverageName: result.coverageName,
+                            title: 'Deducible favorable',
+                            description: `La cotización ofrece mejores condiciones de deducible (${coverage.deductible}) vs clausulado (${matchingDeductible.rawText}).`,
+                            quoteValue: coverage.deductible,
+                            clauseValue: matchingDeductible.rawText,
+                            isFallback: false
+                        });
+                    } else if (comparison.isWorse) {
+                        result.alerts.push({
+                            level: 'CRITICAL',
+                            coverageName: result.coverageName,
+                            title: 'Discrepancia en deducible',
+                            description: `El clausulado establece condiciones menos favorables (${matchingDeductible.rawText}) que la cotización (${coverage.deductible}).`,
+                            quoteValue: coverage.deductible,
+                            clauseValue: matchingDeductible.rawText,
+                            isFallback: false
+                        });
+                    }
+                }
+            }
+
+            // Compare insured amounts
+            if (matchingCoverage.insuredAmount && coverage.value) {
+                const quoteAmount = parseValue(coverage.value);
+                const clauseAmount = parseValue(matchingCoverage.insuredAmount);
+
+                if (quoteAmount && clauseAmount && quoteAmount < clauseAmount) {
                     result.alerts.push({
-                        level: 'CRITICAL',
+                        level: 'WARNING',
                         coverageName: result.coverageName,
-                        title: 'Discrepancia en deducible',
-                        description: `La cotización indica deducible ${coverage.deductible}, pero el clausulado establece ${clauseData.deductible}. El deducible real podría ser mayor.`,
-                        quoteValue: coverage.deductible,
-                        clauseValue: clauseData.deductible || 'N/A',
-                        clauseReference: clauses[0]?.content.substring(0, 200),
-                        isFallback
-                    });
-                } else if (clauseDeductible && quoteDeductible && quoteDeductible > clauseDeductible) {
-                    result.alerts.push({
-                        level: 'GOOD',
-                        coverageName: result.coverageName,
-                        title: 'Deducible favorable',
-                        description: `La cotización ofrece un deducible ${coverage.deductible}, mejor que el clausulado (${clauseData.deductible}).`,
-                        quoteValue: coverage.deductible,
-                        clauseValue: clauseData.deductible || 'N/A',
-                        isFallback
+                        title: 'Valor asegurado menor al clausulado',
+                        description: `La cotización cubre ${coverage.value}, pero el clausulado menciona ${matchingCoverage.insuredAmount}.`,
+                        quoteValue: coverage.value,
+                        clauseValue: matchingCoverage.insuredAmount,
+                        isFallback: false
                     });
                 }
             }
 
             // Check exclusions
-            if (clauseData.exclusions && clauseData.exclusions.length > 0) {
+            const totalExclusions = [
+                ...matchingCoverage.exclusions,
+                ...structuredClause.generalExclusions
+            ];
+            if (totalExclusions.length > 0) {
                 result.alerts.push({
                     level: 'WARNING',
                     coverageName: result.coverageName,
                     title: 'Exclusiones aplicables',
-                    description: `Se encontraron ${clauseData.exclusions.length} exclusiones relevantes: ${clauseData.exclusions.slice(0, 2).join('; ')}${clauseData.exclusions.length > 2 ? '...' : ''}`,
+                    description: `Se encontraron ${totalExclusions.length} exclusiones: ${totalExclusions.slice(0, 2).join('; ')}${totalExclusions.length > 2 ? '...' : ''}`,
                     quoteValue: coverage.value,
-                    clauseValue: clauseData.exclusions.join('; '),
-                    isFallback
-                });
-            }
-
-            // If using fallback clauses, add info alert
-            if (isFallback) {
-                result.alerts.push({
-                    level: 'INFO',
-                    coverageName: result.coverageName,
-                    title: 'Referencia genérica',
-                    description: 'Las cláusulas consultadas son de referencia general. Verificar con la aseguradora específica.',
-                    quoteValue: coverage.value,
-                    clauseValue: 'N/A',
-                    isFallback: true
+                    clauseValue: totalExclusions.join('; '),
+                    isFallback: false
                 });
             }
 
         } catch (error) {
-            console.error(`❌ [crossReference] Error cross-referencing ${coverage.name}:`, error);
-            result.alerts.push({
-                level: 'INFO',
-                coverageName: result.coverageName,
-                title: 'Error en verificación',
-                description: 'No se pudo completar la verificación contra cláusulas.',
-                quoteValue: coverage.value,
-                clauseValue: 'Error',
-                isFallback: false
-            });
+            console.error(`❌ [crossReference] Error in structured cross-reference ${coverage.name}:`, error);
+            // Fall back to legacy
+            return crossReferenceCoverageLegacy(coverage, insurerName);
         }
 
         return result;
@@ -269,7 +313,132 @@ export const crossReferenceEngine = {
     }
 };
 
-// Helper functions
+// ====================
+// Legacy Implementation
+// ====================
+
+/**
+ * Legacy cross-reference implementation using RAG chunks
+ */
+async function crossReferenceCoverageLegacy(
+    coverage: ParsedCoverage,
+    insurerName: string
+): Promise<CrossReferenceResult> {
+    const result: CrossReferenceResult = {
+        coverageName: coverage.canonicalName || coverage.name,
+        quoteData: {
+            value: coverage.value,
+            deductible: coverage.deductible
+        },
+        clauseData: {},
+        alerts: [],
+        isVerified: false
+    };
+
+    try {
+        // Retrieve clause sections for this coverage
+        const { clauses, isFallback } = await ragRetrievalService.searchWithFallback(
+            `${coverage.canonicalName} deducible exclusion`,
+            {
+                insurerName,
+                coverageTags: coverage.canonicalName ? [coverage.canonicalName] : undefined,
+                limit: 3
+            }
+        );
+
+        if (clauses.length === 0) {
+            result.alerts.push({
+                level: 'INFO',
+                coverageName: result.coverageName,
+                title: 'Sin cláusulas de referencia',
+                description: `No se encontraron cláusulas para ${result.coverageName}. No se puede verificar la información.`,
+                quoteValue: coverage.value,
+                clauseValue: 'N/A',
+                isFallback: false
+            });
+            return result;
+        }
+
+        // Extract clause data
+        const clauseData = extractClauseData(clauses, coverage.canonicalName || coverage.name);
+        result.clauseData = clauseData;
+        result.isVerified = true;
+
+        // Compare deductibles
+        if (coverage.deductible && coverage.deductible !== 'No aplica' && coverage.deductible !== 'NO ESPECIFICADO') {
+            const quoteDeductible = parseDeductible(coverage.deductible);
+            const clauseDeductible = clauseData.deductible ? parseDeductible(clauseData.deductible) : null;
+
+            if (clauseDeductible && quoteDeductible && quoteDeductible < clauseDeductible) {
+                result.alerts.push({
+                    level: 'CRITICAL',
+                    coverageName: result.coverageName,
+                    title: 'Discrepancia en deducible',
+                    description: `La cotización indica deducible ${coverage.deductible}, pero el clausulado establece ${clauseData.deductible}. El deducible real podría ser mayor.`,
+                    quoteValue: coverage.deductible,
+                    clauseValue: clauseData.deductible || 'N/A',
+                    clauseReference: clauses[0]?.content.substring(0, 200),
+                    isFallback
+                });
+            } else if (clauseDeductible && quoteDeductible && quoteDeductible > clauseDeductible) {
+                result.alerts.push({
+                    level: 'GOOD',
+                    coverageName: result.coverageName,
+                    title: 'Deducible favorable',
+                    description: `La cotización ofrece un deducible ${coverage.deductible}, mejor que el clausulado (${clauseData.deductible}).`,
+                    quoteValue: coverage.deductible,
+                    clauseValue: clauseData.deductible || 'N/A',
+                    isFallback
+                });
+            }
+        }
+
+        // Check exclusions
+        if (clauseData.exclusions && clauseData.exclusions.length > 0) {
+            result.alerts.push({
+                level: 'WARNING',
+                coverageName: result.coverageName,
+                title: 'Exclusiones aplicables',
+                description: `Se encontraron ${clauseData.exclusions.length} exclusiones relevantes: ${clauseData.exclusions.slice(0, 2).join('; ')}${clauseData.exclusions.length > 2 ? '...' : ''}`,
+                quoteValue: coverage.value,
+                clauseValue: clauseData.exclusions.join('; '),
+                isFallback
+            });
+        }
+
+        // If using fallback clauses, add info alert
+        if (isFallback) {
+            result.alerts.push({
+                level: 'INFO',
+                coverageName: result.coverageName,
+                title: 'Referencia genérica',
+                description: 'Las cláusulas consultadas son de referencia general. Verificar con la aseguradora específica.',
+                quoteValue: coverage.value,
+                clauseValue: 'N/A',
+                isFallback: true
+            });
+        }
+
+    } catch (error) {
+        console.error(`❌ [crossReference] Error cross-referencing ${coverage.name}:`, error);
+        result.alerts.push({
+            level: 'INFO',
+            coverageName: result.coverageName,
+            title: 'Error en verificación',
+            description: 'No se pudo completar la verificación contra cláusulas.',
+            quoteValue: coverage.value,
+            clauseValue: 'Error',
+            isFallback: false
+        });
+    }
+
+    return result;
+}
+
+// ====================
+// Helper Functions
+// ====================
+
 function extractClauseData(clauses: RetrievedClause[], coverageName: string): {
     value?: string;
     deductible?: string;
@@ -345,4 +514,65 @@ function parseDeductible(deducibleText: string): number | null {
     }
 
     return null;
+}
+
+/**
+ * Compare two deductible structures semantically
+ */
+function compareDeductibleStructures(
+    quote: { normalized: { minAmount: number; maxAmount: number; percentage: number } },
+    clause: { normalized: { minAmount: number; maxAmount: number; percentage: number } }
+): { isBetter: boolean; isWorse: boolean; isEqual: boolean } {
+    // Lower deductible is better
+    const quoteMin = quote.normalized.minAmount;
+    const clauseMin = clause.normalized.minAmount;
+    
+    // Consider percentage-based deductibles
+    const quotePercentage = quote.normalized.percentage;
+    const clausePercentage = clause.normalized.percentage;
+    
+    // Compare by effective minimum amount
+    const threshold = 0.05; // 5% tolerance
+    
+    if (quoteMin > 0 && clauseMin > 0) {
+        const diff = (quoteMin - clauseMin) / clauseMin;
+        if (diff < -threshold) return { isBetter: true, isWorse: false, isEqual: false };
+        if (diff > threshold) return { isBetter: false, isWorse: true, isEqual: false };
+    }
+    
+    // Compare by percentage
+    if (quotePercentage > 0 && clausePercentage > 0) {
+        const diff = quotePercentage - clausePercentage;
+        if (diff < -threshold * 100) return { isBetter: true, isWorse: false, isEqual: false };
+        if (diff > threshold * 100) return { isBetter: false, isWorse: true, isEqual: false };
+    }
+    
+    return { isBetter: false, isWorse: false, isEqual: true };
+}
+
+/**
+ * Parse monetary value from string
+ */
+function parseValue(valueText: string): number | null {
+    if (!valueText || valueText === 'N/A' || valueText === 'No aplica') {
+        return null;
+    }
+    
+    // Remove currency symbols and common text
+    const cleaned = valueText
+        .replace(/[$€£]/g, '')
+        .replace(/\./g, '') // Remove thousand separators (Colombian format)
+        .replace(/,/g, '.') // Convert decimal comma to dot
+        .replace(/\s*(SMMLV|SM|UVT)\s*/gi, '')
+        .trim();
+    
+    const match = cleaned.match(/(\d+(?:\.\d+)?)\s*(M|millones|millon)?/i);
+    if (!match) return null;
+    
+    let value = parseFloat(match[1]);
+    if (match[2]) {
+        value *= 1000000; // Convert millions
+    }
+    
+    return value;
 }

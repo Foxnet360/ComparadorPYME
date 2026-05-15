@@ -6,6 +6,8 @@
 import { supabase } from '../config/database';
 import { embeddingService } from './vector/embeddingService';
 import { insurerNameNormalizer } from './insurerNameNormalizer';
+import { queryExpander } from './queryExpander';
+import { redis } from './cache/redisCache';
 
 export interface RetrievedClause {
     id: string;
@@ -309,6 +311,126 @@ export const ragRetrievalService = {
         });
 
         return filteredResults;
+    },
+
+    /**
+     * Search with query expansion (Hybrid Search V2)
+     * Expands query with synonyms and performs multiple searches
+     */
+    searchWithExpansion: async (
+        query: string,
+        options: {
+            insurerName?: string;
+            coverageTags?: string[];
+            sectionType?: string;
+            limit?: number;
+            minSimilarity?: number;
+        } = {}
+    ): Promise<RetrievedClause[]> => {
+        const startTime = Date.now();
+        let { insurerName, coverageTags, sectionType, limit = 15, minSimilarity = MIN_SIMILARITY_THRESHOLD } = options;
+        
+        // Normalize insurer name
+        if (insurerName) {
+            const normalized = insurerNameNormalizer.normalize(insurerName);
+            if (normalized !== insurerName) {
+                console.log(`🔄 [ragRetrieval] Normalized insurer name: "${insurerName}" → "${normalized}"`);
+                insurerName = normalized;
+            }
+        }
+
+        // Check cache first
+        const cacheKey = `search:${Buffer.from(query + insurerName).toString('base64').substring(0, 32)}`;
+        try {
+            const cached = await redis.get(cacheKey);
+            if (cached) {
+                console.log(`✅ [ragRetrieval] Cache hit for query`);
+                return JSON.parse(cached);
+            }
+        } catch (error) {
+            console.warn('⚠️ [ragRetrieval] Cache error:', error);
+        }
+
+        // Expand query
+        const expansions = queryExpander.expand(query, { insurerName });
+        console.log(`🔍 [ragRetrieval] Searching with ${expansions.length} query variants`);
+
+        // Execute searches for all variants
+        const allResults: RetrievedClause[] = [];
+        
+        for (const expansion of expansions) {
+            try {
+                const queryEmbedding = await embeddingService.generateEmbedding(expansion.query);
+                
+                const { data, error } = await supabase
+                    .rpc('match_chunks_hybrid', {
+                        query_embedding: queryEmbedding,
+                        query_text: expansion.query,
+                        insurer_filter: insurerName || null,
+                        coverage_filter: coverageTags || null,
+                        section_filter: sectionType || null,
+                        match_count: Math.ceil(limit / expansions.length) + 5,
+                        vector_weight: expansion.weight,
+                        text_weight: 1 - expansion.weight
+                    } as any);
+
+                if (error) {
+                    console.warn(`⚠️ [ragRetrieval] Search error for "${expansion.query}":`, error);
+                    continue;
+                }
+
+                if (data) {
+                    const results = (data as any[]).map(row => ({
+                        id: row.id,
+                        documentId: row.document_id,
+                        insurerName: row.insurer_name,
+                        sectionType: row.section_type,
+                        coverageTags: row.coverage_tags || [],
+                        content: row.content,
+                        pageNumber: row.page_number,
+                        similarity: row.combined_score || row.similarity
+                    }));
+                    
+                    allResults.push(...results);
+                }
+            } catch (error) {
+                console.warn(`⚠️ [ragRetrieval] Error searching "${expansion.query}":`, error);
+            }
+        }
+
+        // Deduplicate by ID and sort by similarity
+        const seen = new Set<string>();
+        const uniqueResults = allResults
+            .filter(r => {
+                if (seen.has(r.id)) return false;
+                seen.add(r.id);
+                return r.similarity >= minSimilarity;
+            })
+            .sort((a, b) => b.similarity - a.similarity)
+            .slice(0, limit);
+
+        const avgSimilarity = uniqueResults.length > 0 
+            ? uniqueResults.reduce((sum, r) => sum + r.similarity, 0) / uniqueResults.length 
+            : 0;
+
+        logRagPerformance({
+            operation: 'searchWithExpansion',
+            insurerName,
+            query,
+            durationMs: Date.now() - startTime,
+            chunksReturned: uniqueResults.length,
+            avgSimilarity,
+            timestamp: new Date().toISOString()
+        });
+
+        // Cache results
+        try {
+            await redis.setex(cacheKey, 3600, JSON.stringify(uniqueResults)); // 1 hour cache
+        } catch (error) {
+            console.warn('⚠️ [ragRetrieval] Cache write error:', error);
+        }
+
+        return uniqueResults;
     },
 
     /**

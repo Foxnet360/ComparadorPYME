@@ -9,12 +9,28 @@ import { embeddingService } from './vector/embeddingService';
 import { geminiService } from './gemini';
 import { normalizeText } from '../utils/textUtils';
 import { levenshteinDistance } from '../utils/stringUtils';
+import { coverageOntology, CoverageMapping } from './coverageOntology';
+import { featureFlags } from '../config/featureFlags';
 
 export interface SemanticMatchResult {
     categoryId: number | null;
     canonicalName: string | null;
     confidence: number;
     method: 'thesaurus' | 'fuzzy' | 'embedding' | 'llm' | null;
+}
+
+export interface ProbabilisticMatch {
+    categoryId: number;
+    canonicalName: string;
+    confidence: number;
+    method: string;
+}
+
+export interface ProbabilisticMatchResult {
+    matches: ProbabilisticMatch[];
+    isComposite: boolean;
+    compositeComponents?: string[];
+    rawName: string;
 }
 
 // Las 14 categorías canónicas de la Plantilla PYME
@@ -297,6 +313,51 @@ Si no estás seguro, responde: "CATEGORIA: 0\nCONFIANZA: 0"`;
 }
 
 /**
+ * Probabilistic matching using semantic ontology
+ * Returns multiple possible mappings with confidence scores
+ */
+async function matchProbabilistic(coverageName: string): Promise<ProbabilisticMatchResult> {
+    console.log(`🔍 [SemanticMatcher] Probabilistic matching: "${coverageName}"`);
+    
+    if (!coverageName || coverageName.trim().length === 0) {
+        return {
+            matches: [],
+            isComposite: false,
+            rawName: coverageName
+        };
+    }
+    
+    try {
+        // Use ontology for probabilistic mapping
+        const mapping = await coverageOntology.mapCoverage(coverageName);
+        
+        const matches: ProbabilisticMatch[] = mapping.groups.map(g => {
+            const node = coverageOntology.getNodeById(g.groupId);
+            return {
+                categoryId: 0, // Ontology uses string IDs, not numeric
+                canonicalName: node?.name || g.groupId,
+                confidence: g.confidence,
+                method: mapping.isComposite ? 'ontology-composite' : 'ontology'
+            };
+        });
+        
+        return {
+            matches,
+            isComposite: mapping.isComposite,
+            compositeComponents: mapping.components,
+            rawName: coverageName
+        };
+    } catch (error) {
+        console.error(`❌ [SemanticMatcher] Probabilistic matching failed:`, error);
+        return {
+            matches: [],
+            isComposite: false,
+            rawName: coverageName
+        };
+    }
+}
+
+/**
  * Matcher principal: ejecuta las 4 capas en cascada
  */
 export const semanticMatcher = {
@@ -363,6 +424,43 @@ export const semanticMatcher = {
         
         for (const name of coverageNames) {
             const result = await semanticMatcher.matchCoverage(name);
+            results.push(result);
+        }
+        
+        return results;
+    },
+
+    /**
+     * Probabilistic matching using semantic ontology
+     * Returns multiple possible group mappings with confidence scores
+     */
+    matchProbabilistic: async (coverageName: string): Promise<ProbabilisticMatchResult> => {
+        if (featureFlags.isEnabled('semanticCoverageOntology')) {
+            return matchProbabilistic(coverageName);
+        }
+        
+        // Fallback to legacy single match
+        const legacyResult = await semanticMatcher.matchCoverage(coverageName);
+        return {
+            matches: legacyResult.canonicalName ? [{
+                categoryId: legacyResult.categoryId || 0,
+                canonicalName: legacyResult.canonicalName,
+                confidence: legacyResult.confidence,
+                method: legacyResult.method || 'legacy'
+            }] : [],
+            isComposite: false,
+            rawName: coverageName
+        };
+    },
+
+    /**
+     * Batch probabilistic matching
+     */
+    matchCoveragesProbabilistic: async (coverageNames: string[]): Promise<ProbabilisticMatchResult[]> => {
+        const results: ProbabilisticMatchResult[] = [];
+        
+        for (const name of coverageNames) {
+            const result = await semanticMatcher.matchProbabilistic(name);
             results.push(result);
         }
         
