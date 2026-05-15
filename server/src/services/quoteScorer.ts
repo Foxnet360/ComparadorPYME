@@ -584,7 +584,7 @@ async function calculateVariableBasedScores(
             if (!result.quoteData.deductible || result.quoteData.deductible === 'No aplica') continue;
             
             try {
-                const quoteDed = deductibleParser.parse(result.quoteData.deductible);
+                const quoteDed = await deductibleParser.parse(result.quoteData.deductible);
                 
                 // Find best deductible among all quotes for this coverage
                 const coverageName = result.coverageName;
@@ -596,7 +596,7 @@ async function calculateVariableBasedScores(
                 );
                 
                 if (allDeds.length > 1) {
-                    const parsedDeds: Array<{ normalized: { minAmount: number; percentage: number } }> = await Promise.all(allDeds.map(d => deductibleParser.parse(d)));
+                    const parsedDeds = await Promise.all(allDeds.map(d => deductibleParser.parse(d)));
                     const minDed = Math.min(...parsedDeds.map(d => d.normalized.minAmount || d.normalized.percentage || Infinity));
                     const quoteMin = quoteDed.normalized.minAmount || quoteDed.normalized.percentage || Infinity;
                     

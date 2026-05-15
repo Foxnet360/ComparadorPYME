@@ -46,7 +46,7 @@
 - [x] 5.4 Add validation (min < max, percentage 0-100)
 - [x] 5.5 Implement `deductibleBenchmarks.ts` with market standards
 - [x] 5.6 Create expected cost calculator
-- [ ] 5.7 Add tests for compound deductible parsing
+- [x] 5.7 Add tests for compound deductible parsing
 - [x] 5.8 Integrate with existing `deductibleAnalyzer.ts`
 
 ## 6. Triple Source Chat
@@ -65,8 +65,8 @@
 - [x] 7.1 Implement `queryExpander.ts` using thesaurus
 - [x] 7.2 Add synonym and related term expansion
 - [x] 7.3 Build multi-query search executor
-- [ ] 7.4 Implement parent-child retrieval logic
-- [ ] 7.5 Add re-ranking with cross-encoder (local or API)
+- [x] 7.4 Implement parent-child retrieval logic
+- [x] 7.5 Add re-ranking with cross-encoder (local or API)
 - [x] 7.6 Update `ragRetrievalService.ts` with hybrid search v2
 - [x] 7.7 Add performance metrics logging
 - [ ] 7.8 Test search quality improvements
@@ -83,7 +83,7 @@
 
 ## 9. Integration & Refactoring
 
-- [ ] 9.1 Replace `coverageNormalizer.ts` with semantic ontology
+- [x] 9.1 Replace `coverageNormalizer.ts` with semantic ontology
 - [x] 9.2 Update `semanticMatcher.ts` for probabilistic mappings
 - [x] 9.3 Refactor `crossReferenceEngine.ts` for variable comparison
 - [x] 9.4 Update `quoteScorer.ts` to use new comparison metrics
