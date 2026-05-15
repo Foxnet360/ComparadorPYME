@@ -13,7 +13,10 @@
     "server:dev": "cd server && ts-node --transpile-only src/index.ts",
     "seed:clauses": "cd server && ts-node --transpile-only src/scripts/seedClauses.ts",
     "test": "vitest run --passWithNoTests",
-    "deploy": "node .opencode/skills/railway-deploy/deploy.js"
+    "test:smoke": "./scripts/smoke-tests.sh",
+    "deploy": "node .opencode/skills/railway-deploy/deploy.js",
+    "deploy:staging": "./scripts/deploy-staging.sh",
+    "deploy:production": "./scripts/deploy-production.sh"
   },
   "engines": {
     "node": ">=18.0.0"
