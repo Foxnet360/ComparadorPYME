@@ -52,7 +52,7 @@ class MonitoringService {
         correct_value: correctValue,
         is_correct: isCorrect,
         timestamp: new Date().toISOString()
-      });
+      } as any);
     } catch (error) {
       console.error('❌ [Monitoring] Failed to record extraction accuracy:', error);
     }
@@ -75,7 +75,7 @@ class MonitoringService {
         is_correct: isCorrect,
         error_type: errorType,
         timestamp: new Date().toISOString()
-      });
+      } as any);
     } catch (error) {
       console.error('❌ [Monitoring] Failed to record deductible accuracy:', error);
     }
@@ -99,7 +99,7 @@ class MonitoringService {
         user_rating: userRating,
         was_helpful: wasHelpful,
         timestamp: new Date().toISOString()
-      });
+      } as any);
     } catch (error) {
       console.error('❌ [Monitoring] Failed to record chat quality:', error);
     }
@@ -116,7 +116,7 @@ class MonitoringService {
         comment: feedback.comment,
         user_id: feedback.userId,
         created_at: new Date().toISOString()
-      });
+      } as any);
     } catch (error) {
       console.error('❌ [Monitoring] Failed to collect feedback:', error);
     }
@@ -160,7 +160,7 @@ class MonitoringService {
           success: m.success,
           metadata: m.metadata,
           timestamp: m.timestamp
-        }))
+        })) as any
       );
       this.metricsBuffer = [];
     } catch (error) {
@@ -190,10 +190,12 @@ class MonitoringService {
         .gte('timestamp', startDate)
         .lte('timestamp', endDate);
 
-      const extractionTotal = extractionData?.length || 0;
-      const extractionCorrect = extractionData?.filter(d => d.is_correct).length || 0;
-      const deductibleTotal = deductibleData?.length || 0;
-      const deductibleCorrect = deductibleData?.filter(d => d.is_correct).length || 0;
+      const extractionList = (extractionData || []) as any[];
+      const deductibleList = (deductibleData || []) as any[];
+      const extractionTotal = extractionList.length;
+      const extractionCorrect = extractionList.filter(d => d.is_correct).length;
+      const deductibleTotal = deductibleList.length;
+      const deductibleCorrect = deductibleList.filter(d => d.is_correct).length;
 
       return {
         extractionAccuracy: extractionTotal > 0 ? extractionCorrect / extractionTotal : 0,
@@ -228,7 +230,8 @@ class MonitoringService {
         .gte('timestamp', startDate)
         .lte('timestamp', endDate);
 
-      if (!data || data.length === 0) {
+      const dataList = (data || []) as any[];
+      if (dataList.length === 0) {
         return {
           avgAnalysisTime: 0,
           avgChatResponseTime: 0,
@@ -239,9 +242,9 @@ class MonitoringService {
         };
       }
 
-      const durations = data.map(d => d.duration_ms).sort((a, b) => a - b);
+      const durations = dataList.map(d => d.duration_ms).sort((a, b) => a - b);
       const total = durations.length;
-      const successCount = data.filter(d => d.success).length;
+      const successCount = dataList.filter(d => d.success).length;
 
       return {
         avgAnalysisTime: durations.reduce((a, b) => a + b, 0) / total,
@@ -282,7 +285,8 @@ class MonitoringService {
         .gte('created_at', startDate)
         .lte('created_at', endDate);
 
-      if (!data || data.length === 0) {
+      const dataList = (data || []) as any[];
+      if (dataList.length === 0) {
         return {
           avgRating: 0,
           totalFeedback: 0,
@@ -292,7 +296,7 @@ class MonitoringService {
 
       const byFeature: Record<string, { ratings: number[]; count: number }> = {};
       
-      data.forEach(item => {
+      dataList.forEach(item => {
         if (!byFeature[item.feature]) {
           byFeature[item.feature] = { ratings: [], count: 0 };
         }
@@ -310,8 +314,8 @@ class MonitoringService {
       });
 
       return {
-        avgRating: data.reduce((sum, item) => sum + item.rating, 0) / data.length,
-        totalFeedback: data.length,
+        avgRating: dataList.reduce((sum, item) => sum + item.rating, 0) / dataList.length,
+        totalFeedback: dataList.length,
         byFeature: result
       };
     } catch (error) {

@@ -728,7 +728,7 @@ export const analysisController = {
                 const clauseValidation = clauseValidationResults.get(i)?.results;
                 
                 try {
-                    const scoring = quoteScorer.calculateScore(quote, crossRefs, parsedQuotes, undefined, clauseValidation);
+                    const scoring = await quoteScorer.calculateScore(quote, crossRefs, parsedQuotes, undefined, clauseValidation);
                     scoringResults.set(i, scoring);
                     console.log(`   ${quote.insurerName}: ${scoring.totalScore}/100`);
                 } catch (error) {

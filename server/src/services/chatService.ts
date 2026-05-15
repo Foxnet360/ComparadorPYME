@@ -441,9 +441,10 @@ export const processChatMessage = async (
             }
             
             // SOURCE 2: Structured Clauses (Secondary)
+            let structuredCitations: ChatCitation[] = [];
             if (useRAG) {
                 console.log('🔍 [chatService] Searching structured clauses...');
-                const structuredCitations = await searchStructuredClauses(message, insurerNames);
+                structuredCitations = await searchStructuredClauses(message, insurerNames);
                 
                 if (structuredCitations.length > 0) {
                     sourceContext += formatCitationsForPrompt(structuredCitations);

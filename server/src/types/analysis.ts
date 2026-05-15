@@ -1,58 +1,48 @@
-/**
- * Tipos para el pipeline de análisis multi-fase
- */
-
-export interface ExtractedCoverage {
-    name: string;
-    value: string;
-    deductible: string;
-}
-
-export interface ExtractedQuote {
-    insurerName: string;
-    policyName: string;
-    priceAnnual: number;
+export interface CoverageVariables {
+  rawName: string;
+  displayName?: string;
+  insurerName: string;
+  insuredAmount?: {
+    value: number;
     currency: string;
-    coverages: ExtractedCoverage[];
+    rawText: string;
+  };
+  deductible?: {
+    components: Array<{
+      type: string;
+      value: number;
+      currency?: string;
+    }>;
+    normalized: {
+      minAmount: number;
+      maxAmount: number;
+      percentage: number;
+      isPercentageBased: boolean;
+    };
+    rawText: string;
+  };
+  sublimit?: {
+    value: number;
+    type: string;
+    rawText: string;
+  };
+  exclusions: string[];
+  conditions: string[];
+  confidence: number;
 }
 
-export interface ExtractionOutput {
-    quotes: ExtractedQuote[];
-}
-
-export interface ScoringAlert {
-    level: 'CRITICAL' | 'WARNING' | 'GOOD' | 'INFO';
-    title: string;
-    description: string;
-}
-
-export interface ScoringBreakdown {
-    coverage: number;
-    deductibles: number;
-    exclusions: number;
-    priceRatio: number;
-    sublimits: number;
-    warranties: number;
-}
-
-export interface QuoteScore {
+export interface VariableComparison {
+  groupName: string;
+  groupId: string;
+  variables: CoverageVariables[];
+  analysis: {
+    bestInsuredAmount?: string;
+    bestDeductible?: string;
+    mostComprehensive?: string;
+    bestPrice?: string;
+  };
+  exclusiveCoverages: Array<{
     insurerName: string;
-    score: number;
-    scoringBreakdown: ScoringBreakdown;
-    alerts: ScoringAlert[];
-}
-
-export interface ScoringOutput {
-    quotes: QuoteScore[];
-}
-
-export interface NarrativeOutput {
-    recommendation: string;
-    marketAnalysis: string;
-}
-
-export interface CompleteAnalysis {
-    quotes: Array<ExtractedQuote & QuoteScore>;
-    recommendation: string;
-    marketAnalysis: string;
+    rawName: string;
+  }>;
 }

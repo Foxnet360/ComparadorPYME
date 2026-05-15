@@ -222,8 +222,8 @@ export const coverageOntology = {
           semantic_tags: mapping.groups.map(g => g.groupId),
           confidence: mapping.confidence,
           is_composite: mapping.isComposite,
-          components: mapping.components
-        });
+          last_updated: new Date().toISOString()
+        } as any);
     } catch (error) {
       console.error('❌ [Ontology] Failed to save mapping:', error);
     }

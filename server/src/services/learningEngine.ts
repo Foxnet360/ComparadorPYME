@@ -34,8 +34,8 @@ export const learningEngine = {
           insurer_name: correction.insurerName,
           canonical_name: correction.userCorrection,
           user_corrected: true,
-          correction_count: supabase.rpc('increment', { x: 1 })
-        })
+          correction_count: 1
+        } as any)
         .select('id')
         .single();
 
@@ -46,7 +46,7 @@ export const learningEngine = {
       // Trigger async updates
       await this.applyCorrection(correction);
       
-      return data.id;
+      return (data as any)?.id || '';
     } catch (error) {
       console.error('❌ [LearningEngine] Failed to save correction:', error);
       throw error;
@@ -333,7 +333,7 @@ export const learningEngine = {
       let processed = 0;
       let errors = 0;
 
-      for (const mapping of data || []) {
+      for (const mapping of (data || []) as any[]) {
         try {
           await this.updateEmbedding({
             rawName: mapping.raw_name,
