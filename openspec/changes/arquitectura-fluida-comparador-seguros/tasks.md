@@ -36,7 +36,7 @@
 - [x] 4.4 Implement gap detection (exclusive coverages)
 - [x] 4.5 Add user-defined weight support for comparison
 - [x] 4.6 Create endpoint `/api/quotes/compare-variables`
-- [ ] 4.7 Build frontend component for variable comparison matrix
+- [x] 4.7 Build frontend component for variable comparison matrix
 
 ## 5. Deductible Semantic Parser
 
@@ -106,7 +106,7 @@
 - [x] 11.1 Update API documentation
 - [x] 11.2 Create user guide for new features
 - [x] 11.3 Write migration guide for existing data
-- [ ] 11.4 Setup monitoring dashboard
+- [x] 11.4 Setup monitoring dashboard
 - [x] 11.5 Create rollback procedures
 - [ ] 11.6 Deploy to staging environment
 - [ ] 11.7 Run smoke tests in staging
