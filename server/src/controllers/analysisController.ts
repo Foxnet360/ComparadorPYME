@@ -220,7 +220,7 @@ async function processQuoteMultimodal(
 ): Promise<ParsedQuote> {
   return withTimeout(
     processQuoteMultimodalInternal(quoteFile, index, total),
-    5 * 60 * 1000, // 5 minutes
+    2 * 60 * 1000, // 2 minutes
     `Quote processing timeout (${quoteFile.originalname})`
   );
 }
@@ -331,7 +331,7 @@ async function processQuoteLegacy(
 ): Promise<ParsedQuote> {
   return withTimeout(
     processQuoteLegacyInternal(quote, index, total),
-    5 * 60 * 1000, // 5 minutes
+    2 * 60 * 1000, // 2 minutes
     `Quote processing timeout (legacy) (${quote.filename || 'unknown'})`
   );
 }

@@ -63,6 +63,42 @@ export const CONFIDENCE_THRESHOLDS = {
 // Cache de embeddings para evitar regeneración
 const embeddingCache = new Map<string, number[]>();
 let categoryEmbeddingsCache: Map<number, number[]> | null = null;
+let categoryEmbeddingsInitialized = false;
+
+/**
+ * Precalculate embeddings for all 14 canonical categories at module load time
+ * This eliminates redundant API calls during quote processing
+ */
+async function initializeCategoryEmbeddings(): Promise<void> {
+    if (categoryEmbeddingsInitialized) return;
+    
+    try {
+        console.log('🚀 [SemanticMatcher] Pre-calculating embeddings for 14 canonical categories...');
+        categoryEmbeddingsCache = new Map();
+        const categoryTexts = CANONICAL_CATEGORIES.map(c => c.name);
+        const categoryEmbeddings = await embeddingService.generateEmbeddingsBatch(categoryTexts);
+        
+        let successCount = 0;
+        for (let i = 0; i < CANONICAL_CATEGORIES.length; i++) {
+            if (categoryEmbeddings[i]?.embedding) {
+                categoryEmbeddingsCache.set(CANONICAL_CATEGORIES[i].id, categoryEmbeddings[i].embedding);
+                successCount++;
+            }
+        }
+        
+        categoryEmbeddingsInitialized = true;
+        console.log(`✅ [SemanticMatcher] Category embeddings ready: ${successCount}/${CANONICAL_CATEGORIES.length} categories`);
+    } catch (error) {
+        console.error('❌ [SemanticMatcher] Failed to pre-calculate category embeddings:', error);
+        // Don't set initialized flag, allow retry on next call
+        categoryEmbeddingsCache = null;
+    }
+}
+
+// Start initialization immediately when module loads
+initializeCategoryEmbeddings().catch(err => {
+    console.error('❌ [SemanticMatcher] Initialization error:', err);
+});
 
 // Stop words comunes en español para matching
 const STOP_WORDS = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'y', 'en', 'a', 'con', 'por', 'para', 'un', 'una', 'al']);
@@ -213,25 +249,20 @@ async function matchByEmbedding(coverageName: string): Promise<SemanticMatchResu
             embeddingCache.set(cacheKey, coverageEmbedding);
         }
         
-        // Precalcular embeddings de categorías si no están en cache
-        if (!categoryEmbeddingsCache) {
-            categoryEmbeddingsCache = new Map();
-            const categoryTexts = CANONICAL_CATEGORIES.map(c => c.name);
-            const categoryEmbeddings = await embeddingService.generateEmbeddingsBatch(categoryTexts);
-            
-            for (let i = 0; i < CANONICAL_CATEGORIES.length; i++) {
-                if (categoryEmbeddings[i]?.embedding) {
-                    categoryEmbeddingsCache.set(CANONICAL_CATEGORIES[i].id, categoryEmbeddings[i].embedding);
-                }
-            }
+        // Ensure category embeddings are initialized (will use pre-calculated if available)
+        if (!categoryEmbeddingsInitialized || !categoryEmbeddingsCache) {
+            await initializeCategoryEmbeddings();
         }
+        
+        // categoryEmbeddingsCache is guaranteed to be non-null after initialization
+        const cache = categoryEmbeddingsCache!;
         
         // Comparar con cada categoría
         let bestMatch: SemanticMatchResult | null = null;
         let bestSimilarity = 0;
         
         for (const category of CANONICAL_CATEGORIES) {
-            const categoryEmbedding = categoryEmbeddingsCache.get(category.id);
+            const categoryEmbedding = cache.get(category.id);
             if (!categoryEmbedding) continue;
             
             const similarity = embeddingService.cosineSimilarity(coverageEmbedding, categoryEmbedding);

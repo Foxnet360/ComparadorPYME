@@ -1,7 +1,7 @@
 import { supabase } from '../config/database';
 import { embeddingService } from './vector/embeddingService';
 import { coverageOntology } from './coverageOntology';
-import { redis } from './cache/redisCache';
+import { deleteCacheValue, getCacheKeys, setCacheValue } from './cache/redisCache';
 
 export interface UserCorrection {
   id?: string;
@@ -87,7 +87,7 @@ export const learningEngine = {
       console.log(`📚 [LearningEngine] Adding synonym: "${correction.rawName}" → "${correction.userCorrection}"`);
       
       // Store in cache for immediate effect
-      await redis.setex(
+      await setCacheValue(
         `thesaurus:${correction.userCorrection}`,
         86400 * 30, // 30 days
         JSON.stringify({
@@ -111,7 +111,7 @@ export const learningEngine = {
       const correctedEmbedding = await embeddingService.generateEmbedding(correction.userCorrection);
       
       // Store in cache with higher weight
-      await redis.setex(
+      await setCacheValue(
         `emb_correction:${Buffer.from(correction.rawName).toString('base64').substring(0, 32)}`,
         86400 * 30, // 30 days
         JSON.stringify({
@@ -134,12 +134,12 @@ export const learningEngine = {
   async invalidateCache(correction: UserCorrection): Promise<void> {
     try {
       // Delete cached mappings for this raw name
-      await redis.del(`map:${correction.insurerName || 'global'}:${Buffer.from(correction.rawName).toString('base64').substring(0, 32)}`);
+      await deleteCacheValue(`map:${correction.insurerName || 'global'}:${Buffer.from(correction.rawName).toString('base64').substring(0, 32)}`);
       
       // Delete cached search results that might include this mapping
-      const searchKeys = await redis.keys('search:*');
+      const searchKeys = await getCacheKeys('search:*');
       for (const key of searchKeys.slice(0, 100)) { // Limit to avoid blocking
-        await redis.del(key);
+        await deleteCacheValue(key);
       }
       
       console.log(`🗑️ [LearningEngine] Invalidated cache for "${correction.rawName}"`);

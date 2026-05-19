@@ -23,6 +23,7 @@ Configura estas variables en el [dashboard de Railway](https://railway.app):
 - `SUPABASE_SERVICE_ROLE_KEY` - Service role key de Supabase
 - `SUPABASE_ANON_KEY` - Anon key de Supabase
 - `GROQ_API_KEY` - API key de Groq (opcional)
+- `REDIS_URL` - URL de Redis (opcional, ej: `redis://localhost:6379`). Si no se configura, el sistema usa cache en memoria automáticamente.
 - `CLAUSE_PAGES_BUCKET` - Nombre del bucket (default: clause-pages)
 - `REGION` - Código de región (default: CO)
 - `SMMLV_VALUE` - Valor del salario mínimo (default: 1300000)
@@ -107,6 +108,12 @@ docker run -p 8080:8080 --env-file .env comparador-csa
 ### Frontend no carga (404)
 - Verifica que `NODE_ENV=production` esté configurado
 - Verifica que Express esté sirviendo archivos estáticos de `dist/`
+
+### "[ioredis] Unhandled error event: AggregateError [ECONNREFUSED]"
+**Esto es NORMAL si no tienes Redis configurado.** El sistema automáticamente usa cache en memoria como fallback.
+- **Sin acción requerida**: El análisis funciona correctamente sin Redis
+- **Opcional**: Para mejor rendimiento, puedes añadir Redis en Railway Dashboard → Variables → `REDIS_URL`
+- **Verificación**: Si ves `⚠️  [Redis] Unavailable - using in-memory cache fallback` en los logs, todo está funcionando correctamente
 
 ---
 
