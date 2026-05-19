@@ -7,7 +7,7 @@ import { supabase } from '../config/database';
 import { embeddingService } from './vector/embeddingService';
 import { insurerNameNormalizer } from './insurerNameNormalizer';
 import { queryExpander } from './queryExpander';
-import { redis } from './cache/redisCache';
+import { getCacheValue, setCacheValue } from './cache/redisCache';
 
 export interface RetrievedClause {
     id: string;
@@ -342,7 +342,7 @@ export const ragRetrievalService = {
         // Check cache first
         const cacheKey = `search:${Buffer.from(query + insurerName).toString('base64').substring(0, 32)}`;
         try {
-            const cached = await redis.get(cacheKey);
+            const cached = await getCacheValue(cacheKey);
             if (cached) {
                 console.log(`✅ [ragRetrieval] Cache hit for query`);
                 return JSON.parse(cached);
@@ -425,7 +425,7 @@ export const ragRetrievalService = {
 
         // Cache results
         try {
-            await redis.setex(cacheKey, 3600, JSON.stringify(uniqueResults)); // 1 hour cache
+            await setCacheValue(cacheKey, 3600, JSON.stringify(uniqueResults)); // 1 hour cache
         } catch (error) {
             console.warn('⚠️ [ragRetrieval] Cache write error:', error);
         }

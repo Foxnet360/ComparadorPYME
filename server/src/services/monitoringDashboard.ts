@@ -1,5 +1,5 @@
 import { supabase } from '../config/database';
-import { redis } from './cache/redisCache';
+import { redis, getCacheValue, setCacheValue } from './cache/redisCache';
 
 export interface MonitoringMetrics {
   timestamp: string;
@@ -83,7 +83,7 @@ export const monitoringDashboard = {
       };
 
       try {
-        const ragStats = await redis.get('rag:stats:last_hour');
+        const ragStats = await getCacheValue('rag:stats:last_hour');
         if (ragStats) {
           ragMetrics = JSON.parse(ragStats);
         }
@@ -171,7 +171,7 @@ export const monitoringDashboard = {
   ): Promise<void> {
     try {
       const key = 'rag:stats:last_hour';
-      const existing = await redis.get(key);
+      const existing = await getCacheValue(key);
       const stats = existing ? JSON.parse(existing) : {
         count: 0,
         totalChunks: 0,
@@ -184,7 +184,7 @@ export const monitoringDashboard = {
       stats.totalSimilarity += averageSimilarity;
       if (isFallback) stats.fallbackCount++;
 
-      await redis.setex(key, 3600, JSON.stringify(stats));
+      await setCacheValue(key, 3600, JSON.stringify(stats));
     } catch (error) {
       console.error('❌ [Monitoring] Error logging RAG metrics:', error);
     }

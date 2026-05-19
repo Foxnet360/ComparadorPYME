@@ -2,6 +2,7 @@ import Redis from 'ioredis';
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
+// ====== Redis Connection with Error Suppression ======
 export const redis = new Redis(REDIS_URL, {
     retryStrategy: (times) => {
         const delay = Math.min(times * 50, 2000);
@@ -10,6 +11,148 @@ export const redis = new Redis(REDIS_URL, {
     maxRetriesPerRequest: 3
 });
 
+// Suppress ioredis error events after first log
+let errorLogged = false;
+let errorSuppressedUntil = 0;
+redis.on('error', (err) => {
+    const now = Date.now();
+    if (!errorLogged) {
+        console.warn(`⚠️  [Redis] Connection error (suppressing for 60s): ${err.message}`);
+        errorLogged = true;
+        errorSuppressedUntil = now + 60000;
+    } else if (now > errorSuppressedUntil) {
+        console.warn(`⚠️  [Redis] Still unavailable, suppressing for another 60s`);
+        errorSuppressedUntil = now + 60000;
+    }
+    // Do NOT throw or crash
+});
+
+// ====== Redis Availability Detection ======
+let redisAvailable = false;
+let redisCheckInterval: NodeJS.Timeout | null = null;
+
+async function checkRedisAvailability(): Promise<boolean> {
+    try {
+        await redis.ping();
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+// Initial check
+(async () => {
+    redisAvailable = await checkRedisAvailability();
+    if (redisAvailable) {
+        console.log('✅ [Redis] Connected and available');
+    } else {
+        console.log('⚠️  [Redis] Unavailable - using in-memory cache fallback');
+    }
+})();
+
+// Periodic health check every 60 seconds
+redisCheckInterval = setInterval(async () => {
+    const wasAvailable = redisAvailable;
+    redisAvailable = await checkRedisAvailability();
+    if (!wasAvailable && redisAvailable) {
+        console.log('✅ [Redis] Recovered - switching to Redis cache');
+    } else if (wasAvailable && !redisAvailable) {
+        console.log('⚠️  [Redis] Lost connection - switching to in-memory cache');
+    }
+}, 60000);
+
+// ====== In-Memory Cache with TTL and LRU ======
+class MemoryCache {
+    private cache = new Map<string, { value: string; expiresAt: number }>();
+    private maxSize = 10000;
+    private accessOrder = new Map<string, number>(); // For LRU tracking
+    private accessCounter = 0;
+
+    get(key: string): string | null {
+        const item = this.cache.get(key);
+        if (!item) return null;
+
+        if (Date.now() > item.expiresAt) {
+            this.cache.delete(key);
+            this.accessOrder.delete(key);
+            return null;
+        }
+
+        // Update access order for LRU
+        this.accessCounter++;
+        this.accessOrder.set(key, this.accessCounter);
+        return item.value;
+    }
+
+    setex(key: string, ttlSeconds: number, value: string): void {
+        // Evict if at capacity
+        if (this.cache.size >= this.maxSize && !this.cache.has(key)) {
+            this.evictLRU();
+        }
+
+        const expiresAt = Date.now() + (ttlSeconds * 1000);
+        this.cache.set(key, { value, expiresAt });
+        this.accessCounter++;
+        this.accessOrder.set(key, this.accessCounter);
+    }
+
+    del(key: string): void {
+        this.cache.delete(key);
+        this.accessOrder.delete(key);
+    }
+
+    keys(pattern: string): string[] {
+        const regex = new RegExp(pattern.replace('*', '.*'));
+        return Array.from(this.cache.keys()).filter(k => regex.test(k));
+    }
+
+    private evictLRU(): void {
+        let oldestKey: string | null = null;
+        let oldestAccess = Infinity;
+
+        for (const [key, accessTime] of this.accessOrder.entries()) {
+            if (accessTime < oldestAccess) {
+                oldestAccess = accessTime;
+                oldestKey = key;
+            }
+        }
+
+        if (oldestKey) {
+            this.cache.delete(oldestKey);
+            this.accessOrder.delete(oldestKey);
+            console.warn(`⚠️  [MemoryCache] Evicted LRU entry: ${oldestKey}`);
+        }
+    }
+
+    // Cleanup expired entries
+    cleanup(): void {
+        const now = Date.now();
+        let cleaned = 0;
+        for (const [key, item] of this.cache.entries()) {
+            if (now > item.expiresAt) {
+                this.cache.delete(key);
+                this.accessOrder.delete(key);
+                cleaned++;
+            }
+        }
+        if (cleaned > 0) {
+            console.log(`🧹 [MemoryCache] Cleaned ${cleaned} expired entries`);
+        }
+    }
+
+    get size(): number {
+        return this.cache.size;
+    }
+}
+
+const memoryCache = new MemoryCache();
+
+// Periodic cleanup every 5 minutes
+setInterval(() => {
+    memoryCache.cleanup();
+}, 5 * 60 * 1000);
+
+// ====== Cache Keys ======
 export const cacheKeys = {
     embedding: (text: string) => `emb:${Buffer.from(text).toString('base64').substring(0, 32)}`,
     coverageMapping: (rawName: string, insurer?: string) => `map:${insurer || 'global'}:${Buffer.from(rawName).toString('base64').substring(0, 32)}`,
@@ -26,79 +169,167 @@ export const cacheTTL = {
     deductibleParsed: 60 * 60 * 24 * 30 // 30 days
 };
 
+// ====== Dual-Mode Cache Operations ======
 export async function getCachedEmbedding(text: string): Promise<number[] | null> {
-    try {
-        const cached = await redis.get(cacheKeys.embedding(text));
-        if (cached) {
-            return JSON.parse(cached);
+    const key = cacheKeys.embedding(text);
+    
+    if (redisAvailable) {
+        try {
+            const cached = await redis.get(key);
+            if (cached) {
+                return JSON.parse(cached);
+            }
+        } catch (error) {
+            // Redis failed, try memory
         }
-        return null;
-    } catch (error) {
-        console.error('Redis get error:', error);
-        return null;
     }
+    
+    // Fallback to memory
+    const cached = memoryCache.get(key);
+    if (cached) {
+        return JSON.parse(cached);
+    }
+    return null;
 }
 
 export async function setCachedEmbedding(text: string, embedding: number[]): Promise<void> {
-    try {
-        await redis.setex(
-            cacheKeys.embedding(text),
-            cacheTTL.embedding,
-            JSON.stringify(embedding)
-        );
-    } catch (error) {
-        console.error('Redis set error:', error);
+    const key = cacheKeys.embedding(text);
+    const value = JSON.stringify(embedding);
+    
+    if (redisAvailable) {
+        try {
+            await redis.setex(key, cacheTTL.embedding, value);
+            return;
+        } catch (error) {
+            // Redis failed, store in memory
+        }
     }
+    
+    memoryCache.setex(key, cacheTTL.embedding, value);
 }
 
 export async function getCachedCoverageMapping(rawName: string, insurer?: string): Promise<any | null> {
-    try {
-        const cached = await redis.get(cacheKeys.coverageMapping(rawName, insurer));
-        if (cached) {
-            return JSON.parse(cached);
+    const key = cacheKeys.coverageMapping(rawName, insurer);
+    
+    if (redisAvailable) {
+        try {
+            const cached = await redis.get(key);
+            if (cached) {
+                return JSON.parse(cached);
+            }
+        } catch (error) {
+            // Redis failed, try memory
         }
-        return null;
-    } catch (error) {
-        console.error('Redis get error:', error);
-        return null;
     }
+    
+    const cached = memoryCache.get(key);
+    if (cached) {
+        return JSON.parse(cached);
+    }
+    return null;
 }
 
 export async function setCachedCoverageMapping(rawName: string, mapping: any, insurer?: string): Promise<void> {
-    try {
-        await redis.setex(
-            cacheKeys.coverageMapping(rawName, insurer),
-            cacheTTL.coverageMapping,
-            JSON.stringify(mapping)
-        );
-    } catch (error) {
-        console.error('Redis set error:', error);
+    const key = cacheKeys.coverageMapping(rawName, insurer);
+    const value = JSON.stringify(mapping);
+    
+    if (redisAvailable) {
+        try {
+            await redis.setex(key, cacheTTL.coverageMapping, value);
+            return;
+        } catch (error) {
+            // Redis failed, store in memory
+        }
     }
+    
+    memoryCache.setex(key, cacheTTL.coverageMapping, value);
 }
 
 export async function getCachedDeductible(text: string): Promise<any | null> {
-    try {
-        const cached = await redis.get(cacheKeys.deductibleParsed(text));
-        if (cached) {
-            return JSON.parse(cached);
+    const key = cacheKeys.deductibleParsed(text);
+    
+    if (redisAvailable) {
+        try {
+            const cached = await redis.get(key);
+            if (cached) {
+                return JSON.parse(cached);
+            }
+        } catch (error) {
+            // Redis failed, try memory
         }
-        return null;
-    } catch (error) {
-        console.error('Redis get error:', error);
-        return null;
     }
+    
+    const cached = memoryCache.get(key);
+    if (cached) {
+        return JSON.parse(cached);
+    }
+    return null;
 }
 
 export async function setCachedDeductible(text: string, parsed: any): Promise<void> {
-    try {
-        await redis.setex(
-            cacheKeys.deductibleParsed(text),
-            cacheTTL.deductibleParsed,
-            JSON.stringify(parsed)
-        );
-    } catch (error) {
-        console.error('Redis set error:', error);
+    const key = cacheKeys.deductibleParsed(text);
+    const value = JSON.stringify(parsed);
+    
+    if (redisAvailable) {
+        try {
+            await redis.setex(key, cacheTTL.deductibleParsed, value);
+            return;
+        } catch (error) {
+            // Redis failed, store in memory
+        }
     }
+    
+    memoryCache.setex(key, cacheTTL.deductibleParsed, value);
+}
+
+// Generic cache operations for other services
+export async function getCacheValue(key: string): Promise<string | null> {
+    if (redisAvailable) {
+        try {
+            return await redis.get(key);
+        } catch {
+            // Redis failed
+        }
+    }
+    return memoryCache.get(key);
+}
+
+export async function setCacheValue(key: string, ttl: number, value: string): Promise<void> {
+    if (redisAvailable) {
+        try {
+            await redis.setex(key, ttl, value);
+            return;
+        } catch {
+            // Redis failed
+        }
+    }
+    memoryCache.setex(key, ttl, value);
+}
+
+export async function deleteCacheValue(key: string): Promise<void> {
+    if (redisAvailable) {
+        try {
+            await redis.del(key);
+        } catch {
+            // Redis failed
+        }
+    }
+    memoryCache.del(key);
+}
+
+export async function getCacheKeys(pattern: string): Promise<string[]> {
+    if (redisAvailable) {
+        try {
+            return await redis.keys(pattern);
+        } catch {
+            // Redis failed
+        }
+    }
+    return memoryCache.keys(pattern);
+}
+
+export function isRedisAvailable(): boolean {
+    return redisAvailable;
 }
 
 export default redis;
