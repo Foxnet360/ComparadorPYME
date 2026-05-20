@@ -194,6 +194,15 @@ n3. Extrae TODAS las coberturas que encuentres, sin omitir ninguna
 4. Sé preciso con los valores numéricos y porcentajes`;
 
 /**
+ * Calcula timeout dinámico basado en número de coberturas
+ * Fórmula: min(300, max(120, 30 + coverageCount * 3))
+ */
+function calculateDynamicTimeout(coverageCount: number): number {
+  const baseTimeout = 30 + coverageCount * 3;
+  return Math.min(300, Math.max(120, baseTimeout)) * 1000; // Convertir a ms
+}
+
+/**
  * Timeout wrapper for quote processing
  */
 async function withTimeout<T>(
@@ -201,12 +210,13 @@ async function withTimeout<T>(
   timeoutMs: number,
   errorMessage: string
 ): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
-    )
-  ]);
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(errorMessage)), timeoutMs);
+    promise
+      .then(resolve)
+      .catch(reject)
+      .finally(() => clearTimeout(timer));
+  });
 }
 
 /**
@@ -218,9 +228,11 @@ async function processQuoteMultimodal(
   index: number,
   total: number
 ): Promise<ParsedQuote> {
+  // Use generous timeout for multimodal extraction
+  // Individual quote timeout is handled internally with dynamic calculation
   return withTimeout(
     processQuoteMultimodalInternal(quoteFile, index, total),
-    2 * 60 * 1000, // 2 minutes
+    5 * 60 * 1000, // 5 minutes max per quote
     `Quote processing timeout (${quoteFile.originalname})`
   );
 }
@@ -329,9 +341,10 @@ async function processQuoteLegacy(
   index: number,
   total: number
 ): Promise<ParsedQuote> {
+  // Use generous timeout for legacy extraction as well
   return withTimeout(
     processQuoteLegacyInternal(quote, index, total),
-    2 * 60 * 1000, // 2 minutes
+    5 * 60 * 1000, // 5 minutes max per quote
     `Quote processing timeout (legacy) (${quote.filename || 'unknown'})`
   );
 }

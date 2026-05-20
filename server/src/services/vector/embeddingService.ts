@@ -61,36 +61,90 @@ export const embeddingService = {
   },
 
   /**
-   * Genera embeddings en batch para múltiples textos
+   * Genera embeddings en batch para múltiples textos usando una sola llamada a la API
+   * Esto reduce significativamente el tiempo de procesamiento vs llamadas individuales
    */
-  generateEmbeddingsBatch: async (texts: string[]): Promise<EmbeddingResult[]> => {
+  generateEmbeddingsBatch: async (texts: string[], retries = 3): Promise<EmbeddingResult[]> => {
+    const BATCH_SIZE = 10; // Gemini soporta múltiples contenidos por llamada
     const results: EmbeddingResult[] = [];
-    
-    const batchSize = 50;
-    for (let i = 0; i < texts.length; i += batchSize) {
-      const batch = texts.slice(i, i + batchSize);
-      const batchPromises = batch.map(async (text, index) => {
+
+    for (let i = 0; i < texts.length; i += BATCH_SIZE) {
+      const batch = texts.slice(i, i + BATCH_SIZE);
+      let lastError: Error | null = null;
+      let success = false;
+
+      for (let attempt = 1; attempt <= retries; attempt++) {
         try {
-          const embedding = await embeddingService.generateEmbedding(text);
-          return {
-            embedding,
-            text,
+          // Preparar contenidos para batch
+          const contents = batch.map(text => ({
+            parts: [{ text: text.slice(0, 8000) }]
+          }));
+
+          const response = await genAI.models.embedContent({
             model: EMBEDDING_MODEL_NAME,
-          };
+            contents,
+          });
+
+          // Procesar resultados
+          if (response.embeddings && response.embeddings.length > 0) {
+            for (let j = 0; j < response.embeddings.length && j < batch.length; j++) {
+              let embedding = response.embeddings[j].values;
+
+              if (!embedding || embedding.length === 0) {
+                console.warn(`⚠️ [Embedding Service] Empty embedding for text ${i + j}`);
+                continue;
+              }
+
+              // Truncar a 3072 dimensiones
+              if (embedding.length > EMBEDDING_DIMENSIONS) {
+                embedding = embedding.slice(0, EMBEDDING_DIMENSIONS);
+              }
+
+              results.push({
+                embedding,
+                text: batch[j],
+                model: EMBEDDING_MODEL_NAME,
+              });
+            }
+            success = true;
+            break;
+          } else {
+            throw new Error('No embeddings returned from Gemini batch call');
+          }
         } catch (error) {
-          console.error(`❌ [Embedding Service] Failed to generate embedding for text ${i + index}:`, error);
-          return null;
+          lastError = error as Error;
+          console.warn(`⚠️ [Embedding Service] Batch attempt ${attempt}/${retries} failed: ${lastError.message}`);
+
+          if (attempt < retries) {
+            const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
         }
-      });
-      
-      const batchResults = await Promise.all(batchPromises);
-      results.push(...batchResults.filter((r): r is EmbeddingResult => r !== null));
-      
-      if (i + batchSize < texts.length) {
+      }
+
+      if (!success) {
+        console.error(`❌ [Embedding Service] All batch attempts failed for batch ${i}:`, lastError);
+        // Retry individual items as fallback
+        for (let j = 0; j < batch.length; j++) {
+          try {
+            const embedding = await embeddingService.generateEmbedding(batch[j]);
+            results.push({
+              embedding,
+              text: batch[j],
+              model: EMBEDDING_MODEL_NAME,
+            });
+          } catch (error) {
+            console.error(`❌ [Embedding Service] Individual fallback failed for text ${i + j}:`, error);
+          }
+        }
+      }
+
+      // Pequeña pausa entre batches para no sobrecargar la API
+      if (i + BATCH_SIZE < texts.length) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
-    
+
     return results;
   },
 

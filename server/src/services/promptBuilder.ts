@@ -259,6 +259,66 @@ Entrada: "Todo riesgo daños materiales | PRIMA $485,151 | IMPUESTOS $92,179"
 Salida: rawName="Todo riesgo daños materiales", premium=485151, insuredAmount=null`,
   },
 
+  'CONDITIONS': {
+    family: 'CONDITIONS',
+    basePrompt: `Eres un extractor experto de cotizaciones de seguros PYME colombianos.
+
+Este PDF tiene el formato "Condiciones del Contrato" típico de Allianz y similares:
+- Es un documento de condiciones contractuales, no una tabla de cotización
+- Secciones numeradas (7, 8, 9...) con descripciones de coberturas
+- Coberturas listadas con bullets (✓) o viñetas
+- Valor asegurado total en el encabezado, no por cobertura individual
+- Deducibles en secciones separadas o en el clausulado
+
+REGLAS CRÍTICAS:
+1. EXTRAER cada bullet/viñeta como una cobertura individual
+2. Usar el nombre de la sección como contexto (ej: "Todo Riesgo Daño Material")
+3. Si una cobertura dice "Incluye: X, Y, Z", extraer X, Y, Z como coberturas separadas
+4. El valor asegurado total está en el encabezado - usarlo como insuredAmount general
+5. Si no hay valor individual, usar el total o dejar como null con nota "Incluido en base"
+6. REVISAR TODAS LAS PÁGINAS para deducibles - buscar en secciones de "Deducibles" o "Condiciones Especiales"
+7. IMPORTANTE: Si no encuentras deducible en el documento, usa "Ver clausulado" - los deducibles están en el clausulado separado
+8. Extraer sub-límites mencionados (ej: "sublimitado al 100%")
+9. Los servicios (Asistencia, Legal) usualmente no tienen deducible`,
+    formatInstructions: `FORMATO DE SALIDA:
+{
+  "insurerName": "ALLIANZ SEGUROS S.A.",
+  "policyName": "INSTITUCIONES EDUCATIVAS",
+  "premium": {
+    "netPremium": 16409171,
+    "fees": 0,
+    "taxes": 3117742,
+    "otherCharges": 0,
+    "totalPayable": 19526913,
+    "currency": "COP",
+    "periodicity": "ANUAL"
+  },
+  "rawCoverages": [
+    {
+      "section": "Todo Riesgo Daño Material",
+      "rawName": "Incendio y/o rayo o sus efectos inmediatos",
+      "insuredAmount": 16409171035,
+      "deductible": "Ver clausulado",
+      "notes": "Incluido en Todo Riesgo"
+    }
+  ],
+  "subLimits": [
+    {
+      "parentCoverage": "Todo Riesgo Daño Material",
+      "name": "Hurto calificado",
+      "limit": 1363951301,
+      "deductible": "Ver clausulado"
+    }
+  ],
+  "generalDeductibles": [
+    { "appliesTo": "Daños Materiales", "deductibleText": "Ver clausulado" }
+  ]
+}`,
+    fewShotExamples: `EJEMPLO ALLIANZ:
+Entrada: Sección 8 "Todo riesgo daño material incluyendo: ✓ Incendio, ✓ Terremoto, ✓ Daño interno"
+Salida: rawName="Incendio", section="Todo Riesgo Daño Material", insuredAmount=16409171035, deductible="Ver clausulado"`,
+  },
+
   'TEXT': {
     family: 'TEXT',
     basePrompt: `Eres un extractor experto de cotizaciones de seguros PYME colombianos.
