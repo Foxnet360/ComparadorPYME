@@ -10,6 +10,7 @@ export type FormatFamily =
   | 'DESCRIPTIVE'
   | 'PRICE-TABLE'
   | 'TEXT'
+  | 'CONDITIONS'
   | 'UNKNOWN';
 
 export interface FormatDetectionResult {
@@ -57,15 +58,22 @@ const FORMAT_PATTERNS: FormatPattern[] = [
     weight: 1.0,
   },
   {
-    family: 'DESCRIPTIVE',
+    family: 'CONDITIONS',
     patterns: [
-      /Este\s+amparo\s+cubre/i,
-      /Se\s+cubren\s+los\s+daños/i,
-      /cubre\s+las\s+pérdidas/i,
-      /Este\s+amparo\s+cubre\s+las\s+pérdidas/i,
+      /COBERTURA\s+BÁSICA/i,
+      /COBERTURAS\s+ESPECIFICAS\s+Y\s+LIMITES/i,
+      /condiciones\s+del\s+contrato/i,
+      /condiciones\s+particulares/i,
+      /^\s*[\d]+\s*\.\s*(?:COBERTURA|SECCION|AMPARO)/im,
     ],
-    keywords: ['cubre', 'amparo', 'pérdidas'],
-    weight: 0.9,
+    keywords: ['COBERTURA BÁSICA', 'COBERTURAS ESPECIFICAS', 'condiciones del contrato', 'condiciones particulares'],
+    weight: 0.95,
+  },
+  {
+    family: 'TEXT',
+    patterns: [],
+    keywords: [],
+    weight: 0.5,
   },
   {
     family: 'PRICE-TABLE',
@@ -175,6 +183,7 @@ export function getFormatFamilyDescription(family: FormatFamily): string {
     'TABLE-INTEGRATED': 'Tabla única con coberturas, sumas y deducibles (CHUBB style)',
     'SECTIONS': 'Coberturas agrupadas en secciones numeradas (MAPFRE style)',
     'DESCRIPTIVE': 'Texto descriptivo extenso por cobertura (AXA style)',
+    'CONDITIONS': 'Documento de condiciones contractuales con bullets (Allianz style)',
     'PRICE-TABLE': 'Tabla de primas por cobertura (SBS style)',
     'TEXT': 'Texto corrido/carta sin estructura tabular definida (BOLIVAR style)',
     'UNKNOWN': 'No se pudo determinar el formato',

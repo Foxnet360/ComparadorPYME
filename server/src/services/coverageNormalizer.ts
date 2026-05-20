@@ -163,6 +163,105 @@ export async function mapRawToCanonical(rawName: string): Promise<{
 }
 
 /**
+ * Batch version of mapRawToCanonical for improved performance
+ * Uses semanticMatcher.normalizeBatch with cache + batch embeddings
+ */
+export async function mapRawToCanonicalBatch(
+  rawNames: string[]
+): Promise<Array<{
+    canonicalName: string | null;
+    confidence: number;
+    method: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'ontology' | 'thesaurus' | null;
+  }>> {
+  const startTime = Date.now();
+  
+  // Filter out empty names
+  const validIndices = rawNames.map((name, index) => ({ name, index }))
+    .filter(item => item.name && item.name.trim().length > 0);
+  
+  if (validIndices.length === 0) {
+    return rawNames.map(() => ({ canonicalName: null, confidence: 0, method: null }));
+  }
+  
+  const results = new Array(rawNames.length).fill(null).map(() => ({
+    canonicalName: null as string | null,
+    confidence: 0,
+    method: null as 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'ontology' | 'thesaurus' | null,
+  }));
+  
+  // Separate names that can be resolved without embeddings (thesaurus/fuzzy)
+  const namesNeedingEmbeddings: string[] = [];
+  const embeddingIndices: number[] = [];
+  
+  for (const { name, index } of validIndices) {
+    // Check thesaurus exact match first
+    const thesaurusResult = await matchByThesaurusExact(name);
+    if (thesaurusResult) {
+      results[index] = { canonicalName: thesaurusResult, confidence: 100, method: 'exact' };
+      continue;
+    }
+    
+    // Check fuzzy match
+    const fuzzyResult = matchByFuzzy(name);
+    if (fuzzyResult && fuzzyResult.confidence >= 80) {
+      results[index] = {
+        canonicalName: fuzzyResult.canonicalName,
+        confidence: fuzzyResult.confidence,
+        method: 'fuzzy',
+      };
+      continue;
+    }
+    
+    // Needs embedding - add to batch
+    namesNeedingEmbeddings.push(name);
+    embeddingIndices.push(index);
+  }
+  
+  console.log(`🧠 [CoverageNormalizer] Batch: ${validIndices.length - namesNeedingEmbeddings.length}/${validIndices.length} resolved by thesaurus/fuzzy`);
+  
+  // Process embeddings in batch using semanticMatcher
+  if (namesNeedingEmbeddings.length > 0) {
+    try {
+      const batchResults = await semanticMatcher.normalizeBatch(namesNeedingEmbeddings);
+      
+      for (let i = 0; i < batchResults.length; i++) {
+        const result = batchResults[i];
+        const originalIndex = embeddingIndices[i];
+        
+        if (result && result.canonicalName && result.confidence >= 0.7) {
+          results[originalIndex] = {
+            canonicalName: result.canonicalName,
+            confidence: Math.round(result.confidence * 100),
+            method: result.method || 'embedding',
+          };
+        } else {
+          // LLM fallback
+          const llmResult = await semanticMatcher.matchCoverage(namesNeedingEmbeddings[i]);
+          if (llmResult && llmResult.canonicalName && llmResult.confidence >= 0.7) {
+            results[originalIndex] = {
+              canonicalName: llmResult.canonicalName,
+              confidence: Math.round(llmResult.confidence * 100),
+              method: 'llm',
+            };
+          }
+        }
+      }
+      
+      console.log(`✅ [CoverageNormalizer] Batch complete in ${Date.now() - startTime}ms`);
+    } catch (error) {
+      console.error(`❌ [CoverageNormalizer] Batch processing failed:`, error);
+      // Fallback to individual processing
+      for (let i = 0; i < namesNeedingEmbeddings.length; i++) {
+        const singleResult = await mapRawToCanonical(namesNeedingEmbeddings[i]);
+        results[embeddingIndices[i]] = singleResult;
+      }
+    }
+  }
+  
+  return results;
+}
+
+/**
  * Match by thesaurus exact match
  */
 async function matchByThesaurusExact(rawName: string): Promise<string | null> {
@@ -409,7 +508,7 @@ export async function buildCanonicalCoverages(
   // Step 2: Derive insured amounts
   const withAmounts = deriveInsuredAmounts(withDeductibles, insuredAssets);
   
-  // Step 3: Map to canonical
+  // Step 3: Map to canonical (batch processing for better performance)
   const mapped: Array<{
     coverage: RawCoverage;
     canonicalName: string | null;
@@ -417,10 +516,14 @@ export async function buildCanonicalCoverages(
     method: string | null;
   }> = [];
   
-  for (const coverage of withAmounts) {
-    const result = await mapRawToCanonical(coverage.rawName);
+  // Collect coverage names for batch processing
+  const coverageNames = withAmounts.map(c => c.rawName);
+  const batchResults = await mapRawToCanonicalBatch(coverageNames);
+  
+  for (let i = 0; i < withAmounts.length; i++) {
+    const result = batchResults[i];
     mapped.push({
-      coverage,
+      coverage: withAmounts[i],
       canonicalName: result.canonicalName,
       confidence: result.confidence,
       method: result.method,

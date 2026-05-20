@@ -11,6 +11,7 @@ import { normalizeText } from '../utils/textUtils';
 import { levenshteinDistance } from '../utils/stringUtils';
 import { coverageOntology, CoverageMapping } from './coverageOntology';
 import { featureFlags } from '../config/featureFlags';
+import { getBatch, setBatch } from './cache/embeddingCacheService';
 
 export interface SemanticMatchResult {
     categoryId: number | null;
@@ -286,6 +287,44 @@ async function matchByEmbedding(coverageName: string): Promise<SemanticMatchResu
 }
 
 /**
+ * Helper: Match coverage using pre-computed embedding vector
+ */
+async function matchByEmbeddingWithVector(coverageName: string, coverageEmbedding: number[]): Promise<SemanticMatchResult | null> {
+    try {
+        // Ensure category embeddings are initialized
+        if (!categoryEmbeddingsInitialized || !categoryEmbeddingsCache) {
+            await initializeCategoryEmbeddings();
+        }
+
+        const cache = categoryEmbeddingsCache!;
+        let bestMatch: SemanticMatchResult | null = null;
+        let bestSimilarity = 0;
+
+        for (const category of CANONICAL_CATEGORIES) {
+            const categoryEmbedding = cache.get(category.id);
+            if (!categoryEmbedding) continue;
+
+            const similarity = embeddingService.cosineSimilarity(coverageEmbedding, categoryEmbedding);
+
+            if (similarity > bestSimilarity && similarity >= CONFIDENCE_THRESHOLDS.EMBEDDING_MIN) {
+                bestSimilarity = similarity;
+                bestMatch = {
+                    categoryId: category.id,
+                    canonicalName: category.name,
+                    confidence: similarity,
+                    method: 'embedding',
+                };
+            }
+        }
+
+        return bestMatch;
+    } catch (error) {
+        console.error(`❌ [SemanticMatcher] Vector matching failed for "${coverageName}":`, error);
+        return null;
+    }
+}
+
+/**
  * Capa 4: LLM Fallback
  */
 async function matchByLLM(coverageName: string): Promise<SemanticMatchResult | null> {
@@ -510,6 +549,137 @@ export const semanticMatcher = {
      * Lista todas las categorías canónicas
      */
     getAllCategories: () => [...CANONICAL_CATEGORIES],
+
+    /**
+     * Normalización por lotes con pipeline híbrido
+     * 1. Thesaurus exacto → 2. Fuzzy → 3. Cache persistente → 4. Batch embeddings → 5. LLM fallback
+     */
+    normalizeBatch: async (coverageNames: string[]): Promise<SemanticMatchResult[]> => {
+        const startTime = Date.now();
+        const results: SemanticMatchResult[] = new Array(coverageNames.length).fill(null);
+        const pendingIndices: number[] = [];
+        const pendingNames: string[] = [];
+
+        // Paso 1 & 2: Thesaurus + Fuzzy (rápido, sin API)
+        for (let i = 0; i < coverageNames.length; i++) {
+            const name = coverageNames[i];
+
+            // Capa 1: Thesaurus exacto
+            const thesaurusResult = await matchByThesaurus(name);
+            if (thesaurusResult) {
+                results[i] = thesaurusResult;
+                continue;
+            }
+
+            // Capa 2: Fuzzy matching
+            const fuzzyResult = await matchByFuzzy(name);
+            if (fuzzyResult && fuzzyResult.confidence >= CONFIDENCE_THRESHOLDS.FUZZY_MIN) {
+                results[i] = fuzzyResult;
+                continue;
+            }
+
+            // No match rápido, agregar a pendientes
+            pendingIndices.push(i);
+            pendingNames.push(name);
+        }
+
+        console.log(`🧠 [SemanticMatcher] Batch: ${coverageNames.length - pendingNames.length}/${coverageNames.length} resolved by thesaurus/fuzzy`);
+
+        if (pendingNames.length === 0) {
+            console.log(`✅ [SemanticMatcher] Batch complete in ${Date.now() - startTime}ms (all cached)`);
+            return results;
+        }
+
+        // Paso 3: Cache persistente
+        const cacheHits = await getBatch(pendingNames);
+        const stillPendingIndices: number[] = [];
+        const stillPendingNames: string[] = [];
+
+        for (let i = 0; i < pendingNames.length; i++) {
+            const cached = cacheHits.get(pendingNames[i].toLowerCase().trim());
+            if (cached) {
+                // Encontrado en cache, comparar con categorías
+                const match = await matchByEmbeddingWithVector(pendingNames[i], cached);
+                results[pendingIndices[i]] = match || {
+                    categoryId: null,
+                    canonicalName: null,
+                    confidence: 0,
+                    method: null
+                };
+            } else {
+                stillPendingIndices.push(pendingIndices[i]);
+                stillPendingNames.push(pendingNames[i]);
+            }
+        }
+
+        console.log(`🧠 [SemanticMatcher] Batch: ${pendingNames.length - stillPendingNames.length}/${pendingNames.length} resolved from persistent cache`);
+
+        if (stillPendingNames.length === 0) {
+            console.log(`✅ [SemanticMatcher] Batch complete in ${Date.now() - startTime}ms`);
+            return results;
+        }
+
+        // Paso 4: Batch embeddings para los que faltan
+        try {
+            const batchResults = await embeddingService.generateEmbeddingsBatch(stillPendingNames);
+            const embeddingsToCache: { name: string; embedding: number[] }[] = [];
+
+            for (let i = 0; i < batchResults.length; i++) {
+                const result = batchResults[i];
+                const originalIndex = stillPendingIndices[i];
+
+                if (result && result.embedding) {
+                    // Almacenar para cache
+                    embeddingsToCache.push({
+                        name: stillPendingNames[i],
+                        embedding: result.embedding
+                    });
+
+                    // Comparar con categorías
+                    const match = await matchByEmbeddingWithVector(stillPendingNames[i], result.embedding);
+                    results[originalIndex] = match || {
+                        categoryId: null,
+                        canonicalName: null,
+                        confidence: 0,
+                        method: null
+                    };
+                } else {
+                    // Fallback a LLM si el embedding falló
+                    const llmMatch = await matchByLLM(stillPendingNames[i]);
+                    results[originalIndex] = llmMatch || {
+                        categoryId: null,
+                        canonicalName: null,
+                        confidence: 0,
+                        method: null
+                    };
+                }
+            }
+
+            // Guardar en cache persistente
+            if (embeddingsToCache.length > 0) {
+                await setBatch(
+                    embeddingsToCache.map(e => e.name),
+                    embeddingsToCache.map(e => e.embedding)
+                );
+            }
+
+            console.log(`✅ [SemanticMatcher] Batch complete in ${Date.now() - startTime}ms (${stillPendingNames.length} embeddings generated)`);
+        } catch (error) {
+            console.error(`❌ [SemanticMatcher] Batch embedding failed:`, error);
+            // Fallback individual a LLM
+            for (let i = 0; i < stillPendingNames.length; i++) {
+                const llmMatch = await matchByLLM(stillPendingNames[i]);
+                results[stillPendingIndices[i]] = llmMatch || {
+                    categoryId: null,
+                    canonicalName: null,
+                    confidence: 0,
+                    method: null
+                };
+            }
+        }
+
+        return results;
+    },
 
     /**
      * Limpia el cache de embeddings (útil para testing)
