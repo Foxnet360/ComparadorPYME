@@ -83,18 +83,18 @@ export const quoteScorer = {
      * Calculate complete score for a quote
      * Uses variable comparison engine when enabled
      */
-    calculateScore: async (
+    calculateScore: (
         quote: ParsedQuote,
         crossRefResults: CrossReferenceResult[],
         allQuotes: ParsedQuote[] = [],
         customWeights?: Partial<ScoreWeights>,
         clauseValidation?: CoverageExistenceResult[]
-    ): Promise<ScoringResult> => {
+    ): Promise<ScoringResult> | ScoringResult => {
         console.log(`📊 [quoteScorer] Calculating score for ${quote.insurerName}...`);
 
         // Use variable comparison engine when enabled
         if (featureFlags.isEnabled('variableComparisonEngine') && allQuotes.length > 1) {
-            return await quoteScorer.calculateScoreWithVariables(quote, crossRefResults, allQuotes, customWeights, clauseValidation);
+            return quoteScorer.calculateScoreWithVariables(quote, crossRefResults, allQuotes, customWeights, clauseValidation);
         }
 
         const weights = { ...DEFAULT_WEIGHTS, ...customWeights };

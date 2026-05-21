@@ -1,14 +1,20 @@
 import { GoogleGenAI } from '@google/genai';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-if (!GEMINI_API_KEY) {
-  console.error('❌ [Embedding Service] GEMINI_API_KEY not configured');
-}
+const EMBEDDING_MODEL_NAME = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-2';
+const EMBEDDING_DIMENSIONS = 768;
 
-const EMBEDDING_MODEL_NAME = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
-const EMBEDDING_DIMENSIONS = 3072;
-
-const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+let _genAI: GoogleGenAI | null = null;
+const getGenAI = () => {
+  if (!_genAI) {
+    const apiKey = process.env.GEMINI_API_KEY || '';
+    if (!apiKey) {
+      console.error('❌ [Embedding Service] GEMINI_API_KEY not configured');
+      throw new Error('GEMINI_API_KEY is not set in environment');
+    }
+    _genAI = new GoogleGenAI({ apiKey });
+  }
+  return _genAI;
+};
 
 export interface EmbeddingResult {
   embedding: number[];
@@ -27,21 +33,19 @@ export const embeddingService = {
     
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
-        const result = await genAI.models.embedContent({
+        const ai = getGenAI();
+        const result = await ai.models.embedContent({
           model: EMBEDDING_MODEL_NAME,
           contents: [{ parts: [{ text: truncatedText }] }],
+          config: {
+            outputDimensionality: EMBEDDING_DIMENSIONS
+          }
         });
         
         let embedding = result.embeddings?.[0]?.values;
         
         if (!embedding || embedding.length === 0) {
           throw new Error('No embedding returned from Gemini');
-        }
-        
-        // Truncar a 3072 dimensiones para compatibilidad con la base de datos
-        if (embedding.length > EMBEDDING_DIMENSIONS) {
-          console.log(`🔧 [Embedding Service] Truncating embedding from ${embedding.length} to ${EMBEDDING_DIMENSIONS} dims`);
-          embedding = embedding.slice(0, EMBEDDING_DIMENSIONS);
         }
         
         return embedding;
@@ -80,9 +84,13 @@ export const embeddingService = {
             parts: [{ text: text.slice(0, 8000) }]
           }));
 
-          const response = await genAI.models.embedContent({
+          const ai = getGenAI();
+          const response = await ai.models.embedContent({
             model: EMBEDDING_MODEL_NAME,
             contents,
+            config: {
+              outputDimensionality: EMBEDDING_DIMENSIONS
+            }
           });
 
           // Procesar resultados
@@ -93,11 +101,6 @@ export const embeddingService = {
               if (!embedding || embedding.length === 0) {
                 console.warn(`⚠️ [Embedding Service] Empty embedding for text ${i + j}`);
                 continue;
-              }
-
-              // Truncar a 3072 dimensiones
-              if (embedding.length > EMBEDDING_DIMENSIONS) {
-                embedding = embedding.slice(0, EMBEDDING_DIMENSIONS);
               }
 
               results.push({
