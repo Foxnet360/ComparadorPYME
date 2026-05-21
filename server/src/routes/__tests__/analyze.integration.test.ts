@@ -35,6 +35,20 @@ vi.mock('../../services/gemini', () => ({
         parseConfidence: 95
       }]
     })),
+    extractFromPdfWithVision: vi.fn(async () => ({
+      quotes: [{
+        insurerName: 'Seguros Bolívar',
+        policyName: 'Empresarial Plus',
+        priceAnnual: 8500000,
+        currency: 'COP',
+        coverages: [
+          { name: 'Responsabilidad Civil', value: '100M', deductible: '5 SMMLV' },
+          { name: 'Incendio', value: '500M', deductible: '10%' }
+        ],
+        specialConditions: [],
+        parseConfidence: 95
+      }]
+    })),
     analyzeWithGemini: vi.fn(async () => 'Análisis de prueba'),
     generateNarrative: vi.fn(async () => ({
       clientAnalysis: 'Test analysis',
@@ -47,7 +61,14 @@ vi.mock('../../services/gemini', () => ({
 vi.mock('../../services/pdfExtractor', () => ({
   pdfExtractor: {
     extractText: vi.fn(async () => 'Texto de prueba'),
-    processMultiplePdfs: vi.fn(async () => ['Texto de prueba'])
+    processMultiplePdfs: vi.fn(async () => ['Texto de prueba']),
+    extractTextFromPdf: vi.fn(async () => ({
+      text: 'Texto de prueba',
+      pages: [{ number: 1, text: 'Texto de prueba' }],
+      metadata: {},
+      warnings: [],
+      isScanned: false
+    }))
   }
 }));
 
@@ -167,7 +188,18 @@ vi.mock('../../services/crossReferenceEngine', () => ({
       clauseData: { deductible: '10%', exclusions: [] },
       alerts: [],
       isVerified: true
-    }])
+    }]),
+    crossReferenceQuotesBatch: vi.fn(async () => {
+      const results = new Map();
+      results.set(0, [{
+        coverageName: 'Incendio',
+        quoteData: { value: '500M', deductible: '10%' },
+        clauseData: { deductible: '10%', exclusions: [] },
+        alerts: [],
+        isVerified: true
+      }]);
+      return results;
+    })
   }
 }));
 
@@ -193,18 +225,46 @@ vi.mock('../../services/thesaurusMapper', () => ({
   normalizeCoverages: vi.fn((coverages) => coverages)
 }));
 
-vi.mock('../../config/database', () => ({
-  supabase: {
-    from: () => ({
-      insert: () => Promise.resolve({ data: null, error: null }),
-      select: () => ({
-        eq: () => ({
-          order: () => Promise.resolve({ data: [], error: null })
-        })
-      })
-    })
+vi.mock('../../services/ragRetrievalService', () => ({
+  ragRetrievalService: {
+    checkInsurerHasClauses: vi.fn(async () => true),
+    search: vi.fn(async () => [])
   }
 }));
+
+vi.mock('../../config/database', () => {
+  const makeChain = (val) => {
+    const chain = {
+      select: vi.fn(() => chain),
+      insert: vi.fn(() => chain),
+      update: vi.fn(() => chain),
+      eq: vi.fn(() => chain),
+      neq: vi.fn(() => chain),
+      gt: vi.fn(() => chain),
+      lt: vi.fn(() => chain),
+      gte: vi.fn(() => chain),
+      lte: vi.fn(() => chain),
+      in: vi.fn(() => chain),
+      like: vi.fn(() => chain),
+      ilike: vi.fn(() => chain),
+      order: vi.fn(() => chain),
+      limit: vi.fn(() => chain),
+      single: vi.fn(() => Promise.resolve({ data: val, error: null })),
+      then: vi.fn((resolve) => resolve({ data: Array.isArray(val) ? val : [val], error: null })),
+      catch: vi.fn()
+    };
+    return chain;
+  };
+  
+  const mockSupabase = {
+    from: vi.fn(() => makeChain([])),
+    rpc: vi.fn(() => Promise.resolve({ data: [], error: null }))
+  };
+  
+  return {
+    supabase: mockSupabase
+  };
+});
 
 // Create test app with file upload support
 const app = express();

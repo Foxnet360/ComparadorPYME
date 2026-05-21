@@ -17,7 +17,7 @@ describe('queryExpander', () => {
 
   it('should expand with insurer-specific variants', () => {
     const expansions = queryExpander.expand('deducible incendio', {
-      insurerName: 'MAPFRE'
+      insurerName: 'AXA'
     });
     
     const hasInsurerVariant = expansions.some(e => 

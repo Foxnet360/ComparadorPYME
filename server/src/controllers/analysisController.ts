@@ -867,7 +867,9 @@ export const analysisController = {
             // Cleanup temp files
             quoteFiles.forEach(f => {
                 try {
-                    fs.unlinkSync(f.path);
+                    if (f && f.path) {
+                        fs.unlinkSync(f.path);
+                    }
                 } catch (e) {
                     console.error(`Failed to delete temp file ${f.path}`, e);
                 }
@@ -882,10 +884,10 @@ export const analysisController = {
                 crossRefResults,
                 validationResults,
                 confidenceResults,
-                insurersWithClauses,
                 clauseValidationResults,
                 advancedAnalysisResults,
-                dualExtractionResults
+                dualExtractionResults,
+                insurersWithClauses
             );
 
             // Save to Supabase
@@ -981,10 +983,10 @@ export function generateComparison(
     crossRefResults: Map<number, CrossReferenceResult[]>,
     validationResults: Map<number, ValidationResult>,
     confidenceResults: Map<number, ConfidenceResult>,
-    insurersWithClauses: Map<string, boolean>,
     clauseValidationResults?: Map<number, any>,
     advancedAnalysisResults?: Map<number, any>,
-    dualExtractionResults?: Map<number, DualExtractionResult[]>
+    dualExtractionResults?: Map<number, DualExtractionResult[]>,
+    insurersWithClauses?: Map<string, boolean>
 ) {
     const quotesWithScores = quotes.map((quote, index) => {
         const scoring = scoringResults.get(index);
@@ -1025,7 +1027,7 @@ export function generateComparison(
             score: scoring?.totalScore || 0,
             dataQualityScore: scoring?.dataQualityScore || 0,
             verificationConfidence: scoring?.verificationConfidence || 0,
-            isRagAvailable: insurersWithClauses.get(quote.insurerName) || false,
+            isRagAvailable: insurersWithClauses?.get(quote.insurerName) || false,
             parseConfidence: quote.parseConfidence,
             dualExtractionValidation: dualExtractionResults?.get(index) || [],
             specialConditions: quote.specialConditions,
