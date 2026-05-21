@@ -465,14 +465,25 @@ export const analysisController = {
                         const parsed = await processQuoteMultimodal(file, index, quoteFiles.length);
                         return { index, parsed, error: null };
                     } catch (error: any) {
-                        console.error(`   ❌ Error processing quote ${index + 1}:`, error);
+                        const errorMessage = error?.message || 'Unknown error';
+                        const isServiceError = errorMessage.includes('503') || 
+                                               errorMessage.includes('Service Unavailable') ||
+                                               errorMessage.includes('high demand');
+                        
+                        if (isServiceError) {
+                            console.error(`   ❌ Error processing quote ${index + 1}: Servicio de IA temporalmente no disponible (503)`);
+                        } else {
+                            console.error(`   ❌ Error processing quote ${index + 1}:`, errorMessage);
+                        }
+                        
                         // Fallback to legacy pipeline
                         console.log(`   🔄 Falling back to legacy pipeline...`);
                         try {
                             const fallback = await processQuoteLegacy(file, index, quoteFiles.length);
                             return { index, parsed: fallback, error: null };
                         } catch (fallbackError: any) {
-                            return { index, parsed: null, error: fallbackError };
+                            console.error(`   ❌ Legacy fallback also failed:`, fallbackError?.message);
+                            return { index, parsed: null, error: error }; // Return original error for better messaging
                         }
                     }
                 };
@@ -489,13 +500,23 @@ export const analysisController = {
                             parsedQuotes[result.index] = result.parsed;
                         } else {
                             // Create error placeholder
+                            const filename = quoteFiles[result.index]?.originalname || 'Unknown';
+                            const insurerName = filename.replace(/COTIZACION.*?-\s*/i, '').replace(/\.pdf$/i, '') || filename;
+                            const errorMessage = result.error?.message || 'Unknown error';
+                            const isServiceError = errorMessage.includes('503') || 
+                                                   errorMessage.includes('Service Unavailable') ||
+                                                   errorMessage.includes('high demand');
+                            const displayError = isServiceError 
+                                ? 'Servicio temporalmente no disponible. Intente nuevamente en unos momentos.'
+                                : errorMessage;
+                            
                             parsedQuotes[result.index] = {
-                                insurerName: quoteFiles[result.index]?.originalname || 'Unknown',
+                                insurerName: insurerName,
                                 policyName: 'Error en procesamiento',
                                 priceAnnual: 0,
                                 currency: 'COP',
                                 coverages: [],
-                                specialConditions: [`Error: ${result.error?.message || 'Unknown error'}`],
+                                specialConditions: [`Error: ${displayError}`],
                                 rawText: '',
                                 parseConfidence: 0
                             };

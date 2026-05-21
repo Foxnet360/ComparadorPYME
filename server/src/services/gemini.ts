@@ -403,11 +403,19 @@ export const geminiService = {
                     error.message?.includes("Quota exceeded") ||
                     error.message?.includes("Too Many Requests");
 
-                if (isRateLimit) {
+                const isServiceUnavailable =
+                    error.status === 503 ||
+                    error.status === '503' ||
+                    error.message?.includes("503") ||
+                    error.message?.includes("Service Unavailable") ||
+                    error.message?.includes("high demand");
+
+                if (isRateLimit || isServiceUnavailable) {
                     const backoffMs = Math.min(20000 * Math.pow(2, retries), 120000);
-                    console.log(`Rate limit hit. Retry attempt ${retries + 1} of ${maxRetries} (backoff: ${backoffMs}ms)...`);
+                    const errorType = isRateLimit ? "Rate limit" : "Service unavailable (503)";
+                    console.log(`${errorType} hit. Retry attempt ${retries + 1} of ${maxRetries} (backoff: ${backoffMs}ms)...`);
                     if (retries >= maxRetries) {
-                        console.error("Max retries exceeded for rate limit.");
+                        console.error(`Max retries exceeded for ${errorType.toLowerCase()}.`);
                         throw error;
                     }
                     retries++;
@@ -445,9 +453,14 @@ export const geminiService = {
             shouldRetry = (error: any) => {
                 return error.status === 429 ||
                     error.status === '429' ||
+                    error.status === 503 ||
+                    error.status === '503' ||
                     error.message?.includes("429") ||
                     error.message?.includes("Quota exceeded") ||
-                    error.message?.includes("Too Many Requests");
+                    error.message?.includes("Too Many Requests") ||
+                    error.message?.includes("503") ||
+                    error.message?.includes("Service Unavailable") ||
+                    error.message?.includes("high demand");
             }
         } = options;
 
