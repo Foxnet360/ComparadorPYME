@@ -94,6 +94,19 @@ export const deductibleParser = {
         rawText: text
       };
     }
+
+    // Pure Fixed
+    const fixedMatch = text.match(SIMPLE_PATTERNS.fixed);
+    if (fixedMatch) {
+      const valStr = fixedMatch[1].replace(/,/g, '');
+      const value = parseFloat(valStr);
+      return {
+        components: [{ type: 'fixed', value }],
+        semantics: { isZero: false, hasMinimum: false, hasMaximum: false, isComposite: false },
+        normalized: { minAmount: value, maxAmount: value, percentage: 0, isPercentageBased: false },
+        rawText: text
+      };
+    }
     
     // If text is short and doesn't match simple patterns, it's likely complex
     if (text.length < 20) {

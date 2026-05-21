@@ -4,6 +4,10 @@
  * Ejecutar: npx ts-node src/scripts/verifySupabase.ts
  */
 
+import dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../../../.env.local') });
+
 import { supabase } from '../config/database';
 import { embeddingService } from '../services/vector/embeddingService';
 

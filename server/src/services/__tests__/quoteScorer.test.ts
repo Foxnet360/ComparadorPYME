@@ -109,9 +109,9 @@ describe('quoteScorer', () => {
         expect(result.quotePriceRank).toBe(0); // No comparison possible
     });
 
-    it('should calculate price rank when multiple quotes provided', () => {
+    it('should calculate price rank when multiple quotes provided', async () => {
         const quote2 = { ...mockQuote, insurerName: 'Competitor', priceAnnual: 10000000 };
-        const result = quoteScorer.calculateScore(mockQuote, mockCrossRefs, [mockQuote, quote2]);
+        const result = await quoteScorer.calculateScore(mockQuote, mockCrossRefs, [mockQuote, quote2]);
         
         expect(result.quotePriceRank).toBe(1); // mockQuote is cheaper
         expect(result.marketPriceAverage).toBe(9250000);

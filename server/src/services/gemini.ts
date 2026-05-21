@@ -1,5 +1,5 @@
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
-import { GoogleAIFileManager, FileState } from "@google/generative-ai/server";
+import { GoogleGenAI, Type } from "@google/genai";
+const SchemaType = Type;
 import fs from 'fs';
 import { ClauseDocument } from '../types';
 import { preprocessText } from './textPreprocessor';
@@ -221,15 +221,7 @@ const getGenAI = () => {
     if (!apiKey) {
         throw new Error("GEMINI_API_KEY is not set in environment");
     }
-    return new GoogleGenerativeAI(apiKey);
-};
-
-const getFileManager = () => {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-        throw new Error("GEMINI_API_KEY is not set in environment");
-    }
-    return new GoogleAIFileManager(apiKey);
+    return new GoogleGenAI({ apiKey });
 };
 
 /**
@@ -281,13 +273,16 @@ export const geminiService = {
 
     uploadFile: async (filePath: string, mimeType: string, displayName: string) => {
         try {
-            const fileManager = getFileManager();
-            const uploadResult = await fileManager.uploadFile(filePath, {
+            const ai = getGenAI();
+            const uploadResult = await ai.files.upload({
+                file: filePath,
                 mimeType,
-                displayName,
+                config: {
+                    displayName,
+                }
             });
 
-            return uploadResult.file;
+            return uploadResult;
         } catch (error: any) {
             console.error("Error uploading to Gemini:", error);
             throw error;
@@ -295,14 +290,14 @@ export const geminiService = {
     },
 
     waitForFilesActive: async (files: any[]) => {
-        const fileManager = getFileManager();
+        const ai = getGenAI();
         for (const name of files.map((file) => file.name)) {
-            let file = await fileManager.getFile(name);
-            while (file.state === FileState.PROCESSING) {
+            let file = await ai.files.get({ name });
+            while (file.state === 'PROCESSING') {
                 await new Promise((resolve) => setTimeout(resolve, 2000));
-                file = await fileManager.getFile(name);
+                file = await ai.files.get({ name });
             }
-            if (file.state !== FileState.ACTIVE) {
+            if (file.state !== 'ACTIVE') {
                 throw new Error(`File ${file.name} failed to process`);
             }
         }
@@ -310,8 +305,8 @@ export const geminiService = {
 
     deleteFile: async (fileName: string) => {
         try {
-            const fileManager = getFileManager();
-            await fileManager.deleteFile(fileName);
+            const ai = getGenAI();
+            await ai.files.delete({ name: fileName });
             console.log(`🗑️ [Gemini] Deleted file: ${fileName}`);
         } catch (error: any) {
             console.warn(`⚠️ [Gemini] Failed to delete file ${fileName}:`, error.message);
@@ -348,16 +343,23 @@ export const geminiService = {
                 console.log(`✅ [Gemini] File ready: ${uploadedFile.name}`);
 
                 // Extract using multimodal model
-                const genAI = getGenAI();
-                const extractionModel = process.env.GEMINI_MODEL 
-                    ? `models/${process.env.GEMINI_MODEL}`
-                    : 'models/gemini-2.5-pro';
+                const ai = getGenAI();
+                const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
                 
                 console.log(`🤖 [Gemini] Using model: ${extractionModel} for PDF extraction`);
                 
-                const model = genAI.getGenerativeModel({
+                const result = await ai.models.generateContent({
                     model: extractionModel,
-                    generationConfig: {
+                    contents: [
+                        { text: prompt },
+                        {
+                            fileData: {
+                                fileUri: uploadedFile.uri,
+                                mimeType: 'application/pdf',
+                            }
+                        }
+                    ],
+                    config: {
                         temperature: 0.1,
                         maxOutputTokens: 32768,
                         responseMimeType: 'application/json',
@@ -365,22 +367,7 @@ export const geminiService = {
                     }
                 });
 
-                const result = await model.generateContent([
-                    { text: prompt },
-                    {
-                        fileData: {
-                            fileUri: uploadedFile.uri,
-                            mimeType: 'application/pdf',
-                        }
-                    }
-                ]);
-
-                const response = result.response;
-                if (!response) {
-                    throw new Error("No response received from Gemini");
-                }
-
-                const responseText = response.text();
+                const responseText = result.text;
                 if (!responseText) {
                     throw new Error("Empty response from Gemini");
                 }
@@ -495,26 +482,21 @@ export const geminiService = {
 
         while (true) {
             try {
-                const genAI = getGenAI();
-                const model = genAI.getGenerativeModel({
-                    model: 'models/gemini-2.5-flash',
-                    generationConfig: {
+                                const ai = getGenAI();
+                const modelName = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+                const result = await ai.models.generateContent({
+                    model: modelName,
+                    contents: [
+                        { text: prompt },
+                        { text: `\n\n--- DOCUMENTO ---\n\n${text}` }
+                    ],
+                    config: {
                         temperature: 0.1,
                         maxOutputTokens: 32768,
                     }
                 });
 
-                const result = await model.generateContent([
-                    { text: prompt },
-                    { text: `\n\n--- DOCUMENTO ---\n\n${text}` }
-                ]);
-
-                const response = result.response;
-                if (!response) {
-                    throw new Error("No response received from Gemini");
-                }
-
-                const responseText = response.text();
+                const responseText = result.text;
                 if (!responseText) {
                     throw new Error("Empty text response from Gemini");
                 }
@@ -567,14 +549,16 @@ export const geminiService = {
 
         while (true) {
             try {
-                const genAI = getGenAI();
-                const extractionModel = process.env.GEMINI_MODEL 
-                    ? `models/${process.env.GEMINI_MODEL}`
-                    : 'models/gemini-2.5-flash';
+                                const ai = getGenAI();
+                const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
                 console.log(`🤖 [Gemini] Using model: ${extractionModel} for extraction`);
-                const model = genAI.getGenerativeModel({
+                const result = await ai.models.generateContent({
                     model: extractionModel,
-                    generationConfig: {
+                    contents: [
+                        { text: prompt },
+                        { text: `\n\n--- DOCUMENTO ---\n\n${preprocessed.text}` }
+                    ],
+                    config: {
                         temperature: 0.1,
                         maxOutputTokens: 32768,
                         responseMimeType: 'application/json',
@@ -582,17 +566,7 @@ export const geminiService = {
                     }
                 });
 
-                const result = await model.generateContent([
-                    { text: prompt },
-                    { text: `\n\n--- DOCUMENTO ---\n\n${preprocessed.text}` }
-                ]);
-
-                const response = result.response;
-                if (!response) {
-                    throw new Error("No response received from Gemini");
-                }
-
-                const responseText = response.text();
+                const responseText = result.text;
                 if (!responseText) {
                     throw new Error("Empty response from Gemini");
                 }
