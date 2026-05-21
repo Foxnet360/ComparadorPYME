@@ -276,8 +276,8 @@ export const geminiService = {
             const ai = getGenAI();
             const uploadResult = await ai.files.upload({
                 file: filePath,
-                mimeType,
                 config: {
+                    mimeType,
                     displayName,
                 }
             });
