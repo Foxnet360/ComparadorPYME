@@ -176,7 +176,7 @@ export const structuredClauseExtractor = {
       return dataList[0].extracted_data as StructuredClause;
       
     } catch (error) {
-      console.error('❌ [StructuredExtractor] Search failed:', error);
+      console.info('ℹ️ [StructuredExtractor] Search unavailable, falling back to legacy RAG');
       return null;
     }
   },

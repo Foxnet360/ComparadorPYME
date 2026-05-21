@@ -613,9 +613,7 @@ export async function buildCanonicalCoverages(
   // Collect uncategorized coverages (those that didn't match any canonical category)
   const rawUncategorized = mapped
     .filter(m => m.canonicalName === null)
-    .map(m => m.coverage)
-    // Filter out empty coverages (no value and no premium)
-    .filter(c => c.insuredAmount !== null || c.premium !== null);
+    .map(m => m.coverage);
   
   // Group uncategorized coverages by semantic similarity
   const grouped = groupUncategorizedCoverages(rawUncategorized);
@@ -699,6 +697,7 @@ async function buildOntologyBasedCoverages(
   for (const { coverage, mapping } of mappings) {
     if (mapping.groups.length === 0) {
       // Ungrouped - will be added as uncategorized
+      console.log(`[coverageNormalizer] Coverage ungrouped: "${coverage.rawName}" - adding as uncategorized`);
       continue;
     }
     
