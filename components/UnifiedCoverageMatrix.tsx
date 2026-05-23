@@ -342,6 +342,14 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                   <AlertTriangle className="mr-2 text-amber-600" size={20} />
                   Coberturas No Categorizadas
                   <span className="ml-2 text-sm font-normal text-amber-600">({uncategorizedCoverages.length})</span>
+                  <div className="group relative ml-2">
+                    <Info className="text-amber-600 cursor-help" size={16} />
+                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-72 p-3 bg-amber-800 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+                      <p className="font-semibold mb-1">¿Qué son estas coberturas?</p>
+                      <p>Estas coberturas fueron extraídas directamente del PDF pero no encajan en las 14 categorías estándar del comparador. Pueden ser coberturas adicionales, con nombres específicos de cada aseguradora, o requieren revisión manual.</p>
+                      <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-amber-800"></div>
+                    </div>
+                  </div>
                 </h3>
                 <p className="text-sm text-amber-700 mt-1">
                   Agrupadas por similitud semántica según el tesauro.
