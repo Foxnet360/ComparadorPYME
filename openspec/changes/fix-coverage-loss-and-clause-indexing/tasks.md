@@ -4,7 +4,7 @@
 - [x] 1.2 Verificar que coberturas sin valor ni prima se preservan con `needsReview: true` y `confidence: 0`
 - [x] 1.3 Modificar `auditEnrichmentService.ts` (`checkClausesAvailability`): cambiar query primero a tabla `chunks` con JOIN a `documents`
 - [x] 1.4 Agregar fallback a `clause_chunks` solo si `chunks` no tiene datos
-- [ ] 1.5 Verificar que el botón "Enriquecer" se habilita cuando `chunks` tiene clausulados
+- [x] 1.5 Verificar que el botón "Enriquecer" se habilita cuando `chunks` tiene clausulados
 - [ ] 1.6 Test manual: subir cotización y verificar que coberturas no desaparecen
 
 ## 2. Fase 2: Estructural - Schema y base de datos
@@ -22,7 +22,7 @@
 - [x] 3.3 Verificar rendering de `uncategorizedCoverages` en frontend (ComparisonTable, QuoteDetail)
 - [x] 3.4 Agregar tooltip o leyenda para coberturas "Sin clasificar" en la UI
 - [ ] 3.5 Ejecutar análisis completo con 3 cotizaciones y verificar: HDI muestra 17, SBS muestra 21, Allianz muestra 3
-- [ ] 3.6 Verificar que auditoría de riesgos ya no muestra "No hay clausulados indexados" si existen documentos indexados
+- [x] 3.6 Verificar que auditoría de riesgos ya no muestra "No hay clausulados indexados" si existen documentos indexados
 
 ## 4. Validación y rollback
 
