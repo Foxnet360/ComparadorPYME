@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import { processChatMessage, generateSuggestedQuestions, getConversationHistory, getOrCreateThread } from '../services/chatService';
 import { supabase } from '../config/database';
+import { asyncHandler } from '../utils/asyncHandler';
 
 const router = Router();
 
@@ -40,115 +41,83 @@ const checkRateLimit = (clientId: string): boolean => {
  * POST /api/chat
  * Process a chat message and return response with optional RAG citations
  */
-router.post('/', async (req, res) => {
-    try {
-        const { message, reportContext, useRAG, history } = req.body;
-        
-        if (!message || typeof message !== 'string') {
-            return res.status(400).json({
-                error: 'Bad Request',
-                message: 'message is required'
-            });
-        }
-        
-        // Rate limiting
-        const clientId = req.ip || req.headers['x-forwarded-for']?.toString() || 'unknown';
-        if (!checkRateLimit(clientId)) {
-            return res.status(429).json({
-                error: 'Too Many Requests',
-                message: 'Rate limit exceeded. Please wait a minute.'
-            });
-        }
-        
-        console.log(`💬 [chatRoute] Message: "${message.substring(0, 50)}..." | RAG: ${useRAG !== false}`);
-        
-        const userId = req.body.userId || 'anonymous';
-        const threadId = req.body.threadId;
-        
-        const result = await processChatMessage(
-            message,
-            reportContext,
-            useRAG !== false, // default to true
-            userId,
-            threadId
-        );
-        
-        console.log(`✅ [chatRoute] Response generated | Tokens: ${result.tokensUsed || 'unknown'} | Model: ${result.modelUsed}`);
-        
-        res.json(result);
-    } catch (error) {
-        console.error('❌ [chatRoute] Chat error:', error);
-        res.status(500).json({
-            error: 'Internal Server Error',
-            message: 'Failed to process chat message'
+router.post('/', asyncHandler(async (req, res) => {
+    const { message, reportContext, useRAG, history } = req.body;
+    
+    if (!message || typeof message !== 'string') {
+        return res.status(400).json({
+            error: 'Bad Request',
+            message: 'message is required'
         });
     }
-});
+    
+    // Rate limiting
+    const clientId = req.ip || req.headers['x-forwarded-for']?.toString() || 'unknown';
+    if (!checkRateLimit(clientId)) {
+        return res.status(429).json({
+            error: 'Too Many Requests',
+            message: 'Rate limit exceeded. Please wait a minute.'
+        });
+    }
+    
+    console.log(`💬 [chatRoute] Message: "${message.substring(0, 50)}..." | RAG: ${useRAG !== false}`);
+    
+    const userId = req.body.userId || 'anonymous';
+    const threadId = req.body.threadId;
+    
+    const result = await processChatMessage(
+        message,
+        reportContext,
+        useRAG !== false, // default to true
+        userId,
+        threadId
+    );
+    
+    console.log(`✅ [chatRoute] Response generated | Tokens: ${result.tokensUsed || 'unknown'} | Model: ${result.modelUsed}`);
+    
+    res.json(result);
+}));
 
 /**
  * POST /api/chat/suggestions
  * Generate dynamic suggested questions based on report content
  */
-router.post('/suggestions', async (req, res) => {
-    try {
-        const { reportContext } = req.body;
-        
-        const suggestions = generateSuggestedQuestions(reportContext);
-        
-        res.json({ suggestions });
-    } catch (error) {
-        console.error('❌ [chatRoute] Suggestions error:', error);
-        res.status(500).json({
-            error: 'Internal Server Error',
-            message: 'Failed to generate suggestions'
-        });
-    }
-});
+router.post('/suggestions', asyncHandler(async (req, res) => {
+    const { reportContext } = req.body;
+    
+    const suggestions = generateSuggestedQuestions(reportContext);
+    
+    res.json({ suggestions });
+}));
 
 /**
  * GET /api/chat/threads
  * List chat threads for a user
  */
-router.get('/threads', async (req, res) => {
-    try {
-        const userId = req.query.userId as string || 'anonymous';
-        
-        const { data, error } = await supabase
-            .from('chat_threads')
-            .select('*')
-            .eq('user_id', userId)
-            .order('updated_at', { ascending: false });
-        
-        if (error) throw error;
-        
-        res.json({ threads: data || [] });
-    } catch (error) {
-        console.error('❌ [chatRoute] List threads error:', error);
-        res.status(500).json({
-            error: 'Internal Server Error',
-            message: 'Failed to list threads'
-        });
-    }
-});
+router.get('/threads', asyncHandler(async (req, res) => {
+    const userId = req.query.userId as string || 'anonymous';
+    
+    const { data, error } = await supabase
+        .from('chat_threads')
+        .select('*')
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    res.json({ threads: data || [] });
+}));
 
 /**
  * GET /api/chat/threads/:id/messages
  * Get messages for a specific thread
  */
-router.get('/threads/:id/messages', async (req, res) => {
-    try {
-        const threadId = req.params.id;
-        
-        const messages = await getConversationHistory(threadId, 50);
-        
-        res.json({ messages });
-    } catch (error) {
-        console.error('❌ [chatRoute] Get messages error:', error);
-        res.status(500).json({
-            error: 'Internal Server Error',
-            message: 'Failed to get messages'
-        });
-    }
-});
+router.get('/threads/:id/messages', asyncHandler(async (req, res) => {
+    const threadId = req.params.id;
+    
+    const messages = await getConversationHistory(threadId as string, 50);
+    
+    res.json({ messages });
+}));
 
 export default router;

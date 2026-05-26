@@ -73,3 +73,38 @@ The system SHALL detect format family quickly without full AI processing.
 ## Dependencies
 - `pdf-text-extraction-v2` for initial text extraction (first 2000 chars)
 - `multimodal-pdf-extraction` for the actual extraction using detected format
+
+---
+
+## ADDED Requirements (from change: correccion-cotizacion-allianz)
+
+### Requirement: Detect CONDITIONS format family
+The system SHALL detect the "CONDITIONS" format family for Allianz-style documents.
+
+#### Scenario: Allianz conditions document
+- **WHEN** extracted text contains "COBERTURA BÁSICA" AND "COBERTURAS ESPECIFICAS Y LIMITES" AND section numbers like "8." or "9."
+- **THEN** the system SHALL classify as "CONDITIONS"
+- **AND** set confidence to 90%
+- **AND** set hasSections to true
+
+#### Scenario: General conditions format
+- **WHEN** extracted text contains narrative descriptions of coverages with bullet points AND "condiciones del contrato" OR "condiciones particulares"
+- **THEN** the system SHALL classify as "CONDITIONS"
+- **AND** set confidence to 85%
+
+### MODIFIED Requirements
+
+#### Requirement: Updated FormatFamily type
+The FormatFamily type SHALL include the new "CONDITIONS" value.
+
+##### Scenario: Complete family list
+- **WHEN** the system lists supported format families
+- **THEN** it SHALL include: TABLE-DOUBLE, TABLE-INTEGRATED, SECTIONS, DESCRIPTIVE, PRICE-TABLE, TEXT, CONDITIONS, UNKNOWN
+
+#### Requirement: Format detection patterns updated
+The format detection patterns SHALL include CONDITIONS patterns.
+
+##### Scenario: Pattern priority
+- **WHEN** multiple patterns match
+- **THEN** CONDITIONS SHALL have weight 0.95 (same as DESCRIPTIVE)
+- **AND** TABLE-DOUBLE and TABLE-INTEGRATED still have priority 1.0

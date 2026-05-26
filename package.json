@@ -80,5 +80,10 @@
   },
   "optionalDependencies": {
     "canvas": "^3.2.1"
+  },
+  "lint-staged": {
+    "server/src/**/*.ts": [
+      "sh -c 'cd server && npx tsc --noEmit'"
+    ]
   }
 }
