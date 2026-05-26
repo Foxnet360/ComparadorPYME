@@ -132,6 +132,10 @@ app.use('/api/chat', chatRoutes);
 import monitoringRoutes from './routes/monitoring';
 app.use('/api/monitoring', monitoringRoutes);
 
+// Centralized error handling middleware (must be after all routes)
+import { errorHandler } from './middleware/errorHandler';
+app.use(errorHandler);
+
 // Serve static files from frontend build in production
 if (process.env.NODE_ENV === 'production') {
     const staticPath = path.join(__dirname, '../../dist');

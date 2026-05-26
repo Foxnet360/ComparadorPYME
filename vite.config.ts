@@ -29,6 +29,31 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, '.'),
       }
+    },
+    optimizeDeps: {
+      exclude: [
+        'express',
+        'cors',
+        'multer',
+        'ioredis',
+        'pdf-parse',
+        'sharp',
+        'ws',
+        'server',
+      ]
+    },
+    build: {
+      rollupOptions: {
+        external: [
+          'express',
+          'cors',
+          'multer',
+          'ioredis',
+          'pdf-parse',
+          'sharp',
+          'ws',
+        ]
+      }
     }
   };
 });
