@@ -26,9 +26,10 @@ export interface DeductibleStructure {
 
 // Simple regex patterns for common cases
 const SIMPLE_PATTERNS = {
-  zero: /^(sin\s+deducible|no\s+aplica|sin\s+aplicaci[oó]n|incluido|0\s*%|0)$/i,
+  zero: /^(sin\s+deducible(?:\s+alguno)?|no\s+aplica(?:\s+deducible)?|sin\s+aplicaci[oó]n(?:\s+de\s+deducible)?|incluido|0\s*%|0)$/i,
   percentage: /^(\d+(?:\.\d+)?)\s*%$/,
   smmlv: /^(\d+)\s*(?:SMMLV|SM)$/i,
+  uvt: /^(\d+)\s*(?:UVT)$/i,
   fixed: /^(?:\$?\s*)([\d.,]+)$/
 };
 
@@ -107,9 +108,24 @@ export const deductibleParser = {
         rawText: text
       };
     }
+
+    // Pure UVT
+    const uvtMatch = text.match(SIMPLE_PATTERNS.uvt);
+    if (uvtMatch) {
+      const uvt = parseInt(uvtMatch[1]);
+      const amount = uvt * UVT_VALUE;
+      return {
+        components: [{ type: 'fixed', value: uvt, currency: 'UVT' }],
+        semantics: { isZero: false, hasMinimum: false, hasMaximum: false, isComposite: false },
+        normalized: { minAmount: amount, maxAmount: amount, percentage: 0, isPercentageBased: false },
+        rawText: text
+      };
+    }
     
-    // If text is short and doesn't match simple patterns, it's likely complex
-    if (text.length < 20) {
+    // If text is short, doesn't match simple patterns, and contains no numbers or key terms, it's likely garbage/unparseable
+    const hasNumbers = /\d/.test(text);
+    const hasKeywords = /smmlv|uvt|%|deducible|aplica/i.test(text);
+    if (text.length < 20 && !hasNumbers && !hasKeywords) {
       return this.createUnknownStructure(text);
     }
     
@@ -117,37 +133,12 @@ export const deductibleParser = {
   },
 
   /**
-   * Parse complex deductible with LLM
+   * Parse complex deductible with LLM using Gemini Structured Outputs
    */
   async parseWithLLM(text: string): Promise<DeductibleStructure> {
     try {
-      const prompt = `Analiza este deducible de seguro y extrae su estructura:
-
-Texto: "${text}"
-
-Responde ÚNICAMENTE con este JSON:
-{
-  "components": [
-    {"type": "percentage|fixed|smmlv|uvt|minimum|maximum|na", "value": number, "currency": "string|null"}
-  ],
-  "isZero": boolean,
-  "hasMinimum": boolean,
-  "hasMaximum": boolean,
-  "isComposite": boolean
-}`;
-
-      const result = await geminiService.extractText('', prompt);
-      
-      // Extract JSON from response
-      const jsonMatch = result.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('No JSON found in LLM response');
-      }
-      
-      const parsed = JSON.parse(jsonMatch[0]);
-      
+      const parsed = await geminiService.extractDeductible(text);
       return this.buildStructureFromParsed(parsed, text);
-      
     } catch (error) {
       console.error('❌ [DeductibleParser] LLM parsing failed:', error);
       return this.createUnknownStructure(text);
@@ -184,6 +175,10 @@ Responde ÚNICAMENTE con este JSON:
           break;
         case 'smmlv':
           minAmount = comp.value * SMMLV_VALUE;
+          maxAmount = minAmount;
+          break;
+        case 'uvt':
+          minAmount = comp.value * UVT_VALUE;
           maxAmount = minAmount;
           break;
         case 'na':

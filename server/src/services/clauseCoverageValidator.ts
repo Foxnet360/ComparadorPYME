@@ -156,9 +156,9 @@ export const clauseCoverageValidator = {
 async function checkClauseDocumentExists(insurerName: string): Promise<boolean> {
   try {
     const { data, error } = await supabase
-      .from('document_insurer_view')
-      .select('id')
-      .eq('insurer_name', insurerName)
+      .from('documents')
+      .select('id, insurers!inner(name)')
+      .eq('insurers.name', insurerName)
       .eq('is_active', true)
       .limit(1);
     
@@ -200,11 +200,10 @@ async function searchCoverageInClause(coverageName: string, insurerName: string)
  */
 async function extractCoveragesFromClause(insurerName: string): Promise<Array<{name: string; isMandatory: boolean; reference?: string}>> {
   try {
-    // First check if we have cached extractions
     const { data: cachedCoverages } = await supabase
       .from('clause_coverages')
-      .select('*')
-      .eq('insurer_name', insurerName)
+      .select('*, documents!inner(id, insurers!inner(name))')
+      .eq('documents.insurers.name', insurerName)
       .order('created_at', { ascending: false })
       .limit(50);
     

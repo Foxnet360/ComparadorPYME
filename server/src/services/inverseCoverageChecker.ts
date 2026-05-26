@@ -101,11 +101,11 @@ async function extractClauseCoverages(insurerName: string): Promise<Array<{
   reference?: string;
 }>> {
   try {
-    // First try to get from clause_coverages table via document_insurer_view
+    // First try to get from clause_coverages table via documents and insurers
     const { data: cachedCoverages } = await supabase
       .from('clause_coverages')
-      .select('*, document_insurer_view!inner(insurer_name)')
-      .eq('document_insurer_view.insurer_name', insurerName)
+      .select('*, documents!inner(id, insurers!inner(name))')
+      .eq('documents.insurers.name', insurerName)
       .order('extracted_at', { ascending: false })
       .limit(50);
     

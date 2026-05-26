@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 
 const EMBEDDING_MODEL_NAME = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-2';
-const EMBEDDING_DIMENSIONS = 768;
+const EMBEDDING_DIMENSIONS = 3072;
 
 let _genAI: GoogleGenAI | null = null;
 const getGenAI = () => {

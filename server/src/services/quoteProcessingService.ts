@@ -175,23 +175,27 @@ async function processQuoteMultimodalInternal(
   console.log(`   Quote ${index + 1}/${total}: ${quoteFile.originalname}`);
   
   try {
-    // Phase 1: Detect format family (quick text extraction)
-    console.log(`   📋 Phase 1: Detecting format...`);
-    const quickText = extractForDetection(
-      await pdfExtractor.extractTextFromPdf(quoteFile.path).then(r => r.text),
-      2000
-    );
-    const formatResult = detectFormatFamily(quickText);
-    console.log(`   ✅ Format detected: ${formatResult.family} (${formatResult.confidence}% confidence)`);
+    // Phase 1: Detect format family from filename (prescinding from plain text extraction)
+    console.log(`   📋 Phase 1: Detecting format from filename...`);
+    const lowerName = quoteFile.originalname.toLowerCase();
+    let family: any = 'UNKNOWN';
+    if (lowerName.includes('hdi')) family = 'TABLE-DOUBLE';
+    else if (lowerName.includes('chubb')) family = 'TABLE-INTEGRATED';
+    else if (lowerName.includes('axa') || lowerName.includes('colpatria')) family = 'SECTIONS';
+    else if (lowerName.includes('sbs')) family = 'DESCRIPTIVE';
+    else if (lowerName.includes('liberty')) family = 'PRICE-TABLE';
+    else if (lowerName.includes('bolivar') || lowerName.includes('bolívar')) family = 'TEXT';
+    else if (lowerName.includes('allianz')) family = 'SECTIONS';
+    
+    console.log(`   ✅ Format family mapped from filename: ${family}`);
     
     // Phase 2: Build specialized prompt
     console.log(`   📝 Phase 2: Building specialized prompt...`);
-    const prompt = buildPromptForFamily(formatResult.family, {
-      pageCount: formatResult.pageCount,
-      hasTables: formatResult.hasTables,
+    const prompt = buildPromptForFamily(family, {
+      hasTables: family !== 'TEXT' && family !== 'UNKNOWN',
     });
     
-    // Phase 3: Extract using multimodal vision
+    // Phase 3: Extract using multimodal vision directly on File API
     console.log(`   🔍 Phase 3: Extracting with multimodal vision...`);
     const extracted = await geminiService.extractFromPdfWithVision(
       quoteFile.path,

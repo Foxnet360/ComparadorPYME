@@ -169,13 +169,13 @@ export const clauseVersionComparator = {
    */
   getVersionHistory: async (insurerName: string, productName?: string) => {
     let query = supabase
-      .from('document_insurer_view')
-      .select('*')
-      .eq('insurer_name', insurerName)
+      .from('documents')
+      .select('*, insurers!inner(name)')
+      .eq('insurers.name', insurerName)
       .order('created_at', { ascending: false });
     
     if (productName) {
-      query = query.eq('product_name', productName);
+      query = (query as any).eq('product_name', productName);
     }
     
     const { data, error } = await query;
@@ -184,7 +184,10 @@ export const clauseVersionComparator = {
       throw error;
     }
     
-    return (data as any[]) || [];
+    return ((data as any[]) || []).map(d => ({
+      ...d,
+      insurer_name: d.insurers?.name
+    }));
   }
 };
 

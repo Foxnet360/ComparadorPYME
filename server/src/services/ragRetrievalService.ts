@@ -21,7 +21,7 @@ export interface RetrievedClause {
 }
 
 // Minimum similarity threshold for RAG retrieval
-const MIN_SIMILARITY_THRESHOLD = 0.7;
+const MIN_SIMILARITY_THRESHOLD = 0.62;
 
 interface RagPerformanceLog {
     operation: string;

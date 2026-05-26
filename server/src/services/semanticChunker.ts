@@ -196,11 +196,11 @@ export const semanticChunker = {
         const chunks: Chunk[] = [];
         
         // Combinar texto de páginas consecutivas para crear chunks más grandes
-        const targetChunkSize = 800; // caracteres objetivo
+        const targetChunkSize = 2800; // caracteres objetivo para clausulados de seguros
         let currentChunkText = '';
         let currentChunkPages: number[] = [];
         let chunkCounter = 0;
-        
+
         for (const page of pages) {
             if (!page.hasContent) continue;
             
@@ -217,9 +217,13 @@ export const semanticChunker = {
                 );
                 chunks.push(chunk);
                 
-                // Reiniciar
-                currentChunkText = page.text;
-                currentChunkPages = [page.pageNumber];
+                // Empezar nuevo chunk con 15% de overlap de texto del chunk anterior
+                const overlapSize = Math.floor(targetChunkSize * 0.15);
+                const overlapText = currentChunkText.slice(-overlapSize);
+                
+                currentChunkText = overlapText + '\n\n' + page.text;
+                const lastPage = currentChunkPages[currentChunkPages.length - 1];
+                currentChunkPages = lastPage ? [lastPage, page.pageNumber] : [page.pageNumber];
             } else {
                 // Agregar al chunk actual
                 if (currentChunkText.length > 0) {

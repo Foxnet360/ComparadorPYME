@@ -113,6 +113,35 @@ export const QuoteExtractionSchemaV2: any = {
   required: ["insurerName", "policyName", "premium", "rawCoverages"],
 };
 
+export const DeductibleSchema: any = {
+  description: "Estructura detallada de un deducible de seguros",
+  type: SchemaType.OBJECT,
+  properties: {
+    components: {
+      type: SchemaType.ARRAY,
+      description: "Componentes del deducible",
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          type: { 
+            type: SchemaType.STRING, 
+            description: "Tipo de componente",
+            enum: ["percentage", "fixed", "smmlv", "uvt", "minimum", "maximum", "na", "unknown"] 
+          },
+          value: { type: SchemaType.NUMBER, description: "Valor numérico del componente" },
+          currency: { type: SchemaType.STRING, description: "Moneda o unidad de medida (ej: COP, SMMLV, UVT)", nullable: true }
+        },
+        required: ["type", "value"]
+      }
+    },
+    isZero: { type: SchemaType.BOOLEAN, description: "Indica si el deducible es cero (sin deducible)" },
+    hasMinimum: { type: SchemaType.BOOLEAN, description: "Indica si tiene un mínimo" },
+    hasMaximum: { type: SchemaType.BOOLEAN, description: "Indica si tiene un tope o máximo" },
+    isComposite: { type: SchemaType.BOOLEAN, description: "Indica si es un deducible compuesto (ej: porcentaje con un mínimo)" }
+  },
+  required: ["components", "isZero", "hasMinimum", "hasMaximum", "isComposite"]
+};
+
 /**
  * JSON Schema for structured quote extraction (Legacy V1)
  * Enforces consistent output format from Gemini
@@ -323,101 +352,174 @@ export const geminiService = {
         filename: string
     ): Promise<any> => {
         let uploadedFile: any = null;
-        let retries = 0;
-        const maxRetries = 3;
+        try {
+            console.log(`📤 [Gemini] Uploading PDF: ${filename}`);
+            
+            // Upload PDF
+            uploadedFile = await geminiService.uploadFile(
+                pdfPath,
+                'application/pdf',
+                filename
+            );
 
-        while (true) {
-            try {
-                console.log(`📤 [Gemini] Uploading PDF: ${filename}`);
-                
-                // Upload PDF
-                uploadedFile = await geminiService.uploadFile(
-                    pdfPath,
-                    'application/pdf',
-                    filename
-                );
+            // Wait for processing
+            console.log(`⏳ [Gemini] Waiting for file processing...`);
+            await geminiService.waitForFilesActive([uploadedFile]);
+            console.log(`✅ [Gemini] File ready: ${uploadedFile.name}`);
 
-                // Wait for processing
-                console.log(`⏳ [Gemini] Waiting for file processing...`);
-                await geminiService.waitForFilesActive([uploadedFile]);
-                console.log(`✅ [Gemini] File ready: ${uploadedFile.name}`);
+            const ai = getGenAI();
+            const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+            
+            let retries = 0;
+            const maxRetries = 3;
 
-                // Extract using multimodal model
-                const ai = getGenAI();
-                const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
-                
-                console.log(`🤖 [Gemini] Using model: ${extractionModel} for PDF extraction`);
-                
-                const result = await ai.models.generateContent({
-                    model: extractionModel,
-                    contents: [
-                        { text: prompt },
-                        {
-                            fileData: {
-                                fileUri: uploadedFile.uri,
-                                mimeType: 'application/pdf',
+            while (true) {
+                try {
+                    console.log(`🤖 [Gemini] Using model: ${extractionModel} for PDF extraction (attempt ${retries + 1})`);
+                    
+                    const result = await ai.models.generateContent({
+                        model: extractionModel,
+                        contents: [
+                            { text: prompt },
+                            {
+                                fileData: {
+                                    fileUri: uploadedFile.uri,
+                                    mimeType: 'application/pdf',
+                                }
                             }
+                        ],
+                        config: {
+                            temperature: 0.1,
+                            maxOutputTokens: 32768,
+                            responseMimeType: 'application/json',
+                            responseSchema: QuoteExtractionSchemaV2,
                         }
-                    ],
-                    config: {
-                        temperature: 0.1,
-                        maxOutputTokens: 32768,
-                        responseMimeType: 'application/json',
-                        responseSchema: QuoteExtractionSchemaV2,
+                    });
+
+                    const responseText = result.text;
+                    if (!responseText) {
+                        throw new Error("Empty response from Gemini");
                     }
-                });
 
-                const responseText = result.text;
-                if (!responseText) {
-                    throw new Error("Empty response from Gemini");
-                }
-
-                // Parse JSON
-                const parseResult = parseJsonWithRepair(responseText);
-                
-                if (parseResult.success) {
-                    console.log(`📄 [Gemini] PDF extraction: ${parseResult.data.insurerName}, ${parseResult.data.rawCoverages?.length || 0} coverages`);
-                    return parseResult.data;
-                } else {
-                    throw new Error(`JSON parsing failed: ${parseResult.error}`);
-                }
-
-            } catch (error: any) {
-                const isRateLimit =
-                    error.status === 429 ||
-                    error.status === '429' ||
-                    error.message?.includes("429") ||
-                    error.message?.includes("Quota exceeded") ||
-                    error.message?.includes("Too Many Requests");
-
-                const isServiceUnavailable =
-                    error.status === 503 ||
-                    error.status === '503' ||
-                    error.message?.includes("503") ||
-                    error.message?.includes("Service Unavailable") ||
-                    error.message?.includes("high demand");
-
-                if (isRateLimit || isServiceUnavailable) {
-                    const backoffMs = Math.min(20000 * Math.pow(2, retries), 120000);
-                    const errorType = isRateLimit ? "Rate limit" : "Service unavailable (503)";
-                    console.log(`${errorType} hit. Retry attempt ${retries + 1} of ${maxRetries} (backoff: ${backoffMs}ms)...`);
-                    if (retries >= maxRetries) {
-                        console.error(`Max retries exceeded for ${errorType.toLowerCase()}.`);
-                        throw error;
+                    // Parse JSON
+                    const parseResult = parseJsonWithRepair(responseText);
+                    
+                    if (parseResult.success) {
+                        console.log(`📄 [Gemini] PDF extraction: ${parseResult.data.insurerName}, ${parseResult.data.rawCoverages?.length || 0} coverages`);
+                        return parseResult.data;
+                    } else {
+                        throw new Error(`JSON parsing failed: ${parseResult.error}`);
                     }
-                    retries++;
-                    await new Promise(resolve => setTimeout(resolve, backoffMs));
-                    continue;
-                }
 
-                console.error("❌ [Gemini] PDF extraction failed:", error);
-                throw error;
-            } finally {
-                // Always cleanup uploaded file
-                if (uploadedFile?.name) {
-                    await geminiService.deleteFile(uploadedFile.name);
+                } catch (error: any) {
+                    const isRateLimit =
+                        error.status === 429 ||
+                        error.status === '429' ||
+                        error.message?.includes("429") ||
+                        error.message?.includes("Quota exceeded") ||
+                        error.message?.includes("Too Many Requests");
+
+                    const isServiceUnavailable =
+                        error.status === 503 ||
+                        error.status === '503' ||
+                        error.message?.includes("503") ||
+                        error.message?.includes("Service Unavailable") ||
+                        error.message?.includes("high demand");
+
+                    if (isRateLimit || isServiceUnavailable) {
+                        const backoffMs = Math.min(20000 * Math.pow(2, retries), 120000);
+                        const errorType = isRateLimit ? "Rate limit" : "Service unavailable (503)";
+                        console.log(`${errorType} hit. Retry attempt ${retries + 1} of ${maxRetries} (backoff: ${backoffMs}ms)...`);
+                        if (retries >= maxRetries) {
+                            console.error(`Max retries exceeded for ${errorType.toLowerCase()}.`);
+                            throw error;
+                        }
+                        retries++;
+                        await new Promise(resolve => setTimeout(resolve, backoffMs));
+                        continue;
+                    }
+
+                    console.error("❌ [Gemini] PDF extraction failed:", error);
+                    throw error;
                 }
             }
+        } finally {
+            // Always cleanup uploaded file
+            if (uploadedFile?.name) {
+                await geminiService.deleteFile(uploadedFile.name);
+            }
+        }
+    },
+
+    /**
+     * Perform OCR on an image buffer using Gemini 3.5 Flash
+     */
+    performOcrOnImage: async (imageBuffer: Buffer, mimeType = 'image/png'): Promise<string> => {
+        try {
+            const ai = getGenAI();
+            const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+            
+            const result = await ai.models.generateContent({
+                model: extractionModel,
+                contents: [
+                    {
+                        inlineData: {
+                            data: imageBuffer.toString('base64'),
+                            mimeType
+                        }
+                    },
+                    {
+                        text: "Transcribe el texto completo de esta página de un documento de seguros. Mantén el formato, saltos de línea y estructura de las tablas lo mejor posible. No agregues comentarios, interpretaciones ni introducciones. Devuelve únicamente el texto transcrito."
+                    }
+                ],
+                config: {
+                    temperature: 0.1,
+                }
+            });
+
+            return result.text || '';
+        } catch (error: any) {
+            console.error("❌ [Gemini OCR] Failed to transcribe image:", error);
+            throw error;
+        }
+    },
+
+    /**
+     * Extrae la estructura de un deducible utilizando Structured Outputs
+     */
+    extractDeductible: async (deductibleText: string): Promise<any> => {
+        try {
+            const ai = getGenAI();
+            const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+            
+            const prompt = `Analiza este deducible de seguro y extrae su estructura detallada:
+            
+Texto del deducible: "${deductibleText}"`;
+
+            const result = await ai.models.generateContent({
+                model: extractionModel,
+                contents: prompt,
+                config: {
+                    temperature: 0.1,
+                    responseMimeType: 'application/json',
+                    responseSchema: DeductibleSchema,
+                }
+            });
+
+            const responseText = result.text;
+            if (!responseText) {
+                throw new Error("Empty response from Gemini");
+            }
+
+            const parseResult = parseJsonWithRepair(responseText);
+            if (parseResult.success) {
+                return parseResult.data;
+            } else {
+                throw new Error(`JSON parsing failed: ${parseResult.error}`);
+            }
+        } catch (error: any) {
+            console.error("❌ [Gemini Deductible] Extraction failed:", error);
+            throw error;
         }
     },
 

@@ -226,12 +226,21 @@ const searchRAG = async (
         const allClauses: ChatCitation[] = [];
         
         for (const insurerName of insurerNames) {
+            // Retrieve slightly more candidates for better re-ranking
             const results = await ragRetrievalService.search(message, {
                 insurerName,
-                limit: 2
+                limit: 4
             });
             
-            results.forEach(clause => {
+            // Filter by 0.62 similarity threshold
+            const filteredResults = results.filter(r => r.similarity >= 0.62);
+            
+            // Re-rank results using cross-encoder score blending
+            const rankedResults = await ragRetrievalService.reRankResults(message, filteredResults, {
+                topK: 2
+            });
+            
+            rankedResults.forEach(clause => {
                 allClauses.push({
                     id: clause.id,
                     insurerName: clause.insurerName,

@@ -4,6 +4,7 @@ import { semanticChunker, Chunk } from './semanticChunker';
 import { embeddingService } from './vector/embeddingService';
 import { pdfRenderer, RenderedPage } from './pdfRenderer';
 import { handleSupabaseError } from '../config/database';
+import { geminiService } from './gemini';
 
 export interface DocumentMetadata {
   insurerName: string;
@@ -108,6 +109,39 @@ export class DocumentIndexingService {
       );
 
       console.log(`✅ Páginas renderizadas: ${renderedPages.length}`);
+
+      // OCR Fallback for scanned/empty pages
+      console.log('🔍 Checking for empty/scanned pages needing OCR fallback...');
+      let ocrRan = false;
+      for (const page of extractionResult.pages) {
+        const trimmedText = page.text.trim();
+        // If the page has very little text and we have rendered images
+        if (trimmedText.length < 150) {
+          const renderedPage = renderedPages.find(rp => rp.pageNumber === page.pageNumber);
+          if (renderedPage && renderedPage.buffer) {
+            console.log(`📸 [OCR Fallback] Page ${page.pageNumber} text is empty or too short (${trimmedText.length} chars). Transcribing with Gemini...`);
+            try {
+              const transcribedText = await geminiService.performOcrOnImage(renderedPage.buffer);
+              if (transcribedText.trim().length > 0) {
+                page.text = transcribedText;
+                page.wordCount = transcribedText.split(/\s+/).length;
+                page.hasContent = true;
+                ocrRan = true;
+                console.log(`   ✅ Transcribed ${page.text.length} characters for page ${page.pageNumber}`);
+              }
+            } catch (ocrError: any) {
+              console.warn(`   ⚠️ Failed to transcribe page ${page.pageNumber} via Gemini OCR:`, ocrError.message);
+              warnings.push(`Fallo al transcribir página ${page.pageNumber} vía OCR: ${ocrError.message}`);
+            }
+          }
+        }
+      }
+
+      if (ocrRan) {
+        // Re-construct the full text if any page got OCRed
+        extractionResult.text = extractionResult.pages.map(p => p.text).join('\n\n');
+        console.log(`✅ Text reconstructed after OCR fallback: ${extractionResult.text.length} characters`);
+      }
 
       // 4. Crear chunks semánticos
       this.reportProgress({

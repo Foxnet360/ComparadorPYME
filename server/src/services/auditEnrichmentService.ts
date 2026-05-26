@@ -54,11 +54,10 @@ export interface CrossInsurerRisk {
  */
 export const checkClausesAvailability = async (insurerNames: string[]): Promise<boolean> => {
     try {
-        // First try chunks table (populated by documentIndexingService)
+        // First try chunks table directly without join to avoid PostgREST cache bugs
         const { data: chunkData, error: chunkError } = await supabase
             .from('chunks')
-            .select('id, documents!inner(id, document_type)')
-            .in('documents.document_type', ['CLAUSULADO_GENERAL', 'CLAUSULADO_PARTICULAR'])
+            .select('id')
             .limit(1);
         
         if (!chunkError && chunkData && chunkData.length > 0) {

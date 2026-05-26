@@ -151,3 +151,95 @@ The system SHALL normalize insurer names from quotes to match database names.
 - Supabase pgvector
 - PostgreSQL full-text search
 - Clause RAG Indexing (para los chunks)
+
+---
+
+## Delta from change: arquitectura-fluida-comparador-seguros
+
+## ADDED Requirements
+
+### Requirement: Search structured clause JSON
+The system SHALL search within structured clause JSON documents stored in PostgreSQL in addition to vector chunks.
+
+#### Scenario: Search structured clause data
+- **WHEN** a user searches for "deducible terremoto CHUBB"
+- **THEN** the system queries the `structured_clauses` table
+- **AND** returns the exact deductible from the JSON structure
+- **AND" response time is under 100ms
+
+### Requirement: Expand queries automatically
+The system SHALL expand search queries using the thesaurus before executing searches.
+
+#### Scenario: Expanded search
+- **WHEN** searching for "franquicia incendio"
+- **THEN** the system expands to include "deducible amparo básico"
+- **AND" searches for all variants
+
+## MODIFIED Requirements
+
+### Requirement: Retrieve clause chunks via vector similarity
+The system SHALL retrieve clause document chunks using vector similarity search.
+
+#### Scenario: Basic vector search
+- **WHEN** a coverage name is provided for cross-reference
+- **THEN** the system generates an embedding for the coverage name
+- **AND" searches the clause chunk vector index for similar chunks
+- **AND" returns chunks with similarity above the configured threshold
+
+### Requirement: Support hybrid search
+The system SHALL combine vector similarity with full-text search for better retrieval.
+
+#### Scenario: Hybrid clause search
+- **WHEN** searching for clause information
+- **THEN" the system performs both vector similarity and keyword search
+- **AND" combines results using configurable alpha weighting
+- **AND" returns the top N most relevant chunks
+
+## REMOVED Requirements
+
+### Requirement: Chunk-based clause storage as primary format
+**Reason**: Replaced by structured JSON extraction which preserves legal relationships
+**Migration**: Existing chunks remain in vector storage for backward compatibility, but primary search targets structured_clauses table
+
+---
+
+## Delta from change: complete-system-audit-remediation
+
+## MODIFIED Requirements
+
+### Requirement: RAG Retrieval with Query Expansion
+The system SHALL retrieve relevant clause sections using hybrid search with query expansion. **ADDED**: The system SHALL batch embedding generation for query expansions.
+
+#### Scenario: Batch query expansion embeddings
+- **WHEN** a query is expanded into N variants
+- **THEN** all N embeddings SHALL be generated in a single batch request
+- **AND** total embedding time SHALL be approximately equal to a single request
+
+#### Scenario: Limited concurrency for re-ranking
+- **WHEN** re-ranking requires embeddings for M chunks
+- **THEN** at most 5 embedding requests SHALL be in flight simultaneously
+- **AND** the system SHALL not exceed Gemini rate limits
+
+## ADDED Requirements
+
+### Requirement: Request Coalescing for Embeddings
+The system SHALL deduplicate concurrent embedding requests.
+
+#### Scenario: Duplicate embedding requests
+- **WHEN** multiple requests need the same embedding simultaneously
+- **THEN** only one API call SHALL be made
+- **AND** all requests SHALL share the result
+
+### Requirement: Query Result Caching
+The system SHALL cache frequent RAG queries.
+
+#### Scenario: Cache hit
+- **WHEN** a query identical to a recent one is made
+- **AND** the result is in cache
+- **THEN** the cached result SHALL be returned
+- **AND** no database query SHALL be executed
+
+#### Scenario: Cache TTL
+- **WHEN** a cached result is older than 5 minutes
+- **THEN** it SHALL be invalidated
+- **AND** a fresh query SHALL be executed

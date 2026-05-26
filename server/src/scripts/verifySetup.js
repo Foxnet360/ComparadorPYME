@@ -1,15 +1,22 @@
-/**
- * Verificación completa del setup de Supabase
- */
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../../../.env.local') });
 
 const { createClient } = require('@supabase/supabase-js');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const WebSocket = require('ws');
 
-const SUPABASE_URL = 'https://nubiecwypgfekhvaffxm.supabase.co';
-const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51YmllY3d5cGdmZWtodmFmZnhtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDQwODEyNCwiZXhwIjoyMDg5OTg0MTI0fQ.yJVMLIPSs2llvTh2UHMyIHmT9NJkC80yEfhgIetgwo4';
-const GEMINI_API_KEY = 'AIzaSyD3LOshQxEY4swacCat1VnlVuGj8WviWAU';
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://nubiecwypgfekhvaffxm.supabase.co';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51YmllY3d5cGdmZWtodmFmZnhtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDQwODEyNCwiZXhwIjoyMDg5OTg0MTI0fQ.yJVMLIPSs2llvTh2UHMyIHmT9NJkC80yEfhgIetgwo4';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyD3LOshQxEY4swacCat1VnlVuGj8WviWAU';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  },
+  realtime: {
+    transport: WebSocket
+  }
+});
 
 async function verifySetup() {
   console.log('🔍 Verificando configuración de Supabase...\n');
@@ -55,12 +62,23 @@ async function verifySetup() {
   // 3. Verificar Gemini
   console.log('\n3️⃣  Verificando Gemini API:');
   try {
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const embeddingModel = genAI.getGenerativeModel({ model: 'embedding-001' });
-    const result = await embeddingModel.embedContent('test de conexión');
+    const { GoogleGenAI } = require('@google/genai');
+    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    const result = await ai.models.embedContent({
+      model: 'gemini-embedding-2',
+      contents: 'test de conexión',
+      config: {
+        outputDimensionality: 3072
+      }
+    });
     
-    if (result.embedding && result.embedding.values.length > 0) {
-      console.log(`   ✅ Gemini API funcionando (${result.embedding.values.length} dimensiones)`);
+    const embedding = result.embeddings?.[0]?.values;
+    if (embedding && embedding.length > 0) {
+      console.log(`   ✅ Gemini API funcionando (${embedding.length} dimensiones)`);
+      if (embedding.length !== 3072) {
+        console.log(`   ❌ Error: Se esperaban 3072 dimensiones pero se recibieron ${embedding.length}`);
+        allOk = false;
+      }
     } else {
       console.log('   ⚠️  Respuesta inesperada de Gemini');
       allOk = false;

@@ -4,10 +4,10 @@ import { deductibleParser } from '../deductibleParser';
 // Mock gemini service for LLM parsing tests
 vi.mock('../gemini', () => ({
   geminiService: {
-    extractText: vi.fn((text: string, prompt: string) => {
+    extractDeductible: vi.fn((text: string) => {
       // Simulate LLM responses for compound deductibles
-      if (prompt.includes('10% con mínimo')) {
-        return Promise.resolve(JSON.stringify({
+      if (text.includes('10% con mínimo')) {
+        return Promise.resolve({
           components: [
             { type: 'percentage', value: 10 },
             { type: 'minimum', value: 5, currency: 'SMMLV' },
@@ -17,19 +17,19 @@ vi.mock('../gemini', () => ({
           hasMinimum: true,
           hasMaximum: true,
           isComposite: true
-        }));
+        });
       }
-      if (prompt.includes('sin aplicación')) {
-        return Promise.resolve(JSON.stringify({
+      if (text.includes('sin aplicación')) {
+        return Promise.resolve({
           components: [{ type: 'na', value: 0 }],
           isZero: true,
           hasMinimum: false,
           hasMaximum: false,
           isComposite: false
-        }));
+        });
       }
-      if (prompt.includes('15% con tope')) {
-        return Promise.resolve(JSON.stringify({
+      if (text.includes('15% con tope')) {
+        return Promise.resolve({
           components: [
             { type: 'percentage', value: 15 },
             { type: 'maximum', value: 100, currency: 'SMMLV' }
@@ -38,16 +38,16 @@ vi.mock('../gemini', () => ({
           hasMinimum: false,
           hasMaximum: true,
           isComposite: true
-        }));
+        });
       }
       // Default fallback
-      return Promise.resolve(JSON.stringify({
+      return Promise.resolve({
         components: [{ type: 'unknown', value: 0 }],
         isZero: false,
         hasMinimum: false,
         hasMaximum: false,
         isComposite: false
-      }));
+      });
     })
   }
 }));
