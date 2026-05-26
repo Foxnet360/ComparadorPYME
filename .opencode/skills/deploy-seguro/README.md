@@ -1,49 +1,35 @@
-# Deploy Seguro - Guía Rápida
+# Skill: Deploy Seguro (LEGACY)
 
-## Uso
+## ⚠️ Este skill ha sido reemplazado
 
-### Antes de cada push:
+Usa el nuevo **Deploy Bot v2.0** que automatiza TODO el proceso:
+
 ```bash
-.opencode/skills/deploy-seguro/scripts/pre-push-check.sh
+# Modo Guiado (Recomendado)
+.opencode/skills/deploy/scripts/deploy-bot.sh gui
+
+# Modo Automático
+.opencode/skills/deploy/scripts/deploy-bot.sh auto
+
+# Solo Verificar
+.opencode/skills/deploy/scripts/deploy-bot.sh check
 ```
 
-### Si todo está verificado:
-```bash
-git push origin main
-```
+## ¿Por qué el nuevo bot?
 
-## Verificaciones Automáticas
+El **Deploy Bot** automatiza todas las tareas que antes hacías manualmente:
+- ✅ Verificaciones automáticas
+- ✅ Corrección de errores comunes
+- ✅ Commit y push automático
+- ✅ Monitoreo de Railway
 
-El script valida:
-1. ✅ Estado del repositorio (rama main, cambios pendientes)
-2. ✅ Sincronización con remoto
-3. ✅ Dependencias (package.json ↔ package-lock.json)
-4. ✅ Compilación TypeScript sin errores
-5. ✅ Archivos sensibles (.env no commiteados)
-6. ✅ Mensaje de commit descriptivo
+## Documentación
 
-## Reglas de Oro
+Ver el nuevo skill en `.opencode/skills/deploy/`:
+- [README.md del nuevo skill](./deploy/README.md)
+- [SKILL.md completo](./deploy/SKILL.md)
+- [Script del bot](./deploy/scripts/deploy-bot.sh)
 
-1. **NUNCA** modificar `package.json` sin ejecutar `npm install`
-2. **SIEMPRE** incluir `package-lock.json` con `package.json`
-3. **SIEMPRE** verificar `tsc --noEmit` antes de push
-4. **NUNCA** push si hay errores de build
-5. **NUNCA** commitear `.env` o credenciales
+---
 
-## Troubleshooting
-
-### Si el script detecta errores:
-1. Lee el mensaje de error
-2. Ejecuta la corrección sugerida
-3. Vuelve a ejecutar el script
-4. Repite hasta que pase
-
-### Si necesitas bypass (EMERGENCIA):
-```bash
-git push origin main --no-verify
-```
-⚠️ Solo usar si entiendes el riesgo
-
-## Documentación Completa
-
-Ver [SKILL.md](./SKILL.md) para el flujo completo y estrategia de deploy.
+*Este archivo se mantiene por compatibilidad. El skill activo es `deploy`.*
