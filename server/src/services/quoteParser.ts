@@ -47,6 +47,10 @@ export interface ParsedQuote {
     rawText: string;
     parseConfidence: number;
     expectedCoverages?: ExpectedCoverage[];
+    // Error tracking for graceful degradation
+    isFailed?: boolean;
+    errorCategory?: string;
+    errorCode?: string;
 }
 
 export const quoteParser = {

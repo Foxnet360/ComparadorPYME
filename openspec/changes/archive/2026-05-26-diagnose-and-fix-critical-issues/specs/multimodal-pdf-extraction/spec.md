@@ -1,13 +1,3 @@
-# Spec: Multimodal PDF Extraction
-
-## Capability
-Extracción de datos de cotizaciones de seguros mediante visión multimodal de documentos PDF usando Gemini con File API, preservando la estructura tabular y espacial del documento original.
-
-## User Story
-**Como** sistema de análisis de cotizaciones
-**Quiero** procesar PDFs directamente con visión de IA
-**Para** extraer datos estructurados preservando tablas, secciones y relaciones espaciales entre coberturas, valores y deducibles
-
 ## MODIFIED Requirements
 
 ### Requirement: Extract data using multimodal generation

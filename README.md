@@ -60,7 +60,7 @@ cd server && npm install
 
 ### 2. Configurar variables de entorno
 
-Crear archivo `.env` en la raíz y `server/.env`:
+Crear archivo `.env` en la raíz del proyecto (no en `server/`):
 
 ```bash
 # Supabase
@@ -77,7 +77,20 @@ REGION=CO
 SMMLV_VALUE=1300000
 UVT_VALUE=42412
 CURRENCY=COP
+
+# CORS (opcional, para producción)
+CORS_ORIGINS=["https://tudominio.com"]
+
+# Redis (opcional, para learningEngine)
+REDIS_URL=redis://localhost:6379
 ```
+
+**Nota:** El sistema ahora carga `.env` desde la raíz del proyecto. Si usabas `server/.env`, se mantiene como fallback temporal pero está deprecado.
+
+#### Variables de entorno nuevas
+
+- **`CORS_ORIGINS`**: Array JSON de orígenes permitidos para CORS. Ejemplo: `["http://localhost:3000", "https://production.com"]`
+- **`REDIS_URL`**: URL de conexión a Redis. Si no está configurada, `learningEngine` se desactiva automáticamente.
 
 ### 3. Ejecutar en desarrollo
 
@@ -159,13 +172,65 @@ Ver `DEPLOY.md` para la guía completa de despliegue y troubleshooting.
 ## API Endpoints
 
 - `GET /` - Información de la API
-- `GET /health` - Health check
+- `GET /health` - Health check extendido (ver abajo)
 - `POST /api/analyze` - Análisis de documentos
 - `POST /api/documents` - Indexar documentos
 - `GET /api/documents` - Listar documentos
 - `POST /api/search` - Búsqueda semántica
 - `POST /api/rag/clauses` - Indexar cláusulas (RAG)
 - `POST /api/rag/search` - Búsqueda RAG
+
+### Health Check Endpoint
+
+`GET /health` ahora reporta el estado de todas las dependencias críticas:
+
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "services": {
+    "gemini": { "status": "ok", "latency": 120 },
+    "supabase": { "status": "ok", "latency": 45 },
+    "redis": { "status": "ok", "latency": 5 }
+  }
+}
+```
+
+**Estados posibles:**
+- `healthy` (HTTP 200): Todos los servicios disponibles
+- `degraded` (HTTP 503): Algunos servicios no disponibles
+- `unhealthy` (HTTP 503): Todos los servicios fallaron
+
+**Caché:** Los resultados se cachean por 30 segundos para evitar llamadas excesivas a APIs externas.
+
+### Formato de Respuestas de Error
+
+Todas las respuestas de error ahora incluyen un formato estandarizado:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "GEMINI_SERVICE_UNAVAILABLE",
+    "message": "Gemini temporalmente no disponible. Reintenta en unos momentos.",
+    "requestId": "uuid-v4",
+    "retryAfter": 60
+  }
+}
+```
+
+**Campos:**
+- `code`: Código de error legible por máquina
+- `message`: Mensaje descriptivo en español
+- `requestId`: ID de rastreo para soporte
+- `retryAfter`: (opcional) Segundos para reintentar
+
+**Códigos de error de Gemini:**
+- `GEMINI_RATE_LIMIT` (429): Límite de requests excedido
+- `GEMINI_SERVICE_UNAVAILABLE` (503): Servicio temporalmente no disponible
+- `GEMINI_TIMEOUT` (504): La extracción tomó demasiado tiempo
+- `GEMINI_INVALID_RESPONSE` (502): Respuesta inesperada
+- `GEMINI_UNKNOWN_ERROR` (500): Error interno
 
 ## Características
 

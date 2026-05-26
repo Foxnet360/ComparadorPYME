@@ -20,14 +20,17 @@ export interface FeatureFlags {
   useLegacyChatOnlyRAG: boolean;
 }
 
-// Default configuration - all new features enabled
+// Check if Redis is configured
+const redisAvailable = !!process.env.REDIS_URL;
+
+// Default configuration - all new features enabled (with dependency checks)
 export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   structuredClauseExtraction: true,
   semanticCoverageOntology: true,
   variableComparisonEngine: true,
   deductibleSemanticParser: true,
   tripleSourceChat: true,
-  learningEngine: true,
+  learningEngine: redisAvailable, // Only enable if Redis is configured
   queryExpansion: true,
   hybridSearchV2: true,
   
@@ -67,6 +70,23 @@ class FeatureFlagManager {
     
     // Override from environment variables if present
     this.loadFromEnvironment();
+    
+    // Log feature flags on startup
+    this.logFeatureFlags();
+  }
+  
+  private logFeatureFlags(): void {
+    console.log('🚩 [FeatureFlags] Configuration:');
+    const flags = this.getFlags();
+    Object.entries(flags).forEach(([key, value]) => {
+      const status = value ? '✅' : '❌';
+      console.log(`   ${status} ${key}: ${value}`);
+    });
+    
+    // Log any auto-disabled features
+    if (!redisAvailable && flags.learningEngine) {
+      console.warn('⚠️ [FeatureFlags] learningEngine was disabled because REDIS_URL is not configured');
+    }
   }
   
   private loadFromEnvironment(): void {

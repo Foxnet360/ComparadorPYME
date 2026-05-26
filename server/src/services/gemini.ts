@@ -412,19 +412,11 @@ export const geminiService = {
                     }
 
                 } catch (error: any) {
-                    const isRateLimit =
-                        error.status === 429 ||
-                        error.status === '429' ||
-                        error.message?.includes("429") ||
-                        error.message?.includes("Quota exceeded") ||
-                        error.message?.includes("Too Many Requests");
-
-                    const isServiceUnavailable =
-                        error.status === 503 ||
-                        error.status === '503' ||
-                        error.message?.includes("503") ||
-                        error.message?.includes("Service Unavailable") ||
-                        error.message?.includes("high demand");
+                    const { categorizeGeminiError } = require('../errors/geminiErrors');
+                    const geminiError = categorizeGeminiError(error);
+                    
+                    const isRateLimit = geminiError instanceof (require('../errors/geminiErrors').GeminiRateLimitError);
+                    const isServiceUnavailable = geminiError instanceof (require('../errors/geminiErrors').GeminiServiceUnavailableError);
 
                     if (isRateLimit || isServiceUnavailable) {
                         const backoffMs = Math.min(20000 * Math.pow(2, retries), 120000);
@@ -432,7 +424,7 @@ export const geminiService = {
                         console.log(`${errorType} hit. Retry attempt ${retries + 1} of ${maxRetries} (backoff: ${backoffMs}ms)...`);
                         if (retries >= maxRetries) {
                             console.error(`Max retries exceeded for ${errorType.toLowerCase()}.`);
-                            throw error;
+                            throw geminiError;
                         }
                         retries++;
                         await new Promise(resolve => setTimeout(resolve, backoffMs));
@@ -440,7 +432,7 @@ export const geminiService = {
                     }
 
                     console.error("❌ [Gemini] PDF extraction failed:", error);
-                    throw error;
+                    throw geminiError;
                 }
             }
         } finally {
@@ -607,18 +599,16 @@ Texto del deducible: "${deductibleText}"`;
                 
                 return responseText;
             } catch (error: any) {
-                const isRateLimit =
-                    error.status === 429 ||
-                    error.status === '429' ||
-                    error.message?.includes("429") ||
-                    error.message?.includes("Quota exceeded") ||
-                    error.message?.includes("Too Many Requests");
+                const { categorizeGeminiError } = require('../errors/geminiErrors');
+                const geminiError = categorizeGeminiError(error);
+                
+                const isRateLimit = geminiError instanceof (require('../errors/geminiErrors').GeminiRateLimitError);
 
                 if (isRateLimit) {
                     console.log(`Rate limit hit. Retry attempt ${retries + 1} of ${maxRetries}...`);
                     if (retries >= maxRetries) {
                         console.error("Max retries exceeded for rate limit.");
-                        throw error;
+                        throw geminiError;
                     }
                     retries++;
                     await new Promise(resolve => setTimeout(resolve, 20000));
@@ -626,7 +616,7 @@ Texto del deducible: "${deductibleText}"`;
                 }
 
                 console.error("Error generating content:", error);
-                throw error;
+                throw geminiError;
             }
         }
     },
@@ -709,18 +699,16 @@ Texto del deducible: "${deductibleText}"`;
                     throw new Error(`JSON parsing failed: ${parseResult.error}`);
                 }
             } catch (error: any) {
-                const isRateLimit =
-                    error.status === 429 ||
-                    error.status === '429' ||
-                    error.message?.includes("429") ||
-                    error.message?.includes("Quota exceeded") ||
-                    error.message?.includes("Too Many Requests");
+                const { categorizeGeminiError } = require('../errors/geminiErrors');
+                const geminiError = categorizeGeminiError(error);
+                
+                const isRateLimit = geminiError instanceof (require('../errors/geminiErrors').GeminiRateLimitError);
 
                 if (isRateLimit) {
                     console.log(`Rate limit hit. Retry attempt ${retries + 1} of ${maxRetries}...`);
                     if (retries >= maxRetries) {
                         console.error("Max retries exceeded for rate limit.");
-                        throw error;
+                        throw geminiError;
                     }
                     retries++;
                     await new Promise(resolve => setTimeout(resolve, 20000));
@@ -730,11 +718,11 @@ Texto del deducible: "${deductibleText}"`;
                 // If JSON parsing fails or schema validation fails, throw
                 if (error.message?.includes("JSON") || error.message?.includes("schema")) {
                     console.error("❌ [Gemini] Structured extraction failed:", error.message);
-                    throw new Error(`Structured extraction failed: ${error.message}`);
+                    throw new (require('../errors/geminiErrors').GeminiInvalidResponseError)(`Structured extraction failed: ${error.message}`);
                 }
 
                 console.error("Error generating structured content:", error);
-                throw error;
+                throw geminiError;
             }
         }
     },

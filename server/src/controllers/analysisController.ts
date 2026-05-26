@@ -125,7 +125,10 @@ export const analysisController = {
                                 coverages: [],
                                 specialConditions: [`Error: ${displayError}`],
                                 rawText: '',
-                                parseConfidence: 0
+                                parseConfidence: 0,
+                                isFailed: true,
+                                errorCategory: isServiceError ? 'SERVICE_UNAVAILABLE' : 'EXTRACTION_FAILED',
+                                errorCode: isServiceError ? 'GEMINI_SERVICE_UNAVAILABLE' : 'EXTRACTION_ERROR'
                             };
                         }
                     }

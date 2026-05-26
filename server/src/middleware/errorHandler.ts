@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError, ValidationError, RateLimitError, sanitizeErrorMessage } from '../errors';
+import { GeminiError } from '../errors/geminiErrors';
 import logger from '../config/logger';
 
 export const errorHandler = (
@@ -8,6 +9,24 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction
 ): void => {
+  if (err instanceof GeminiError) {
+    const response: Record<string, any> = {
+      success: false,
+      error: {
+        code: err.errorCode,
+        message: err.userMessage,
+        requestId: res.locals.requestId,
+      },
+    };
+
+    if (err.retryAfter) {
+      response.error.retryAfter = err.retryAfter;
+    }
+
+    res.status(err.statusCode).json(response);
+    return;
+  }
+
   if (err instanceof AppError) {
     const response: Record<string, any> = {
       success: false,

@@ -68,8 +68,16 @@ function validateEnv(): EnvConfig {
   
   if (missing.length > 0) {
     logger.error('❌ Missing required environment variables:');
-    missing.forEach(v => logger.error(`   - ${v}`));
+    missing.forEach(v => {
+      const descriptions: Record<string, string> = {
+        'GEMINI_API_KEY': 'Required for AI processing. Get yours at: https://aistudio.google.com/app/apikey',
+        'SUPABASE_URL': 'Required for database and vector storage. Format: https://your-project.supabase.co',
+        'SUPABASE_ANON_KEY': 'Required for database access. Get yours at: https://supabase.com/dashboard',
+      };
+      logger.error(`   - ${v}: ${descriptions[v] || 'Required configuration'}`);
+    });
     logger.error('Please set these variables in your .env file or environment.');
+    logger.error('See .env.example for a template.');
     process.exit(1);
   }
   
@@ -104,6 +112,15 @@ function validateEnv(): EnvConfig {
     REDIS_URL: process.env.REDIS_URL,
     VITE_GEMINI_API_KEY: process.env.VITE_GEMINI_API_KEY,
   };
+  
+  // Log loaded configuration (without secrets)
+  logger.info('✅ Environment configuration loaded successfully');
+  logger.info(`   PORT: ${config.PORT}`);
+  logger.info(`   NODE_ENV: ${config.NODE_ENV}`);
+  logger.info(`   GEMINI_MODEL: ${config.GEMINI_MODEL}`);
+  logger.info(`   REGION: ${config.REGION}`);
+  logger.info(`   CURRENCY: ${config.CURRENCY}`);
+  logger.info(`   REDIS_URL: ${config.REDIS_URL ? 'configured' : 'not configured'}`);
   
   return config;
 }

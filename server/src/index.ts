@@ -5,11 +5,21 @@ import path from 'path';
 import fs from 'fs';
 import multer from 'multer';
 
-const envPath = path.resolve(__dirname, '../.env');
-const result = dotenv.config({ path: envPath });
+const rootEnvPath = path.resolve(__dirname, '../../.env');
+const serverEnvPath = path.resolve(__dirname, '../.env');
+
+let envPath = rootEnvPath;
+let result = dotenv.config({ path: envPath });
 
 if (result.error) {
-    console.warn("⚠️ Dotenv error:", result.error.message);
+    // Fallback to server/.env for backward compatibility
+    result = dotenv.config({ path: serverEnvPath });
+    if (!result.error) {
+        console.warn("⚠️ [DEPRECATION] Using server/.env is deprecated. Please move your .env file to the project root.");
+        envPath = serverEnvPath;
+    } else {
+        console.warn("⚠️ Dotenv error:", result.error.message);
+    }
 }
 
 // Map VITE_ variable to standard variable if needed
@@ -29,19 +39,56 @@ import analysisRoutes from './routes/analysis';
 const app = express();
 const port = parseInt(process.env.PORT || '8080', 10);
 
-// Trigger restart: 1
+// Request ID middleware
+import { v4 as uuidv4 } from 'uuid';
+app.use((req, res, next) => {
+    const requestId = req.headers['x-request-id'] as string || uuidv4();
+    res.locals.requestId = requestId;
+    res.setHeader('X-Request-ID', requestId);
+    next();
+});
+
+// Dynamic CORS configuration
+let corsOrigins: string[] = ['http://localhost:3000', 'http://localhost:8080'];
+try {
+    if (process.env.CORS_ORIGINS) {
+        const parsed = JSON.parse(process.env.CORS_ORIGINS);
+        if (Array.isArray(parsed)) {
+            corsOrigins = parsed;
+            console.log('🌐 [CORS] Using configured origins:', corsOrigins);
+        } else {
+            console.warn('⚠️ [CORS] CORS_ORIGINS is not a valid JSON array, using defaults');
+        }
+    } else {
+        console.log('🌐 [CORS] Using default origins:', corsOrigins);
+    }
+} catch (error) {
+    console.error('❌ [CORS] Failed to parse CORS_ORIGINS:', error);
+    console.log('🌐 [CORS] Using default origins:', corsOrigins);
+}
+
 app.use(cors({
-    origin: ['https://compapyme.baconhacks.com', 'http://localhost:3000', 'http://localhost:8080'],
+    origin: corsOrigins,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID']
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// Basic health check
-// Basic health check
-app.get('/health', (req, res) => {
-    res.json({ status: 'ok', message: 'CSA Comparator API is running', timestamp: new Date().toISOString() });
+// Health check with dependency status
+import { checkHealth } from './services/healthCheckService';
+app.get('/health', async (req, res) => {
+    try {
+        const health = await checkHealth();
+        const statusCode = health.status === 'healthy' ? 200 : health.status === 'degraded' ? 503 : 503;
+        res.status(statusCode).json(health);
+    } catch (error) {
+        res.status(500).json({
+            status: 'unhealthy',
+            timestamp: new Date().toISOString(),
+            error: 'Failed to perform health check'
+        });
+    }
 });
 
 // Root route - API info (only if not serving static files)

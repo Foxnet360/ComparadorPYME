@@ -1,8 +1,3 @@
-# Spec: Error Handling
-
-## Purpose
-Manejo centralizado de errores con clases de error específicas por dominio, logging estructurado y tracking de request IDs.
-
 ## MODIFIED Requirements
 
 ### Requirement: Centralized Error Handling
