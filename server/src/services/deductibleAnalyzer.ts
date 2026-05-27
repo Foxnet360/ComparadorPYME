@@ -47,7 +47,11 @@ export const deductibleAnalyzer = {
     const clauseStructure = clauseDeductibleText ? await deductibleParser.parse(clauseDeductibleText) : null;
     
     // Use clause deductible as source of truth (or quote if clause not available)
-    const effectiveStructure = (clauseStructure?.normalized?.minAmount || 0) > 0 ? clauseStructure : quoteStructure;
+    const effectiveStructure = clauseStructure && (
+      clauseStructure.normalized.minAmount > 0 || 
+      clauseStructure.normalized.maxAmount > 0 || 
+      clauseStructure.normalized.percentage > 0
+    ) ? clauseStructure : quoteStructure;
     
     if (!effectiveStructure || !effectiveStructure.normalized) {
       throw new Error('Failed to parse deductible structure');

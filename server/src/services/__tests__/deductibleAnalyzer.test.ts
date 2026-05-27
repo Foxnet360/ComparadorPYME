@@ -4,9 +4,9 @@ import { mockDeductibleScenarios } from './__fixtures__/mockData';
 
 describe('deductibleAnalyzer', () => {
   describe('analyze', () => {
-    it('should calculate LOW risk for deductibles under 10%', () => {
+    it('should calculate LOW risk for deductibles under 10%', async () => {
       const scenario = mockDeductibleScenarios[0];
-      const result = deductibleAnalyzer.analyze(
+      const result = await deductibleAnalyzer.analyze(
         scenario.name,
         scenario.quoteDeductible,
         scenario.clauseDeductible,
@@ -18,9 +18,9 @@ describe('deductibleAnalyzer', () => {
       expect(result.deductibleRatio).toBeLessThan(0.10);
     });
 
-    it('should calculate MEDIUM risk for deductibles between 10-15%', () => {
+    it('should calculate MEDIUM risk for deductibles between 10-15%', async () => {
       const scenario = mockDeductibleScenarios[3]; // 15% with cap
-      const result = deductibleAnalyzer.analyze(
+      const result = await deductibleAnalyzer.analyze(
         scenario.name,
         scenario.quoteDeductible,
         scenario.clauseDeductible,
@@ -32,9 +32,9 @@ describe('deductibleAnalyzer', () => {
       expect(result.score).toBeLessThan(80);
     });
 
-    it('should calculate HIGH risk for deductibles over 15%', () => {
+    it('should calculate HIGH risk for deductibles over 15%', async () => {
       const scenario = mockDeductibleScenarios[2]; // 20%
-      const result = deductibleAnalyzer.analyze(
+      const result = await deductibleAnalyzer.analyze(
         scenario.name,
         scenario.quoteDeductible,
         scenario.clauseDeductible,
@@ -45,8 +45,8 @@ describe('deductibleAnalyzer', () => {
       expect(result.score).toBeLessThan(50);
     });
 
-    it('should apply cap when specified', () => {
-      const result = deductibleAnalyzer.analyze(
+    it('should apply cap when specified', async () => {
+      const result = await deductibleAnalyzer.analyze(
         'Test',
         '10%',
         '10% / Máx. 500 SMMLV',
@@ -59,8 +59,8 @@ describe('deductibleAnalyzer', () => {
       expect(result.deductibleAmount).toBeLessThanOrEqual(result.insuredAmount * 0.10);
     });
 
-    it('should handle SMMLV format', () => {
-      const result = deductibleAnalyzer.analyze(
+    it('should handle SMMLV format', async () => {
+      const result = await deductibleAnalyzer.analyze(
         'RC',
         '5 SMMLV',
         '5 SMMLV',
@@ -70,8 +70,8 @@ describe('deductibleAnalyzer', () => {
       expect(result.deductibleAmount).toBe(5 * 1300000); // 5 * SMMLV value
     });
 
-    it('should handle fixed amount format', () => {
-      const result = deductibleAnalyzer.analyze(
+    it('should handle fixed amount format', async () => {
+      const result = await deductibleAnalyzer.analyze(
         'Test',
         '$500,000',
         '$500,000',
@@ -81,8 +81,8 @@ describe('deductibleAnalyzer', () => {
       expect(result.deductibleAmount).toBe(500000);
     });
 
-    it('should handle percentage format', () => {
-      const result = deductibleAnalyzer.analyze(
+    it('should handle percentage format', async () => {
+      const result = await deductibleAnalyzer.analyze(
         'Test',
         '10%',
         '10%',
@@ -93,8 +93,8 @@ describe('deductibleAnalyzer', () => {
       expect(result.deductibleRatio).toBe(0.10);
     });
 
-    it('should provide recommendation for HIGH risk', () => {
-      const result = deductibleAnalyzer.analyze(
+    it('should provide recommendation for HIGH risk', async () => {
+      const result = await deductibleAnalyzer.analyze(
         'Test',
         '20%',
         '20%',
@@ -106,8 +106,8 @@ describe('deductibleAnalyzer', () => {
       expect(result.recommendation).toContain('20.0%');
     });
 
-    it('should handle no deductible', () => {
-      const result = deductibleAnalyzer.analyze(
+    it('should handle no deductible', async () => {
+      const result = await deductibleAnalyzer.analyze(
         'Test',
         'No aplica',
         'No aplica',
@@ -118,7 +118,7 @@ describe('deductibleAnalyzer', () => {
       expect(result.deductibleRatio).toBe(0);
     });
 
-    it('should return score between 0 and 100', () => {
+    it('should return score between 0 and 100', async () => {
       const scenarios = [
         { deductible: '5%', amount: 100000000 },
         { deductible: '10%', amount: 100000000 },
@@ -127,7 +127,7 @@ describe('deductibleAnalyzer', () => {
       ];
 
       for (const scenario of scenarios) {
-        const result = deductibleAnalyzer.analyze(
+        const result = await deductibleAnalyzer.analyze(
           'Test',
           scenario.deductible,
           scenario.deductible,
@@ -141,7 +141,7 @@ describe('deductibleAnalyzer', () => {
   });
 
   describe('analyzeQuote', () => {
-    it('should analyze all coverages in a quote', () => {
+    it('should analyze all coverages in a quote', async () => {
       const quote = {
         coverages: [
           { name: 'Incendio', deductible: '10%', value: '500M' },
@@ -154,14 +154,14 @@ describe('deductibleAnalyzer', () => {
         ['RC', '5 SMMLV']
       ]);
       
-      const results = deductibleAnalyzer.analyzeQuote(quote, clauseDeductibles);
+      const results = await deductibleAnalyzer.analyzeQuote(quote, clauseDeductibles);
       
       expect(results).toHaveLength(2);
       expect(results[0].coverageName).toBe('Incendio');
       expect(results[1].coverageName).toBe('RC');
     });
 
-    it('should skip coverages without insured amount', () => {
+    it('should skip coverages without insured amount', async () => {
       const quote = {
         coverages: [
           { name: 'Asistencia', deductible: 'No aplica', value: 'Incluido' },
@@ -169,7 +169,7 @@ describe('deductibleAnalyzer', () => {
         ]
       };
       
-      const results = deductibleAnalyzer.analyzeQuote(quote, new Map());
+      const results = await deductibleAnalyzer.analyzeQuote(quote, new Map());
       
       expect(results.length).toBeLessThanOrEqual(1);
     });
