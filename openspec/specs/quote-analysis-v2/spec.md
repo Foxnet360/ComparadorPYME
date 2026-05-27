@@ -37,6 +37,19 @@ The system SHALL analyze insurance quotes using **multimodal PDF extraction** fo
 - **AND** include discrepancies in the analysis
 - **AND** RAG SHALL NOT block the main extraction pipeline
 
+#### Scenario: Multiple quotes with unified engine
+- **WHEN** a user uploads 3-5 quote PDFs and `USE_UNIFIED_ENGINE` is enabled
+- **THEN** the system SHALL route to the unified comparison engine
+- **AND** it SHALL process all quotes in a single Gemini call
+- **AND** it SHALL return a `UnifiedComparisonResult` instead of individual `QuoteAnalysis` objects
+- **AND** the adapter SHALL transform the result to `MatrixRow[]` for compatibility
+
+#### Scenario: Unified engine fallback
+- **WHEN** the unified engine fails during processing
+- **THEN** the adapter SHALL automatically fallback to individual extraction
+- **AND** it SHALL process each quote sequentially as before
+- **AND** it SHALL log the fallback event
+
 ### Requirement: No forced JSON output
 The system SHALL NOT force Gemini to output JSON for quote analysis **when using multimodal extraction**.
 
@@ -84,6 +97,21 @@ The system SHALL use specialized prompts based on detected format family.
 - **WHEN** format family is SECTIONS
 - **THEN** the prompt SHALL instruct Gemini that each section contains multiple coverages
 - **AND** the prompt SHALL ask to list all coverages included in each section
+
+### Requirement: Unified engine integration
+The system SHALL support the unified comparison engine as an alternative processing path.
+
+#### Scenario: Feature flag routing
+- **WHEN** the comparison endpoint receives a request
+- **THEN** it SHALL check the `USE_UNIFIED_ENGINE` feature flag
+- **AND** if enabled, route to `unifiedComparisonEngine.compare()`
+- **AND** if disabled, use the existing `quoteAnalysisService.analyze()`
+
+#### Scenario: Result format compatibility
+- **WHEN** using the unified engine
+- **THEN** the final output SHALL be compatible with the existing comparison view
+- **AND** it SHALL produce the same `MatrixRow[]` structure
+- **AND** the Excel export SHALL generate identical format
 
 ## Dependencies
 - `multimodal-pdf-extraction` for PDF extraction
