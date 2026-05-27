@@ -135,6 +135,24 @@ router.get('/unified-engine', asyncHandler(async (req, res) => {
 }));
 
 /**
+ * GET /api/monitoring/engine-comparison
+ * Get unified vs legacy engine comparison metrics
+ */
+router.get('/engine-comparison', asyncHandler(async (req, res) => {
+    const { start, end } = req.query;
+    
+    const startDate = start as string || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const endDate = end as string || new Date().toISOString();
+    
+    const metrics = await monitoringService.getEngineComparisonMetrics(startDate, endDate);
+    
+    res.json({
+        period: { start: startDate, end: endDate },
+        metrics
+    });
+}));
+
+/**
  * GET /api/monitoring/dashboard
  * Get comprehensive monitoring dashboard data
  */
@@ -144,10 +162,11 @@ router.get('/dashboard', asyncHandler(async (req, res) => {
     const startDate = start as string || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const endDate = end as string || new Date().toISOString();
     
-    const [accuracy, performance, feedback] = await Promise.all([
+    const [accuracy, performance, feedback, engineComparison] = await Promise.all([
         monitoringService.getAccuracySummary(startDate, endDate),
         monitoringService.getPerformanceSummary(startDate, endDate),
-        monitoringService.getFeedbackSummary(startDate, endDate)
+        monitoringService.getFeedbackSummary(startDate, endDate),
+        monitoringService.getEngineComparisonMetrics(startDate, endDate)
     ]);
     
     res.json({
@@ -155,6 +174,7 @@ router.get('/dashboard', asyncHandler(async (req, res) => {
         accuracy,
         performance,
         feedback,
+        engineComparison,
         systemHealth: {
             status: 'operational',
             uptime: process.uptime(),

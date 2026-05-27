@@ -327,6 +327,96 @@ class MonitoringService {
       };
     }
   }
+
+  /**
+   * Get unified vs legacy engine comparison metrics
+   */
+  async getEngineComparisonMetrics(
+    startDate: string,
+    endDate: string
+  ): Promise<{
+    unified: {
+      count: number;
+      avgProcessingTime: number;
+      avgConfidence: number;
+      successRate: number;
+    };
+    legacy: {
+      count: number;
+      avgProcessingTime: number;
+      avgConfidence: number;
+    };
+    fallback: {
+      count: number;
+      rate: number;
+      topReasons: string[];
+    };
+  }> {
+    try {
+      const { data } = await supabase
+        .from('analysis_history')
+        .select('engine_type, processing_time_ms, confidence_score, fallback_reason')
+        .gte('created_at', startDate)
+        .lte('created_at', endDate)
+        .not('engine_type', 'is', null);
+
+      const records = (data || []) as any[];
+
+      const unifiedRecords = records.filter(r => r.engine_type === 'unified');
+      const legacyRecords = records.filter(r => r.engine_type === 'legacy');
+      const fallbackRecords = records.filter(r => r.engine_type === 'fallback');
+
+      // Calculate top fallback reasons
+      const reasonCounts: Record<string, number> = {};
+      fallbackRecords.forEach(r => {
+        const reason = r.fallback_reason || 'Unknown';
+        reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
+      });
+
+      const topReasons = Object.entries(reasonCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([reason]) => reason);
+
+      return {
+        unified: {
+          count: unifiedRecords.length,
+          avgProcessingTime: unifiedRecords.length > 0
+            ? Math.round(unifiedRecords.reduce((sum, r) => sum + (r.processing_time_ms || 0), 0) / unifiedRecords.length)
+            : 0,
+          avgConfidence: unifiedRecords.length > 0
+            ? Math.round(unifiedRecords.reduce((sum, r) => sum + (r.confidence_score || 0), 0) / unifiedRecords.length)
+            : 0,
+          successRate: records.length > 0
+            ? Math.round((unifiedRecords.length / records.length) * 100)
+            : 0
+        },
+        legacy: {
+          count: legacyRecords.length,
+          avgProcessingTime: legacyRecords.length > 0
+            ? Math.round(legacyRecords.reduce((sum, r) => sum + (r.processing_time_ms || 0), 0) / legacyRecords.length)
+            : 0,
+          avgConfidence: legacyRecords.length > 0
+            ? Math.round(legacyRecords.reduce((sum, r) => sum + (r.confidence_score || 0), 0) / legacyRecords.length)
+            : 0
+        },
+        fallback: {
+          count: fallbackRecords.length,
+          rate: records.length > 0
+            ? Math.round((fallbackRecords.length / records.length) * 100)
+            : 0,
+          topReasons
+        }
+      };
+    } catch (error) {
+      console.error('❌ [Monitoring] Failed to get engine comparison metrics:', error);
+      return {
+        unified: { count: 0, avgProcessingTime: 0, avgConfidence: 0, successRate: 0 },
+        legacy: { count: 0, avgProcessingTime: 0, avgConfidence: 0 },
+        fallback: { count: 0, rate: 0, topReasons: [] }
+      };
+    }
+  }
 }
 
 export const monitoringService = new MonitoringService();

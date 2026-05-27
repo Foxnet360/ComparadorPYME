@@ -66,18 +66,18 @@
 - [x] 7.2 Create unit tests for `comparisonResultValidator.ts`
 - [x] 7.3 Create unit tests for adapter transformation logic
 - [x] 7.4 Create integration test with laser-home example (4 quotes)
-- [ ] 7.5 Validate output JSON matches reference Excel structure
-- [ ] 7.6 Test fallback mechanism by simulating unified engine failure
-- [ ] 7.7 Test feature flag toggle without server restart
+- [x] 7.5 Validate output JSON matches reference Excel structure
+- [x] 7.6 Test fallback mechanism by simulating unified engine failure
+- [x] 7.7 Test feature flag toggle without server restart
 - [ ] 7.8 Test deep mode with clause PDFs
-- [ ] 7.9 Test gradual rollout percentage logic
+- [x] 7.9 Test gradual rollout percentage logic
 - [ ] 7.10 Performance test: measure time vs legacy engine (target: <60s for 4 quotes)
 - [ ] 7.11 Test with edge cases: 1 quote, 8+ quotes, quotes with missing data
 
 ## 8. Monitoring and Observability
 
 - [x] 8.1 Add metrics: unified engine success rate, fallback rate, average processing time
-- [ ] 8.2 Create dashboard for comparing unified vs legacy engine performance
+- [x] 8.2 Create dashboard for comparing unified vs legacy engine performance
 - [ ] 8.3 Add alerting for high fallback rates (>5%)
 - [ ] 8.4 Implement structured logging with correlation IDs
 - [ ] 8.5 Add error tracking for unified engine specific failures
