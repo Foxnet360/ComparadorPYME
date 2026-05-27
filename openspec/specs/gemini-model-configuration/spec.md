@@ -16,7 +16,7 @@ The system SHALL read all Gemini model selections from environment variables wit
 #### Scenario: PDF extraction uses configured model
 - **WHEN** the system extracts data from a PDF quote
 - **THEN** it SHALL use the model specified in `GEMINI_MODEL` environment variable
-- **AND** if `GEMINI_MODEL` is not set, it SHALL default to `gemini-3.5-flash`
+- **AND** if `GEMINI_MODEL` is not set, it SHALL default to `gemini-2.5-flash`
 
 #### Scenario: Chat uses configured model
 - **WHEN** the system processes a chat message

@@ -369,7 +369,7 @@ export const geminiService = {
             console.log(`✅ [Gemini] File ready: ${uploadedFile.name}`);
 
             const ai = getGenAI();
-            const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+            const extractionModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
             
             let retries = 0;
             const maxRetries = 3;
@@ -382,7 +382,7 @@ export const geminiService = {
                     if (extractedText && extractedText.trim().length > 0) {
                         finalPrompt += `\n\n=== TEXTO EXTRAÍDO NATIVAMENTE (REFERENCIA DE ALTA FIDELIDAD) ===\n`;
                         finalPrompt += `Utiliza el siguiente texto extraído del PDF como referencia exacta de caracteres para nombres de coberturas, sumas aseguradas y deducibles. Evita perder detalles en la maquetación visual:\n\n`;
-                        finalPrompt += `${extractedText.slice(0, 120000)}`; // Gemini 3.5 soporta contextos inmensos de forma nativa
+                        finalPrompt += `${extractedText.slice(0, 120000)}`; // Gemini 2.5 soporta contextos inmensos de forma nativa
                     }
 
                     const result = await ai.models.generateContent({
@@ -452,12 +452,12 @@ export const geminiService = {
     },
 
     /**
-     * Perform OCR on an image buffer using Gemini 3.5 Flash
+     * Perform OCR on an image buffer using Gemini 2.5 Flash
      */
     performOcrOnImage: async (imageBuffer: Buffer, mimeType = 'image/png'): Promise<string> => {
         try {
             const ai = getGenAI();
-            const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+            const extractionModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
             
             const result = await ai.models.generateContent({
                 model: extractionModel,
@@ -490,7 +490,7 @@ export const geminiService = {
     extractDeductible: async (deductibleText: string): Promise<any> => {
         try {
             const ai = getGenAI();
-            const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+            const extractionModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
             
             const prompt = `Analiza este deducible de seguro de una póliza en Colombia y extrae su estructura detallada:
             
@@ -594,7 +594,7 @@ Instrucciones para el análisis:
         while (true) {
             try {
                                 const ai = getGenAI();
-                const modelName = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+                const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
                 const result = await ai.models.generateContent({
                     model: modelName,
                     contents: [
@@ -659,7 +659,7 @@ Instrucciones para el análisis:
         while (true) {
             try {
                                 const ai = getGenAI();
-                const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+                const extractionModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
                 console.log(`🤖 [Gemini] Using model: ${extractionModel} for extraction`);
                 const result = await ai.models.generateContent({
                     model: extractionModel,
