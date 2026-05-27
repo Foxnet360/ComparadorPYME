@@ -103,13 +103,19 @@ const App: React.FC = () => {
         (msg) => setStatusMessage(msg),
         clauseIdsToUse
       );
-      setReport(result);
-
-      // Save to history using selected Client
+      // Save to history using selected Client and capture generated ID
+      let savedId: string | undefined = undefined;
       if (currentUser && selectedClient) {
-        await storageService.saveAnalysis(selectedClient.name, result);
+        savedId = await storageService.saveAnalysis(selectedClient.name, result);
       } else if (currentUser) {
-        await storageService.saveAnalysis("Cliente Desconocido", result);
+        savedId = await storageService.saveAnalysis("Cliente Desconocido", result);
+      }
+
+      if (savedId) {
+        result.id = savedId;
+        setReport({ ...result, id: savedId });
+      } else {
+        setReport(result);
       }
 
       setStatus(AppStatus.COMPLETED);

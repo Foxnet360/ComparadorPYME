@@ -261,3 +261,24 @@ export interface UserCorrection {
     quoteId?: string;
     createdAt?: Date;
 }
+
+// --- MATRIX COMPARISON TYPES ---
+
+export type MatrixRowType = 'header' | 'data' | 'spacer';
+
+export interface MatrixCell {
+  value: string;
+  isExcluded: boolean;
+  isWinner: boolean;
+  notes?: string;
+  pageNumber?: number;
+  confidence?: number;
+}
+
+export interface MatrixRow {
+  type: MatrixRowType;
+  id: string;
+  label: string;
+  sectionId: number;
+  cells: MatrixCell[];
+}

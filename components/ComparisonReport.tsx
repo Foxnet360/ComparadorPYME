@@ -473,6 +473,7 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
           <UnifiedCoverageMatrix 
             quotes={report.quotes} 
             viewMode={viewMode}
+            analysisId={report.id}
           />
         </div>
       )}

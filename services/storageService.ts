@@ -135,13 +135,13 @@ export const storageService = {
     return await dbService.getAll("history");
   },
 
-  saveAnalysis: async (clientName: string, report: ComparisonReport) => {
+  saveAnalysis: async (clientName: string, report: ComparisonReport): Promise<string | undefined> => {
     const currentUser = storageService.getCurrentUser();
-    if (!currentUser) return;
+    if (!currentUser) return undefined;
 
     if (!report || !report.quotes || !Array.isArray(report.quotes) || report.quotes.length === 0) {
       console.warn("Cannot save analysis: Invalid report structure", report);
-      return;
+      return undefined;
     }
 
     // Backend already saves the analysis, we just need to update local cache
@@ -161,6 +161,7 @@ export const storageService = {
     };
 
     await dbService.put("history", newEntry);
+    return newEntry.id;
   },
 
   updateStatus: async (id: string, newStatus: QuoteStatus) => {

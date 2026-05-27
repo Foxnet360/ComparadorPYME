@@ -1,10 +1,5 @@
-import React, { useState } from 'react';
-import { QuoteAnalysis, MatrixRow, MatrixCell } from '../types';
-import { Info, AlertTriangle, ListChecks, Trophy, DollarSign, Calendar, ShieldCheck, Download, Award, FileText } from 'lucide-react';
-import { DeductibleBadge } from './DeductibleBadge';
-import { formatPercentage } from '../utils/formatCurrency';
+import { QuoteAnalysis, CoverageItem, MatrixRow, MatrixCell } from '../types';
 
-// Config and transformer duplicated locally to avoid bundle import issues in Vite
 export const PLANTILLA_ITEMS = [
   "Incendio (Edificio y Contenidos)",
   "Lucro Cesante",
@@ -180,6 +175,7 @@ export function isExcludedValue(val: string | undefined | null): boolean {
 
 export function parseNumericValue(val: string | undefined | null): number {
   if (!val || isExcludedValue(val)) return 0;
+  // Extract numbers, ignoring formatting. e.g. "$ 119.600.000" -> 119600000
   const cleaned = val.replace(/[^0-9]/g, '');
   if (!cleaned) return 0;
   return parseInt(cleaned, 10);
@@ -196,6 +192,8 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
 
   // 1. Process Canonical Categories
   for (const config of CATEGORY_CONFIGS) {
+    // Check if at least one quote has this coverage configured (avoiding empty sections if all NC, but for strictness we include all 14)
+    // Add Header
     matrix.push({
       type: 'header',
       id: `section_${config.id}`,
@@ -204,11 +202,13 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
       cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false }))
     });
 
+    // Add Data Rows (Valor Asegurado, Deducible, Incluye)
     for (const rowConfig of config.rows) {
       const cells: MatrixCell[] = [];
 
       for (let i = 0; i < numQuotes; i++) {
         const quote = quotes[i];
+        // Match coverage item semantically or by categoryId
         const cov = quote.coverages.find(c => 
           (c.categoryId === config.id || 
            c.canonicalName === config.canonicalName || 
@@ -226,7 +226,6 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
             cellValue = cov.description || (cov as any).details || 'Incluido bajo condiciones generales';
           }
 
-          // In a deductible row, "No aplica" is not an exclusion
           const excluded = rowConfig.field === 'deductible' && cellValue.toLowerCase().trim() === 'no aplica'
             ? false
             : isExcludedValue(cellValue);
@@ -237,7 +236,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
             isExcluded: excluded,
             isWinner: false,
             notes: cov.description,
-            pageNumber: firstCitation?.page || cov.citations?.[0]?.page,
+            pageNumber: firstCitation?.page,
             confidence: cov.matchConfidence
           });
         } else {
@@ -249,7 +248,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
         }
       }
 
-      // Winner Detection
+      // Determine Winner for Data Row
       if (rowConfig.field === 'value') {
         const numericValues = cells.map(c => parseNumericValue(c.value));
         const maxVal = Math.max(...numericValues);
@@ -261,6 +260,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
           });
         }
       } else if (rowConfig.field === 'deductible') {
+        // "No aplica" is the best deductible
         const hasNoAplica = cells.some(c => c.value.toLowerCase().trim() === 'no aplica');
         if (hasNoAplica) {
           cells.forEach(cell => {
@@ -280,6 +280,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
       });
     }
 
+    // Add Spacer
     matrix.push({
       type: 'spacer',
       id: `spacer_${config.id}`,
@@ -289,14 +290,16 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     });
   }
 
-  // 2. Exclusive Coverages
-  const exclusiveGroups = new Map<string, Array<{ quoteIdx: number; item: any }>>();
+  // 2. Process Exclusive Coverages / Ventajas Competitivas
+  const exclusiveGroups = new Map<string, Array<{ quoteIdx: number; item: CoverageItem }>>();
+
   quotes.forEach((quote, quoteIdx) => {
     quote.coverages.forEach(c => {
       const isUnmapped = c.categoryId === undefined || c.categoryId === null;
       const isLowConfidence = c.matchConfidence !== undefined && c.matchConfidence !== null && c.matchConfidence < 0.65;
       
       if (isUnmapped || isLowConfidence) {
+        // Group by lowercase normalized name
         const key = (c.canonicalName || c.name).trim().toLowerCase();
         if (!exclusiveGroups.has(key)) {
           exclusiveGroups.set(key, []);
@@ -307,6 +310,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
   });
 
   if (exclusiveGroups.size > 0) {
+    // Add Exclusive Section Header
     matrix.push({
       type: 'header',
       id: 'section_exclusive_header',
@@ -327,10 +331,11 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
           if (item.deductible && item.deductible !== 'No aplica' && item.deductible !== '') {
             displayVal += ` (Ded: ${item.deductible})`;
           }
+          const excluded = isExcludedValue(item.value);
           cells.push({
             value: displayVal,
-            isExcluded: isExcludedValue(item.value),
-            isWinner: true,
+            isExcluded: excluded,
+            isWinner: true, // Offered exclusively or competitively
             notes: item.description,
             pageNumber: item.citations?.[0]?.page,
             confidence: item.matchConfidence
@@ -353,6 +358,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
       });
     });
 
+    // Add Spacer
     matrix.push({
       type: 'spacer',
       id: 'spacer_exclusive',
@@ -362,7 +368,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     });
   }
 
-  // 3. Financials Section
+  // 3. Process Financial Section (Primas y Costos)
   matrix.push({
     type: 'header',
     id: 'section_financial_header',
@@ -374,16 +380,20 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
   const netPremiums = quotes.map(q => q.priceAnnual || 0);
   const expenses = quotes.map(q => {
     if (q.priceAnnual === 0) return 0;
+    // Map standard expense mock data
     if (q.insurerName.toLowerCase().includes('mapfre')) return 10000;
     if (q.insurerName.toLowerCase().includes('chubb')) return 12000;
-    return 0;
+    return 0; // Default
   });
   const subtotals = netPremiums.map((net, idx) => net + expenses[idx]);
   const ivas = subtotals.map(sub => Math.round(sub * 0.19));
   const totals = subtotals.map((sub, idx) => sub + ivas[idx]);
+
+  // Determine Cheaper Total Price Winner
   const positiveTotals = totals.filter(t => t > 0);
   const minTotal = positiveTotals.length > 0 ? Math.min(...positiveTotals) : 0;
 
+  // Row: Prima Neta
   matrix.push({
     type: 'data',
     id: 'financial_net_premium',
@@ -396,6 +406,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     }))
   });
 
+  // Row: Gastos de Expedición
   matrix.push({
     type: 'data',
     id: 'financial_expenses',
@@ -408,6 +419,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     }))
   });
 
+  // Row: Subtotal
   matrix.push({
     type: 'data',
     id: 'financial_subtotal',
@@ -420,6 +432,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     }))
   });
 
+  // Row: IVA (19%)
   matrix.push({
     type: 'data',
     id: 'financial_iva',
@@ -432,6 +445,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     }))
   });
 
+  // Row: TOTAL A PAGAR
   matrix.push({
     type: 'data',
     id: 'financial_total',
@@ -444,12 +458,14 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     }))
   });
 
+  // Calculate ratio over total assets (Incendio Valor Asegurado)
   const assetValues = quotes.map(q => {
     const incendio = q.coverages.find(c => c.name.toLowerCase().includes('incendio') || c.canonicalName?.toLowerCase().includes('incendio'));
     return parseNumericValue(incendio?.value);
   });
   const maxAsset = Math.max(...assetValues);
 
+  // Row: % SOBRE VALOR ASEGURADO
   matrix.push({
     type: 'data',
     id: 'financial_ratio',
@@ -468,6 +484,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     })
   });
 
+  // Add Spacer
   matrix.push({
     type: 'spacer',
     id: 'spacer_financial',
@@ -476,7 +493,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false }))
   });
 
-  // 4. Additional Info
+  // 4. Process Additional Information Section
   matrix.push({
     type: 'header',
     id: 'section_additional_header',
@@ -485,12 +502,14 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false }))
   });
 
+  // Row: Vigencia de cotización
   matrix.push({
     type: 'data',
     id: 'additional_validity',
     label: 'Vigencia de cotización:',
     sectionId: 101,
     cells: quotes.map(q => {
+      // Find validity if mentioned in text, default to 30 días
       let validity = '30 días';
       if (q.technicalAnalysis?.toLowerCase().includes('60 días') || q.clientAnalysis?.toLowerCase().includes('60 días')) {
         validity = '60 días';
@@ -499,6 +518,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     })
   });
 
+  // Row: Producto
   matrix.push({
     type: 'data',
     id: 'additional_product',
@@ -511,6 +531,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     }))
   });
 
+  // Row: Respaldo
   matrix.push({
     type: 'data',
     id: 'additional_backing',
@@ -523,6 +544,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     }))
   });
 
+  // Row: Comisión intermediario
   matrix.push({
     type: 'data',
     id: 'additional_commission',
@@ -534,6 +556,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     })
   });
 
+  // Row: Asistencia incluida
   matrix.push({
     type: 'data',
     id: 'additional_assistance',
@@ -548,6 +571,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     })
   });
 
+  // Row: Modalidad RCE
   matrix.push({
     type: 'data',
     id: 'additional_rce_type',
@@ -559,12 +583,14 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     })
   });
 
+  // Row: Fecha cotización
   matrix.push({
     type: 'data',
     id: 'additional_date',
     label: 'Fecha cotización:',
     sectionId: 101,
     cells: quotes.map(q => {
+      // Mock quote dates to match inspect excel
       let dateStr = '05-feb-2026';
       if (q.insurerName.toLowerCase().includes('chubb')) dateStr = '27-ene-2026';
       else if (q.insurerName.toLowerCase().includes('bbva')) dateStr = '14-ene-2026';
@@ -575,276 +601,3 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
 
   return matrix;
 }
-
-interface UnifiedCoverageMatrixProps {
-  quotes: QuoteAnalysis[];
-  viewMode?: 'client' | 'technical';
-  analysisId?: string; // Optional ID for direct exports
-}
-
-export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ quotes, viewMode = 'technical', analysisId }) => {
-  const [activeTab, setActiveTab] = useState<'coverages' | 'financials' | 'additional'>('coverages');
-  const [hoveredCell, setHoveredCell] = useState<{ rowId: string; colIdx: number } | null>(null);
-  const [isExporting, setIsExporting] = useState(false);
-
-  const fullMatrix = transformQuotesToMatrix(quotes);
-
-  // Partition matrix rows according to active tabs
-  const filteredRows = fullMatrix.filter(row => {
-    if (activeTab === 'coverages') return row.sectionId < 100;
-    if (activeTab === 'financials') return row.sectionId === 100;
-    return row.sectionId === 101;
-  });
-
-  const getConfidenceBadgeColor = (confidence: number | undefined) => {
-    if (confidence === undefined || confidence === null) return 'bg-slate-100 text-slate-500 border-slate-200';
-    if (confidence >= 0.9) return 'bg-green-50 text-green-700 border-green-200';
-    if (confidence >= 0.7) return 'bg-yellow-50 text-yellow-700 border-yellow-200';
-    return 'bg-red-50 text-red-700 border-red-200';
-  };
-
-  const getConfidenceText = (confidence: number | undefined) => {
-    if (confidence === undefined || confidence === null) return 'Sin match';
-    if (confidence >= 0.9) return 'Exacto';
-    if (confidence >= 0.7) return 'Aproximado';
-    return 'Revisar';
-  };
-
-  const handleExportExcel = async () => {
-    if (!analysisId) {
-      alert('ID de análisis no disponible para exportación.');
-      return;
-    }
-    setIsExporting(true);
-    try {
-      // Trigger API endpoint for direct file download
-      window.open(`/api/analysis/${analysisId}/export`, '_blank');
-    } catch (err) {
-      console.error('Error al exportar Excel:', err);
-      alert('Error al descargar el archivo Excel.');
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      {/* Header Panel with Premium Title & Export Button */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-950 p-6 rounded-2xl shadow-lg border border-slate-700 text-white">
-        <div>
-          <h2 className="text-xl md:text-2xl font-extrabold tracking-tight flex items-center gap-2">
-            <ListChecks className="text-blue-400" size={24} />
-            Análisis de Cotizaciones Unificado
-          </h2>
-          <p className="text-xs md:text-sm text-slate-300 mt-1">
-            Visualización interactiva con paridad total de filas del reporte técnico en Excel.
-          </p>
-        </div>
-        {analysisId && (
-          <button
-            onClick={handleExportExcel}
-            disabled={isExporting}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 font-semibold text-sm transition-all shadow-md active:scale-95 disabled:opacity-50"
-          >
-            <Download size={16} />
-            {isExporting ? 'Generando Excel...' : 'Descargar Excel Comparativo'}
-          </button>
-        )}
-      </div>
-
-      {/* Segmented Premium Tab Controls */}
-      <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200 max-w-lg shadow-inner">
-        <button
-          onClick={() => setActiveTab('coverages')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs md:text-sm font-semibold transition-all ${
-            activeTab === 'coverages'
-              ? 'bg-white text-blue-700 shadow-sm border border-slate-200'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-          }`}
-        >
-          <ShieldCheck size={16} />
-          Coberturas y Deducibles
-        </button>
-        <button
-          onClick={() => setActiveTab('financials')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs md:text-sm font-semibold transition-all ${
-            activeTab === 'financials'
-              ? 'bg-white text-blue-700 shadow-sm border border-slate-200'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-          }`}
-        >
-          <DollarSign size={16} />
-          Primas y Costos
-        </button>
-        <button
-          onClick={() => setActiveTab('additional')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs md:text-sm font-semibold transition-all ${
-            activeTab === 'additional'
-              ? 'bg-white text-blue-700 shadow-sm border border-slate-200'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-          }`}
-        >
-          <Calendar size={16} />
-          Información Adicional
-        </button>
-      </div>
-
-      {/* Grid Matrix Container */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto relative">
-          <table className="w-full text-sm border-collapse text-left">
-            <thead className="bg-[#E6F0FA] text-[#0066CC] font-bold text-xs uppercase border-b border-blue-200 sticky top-0 z-20">
-              <tr>
-                <th className="px-6 py-4 sticky left-0 bg-[#E6F0FA] border-r border-blue-100 min-w-[220px] md:min-w-[280px] shadow-[4px_0_10px_-5px_rgba(0,0,0,0.08)] z-30">
-                  Concepto / Variable
-                </th>
-                {quotes.map((q, i) => (
-                  <th key={i} className="px-6 py-4 min-w-[200px] md:min-w-[240px] whitespace-nowrap text-center text-[#0066CC] border-b border-blue-100">
-                    {q.insurerName}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredRows.map((row) => {
-                if (row.type === 'header') {
-                  return (
-                    <tr key={row.id} className="bg-[#E6F0FA]/40 font-bold">
-                      <td 
-                        colSpan={quotes.length + 1}
-                        className="px-6 py-3 text-xs md:text-sm text-blue-800 uppercase tracking-wide border-y border-blue-50/50"
-                      >
-                        {row.label}
-                      </td>
-                    </tr>
-                  );
-                }
-
-                if (row.type === 'spacer') {
-                  return (
-                    <tr key={row.id} className="bg-white h-4">
-                      <td colSpan={quotes.length + 1} className="py-2"></td>
-                    </tr>
-                  );
-                }
-
-                // Standard Data Row
-                return (
-                  <tr key={row.id} className="hover:bg-slate-50/70 transition-colors group">
-                    {/* Concept Label (Column A) */}
-                    <td className="px-6 py-3.5 text-xs md:text-sm font-semibold text-slate-700 bg-[#F8FAFC] sticky left-0 border-r border-slate-100 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)] z-10 group-hover:bg-[#F1F5F9]/80">
-                      {row.label}
-                    </td>
-
-                    {/* Insurer Cells */}
-                    {row.cells.map((cell, colIdx) => {
-                      const isWinner = cell.isWinner;
-                      const excluded = cell.isExcluded;
-                      const hasDetails = cell.confidence !== undefined || cell.pageNumber !== undefined || cell.notes;
-                      
-                      const cellClass = `px-6 py-3.5 text-sm align-middle text-center relative border-r border-slate-50 transition-all ${
-                        isWinner ? 'bg-amber-50/60 font-semibold text-amber-900 border border-amber-200/50' : ''
-                      } ${
-                        excluded ? 'text-red-500 italic bg-slate-50/20' : 'text-slate-800'
-                      }`;
-
-                      return (
-                        <td 
-                          key={colIdx} 
-                          className={cellClass}
-                          onMouseEnter={() => setHoveredCell({ rowId: row.id, colIdx })}
-                          onMouseLeave={() => setHoveredCell(null)}
-                        >
-                          {/* Winner trophy */}
-                          {isWinner && (
-                            <span 
-                              className="absolute top-1 right-2 text-amber-500 hover:scale-110 transition-transform cursor-help"
-                              title="Condición / Valor favorable"
-                            >
-                              🏆
-                            </span>
-                          )}
-
-                          {/* Cell Value Rendering */}
-                          <div className="flex flex-col items-center justify-center gap-1.5">
-                            {excluded ? (
-                              <span className="text-red-400 font-medium">No incluida</span>
-                            ) : (
-                              <span className={`${isWinner ? 'text-amber-950 font-bold' : 'text-slate-800 font-medium'}`}>
-                                {row.label === 'Deducible' && cell.value !== 'No aplica' ? (
-                                  <DeductibleBadge deductible={cell.value} />
-                                ) : (
-                                  cell.value
-                                )}
-                              </span>
-                            )}
-
-                            {/* Technical Details Popover Trigger (Only in Technical ViewMode) */}
-                            {viewMode === 'technical' && hasDetails && (
-                              <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-400">
-                                {cell.pageNumber !== undefined && (
-                                  <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200 flex items-center gap-0.5">
-                                    <FileText size={10} />
-                                    Pág. {cell.pageNumber}
-                                  </span>
-                                )}
-                                {cell.confidence !== undefined && (
-                                  <span className={`px-1.5 py-0.5 rounded border ${getConfidenceBadgeColor(cell.confidence)}`}>
-                                    {getConfidenceText(cell.confidence)}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Premium Technical Hover Card Popover */}
-                          {viewMode === 'technical' && hoveredCell?.rowId === row.id && hoveredCell?.colIdx === colIdx && hasDetails && (
-                            <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-72 p-4 bg-slate-900 text-slate-100 text-xs rounded-xl shadow-xl z-50 border border-slate-700 pointer-events-none transition-all duration-200">
-                              <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-slate-800">
-                                <Award className="text-blue-400" size={14} />
-                                <span className="font-bold text-white text-[11px] tracking-wide uppercase">Metadatos de Extracción</span>
-                              </div>
-                              {cell.confidence !== undefined && (
-                                <div className="flex justify-between py-0.5">
-                                  <span className="text-slate-400">Match Semántico:</span>
-                                  <span className="font-semibold text-white">{formatPercentage(cell.confidence, 0)} ({getConfidenceText(cell.confidence)})</span>
-                                </div>
-                              )}
-                              {cell.pageNumber !== undefined && (
-                                <div className="flex justify-between py-0.5">
-                                  <span className="text-slate-400">Fuente del Documento:</span>
-                                  <span className="font-semibold text-white">PDF Cotización, Pág. {cell.pageNumber}</span>
-                                </div>
-                              )}
-                              {cell.notes && (
-                                <div className="mt-2 pt-2 border-t border-slate-800 text-[11px] text-slate-300 leading-relaxed text-left">
-                                  <span className="font-semibold text-slate-400 block mb-1">Descripción extraída:</span>
-                                  {cell.notes}
-                                </div>
-                              )}
-                              <div className="absolute left-1/2 -translate-x-1/2 bottom-full w-0 h-0 border-l-6 border-r-6 border-b-6 border-transparent border-b-slate-900"></div>
-                            </div>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Methodology Alert Note */}
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-start gap-3 shadow-inner">
-        <Info className="text-slate-500 mt-0.5 flex-shrink-0" size={16} />
-        <div className="text-xs text-slate-500 leading-relaxed">
-          <span className="font-semibold text-slate-700">Nota técnica:</span> La correspondencia en esta matriz horizontal
-          ha sido alineada determinísticamente por nuestro transformador. El contenido coincide de manera exacta y
-          paritaria con el reporte Excel monocromático de 3 pestañas.
-        </div>
-      </div>
-    </div>
-  );
-};

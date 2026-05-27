@@ -293,3 +293,21 @@ The system SHALL validate all inputs to the analysis endpoint.
 - **WHEN** the multipart request is malformed
 - **THEN** the system SHALL respond with HTTP 400
 - **AND** SHALL NOT crash with TypeError
+
+---
+
+## Delta from change: hybrid-comparison-matrix-v2
+
+## MODIFIED Requirements
+
+### Requirement: Text-based quote analysis
+The system SHALL analyze insurance quotes using **multimodal PDF extraction** followed by post-normalization, instead of text-based extraction with deterministic parsing. **MODIFIED**: The extraction pipeline SHALL capture detailed narrative breakdowns of inclusions, sub-limits, and exclusions in a dedicated `details` property for each coverage to feed the row-grouped grid visualizer, in addition to sums and deductibles.
+
+#### Scenario: Single quote analysis with details extraction
+- **WHEN** a user uploads a quote PDF
+- **THEN** the system SHALL:
+  1. Detect format family (format-family-detection)
+  2. Upload PDF to Gemini File API (multimodal-pdf-extraction)
+  3. Extract structured data including detailed breakdowns of coverage inclusions and sub-limits in `details` fields
+  4. Normalize coverages to canonical categories (coverage-post-normalization)
+  5. Return structured quote data with 14 canonical coverages enriched with `details` strings

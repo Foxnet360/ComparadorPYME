@@ -231,3 +231,45 @@ export const batchRetrain = async (req: Request, res: Response): Promise<void> =
   const result = await learningEngine.batchRetrainEmbeddings();
   res.json(result);
 };
+
+// NEW: Export dynamic Excel report unmapped horizontally
+import { getAnalysisById } from '../repositories/analysisRepository';
+import { generateExcelBuffer } from '../services/excelGenerator';
+
+export const exportAnalysisExcel = async (req: Request, res: Response): Promise<void> => {
+  const id = req.params.id as string;
+  
+  if (!id) {
+    res.status(400).json({ error: 'Missing required parameter: id' });
+    return;
+  }
+  
+  try {
+    const analysis = await getAnalysisById(id);
+    if (!analysis) {
+      res.status(404).json({ error: `Analysis with id ${id} not found` });
+      return;
+    }
+    
+    const quotes = analysis.analysis_result?.quotes || [];
+    if (quotes.length === 0) {
+      res.status(404).json({ error: `No quotes found in analysis ${id}` });
+      return;
+    }
+    
+    const clientInfo = {
+      name: analysis.client_name || 'Cliente',
+      activity: 'Centro de Belleza y/o Estetica (CIIU 9602)',
+      location: 'Bogotá D.C.'
+    };
+    
+    const buffer = await generateExcelBuffer(quotes, clientInfo);
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=comparativa_seguros_${id}.xlsx`);
+    res.send(buffer);
+  } catch (err: any) {
+    console.error('❌ [exportAnalysisExcel] Error exporting to Excel:', err);
+    res.status(500).json({ error: 'Internal server error while exporting to Excel', details: err.message });
+  }
+};

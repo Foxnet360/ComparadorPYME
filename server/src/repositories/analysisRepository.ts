@@ -50,3 +50,19 @@ export async function getAnalysisHistoryByUser(
 
   return data || [];
 }
+
+export async function getAnalysisById(
+  id: string
+): Promise<any> {
+  const { data, error } = await supabase
+    .from('analysis_history')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    handleDbError(error, 'Failed to fetch analysis by id');
+  }
+
+  return data;
+}

@@ -137,7 +137,7 @@ const TechnicalDashboard: React.FC<TechnicalDashboardProps> = ({ onNewAnalysis, 
                     <td className="px-6 py-4 text-center">
                       {item.fullReport ? (
                         <button
-                          onClick={() => onViewReport(item.fullReport!)}
+                          onClick={() => onViewReport({ ...item.fullReport!, id: item.id })}
                           className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
                           title="Ver Reporte Completo"
                         >

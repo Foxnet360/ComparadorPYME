@@ -218,47 +218,8 @@ export interface LegalOpinion {
   confidence: number;
 }
 
-export interface QuoteAnalysis {
-  insurerName: string;
-  policyName: string;
-  priceMonthly: number;
-  priceAnnual: number;
-  currency: string;
-  deductibles: string;
-  coverages: CoverageItem[];
-  alerts: AlertItem[];
-  scoringBreakdown: ScoringBreakdown;
-  clientAnalysis: string;
-  technicalAnalysis: string;
-  score: number;
-  dataQualityScore?: number;
-  verificationConfidence?: number;
-  isRagAvailable?: boolean;
-  extractionConfidence?: number;
-  confidenceBreakdown?: {
-    coverageCompleteness: number;
-    numericParseSuccess: number;
-    validationPassRate: number;
-    schemaCompliance: number;
-  };
-  needsReview?: boolean;
-  isCritical?: boolean;
-  validationFlags?: Array<{
-    field: string;
-    severity: 'CRITICAL' | 'WARNING' | 'INFO';
-    message: string;
-    code: string;
-  }>;
-  validationSummary?: string;
-  // Advanced analysis fields (optional, backward compatible)
-  clauseValidation?: ClauseValidationResult;
-  deductibleAnalysis?: DeductibleAnalysis[];
-  contextualRisk?: ContextualRisk;
-  warrantyCompliance?: WarrantyCompliance;
-  legalOpinion?: LegalOpinion[];
-}
-
 export interface ComparisonReport {
+  id?: string;
   quotes: QuoteAnalysis[];
   recommendation: string;
   marketAnalysis: string;
@@ -401,4 +362,25 @@ export interface ClauseSummary {
 export interface InsurerSummary {
   aseguradora: string;
   count: number;
+}
+
+// --- MATRIX COMPARISON TYPES ---
+
+export type MatrixRowType = 'header' | 'data' | 'spacer';
+
+export interface MatrixCell {
+  value: string;
+  isExcluded: boolean;
+  isWinner: boolean;
+  notes?: string;
+  pageNumber?: number;
+  confidence?: number;
+}
+
+export interface MatrixRow {
+  type: MatrixRowType;
+  id: string;
+  label: string;
+  sectionId: number;
+  cells: MatrixCell[];
 }

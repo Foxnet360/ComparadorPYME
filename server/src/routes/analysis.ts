@@ -20,7 +20,8 @@ import {
   saveCorrection,
   getLearningMetrics,
   getMonthlyReport,
-  batchRetrain
+  batchRetrain,
+  exportAnalysisExcel
 } from '../controllers/analysisValidationController';
 
 const router = Router();
@@ -39,5 +40,6 @@ router.post('/correction', asyncHandler(saveCorrection));
 router.get('/learning-metrics', asyncHandler(getLearningMetrics));
 router.get('/monthly-report', asyncHandler(getMonthlyReport));
 router.post('/batch-retrain', asyncHandler(batchRetrain));
+router.get('/:id/export', asyncHandler(exportAnalysisExcel));
 
 export default router;
