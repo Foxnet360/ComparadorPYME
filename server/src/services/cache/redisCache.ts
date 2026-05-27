@@ -158,7 +158,9 @@ export const cacheKeys = {
     coverageMapping: (rawName: string, insurer?: string) => `map:${insurer || 'global'}:${Buffer.from(rawName).toString('base64').substring(0, 32)}`,
     clauseStructured: (insurer: string, product?: string) => `clause:${insurer}:${product || 'default'}`,
     searchResults: (query: string) => `search:${Buffer.from(query).toString('base64').substring(0, 32)}`,
-    deductibleParsed: (text: string) => `deductible:${Buffer.from(text).toString('base64').substring(0, 32)}`
+    deductibleParsed: (text: string) => `deductible:${Buffer.from(text).toString('base64').substring(0, 32)}`,
+    comparisonResult: (fileHash: string) => `comparison:${fileHash}`,
+    unifiedResult: (fileHash: string) => `unified:${fileHash}`
 };
 
 export const cacheTTL = {
@@ -166,7 +168,9 @@ export const cacheTTL = {
     coverageMapping: 60 * 60 * 24 * 30, // 30 days
     clauseStructured: 60 * 60 * 24, // 1 day
     searchResults: 60 * 60, // 1 hour
-    deductibleParsed: 60 * 60 * 24 * 30 // 30 days
+    deductibleParsed: 60 * 60 * 24 * 30, // 30 days
+    comparisonResult: 60 * 60 * 24, // 1 day
+    unifiedResult: 60 * 60 * 24 // 1 day
 };
 
 // ====== Dual-Mode Cache Operations ======
@@ -330,6 +334,81 @@ export async function getCacheKeys(pattern: string): Promise<string[]> {
 
 export function isRedisAvailable(): boolean {
     return redisAvailable;
+}
+
+// ====== Comparison Result Caching ======
+export async function getCachedComparisonResult(fileHash: string): Promise<any | null> {
+    const key = cacheKeys.comparisonResult(fileHash);
+    
+    if (redisAvailable) {
+        try {
+            const cached = await redis.get(key);
+            if (cached) {
+                return JSON.parse(cached);
+            }
+        } catch (error) {
+            // Redis failed, try memory
+        }
+    }
+    
+    const cached = memoryCache.get(key);
+    if (cached) {
+        return JSON.parse(cached);
+    }
+    return null;
+}
+
+export async function setCachedComparisonResult(fileHash: string, result: any): Promise<void> {
+    const key = cacheKeys.comparisonResult(fileHash);
+    const value = JSON.stringify(result);
+    
+    if (redisAvailable) {
+        try {
+            await redis.setex(key, cacheTTL.comparisonResult, value);
+            return;
+        } catch (error) {
+            // Redis failed, store in memory
+        }
+    }
+    
+    memoryCache.setex(key, cacheTTL.comparisonResult, value);
+}
+
+export async function getCachedUnifiedResult(fileHash: string): Promise<any | null> {
+    const key = cacheKeys.unifiedResult(fileHash);
+    
+    if (redisAvailable) {
+        try {
+            const cached = await redis.get(key);
+            if (cached) {
+                return JSON.parse(cached);
+            }
+        } catch (error) {
+            // Redis failed, try memory
+        }
+    }
+    
+    const cached = memoryCache.get(key);
+    if (cached) {
+        return JSON.parse(cached);
+    }
+    return null;
+}
+
+export async function setCachedUnifiedResult(fileHash: string, result: any): Promise<void> {
+    const key = cacheKeys.unifiedResult(fileHash);
+    const value = JSON.stringify(result);
+    
+    if (redisAvailable) {
+        try {
+            await redis.setex(key, cacheTTL.unifiedResult, value);
+            return;
+        } catch (error) {
+            // Redis failed, store in memory
+        }
+    }
+    
+    memoryCache.setex(key, cacheTTL.unifiedResult, value);
 }
 
 export default redis;

@@ -82,6 +82,8 @@ export const analysisController = {
                         const avgConfidence = comparisonResult.quotes.reduce((sum: number, q: any) => 
                             sum + (q.extractionConfidence || 0), 0) / (comparisonResult.quotes.length || 1);
                         
+                        const duration = Date.now() - startTime;
+                        
                         const insertData = {
                             user_id: userId,
                             client_name: clientName,
@@ -91,7 +93,12 @@ export const analysisController = {
                             extraction_confidence: Math.round(avgConfidence),
                             needs_review: comparisonResult.quotes.some((q: any) => q.needsReview),
                             validation_flags_count: comparisonResult.quotes.reduce((sum: number, q: any) => 
-                                sum + (q.validationFlags?.length || 0), 0)
+                                sum + (q.validationFlags?.length || 0), 0),
+                            // Unified comparison fields
+                            engine_type: 'unified',
+                            processing_time_ms: duration,
+                            confidence_score: Math.round(avgConfidence),
+                            unified_result: comparisonResult
                         };
                         
                         const savedId = await saveAnalysisHistory(insertData);
@@ -563,6 +570,12 @@ export const analysisController = {
                 const avgConfidence = comparisonResult.quotes.reduce((sum: number, q: any) => 
                     sum + (q.extractionConfidence || 0), 0) / (comparisonResult.quotes.length || 1);
                 
+                const duration = Date.now() - startTime;
+                
+                // Determine engine type based on whether unified was attempted
+                const engineType = useUnifiedEngine ? 'fallback' : 'legacy';
+                const fallbackReason = useUnifiedEngine ? 'Unified engine failed, fell back to legacy' : null;
+                
                 const insertData = {
                     user_id: userId,
                     client_name: clientName,
@@ -572,7 +585,12 @@ export const analysisController = {
                     extraction_confidence: Math.round(avgConfidence),
                     needs_review: comparisonResult.quotes.some((q: any) => q.needsReview),
                     validation_flags_count: comparisonResult.quotes.reduce((sum: number, q: any) => 
-                        sum + (q.validationFlags?.length || 0), 0)
+                        sum + (q.validationFlags?.length || 0), 0),
+                    // Unified comparison fields
+                    engine_type: engineType,
+                    processing_time_ms: duration,
+                    confidence_score: Math.round(avgConfidence),
+                    fallback_reason: fallbackReason
                 };
                 
                 const savedId = await saveAnalysisHistory(insertData);

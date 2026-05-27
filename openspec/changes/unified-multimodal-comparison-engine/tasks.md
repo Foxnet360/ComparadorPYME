@@ -57,15 +57,15 @@
 - [x] 6.2 Ensure `matrixTransformer.ts` works with adapter output (no modifications)
 - [x] 6.3 Ensure `excelGenerator.ts` works with adapter output (no modifications)
 - [x] 6.4 Ensure `UnifiedCoverageMatrix.tsx` works with adapter output (no modifications)
-- [ ] 6.5 Add unified result storage to database schema
-- [ ] 6.6 Implement comparison result caching for performance
+- [x] 6.5 Add unified result storage to database schema
+- [x] 6.6 Implement comparison result caching for performance
 
 ## 7. Testing
 
 - [x] 7.1 Create unit tests for `comparisonPromptBuilder.ts`
 - [x] 7.2 Create unit tests for `comparisonResultValidator.ts`
 - [x] 7.3 Create unit tests for adapter transformation logic
-- [ ] 7.4 Create integration test with laser-home example (4 quotes)
+- [x] 7.4 Create integration test with laser-home example (4 quotes)
 - [ ] 7.5 Validate output JSON matches reference Excel structure
 - [ ] 7.6 Test fallback mechanism by simulating unified engine failure
 - [ ] 7.7 Test feature flag toggle without server restart
@@ -76,7 +76,7 @@
 
 ## 8. Monitoring and Observability
 
-- [ ] 8.1 Add metrics: unified engine success rate, fallback rate, average processing time
+- [x] 8.1 Add metrics: unified engine success rate, fallback rate, average processing time
 - [ ] 8.2 Create dashboard for comparing unified vs legacy engine performance
 - [ ] 8.3 Add alerting for high fallback rates (>5%)
 - [ ] 8.4 Implement structured logging with correlation IDs

@@ -13,6 +13,7 @@ export interface UnifiedComparisonResult {
     confidence: number; // 0-1
     needsHumanReview: boolean;
     processingTimeMs: number;
+    fromCache?: boolean;
   };
 
   client: {

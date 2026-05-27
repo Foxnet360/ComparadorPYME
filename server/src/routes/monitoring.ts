@@ -5,6 +5,7 @@
 
 import { Router } from 'express';
 import { monitoringService } from '../services/monitoringService';
+import { getUnifiedEngineMetrics } from '../repositories/analysisRepository';
 import { asyncHandler } from '../utils/asyncHandler';
 
 const router = Router();
@@ -114,6 +115,23 @@ router.post('/accuracy', asyncHandler(async (req, res) => {
     }
     
     res.json({ success: true });
+}));
+
+/**
+ * GET /api/monitoring/unified-engine
+ * Get unified comparison engine metrics
+ */
+router.get('/unified-engine', asyncHandler(async (req, res) => {
+    const { days } = req.query;
+    
+    const since = new Date(Date.now() - (parseInt(days as string) || 7) * 24 * 60 * 60 * 1000);
+    
+    const metrics = await getUnifiedEngineMetrics(since);
+    
+    res.json({
+        period: { since: since.toISOString(), until: new Date().toISOString() },
+        metrics
+    });
 }));
 
 /**

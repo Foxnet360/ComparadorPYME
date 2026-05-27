@@ -9,6 +9,9 @@ import { comparisonPromptBuilder } from "./comparisonPromptBuilder";
 import { comparisonResultValidator } from "./comparisonResultValidator";
 import { UnifiedComparisonSchema } from "./comparisonSchema";
 import { parseJsonWithRepair } from "../jsonRepair";
+import { getCachedUnifiedResult, setCachedUnifiedResult } from "../cache/redisCache";
+import crypto from "crypto";
+import fs from "fs";
 
 // Initialize Gemini client
 const getGenAI = () => {
@@ -37,6 +40,24 @@ export class UnifiedComparisonEngine {
   }
 
   /**
+   * Generate a hash from file paths and their contents for caching
+   */
+  private generateFileHash(pdfPaths: string[]): string {
+    const hash = crypto.createHash('md5');
+    for (const path of pdfPaths.sort()) {
+      try {
+        const stats = fs.statSync(path);
+        hash.update(path);
+        hash.update(stats.size.toString());
+        hash.update(stats.mtime.toISOString());
+      } catch (error) {
+        hash.update(path);
+      }
+    }
+    return hash.digest('hex');
+  }
+
+  /**
    * Compare multiple insurance quotes in a single LLM call
    */
   async compare(pdfPaths: string[]): Promise<UnifiedComparisonResult> {
@@ -44,6 +65,20 @@ export class UnifiedComparisonEngine {
     const correlationId = `compare-${Date.now()}`;
     
     console.log(`🔍 [UnifiedComparison] Starting comparison for ${pdfPaths.length} quotes [${correlationId}]`);
+
+    // Check cache first
+    const fileHash = this.generateFileHash(pdfPaths);
+    try {
+      const cached = await getCachedUnifiedResult(fileHash);
+      if (cached) {
+        console.log(`✅ [UnifiedComparison] Cache hit for hash ${fileHash.substring(0, 8)}... [${correlationId}]`);
+        cached.metadata.processingTimeMs = Date.now() - startTime;
+        cached.metadata.fromCache = true;
+        return cached;
+      }
+    } catch (error) {
+      console.warn(`⚠️ [UnifiedComparison] Cache check failed [${correlationId}]:`, error);
+    }
 
     try {
       // 1. Upload PDFs to Gemini
@@ -65,6 +100,15 @@ export class UnifiedComparisonEngine {
       // 5. Add metadata
       parsedResult.metadata.processingTimeMs = Date.now() - startTime;
       parsedResult.metadata.pdfCount = pdfPaths.length;
+      parsedResult.metadata.fromCache = false;
+
+      // 6. Cache the result
+      try {
+        await setCachedUnifiedResult(fileHash, parsedResult);
+        console.log(`💾 [UnifiedComparison] Cached result for hash ${fileHash.substring(0, 8)}... [${correlationId}]`);
+      } catch (error) {
+        console.warn(`⚠️ [UnifiedComparison] Failed to cache result [${correlationId}]:`, error);
+      }
 
       console.log(`✅ [UnifiedComparison] Completed in ${parsedResult.metadata.processingTimeMs}ms [${correlationId}]`);
       console.log(`📊 [UnifiedComparison] Confidence: ${parsedResult.metadata.confidence}, Needs review: ${parsedResult.metadata.needsHumanReview} [${correlationId}]`);

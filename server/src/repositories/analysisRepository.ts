@@ -19,6 +19,12 @@ export interface AnalysisHistoryRecord {
   needs_review: boolean;
   validation_flags_count: number;
   created_at?: string;
+  // Unified comparison fields
+  engine_type?: 'legacy' | 'unified' | 'fallback';
+  processing_time_ms?: number;
+  confidence_score?: number;
+  unified_result?: any;
+  fallback_reason?: string;
 }
 
 export async function saveAnalysisHistory(
@@ -68,4 +74,68 @@ export async function getAnalysisById(
   }
 
   return data;
+}
+
+/**
+ * Get unified engine metrics for monitoring
+ */
+export async function getUnifiedEngineMetrics(
+  since: Date = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+): Promise<{
+  total: number;
+  unified: number;
+  legacy: number;
+  fallback: number;
+  successRate: number;
+  fallbackRate: number;
+  avgProcessingTimeMs: number;
+  avgConfidenceScore: number;
+}> {
+  const { data, error } = await supabase
+    .from('analysis_history')
+    .select('engine_type, processing_time_ms, confidence_score')
+    .gte('created_at', since.toISOString())
+    .not('engine_type', 'is', null);
+
+  if (error || !data || (data as any[]).length === 0) {
+    return {
+      total: 0,
+      unified: 0,
+      legacy: 0,
+      fallback: 0,
+      successRate: 0,
+      fallbackRate: 0,
+      avgProcessingTimeMs: 0,
+      avgConfidenceScore: 0
+    };
+  }
+
+  const records = data as any[];
+  const total = records.length;
+  const unified = records.filter((r: any) => r.engine_type === 'unified').length;
+  const legacy = records.filter((r: any) => r.engine_type === 'legacy').length;
+  const fallback = records.filter((r: any) => r.engine_type === 'fallback').length;
+
+  const processingTimes = records
+    .filter((r: any) => r.processing_time_ms > 0)
+    .map((r: any) => r.processing_time_ms);
+  
+  const confidenceScores = records
+    .filter((r: any) => r.confidence_score > 0)
+    .map((r: any) => r.confidence_score);
+
+  return {
+    total,
+    unified,
+    legacy,
+    fallback,
+    successRate: total > 0 ? Math.round(((unified + legacy) / total) * 100) : 0,
+    fallbackRate: total > 0 ? Math.round((fallback / total) * 100) : 0,
+    avgProcessingTimeMs: processingTimes.length > 0 
+      ? Math.round(processingTimes.reduce((a: number, b: number) => a + b, 0) / processingTimes.length)
+      : 0,
+    avgConfidenceScore: confidenceScores.length > 0
+      ? Math.round(confidenceScores.reduce((a: number, b: number) => a + b, 0) / confidenceScores.length)
+      : 0
+  };
 }
