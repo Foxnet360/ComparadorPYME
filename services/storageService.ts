@@ -148,8 +148,11 @@ export const storageService = {
     const bestQuote = report.quotes.reduce((prev: any, curr: any) => ((prev?.score || 0) > (curr?.score || 0)) ? prev : curr, report.quotes[0]);
     const insurers = report.quotes.map((q: any) => q.insurerName || 'Desconocido');
 
+    // Use backend-generated UUID if available, otherwise generate a valid UUID
+    const id = report.id || crypto.randomUUID();
+    
     const newEntry: HistoryEntry = {
-      id: Date.now().toString(),
+      id,
       userId: currentUser.id,
       date: new Date().toISOString().split('T')[0],
       clientName: clientName || 'Cliente Sin Nombre',

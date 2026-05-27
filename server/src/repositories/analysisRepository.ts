@@ -23,16 +23,19 @@ export interface AnalysisHistoryRecord {
 
 export async function saveAnalysisHistory(
   data: Record<string, any>
-): Promise<void> {
-  const { error } = await supabase
+): Promise<string | null> {
+  const { data: result, error } = await supabase
     .from('analysis_history' as any)
     .insert(data as any)
-    .select();
+    .select('id')
+    .single();
 
   if (error) {
     console.error('❌ [AnalysisRepository] Failed to save analysis:', error);
-    // Don't throw - history is non-critical
+    return null;
   }
+
+  return (result as any)?.id || null;
 }
 
 export async function getAnalysisHistoryByUser(

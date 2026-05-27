@@ -27,6 +27,8 @@ import {
   createDefaultScoringResult,
   isMultimodalEnabled
 } from '../services/quoteProcessingService';
+import { comparisonEngineAdapter } from '../services/unifiedComparison/comparisonEngineAdapter';
+import { featureFlags } from '../config/featureFlags';
 
 // Helper to call service with timeout
 const callWithTimeout = async <T>(promise: Promise<T>, timeoutMs: number = 5000, fallback: T): Promise<T> => {
@@ -58,6 +60,58 @@ export const analysisController = {
 
             console.log(`📄 Processing ${quoteFiles.length} quotes...`);
             console.log(`🔧 Pipeline: ${isMultimodalEnabled() ? 'Multimodal (V2)' : 'Legacy (V1)'}`);
+
+            // Check if unified comparison engine is enabled
+            const useUnifiedEngine = featureFlags.isEnabled('useUnifiedComparisonEngine');
+            console.log(`🚩 Unified Comparison Engine: ${useUnifiedEngine ? 'ENABLED' : 'DISABLED'}`);
+
+            if (useUnifiedEngine) {
+                try {
+                    console.log('🚀 Using Unified Comparison Engine (single LLM call)...');
+                    const pdfPaths = quoteFiles.map(f => f.path);
+                    const matrixRows = await comparisonEngineAdapter.generateComparison(pdfPaths, req.body.userId);
+                    
+                    // Convert MatrixRow[] to ComparisonReport format
+                    const comparisonResult = matrixRowsToComparisonReport(matrixRows, quoteFiles);
+                    
+                    // Save to Supabase
+                    const userId = req.body.userId || 'anonymous';
+                    const clientName = req.body.clientName || 'Cliente';
+                    
+                    try {
+                        const avgConfidence = comparisonResult.quotes.reduce((sum: number, q: any) => 
+                            sum + (q.extractionConfidence || 0), 0) / (comparisonResult.quotes.length || 1);
+                        
+                        const insertData = {
+                            user_id: userId,
+                            client_name: clientName,
+                            analysis_result: comparisonResult,
+                            recommendation: comparisonResult.recommendation || null,
+                            total_score: comparisonResult.quotes?.[0]?.score || null,
+                            extraction_confidence: Math.round(avgConfidence),
+                            needs_review: comparisonResult.quotes.some((q: any) => q.needsReview),
+                            validation_flags_count: comparisonResult.quotes.reduce((sum: number, q: any) => 
+                                sum + (q.validationFlags?.length || 0), 0)
+                        };
+                        
+                        const savedId = await saveAnalysisHistory(insertData);
+                        if (savedId) {
+                            (comparisonResult as any).id = savedId;
+                        }
+                    } catch (saveError: any) {
+                        console.error("❌ [Supabase] Exception saving analysis:", saveError);
+                    }
+                    
+                    const duration = Date.now() - startTime;
+                    console.log(`✅ Unified analysis completed in ${duration}ms`);
+                    
+                    res.json(comparisonResult);
+                    return;
+                } catch (unifiedError: any) {
+                    console.error('❌ Unified engine failed, falling back to legacy:', unifiedError.message);
+                    console.log('🔄 Falling back to legacy pipeline...');
+                }
+            }
 
             let parsedQuotes: ParsedQuote[] = [];
 
@@ -521,7 +575,10 @@ export const analysisController = {
                         sum + (q.validationFlags?.length || 0), 0)
                 };
                 
-                await saveAnalysisHistory(insertData);
+                const savedId = await saveAnalysisHistory(insertData);
+                if (savedId) {
+                    (comparisonResult as any).id = savedId;
+                }
             } catch (saveError: any) {
                 console.error("❌ [Supabase] Exception saving analysis:", saveError);
             }
@@ -713,5 +770,112 @@ export function generateComparison(
         })),
         timestamp: new Date().toISOString(),
         analysisVersion: '2.0-rag'
+    };
+}
+
+/**
+ * Convert MatrixRow[] from unified engine to ComparisonReport format
+ */
+function matrixRowsToComparisonReport(matrixRows: any[], quoteFiles: Express.Multer.File[]): any {
+    // Extract insurer names from header row
+    const headerRow = matrixRows.find(r => r.type === 'header' && r.id === 'client_info');
+    const numInsurers = headerRow ? headerRow.cells.length : 0;
+    
+    // Get insurer names from quote files
+    const insurerNames = quoteFiles.map(f => {
+        const name = f.originalname.replace(/COTIZACION.*?-\s*/i, '').replace(/\.pdf$/i, '');
+        return name || 'Desconocido';
+    });
+    
+    // Build quotes array
+    const quotes: any[] = insurerNames.map((insurerName, idx) => {
+        const coverages: any[] = [];
+        const alerts: any[] = [];
+        let priceAnnual = 0;
+        
+        // Extract coverages from matrix rows
+        matrixRows.forEach(row => {
+            if (row.type === 'data' && row.cells && row.cells[idx]) {
+                const cell = row.cells[idx];
+                const value = cell.value || '';
+                
+                // Check if this is a premium row
+                if (row.id === 'premium_total' || row.label === 'TOTAL A PAGAR') {
+                    const numericValue = parseFloat(value.replace(/[^\d]/g, ''));
+                    if (!isNaN(numericValue)) {
+                        priceAnnual = numericValue;
+                    }
+                } else if (row.id?.startsWith('premium_')) {
+                    // Skip other premium rows for now
+                } else if (row.id?.startsWith('meta_')) {
+                    // Skip metadata rows
+                } else if (row.id?.startsWith('warning_')) {
+                    // Add warning alerts
+                    if (value && value !== 'No informado') {
+                        alerts.push({
+                            level: 'WARNING',
+                            title: 'Alerta del Motor Unificado',
+                            description: value
+                        });
+                    }
+                } else {
+                    // Regular coverage row
+                    coverages.push({
+                        name: row.label || 'Cobertura',
+                        value: value === 'No informado' || value === 'N.C.' ? 'No incluido' : value,
+                        deductible: cell.notes || 'No especificado',
+                        isPositive: !cell.isExcluded,
+                        valueSource: 'extracted' as const
+                    });
+                }
+            }
+        });
+        
+        return {
+            insurerName,
+            policyName: 'Cotización PYME',
+            priceMonthly: Math.round(priceAnnual / 12),
+            priceAnnual,
+            currency: 'COP',
+            deductibles: coverages.map(c => c.deductible).join('; '),
+            coverages,
+            alerts,
+            scoringBreakdown: {
+                coverage: 70,
+                deductibles: 70,
+                exclusions: 70,
+                priceRatio: 70,
+                sublimits: 70,
+                warranties: 70
+            },
+            clientAnalysis: `Análisis generado por el Motor Unificado para ${insurerName}`,
+            technicalAnalysis: '',
+            score: 70,
+            extractionConfidence: 85,
+            needsReview: false,
+            isCritical: false,
+            validationFlags: [],
+            validationSummary: `${coverages.length} coberturas extraídas`
+        };
+    });
+    
+    // Sort by score
+    quotes.sort((a, b) => b.score - a.score);
+    const bestQuote = quotes[0];
+    
+    return {
+        quotes,
+        recommendation: bestQuote 
+            ? `Mejor opción: ${bestQuote.insurerName} con score de ${bestQuote.score}/100. Análisis generado por el Motor Unificado de Comparación.`
+            : 'No se pudieron analizar las cotizaciones',
+        marketAnalysis: `Se analizaron ${quotes.length} cotizaciones de seguros PYME usando el Motor Unificado. ${
+            bestQuote ? `Prima anual: ${formatCOP(bestQuote.priceAnnual)} COP` : ''
+        }`,
+        deductibleComparison: quotes.map(q => ({
+            insurer: q.insurerName,
+            deductibleText: q.deductibles || 'No especificado'
+        })),
+        timestamp: new Date().toISOString(),
+        analysisVersion: '3.0-unified'
     };
 }
