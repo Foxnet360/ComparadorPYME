@@ -441,3 +441,283 @@ curl -X POST http://localhost:8080/api/search \
   -H "Content-Type: application/json" \
   -d '{"query": "cobertura total", "limit": 5}'
 ```
+
+## Unified Comparison Engine (New)
+
+### Unified Comparison
+
+**POST** `/api/comparison/unified`
+
+Compare multiple insurance quotes using the unified engine.
+
+**Content-Type:** `multipart/form-data`
+
+**Parameters:**
+- `quotes` (required): Array of PDF files (2-10 files)
+- `userId` (optional): User ID for tracking
+- `clientName` (optional): Client name for the analysis
+
+**Response:**
+```json
+{
+  "quotes": [
+    {
+      "insurerName": "Seguros Bolívar",
+      "score": 85,
+      "coverages": [...],
+      "alerts": [...]
+    }
+  ],
+  "recommendation": "Mejor opción: Seguros Bolívar con score de 85/100",
+  "marketAnalysis": "Se analizaron 3 cotizaciones..."
+}
+```
+
+**Example:**
+```bash
+curl -X POST http://localhost:8080/api/comparison/unified \
+  -F "quotes=@quote1.pdf" \
+  -F "quotes=@quote2.pdf" \
+  -F "quotes=@quote3.pdf" \
+  -F "clientName=ACME Corp"
+```
+
+### Deep Mode Validation
+
+**POST** `/api/comparison/:id/deep-mode`
+
+Validate comparison results against clause documents.
+
+**Content-Type:** `multipart/form-data`
+
+**Parameters:**
+- `id` (path): Comparison ID
+- `clauses` (required): Array of clause PDF files
+- `userId` (optional): User ID
+
+**Response:**
+```json
+{
+  "originalComparison": { ... },
+  "validatedComparison": { ... },
+  "validations": [
+    {
+      "insurer": "Seguros Bolívar",
+      "coverage": "INCENDIO",
+      "field": "deductible",
+      "originalValue": "10% - Ver condiciones",
+      "validatedValue": "10% - Mínimo 1 SMMLV",
+      "source": "página 15"
+    }
+  ],
+  "discrepancies": [
+    {
+      "insurer": "MAPFRE",
+      "type": "exclusion",
+      "description": "No cubre terremoto",
+      "severity": "high"
+    }
+  ]
+}
+```
+
+**Example:**
+```bash
+curl -X POST http://localhost:8080/api/comparison/123/deep-mode \
+  -F "clauses=@clause1.pdf" \
+  -F "clauses=@clause2.pdf"
+```
+
+## Monitoring Endpoints
+
+### Get Unified Engine Metrics
+
+**GET** `/api/monitoring/unified-engine`
+
+**Query Parameters:**
+- `days` (optional): Number of days to include (default: 7)
+
+**Response:**
+```json
+{
+  "period": {
+    "since": "2024-01-01T00:00:00Z",
+    "until": "2024-01-31T23:59:59Z"
+  },
+  "metrics": {
+    "total": 150,
+    "unified": 135,
+    "legacy": 10,
+    "fallback": 5,
+    "successRate": 96,
+    "fallbackRate": 3,
+    "avgProcessingTimeMs": 45000,
+    "avgConfidenceScore": 85
+  }
+}
+```
+
+### Get Engine Comparison
+
+**GET** `/api/monitoring/engine-comparison`
+
+**Query Parameters:**
+- `start` (optional): Start date (ISO 8601)
+- `end` (optional): End date (ISO 8601)
+
+**Response:**
+```json
+{
+  "period": { "start": "2024-01-01", "end": "2024-01-31" },
+  "metrics": {
+    "unified": {
+      "count": 135,
+      "avgProcessingTime": 45000,
+      "avgConfidence": 85,
+      "successRate": 96
+    },
+    "legacy": {
+      "count": 10,
+      "avgProcessingTime": 180000,
+      "avgConfidence": 75
+    },
+    "fallback": {
+      "count": 5,
+      "rate": 3,
+      "topReasons": ["Timeout", "Parse error"]
+    }
+  }
+}
+```
+
+### Get Active Alerts
+
+**GET** `/api/monitoring/alerts`
+
+**Response:**
+```json
+{
+  "alerts": [
+    {
+      "id": "fallback-2024-01-15",
+      "type": "fallback_rate",
+      "severity": "warning",
+      "message": "High fallback rate detected: 8%",
+      "details": { ... },
+      "timestamp": "2024-01-15T10:30:00Z",
+      "acknowledged": false
+    }
+  ],
+  "count": 1
+}
+```
+
+### Acknowledge Alert
+
+**POST** `/api/monitoring/alerts/:id/acknowledge`
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Alert fallback-2024-01-15 acknowledged"
+}
+```
+
+### Get Error Tracking
+
+**GET** `/api/monitoring/errors`
+
+**Query Parameters:**
+- `start` (optional): Start date
+- `end` (optional): End date
+- `category` (optional): Error category filter
+
+**Response:**
+```json
+{
+  "period": { "start": "2024-01-01", "end": "2024-01-31" },
+  "summary": {
+    "total": 25,
+    "byCategory": {
+      "gemini_api": 10,
+      "pdf_upload": 5,
+      "json_parse": 3,
+      "timeout": 7
+    },
+    "topErrors": [
+      {
+        "message": "Service unavailable",
+        "count": 8,
+        "category": "gemini_api"
+      }
+    ],
+    "resolutionRate": 80
+  }
+}
+```
+
+### Resolve Error
+
+**POST** `/api/monitoring/errors/:id/resolve`
+
+**Body:**
+```json
+{
+  "resolution": "Fixed by increasing timeout"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Error 123 resolved"
+}
+```
+
+### Get Alerting Configuration
+
+**GET** `/api/monitoring/alerts/config`
+
+**Response:**
+```json
+{
+  "config": {
+    "fallbackRateThreshold": 5,
+    "processingTimeThreshold": 120000,
+    "errorRateThreshold": 10,
+    "checkIntervalMinutes": 15,
+    "alertCooldownMinutes": 60
+  }
+}
+```
+
+### Update Alerting Configuration
+
+**PUT** `/api/monitoring/alerts/config`
+
+**Body:**
+```json
+{
+  "fallbackRateThreshold": 3,
+  "processingTimeThreshold": 90000,
+  "errorRateThreshold": 5,
+  "checkIntervalMinutes": 10,
+  "alertCooldownMinutes": 30
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "config": {
+    "fallbackRateThreshold": 3,
+    "processingTimeThreshold": 90000,
+    "errorRateThreshold": 5,
+    "checkIntervalMinutes": 10,
+    "alertCooldownMinutes": 30
+  }
+}
+```

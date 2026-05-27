@@ -84,11 +84,11 @@
 
 ## 9. Documentation
 
-- [ ] 9.1 Document JSON Schema for `UnifiedComparisonResult`
-- [ ] 9.2 Document prompt structure and customization points
-- [ ] 9.3 Create migration guide from legacy to unified engine
-- [ ] 9.4 Document feature flag configuration and rollout strategy
-- [ ] 9.5 Update API documentation with new endpoints
+- [x] 9.1 Document JSON Schema for `UnifiedComparisonResult`
+- [x] 9.2 Document prompt structure and customization points
+- [x] 9.3 Create migration guide from legacy to unified engine
+- [x] 9.4 Document feature flag configuration and rollout strategy
+- [x] 9.5 Update API documentation with new endpoints
 - [x] 9.6 Create troubleshooting guide for common failures
 
 ## 10. Deployment and Rollout
