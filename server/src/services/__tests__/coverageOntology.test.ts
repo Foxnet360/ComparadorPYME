@@ -2,37 +2,60 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { coverageOntology, CoverageMapping } from '../coverageOntology';
 
 // Mock embedding service
-vi.mock('../vector/embeddingService', () => ({
-  embeddingService: {
-    generateEmbedding: vi.fn((text: string) => {
-      // Return deterministic mock embeddings based on text
-      const mockEmbeddings: Record<string, number[]> = {
-        'AMPARO BASICO': [0.9, 0.8, 0.7, 0.6],
-        'TODO RIESGO': [0.85, 0.75, 0.65, 0.55],
-        'DAÑO MATERIAL': [0.8, 0.7, 0.6, 0.5],
-        'Incendio': [0.7, 0.6, 0.5, 0.4],
-        'Edificios y Contenidos': [0.75, 0.65, 0.55, 0.45],
-        'Equipos y Maquinaria': [0.6, 0.5, 0.4, 0.3],
-        'Rotura de Maquinaria': [0.55, 0.45, 0.35, 0.25],
-        'Responsabilidad Civil': [0.5, 0.4, 0.3, 0.2],
-        'Terremoto': [0.4, 0.3, 0.2, 0.1]
-      };
-      return Promise.resolve(mockEmbeddings[text] || [0.1, 0.1, 0.1, 0.1]);
-    }),
-    cosineSimilarity: vi.fn((a: number[], b: number[]) => {
-      // Simple dot product for testing
-      let dot = 0;
-      let normA = 0;
-      let normB = 0;
-      for (let i = 0; i < Math.min(a.length, b.length); i++) {
-        dot += a[i] * b[i];
-        normA += a[i] * a[i];
-        normB += b[i] * b[i];
-      }
-      return dot / (Math.sqrt(normA) * Math.sqrt(normB) + 0.001);
-    })
-  }
-}));
+vi.mock('../vector/embeddingService', () => {
+  const generateEmbeddingMock = vi.fn((text: string) => {
+    // Return deterministic mock embeddings based on text
+    const mockEmbeddings: Record<string, number[]> = {
+      'AMPARO BASICO': [0.9, 0.8, 0.7, 0.6],
+      'TODO RIESGO': [0.85, 0.75, 0.65, 0.55],
+      'DAÑO MATERIAL': [0.8, 0.7, 0.6, 0.5],
+      'Incendio': [0.7, 0.6, 0.5, 0.4],
+      'Edificios y Contenidos': [0.75, 0.65, 0.55, 0.45],
+      'Equipos y Maquinaria': [0.6, 0.5, 0.4, 0.3],
+      'Rotura de Maquinaria': [0.55, 0.45, 0.35, 0.25],
+      'Responsabilidad Civil': [0.5, 0.4, 0.3, 0.2],
+      'Terremoto': [0.4, 0.3, 0.2, 0.1]
+    };
+    return Promise.resolve(mockEmbeddings[text] || [0.1, 0.1, 0.1, 0.1]);
+  });
+
+  return {
+    embeddingService: {
+      generateEmbedding: generateEmbeddingMock,
+      generateEmbeddingsBatch: vi.fn((texts: string[]) => {
+        return Promise.resolve(texts.map(text => {
+          const mockEmbeddings: Record<string, number[]> = {
+            'AMPARO BASICO': [0.9, 0.8, 0.7, 0.6],
+            'TODO RIESGO': [0.85, 0.75, 0.65, 0.55],
+            'DAÑO MATERIAL': [0.8, 0.7, 0.6, 0.5],
+            'Incendio': [0.7, 0.6, 0.5, 0.4],
+            'Edificios y Contenidos': [0.75, 0.65, 0.55, 0.45],
+            'Equipos y Maquinaria': [0.6, 0.5, 0.4, 0.3],
+            'Rotura de Maquinaria': [0.55, 0.45, 0.35, 0.25],
+            'Responsabilidad Civil': [0.5, 0.4, 0.3, 0.2],
+            'Terremoto': [0.4, 0.3, 0.2, 0.1]
+          };
+          return {
+            text,
+            embedding: mockEmbeddings[text] || [0.1, 0.1, 0.1, 0.1]
+          };
+        }));
+      }),
+      cosineSimilarity: vi.fn((a: number[], b: number[]) => {
+        // Simple dot product for testing
+        let dot = 0;
+        let normA = 0;
+        let normB = 0;
+        for (let i = 0; i < Math.min(a.length, b.length); i++) {
+          dot += a[i] * b[i];
+          normA += a[i] * a[i];
+          normB += b[i] * b[i];
+        }
+        return dot / (Math.sqrt(normA) * Math.sqrt(normB) + 0.001);
+      })
+    }
+  };
+});
 
 describe('coverageOntology', () => {
   describe('getNodes', () => {
@@ -118,7 +141,7 @@ describe('coverageOntology', () => {
 
   describe('getTypicalDeductible', () => {
     it('should return typical deductible for known groups', () => {
-      const ded = coverageOntology.getTypicalDeductible('edificios');
+      const ded = coverageOntology.getTypicalDeductible('incendio');
       expect(ded).toBeDefined();
     });
 
@@ -133,7 +156,7 @@ describe('coverageOntology', () => {
       const mapping: CoverageMapping = {
         rawName: 'Test Coverage',
         insurerName: 'TEST',
-        groups: [{ groupId: 'edificios', confidence: 0.9 }],
+        groups: [{ groupId: 'incendio', confidence: 0.9 }],
         isComposite: false,
         confidence: 0.9
       };

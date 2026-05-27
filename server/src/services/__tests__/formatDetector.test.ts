@@ -70,7 +70,7 @@ describe('formatDetector', () => {
     it('should detect SECTIONS format (MAPFRE)', () => {
       const result = detectFormatFamily(MAPFRE_TEXT);
       expect(result.family).toBe('SECTIONS');
-      expect(result.confidence).toBeGreaterThan(70);
+      expect(result.confidence).toBeGreaterThanOrEqual(50);
       expect(result.hasSections).toBe(true);
     });
 

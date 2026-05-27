@@ -31,35 +31,38 @@ export interface CoverageMapping {
 // Initial ontology structure
 const ONTOLOGY_SEED: OntologyNode[] = [
   // Level 1: Families
-  { id: 'patrimoniales', name: 'Patrimoniales', level: 1, childrenIds: ['edificios', 'equipos', 'rotura', 'interrupcion'], aliases: ['Daño Material', 'Propiedad', 'Bienes'], riskType: 'property' },
-  { id: 'responsabilidad-civil', name: 'Responsabilidad Civil', level: 1, childrenIds: ['rce', 'rcd'], aliases: ['RC', 'RCE', 'Civil Liability'], riskType: 'liability' },
+  { id: 'patrimoniales', name: 'Patrimoniales', level: 1, childrenIds: ['incendio', 'lucro-cesante', 'equipo-electronico', 'rotura-maquinaria', 'sustraccion', 'vidrios', 'manejo'], aliases: ['Daño Material', 'Propiedad', 'Bienes'], riskType: 'property' },
+  { id: 'responsabilidad-civil', name: 'Responsabilidad Civil', level: 1, childrenIds: ['rce'], aliases: ['RC', 'RCE', 'Civil Liability'], riskType: 'liability' },
   { id: 'asistencias', name: 'Asistencias y Servicios', level: 1, childrenIds: ['asistencia-pyme', 'asistencia-legal'], aliases: ['Servicios', 'Asistencia'], riskType: 'assistance' },
-  { id: 'riesgos-especiales', name: 'Riesgos Especiales', level: 1, childrenIds: ['terremoto', 'hmacc', 'transporte'], aliases: ['Especiales', 'Catastróficos'], riskType: 'special' },
+  { id: 'riesgos-especiales', name: 'Riesgos Especiales', level: 1, childrenIds: ['terremoto', 'hmacc', 'transporte-mercancias', 'transporte-valores'], aliases: ['Especiales', 'Catastróficos'], riskType: 'special' },
   
-  // Level 2: Sub-families
-  { id: 'edificios', name: 'Edificios y Contenidos', level: 2, parentId: 'patrimoniales', childrenIds: [], aliases: ['Incendio', 'Edificio', 'Contenidos', 'Inmuebles'], riskType: 'property', typicalDeductible: '10%' },
-  { id: 'equipos', name: 'Equipos y Maquinaria', level: 2, parentId: 'patrimoniales', childrenIds: [], aliases: ['Equipo Eléctrico', 'Electrónico', 'EEE', 'Maquinaria'], riskType: 'equipment', typicalDeductible: '10%' },
-  { id: 'rotura', name: 'Rotura de Maquinaria', level: 2, parentId: 'patrimoniales', childrenIds: [], aliases: ['Rotura', 'Daño Interno', 'Máquina'], riskType: 'equipment', typicalDeductible: '10%' },
-  { id: 'interrupcion', name: 'Interrupción de Negocio', level: 2, parentId: 'patrimoniales', childrenIds: [], aliases: ['Lucro Cesante', 'Pérdida de Beneficios', 'Interrupción'], riskType: 'business', typicalDeductible: '0%' },
-  { id: 'rce', name: 'Responsabilidad Civil Extracontractual', level: 2, parentId: 'responsabilidad-civil', childrenIds: [], aliases: ['RCE', 'RC Extracontractual', 'Daño a Terceros'], riskType: 'liability', typicalDeductible: '0%' },
-  { id: 'rcd', name: 'Responsabilidad Civil Contractual', level: 2, parentId: 'responsabilidad-civil', childrenIds: [], aliases: ['RCD', 'RC Contractual'], riskType: 'liability', typicalDeductible: '0%' },
-  { id: 'asistencia-pyme', name: 'Asistencia PYME', level: 2, parentId: 'asistencias', childrenIds: [], aliases: ['Asistencia', 'Servicios PYME'], riskType: 'assistance', typicalDeductible: '0%' },
-  { id: 'asistencia-legal', name: 'Asistencia Legal', level: 2, parentId: 'asistencias', childrenIds: [], aliases: ['Legal', 'Asesoría Legal'], riskType: 'assistance', typicalDeductible: '0%' },
-  { id: 'terremoto', name: 'Terremoto y Eventos Catastróficos', level: 2, parentId: 'riesgos-especiales', childrenIds: [], aliases: ['Terremoto', 'Sismo', 'Catastróficos', 'Erupción'], riskType: 'catastrophe', typicalDeductible: '10% min 5 SMMLV' },
-  { id: 'hmacc', name: 'Huelga, Motín, Asonada', level: 2, parentId: 'riesgos-especiales', childrenIds: [], aliases: ['HMACC', 'Asonada', 'Motín', 'Huelga'], riskType: 'special', typicalDeductible: '10%' },
-  { id: 'transporte', name: 'Transporte', level: 2, parentId: 'riesgos-especiales', childrenIds: [], aliases: ['Transporte Mercancías', 'Transporte Valores', 'Tránsito'], riskType: 'transit', typicalDeductible: '10%' }
+  // Level 2: Sub-families matching the 14 CANONICAL CATEGORIES exactly
+  { id: 'incendio', name: 'Incendio (Edificio y Contenidos)', level: 2, parentId: 'patrimoniales', childrenIds: [], aliases: ['Incendio', 'Edificio', 'Contenidos', 'Inmuebles', 'Todo riesgo daños materiales', 'Daños Materiales', 'Amparo Básico', 'Daños por Agua', 'Anegación', 'Inundación', 'Huracan, vientos fuertes, granizo, impacto y humo', 'Vientos Fuertes', 'Granizo', 'Impacto', 'Humo', 'Daño Físico'], riskType: 'property', typicalDeductible: '10%' },
+  { id: 'lucro-cesante', name: 'Lucro Cesante', level: 2, parentId: 'patrimoniales', childrenIds: [], aliases: ['Lucro Cesante', 'Pérdida de Beneficios', 'Interrupción de Negocio', 'Gastos por Parálisis', 'Interrupción', 'Lucro cesante por daños materiales'], riskType: 'business', typicalDeductible: '0%' },
+  { id: 'sustraccion', name: 'Sustracción / Hurto', level: 2, parentId: 'patrimoniales', childrenIds: [], aliases: ['Sustracción', 'Hurto', 'Robo', 'Hurto Calificado', 'Hurto Simple', 'Sustracción con Violencia', 'Sustracción sin Violencia', 'Saqueo', 'Hurto calificado', 'Sustracción con violencia', 'Sustracción sin violencia'], riskType: 'theft', typicalDeductible: '10% min 1 SMMLV' },
+  { id: 'equipo-electronico', name: 'Equipo Eléctrico y Electrónico', level: 2, parentId: 'patrimoniales', childrenIds: [], aliases: ['Equipo Eléctrico', 'Electrónico', 'EEE', 'Equipo Eléctrico y Electrónico', 'Computadores', 'Servidores', 'Daño Interno', 'Cobertura Fuera de Predios', 'Vehículos propios y no propios', 'Responsabilidad profesional por pérdida de datos – Cyber'], riskType: 'equipment', typicalDeductible: '10%' },
+  { id: 'rotura-maquinaria', name: 'Rotura de Maquinaria', level: 2, parentId: 'patrimoniales', childrenIds: [], aliases: ['Rotura de Maquinaria', 'Rotura', 'Daño Interno de Maquinaria', 'Máquinas', 'Rotura de maquinaria'], riskType: 'equipment', typicalDeductible: '10%' },
+  { id: 'rce', name: 'Responsabilidad Civil (RCE)', level: 2, parentId: 'responsabilidad-civil', childrenIds: [], aliases: ['RCE', 'Responsabilidad Civil Extracontractual', 'Daño a Terceros', 'PLO', 'Predios, labores y operaciones', 'Predios, labores y operaciones (PLO)', 'Responsabilidad Civil Productos', 'RC Cruzada', 'Parqueaderos', 'Contratistas o subcontratistas', 'Vehículos propios y no propios', 'Amparo básico daños y perjuicios a terceros', 'Responsabilidad civil patronal', 'Accidentes personales'], riskType: 'liability', typicalDeductible: '0%' },
+  { id: 'vidrios', name: 'Vidrios Planos', level: 2, parentId: 'patrimoniales', childrenIds: [], aliases: ['Vidrios', 'Placas', 'Cristales', 'Vidrios Planos', 'Vidrios planos'], riskType: 'property', typicalDeductible: '10%' },
+  { id: 'manejo', name: 'Manejo Global / Infidelidad', level: 2, parentId: 'patrimoniales', childrenIds: [], aliases: ['Manejo', 'Infidelidad', 'Fraude de Empleados', 'Manejo Global', 'Manejo Global Comercial', 'Manejo global comercial', 'Fraude Empleados'], riskType: 'theft', typicalDeductible: '10% min 1 SMMLV' },
+  { id: 'transporte-mercancias', name: 'Transporte de Mercancías', level: 2, parentId: 'riesgos-especiales', childrenIds: [], aliases: ['Transporte de Mercancías', 'Tránsito de Mercancías', 'Transporte', 'Transporte de mercancias'], riskType: 'transit', typicalDeductible: '10%' },
+  { id: 'transporte-valores', name: 'Transporte de Valores', level: 2, parentId: 'riesgos-especiales', childrenIds: [], aliases: ['Transporte de Valores', 'Dinero en Tránsito', 'Valores en Tránsito', 'Dinero Local', 'Transporte de valores'], riskType: 'transit', typicalDeductible: '10%' },
+  { id: 'asistencia-pyme', name: 'Asistencia PYME', level: 2, parentId: 'asistencias', childrenIds: [], aliases: ['Asistencia', 'Servicios PYME', 'Servicios de asistencia', 'Asistencia pyme'], riskType: 'assistance', typicalDeductible: '0%' },
+  { id: 'asistencia-legal', name: 'Asistencia Legal', level: 2, parentId: 'asistencias', childrenIds: [], aliases: ['Legal', 'Asesoría Legal', 'Asistencia Jurídica', 'Asistencia legal'], riskType: 'assistance', typicalDeductible: '0%' },
+  { id: 'terremoto', name: 'Terremoto y Eventos Catastróficos', level: 2, parentId: 'riesgos-especiales', childrenIds: [], aliases: ['Terremoto', 'Sismo', 'Catastróficos', 'Erupción', 'Terremoto y Eventos Catastróficos', 'Terremoto, maremoto o tsunami, temblor o erupción volcánica', 'Terremoto y eventos catastrificos', 'Terremoto y eventos catastróficos'], riskType: 'catastrophe', typicalDeductible: '10% min 5 SMMLV' },
+  { id: 'hmacc', name: 'Huelga, Motín, Asonada (HMACC)', level: 2, parentId: 'riesgos-especiales', childrenIds: [], aliases: ['HMACC', 'Asonada', 'Motín', 'Huelga', 'Huelga, Motín, Asonada', 'Huelga, Motín, Asonada (HMACC)', 'Actos mal intencionados de terceros'], riskType: 'special', typicalDeductible: '10%' }
 ];
 
 // Composite coverage patterns
 const COMPOSITE_PATTERNS = [
   {
     pattern: /todo\s+riesgo|amparo\s+básico|amparo\s+basico/i,
-    components: ['edificios', 'terremoto', 'hmacc', 'sustraccion'],
+    components: ['incendio', 'terremoto', 'hmacc', 'sustraccion'],
     confidence: 0.85
   },
   {
     pattern: /daño\s+material|pérdida\s+o\s+daño/i,
-    components: ['edificios', 'equipos', 'rotura'],
+    components: ['incendio', 'equipo-electronico', 'rotura-maquinaria'],
     confidence: 0.75
   }
 ];

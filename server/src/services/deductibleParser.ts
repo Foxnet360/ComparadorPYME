@@ -121,6 +121,87 @@ export const deductibleParser = {
         rawText: text
       };
     }
+
+    // Colombian Compound Deductibles (Percentage + Min/Max in SMMLV/COP/UVT)
+    const pctMatch = text.match(/(\d+(?:\.\d+)?)\s*%/);
+    const hasMinWord = /m[ií]n/i.test(text);
+    const hasMaxWord = /m[aá]x|tope|l[ií]mite/i.test(text);
+    
+    if (pctMatch || hasMinWord || hasMaxWord) {
+      const percentage = pctMatch ? parseFloat(pctMatch[1]) : 0;
+      const isPercentageBased = percentage > 0;
+      
+      let minAmount = 0;
+      let hasMinimum = false;
+      const minMatch = text.match(/(?:m[ií]n(?:imo|o|\.|\b)?)(?:\s+de)?\s*(?:\$?\s*)(\d+(?:[.,]\d+)*)\s*(smmlv|sm|cop|pesos|uvt)?/i);
+      if (minMatch) {
+        hasMinimum = true;
+        const val = parseFloat(minMatch[1].replace(/[.,]/g, ''));
+        const unit = minMatch[2]?.toLowerCase() || '';
+        if (unit.startsWith('sm')) {
+          minAmount = val * SMMLV_VALUE;
+        } else if (unit.startsWith('uvt')) {
+          minAmount = val * UVT_VALUE;
+        } else {
+          if (val < 50 && isPercentageBased) {
+            minAmount = val * SMMLV_VALUE;
+          } else {
+            minAmount = val;
+          }
+        }
+      }
+      
+      let maxAmount = 0;
+      let hasMaximum = false;
+      const maxMatch = text.match(/(?:m[aá]x(?:imo|o|\.|\b)?|tope|l[ií]mite)(?:\s+de)?\s*(?:\$?\s*)(\d+(?:[.,]\d+)*)\s*(smmlv|sm|cop|pesos|uvt)?/i);
+      if (maxMatch) {
+        hasMaximum = true;
+        const val = parseFloat(maxMatch[1].replace(/[.,]/g, ''));
+        const unit = maxMatch[2]?.toLowerCase() || '';
+        if (unit.startsWith('sm')) {
+          maxAmount = val * SMMLV_VALUE;
+        } else if (unit.startsWith('uvt')) {
+          maxAmount = val * UVT_VALUE;
+        } else {
+          if (val < 500 && isPercentageBased) {
+            maxAmount = val * SMMLV_VALUE;
+          } else {
+            maxAmount = val;
+          }
+        }
+      }
+      
+      // If we matched at least a percentage or a min/max, we can construct the structure
+      if (isPercentageBased || hasMinimum || hasMaximum) {
+        const components: DeductibleComponent[] = [];
+        if (isPercentageBased) {
+          components.push({ type: 'percentage', value: percentage });
+        }
+        if (hasMinimum) {
+          components.push({ type: 'minimum', value: minAmount });
+        }
+        if (hasMaximum) {
+          components.push({ type: 'maximum', value: maxAmount });
+        }
+        
+        return {
+          components,
+          semantics: {
+            isZero: false,
+            hasMinimum,
+            hasMaximum,
+            isComposite: components.length > 1
+          },
+          normalized: {
+            minAmount,
+            maxAmount,
+            percentage,
+            isPercentageBased
+          },
+          rawText: text
+        };
+      }
+    }
     
     // If text is short, doesn't match simple patterns, and contains no numbers or key terms, it's likely garbage/unparseable
     const hasNumbers = /\d/.test(text);

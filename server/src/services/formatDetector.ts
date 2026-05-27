@@ -84,13 +84,22 @@ const FORMAT_PATTERNS: FormatPattern[] = [
     keywords: ['Resumen', 'coberturas', 'primas', 'PRIMA', 'IMPUESTOS'],
     weight: 1.0,
   },
+  {
+    family: 'DESCRIPTIVE',
+    patterns: [
+      /Este\s+amparo\s+cubre/i,
+      /daños\s+súbitos/i,
+    ],
+    keywords: ['CUBRE', 'EXCLUSION', 'PROPIEDAD', 'DESCRIPCION'],
+    weight: 1.0,
+  },
 ];
 
 /**
  * Detect format family from extracted text
  */
 export function detectFormatFamily(text: string): FormatDetectionResult {
-  if (!text || text.length < 100) {
+  if (!text || text.length < 20) {
     return {
       family: 'UNKNOWN',
       confidence: 0,
@@ -138,8 +147,9 @@ export function detectFormatFamily(text: string): FormatDetectionResult {
 
   // Detect table structures
   hasTables = /\|.*\|.*\|/.test(text) || 
-              text.includes('Suma Asegurada') || 
-              text.includes('Deducible');
+              /Suma\s+Asegurada/i.test(text) || 
+              /Deducible/i.test(text) ||
+              /Coberturas/i.test(text);
 
   // Detect sections
   hasSections = /SECCION\s+\d|SECCION\s+(PRIMERA|SEGUNDA|TERCERA)/i.test(text);

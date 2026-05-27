@@ -24,7 +24,7 @@ export interface CanonicalCoverage {
   matchMethod: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'implicit' | 'derived' | 'semantic-group' | 'ontology' | 'ontology-composite' | null;
   needsReview: boolean;
   notes?: string;
-  categoryId?: string;
+  categoryId?: number | string | null;
 }
 
 export interface RawCoverage {
@@ -561,7 +561,7 @@ export async function buildCanonicalCoverages(
         rawNames: explicitMatches.map(m => m.coverage.rawName),
         matchMethod: best.method as any,
         needsReview: best.confidence < 70,
-        categoryId: category.id.toString(),
+        categoryId: category.id,
       });
       
       totalConfidence += best.confidence;
@@ -583,7 +583,7 @@ export async function buildCanonicalCoverages(
         matchMethod: 'implicit',
         needsReview: true,
         notes: `Cobertura implícita en: ${bestImplicit.rawName}`,
-        categoryId: category.id.toString(),
+        categoryId: category.id,
       });
       
       totalConfidence += bestImplicit.confidence;
@@ -601,7 +601,7 @@ export async function buildCanonicalCoverages(
         rawNames: [],
         matchMethod: null,
         needsReview: false,
-        categoryId: category.id.toString(),
+        categoryId: category.id,
       });
     }
   }
@@ -722,37 +722,56 @@ async function buildOntologyBasedCoverages(
     groups[groupName].totalConfidence += bestGroup.confidence;
   }
   
-  // Step 5: Build canonical coverages from groups
+  // Step 5: Build exactly 14 canonical coverages from groups using CANONICAL_CATEGORIES
   const canonicalCoverages: CanonicalCoverage[] = [];
   let needsReview = false;
   let totalConfidence = 0;
   let presentCount = 0;
   
-  for (const [groupName, groupData] of Object.entries(groups)) {
-    // Use best coverage in group
-    const best = groupData.coverages.reduce((a, b) => 
-      a.confidence > b.confidence ? a : b
-    );
+  for (const category of CANONICAL_CATEGORIES) {
+    const groupData = groups[category.name];
     
-    const avgConfidence = groupData.totalConfidence / groupData.coverages.length;
-    const groupNeedsReview = avgConfidence < 0.7 || best.isComposite;
-    
-    canonicalCoverages.push({
-      name: groupName,
-      status: 'present',
-      insuredAmount: best.rawCoverage.insuredAmount || null,
-      deductible: best.rawCoverage.deductible || null,
-      premium: best.rawCoverage.premium || null,
-      confidence: Math.round(avgConfidence * 100),
-      rawNames: groupData.coverages.map(c => c.rawCoverage.rawName),
-      matchMethod: best.isComposite ? 'ontology-composite' : 'ontology',
-      needsReview: groupNeedsReview,
-      notes: best.isComposite ? `Cobertura compuesta: ${best.components?.join(', ')}` : undefined
-    });
-    
-    totalConfidence += avgConfidence * 100;
-    presentCount++;
-    if (groupNeedsReview) needsReview = true;
+    if (groupData && groupData.coverages.length > 0) {
+      // Use best coverage in group
+      const best = groupData.coverages.reduce((a, b) => 
+        a.confidence > b.confidence ? a : b
+      );
+      
+      const avgConfidence = groupData.totalConfidence / groupData.coverages.length;
+      const groupNeedsReview = avgConfidence < 0.7 || best.isComposite;
+      
+      canonicalCoverages.push({
+        name: category.name,
+        status: 'present',
+        insuredAmount: best.rawCoverage.insuredAmount || null,
+        deductible: best.rawCoverage.deductible || null,
+        premium: best.rawCoverage.premium || null,
+        confidence: Math.round(avgConfidence * 100),
+        rawNames: groupData.coverages.map(c => c.rawCoverage.rawName),
+        matchMethod: best.isComposite ? 'ontology-composite' : 'ontology',
+        needsReview: groupNeedsReview,
+        notes: best.isComposite ? `Cobertura compuesta: ${best.components?.join(', ')}` : undefined,
+        categoryId: category.id
+      });
+      
+      totalConfidence += avgConfidence * 100;
+      presentCount++;
+      if (groupNeedsReview) needsReview = true;
+    } else {
+      // Mark as missing
+      canonicalCoverages.push({
+        name: category.name,
+        status: 'missing',
+        insuredAmount: null,
+        deductible: null,
+        premium: null,
+        confidence: 0,
+        rawNames: [],
+        matchMethod: null,
+        needsReview: false,
+        categoryId: category.id
+      });
+    }
   }
   
   // Add ungrouped coverages as uncategorized
@@ -782,10 +801,14 @@ async function buildOntologyBasedCoverages(
   
   const avgConfidence = presentCount > 0 ? totalConfidence / presentCount : 0;
   
+  const missingCoverages = canonicalCoverages
+    .filter(c => c.status === 'missing')
+    .map(c => c.name);
+  
   return {
     canonicalCoverages,
     uncategorizedCoverages,
-    missingCoverages: [], // In ontology mode, nothing is "missing" - everything is present or uncategorized
+    missingCoverages,
     needsReview,
     totalConfidence: Math.round(avgConfidence),
     generalDeductibles
