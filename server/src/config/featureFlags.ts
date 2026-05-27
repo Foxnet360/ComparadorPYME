@@ -14,6 +14,9 @@ export interface FeatureFlags {
   queryExpansion: boolean;
   hybridSearchV2: boolean;
   
+  // Unified Comparison Engine
+  useUnifiedComparisonEngine: boolean;
+  
   // Backward compatibility
   useLegacyCoverageMatcher: boolean;
   useLegacyDeductibleParser: boolean;
@@ -33,6 +36,9 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   learningEngine: redisAvailable, // Only enable if Redis is configured
   queryExpansion: true,
   hybridSearchV2: true,
+  
+  // Unified Comparison Engine (disabled by default for safe rollout)
+  useUnifiedComparisonEngine: process.env.USE_UNIFIED_ENGINE === 'true',
   
   // Backward compatibility flags (for gradual migration)
   useLegacyCoverageMatcher: false,
@@ -109,7 +115,8 @@ class FeatureFlagManager {
       'TRIPLE_SOURCE_CHAT',
       'LEARNING_ENGINE',
       'QUERY_EXPANSION',
-      'HYBRID_SEARCH_V2'
+      'HYBRID_SEARCH_V2',
+      'USE_UNIFIED_COMPARISON_ENGINE'
     ];
     
     for (const varName of featureVars) {

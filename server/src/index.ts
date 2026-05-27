@@ -35,6 +35,7 @@ import { compareExtraction } from './controllers/compareController';
 import auditRoutes from './routes/audit';
 import chatRoutes from './routes/chat';
 import analysisRoutes from './routes/analysis';
+import comparisonRoutes from './routes/comparisonRoutes';
 
 const app = express();
 const port = parseInt(process.env.PORT || '8080', 10);
@@ -178,6 +179,9 @@ app.use('/api/chat', chatRoutes);
 // NEW: Monitoring routes
 import monitoringRoutes from './routes/monitoring';
 app.use('/api/monitoring', monitoringRoutes);
+
+// NEW: Unified Comparison routes
+app.use('/api/comparison', comparisonRoutes);
 
 // Centralized error handling middleware (must be after all routes)
 import { errorHandler } from './middleware/errorHandler';
