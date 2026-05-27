@@ -329,7 +329,58 @@ UNIFIED_ENGINE_TIMEOUT=60000
 UNIFIED_CACHE_TTL=86400
 ```
 
-### Runtime API
+### Admin API
+
+The following endpoints allow runtime control of the unified engine without requiring a restart:
+
+```bash
+# Get current unified engine status
+GET /api/monitoring/unified-engine/admin/status
+
+# Enable/disable the unified engine
+POST /api/monitoring/unified-engine/admin/enable
+Body: { "enabled": true }
+
+# Update rollout percentage (0-100)
+POST /api/monitoring/unified-engine/admin/rollout
+Body: { "percentage": 10 }
+
+# Manage enabled users list
+POST /api/monitoring/unified-engine/admin/users
+Body: {
+  "users": ["user1@company.com", "user2@company.com"],
+  "action": "add" | "remove" | "set"
+}
+```
+
+**Examples:**
+
+```bash
+# Enable for internal testing team
+curl -X POST https://your-api.com/api/monitoring/unified-engine/admin/enable \
+  -H "Content-Type: application/json" \
+  -d '{"enabled": true}'
+
+# Add users to testing list
+curl -X POST https://your-api.com/api/monitoring/unified-engine/admin/users \
+  -H "Content-Type: application/json" \
+  -d '{
+    "users": ["admin@company.com", "tester@company.com"],
+    "action": "add"
+  }'
+
+# Set 10% rollout
+curl -X POST https://your-api.com/api/monitoring/unified-engine/admin/rollout \
+  -H "Content-Type: application/json" \
+  -d '{"percentage": 10}'
+
+# Enable for 100% of users
+curl -X POST https://your-api.com/api/monitoring/unified-engine/admin/rollout \
+  -H "Content-Type: application/json" \
+  -d '{"percentage": 100}'
+```
+
+### Runtime API (Legacy)
 
 ```typescript
 // Get current flags

@@ -721,3 +721,84 @@ curl -X POST http://localhost:8080/api/comparison/123/deep-mode \
   }
 }
 ```
+
+### Unified Engine Admin Status
+
+**GET** `/api/monitoring/unified-engine/admin/status`
+
+**Response:**
+```json
+{
+  "enabled": true,
+  "rolloutConfig": {
+    "percentage": 10,
+    "enabledUsers": ["admin@company.com"]
+  },
+  "model": "gemini-3.5-flash",
+  "environment": "production"
+}
+```
+
+### Enable/Disable Unified Engine
+
+**POST** `/api/monitoring/unified-engine/admin/enable`
+
+**Body:**
+```json
+{
+  "enabled": true
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "enabled": true,
+  "message": "Unified engine enabled"
+}
+```
+
+### Update Rollout Percentage
+
+**POST** `/api/monitoring/unified-engine/admin/rollout`
+
+**Body:**
+```json
+{
+  "percentage": 10
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "percentage": 10,
+  "message": "Rollout percentage set to 10%"
+}
+```
+
+### Manage Enabled Users
+
+**POST** `/api/monitoring/unified-engine/admin/users`
+
+**Body:**
+```json
+{
+  "users": ["admin@company.com", "tester@company.com"],
+  "action": "add"
+}
+```
+
+Actions: `add`, `remove`, `set`
+
+**Response:**
+```json
+{
+  "success": true,
+  "action": "add",
+  "users": ["admin@company.com", "tester@company.com"],
+  "enabledUsers": ["admin@company.com", "tester@company.com"]
+}
+```

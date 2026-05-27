@@ -72,6 +72,32 @@ class UnifiedComparisonFeatureFlag {
   }
 
   /**
+   * Add a user to the enabled users list
+   */
+  addEnabledUser(userId: string): void {
+    if (!this.rolloutConfig.enabledUsers?.includes(userId)) {
+      this.rolloutConfig.enabledUsers = [...(this.rolloutConfig.enabledUsers || []), userId];
+      console.log(`🚩 [UnifiedComparison] Added user ${userId} to enabled list`);
+    }
+  }
+
+  /**
+   * Remove a user from the enabled users list
+   */
+  removeEnabledUser(userId: string): void {
+    this.rolloutConfig.enabledUsers = this.rolloutConfig.enabledUsers?.filter(id => id !== userId) || [];
+    console.log(`🚩 [UnifiedComparison] Removed user ${userId} from enabled list`);
+  }
+
+  /**
+   * Update the entire enabled users list
+   */
+  setEnabledUsers(userIds: string[]): void {
+    this.rolloutConfig.enabledUsers = [...userIds];
+    console.log(`🚩 [UnifiedComparison] Enabled users list updated (${userIds.length} users)`);
+  }
+
+  /**
    * Deterministic hash of user ID for consistent rollout
    */
   private hashUserId(userId: string): number {

@@ -93,10 +93,21 @@
 
 ## 10. Deployment and Rollout
 
-- [ ] 10.1 Deploy with `USE_UNIFIED_ENGINE=false` (disabled by default)
-- [ ] 10.2 Enable for internal testing team
+- [x] 10.1 Deploy with `USE_UNIFIED_ENGINE=false` (disabled by default)
+- [x] 10.2 Enable for internal testing team
+  - Added admin endpoints for runtime control:
+    - GET /api/monitoring/unified-engine/admin/status
+    - POST /api/monitoring/unified-engine/admin/enable
+    - POST /api/monitoring/unified-engine/admin/rollout
+    - POST /api/monitoring/unified-engine/admin/users
+  - Added methods to featureFlagService: addEnabledUser, removeEnabledUser, setEnabledUsers
 - [ ] 10.3 Enable for 10% of production users
+  - Use POST /api/monitoring/unified-engine/admin/rollout with {"percentage": 10}
 - [ ] 10.4 Monitor metrics for 1 week
+  - Use GET /api/monitoring/dashboard for comprehensive metrics
+  - Use GET /api/monitoring/unified-engine for engine-specific metrics
 - [ ] 10.5 Increase to 50% if metrics are positive
+  - Use POST /api/monitoring/unified-engine/admin/rollout with {"percentage": 50}
 - [ ] 10.6 Increase to 100% after 2 weeks of stable metrics
+  - Use POST /api/monitoring/unified-engine/admin/rollout with {"percentage": 100}
 - [ ] 10.7 Schedule legacy engine deprecation (future release)

@@ -7,6 +7,8 @@ import { Router } from 'express';
 import { monitoringService } from '../services/monitoringService';
 import { alertingService } from '../services/unifiedComparison/alertingService';
 import { errorTrackingService } from '../services/unifiedComparison/errorTrackingService';
+import { unifiedComparisonFlag } from '../services/unifiedComparison/featureFlagService';
+import { featureFlags } from '../config/featureFlags';
 import { getUnifiedEngineMetrics } from '../repositories/analysisRepository';
 import { asyncHandler } from '../utils/asyncHandler';
 
@@ -307,6 +309,108 @@ router.get('/dashboard', asyncHandler(async (req, res) => {
             memory: process.memoryUsage(),
             nodeVersion: process.version
         }
+    });
+}));
+
+/**
+ * GET /api/monitoring/unified-engine/admin/status
+ * Get unified engine admin status
+ */
+router.get('/unified-engine/admin/status', asyncHandler(async (req, res) => {
+    const config = unifiedComparisonFlag.getRolloutConfig();
+    
+    res.json({
+        enabled: featureFlags.isEnabled('useUnifiedComparisonEngine'),
+        rolloutConfig: config,
+        model: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
+        environment: process.env.NODE_ENV || 'development'
+    });
+}));
+
+/**
+ * POST /api/monitoring/unified-engine/admin/enable
+ * Enable or disable the unified engine
+ */
+router.post('/unified-engine/admin/enable', asyncHandler(async (req, res) => {
+    const { enabled } = req.body;
+    
+    if (typeof enabled !== 'boolean') {
+        return res.status(400).json({
+            error: 'Bad Request',
+            message: 'enabled must be a boolean'
+        });
+    }
+    
+    featureFlags.updateFlag('useUnifiedComparisonEngine', enabled);
+    
+    res.json({
+        success: true,
+        enabled,
+        message: `Unified engine ${enabled ? 'enabled' : 'disabled'}`
+    });
+}));
+
+/**
+ * POST /api/monitoring/unified-engine/admin/rollout
+ * Update rollout percentage
+ */
+router.post('/unified-engine/admin/rollout', asyncHandler(async (req, res) => {
+    const { percentage } = req.body;
+    
+    if (typeof percentage !== 'number' || percentage < 0 || percentage > 100) {
+        return res.status(400).json({
+            error: 'Bad Request',
+            message: 'percentage must be a number between 0 and 100'
+        });
+    }
+    
+    unifiedComparisonFlag.updateRolloutPercentage(percentage);
+    
+    res.json({
+        success: true,
+        percentage,
+        message: `Rollout percentage set to ${percentage}%`
+    });
+}));
+
+/**
+ * POST /api/monitoring/unified-engine/admin/users
+ * Update enabled users list
+ */
+router.post('/unified-engine/admin/users', asyncHandler(async (req, res) => {
+    const { users, action } = req.body;
+    
+    if (!Array.isArray(users)) {
+        return res.status(400).json({
+            error: 'Bad Request',
+            message: 'users must be an array of user IDs'
+        });
+    }
+    
+    const currentConfig = unifiedComparisonFlag.getRolloutConfig();
+    
+    switch (action) {
+        case 'add':
+            users.forEach(userId => unifiedComparisonFlag.addEnabledUser(userId));
+            break;
+        case 'remove':
+            users.forEach(userId => unifiedComparisonFlag.removeEnabledUser(userId));
+            break;
+        case 'set':
+            unifiedComparisonFlag.setEnabledUsers(users);
+            break;
+        default:
+            return res.status(400).json({
+                error: 'Bad Request',
+                message: 'action must be "add", "remove", or "set"'
+            });
+    }
+    
+    res.json({
+        success: true,
+        action,
+        users,
+        enabledUsers: unifiedComparisonFlag.getRolloutConfig().enabledUsers
     });
 }));
 
