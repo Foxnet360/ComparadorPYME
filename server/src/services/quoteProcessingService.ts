@@ -195,12 +195,25 @@ async function processQuoteMultimodalInternal(
       hasTables: family !== 'TEXT' && family !== 'UNKNOWN',
     });
     
+    // Phase 2.5: Extract native text for character-perfect reference (Fase 1)
+    console.log(`   📄 Phase 2.5: Extracting native PDF text for reference...`);
+    let nativeText = '';
+    try {
+      const { pdfExtractor } = require('./pdfExtractor');
+      const extractionResult = await pdfExtractor.extractTextFromPdf(quoteFile.path);
+      nativeText = extractionResult.text || '';
+      console.log(`   ✅ Extracted ${nativeText.length} characters of native text for reference.`);
+    } catch (err: any) {
+      console.warn(`   ⚠️ Native text extraction failed: ${err.message}. Relying on vision-only.`);
+    }
+    
     // Phase 3: Extract using multimodal vision directly on File API
-    console.log(`   🔍 Phase 3: Extracting with multimodal vision...`);
+    console.log(`   🔍 Phase 3: Extracting with multimodal vision + text reference...`);
     const extracted = await geminiService.extractFromPdfWithVision(
       quoteFile.path,
       prompt,
-      quoteFile.originalname
+      quoteFile.originalname,
+      nativeText
     );
     
     // Phase 4: Normalize coverages

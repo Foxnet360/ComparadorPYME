@@ -1,6 +1,37 @@
 import { CoverageVariables } from '../types/analysis';
 import { coverageOntology } from './coverageOntology';
 
+export interface SectorCriticalCoverage {
+  canonicalId: string;
+  displayName: string;
+  reason: string;
+}
+
+export const PYME_SECTORS_CRITICAL_COVERAGES: Record<string, SectorCriticalCoverage[]> = {
+  'Restaurantes / Alimentos': [
+    { canonicalId: 'edificios', displayName: 'Incendio y Daños por Agua', reason: 'Los locales de alimentos tienen alto riesgo de incendios en cocina y daños por tuberías.' },
+    { canonicalId: 'sustraccion', displayName: 'Sustracción (Dinero en Caja y Equipos)', reason: 'Alta rotación de efectivo en caja expone al negocio a robos constantes.' },
+    { canonicalId: 'rce', displayName: 'Responsabilidad Civil (Intoxicación por alimentos)', reason: 'Vital para restaurantes ante reclamos por afectación a comensales.' },
+    { canonicalId: 'interrupcion', displayName: 'Lucro Cesante / Interrupción de Negocio', reason: 'Si el local cierra por siniestro, requiere cobertura para pagar arriendos y salarios.' }
+  ],
+  'Oficinas / Servicios / Tecnología': [
+    { canonicalId: 'equipos', displayName: 'Equipo Eléctrico y Electrónico (EEE)', reason: 'Los computadores y servidores son el activo principal de la empresa.' },
+    { canonicalId: 'rce', displayName: 'Responsabilidad Civil Extracontractual', reason: 'Cubre visitas de clientes en las oficinas.' },
+    { canonicalId: 'transporte', displayName: 'Portabilidad de Equipos (Fuera de predios)', reason: 'Esencial para portátiles corporativos que salen con los ingenieros/consultores.' }
+  ],
+  'Manufactura / Talleres / Fábricas': [
+    { canonicalId: 'rotura', displayName: 'Rotura de Maquinaria y Daño Interno', reason: 'Crucial para proteger la maquinaria productiva del negocio.' },
+    { canonicalId: 'edificios', displayName: 'Incendio (Combustión Espontánea)', reason: 'Alta carga de calor o almacenamiento de materias primas inflamables.' },
+    { canonicalId: 'interrupcion', displayName: 'Lucro Cesante por Daño de Máquinas', reason: 'La paralización de la planta frena la facturación por completo.' }
+  ],
+  'Comercio / Retail': [
+    { canonicalId: 'sustraccion', displayName: 'Sustracción / Hurto de Mercancía', reason: 'El inventario en vitrina y bodega es el blanco principal de robos.' },
+    { canonicalId: 'transporte', displayName: 'Transporte de Mercancías y Valores', reason: 'Cubre el despacho de productos y el recaudo de ventas.' },
+    { canonicalId: 'edificios', displayName: 'Incendio (Edificios y Contenidos)', reason: 'Protección de toda la vitrina comercial expuesta.' }
+  ]
+};
+
+
 export interface VariableComparison {
   groupName: string;
   groupId: string;
@@ -295,7 +326,71 @@ export const variableComparator = {
     }
     
     return matrix;
+  },
+
+  /**
+   * Genera alertas críticas dinámicas basadas en el sector PYME del asegurado
+   */
+  generateSectorAlerts(
+    comparisons: VariableComparison[],
+    pymeSector: string
+  ): Array<{
+    level: 'CRITICAL' | 'WARNING';
+    title: string;
+    description: string;
+    insurerName: string;
+  }> {
+    const alerts: Array<{
+      level: 'CRITICAL' | 'WARNING';
+      title: string;
+      description: string;
+      insurerName: string;
+    }> = [];
+
+    const criticalCoverages = PYME_SECTORS_CRITICAL_COVERAGES[pymeSector] || [];
+    if (criticalCoverages.length === 0) return alerts;
+
+    // Get all insurers in comparisons
+    const insurers = [...new Set(
+      comparisons.flatMap(c => c.variables.map(v => v.insurerName))
+    )];
+
+    for (const insurer of insurers) {
+      for (const req of criticalCoverages) {
+        // Find if this critical coverage is present for this insurer in comparison
+        const match = comparisons.find(c => 
+          c.groupId === req.canonicalId && 
+          c.variables.some(v => v.insurerName === insurer)
+        );
+
+        if (!match) {
+          // Critical coverage is missing!
+          alerts.push({
+            level: 'CRITICAL',
+            title: `Falta amparo crítico: ${req.displayName}`,
+            description: `Esta póliza no cotiza la cobertura de ${req.displayName}. ${req.reason}`,
+            insurerName: insurer
+          });
+        } else {
+          // If present, check if the deductible is unusually high
+          const insurerVar = match.variables.find(v => v.insurerName === insurer);
+          const deductibleMin = insurerVar?.deductible?.normalized?.minAmount || 0;
+          
+          if (deductibleMin > 10000000) { // More than 10M COP min deductible
+            alerts.push({
+              level: 'WARNING',
+              title: `Deducible elevado en amparo crítico: ${req.displayName}`,
+              description: `El deducible mínimo para esta cobertura crítica es elevado (${deductibleMin.toLocaleString()} COP), lo que asume un alto autoseguro en siniestros medianos.`,
+              insurerName: insurer
+            });
+          }
+        }
+      }
+    }
+
+    return alerts;
   }
 };
+
 
 export default variableComparator;

@@ -343,13 +343,14 @@ export const geminiService = {
     },
 
     /**
-     * Extract structured data from PDF using multimodal vision
+     * Extract structured data from PDF using multimodal vision + native text reference
      * Uploads PDF to Gemini File API and processes with vision
      */
     extractFromPdfWithVision: async (
         pdfPath: string,
         prompt: string,
-        filename: string
+        filename: string,
+        extractedText?: string
     ): Promise<any> => {
         let uploadedFile: any = null;
         try {
@@ -377,10 +378,17 @@ export const geminiService = {
                 try {
                     console.log(`🤖 [Gemini] Using model: ${extractionModel} for PDF extraction (attempt ${retries + 1})`);
                     
+                    let finalPrompt = prompt;
+                    if (extractedText && extractedText.trim().length > 0) {
+                        finalPrompt += `\n\n=== TEXTO EXTRAÍDO NATIVAMENTE (REFERENCIA DE ALTA FIDELIDAD) ===\n`;
+                        finalPrompt += `Utiliza el siguiente texto extraído del PDF como referencia exacta de caracteres para nombres de coberturas, sumas aseguradas y deducibles. Evita perder detalles en la maquetación visual:\n\n`;
+                        finalPrompt += `${extractedText.slice(0, 120000)}`; // Gemini 3.5 soporta contextos inmensos de forma nativa
+                    }
+
                     const result = await ai.models.generateContent({
                         model: extractionModel,
                         contents: [
-                            { text: prompt },
+                            { text: finalPrompt },
                             {
                                 fileData: {
                                     fileUri: uploadedFile.uri,
@@ -484,9 +492,18 @@ export const geminiService = {
             const ai = getGenAI();
             const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
             
-            const prompt = `Analiza este deducible de seguro y extrae su estructura detallada:
+            const prompt = `Analiza este deducible de seguro de una póliza en Colombia y extrae su estructura detallada:
             
-Texto del deducible: "${deductibleText}"`;
+Texto del deducible: "${deductibleText}"
+
+Instrucciones para el análisis:
+- En Colombia, los deducibles frecuentemente constan de un porcentaje (ej. 10% del siniestro) combinado con un mínimo expresado en SMMLV (Salarios Mínimos Mensuales Legales Vigentes), COP (pesos colombianos) o UVT.
+- Ej: "10% con mínimo de 5 SMMLV" tiene dos componentes:
+  1. type = "percentage", value = 10
+  2. type = "minimum", value = 5, currency = "SMMLV"
+- Ej: "Sin deducible", "No aplica", "0%" o "Incluido" tiene isZero = true, y componentes de tipo "na".
+- Ej: "10% de la pérdida, mínimo $1.000.000 COP" tiene components: [{type: "percentage", value: 10}, {type: "minimum", value: 1000000, currency: "COP"}].
+- Si encuentras expresiones como "de la pérdida", "del siniestro", "del valor asegurado", extrae únicamente la estructura numérica y el tipo de componente.`;
 
             const result = await ai.models.generateContent({
                 model: extractionModel,

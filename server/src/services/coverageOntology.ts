@@ -1,5 +1,9 @@
 import { embeddingService } from './vector/embeddingService';
 import { supabase } from '../config/database';
+import { GoogleGenAI } from '@google/genai';
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 export interface OntologyNode {
   id: string;
@@ -60,6 +64,97 @@ const COMPOSITE_PATTERNS = [
   }
 ];
 
+// Cache in-memory for static ontology embeddings to eliminate HTTP overhead
+let ontologyEmbeddingsCache: Map<string, number[]> | null = null;
+let isInitializingCache = false;
+
+/**
+ * Ensures that ontology node and alias embeddings are pre-calculated in batch
+ */
+async function ensureOntologyEmbeddingsCache(): Promise<Map<string, number[]>> {
+  if (ontologyEmbeddingsCache) return ontologyEmbeddingsCache;
+  if (isInitializingCache) {
+    // Wait briefly if initialization is already in progress
+    await new Promise(resolve => setTimeout(resolve, 500));
+    if (ontologyEmbeddingsCache) return ontologyEmbeddingsCache;
+  }
+  
+  isInitializingCache = true;
+  console.log('🧠 [Ontology] Initializing static embeddings cache...');
+  const cache = new Map<string, number[]>();
+  
+  const textsToEmbed: string[] = [];
+  for (const node of ONTOLOGY_SEED.filter(n => n.level >= 2)) {
+    textsToEmbed.push(node.name);
+    for (const alias of node.aliases) {
+      textsToEmbed.push(alias);
+    }
+  }
+  
+  const uniqueTexts = Array.from(new Set(textsToEmbed));
+  
+  try {
+    const results = await embeddingService.generateEmbeddingsBatch(uniqueTexts);
+    for (const res of results) {
+      cache.set(res.text, res.embedding);
+    }
+    console.log(`✅ [Ontology] Static embeddings cache initialized with ${cache.size} embeddings`);
+    ontologyEmbeddingsCache = cache;
+  } catch (error: any) {
+    console.error('❌ [Ontology] Failed to pre-calculate embeddings in batch:', error.message);
+    // Fallback: populate on-demand in mapCoverage
+    ontologyEmbeddingsCache = cache;
+  } finally {
+    isInitializingCache = false;
+  }
+  
+  return ontologyEmbeddingsCache;
+}
+
+/**
+ * Ask LLM to act as a judge to resolve ambiguous matches (grey area: 0.65 - 0.85 confidence)
+ */
+async function askJudge(rawName: string, candidates: Array<{ id: string; name: string }>): Promise<string | null> {
+  if (!GEMINI_API_KEY) return null;
+  try {
+    const prompt = `Actúas como un suscriptor experto en seguros PYME en Colombia.
+Tu tarea es decidir si la cobertura dada pertenece semántica y legalmente a uno de los siguientes grupos canónicos, o si es un amparo exótico/exclusivo independiente.
+
+Cobertura del documento: "${rawName}"
+
+Candidatos canónicos posibles:
+${candidates.map((c, i) => `${i + 1}. [ID: ${c.id}] ${c.name}`).join('\n')}
+
+Instrucciones:
+- Analiza con precisión técnica si la cobertura del documento es sinónimo o equivale al 90%+ a uno de los candidatos canónicos.
+- Ej: "Daños por humo" equivale a "Edificios y Contenidos" (Amparo Básico).
+- Ej: "Pérdida de Alimentos por Frío" para un restaurante es una cobertura exótica de congelación, si no está el candidato de congelación no la unas a un amparo genérico si desvirtúa su valor.
+- Si corresponde a un candidato, responde únicamente con el ID del candidato en el formato exacto.
+- Si NO corresponde a ningún candidato (es exótica/exclusiva), responde únicamente con "EXCLUSIVE".
+
+Respuesta (sólo escribe el ID o "EXCLUSIVE"):`;
+
+    const result = await genAI.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        temperature: 0.1,
+      }
+    });
+
+    const answer = result.text?.trim();
+    if (answer && candidates.some(c => c.id === answer)) {
+      console.log(`⚖️ [Ontology Judge] Assigned "${rawName}" to group: ${answer}`);
+      return answer;
+    }
+    console.log(`⚖️ [Ontology Judge] Deemed "${rawName}" as EXCLUSIVE`);
+    return null;
+  } catch (error) {
+    console.error('❌ [Ontology Judge] Error in judge call:', error);
+    return null;
+  }
+}
+
 export const coverageOntology = {
   /**
    * Get all ontology nodes
@@ -113,14 +208,22 @@ export const coverageOntology = {
       };
     }
     
+    // Ensure cache is loaded
+    const cache = await ensureOntologyEmbeddingsCache();
+    
     // Generate embedding for raw name
     const rawEmbedding = await embeddingService.generateEmbedding(rawName);
     
-    // Calculate similarity with each node
+    // Calculate similarity with each node using pre-computed embeddings
     const similarities: Array<{ groupId: string; confidence: number }> = [];
     
     for (const node of ONTOLOGY_SEED.filter(n => n.level >= 2)) {
-      const nodeEmbedding = await embeddingService.generateEmbedding(node.name);
+      let nodeEmbedding = cache.get(node.name);
+      if (!nodeEmbedding) {
+        nodeEmbedding = await embeddingService.generateEmbedding(node.name);
+        cache.set(node.name, nodeEmbedding);
+      }
+      
       const similarity = embeddingService.cosineSimilarity(rawEmbedding, nodeEmbedding);
       
       if (similarity > 0.6) {
@@ -132,7 +235,12 @@ export const coverageOntology = {
       
       // Check aliases
       for (const alias of node.aliases) {
-        const aliasEmbedding = await embeddingService.generateEmbedding(alias);
+        let aliasEmbedding = cache.get(alias);
+        if (!aliasEmbedding) {
+          aliasEmbedding = await embeddingService.generateEmbedding(alias);
+          cache.set(alias, aliasEmbedding);
+        }
+        
         const aliasSimilarity = embeddingService.cosineSimilarity(rawEmbedding, aliasEmbedding);
         
         if (aliasSimilarity > 0.65) {
@@ -144,17 +252,58 @@ export const coverageOntology = {
       }
     }
     
-    // Sort by confidence and take top 5
+    // Sort by confidence and take top matches
     similarities.sort((a, b) => b.confidence - a.confidence);
-    const topMatches = similarities.slice(0, 5);
     
-    // Calculate overall confidence
-    const maxConfidence = topMatches.length > 0 ? topMatches[0].confidence : 0;
+    // Deduplicate by groupId
+    const seenGroups = new Set<string>();
+    const deduplicatedSimilarities = similarities.filter(s => {
+      if (seenGroups.has(s.groupId)) return false;
+      seenGroups.add(s.groupId);
+      return true;
+    });
+    
+    const topMatches = deduplicatedSimilarities.slice(0, 5);
+    let maxConfidence = topMatches.length > 0 ? topMatches[0].confidence : 0;
+    let finalMatches = topMatches;
+    
+    // LLM-as-a-Judge for grey areas (confidence 0.65 to 0.85) to refine mapping
+    if (maxConfidence >= 0.65 && maxConfidence < 0.85 && topMatches.length > 1) {
+      const candidates = topMatches.map(m => ({
+        id: m.groupId,
+        name: this.getNodeById(m.groupId)?.name || m.groupId
+      }));
+      
+      const judgeDecision = await askJudge(rawName, candidates);
+      if (judgeDecision) {
+        // Rearrange to put the judged node first with higher confidence
+        finalMatches = topMatches.map(m => {
+          if (m.groupId === judgeDecision) {
+            return { groupId: m.groupId, confidence: Math.max(m.confidence, 0.88) };
+          }
+          return m;
+        }).sort((a, b) => b.confidence - a.confidence);
+        maxConfidence = finalMatches[0].confidence;
+      }
+    }
+    
+    // Fluid Ontology: If confidence is very low (< 0.62), we don't force a category mapping.
+    // It remains ungrouped and is automatically treated as an "Amparo Exclusivo" by the comparator.
+    if (maxConfidence < 0.62) {
+      console.log(`ℹ️ [Ontology] "${rawName}" classified as EXCLUSIVE coverage (confidence ${maxConfidence.toFixed(3)})`);
+      return {
+        rawName,
+        insurerName,
+        groups: [],
+        isComposite: false,
+        confidence: 0
+      };
+    }
     
     return {
       rawName,
       insurerName,
-      groups: topMatches,
+      groups: finalMatches,
       isComposite: false,
       confidence: maxConfidence
     };
@@ -231,3 +380,4 @@ export const coverageOntology = {
 };
 
 export default coverageOntology;
+

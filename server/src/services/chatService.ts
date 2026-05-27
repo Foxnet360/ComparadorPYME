@@ -117,6 +117,65 @@ const buildReportContext = (reportContext: any): string => {
 /**
  * Search quote data for relevant information (Primary Source)
  */
+/**
+ * Search quote data semantically using coverage ontology
+ */
+const searchQuoteDataSemantically = async (
+    message: string,
+    reportContext: any
+): Promise<{ data: string; source: string; insurerName?: string } | null> => {
+    try {
+        const quotes = reportContext?.quotes || [];
+        const messageLower = message.toLowerCase();
+        
+        // Match user's question semantically to a canonical group
+        const mapped = await require('./coverageOntology').coverageOntology.mapCoverage(message);
+        
+        if (mapped && mapped.groups.length > 0) {
+            const bestGroupId = mapped.groups[0].groupId;
+            console.log(`🧠 [chatService] Semantic quote search mapped query to group: "${bestGroupId}"`);
+            
+            const matchingInsurerData: string[] = [];
+            let matchedInsurerName: string | undefined;
+            
+            for (const quote of quotes) {
+                // Find coverages belonging to bestGroupId
+                const matchingCoverages = (quote.coverages || []).filter((c: any) => 
+                    c.categoryId === bestGroupId || 
+                    c.canonicalName?.toLowerCase() === bestGroupId ||
+                    c.name?.toLowerCase().includes(bestGroupId) ||
+                    (bestGroupId === 'edificios' && c.name?.toLowerCase().includes('incendio')) ||
+                    (bestGroupId === 'rce' && c.name?.toLowerCase().includes('responsabilidad'))
+                );
+                
+                if (matchingCoverages.length > 0) {
+                    matchedInsurerName = quote.insurerName;
+                    matchingCoverages.forEach((c: any) => {
+                        matchingInsurerData.push(`${quote.insurerName}: ${c.name} - $${c.value?.toLocaleString() || c.value} ${c.deductible ? `(Deducible: ${c.deductible})` : ''}`);
+                    });
+                }
+            }
+            
+            if (matchingInsurerData.length > 0) {
+                return {
+                    data: matchingInsurerData.join('\n'),
+                    source: 'quote',
+                    insurerName: matchedInsurerName
+                };
+            }
+        }
+        
+        // Fallback to simple includes search if semantic search found nothing
+        return searchQuoteData(message, reportContext);
+    } catch (error) {
+        console.error('❌ [chatService] Semantic quote search error:', error);
+        return searchQuoteData(message, reportContext);
+    }
+};
+
+/**
+ * Legacy Search quote data for relevant information (Primary Source)
+ */
 const searchQuoteData = (
     message: string,
     reportContext: any
@@ -177,7 +236,7 @@ const searchQuoteData = (
 };
 
 /**
- * Search structured clauses (Secondary Source)
+ * Search structured clauses semantically (Secondary Source)
  */
 const searchStructuredClauses = async (
     message: string,
@@ -186,24 +245,48 @@ const searchStructuredClauses = async (
     try {
         const allClauses: ChatCitation[] = [];
         
+        // Map user's question semantically to a canonical group
+        const mappedMessage = await require('./coverageOntology').coverageOntology.mapCoverage(message);
+        const bestGroupId = mappedMessage?.groups?.[0]?.groupId;
+        
         for (const insurerName of insurerNames) {
             // Try structured clause search first
             const structured = await structuredClauseExtractor.searchClause(insurerName);
             
             if (structured) {
-                // Find relevant coverage in structured data
-                const relevantCoverage = structured.coverages.find(c => 
-                    message.toLowerCase().includes(c.name.toLowerCase())
-                );
+                // Semantic matching: map clause's coverages and compare groups
+                let matched = false;
+                for (const cov of structured.coverages) {
+                    const mappedCov = await require('./coverageOntology').coverageOntology.mapCoverage(cov.name);
+                    const covGroupId = mappedCov?.groups?.[0]?.groupId;
+                    
+                    if (covGroupId && covGroupId === bestGroupId) {
+                        allClauses.push({
+                            id: `structured-${insurerName}-${cov.name}`,
+                            insurerName,
+                            content: `${cov.name}: ${cov.description}\nDeducible: ${JSON.stringify(cov.deductible || 'No especificado')}\nExclusiones asociadas: ${(cov.exclusions || []).slice(0, 3).join(', ')}`,
+                            pageNumber: cov.sourcePage,
+                            similarityScore: 0.95
+                        });
+                        matched = true;
+                    }
+                }
                 
-                if (relevantCoverage) {
-                    allClauses.push({
-                        id: `structured-${insurerName}`,
-                        insurerName,
-                        content: `${relevantCoverage.name}: ${relevantCoverage.description}\nDeducible: ${JSON.stringify(relevantCoverage.deductible)}`,
-                        pageNumber: relevantCoverage.sourcePage,
-                        similarityScore: 0.95
-                    });
+                // Fallback to simple includes search if semantic search didn't match anything
+                if (!matched) {
+                    const relevantCoverage = structured.coverages.find(c => 
+                        message.toLowerCase().includes(c.name.toLowerCase())
+                    );
+                    
+                    if (relevantCoverage) {
+                        allClauses.push({
+                            id: `structured-${insurerName}`,
+                            insurerName,
+                            content: `${relevantCoverage.name}: ${relevantCoverage.description}\nDeducible: ${JSON.stringify(relevantCoverage.deductible)}`,
+                            pageNumber: relevantCoverage.sourcePage,
+                            similarityScore: 0.95
+                        });
+                    }
                 }
             }
         }
@@ -214,6 +297,7 @@ const searchStructuredClauses = async (
         return [];
     }
 };
+
 
 /**
  * Search RAG for relevant clauses (Tertiary Source)
@@ -440,13 +524,13 @@ export const processChatMessage = async (
             const insurerNames = reportContext.quotes.map((q: any) => q.insurerName).filter(Boolean);
             
             // SOURCE 1: Quote Data (Primary)
-            console.log('🔍 [chatService] Searching quote data...');
-            const quoteResult = searchQuoteData(message, reportContext);
+            console.log('🔍 [chatService] Searching quote data semantically...');
+            const quoteResult = await searchQuoteDataSemantically(message, reportContext);
             
             if (quoteResult) {
                 sourceContext += `\n=== DATOS DE COTIZACIÓN ===\n${quoteResult.data}\n`;
                 sourcesUsed.push('quote');
-                console.log('✅ [chatService] Found in quote data');
+                console.log('✅ [chatService] Found in quote data semantically');
             }
             
             // SOURCE 2: Structured Clauses (Secondary)
@@ -484,7 +568,17 @@ export const processChatMessage = async (
         }
         
         // Build the full prompt with history
-        const systemPrompt = buildSystemPromptTripleSource();
+        let systemPrompt = buildSystemPromptTripleSource();
+        if (reportContext?.pymeSector) {
+            systemPrompt += `\n\nEl cliente es una PYME del sector: **${reportContext.pymeSector}**.
+Ten esto en cuenta al dar asesoría técnica. Por ejemplo:
+- Si es Restaurantes/Alimentos: prioriza Daños por Agua, Congelación, RCE Alimentos, e Interrupción.
+- Si es Oficinas/Servicios/Tecnología: prioriza Equipo Eléctrico y Electrónico, Portabilidad, y RCE Profesional.
+- Si es Manufactura/Talleres: prioriza Rotura de Maquinaria, Incendio Combustión Espontánea, y Lucro Cesante.
+- Si es Comercio/Retail: prioriza Sustracción, Transporte de Mercancías y Valores.
+Adapta el tono, las alertas y las advertencias técnicas según la actividad económica del cliente.`;
+        }
+
         const fullPrompt = buildPromptWithHistory(
             systemPrompt,
             reportCtx,
