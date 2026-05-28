@@ -1,6 +1,7 @@
 import { embeddingService } from './vector/embeddingService';
 import { supabase } from '../config/database';
 import { GoogleGenAI } from '@google/genai';
+import { env } from '../config/env';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
@@ -137,8 +138,9 @@ Instrucciones:
 
 Respuesta (sólo escribe el ID o "EXCLUSIVE"):`;
 
+    const modelName = env.GEMINI_MODEL || 'gemini-2.5-flash';
     const result = await genAI.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: modelName,
       contents: prompt,
       config: {
         temperature: 0.1,

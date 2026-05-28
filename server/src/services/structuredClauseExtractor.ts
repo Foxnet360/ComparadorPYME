@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import { supabase } from '../config/database';
+import { env } from '../config/env';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
@@ -53,13 +54,16 @@ const StructuredClauseSchema = {
     },
     generalConditions: {
       type: SchemaType.ARRAY,
-      items: { type: SchemaType.STRING }
+      items: { type: SchemaType.STRING },
+      description: "Lista de condiciones generales del documento"
     },
     definitions: {
       type: SchemaType.OBJECT,
+      description: "Definiciones de términos clave encontradas en el clausulado",
       additionalProperties: { type: SchemaType.STRING }
     }
-  }
+  },
+  required: ["coverages", "generalExclusions", "generalConditions", "definitions"]
 };
 
 export interface ExtractedCoverage {
@@ -141,23 +145,24 @@ export const structuredClauseExtractor = {
     productName: string = '',
     documentType: 'CLAUSULADO_GENERAL' | 'CLAUSULADO_PARTICULAR' = 'CLAUSULADO_GENERAL'
   ): Promise<StructuredClause> {
-    console.log(`📄 [StructuredExtractor] Extracting clauses for ${insurerName}...`);
+    const modelName = env.GEMINI_CLAUSE_MODEL || 'gemini-2.5-flash';
+    console.log(`📄 [StructuredExtractor] Extracting clauses for ${insurerName} using model ${modelName}...`);
     
     try {
       const prompt = `${CLAUSE_EXTRACTION_PROMPT}\n\n${clauseText}`;
       
       const result = await genAI.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: modelName,
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         config: {
+          temperature: 0.1,
+          maxOutputTokens: 32768,
           responseMimeType: 'application/json',
           responseSchema: StructuredClauseSchema
         }
       });
       
       const responseText = result.text || '{}';
-      
-      // Parse JSON directly (schema enforcement guarantees valid JSON)
       const extracted = JSON.parse(responseText);
       
       const structured: StructuredClause = {

@@ -115,9 +115,10 @@ export const DeductibleBadge: React.FC<DeductibleBadgeProps> = ({ deductible, cl
       <span>{config.label}</span>
       
       {showTooltip && (
-        <div className="absolute z-50 left-0 bottom-full mb-1 bg-slate-800 text-white text-xs rounded-lg py-1.5 px-2 shadow-lg whitespace-nowrap">
+        <div className="absolute z-50 bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-slate-800 text-white text-xs rounded-lg py-1.5 px-2.5 shadow-lg whitespace-nowrap pointer-events-none">
           <div className="font-semibold">{deductible || 'No especificado'}</div>
           <div className="text-slate-300 mt-0.5">{config.recommendation}</div>
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-slate-800"></div>
         </div>
       )}
     </span>
