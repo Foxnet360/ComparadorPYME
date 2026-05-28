@@ -34,7 +34,7 @@ const VariableComparisonMatrix: React.FC<VariableComparisonMatrixProps> = ({ com
 
   const formatDeductible = (deductible: any): string => {
     if (!deductible) return '-';
-    if (deductible.rawText) return deductible.rawText;
+    // Prioritize normalized structured data over raw text
     if (deductible.normalized) {
       const parts = [];
       if (deductible.normalized.percentage > 0) parts.push(`${deductible.normalized.percentage}%`);
@@ -42,8 +42,11 @@ const VariableComparisonMatrix: React.FC<VariableComparisonMatrixProps> = ({ com
       if (deductible.normalized.maxAmount > 0 && deductible.normalized.maxAmount !== Infinity) {
         parts.push(`max: ${deductible.normalized.maxAmount.toLocaleString()}`);
       }
-      return parts.join(', ') || '-';
+      const normalizedStr = parts.join(', ');
+      if (normalizedStr) return normalizedStr;
     }
+    // Fallback to raw text if normalized is empty or invalid
+    if (deductible.rawText) return deductible.rawText;
     return '-';
   };
 

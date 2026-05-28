@@ -4,6 +4,11 @@
  * Flags discrepancies >20% for manual review
  */
 
+import { GoogleGenAI } from '@google/genai';
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+
 export interface DualExtractionResult {
     coverageName: string;
     firstExtraction: {
@@ -75,10 +80,10 @@ export const dualExtractionService = {
      * Validate critical coverages with dual extraction
      * Call this after initial extraction to verify Incendio and RC values
      */
-    validateCriticalCoverages: (
+    validateCriticalCoverages: async (
         coverages: Array<{ name: string; value: string; deductible?: string; confidence?: number }>,
         rawText: string
-    ): DualExtractionResult[] => {
+    ): Promise<DualExtractionResult[]> => {
         const criticalCategories = ['Incendio', 'Responsabilidad Civil', 'RC', 'RCE'];
         const results: DualExtractionResult[] = [];
         
@@ -92,9 +97,8 @@ export const dualExtractionService = {
             
             if (!isCritical) continue;
             
-            // Simulate second extraction (in production, this would call Gemini again)
-            // For now, we use heuristics based on raw text
-            const secondExtraction = extractFromRawText(rawText, coverage.name);
+            // Real second extraction via Gemini API
+            const secondExtraction = await extractFromGemini(rawText, coverage.name);
             
             const discrepancy = calculateDiscrepancy(coverage.value, secondExtraction.value);
             const isDiscrepancy = discrepancy > 20;
@@ -131,70 +135,55 @@ export const dualExtractionService = {
 };
 
 /**
- * Extract coverage value from raw text using regex (second extraction method)
+ * Second extraction via real Gemini API call for critical coverages
+ * Uses gemini-2.5-flash with focused verification prompt
  */
-function extractFromRawText(rawText: string, coverageName: string): { 
+async function extractFromGemini(rawText: string, coverageName: string): Promise<{ 
     value: string; 
     deductible: string; 
     confidence: number;
-} {
-    const lines = rawText.split('\n');
-    
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        const lineLower = line.toLowerCase();
-        const coverageLower = coverageName.toLowerCase();
-        
-        // Check if this line mentions the coverage
-        if (lineLower.includes(coverageLower) || 
-            coverageLower.includes(lineLower.replace(/[:\s-]/g, ''))) {
-            
-            // Try to find value in this line or next few lines
-            for (let j = i; j < Math.min(i + 3, lines.length); j++) {
-                const valueLine = lines[j];
-                
-                // Match patterns like "Valor: $100M" or "SA: 100%" or "$100.000.000"
-                const valueMatch = valueLine.match(/(?:valor|sa|suma|asegurado)[\s:]*([^\n]+)/i);
-                if (valueMatch) {
-                    return {
-                        value: valueMatch[1].trim(),
-                        deductible: extractDeductibleFromLines(lines, j),
-                        confidence: 85
-                    };
-                }
-                
-                // Match currency patterns
-                const currencyMatch = valueLine.match(/\$?[\d.,]+(?:\s*(?:M|millones|MM|SMMLV|%))?/i);
-                if (currencyMatch) {
-                    return {
-                        value: currencyMatch[0].trim(),
-                        deductible: extractDeductibleFromLines(lines, j),
-                        confidence: 75
-                    };
-                }
-            }
-        }
-    }
-    
-    return {
-        value: 'NO ESPECIFICADO',
-        deductible: 'NO ESPECIFICADO',
-        confidence: 0
-    };
-}
+}> {
+    const prompt = `Analiza el siguiente texto de cotización y extrae EXCLUSIVAMENTE la información para la cobertura "${coverageName}".
 
-/**
- * Extract deductible from nearby lines
- */
-function extractDeductibleFromLines(lines: string[], startIdx: number): string {
-    for (let j = startIdx; j < Math.min(startIdx + 2, lines.length); j++) {
-        const line = lines[j].toLowerCase();
-        if (line.includes('deducible') || line.includes('deductible')) {
-            const match = lines[j].match(/(?:deducible|deductible)[\s:]*([^\n]+)/i);
-            if (match) return match[1].trim();
-        }
+TEXTO DE COTIZACIÓN:
+${rawText.substring(0, 8000)}
+
+INSTRUCCIONES:
+1. Busca específicamente la cobertura "${coverageName}" en el texto
+2. Extrae el valor asegurado (SA) o suma asegurada
+3. Extrae el deducible asociado
+4. Si no encuentras la cobertura, responde "NO ESPECIFICADO"
+5. Responde ÚNICAMENTE en este formato JSON:
+{"value": "valor extraído", "deductible": "deducible extraído"}
+
+RESPUESTA (solo JSON):`;
+
+    try {
+        const result = await genAI.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            config: {
+                temperature: 0.3,
+                responseMimeType: 'application/json'
+            }
+        });
+        
+        const responseText = result.text || '{}';
+        const extracted = JSON.parse(responseText);
+        
+        return {
+            value: extracted.value || 'NO ESPECIFICADO',
+            deductible: extracted.deductible || 'NO ESPECIFICADO',
+            confidence: extracted.value ? 90 : 50
+        };
+    } catch (error) {
+        console.error('❌ [DualExtraction] Gemini API call failed:', error);
+        return {
+            value: 'NO ESPECIFICADO',
+            deductible: 'NO ESPECIFICADO',
+            confidence: 0
+        };
     }
-    return 'NO ESPECIFICADO';
 }
 
 export default dualExtractionService;

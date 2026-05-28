@@ -100,7 +100,7 @@ export const DeductibleBadge: React.FC<DeductibleBadgeProps> = ({ deductible, cl
 
   return (
     <span 
-      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium ${config.bgColor} ${config.color} ${className}`}
+      className={`relative inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium ${config.bgColor} ${config.color} ${className}`}
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
@@ -115,7 +115,7 @@ export const DeductibleBadge: React.FC<DeductibleBadgeProps> = ({ deductible, cl
       <span>{config.label}</span>
       
       {showTooltip && (
-        <div className="absolute z-50 mt-1 bg-slate-800 text-white text-xs rounded-lg py-1.5 px-2 shadow-lg whitespace-nowrap">
+        <div className="absolute z-50 left-0 bottom-full mb-1 bg-slate-800 text-white text-xs rounded-lg py-1.5 px-2 shadow-lg whitespace-nowrap">
           <div className="font-semibold">{deductible || 'No especificado'}</div>
           <div className="text-slate-300 mt-0.5">{config.recommendation}</div>
         </div>

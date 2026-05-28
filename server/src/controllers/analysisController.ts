@@ -240,7 +240,7 @@ export const analysisController = {
             for (let i = 0; i < parsedQuotes.length; i++) {
                 const quote = parsedQuotes[i];
                 if (quote.rawText && quote.coverages.length > 0) {
-                    const dualResults = dualExtractionService.validateCriticalCoverages(
+                    const dualResults = await dualExtractionService.validateCriticalCoverages(
                         quote.coverages.map(c => ({ 
                             name: c.name, 
                             value: c.value, 

@@ -1,8 +1,66 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Type } from '@google/genai';
 import { supabase } from '../config/database';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+const SchemaType = Type;
+
+// JSON Schema for structured clause extraction (enforced at inference time)
+const StructuredClauseSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    coverages: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          name: { type: SchemaType.STRING },
+          description: { type: SchemaType.STRING },
+          insuredAmount: { type: SchemaType.STRING, nullable: true },
+          deductible: {
+            type: SchemaType.OBJECT,
+            properties: {
+              components: {
+                type: SchemaType.ARRAY,
+                items: {
+                  type: SchemaType.OBJECT,
+                  properties: {
+                    type: { type: SchemaType.STRING },
+                    value: { type: SchemaType.NUMBER },
+                    currency: { type: SchemaType.STRING, nullable: true }
+                  }
+                }
+              },
+              rawText: { type: SchemaType.STRING }
+            }
+          },
+          sublimit: { type: SchemaType.STRING, nullable: true },
+          exclusions: {
+            type: SchemaType.ARRAY,
+            items: { type: SchemaType.STRING }
+          },
+          conditions: {
+            type: SchemaType.ARRAY,
+            items: { type: SchemaType.STRING }
+          },
+          sourcePage: { type: SchemaType.NUMBER }
+        }
+      }
+    },
+    generalExclusions: {
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING }
+    },
+    generalConditions: {
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING }
+    },
+    definitions: {
+      type: SchemaType.OBJECT,
+      additionalProperties: { type: SchemaType.STRING }
+    }
+  }
+};
 
 export interface ExtractedCoverage {
   name: string;
@@ -90,18 +148,17 @@ export const structuredClauseExtractor = {
       
       const result = await genAI.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: [{ role: 'user', parts: [{ text: prompt }] }]
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: StructuredClauseSchema
+        }
       });
       
       const responseText = result.text || '{}';
       
-      // Extract JSON from response
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('No JSON found in response');
-      }
-      
-      const extracted = JSON.parse(jsonMatch[0]);
+      // Parse JSON directly (schema enforcement guarantees valid JSON)
+      const extracted = JSON.parse(responseText);
       
       const structured: StructuredClause = {
         insurer: insurerName,

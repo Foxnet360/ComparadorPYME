@@ -115,6 +115,31 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
         </div>
       )}
 
+      {/* Dual Extraction Discrepancy Alerts */}
+      {report.quotes.some(q => q.dualExtractionValidation?.some(v => v.isDiscrepancy)) && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+          <AlertTriangle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
+          <div>
+            <h3 className="font-semibold text-red-800">Discrepancias Detectadas en Extracción Dual</h3>
+            <p className="text-sm text-red-700 mt-1">
+              Se detectaron diferencias significativas (>20%) entre las extracciones de coberturas críticas (Incendio y RC). 
+              Por favor verifique los valores manualmente.
+            </p>
+            <div className="mt-2 space-y-1">
+              {report.quotes.map((q, idx) => 
+                q.dualExtractionValidation?.filter(v => v.isDiscrepancy).map((v, vIdx) => (
+                  <div key={`${idx}-${vIdx}`} className="text-sm text-red-600">
+                    <strong>{q.insurerName}</strong> - {v.coverageName}: {v.discrepancy.toFixed(1)}% de diferencia
+                    <br/>
+                    <span className="text-red-500">Extracción 1: {v.firstExtraction.value} | Extracción 2: {v.secondExtraction.value}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header Actions & View Toggle */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200 relative">
         <div>

@@ -175,37 +175,77 @@ async function processQuoteMultimodalInternal(
   console.log(`   Quote ${index + 1}/${total}: ${quoteFile.originalname}`);
   
   try {
-    // Phase 1: Detect format family from filename (prescinding from plain text extraction)
-    console.log(`   📋 Phase 1: Detecting format from filename...`);
+    // Phase 1: Extract native text for robust insurer/format detection
+    console.log(`   📄 Phase 1: Extracting native PDF text for detection...`);
+    let nativeText = '';
+    try {
+      const { pdfExtractor } = require('./pdfExtractor');
+      const extractionResult = await pdfExtractor.extractTextFromPdf(quoteFile.path);
+      nativeText = extractionResult.text || '';
+      console.log(`   ✅ Extracted ${nativeText.length} characters of native text.`);
+    } catch (err: any) {
+      console.warn(`   ⚠️ Native text extraction failed: ${err.message}.`);
+    }
+    
+    // Phase 1.5: Detect format family from native text (prioritary) or filename (fallback)
+    console.log(`   📋 Phase 1.5: Detecting format family from content...`);
+    const textPreview = nativeText.substring(0, 1000).toLowerCase();
     const lowerName = quoteFile.originalname.toLowerCase();
     let family: any = 'UNKNOWN';
-    if (lowerName.includes('hdi')) family = 'TABLE-DOUBLE';
-    else if (lowerName.includes('chubb')) family = 'TABLE-INTEGRATED';
-    else if (lowerName.includes('axa') || lowerName.includes('colpatria')) family = 'SECTIONS';
-    else if (lowerName.includes('sbs')) family = 'DESCRIPTIVE';
-    else if (lowerName.includes('liberty')) family = 'PRICE-TABLE';
-    else if (lowerName.includes('bolivar') || lowerName.includes('bolívar')) family = 'TEXT';
-    else if (lowerName.includes('allianz')) family = 'SECTIONS';
+    let detectionSource = 'default';
     
-    console.log(`   ✅ Format family mapped from filename: ${family}`);
+    // Prioritize native text content over filename
+    if (textPreview.includes('hdi') || textPreview.includes('hdi seguros')) {
+      family = 'TABLE-DOUBLE';
+      detectionSource = 'nativeText';
+    } else if (textPreview.includes('chubb')) {
+      family = 'TABLE-INTEGRATED';
+      detectionSource = 'nativeText';
+    } else if (textPreview.includes('axa') || textPreview.includes('colpatria')) {
+      family = 'SECTIONS';
+      detectionSource = 'nativeText';
+    } else if (textPreview.includes('sbs') || textPreview.includes('sbs seguros')) {
+      family = 'DESCRIPTIVE';
+      detectionSource = 'nativeText';
+    } else if (textPreview.includes('liberty') || textPreview.includes('liberty seguros')) {
+      family = 'PRICE-TABLE';
+      detectionSource = 'nativeText';
+    } else if (textPreview.includes('bolivar') || textPreview.includes('bolívar') || textPreview.includes('seguros bolívar')) {
+      family = 'TEXT';
+      detectionSource = 'nativeText';
+    } else if (textPreview.includes('allianz')) {
+      family = 'SECTIONS';
+      detectionSource = 'nativeText';
+    } else if (lowerName.includes('hdi')) {
+      family = 'TABLE-DOUBLE';
+      detectionSource = 'filename';
+    } else if (lowerName.includes('chubb')) {
+      family = 'TABLE-INTEGRATED';
+      detectionSource = 'filename';
+    } else if (lowerName.includes('axa') || lowerName.includes('colpatria')) {
+      family = 'SECTIONS';
+      detectionSource = 'filename';
+    } else if (lowerName.includes('sbs')) {
+      family = 'DESCRIPTIVE';
+      detectionSource = 'filename';
+    } else if (lowerName.includes('liberty')) {
+      family = 'PRICE-TABLE';
+      detectionSource = 'filename';
+    } else if (lowerName.includes('bolivar') || lowerName.includes('bolívar')) {
+      family = 'TEXT';
+      detectionSource = 'filename';
+    } else if (lowerName.includes('allianz')) {
+      family = 'SECTIONS';
+      detectionSource = 'filename';
+    }
+    
+    console.log(`   ✅ Format family detected: ${family} (source: ${detectionSource})`);
     
     // Phase 2: Build specialized prompt
     console.log(`   📝 Phase 2: Building specialized prompt...`);
     const prompt = buildPromptForFamily(family, {
       hasTables: family !== 'TEXT' && family !== 'UNKNOWN',
     });
-    
-    // Phase 2.5: Extract native text for character-perfect reference (Fase 1)
-    console.log(`   📄 Phase 2.5: Extracting native PDF text for reference...`);
-    let nativeText = '';
-    try {
-      const { pdfExtractor } = require('./pdfExtractor');
-      const extractionResult = await pdfExtractor.extractTextFromPdf(quoteFile.path);
-      nativeText = extractionResult.text || '';
-      console.log(`   ✅ Extracted ${nativeText.length} characters of native text for reference.`);
-    } catch (err: any) {
-      console.warn(`   ⚠️ Native text extraction failed: ${err.message}. Relying on vision-only.`);
-    }
     
     // Phase 3: Extract using multimodal vision directly on File API
     console.log(`   🔍 Phase 3: Extracting with multimodal vision + text reference...`);
