@@ -122,7 +122,7 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
           <div>
             <h3 className="font-semibold text-red-800">Discrepancias Detectadas en Extracción Dual</h3>
             <p className="text-sm text-red-700 mt-1">
-              Se detectaron diferencias significativas (>20%) entre las extracciones de coberturas críticas (Incendio y RC). 
+              Se detectaron diferencias significativas (&gt;20%) entre las extracciones de coberturas críticas (Incendio y RC). 
               Por favor verifique los valores manualmente.
             </p>
             <div className="mt-2 space-y-1">
