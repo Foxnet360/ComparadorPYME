@@ -235,7 +235,9 @@ export class UnifiedComparisonEngine {
     console.log(`🤖 [UnifiedComparison] Thinking level: ${this.config.thinkingLevel} [${correlationId}]`);
 
     try {
-      const result = await ai.models.generateContent({
+      // Add 45-second timeout to prevent hanging
+      const TIMEOUT_MS = 45000;
+      const geminiPromise = ai.models.generateContent({
         model: this.config.model,
         contents,
         config: {
@@ -246,6 +248,12 @@ export class UnifiedComparisonEngine {
           responseSchema: this.config.responseSchema
         }
       });
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(`Gemini call timed out after ${TIMEOUT_MS}ms`)), TIMEOUT_MS)
+      );
+
+      const result = await Promise.race([geminiPromise, timeoutPromise]);
 
       if (!result.text) {
         throw new Error('Empty response from Gemini');
