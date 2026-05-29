@@ -83,8 +83,6 @@ const CoverageCell = memo(({
 
 CoverageCell.displayName = 'CoverageCell';
 
-const PdfViewer = lazy(() => import('./PdfViewer'));
-
 // Config and transformer duplicated locally to avoid bundle import issues in Vite
 export const PLANTILLA_ITEMS = [
   "Incendio (Edificio y Contenidos)",
