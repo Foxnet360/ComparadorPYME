@@ -71,8 +71,22 @@ export const analysisController = {
                     const pdfPaths = quoteFiles.map(f => f.path);
                     const matrixRows = await comparisonEngineAdapter.generateComparison(pdfPaths, req.body.userId);
                     
+                    // Debug: Log matrix structure
+                    console.log(`📊 [Unified Debug] Matrix rows: ${matrixRows.length}`);
+                    const dataRows = matrixRows.filter(r => r.type === 'data');
+                    console.log(`📊 [Unified Debug] Data rows: ${dataRows.length}`);
+                    if (dataRows.length > 0) {
+                        console.log(`📊 [Unified Debug] First data row:`, JSON.stringify(dataRows[0], null, 2));
+                    }
+                    
                     // Convert MatrixRow[] to ComparisonReport format
                     const comparisonResult = matrixRowsToComparisonReport(matrixRows, quoteFiles);
+                    
+                    // Debug: Log result structure
+                    console.log(`📊 [Unified Debug] Quotes generated: ${comparisonResult.quotes?.length || 0}`);
+                    comparisonResult.quotes?.forEach((q: any, i: number) => {
+                        console.log(`📊 [Unified Debug] Quote ${i} (${q.insurerName}): ${q.coverages?.length || 0} coverages, price: ${q.priceAnnual}`);
+                    });
                     
                     // Save to Supabase
                     const userId = req.body.userId || 'anonymous';

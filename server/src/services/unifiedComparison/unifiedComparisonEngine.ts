@@ -96,6 +96,18 @@ export class UnifiedComparisonEngine {
 
       // 4. Parse and validate response
       const parsedResult = await this.parseAndValidateResult(result, pdfPaths.length);
+      
+      // Debug: Log parsed result structure
+      console.log(`📊 [Unified Debug] Parsed result - Insurers: ${parsedResult.insurers?.length || 0}`);
+      console.log(`📊 [Unified Debug] Coverage matrix sections: ${parsedResult.coverageMatrix?.length || 0}`);
+      if (parsedResult.coverageMatrix && parsedResult.coverageMatrix.length > 0) {
+        const firstSection = parsedResult.coverageMatrix[0];
+        console.log(`📊 [Unified Debug] First section: ${firstSection.category}, rows: ${firstSection.rows?.length || 0}`);
+        if (firstSection.rows && firstSection.rows.length > 0) {
+          console.log(`📊 [Unified Debug] First row: ${JSON.stringify(firstSection.rows[0], null, 2)}`);
+        }
+      }
+      console.log(`📊 [Unified Debug] Financials premiums: ${parsedResult.financials?.premiums?.length || 0}`);
 
       // 5. Add metadata
       parsedResult.metadata.processingTimeMs = Date.now() - startTime;
