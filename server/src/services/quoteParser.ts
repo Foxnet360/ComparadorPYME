@@ -66,6 +66,23 @@ export const quoteParser = {
     parse: async (rawText: string): Promise<ParsedQuote> => {
         console.log('🔍 [quoteParser] Parsing Gemini output...');
         
+        if (!rawText) {
+            console.error('❌ [quoteParser] No text provided for parsing');
+            return {
+                insurerName: 'NO ESPECIFICADO',
+                policyName: 'NO ESPECIFICADO',
+                priceAnnual: 0,
+                currency: 'COP',
+                coverages: [],
+                specialConditions: [],
+                rawText: '',
+                parseConfidence: 0,
+                isFailed: true,
+                errorCategory: 'NO_TEXT',
+                errorCode: 'E001'
+            };
+        }
+        
         const insurerName = extractField(rawText, 'ASEGURADORA:', 'PÓLIZA:');
         const policyName = extractField(rawText, 'PÓLIZA:', 'PRIMA');
         const priceText = extractField(rawText, 'PRIMA ANUAL:', 'MONEDA:');
@@ -121,6 +138,7 @@ export const quoteParser = {
 
 // Helper functions
 function extractField(text: string, startMarker: string, endMarker: string): string {
+    if (!text) return '';
     const regex = new RegExp(`${startMarker}\\s*([^\\n]+?)(?=\\n|${endMarker}|$)`, 'i');
     const match = text.match(regex);
     return match ? match[1].trim() : '';
@@ -128,6 +146,8 @@ function extractField(text: string, startMarker: string, endMarker: string): str
 
 async function extractCoverages(text: string): Promise<ParsedCoverage[]> {
     const coverages: ParsedCoverage[] = [];
+    
+    if (!text) return coverages;
     
     // Look for coverage section
     const coverageSection = extractSection(text, 'COBERTURAS:', 'CONDICIONES');
@@ -201,6 +221,7 @@ function extractSpecialConditions(text: string): string[] {
 }
 
 function extractSection(text: string, startMarker: string, endMarker: string): string {
+    if (!text) return '';
     const startIdx = text.indexOf(startMarker);
     if (startIdx === -1) return '';
     

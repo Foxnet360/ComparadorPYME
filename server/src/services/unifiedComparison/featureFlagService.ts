@@ -14,8 +14,8 @@ class UnifiedComparisonFeatureFlag {
   private rolloutConfig: RolloutConfig;
 
   constructor() {
-    // Parse rollout percentage from environment (default: 0%)
-    const rolloutPercentage = parseInt(process.env.USE_UNIFIED_ENGINE_ROLLOUT || '0', 10);
+    // Parse rollout percentage from environment (default: 100% for production)
+    const rolloutPercentage = parseInt(process.env.USE_UNIFIED_ENGINE_ROLLOUT || '100', 10);
     this.rolloutConfig = {
       percentage: Math.min(100, Math.max(0, rolloutPercentage)),
       enabledUsers: process.env.USE_UNIFIED_ENGINE_USERS?.split(',') || []
