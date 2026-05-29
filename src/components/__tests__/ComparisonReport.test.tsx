@@ -3,6 +3,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import ComparisonReport from '../../../components/ComparisonReport';
 import { ComparisonReport as ReportType } from '../../../types';
+import { AnalysisProvider } from '../../../contexts/AnalysisContext';
+
+// Helper to render with AnalysisProvider
+const renderWithProvider = (ui: React.ReactElement) => {
+  return render(<AnalysisProvider>{ui}</AnalysisProvider>);
+};
 
 // Mock child components that might crash or have complex dependencies
 vi.mock('../../../components/ExecutiveSummary', () => ({
@@ -107,13 +113,13 @@ describe('ComparisonReport - Advanced Tab Visibility', () => {
       }]
     };
 
-    render(<ComparisonReport report={reportWithAdvancedData} />);
+    renderWithProvider(<ComparisonReport report={reportWithAdvancedData} />);
 
     expect(screen.getByText('Análisis Avanzado')).toBeTruthy();
   });
 
   it('hides advanced tab when no advanced data exists', () => {
-    render(<ComparisonReport report={baseReport} />);
+    renderWithProvider(<ComparisonReport report={baseReport} />);
 
     expect(screen.queryByText('Análisis Avanzado')).toBeNull();
   });
@@ -148,7 +154,7 @@ describe('ComparisonReport - Advanced Tab Visibility', () => {
       }]
     };
 
-    render(<ComparisonReport report={reportWithAllAdvanced} />);
+    renderWithProvider(<ComparisonReport report={reportWithAllAdvanced} />);
 
     // Click on the advanced tab to activate it
     const advancedTab = screen.getByText('Análisis Avanzado');
@@ -163,7 +169,7 @@ describe('ComparisonReport - Advanced Tab Visibility', () => {
   });
 
   it('always shows basic tabs regardless of advanced data', () => {
-    render(<ComparisonReport report={baseReport} />);
+    renderWithProvider(<ComparisonReport report={baseReport} />);
 
     expect(screen.getByText('Dashboard Resumen')).toBeTruthy();
     expect(screen.getByText('Matriz de Coberturas')).toBeTruthy();
@@ -177,7 +183,7 @@ describe('ComparisonReport - Advanced Tab Visibility', () => {
       quotes: []
     };
 
-    render(<ComparisonReport report={emptyReport} />);
+    renderWithProvider(<ComparisonReport report={emptyReport} />);
 
     expect(screen.getByText('No se encontraron detalles de cotizaciones en el análisis.')).toBeTruthy();
   });
@@ -228,7 +234,7 @@ describe('ComparisonReport - Feature Flag Integration', () => {
   it('component checks for feature flag and data presence', () => {
     // This test verifies the integration point exists
     // The actual feature flag behavior is tested at the config level
-    render(<ComparisonReport report={reportWithAdvancedData} />);
+    renderWithProvider(<ComparisonReport report={reportWithAdvancedData} />);
 
     // Should render without errors
     expect(screen.getByText('Dashboard Resumen')).toBeTruthy();
@@ -248,7 +254,7 @@ describe('ComparisonReport - Feature Flag Integration', () => {
       }))
     };
 
-    render(<ComparisonReport report={oldFormatReport} />);
+    renderWithProvider(<ComparisonReport report={oldFormatReport} />);
 
     // Should not show advanced tab
     expect(screen.queryByText('Análisis Avanzado')).toBeNull();

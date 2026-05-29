@@ -408,7 +408,7 @@ export function buildPromptForFamily(
     }
   }
   
-  prompt += `\n\nINSTRUCCIONES FINALES:\n1. Extraer TODA la información disponible\n2. NO inventar valores que no estén en el documento\n3. Si un campo no está en el documento, usar null o array vacío\n4. Devolver SOLO el JSON, sin texto adicional`;
+  prompt += `\n\nINSTRUCCIONES FINALES:\n1. Extraer TODA la información disponible\n2. NO inventar valores que no estén en el documento\n3. Si un campo no está en el documento, usar null o array vacío\n4. Para cada cobertura en 'rawCoverages', DEBES extraer obligatoriamente en 'rawTextSnippet' un fragmento textual literal continuo de 50 a 100 caracteres adyacente a la cobertura en el PDF de origen. Copia este fragmento de forma exacta y sin modificaciones.\n5. Devolver SOLO el JSON, sin texto adicional`;
   
   return prompt;
 }

@@ -70,7 +70,7 @@ export const embeddingService = {
    * Esto reduce significativamente el tiempo de procesamiento vs llamadas individuales
    */
   generateEmbeddingsBatch: async (texts: string[], retries = 3): Promise<EmbeddingResult[]> => {
-    const BATCH_SIZE = 10; // Gemini soporta múltiples contenidos por llamada
+    const BATCH_SIZE = 100; // Gemini soporta múltiples contenidos por llamada
     const results: EmbeddingResult[] = [];
 
     for (let i = 0; i < texts.length; i += BATCH_SIZE) {

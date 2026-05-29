@@ -1,30 +1,41 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { chatService } from '../chatService';
+import chatService from '../chatService';
+
+// Mock chat repository to avoid database dependencies
+vi.mock('../../repositories/chatRepository', () => ({
+  chatRepository: {
+    createThread: vi.fn(async () => 'thread-test'),
+    getOrCreateThread: vi.fn(async () => 'thread-test'),
+    getThreadByReport: vi.fn(async () => null),
+    saveMessage: vi.fn(async () => {}),
+    getHistory: vi.fn(async () => []),
+    archiveThread: vi.fn(async () => {}),
+    listUserThreads: vi.fn(async () => [])
+  }
+}));
 
 // Mock dependencies
 vi.mock('../ragRetrievalService', () => ({
   ragRetrievalService: {
-    searchWithFallback: vi.fn(() => Promise.resolve({
-      clauses: [],
-      isFallback: false
-    }))
+    search: vi.fn(async () => []),
+    reRankResults: vi.fn(async (query, results) => results)
   }
 }));
 
 vi.mock('../structuredClauseExtractor', () => ({
   structuredClauseExtractor: {
-    searchClause: vi.fn(() => Promise.resolve(null))
+    searchClause: vi.fn(async () => null)
   }
 }));
 
 vi.mock('@google/genai', () => ({
-  GoogleGenAI: vi.fn(() => ({
-    models: {
+  GoogleGenAI: class MockGoogleGenAI {
+    models = {
       generateContent: vi.fn(() => Promise.resolve({
         text: '📄 Según la cotización, la cobertura de incendio tiene un deducible del 10%.'
       }))
-    }
-  }))
+    };
+  }
 }));
 
 describe('chatService - Triple Source with Missing RAG', () => {
@@ -43,14 +54,12 @@ describe('chatService - Triple Source with Missing RAG', () => {
     vi.clearAllMocks();
   });
 
-  describe('sendMessage', () => {
+  describe('processChatMessage', () => {
     it('should answer using quote data when RAG returns no results', async () => {
-      const history: any[] = [];
-      
-      const response = await chatService.sendMessage(
+      const response = await chatService.processChatMessage(
         '¿Cuál es el deducible de incendio?',
-        history,
-        mockReportContext
+        mockReportContext,
+        'test-user'
       );
 
       expect(response.text).toContain('10%');
@@ -59,12 +68,10 @@ describe('chatService - Triple Source with Missing RAG', () => {
     });
 
     it('should use quote data as primary source even with empty RAG', async () => {
-      const history: any[] = [];
-      
-      const response = await chatService.sendMessage(
+      const response = await chatService.processChatMessage(
         '¿Qué coberturas tiene MAPFRE?',
-        history,
-        mockReportContext
+        mockReportContext,
+        'test-user'
       );
 
       // Should mention the coverage from quote data
@@ -72,12 +79,10 @@ describe('chatService - Triple Source with Missing RAG', () => {
     });
 
     it('should include source attribution in responses', async () => {
-      const history: any[] = [];
-      
-      const response = await chatService.sendMessage(
+      const response = await chatService.processChatMessage(
         '¿Cuál es el valor asegurado?',
-        history,
-        mockReportContext
+        mockReportContext,
+        'test-user'
       );
 
       // Should indicate data comes from quote
@@ -86,27 +91,15 @@ describe('chatService - Triple Source with Missing RAG', () => {
     });
 
     it('should handle questions about non-existent coverages gracefully', async () => {
-      const history: any[] = [];
-      
-      const response = await chatService.sendMessage(
+      const response = await chatService.processChatMessage(
         '¿Tiene cobertura de terremoto?',
-        history,
-        mockReportContext
+        mockReportContext,
+        'test-user'
       );
 
       // Should not crash and should provide a response
       expect(response.text).toBeTruthy();
       expect(response.text.length).toBeGreaterThan(0);
-    });
-  });
-
-  describe('buildReportContext', () => {
-    it('should include quote data in context', () => {
-      const context = (chatService as any).buildReportContext(mockReportContext);
-      
-      expect(context).toContain('MAPFRE');
-      expect(context).toContain('Incendio');
-      expect(context).toContain('10%');
     });
   });
 });

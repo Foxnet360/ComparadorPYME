@@ -12,16 +12,33 @@ El sistema DEBE procesar mensajes de chat en el backend con contexto del reporte
 - **AND** llama a Gemini Flash-Lite
 - **AND** retorna respuesta con citas
 
-### Requirement: Toggle RAG
-El usuario DEBE poder elegir si usar clausulados en las respuestas.
+#### Scenario: Enviar mensaje con persistencia
+- **WHEN** el usuario escribe "¿Qué deducible tiene AXA?"
+- **THEN** el backend recibe el mensaje + reportContext
+- **AND** obtiene o crea el thread asociado al report_id
+- **AND** recupera historial desde la base de datos (no desde el frontend)
+- **AND** genera embedding de la pregunta
+- **AND** busca chunks relevantes en RAG (siempre activo)
+- **AND** construye prompt con contexto compactado + chunks + historial
+- **AND** llama a Gemini Flash-Lite
+- **AND** guarda la respuesta en chat_messages
+- **AND** retorna respuesta con citas y fuentes usadas
 
-#### Scenario: RAG activado
-- **WHEN** toggle "Usar clausulados" está ON
-- **THEN** las respuestas incluyen búsqueda RAG
+### Requirement: Context window management
+El sistema DEBE controlar el tamaño del prompt para no exceder el límite de tokens.
 
-#### Scenario: RAG desactivado
-- **WHEN** toggle está OFF
-- **THEN** las respuestas usan solo el contexto del reporte
+#### Scenario: Compactar contexto del reporte
+- **WHEN** el reporte tiene múltiples cotizaciones con muchas coberturas
+- **THEN** el sistema genera un resumen compacto (aseguradoras, coberturas clave, alertas críticas)
+- **AND** solo incluye detalles completos de la aseguradora/cobertura mencionada en la pregunta
+
+### Requirement: Endpoint para recuperar historial por reporte
+El sistema DEBE exponer un endpoint para cargar la conversación de un análisis específico.
+
+#### Scenario: Cargar historial existente
+- **WHEN** el frontend hace GET /api/chat/threads/report/:reportId
+- **THEN** el backend devuelve el thread_id y los mensajes asociados
+- **AND** ordenados por created_at ascendente
 
 ### Requirement: Preguntas dinámicas
 El sistema DEBE sugerir preguntas basadas en el reporte actual.

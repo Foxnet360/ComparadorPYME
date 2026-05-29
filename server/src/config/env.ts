@@ -89,11 +89,10 @@ function validateEnv(): EnvConfig {
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || '',
     SUPABASE_JWT_SECRET: process.env.SUPABASE_JWT_SECRET || '',
-    
     GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
-    GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+    GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
     GEMINI_CHAT_MODEL: process.env.GEMINI_CHAT_MODEL || 'gemini-2.5-flash-lite',
-    GEMINI_CLAUSE_MODEL: process.env.GEMINI_CLAUSE_MODEL || 'gemini-2.5-flash',
+    GEMINI_CLAUSE_MODEL: process.env.GEMINI_CLAUSE_MODEL || 'gemini-3.5-flash',
     GEMINI_EMBEDDING_MODEL: process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-2',
     
     REGION: process.env.REGION || 'CO',

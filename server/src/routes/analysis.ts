@@ -41,5 +41,6 @@ router.get('/learning-metrics', asyncHandler(getLearningMetrics));
 router.get('/monthly-report', asyncHandler(getMonthlyReport));
 router.post('/batch-retrain', asyncHandler(batchRetrain));
 router.get('/:id/export', asyncHandler(exportAnalysisExcel));
+router.post('/:id/export', asyncHandler(exportAnalysisExcel));
 
 export default router;

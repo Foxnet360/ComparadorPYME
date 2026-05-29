@@ -178,10 +178,12 @@ async function processQuoteMultimodalInternal(
     // Phase 1: Extract native text for robust insurer/format detection
     console.log(`   📄 Phase 1: Extracting native PDF text for detection...`);
     let nativeText = '';
+    let pageTextMap: Record<number, string> = {};
     try {
       const { pdfExtractor } = require('./pdfExtractor');
       const extractionResult = await pdfExtractor.extractTextFromPdf(quoteFile.path);
       nativeText = extractionResult.text || '';
+      pageTextMap = extractionResult.pageTextMap || {};
       console.log(`   ✅ Extracted ${nativeText.length} characters of native text.`);
     } catch (err: any) {
       console.warn(`   ⚠️ Native text extraction failed: ${err.message}.`);
@@ -261,7 +263,8 @@ async function processQuoteMultimodalInternal(
     const normalizationResult = await buildCanonicalCoverages(
       extracted.rawCoverages || [],
       extracted.insuredAssets || [],
-      extracted.generalDeductibles || []
+      extracted.generalDeductibles || [],
+      pageTextMap
     );
     
     // Phase 5: Extract premium breakdown
@@ -286,6 +289,8 @@ async function processQuoteMultimodalInternal(
         value: c.insuredAmount ? c.insuredAmount.toString() : 'NO ESPECIFICADO',
         deductible: c.deductible || getDeductibleFallback(c.name, normalizationResult.generalDeductibles),
         confidence: c.confidence,
+        rawTextSnippet: c.rawTextSnippet,
+        calculatedPage: c.pageNumber || undefined
       })),
       uncategorizedCoverages: normalizationResult.uncategorizedCoverages?.map(c => ({
         name: c.name,
@@ -293,6 +298,8 @@ async function processQuoteMultimodalInternal(
         value: c.insuredAmount ? c.insuredAmount.toString() : 'NO ESPECIFICADO',
         deductible: c.deductible || 'NO ESPECIFICADO',
         confidence: c.confidence,
+        rawTextSnippet: c.rawTextSnippet,
+        calculatedPage: c.pageNumber || undefined
       })),
       validityPeriod: extracted.validityPeriod,
       specialConditions: [
@@ -308,6 +315,7 @@ async function processQuoteMultimodalInternal(
         value: c.insuredAmount ? c.insuredAmount.toString() : null,
         deductible: c.deductible,
       })),
+      pageTextMap: pageTextMap
     };
     
     console.log(`   ✅ Multimodal extraction: ${parsed.insurerName}, ${parsed.coverages.length} coverages, premium: ${parsed.priceAnnual}`);

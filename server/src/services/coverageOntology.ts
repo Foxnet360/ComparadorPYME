@@ -2,6 +2,7 @@ import { embeddingService } from './vector/embeddingService';
 import { supabase } from '../config/database';
 import { GoogleGenAI } from '@google/genai';
 import { env } from '../config/env';
+import { getCachedCoverageMapping, setCachedCoverageMapping } from './cache/redisCache';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
@@ -27,6 +28,10 @@ export interface CoverageMapping {
   isComposite: boolean;
   components?: string[];
   confidence: number;
+  needsHumanReview?: boolean;
+  rawTextSnippet?: string;
+  justification?: string;
+  pageNumber?: number;
 }
 
 // Initial ontology structure
@@ -116,47 +121,166 @@ async function ensureOntologyEmbeddingsCache(): Promise<Map<string, number[]>> {
 }
 
 /**
- * Ask LLM to act as a judge to resolve ambiguous matches (grey area: 0.65 - 0.85 confidence)
+ * Safe JSON parser utility that removes markdown formatting
  */
-async function askJudge(rawName: string, candidates: Array<{ id: string; name: string }>): Promise<string | null> {
-  if (!GEMINI_API_KEY) return null;
+function parseJSONSafe(text: string): any {
+  if (!text) return null;
+  let cleaned = text.trim();
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```json\s*/i, '').replace(/```$/, '').trim();
+  }
+  return JSON.parse(cleaned);
+}
+
+/**
+ * Runs stateless, memory-isolated double-agent consensus between Taxonomist and Critic
+ */
+async function runConsensus(rawName: string): Promise<{
+  groupId: string;
+  confidence: number;
+  justification: string;
+  needsHumanReview: boolean;
+}> {
+  if (!GEMINI_API_KEY) {
+    return {
+      groupId: 'EXCLUSIVE',
+      confidence: 0,
+      justification: 'Gemini API key not configured',
+      needsHumanReview: true
+    };
+  }
+
   try {
-    const prompt = `Actúas como un suscriptor experto en seguros PYME en Colombia.
-Tu tarea es decidir si la cobertura dada pertenece semántica y legalmente a uno de los siguientes grupos canónicos, o si es un amparo exótico/exclusivo independiente.
+    const canonicalCategoriesList = ONTOLOGY_SEED.filter(n => n.level >= 2);
+    
+    // Import learningEngine dynamically to prevent circular dependencies
+    const { learningEngine } = await import('./learningEngine');
+    
+    // Fetch top 3 past human corrections as dynamic few-shots (Task 5.2 & 5.3)
+    const examples = await learningEngine.getSimilarCorrections(rawName);
+    let fewShotContext = '';
+    if (examples && examples.length > 0) {
+      fewShotContext = `\nAquí tienes algunos ejemplos de cómo un suscriptor experto humano ha clasificado coberturas similares anteriormente:\n` +
+        examples.map((ex: any) => `- Cobertura original: "${ex.raw_name}" -> Categoría asignada: "${ex.canonical_name}"`).join('\n') + '\n';
+    }
 
-Cobertura del documento: "${rawName}"
+    // 1. Taxonomist Agent (Agent A) Prompt
+    const taxonomistPrompt = `Actúas como un suscriptor de seguros PYME experto (Agente Taxónomo).
+Tu tarea es analizar la siguiente cobertura extraída de un documento de seguro y proponer a cuál de las categorías canónicas pertenece semántica y legalmente.
 
-Candidatos canónicos posibles:
-${candidates.map((c, i) => `${i + 1}. [ID: ${c.id}] ${c.name}`).join('\n')}
+Cobertura del documento a clasificar: "${rawName}"
+${fewShotContext}
+Categorías canónicas disponibles:
+${canonicalCategoriesList.map(c => `- ID: "${c.id}" (${c.name}). Sinónimos/Alias comunes: ${c.aliases.join(', ')}`).join('\n')}
 
-Instrucciones:
-- Analiza con precisión técnica si la cobertura del documento es sinónimo o equivale al 90%+ a uno de los candidatos canónicos.
-- Ej: "Daños por humo" equivale a "Edificios y Contenidos" (Amparo Básico).
-- Ej: "Pérdida de Alimentos por Frío" para un restaurante es una cobertura exótica de congelación, si no está el candidato de congelación no la unas a un amparo genérico si desvirtúa su valor.
-- Si corresponde a un candidato, responde únicamente con el ID del candidato en el formato exacto.
-- Si NO corresponde a ningún candidato (es exótica/exclusiva), responde únicamente con "EXCLUSIVE".
+Instrucciones de clasificación:
+1. Elige exactamente uno de los IDs de las categorías canónicas si y solo si la cobertura pertenece semántica o legalmente a ese grupo con alta certeza (90%+).
+2. Si la cobertura es "exótica", exclusiva, sumamente específica de un ramo que no encaja en ninguna categoría canónica (ej. avería de maquinaria de refrigeración muy específica sin categoría general aplicable, o amparos raros de cyber específicos), responde con "EXCLUSIVE".
+3. Responde únicamente en formato JSON con la siguiente estructura:
+{
+  "proposedGroupId": "id_de_la_categoria_o_EXCLUSIVE",
+  "justification": "Breve explicación técnica de 1-2 frases de por qué pertenece a esta categoría o por qué es EXCLUSIVE."
+}
 
-Respuesta (sólo escribe el ID o "EXCLUSIVE"):`;
+Tu respuesta debe ser un JSON válido, sin bloques de código markdown, solo el objeto JSON.`;
 
-    const modelName = env.GEMINI_MODEL || 'gemini-2.5-flash';
-    const result = await genAI.models.generateContent({
+    const modelName = env.GEMINI_MODEL || 'gemini-3.5-flash';
+    console.log(`🤖 [Consensus] Agent A (Taxonomist) evaluating: "${rawName}" using ${modelName}`);
+
+    // Call Agent A
+    const agentAResult = await genAI.models.generateContent({
       model: modelName,
-      contents: prompt,
-      config: {
-        temperature: 0.1,
-      }
+      contents: taxonomistPrompt,
+      config: { temperature: 0.1 }
     });
 
-    const answer = result.text?.trim();
-    if (answer && candidates.some(c => c.id === answer)) {
-      console.log(`⚖️ [Ontology Judge] Assigned "${rawName}" to group: ${answer}`);
-      return answer;
+    const parsedA = parseJSONSafe(agentAResult.text || '');
+    if (!parsedA || !parsedA.proposedGroupId) {
+      throw new Error(`Invalid response from Taxonomist Agent: ${agentAResult.text}`);
     }
-    console.log(`⚖️ [Ontology Judge] Deemed "${rawName}" as EXCLUSIVE`);
-    return null;
-  } catch (error) {
-    console.error('❌ [Ontology Judge] Error in judge call:', error);
-    return null;
+
+    const proposedGroupId = parsedA.proposedGroupId;
+    const taxonomistJustification = parsedA.justification || '';
+    
+    console.log(`🤖 [Consensus] Agent A proposed: "${proposedGroupId}" - Reason: "${taxonomistJustification}"`);
+
+    // 2. Critic Agent (Agent B) Prompt in isolated, stateless context
+    const proposedNode = ONTOLOGY_SEED.find(n => n.id === proposedGroupId);
+    const proposedName = proposedNode ? proposedNode.name : proposedGroupId;
+
+    const criticPrompt = `Actúas como un Crítico de Suscripción de Seguros PYME (Agente Crítico).
+Tu única función es auditar y desafiar de manera rigurosa la propuesta de clasificación realizada por otro agente (el Taxónomo).
+Debes prevenir falsos positivos, clasificaciones forzadas o alucinaciones.
+
+Cobertura original del documento: "${rawName}"
+Propuesta del Taxónomo: clasificar esta cobertura en la categoría ID "${proposedGroupId}" (${proposedName})
+Justificación del Taxónomo: "${taxonomistJustification}"
+
+Categorías canónicas disponibles en el sistema:
+${canonicalCategoriesList.map(c => `- ID: "${c.id}" (${c.name}). Sinónimos/Alias comunes: ${c.aliases.join(', ')}`).join('\n')}
+
+Instrucciones de auditoría:
+- Analiza críticamente si la cobertura original realmente equivale o encaja de forma técnica y legal en la propuesta "${proposedGroupId}".
+- Desafía la propuesta. ¿Es una clasificación forzada? Por ejemplo, una cobertura exótica de "Pérdida de Alimentos por Frío" NO debería forzarse dentro de "Incendio" solo porque es un "daño material". Debería ser clasificada como "EXCLUSIVE" si no hay una categoría de congelación específica.
+- Si la clasificación del Taxónomo es correcta e inapelable (ej. "Daños por humo" en "incendio" es correcto), entonces apruébala.
+- Si no es correcta, desapruébala y sugiere la categoría correcta (o "EXCLUSIVE" si no encaja en ninguna).
+
+Responde únicamente en formato JSON con la siguiente estructura:
+{
+  "approved": true o false,
+  "alternativeGroupId": "ID_de_categoria_alternativa_o_EXCLUSIVE_o_null",
+  "reason": "Justificación crítica y detallada de 1-2 frases de tu decisión de aprobar o rechazar la propuesta."
+}
+
+Tu respuesta debe ser un JSON válido, sin bloques de código markdown, solo el objeto JSON.`;
+
+    console.log(`🤖 [Consensus] Agent B (Critic) auditing proposal: "${proposedGroupId}"`);
+
+    const agentBResult = await genAI.models.generateContent({
+      model: modelName,
+      contents: criticPrompt,
+      config: { temperature: 0.3 }
+    });
+
+    const parsedB = parseJSONSafe(agentBResult.text || '');
+    if (!parsedB) {
+      throw new Error(`Invalid response from Critic Agent: ${agentBResult.text}`);
+    }
+
+    const approved = parsedB.approved === true;
+    const alternativeGroupId = parsedB.alternativeGroupId;
+    const criticReason = parsedB.reason || '';
+
+    console.log(`🤖 [Consensus] Agent B verdict: ${approved ? 'APPROVED' : 'DISAGREED'} - Critic Reason: "${criticReason}"`);
+
+    // Local Conciliation Engine (Task 3.3 & 3.4)
+    if (approved) {
+      return {
+        groupId: proposedGroupId,
+        confidence: 0.95,
+        justification: `Consenso alcanzado. Taxónomo: ${taxonomistJustification}. Crítico aprobó: ${criticReason}.`,
+        needsHumanReview: false
+      };
+    } else {
+      const finalGroup = (alternativeGroupId && alternativeGroupId !== 'null') ? alternativeGroupId : proposedGroupId;
+      console.warn(`⚠️ [Consensus] Disagreement between agents for "${rawName}". Proposed: "${proposedGroupId}", Suggested Alternative: "${alternativeGroupId}". Triggering human audit.`);
+      
+      return {
+        groupId: finalGroup,
+        confidence: 0.50,
+        justification: `Discrepancia detectada. Taxónomo propuso "${proposedGroupId}" (${taxonomistJustification}). Crítico rechazó: ${criticReason}. Sugirió alternativa: "${alternativeGroupId}".`,
+        needsHumanReview: true
+      };
+    }
+
+  } catch (error: any) {
+    console.error('❌ [Consensus] Error during double-agent consensus:', error.message);
+    return {
+      groupId: 'EXCLUSIVE',
+      confidence: 0,
+      justification: `Error en el flujo de consenso de agentes: ${error.message}`,
+      needsHumanReview: true
+    };
   }
 }
 
@@ -195,12 +319,52 @@ export const coverageOntology = {
   ): Promise<CoverageMapping> {
     console.log(`🧠 [Ontology] Mapping: "${rawName}"`);
     
+    // Task 3.5: Fast cache lookup using Redis/Memory Cache
+    const cached = await getCachedCoverageMapping(rawName, insurerName);
+    if (cached) {
+      console.log(`⚡ [Ontology Cache] Hit for "${rawName}":`, cached);
+      return cached;
+    }
+
+    // Try DB lookup first
+    try {
+      const { data, error } = await supabase
+        .from('coverage_mappings')
+        .select('*')
+        .eq('raw_name', rawName)
+        .eq('insurer_name', insurerName || '')
+        .limit(1);
+
+      if (data && data.length > 0) {
+        const record = data[0] as any;
+        console.log(`📦 [Ontology DB] Hit for "${rawName}" -> "${record.canonical_name}"`);
+        
+        const mapping: CoverageMapping = {
+          rawName,
+          insurerName,
+          groups: record.canonical_name ? [{ groupId: record.canonical_name, confidence: record.confidence }] : [],
+          isComposite: record.is_composite,
+          confidence: record.confidence,
+          needsHumanReview: record.needs_human_review,
+          rawTextSnippet: record.raw_text_snippet,
+          justification: record.ai_justification,
+          pageNumber: record.page_number
+        };
+
+        // Cache for future lookups
+        await setCachedCoverageMapping(rawName, mapping, insurerName);
+        return mapping;
+      }
+    } catch (dbErr) {
+      console.warn('⚠️ [Ontology DB] Lookup error, falling back to consensus:', dbErr);
+    }
+    
     // Check for composite patterns
     const isComposite = COMPOSITE_PATTERNS.some(p => p.pattern.test(rawName));
     
     if (isComposite) {
       const match = COMPOSITE_PATTERNS.find(p => p.pattern.test(rawName));
-      return {
+      const mapping = {
         rawName,
         insurerName,
         groups: match!.components.map(id => ({
@@ -211,107 +375,34 @@ export const coverageOntology = {
         components: match!.components,
         confidence: match!.confidence
       };
+
+      await setCachedCoverageMapping(rawName, mapping, insurerName);
+      return mapping;
     }
-    
-    // Ensure cache is loaded
-    const cache = await ensureOntologyEmbeddingsCache();
-    
-    // Generate embedding for raw name
-    const rawEmbedding = await embeddingService.generateEmbedding(rawName);
-    
-    // Calculate similarity with each node using pre-computed embeddings
-    const similarities: Array<{ groupId: string; confidence: number }> = [];
-    
-    for (const node of ONTOLOGY_SEED.filter(n => n.level >= 2)) {
-      let nodeEmbedding = cache.get(node.name);
-      if (!nodeEmbedding) {
-        nodeEmbedding = await embeddingService.generateEmbedding(node.name);
-        cache.set(node.name, nodeEmbedding);
-      }
-      
-      const similarity = embeddingService.cosineSimilarity(rawEmbedding, nodeEmbedding);
-      
-      if (similarity > 0.6) {
-        similarities.push({
-          groupId: node.id,
-          confidence: similarity
-        });
-      }
-      
-      // Check aliases
-      for (const alias of node.aliases) {
-        let aliasEmbedding = cache.get(alias);
-        if (!aliasEmbedding) {
-          aliasEmbedding = await embeddingService.generateEmbedding(alias);
-          cache.set(alias, aliasEmbedding);
-        }
-        
-        const aliasSimilarity = embeddingService.cosineSimilarity(rawEmbedding, aliasEmbedding);
-        
-        if (aliasSimilarity > 0.65) {
-          similarities.push({
-            groupId: node.id,
-            confidence: aliasSimilarity
-          });
-        }
-      }
+
+    // Call Double-Agent Consensus flow for high certainty mapping
+    const consensus = await runConsensus(rawName);
+
+    let groups: Array<{ groupId: string; confidence: number }> = [];
+    if (consensus.groupId !== 'EXCLUSIVE') {
+      groups = [{ groupId: consensus.groupId, confidence: consensus.confidence }];
     }
-    
-    // Sort by confidence and take top matches
-    similarities.sort((a, b) => b.confidence - a.confidence);
-    
-    // Deduplicate by groupId
-    const seenGroups = new Set<string>();
-    const deduplicatedSimilarities = similarities.filter(s => {
-      if (seenGroups.has(s.groupId)) return false;
-      seenGroups.add(s.groupId);
-      return true;
-    });
-    
-    const topMatches = deduplicatedSimilarities.slice(0, 5);
-    let maxConfidence = topMatches.length > 0 ? topMatches[0].confidence : 0;
-    let finalMatches = topMatches;
-    
-    // LLM-as-a-Judge for grey areas (confidence 0.65 to 0.85) to refine mapping
-    if (maxConfidence >= 0.65 && maxConfidence < 0.85 && topMatches.length > 1) {
-      const candidates = topMatches.map(m => ({
-        id: m.groupId,
-        name: this.getNodeById(m.groupId)?.name || m.groupId
-      }));
-      
-      const judgeDecision = await askJudge(rawName, candidates);
-      if (judgeDecision) {
-        // Rearrange to put the judged node first with higher confidence
-        finalMatches = topMatches.map(m => {
-          if (m.groupId === judgeDecision) {
-            return { groupId: m.groupId, confidence: Math.max(m.confidence, 0.88) };
-          }
-          return m;
-        }).sort((a, b) => b.confidence - a.confidence);
-        maxConfidence = finalMatches[0].confidence;
-      }
-    }
-    
-    // Fluid Ontology: If confidence is very low (< 0.62), we don't force a category mapping.
-    // It remains ungrouped and is automatically treated as an "Amparo Exclusivo" by the comparator.
-    if (maxConfidence < 0.62) {
-      console.log(`ℹ️ [Ontology] "${rawName}" classified as EXCLUSIVE coverage (confidence ${maxConfidence.toFixed(3)})`);
-      return {
-        rawName,
-        insurerName,
-        groups: [],
-        isComposite: false,
-        confidence: 0
-      };
-    }
-    
-    return {
+
+    const mapping: CoverageMapping = {
       rawName,
       insurerName,
-      groups: finalMatches,
+      groups,
       isComposite: false,
-      confidence: maxConfidence
+      confidence: consensus.groupId === 'EXCLUSIVE' ? 0 : consensus.confidence,
+      needsHumanReview: consensus.needsHumanReview,
+      justification: consensus.justification,
     };
+
+    // Save and cache the result
+    await this.saveMapping(mapping);
+    await setCachedCoverageMapping(rawName, mapping, insurerName);
+
+    return mapping;
   },
 
   /**
@@ -363,23 +454,53 @@ export const coverageOntology = {
   },
 
   /**
-   * Save mapping to database for learning
+   * Save mapping to database for learning with fallback
    */
   async saveMapping(mapping: CoverageMapping): Promise<void> {
     try {
-      await supabase
+      // Intento 1: Guardar con las nuevas columnas de alta certeza
+      const { error } = await supabase
         .from('coverage_mappings')
         .upsert({
           raw_name: mapping.rawName,
-          insurer_name: mapping.insurerName,
-          canonical_name: mapping.groups[0]?.groupId,
+          insurer_name: mapping.insurerName || '',
+          canonical_name: mapping.groups[0]?.groupId || null,
           semantic_tags: mapping.groups.map(g => g.groupId),
           confidence: mapping.confidence,
           is_composite: mapping.isComposite,
-          last_updated: new Date().toISOString()
+          components: mapping.components || null,
+          raw_text_snippet: mapping.rawTextSnippet || null,
+          ai_justification: mapping.justification || null,
+          page_number: mapping.pageNumber || null,
+          needs_human_review: mapping.needsHumanReview || false,
+          last_used_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         } as any);
+
+      if (error) {
+        // Fallback: guardar solo columnas estándar en caso de que falten en el esquema
+        console.warn('⚠️ [Ontology DB] Schema columns missing, falling back to standard columns:', error.message);
+        const { error: fallbackError } = await supabase
+          .from('coverage_mappings')
+          .upsert({
+            raw_name: mapping.rawName,
+            insurer_name: mapping.insurerName || '',
+            canonical_name: mapping.groups[0]?.groupId || null,
+            semantic_tags: mapping.groups.map(g => g.groupId),
+            confidence: mapping.confidence,
+            is_composite: mapping.isComposite,
+            components: mapping.components || null,
+            last_used_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          } as any);
+        
+        if (fallbackError) {
+          throw fallbackError;
+        }
+      }
+      console.log(`🌳 [Ontology DB] Saved mapping for "${mapping.rawName}"`);
     } catch (error) {
-      console.error('❌ [Ontology] Failed to save mapping:', error);
+      console.error('❌ [Ontology DB] Failed to save mapping:', error);
     }
   }
 };

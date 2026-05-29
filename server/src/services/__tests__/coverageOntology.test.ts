@@ -1,6 +1,41 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { coverageOntology, CoverageMapping } from '../coverageOntology';
 
+// Mock Supabase database calls
+vi.mock('../../config/database', () => {
+  const mockSupabase = {
+    from: vi.fn().mockReturnThis(),
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+    upsert: vi.fn().mockResolvedValue({ data: { id: 'mocked-id' }, error: null }),
+    single: vi.fn().mockResolvedValue({ data: { id: 'mocked-id' }, error: null })
+  };
+  return {
+    supabase: mockSupabase
+  };
+});
+
+// Mock GoogleGenAI class
+vi.mock('@google/genai', () => {
+  class MockGoogleGenAI {
+    models = {
+      generateContent: vi.fn().mockResolvedValue({
+        text: JSON.stringify({
+          proposedGroupId: 'incendio',
+          justification: 'Mocked justification',
+          approved: true,
+          alternativeGroupId: null,
+          reason: 'Mocked critic reason'
+        })
+      })
+    };
+  }
+  return {
+    GoogleGenAI: MockGoogleGenAI
+  };
+});
+
 // Mock embedding service
 vi.mock('../vector/embeddingService', () => {
   const generateEmbeddingMock = vi.fn((text: string) => {

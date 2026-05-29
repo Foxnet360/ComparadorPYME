@@ -48,7 +48,7 @@ interface PDFOptions {
   primaryColor?: [number, number, number];
 }
 
-export const generatePDF = (report: ComparisonReport, options?: PDFOptions) => {
+export const generatePDF = (report: ComparisonReport, options?: PDFOptions, cellNotes?: Record<string, string>) => {
   const doc = new jsPDF();
   const today = new Date().toLocaleDateString('es-ES');
 
@@ -137,13 +137,16 @@ export const generatePDF = (report: ComparisonReport, options?: PDFOptions) => {
   currentY = addHeader("Matriz Comparativa Normalizada (PYME)");
 
   const insurers = quotes.map(q => q.insurerName || "Aseguradora");
-  const tableHead = [['Rubro Estandarizado', ...insurers]];
+  const hasNotes = cellNotes && Object.keys(cellNotes).length > 0;
+  const tableHead = hasNotes 
+    ? [['Rubro Estandarizado', ...insurers, 'Insights del Consultor']]
+    : [['Rubro Estandarizado', ...insurers]];
 
   const tableBody: string[][] = [];
 
-  PLANTILLA_ITEMS.forEach(standardItem => {
+  PLANTILLA_ITEMS.forEach((standardItem, itemIndex) => {
     const row: string[] = [standardItem];
-    quotes.forEach(q => {
+    quotes.forEach((q, quoteIndex) => {
       const coverages = Array.isArray(q.coverages) ? q.coverages : [];
       // Robust matching
       const found = coverages.find(c => {
@@ -158,6 +161,14 @@ export const generatePDF = (report: ComparisonReport, options?: PDFOptions) => {
 
       row.push(cellValue);
     });
+    
+    // Add notes column if notes exist
+    if (hasNotes) {
+      const cellId = `coverage-${standardItem}`;
+      const note = cellNotes?.[cellId];
+      row.push(note ? (note.length > 60 ? note.substring(0, 60) + '...' : note) : '');
+    }
+    
     tableBody.push(row);
   });
 

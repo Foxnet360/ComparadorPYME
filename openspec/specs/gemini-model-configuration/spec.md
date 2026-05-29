@@ -16,7 +16,7 @@ The system SHALL read all Gemini model selections from environment variables wit
 #### Scenario: PDF extraction uses configured model
 - **WHEN** the system extracts data from a PDF quote
 - **THEN** it SHALL use the model specified in `GEMINI_MODEL` environment variable
-- **AND** if `GEMINI_MODEL` is not set, it SHALL default to `gemini-2.5-flash`
+- **AND** if `GEMINI_MODEL` is not set, it SHALL default to `gemini-3.5-flash`
 
 #### Scenario: Chat uses configured model
 - **WHEN** the system processes a chat message
@@ -31,7 +31,7 @@ The system SHALL read all Gemini model selections from environment variables wit
 #### Scenario: Clause extraction uses configured model
 - **WHEN** the system extracts structured clauses from documents
 - **THEN** it SHALL use the model specified in `GEMINI_CLAUSE_MODEL` environment variable
-- **AND** if `GEMINI_CLAUSE_MODEL` is not set, it SHALL default to `gemini-2.5-flash`
+- **AND** if `GEMINI_CLAUSE_MODEL` is not set, it SHALL default to `gemini-3.5-flash`
 
 ### Requirement: No hardcoded model names in production code
 The system SHALL NOT contain hardcoded Gemini model names except in configuration defaults.

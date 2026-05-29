@@ -1,8 +1,89 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, lazy, Suspense, memo } from 'react';
 import { QuoteAnalysis, MatrixRow, MatrixCell } from '../types';
-import { Info, AlertTriangle, ListChecks, Trophy, DollarSign, Calendar, ShieldCheck, Download, Award, FileText } from 'lucide-react';
+import { Info, AlertTriangle, ListChecks, Trophy, DollarSign, Calendar, ShieldCheck, Download, Award, FileText, ChevronDown, Check, AlertCircle, Eye, Loader2, Pin } from 'lucide-react';
 import { DeductibleBadge } from './DeductibleBadge';
 import { formatPercentage } from '../utils/formatCurrency';
+import { useOptimisticCorrection } from '../hooks/useOptimisticCorrection';
+import { usePdfViewer, useCellNotes } from '../contexts/AnalysisContext';
+import { InlineNoteEditor } from './InlineNoteEditor';
+
+const PdfViewer = lazy(() => import('./PdfViewer'));
+
+// CoverageCell memoizado para optimizar re-renders
+const CoverageCell = memo(({ 
+  cell, 
+  rowLabel,
+  isWinner,
+  excluded,
+  lowConfidence,
+  needsReview,
+  isSaving,
+  onOpenPdf,
+  onOpenCorrection,
+  onDoubleClick,
+  hasNote
+}: {
+  cell: MatrixCell;
+  rowLabel: string;
+  isWinner: boolean;
+  excluded: boolean;
+  lowConfidence: boolean;
+  needsReview: boolean;
+  isSaving: boolean;
+  onOpenPdf?: () => void;
+  onOpenCorrection?: () => void;
+  onDoubleClick?: () => void;
+  hasNote?: boolean;
+}) => {
+  return (
+    <div 
+      className={`relative ${
+        isWinner ? 'bg-amber-50/60 font-semibold text-amber-900 border border-amber-200/50' : ''
+      } ${
+        excluded ? 'text-red-500 italic bg-slate-50/20' : 'text-slate-800'
+      } ${
+        lowConfidence ? 'bg-yellow-50/40 border-2 border-yellow-400/60 shadow-sm' : ''
+      } ${
+        needsReview ? 'ring-2 ring-red-300/50 ring-inset' : ''
+      } ${
+        isSaving ? 'opacity-70' : ''
+      }`}
+      onDoubleClick={onDoubleClick}
+    >
+      {/* Note indicator */}
+      {hasNote && (
+        <span className="absolute top-1 right-1 text-blue-500" title="Tiene nota consultiva">
+          <Pin size={12} />
+        </span>
+      )}
+      
+      {/* Winner trophy */}
+      {isWinner && !lowConfidence && (
+        <span className="absolute top-1 left-1 text-amber-500" title="Condición favorable">
+          <Trophy size={12} />
+        </span>
+      )}
+      
+      <div className="flex flex-col items-center justify-center gap-1.5">
+        {excluded ? (
+          <span className="text-red-400 font-medium">No incluida</span>
+        ) : (
+          <span className={`${isWinner ? 'text-amber-950 font-bold' : 'text-slate-800 font-medium'}`}>
+            {rowLabel === 'Deducible' && cell.value !== 'No aplica' ? (
+              <DeductibleBadge deductible={cell.value} />
+            ) : (
+              cell.value
+            )}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+});
+
+CoverageCell.displayName = 'CoverageCell';
+
+const PdfViewer = lazy(() => import('./PdfViewer'));
 
 // Config and transformer duplicated locally to avoid bundle import issues in Vite
 export const PLANTILLA_ITEMS = [
@@ -238,7 +319,11 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
             isWinner: false,
             notes: cov.description,
             pageNumber: firstCitation?.page || cov.citations?.[0]?.page,
-            confidence: cov.matchConfidence
+            confidence: cov.matchConfidence,
+            rawTextSnippet: cov.rawTextSnippet,
+            needsHumanReview: cov.needsHumanReview,
+            calculatedPage: cov.calculatedPage,
+            justification: cov.justification
           });
         } else {
           cells.push({
@@ -333,7 +418,11 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
             isWinner: true,
             notes: item.description,
             pageNumber: item.citations?.[0]?.page,
-            confidence: item.matchConfidence
+            confidence: item.matchConfidence,
+            rawTextSnippet: item.rawTextSnippet,
+            needsHumanReview: item.needsHumanReview,
+            calculatedPage: item.calculatedPage,
+            justification: item.justification
           });
         } else {
           cells.push({
@@ -586,6 +675,86 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
   const [activeTab, setActiveTab] = useState<'coverages' | 'financials' | 'additional'>('coverages');
   const [hoveredCell, setHoveredCell] = useState<{ rowId: string; colIdx: number } | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<{ rowId: string; colIdx: number } | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const { submitCorrection } = useOptimisticCorrection();
+  const { openPdfViewer } = usePdfViewer();
+  const { setCellNote, getCellNote } = useCellNotes();
+  const [savingCorrections, setSavingCorrections] = useState<Set<string>>(new Set());
+  const [editingNote, setEditingNote] = useState<{rowId: string, colIdx: number} | null>(null);
+
+  const handleDiscrepancyResolution = async (rowId: string, colIdx: number, selectedCategory: string) => {
+    const quote = quotes[colIdx];
+    const cell = fullMatrix.find(r => r.id === rowId)?.cells[colIdx];
+    
+    if (!quote || !cell) return;
+
+    const correctionId = `${rowId}-${colIdx}`;
+    setSavingCorrections(prev => new Set(prev).add(correctionId));
+    
+    try {
+      const result = await submitCorrection({
+        rawName: cell.rawName || rowId,
+        insurerName: quote.insurerName,
+        systemMapping: cell.canonicalName || rowId,
+        userCorrection: selectedCategory,
+        correctionType: 'coverage_mapping',
+        rawTextSnippet: cell.rawTextSnippet,
+        pageNumber: cell.calculatedPage || cell.pageNumber,
+      });
+
+      if (result.success) {
+        setOpenDropdown(null);
+      }
+    } finally {
+      setSavingCorrections(prev => {
+        const next = new Set(prev);
+        next.delete(correctionId);
+        return next;
+      });
+    }
+  };
+
+  const handleOpenPdfEvidence = (cell: MatrixCell, quote: QuoteAnalysis) => {
+    if (cell.calculatedPage || cell.pageNumber) {
+      openPdfViewer({
+        pdfUrl: `/api/quotes/${quote.insurerName}/pdf`,
+        targetPage: cell.calculatedPage || cell.pageNumber || 1,
+        searchText: cell.rawTextSnippet,
+        title: `Evidencia - ${quote.insurerName}`,
+      });
+    }
+  };
+
+  const handleCellDoubleClick = (rowId: string, colIdx: number) => {
+    setEditingNote({ rowId, colIdx });
+  };
+
+  const handleSaveNote = (rowId: string, colIdx: number, content: string) => {
+    const cellId = `${rowId}-${colIdx}`;
+    setCellNote(cellId, content);
+    setEditingNote(null);
+  };
+
+  const handleCancelNote = () => {
+    setEditingNote(null);
+  };
+
+  const isLowConfidence = (confidence: number | undefined): boolean => {
+    return confidence !== undefined && confidence !== null && confidence <= 0.5;
+  };
 
   const fullMatrix = transformQuotesToMatrix(quotes);
 
@@ -617,8 +786,34 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
     }
     setIsExporting(true);
     try {
-      // Trigger API endpoint for direct file download
-      window.open(`/api/analysis/${analysisId}/export`, '_blank');
+      // Create a simplified version of cellNotes for export
+      const exportNotes: Record<string, string> = {};
+      Object.entries(cellNotes).forEach(([key, note]) => {
+        if (note.content) {
+          exportNotes[key] = note.content;
+        }
+      });
+
+      // POST request with notes
+      const response = await fetch(`/api/analysis/${analysisId}/export`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cellNotes: exportNotes }),
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `comparativa_seguros_${analysisId}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        throw new Error('Export failed');
+      }
     } catch (err) {
       console.error('Error al exportar Excel:', err);
       alert('Error al descargar el archivo Excel.');
@@ -690,16 +885,27 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
       </div>
 
       {/* Grid Matrix Container */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div 
+        className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
+        role="grid"
+        aria-label="Matriz de coberturas de seguros"
+      >
         <div className="overflow-x-auto relative">
           <table className="w-full text-sm border-collapse text-left">
             <thead className="bg-[#E6F0FA] text-[#0066CC] font-bold text-xs uppercase border-b border-blue-200 sticky top-0 z-20">
-              <tr>
-                <th className="px-6 py-4 sticky left-0 bg-[#E6F0FA] border-r border-blue-100 min-w-[220px] md:min-w-[280px] shadow-[4px_0_10px_-5px_rgba(0,0,0,0.08)] z-30">
+              <tr role="row">
+                <th 
+                  role="columnheader"
+                  className="px-6 py-4 sticky left-0 bg-[#E6F0FA] border-r border-blue-100 min-w-[220px] md:min-w-[280px] shadow-[4px_0_10px_-5px_rgba(0,0,0,0.08)] z-30"
+                >
                   Concepto / Variable
                 </th>
                 {quotes.map((q, i) => (
-                  <th key={i} className="px-6 py-4 min-w-[200px] md:min-w-[240px] whitespace-nowrap text-center text-[#0066CC] border-b border-blue-100">
+                  <th 
+                    key={i} 
+                    role="columnheader"
+                    className="px-6 py-4 min-w-[200px] md:min-w-[240px] whitespace-nowrap text-center text-[#0066CC] border-b border-blue-100"
+                  >
                     {q.insurerName}
                   </th>
                 ))}
@@ -709,8 +915,9 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
               {filteredRows.map((row) => {
                 if (row.type === 'header') {
                   return (
-                    <tr key={row.id} className="bg-[#E6F0FA]/40 font-bold">
+                    <tr key={row.id} className="bg-[#E6F0FA]/40 font-bold" role="row">
                       <td 
+                        role="gridcell"
                         colSpan={quotes.length + 1}
                         className="px-6 py-3 text-xs md:text-sm text-blue-800 uppercase tracking-wide border-y border-blue-50/50"
                       >
@@ -722,17 +929,20 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
 
                 if (row.type === 'spacer') {
                   return (
-                    <tr key={row.id} className="bg-white h-4">
-                      <td colSpan={quotes.length + 1} className="py-2"></td>
+                    <tr key={row.id} className="bg-white h-4" role="row">
+                      <td role="gridcell" colSpan={quotes.length + 1} className="py-2"></td>
                     </tr>
                   );
                 }
 
                 // Standard Data Row
                 return (
-                  <tr key={row.id} className="hover:bg-slate-50/70 transition-colors group">
+                  <tr key={row.id} className="hover:bg-slate-50/70 transition-colors group" role="row">
                     {/* Concept Label (Column A) */}
-                    <td className="px-6 py-3.5 text-xs md:text-sm font-semibold text-slate-700 bg-[#F8FAFC] sticky left-0 border-r border-slate-100 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)] z-10 group-hover:bg-[#F1F5F9]/80">
+                    <td 
+                      role="gridcell"
+                      className="px-6 py-3.5 text-xs md:text-sm font-semibold text-slate-700 bg-[#F8FAFC] sticky left-0 border-r border-slate-100 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)] z-10 group-hover:bg-[#F1F5F9]/80"
+                    >
                       {row.label}
                     </td>
 
@@ -741,27 +951,81 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                       const isWinner = cell.isWinner;
                       const excluded = cell.isExcluded;
                       const hasDetails = cell.confidence !== undefined || cell.pageNumber !== undefined || cell.notes;
+                      const lowConfidence = isLowConfidence(cell.confidence);
+                      const needsReview = cell.needsHumanReview;
+                      const isSaving = savingCorrections.has(`${row.id}-${colIdx}`);
+                      const cellId = `${row.id}-${colIdx}`;
+                      const cellNote = getCellNote(cellId);
+                      const isEditingNote = editingNote?.rowId === row.id && editingNote?.colIdx === colIdx;
                       
                       const cellClass = `px-6 py-3.5 text-sm align-middle text-center relative border-r border-slate-50 transition-all ${
                         isWinner ? 'bg-amber-50/60 font-semibold text-amber-900 border border-amber-200/50' : ''
                       } ${
                         excluded ? 'text-red-500 italic bg-slate-50/20' : 'text-slate-800'
+                      } ${
+                        lowConfidence ? 'bg-yellow-50/40 border-2 border-yellow-400/60 shadow-sm' : ''
+                      } ${
+                        needsReview ? 'ring-2 ring-red-300/50 ring-inset' : ''
+                      } ${
+                        isSaving ? 'opacity-70' : ''
                       }`;
+
+                      if (isEditingNote) {
+                        return (
+                          <td 
+                            key={colIdx} 
+                            role="gridcell"
+                            tabIndex={0}
+                            className="relative p-0"
+                            style={{ height: '150px' }}
+                          >
+                            <InlineNoteEditor
+                              cellId={cellId}
+                              initialContent={cellNote?.content || ''}
+                              onSave={(id, content) => handleSaveNote(row.id, colIdx, content)}
+                              onCancel={handleCancelNote}
+                            />
+                          </td>
+                        );
+                      }
 
                       return (
                         <td 
                           key={colIdx} 
+                          role="gridcell"
+                          tabIndex={0}
                           className={cellClass}
                           onMouseEnter={() => setHoveredCell({ rowId: row.id, colIdx })}
                           onMouseLeave={() => setHoveredCell(null)}
+                          onDoubleClick={() => handleCellDoubleClick(row.id, colIdx)}
                         >
+                          {/* Note indicator */}
+                          {cellNote && (
+                            <span 
+                              className="absolute top-1 right-2 text-blue-500 hover:scale-110 transition-transform cursor-help"
+                              title={`Nota: ${cellNote.content.substring(0, 50)}...`}
+                            >
+                              <Pin size={12} />
+                            </span>
+                          )}
+
                           {/* Winner trophy */}
-                          {isWinner && (
+                          {isWinner && !lowConfidence && (
                             <span 
                               className="absolute top-1 right-2 text-amber-500 hover:scale-110 transition-transform cursor-help"
                               title="Condición / Valor favorable"
                             >
                               🏆
+                            </span>
+                          )}
+
+                          {/* Low Confidence / Needs Review Alert */}
+                          {(lowConfidence || needsReview) && (
+                            <span 
+                              className="absolute top-1 right-2 text-yellow-600 hover:scale-110 transition-transform cursor-help z-10"
+                              title={needsReview ? 'Requiere validación humana - Doble agente en discrepancia' : 'Confianza baja en mapeo ontológico'}
+                            >
+                              <AlertCircle size={14} />
                             </span>
                           )}
 
@@ -782,47 +1046,142 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                             {/* Technical Details Popover Trigger (Only in Technical ViewMode) */}
                             {viewMode === 'technical' && hasDetails && (
                               <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-400">
-                                {cell.pageNumber !== undefined && (
-                                  <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200 flex items-center gap-0.5">
-                                    <FileText size={10} />
-                                    Pág. {cell.pageNumber}
-                                  </span>
+                                {(cell.calculatedPage !== undefined || cell.pageNumber !== undefined) && (
+                                  <button
+                                    onClick={() => handleOpenPdfEvidence(cell, quotes[colIdx])}
+                                    className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-1.5 py-0.5 rounded border border-blue-200 flex items-center gap-0.5 transition-colors cursor-pointer"
+                                    title="Ver evidencia en PDF"
+                                  >
+                                    <Eye size={10} />
+                                    Pág. {cell.calculatedPage || cell.pageNumber}
+                                  </button>
                                 )}
                                 {cell.confidence !== undefined && (
                                   <span className={`px-1.5 py-0.5 rounded border ${getConfidenceBadgeColor(cell.confidence)}`}>
                                     {getConfidenceText(cell.confidence)}
                                   </span>
                                 )}
+                                {needsReview && (
+                                  <span className="bg-red-50 text-red-600 px-1.5 py-0.5 rounded border border-red-200 flex items-center gap-0.5">
+                                    <AlertTriangle size={10} />
+                                    Revisar
+                                  </span>
+                                )}
                               </div>
                             )}
                           </div>
 
+                          {/* Inline Discrepancy Resolution Dropdown */}
+                          {viewMode === 'technical' && needsReview && openDropdown?.rowId === row.id && openDropdown?.colIdx === colIdx && (
+                            <div 
+                              ref={dropdownRef}
+                              className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-80 bg-white rounded-xl shadow-2xl z-50 border border-slate-200 overflow-hidden"
+                            >
+                              <div className="bg-amber-50 px-4 py-2.5 border-b border-amber-200 flex items-center gap-2">
+                                <AlertTriangle size={14} className="text-amber-600" />
+                                <span className="text-xs font-bold text-amber-800">Resolver Discrepancia Ontológica</span>
+                              </div>
+                              <div className="p-3 max-h-64 overflow-y-auto">
+                                <p className="text-[11px] text-slate-500 mb-2">Seleccione la categoría canónica correcta:</p>
+                                {PLANTILLA_ITEMS.map((item, idx) => (
+                                  <button
+                                    key={idx}
+                                    onClick={() => handleDiscrepancyResolution(row.id, colIdx, item)}
+                                    className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 rounded-lg transition-colors flex items-center justify-between group"
+                                  >
+                                    <span>{item}</span>
+                                    <Check size={12} className="text-green-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="px-3 py-2 bg-slate-50 border-t border-slate-100">
+                                <button 
+                                  onClick={() => setOpenDropdown(null)}
+                                  className="w-full text-center text-[11px] text-slate-500 hover:text-slate-700 py-1"
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Trigger button for dropdown */}
+                          {viewMode === 'technical' && needsReview && (
+                            <button
+                              onClick={() => setOpenDropdown(openDropdown?.rowId === row.id && openDropdown?.colIdx === colIdx ? null : { rowId: row.id, colIdx })}
+                              disabled={isSaving}
+                              className="absolute bottom-1 right-1 text-[10px] text-yellow-700 bg-yellow-100 hover:bg-yellow-200 disabled:opacity-50 px-1.5 py-0.5 rounded border border-yellow-300 transition-colors flex items-center gap-0.5 z-10"
+                            >
+                              {isSaving ? (
+                                <Loader2 size={10} className="animate-spin" />
+                              ) : (
+                                <ChevronDown size={10} />
+                              )}
+                              {isSaving ? 'Guardando...' : 'Corregir'}
+                            </button>
+                          )}
+
                           {/* Premium Technical Hover Card Popover */}
                           {viewMode === 'technical' && hoveredCell?.rowId === row.id && hoveredCell?.colIdx === colIdx && hasDetails && (
-                            <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-72 p-4 bg-slate-900 text-slate-100 text-xs rounded-xl shadow-xl z-50 border border-slate-700 pointer-events-none transition-all duration-200">
+                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-80 p-4 bg-slate-900 text-slate-100 text-xs rounded-xl shadow-xl z-50 border border-slate-700 pointer-events-none transition-all duration-200">
                               <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-slate-800">
                                 <Award className="text-blue-400" size={14} />
-                                <span className="font-bold text-white text-[11px] tracking-wide uppercase">Metadatos de Extracción</span>
+                                <span className="font-bold text-white text-[11px] tracking-wide uppercase">Auditoría de Extracción</span>
                               </div>
+                              
+                              {/* Confidence Section */}
                               {cell.confidence !== undefined && (
                                 <div className="flex justify-between py-0.5">
-                                  <span className="text-slate-400">Match Semántico:</span>
-                                  <span className="font-semibold text-white">{formatPercentage(cell.confidence, 0)} ({getConfidenceText(cell.confidence)})</span>
+                                  <span className="text-slate-400">Confianza:</span>
+                                  <span className={`font-semibold ${lowConfidence ? 'text-yellow-400' : 'text-white'}`}>
+                                    {formatPercentage(cell.confidence, 0)} ({getConfidenceText(cell.confidence)})
+                                  </span>
                                 </div>
                               )}
-                              {cell.pageNumber !== undefined && (
+                              
+                              {/* Page Evidence */}
+                              {(cell.calculatedPage !== undefined || cell.pageNumber !== undefined) && (
                                 <div className="flex justify-between py-0.5">
-                                  <span className="text-slate-400">Fuente del Documento:</span>
-                                  <span className="font-semibold text-white">PDF Cotización, Pág. {cell.pageNumber}</span>
+                                  <span className="text-slate-400">Página:</span>
+                                  <span className="font-semibold text-white">
+                                    {cell.calculatedPage !== undefined ? `Pág. ${cell.calculatedPage} (calculada)` : `Pág. ${cell.pageNumber}`}
+                                  </span>
                                 </div>
                               )}
-                              {cell.notes && (
-                                <div className="mt-2 pt-2 border-t border-slate-800 text-[11px] text-slate-300 leading-relaxed text-left">
-                                  <span className="font-semibold text-slate-400 block mb-1">Descripción extraída:</span>
-                                  {cell.notes}
+                              
+                              {/* Raw Text Snippet */}
+                              {cell.rawTextSnippet && (
+                                <div className="mt-2 pt-2 border-t border-slate-800">
+                                  <span className="font-semibold text-slate-400 block mb-1">Evidencia textual (verbatim):</span>
+                                  <div className="bg-slate-800/50 rounded-lg p-2 text-[11px] text-slate-300 leading-relaxed italic border border-slate-700/50">
+                                    "{cell.rawTextSnippet}"
+                                  </div>
                                 </div>
                               )}
-                              <div className="absolute left-1/2 -translate-x-1/2 bottom-full w-0 h-0 border-l-6 border-r-6 border-b-6 border-transparent border-b-slate-900"></div>
+                              
+                              {/* Justification */}
+                              {cell.justification && (
+                                <div className="mt-2 pt-2 border-t border-slate-800">
+                                  <span className="font-semibold text-slate-400 block mb-1">Justificación IA:</span>
+                                  <div className="text-[11px] text-slate-300 leading-relaxed">
+                                    {cell.justification}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Human Review Flag */}
+                              {needsReview && (
+                                <div className="mt-2 pt-2 border-t border-slate-800">
+                                  <div className="bg-red-900/30 border border-red-700/50 rounded-lg p-2 flex items-center gap-2">
+                                    <AlertTriangle size={12} className="text-red-400 flex-shrink-0" />
+                                    <span className="text-[11px] text-red-300">
+                                      Doble agente en discrepancia. Se requiere validación humana.
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-slate-900"></div>
                             </div>
                           )}
                         </td>
@@ -845,6 +1204,11 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
           paritaria con el reporte Excel monocromático de 3 pestañas.
         </div>
       </div>
+
+      {/* PdfViewer Lazy Loaded */}
+      <Suspense fallback={null}>
+        <PdfViewer />
+      </Suspense>
     </div>
   );
 };

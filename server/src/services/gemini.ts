@@ -65,6 +65,7 @@ export const QuoteExtractionSchemaV2: any = {
           rawName: { type: SchemaType.STRING, description: "Exact coverage name from document" },
           insuredAmount: { type: SchemaType.NUMBER, description: "Insured amount", nullable: true },
           deductible: { type: SchemaType.STRING, description: "Deductible text as it appears in the document. If the coverage has no deductible, use null. If not found in the main table, search ALL pages including clauses, conditions, and annexes.", nullable: true },
+          rawTextSnippet: { type: SchemaType.STRING, description: "Un fragmento continuo de 50-100 caracteres de texto adyacente a la cobertura en el PDF de origen para auditoría posicional", nullable: true },
           premium: { type: SchemaType.NUMBER, description: "Premium for this coverage", nullable: true },
           notes: { type: SchemaType.STRING, nullable: true },
         },

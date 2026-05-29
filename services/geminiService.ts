@@ -70,36 +70,5 @@ export const analyzeQuotesWithGemini = async (
   }
 };
 
-export interface ChatSession {
-  sendMessageStream: (params: { message: string }) => AsyncIterableIterator<any>;
-}
-
-export const createChatSession = (reportContext?: any): ChatSession | null => {
-  return {
-    sendMessageStream: async function* ({ message }: { message: string }) {
-      const response = await fetch(`${API_BASE_URL}/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          message,
-          reportContext,
-          useRAG: true
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Chat error: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      
-      // Yield the response in the expected format
-      yield {
-        text: result.text,
-        citations: result.citations
-      };
-    }
-  };
-};
+// Chat functionality is now handled by the backend API directly
+// See components/ChatBot.tsx for the frontend implementation

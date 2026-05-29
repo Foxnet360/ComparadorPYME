@@ -12,6 +12,38 @@ Sistema de análisis y comparación de cotizaciones de seguros usando IA (Gemini
 
 ## Nuevas Capacidades (Fases 1-5)
 
+### UX Mejoras (2024)
+
+#### Visor PDF Interactivo
+- **Visor integrado**: Visualiza PDFs directamente en la interfaz sin salir del comparador
+- **Navegación automática**: Salta directamente a la página de evidencia RAG
+- **Resaltado de texto**: Resalta automáticamente el snippet de texto verbatim en el PDF
+- **Responsive**: Modo drawer (desktop), modal (tablet), fullscreen (mobile)
+
+#### Correcciones HITL (Human-in-the-Loop)
+- **API real conectada**: Las correcciones se guardan en el backend con validación Zod
+- **Estado optimista**: La UI se actualiza inmediatamente antes de confirmar con el servidor
+- **Cola offline**: Correcciones se guardan localmente cuando no hay conexión y se sincronizan automáticamente
+- **Feedback visual**: Estados de pending (spinner), success (check verde), error (reversión)
+
+#### Asistente de Auditoría (Wizard)
+- **Panel de discrepancias**: Muestra conteo de discrepancias críticas, advertencias e informativas
+- **Navegación inteligente**: Un clic salta a la fila específica de la matriz
+- **Progreso de auditoría**: Indicador circular accesible con porcentaje de completitud
+- **Agrupación por severidad**: Secciones colapsables para priorizar trabajo
+
+#### Notas Consultivas
+- **Editor inline**: Doble-clic en cualquier celda para agregar notas
+- **Markdown soportado**: Formato básico con sanitización DOMPurify
+- **Persistencia**: Notas se guardan en el estado del reporte
+- **Exportación**: Incluidas en exportaciones PDF y Excel
+
+#### Accesibilidad WCAG 2.1 AA
+- **Semántica ARIA**: role="grid", role="row", role="gridcell"
+- **Navegación por teclado**: Flechas, Enter, Escape, Home, End
+- **Anuncios screen reader**: Regiones live para notificaciones y cambios
+- **Contraste**: Todos los estilos cumplen con WCAG AA
+
 ### Fase 1: Validación de Coberturas
 - **Validación bidireccional**: Verifica que coberturas en cotización existan en clausulado (y viceversa)
 - **Detección de coberturas fantasma**: Identifica coberturas ofrecidas pero no contempladas en clausulado

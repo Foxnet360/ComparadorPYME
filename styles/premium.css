@@ -1,0 +1,87 @@
+/* Estilos premium para el comparador de seguros */
+
+/* Glassmorphic cells */
+.cell-glassmorphic {
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Winner cell - golden aura */
+.cell-winner {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(252, 211, 77, 0.08) 100%);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.1);
+}
+
+.cell-winner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.6), transparent);
+}
+
+/* Exclusion cell - crimson mist */
+.cell-exclusion {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(248, 113, 113, 0.04) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* Discrepancy cell - warning stripe */
+.cell-discrepancy {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(234, 179, 8, 0.05),
+    rgba(234, 179, 8, 0.05) 10px,
+    rgba(234, 179, 8, 0.1) 10px,
+    rgba(234, 179, 8, 0.1) 20px
+  );
+  border: 2px solid rgba(234, 179, 8, 0.4);
+}
+
+/* Micro-animations */
+@keyframes micro-shimmer {
+  0% { opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
+.animate-micro-shimmer {
+  animation: micro-shimmer 2s ease-in-out infinite;
+}
+
+@keyframes success-pulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+  70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.animate-success-pulse {
+  animation: success-pulse 0.6s ease-out;
+}
+
+/* Smooth transitions */
+.transition-smooth {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Focus ring for accessibility */
+.focus-ring:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-micro-shimmer,
+  .animate-success-pulse {
+    animation: none;
+  }
+  
+  .transition-smooth {
+    transition: none;
+  }
+}

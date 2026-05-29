@@ -1,5 +1,11 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { MessageSquare, Send, X, Bot, User, Minimize2, Loader2, BookOpen, Lightbulb, ToggleLeft, ToggleRight } from 'lucide-react';
+/**
+ * ChatBot Component v2.0
+ * Persistent chat with database-backed conversations
+ * Always-on RAG with source attribution
+ */
+
+import React, { useState, useRef, useEffect } from 'react';
+import { MessageSquare, Send, Bot, User, Minimize2, Loader2, BookOpen, Lightbulb } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { ChatMessage, ChatCitation } from '../types';
 import { API_BASE_URL } from '../services/apiConfig';
@@ -10,29 +16,75 @@ interface ChatBotProps {
   onClose: () => void;
 }
 
+const INITIAL_MESSAGE: ChatMessage = {
+  role: 'model',
+  text: 'Hola, soy SeguroBot AI. Puedo responder preguntas sobre las cotizaciones analizadas y los clausulados. ¿En qué puedo ayudarte?',
+  timestamp: new Date()
+};
+
 const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'model', text: 'Hola, soy SeguroBot AI. Puedo responder preguntas sobre las cotizaciones analizadas y los clausulados. ¿En qué puedo ayudarte?', timestamp: new Date() }
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [useRAG, setUseRAG] = useState(true);
+  const [threadId, setThreadId] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isOpen]);
 
-  // Load suggestions when report context changes
+  // Load thread when report context changes or chat opens
   useEffect(() => {
-    if (reportContext) {
+    if (isOpen && reportContext?.id) {
+      loadThread(reportContext.id);
       loadSuggestions();
     }
-  }, [reportContext]);
+  }, [isOpen, reportContext?.id]);
+
+  // Reset chat when report context changes
+  useEffect(() => {
+    if (reportContext?.id) {
+      setMessages([INITIAL_MESSAGE]);
+      setThreadId(null);
+      setShowSuggestions(true);
+    }
+  }, [reportContext?.id]);
+
+  const loadThread = async (reportId: string) => {
+    try {
+      const user = localStorage.getItem('seguro_app_user');
+      const userId = user ? JSON.parse(user)?.id : 'anonymous';
+      
+      const response = await fetch(`${API_BASE_URL}/chat/threads/report/${reportId}?userId=${userId}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setThreadId(data.threadId);
+        
+        // Load existing messages if any
+        if (data.messages && data.messages.length > 0) {
+          const loadedMessages: ChatMessage[] = data.messages.map((msg: any) => ({
+            role: msg.role,
+            text: msg.text,
+            timestamp: new Date(msg.createdAt),
+            citations: msg.citations,
+            source: msg.sourcesUsed?.[0]?.type || 'direct'
+          }));
+          setMessages(loadedMessages);
+          setShowSuggestions(false);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load thread:', error);
+    }
+  };
 
   const loadSuggestions = async () => {
+    if (!reportContext) return;
+    
     try {
       const response = await fetch(`${API_BASE_URL}/chat/suggestions`, {
         method: 'POST',
@@ -54,13 +106,21 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
     const messageText = suggestedMessage || input.trim();
     if (!messageText || isLoading) return;
 
-    const userMessage: ChatMessage = { role: 'user', text: messageText, timestamp: new Date() };
+    const userMessage: ChatMessage = { 
+      role: 'user', 
+      text: messageText, 
+      timestamp: new Date() 
+    };
+    
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
     setShowSuggestions(false);
 
     try {
+      const user = localStorage.getItem('seguro_app_user');
+      const userId = user ? JSON.parse(user)?.id : 'anonymous';
+      
       const response = await fetch(`${API_BASE_URL}/chat`, {
         method: 'POST',
         headers: {
@@ -69,8 +129,8 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
         body: JSON.stringify({
           message: messageText,
           reportContext,
-          useRAG,
-          history: messages.map(m => ({ role: m.role, text: m.text }))
+          threadId,
+          userId
         })
       });
 
@@ -80,12 +140,17 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
 
       const result = await response.json();
       
+      // Update threadId if returned
+      if (result.threadId) {
+        setThreadId(result.threadId);
+      }
+      
       const modelMessage: ChatMessage = { 
         role: 'model', 
         text: result.text || 'Lo siento, no pude generar una respuesta.',
         timestamp: new Date(),
         citations: result.citations,
-        source: result.source || (useRAG ? 'rag' : 'direct')
+        source: result.source || 'direct'
       };
       
       setMessages(prev => [...prev, modelMessage]);
@@ -101,6 +166,17 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
     }
   };
 
+  // Get source badge configuration
+  const getSourceBadge = (source?: string) => {
+    const configs: Record<string, { label: string; className: string }> = {
+      'direct': { label: '📄 Cotización', className: 'bg-green-100 text-green-700' },
+      'rag': { label: '📋 Clausulado', className: 'bg-blue-100 text-blue-700' },
+      'ontology': { label: '📋 Ontología', className: 'bg-purple-100 text-purple-700' },
+      'fallback': { label: 'ℹ️ General', className: 'bg-amber-100 text-amber-700' }
+    };
+    return configs[source || 'direct'] || configs['direct'];
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -111,20 +187,10 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
           <Bot size={20} />
           <div>
             <span className="font-semibold">SeguroBot AI</span>
-            <span className="text-xs text-indigo-200 ml-2">RAG {useRAG ? 'ON' : 'OFF'}</span>
+            <span className="text-xs text-indigo-200 ml-2">Expert</span>
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          {/* RAG Toggle */}
-          <button
-            onClick={() => setUseRAG(!useRAG)}
-            className="flex items-center gap-1 px-2 py-1 bg-white/10 hover:bg-white/20 rounded transition-colors text-xs"
-            title={useRAG ? 'Desactivar búsqueda en clausulados' : 'Activar búsqueda en clausulados'}
-          >
-            {useRAG ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
-            <span className="hidden sm:inline">Clausulados</span>
-          </button>
-          
           <button onClick={onClose} className="p-1 hover:bg-white/20 rounded transition-colors">
             <Minimize2 size={18} />
           </button>
@@ -147,18 +213,11 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
                 </div>
               ) : (
                 <div>
-                  {msg.source && msg.role === 'model' && (
+                  {/* Source Badge for model messages */}
+                  {msg.role === 'model' && msg.source && (
                     <div className="flex items-center gap-1 mb-2">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        msg.source === 'rag' ? 'bg-blue-100 text-blue-700' :
-                        msg.source === 'ontology' ? 'bg-purple-100 text-purple-700' :
-                        msg.source === 'fallback' ? 'bg-amber-100 text-amber-700' :
-                        'bg-slate-100 text-slate-600'
-                      }`}>
-                        {msg.source === 'rag' ? 'RAG' :
-                         msg.source === 'ontology' ? 'Ontología' :
-                         msg.source === 'fallback' ? 'Fallback' :
-                         'Directo'}
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getSourceBadge(msg.source).className}`}>
+                        {getSourceBadge(msg.source).label}
                       </span>
                     </div>
                   )}

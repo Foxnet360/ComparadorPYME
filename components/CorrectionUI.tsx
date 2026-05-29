@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { QuoteAnalysis } from '../types';
-import { AlertTriangle, Check, X, Edit3, Save, RotateCcw } from 'lucide-react';
+import { AlertTriangle, Check, X, Edit3, Save, RotateCcw, Loader2 } from 'lucide-react';
+import { useOptimisticCorrection } from '../hooks/useOptimisticCorrection';
+import { ToastContainer, useToasts } from './ToastNotification';
 
 interface CorrectionUIProps {
   quote: QuoteAnalysis;
@@ -17,30 +19,61 @@ export const CorrectionUI: React.FC<CorrectionUIProps> = ({ quote, onCorrection 
   const [corrections, setCorrections] = useState<Record<string, string>>({});
   const [reasons, setReasons] = useState<Record<string, string>>({});
   const [savedFields, setSavedFields] = useState<Set<string>>(new Set());
+  const [savingFields, setSavingFields] = useState<Set<string>>(new Set());
+  const { submitCorrection } = useOptimisticCorrection();
+  const { toasts, addToast, removeToast } = useToasts();
 
-  const handleCorrection = (field: string, originalValue: string) => {
+  const handleCorrection = async (field: string, originalValue: string) => {
     const correctedValue = corrections[field];
     const reason = reasons[field];
     
     if (!correctedValue || correctedValue === originalValue) return;
     
-    onCorrection({
-      field,
-      originalValue,
-      correctedValue,
-      reason
-    });
+    setSavingFields(prev => new Set(prev).add(field));
     
-    setSavedFields(prev => new Set(prev).add(field));
-    
-    // Clear saved status after 3 seconds
-    setTimeout(() => {
-      setSavedFields(prev => {
+    try {
+      // Call the real API
+      const result = await submitCorrection({
+        rawName: field,
+        insurerName: quote.insurerName,
+        systemMapping: originalValue,
+        userCorrection: correctedValue,
+        correctionType: field.startsWith('coverage_') ? 'coverage_mapping' : 'value',
+        quoteId: quote.id,
+      });
+
+      if (result.success) {
+        setSavedFields(prev => new Set(prev).add(field));
+        addToast(`Corrección guardada para ${field}`, 'success');
+        
+        // Also call the parent callback if provided
+        onCorrection({
+          field,
+          originalValue,
+          correctedValue,
+          reason
+        });
+        
+        // Clear saved status after 3 seconds
+        setTimeout(() => {
+          setSavedFields(prev => {
+            const next = new Set(prev);
+            next.delete(field);
+            return next;
+          });
+        }, 3000);
+      } else {
+        addToast(`Error: ${result.error || 'No se pudo guardar'}`, 'error');
+      }
+    } catch (error) {
+      addToast('Error de conexión. Corrección guardada localmente.', 'warning');
+    } finally {
+      setSavingFields(prev => {
         const next = new Set(prev);
         next.delete(field);
         return next;
       });
-    }, 3000);
+    }
   };
 
   const handleReset = (field: string) => {
@@ -143,14 +176,16 @@ export const CorrectionUI: React.FC<CorrectionUIProps> = ({ quote, onCorrection 
               />
               <button
                 onClick={() => handleCorrection(field.field, field.value)}
-                disabled={!corrections[field.field] || corrections[field.field] === field.value}
+                disabled={!corrections[field.field] || corrections[field.field] === field.value || savingFields.has(field.field)}
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   savedFields.has(field.field)
                     ? 'bg-green-100 text-green-700'
                     : 'bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed'
                 }`}
               >
-                {savedFields.has(field.field) ? (
+                {savingFields.has(field.field) ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : savedFields.has(field.field) ? (
                   <><Check size={16} /></>
                 ) : (
                   <Save size={16} />
@@ -174,11 +209,13 @@ export const CorrectionUI: React.FC<CorrectionUIProps> = ({ quote, onCorrection 
         <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
           <AlertTriangle size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
           <p className="text-sm text-amber-800">
-            Esta cotización tiene baja confianza de extracción. 
+            Esta cotización tiene baja confianza de extracción.
             Tus correcciones son especialmente valiosas para mejorar el sistema.
           </p>
         </div>
       )}
+
+      <ToastContainer toasts={toasts} onClose={removeToast} />
     </div>
   );
 };

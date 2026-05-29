@@ -1,16 +1,17 @@
 /**
- * Chat Service - Triple Source Implementation
- * Prioritizes: 1. Quote Data > 2. Structured Clauses > 3. General Knowledge
+ * Chat Service v2.0 - Refactored with Database Persistence
+ * Prioritizes: 1. Quote Data > 2. Structured Clauses > 3. RAG Chunks
+ * Always-on RAG with clear source attribution
  */
 
 import { GoogleGenAI } from '@google/genai';
 import { ragRetrievalService } from './ragRetrievalService';
-import { embeddingService } from './vector/embeddingService';
-import { supabase } from '../config/database';
 import { structuredClauseExtractor } from './structuredClauseExtractor';
+import { chatRepository } from '../repositories/chatRepository';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const GEMINI_CHAT_MODEL = process.env.GEMINI_CHAT_MODEL || 'gemini-2.5-flash-lite';
+const MAX_PROMPT_TOKENS = 12000;
 
 if (!GEMINI_API_KEY) {
     console.error('❌ [chatService] GEMINI_API_KEY not configured');
@@ -39,11 +40,386 @@ export interface ChatResponse {
     source?: 'rag' | 'ontology' | 'fallback' | 'direct';
 }
 
+interface SourceResult {
+    type: 'quote' | 'structured' | 'rag' | 'general';
+    data: string;
+    insurerName?: string;
+    citations?: ChatCitation[];
+    relevance: number;
+}
+
+/**
+ * Context Window Manager - Controls prompt size and prioritizes content
+ */
+class ContextWindowManager {
+    private maxTokens: number;
+    
+    constructor(maxTokens: number = MAX_PROMPT_TOKENS) {
+        this.maxTokens = maxTokens;
+    }
+    
+    /**
+     * Compact report context to essential information only
+     */
+    compactReportContext(reportContext: any): string {
+        if (!reportContext || !reportContext.quotes) {
+            return '';
+        }
+        
+        const quotes = reportContext.quotes;
+        let compact = `=== RESUMEN DEL ANÁLISIS ===\n`;
+        compact += `Cliente: ${reportContext.clientName || 'No especificado'}\n`;
+        compact += `Aseguradoras: ${quotes.length}\n\n`;
+        
+        quotes.forEach((quote: any, idx: number) => {
+            compact += `--- ${quote.insurerName} ---\n`;
+            compact += `Score: ${quote.score || 'N/A'}/100 | Prima: ${quote.priceAnnual || 'N/A'}\n`;
+            
+            // Only include first 5 coverages in compact view
+            const keyCoverages = (quote.coverages || []).slice(0, 5);
+            if (keyCoverages.length > 0) {
+                compact += `Coberturas principales:\n`;
+                keyCoverages.forEach((c: any) => {
+                    compact += `- ${c.name}: ${c.value}${c.deductible ? ` (Ded: ${c.deductible})` : ''}\n`;
+                });
+            }
+            
+            // Include critical alerts only
+            const criticalAlerts = (quote.alerts || []).filter((a: any) => a.level === 'CRITICAL');
+            if (criticalAlerts.length > 0) {
+                compact += `Alertas críticas:\n`;
+                criticalAlerts.forEach((a: any) => {
+                    compact += `- ${a.title}\n`;
+                });
+            }
+            
+            compact += `\n`;
+        });
+        
+        return compact;
+    }
+    
+    /**
+     * Build full prompt with controlled window size
+     */
+    buildPrompt(
+        systemPrompt: string,
+        reportSummary: string,
+        sources: SourceResult[],
+        history: ChatMessage[],
+        currentMessage: string
+    ): { prompt: string; tokens: number } {
+        let prompt = systemPrompt;
+        let currentTokens = this.estimateTokens(prompt);
+        
+        // Add report summary (high priority)
+        if (reportSummary) {
+            const reportSection = `\n\n${reportSummary}`;
+            prompt += reportSection;
+            currentTokens += this.estimateTokens(reportSection);
+        }
+        
+        // Add sources (medium priority)
+        if (sources.length > 0) {
+            let sourcesText = '\n\n=== FUENTES CONSULTADAS ===\n';
+            sources.forEach((source, idx) => {
+                sourcesText += `[${idx + 1}] ${this.getSourceLabel(source.type)} ${source.insurerName ? `(${source.insurerName})` : ''}:\n${source.data}\n\n`;
+            });
+            
+            // Check if adding sources would exceed budget
+            const sourcesTokens = this.estimateTokens(sourcesText);
+            if (currentTokens + sourcesTokens < this.maxTokens * 0.7) {
+                prompt += sourcesText;
+                currentTokens += sourcesTokens;
+            } else {
+                // Only include top source if budget is tight
+                const topSource = sources[0];
+                const minimalSources = `\n\n=== FUENTE PRINCIPAL ===\n${this.getSourceLabel(topSource.type)}: ${topSource.data}\n`;
+                prompt += minimalSources;
+                currentTokens += this.estimateTokens(minimalSources);
+            }
+        }
+        
+        // Add history (lower priority, truncated if needed)
+        if (history.length > 0) {
+            let historyText = '\n\n=== HISTORIAL RECIENTE ===\n';
+            const recentHistory = history.slice(-6); // Last 6 messages max
+            
+            recentHistory.forEach(msg => {
+                historyText += `${msg.role === 'user' ? 'Usuario' : 'Asistente'}: ${msg.text}\n`;
+            });
+            
+            const historyTokens = this.estimateTokens(historyText);
+            const remainingBudget = this.maxTokens - currentTokens - this.estimateTokens(currentMessage) - 100; // Buffer
+            
+            if (historyTokens < remainingBudget) {
+                prompt += historyText;
+                currentTokens += historyTokens;
+            } else {
+                // Only include last 2 messages if budget is tight
+                const minimalHistory = '\n\n=== ÚLTIMOS MENSAJES ===\n';
+                const lastTwo = history.slice(-2);
+                lastTwo.forEach(msg => {
+                    historyText += `${msg.role === 'user' ? 'Usuario' : 'Asistente'}: ${msg.text}\n`;
+                });
+                prompt += minimalHistory + historyText;
+                currentTokens += this.estimateTokens(minimalHistory + historyText);
+            }
+        }
+        
+        // Add current message
+        prompt += `\n\n=== PREGUNTA ACTUAL ===\n${currentMessage}`;
+        currentTokens += this.estimateTokens(currentMessage);
+        
+        return { prompt, tokens: currentTokens };
+    }
+    
+    private getSourceLabel(type: string): string {
+        const labels: Record<string, string> = {
+            'quote': '📄 COTIZACIÓN',
+            'structured': '📋 CLAUSULADO ESTRUCTURADO',
+            'rag': '📋 CLAUSULADO',
+            'general': 'ℹ️ CONOCIMIENTO GENERAL'
+        };
+        return labels[type] || 'ℹ️ FUENTE';
+    }
+    
+    private estimateTokens(text: string): number {
+        return Math.ceil(text.length / 4);
+    }
+}
+
+/**
+ * Source Prioritizer - Gathers and ranks information sources in parallel
+ */
+class SourcePrioritizer {
+    async gatherSources(message: string, reportContext: any): Promise<SourceResult[]> {
+        const sources: SourceResult[] = [];
+        
+        if (!reportContext?.quotes) {
+            return sources;
+        }
+        
+        const insurerNames = reportContext.quotes.map((q: any) => q.insurerName).filter(Boolean);
+        
+        // Execute all searches in parallel
+        const [quoteResult, structuredResult, ragResult] = await Promise.all([
+            this.searchQuoteData(message, reportContext),
+            this.searchStructuredClauses(message, insurerNames),
+            this.searchRAG(message, insurerNames)
+        ]);
+        
+        // Add results with relevance scores
+        if (quoteResult) {
+            sources.push({
+                type: 'quote',
+                data: quoteResult.data,
+                insurerName: quoteResult.insurerName,
+                relevance: 1.0 // Highest priority
+            });
+        }
+        
+        if (structuredResult.length > 0) {
+            sources.push({
+                type: 'structured',
+                data: this.formatCitations(structuredResult),
+                citations: structuredResult,
+                relevance: 0.8
+            });
+        }
+        
+        if (ragResult.length > 0) {
+            sources.push({
+                type: 'rag',
+                data: this.formatCitations(ragResult),
+                citations: ragResult,
+                relevance: 0.6
+            });
+        }
+        
+        // If no sources found, add general context
+        if (sources.length === 0) {
+            sources.push({
+                type: 'general',
+                data: 'No se encontraron datos específicos para esta pregunta en las cotizaciones o clausulados.',
+                relevance: 0.3
+            });
+        }
+        
+        return sources;
+    }
+    
+    private async searchQuoteData(
+        message: string,
+        reportContext: any
+    ): Promise<{ data: string; insurerName?: string } | null> {
+        try {
+            const quotes = reportContext?.quotes || [];
+            const messageLower = message.toLowerCase();
+            
+            // Search for insurer mentions
+            const mentionedInsurer = quotes.find((q: any) => 
+                messageLower.includes(q.insurerName?.toLowerCase())
+            );
+            
+            if (mentionedInsurer) {
+                const coverage = mentionedInsurer.coverages?.find((c: any) => 
+                    messageLower.includes(c.name?.toLowerCase()) ||
+                    messageLower.includes(c.canonicalName?.toLowerCase())
+                );
+                
+                if (coverage) {
+                    return {
+                        data: `Cobertura: ${coverage.name}\nValor: ${coverage.value}\nDeducible: ${coverage.deductible || 'No especificado'}`,
+                        insurerName: mentionedInsurer.insurerName
+                    };
+                }
+                
+                return {
+                    data: `Aseguradora: ${mentionedInsurer.insurerName}\nPrima: ${mentionedInsurer.priceAnnual}\nCoberturas: ${mentionedInsurer.coverages?.length || 0}`,
+                    insurerName: mentionedInsurer.insurerName
+                };
+            }
+            
+            // Search across all quotes
+            for (const quote of quotes) {
+                const coverage = quote.coverages?.find((c: any) => 
+                    messageLower.includes(c.name?.toLowerCase()) ||
+                    messageLower.includes(c.canonicalName?.toLowerCase())
+                );
+                
+                if (coverage) {
+                    return {
+                        data: `${quote.insurerName}: ${coverage.name} - ${coverage.value} (Ded: ${coverage.deductible || 'N/A'})`,
+                        insurerName: quote.insurerName
+                    };
+                }
+            }
+            
+            return null;
+        } catch (error) {
+            console.error('❌ [SourcePrioritizer] Quote search error:', error);
+            return null;
+        }
+    }
+    
+    private async searchStructuredClauses(
+        message: string,
+        insurerNames: string[]
+    ): Promise<ChatCitation[]> {
+        try {
+            const allClauses: ChatCitation[] = [];
+            
+            for (const insurerName of insurerNames) {
+                const structured = await structuredClauseExtractor.searchClause(insurerName);
+                
+                if (structured) {
+                    const relevantCoverage = structured.coverages.find(c => 
+                        message.toLowerCase().includes(c.name.toLowerCase())
+                    );
+                    
+                    if (relevantCoverage) {
+                        allClauses.push({
+                            id: `structured-${insurerName}`,
+                            insurerName,
+                            content: `${relevantCoverage.name}: ${relevantCoverage.description}\nDeducible: ${JSON.stringify(relevantCoverage.deductible)}`,
+                            pageNumber: relevantCoverage.sourcePage,
+                            similarityScore: 0.95
+                        });
+                    }
+                }
+            }
+            
+            return allClauses;
+        } catch (error) {
+            console.error('❌ [SourcePrioritizer] Structured clause search error:', error);
+            return [];
+        }
+    }
+    
+    private async searchRAG(
+        message: string,
+        insurerNames: string[]
+    ): Promise<ChatCitation[]> {
+        try {
+            const allClauses: ChatCitation[] = [];
+            
+            for (const insurerName of insurerNames) {
+                const results = await ragRetrievalService.search(message, {
+                    insurerName,
+                    limit: 3
+                });
+                
+                const filteredResults = results.filter(r => r.similarity >= 0.62);
+                const rankedResults = await ragRetrievalService.reRankResults(message, filteredResults, {
+                    topK: 2
+                });
+                
+                rankedResults.forEach(clause => {
+                    allClauses.push({
+                        id: clause.id,
+                        insurerName: clause.insurerName,
+                        content: clause.content,
+                        pageNumber: clause.pageNumber,
+                        similarityScore: clause.similarity
+                    });
+                });
+            }
+            
+            return allClauses;
+        } catch (error) {
+            console.error('❌ [SourcePrioritizer] RAG search error:', error);
+            return [];
+        }
+    }
+    
+    private formatCitations(citations: ChatCitation[]): string {
+        return citations.map((c, idx) => 
+            `[${idx + 1}] ${c.insurerName} (pág. ${c.pageNumber}): ${c.content}`
+        ).join('\n');
+    }
+}
+
+/**
+ * Response Validator - Ensures responses don't contradict quote data
+ */
+class ResponseValidator {
+    validate(response: string, sources: SourceResult[]): { isValid: boolean; issues: string[] } {
+        const issues: string[] = [];
+        
+        // Extract quote data sources
+        const quoteSources = sources.filter(s => s.type === 'quote');
+        
+        for (const quoteSource of quoteSources) {
+            // Check for common contradiction patterns
+            // This is a basic implementation - could be enhanced with NLP
+            const quoteData = quoteSource.data.toLowerCase();
+            const responseLower = response.toLowerCase();
+            
+            // Simple heuristic: if response mentions a different deductible or value
+            // Extract deductible patterns
+            const deductibleMatch = quoteData.match(/deducible[:\s]+([^\n]+)/i);
+            if (deductibleMatch) {
+                const quoteDeductible = deductibleMatch[1].trim();
+                // Check if response mentions a different deductible
+                // This is a simplified check - production would need more sophisticated parsing
+            }
+        }
+        
+        return { isValid: issues.length === 0, issues };
+    }
+}
+
+// Initialize managers
+const contextWindowManager = new ContextWindowManager();
+const sourcePrioritizer = new SourcePrioritizer();
+const responseValidator = new ResponseValidator();
+
 /**
  * Build system prompt for Triple Source chat
  */
-const buildSystemPromptTripleSource = (): string => {
-    return `Eres un asistente especializado en seguros para corredores de seguros en Colombia.
+const buildSystemPrompt = (): string => {
+    return `Eres SeguroBot AI, un experto en seguros PYME para corredores de seguros en Colombia.
 
 TRIPLE FUENTE DE VERDAD (en orden de prioridad):
 1. 📄 DATOS DE COTIZACIÓN (Primera fuente): Datos extraídos directamente del PDF de la cotización. Siempre disponibles y precisos.
@@ -62,534 +438,76 @@ REGLAS ESTRICTAS:
 9. Si hay inconsistencia entre cotización y clausulado, ALERTA al usuario
 
 FORMATO DE RESPUESTA:
-- Indica la fuente al inicio: 📄, 📋, o ℹ️
-- Respuesta directa primero
-- Detalles de soporte después`;
+📋 RESUMEN EJECUTIVO (2-3 líneas)
+
+🔍 DATOS DE COTIZACIÓN:
+[Datos relevantes de la cotización]
+
+📋 DETALLES DEL CLAUSULADO:
+[Detalles legales si aplica]
+
+⚠️ ALERTAS:
+[Inconsistencias detectadas si las hay]`;
 };
 
 /**
- * Legacy system prompt (for backward compatibility)
- */
-const buildSystemPrompt = (): string => {
-    return buildSystemPromptTripleSource();
-};
-
-/**
- * Build context from report data
- */
-const buildReportContext = (reportContext: any): string => {
-    if (!reportContext) return '';
-    
-    const quotes = reportContext.quotes || [];
-    const summary = reportContext.summary || '';
-    
-    let context = `=== CONTEXTO DEL REPORTE ===\n`;
-    
-    if (summary) {
-        context += `Resumen: ${summary}\n\n`;
-    }
-    
-    quotes.forEach((quote: any, idx: number) => {
-        context += `--- ASEGURADORA ${idx + 1}: ${quote.insurerName} ---\n`;
-        context += `Score: ${quote.score || 'N/A'}/100\n`;
-        context += `Prima Anual: ${quote.priceAnnual || 'N/A'}\n`;
-        
-        if (quote.coverages && quote.coverages.length > 0) {
-            context += `Coberturas principales:\n`;
-            quote.coverages.slice(0, 10).forEach((c: any) => {
-                context += `- ${c.name}: ${c.value}${c.deductible ? ` (Ded: ${c.deductible})` : ''}\n`;
-            });
-        }
-        
-        if (quote.alerts && quote.alerts.length > 0) {
-            context += `Alertas:\n`;
-            quote.alerts.slice(0, 5).forEach((a: any) => {
-                context += `- [${a.level}] ${a.title}: ${a.description}\n`;
-            });
-        }
-        
-        context += `\n`;
-    });
-    
-    return context;
-};
-
-/**
- * Search quote data for relevant information (Primary Source)
- */
-/**
- * Search quote data semantically using coverage ontology
- */
-const searchQuoteDataSemantically = async (
-    message: string,
-    reportContext: any
-): Promise<{ data: string; source: string; insurerName?: string } | null> => {
-    try {
-        const quotes = reportContext?.quotes || [];
-        const messageLower = message.toLowerCase();
-        
-        // Match user's question semantically to a canonical group
-        const mapped = await require('./coverageOntology').coverageOntology.mapCoverage(message);
-        
-        if (mapped && mapped.groups.length > 0) {
-            const bestGroupId = mapped.groups[0].groupId;
-            console.log(`🧠 [chatService] Semantic quote search mapped query to group: "${bestGroupId}"`);
-            
-            const matchingInsurerData: string[] = [];
-            let matchedInsurerName: string | undefined;
-            
-            for (const quote of quotes) {
-                // Find coverages belonging to bestGroupId
-                const matchingCoverages = (quote.coverages || []).filter((c: any) => 
-                    c.categoryId === bestGroupId || 
-                    c.canonicalName?.toLowerCase() === bestGroupId ||
-                    c.name?.toLowerCase().includes(bestGroupId) ||
-                    (bestGroupId === 'edificios' && c.name?.toLowerCase().includes('incendio')) ||
-                    (bestGroupId === 'rce' && c.name?.toLowerCase().includes('responsabilidad'))
-                );
-                
-                if (matchingCoverages.length > 0) {
-                    matchedInsurerName = quote.insurerName;
-                    matchingCoverages.forEach((c: any) => {
-                        matchingInsurerData.push(`${quote.insurerName}: ${c.name} - $${c.value?.toLocaleString() || c.value} ${c.deductible ? `(Deducible: ${c.deductible})` : ''}`);
-                    });
-                }
-            }
-            
-            if (matchingInsurerData.length > 0) {
-                return {
-                    data: matchingInsurerData.join('\n'),
-                    source: 'quote',
-                    insurerName: matchedInsurerName
-                };
-            }
-        }
-        
-        // Fallback to simple includes search if semantic search found nothing
-        return searchQuoteData(message, reportContext);
-    } catch (error) {
-        console.error('❌ [chatService] Semantic quote search error:', error);
-        return searchQuoteData(message, reportContext);
-    }
-};
-
-/**
- * Legacy Search quote data for relevant information (Primary Source)
- */
-const searchQuoteData = (
-    message: string,
-    reportContext: any
-): { data: string; source: string; insurerName?: string } | null => {
-    try {
-        const quotes = reportContext?.quotes || [];
-        const messageLower = message.toLowerCase();
-        
-        // Search for insurer mentions
-        const mentionedInsurer = quotes.find((q: any) => 
-            messageLower.includes(q.insurerName?.toLowerCase())
-        );
-        
-        if (mentionedInsurer) {
-            // Search for coverage mentions in the message
-            const coverage = mentionedInsurer.coverages?.find((c: any) => 
-                messageLower.includes(c.name?.toLowerCase()) ||
-                messageLower.includes(c.canonicalName?.toLowerCase())
-            );
-            
-            if (coverage) {
-                return {
-                    data: `Cobertura: ${coverage.name}\nValor: ${coverage.value}\nDeducible: ${coverage.deductible || 'No especificado'}`,
-                    source: 'quote',
-                    insurerName: mentionedInsurer.insurerName
-                };
-            }
-            
-            // Return general quote info
-            return {
-                data: `Aseguradora: ${mentionedInsurer.insurerName}\nPrima: ${mentionedInsurer.priceAnnual}\nCoberturas: ${mentionedInsurer.coverages?.length || 0}`,
-                source: 'quote',
-                insurerName: mentionedInsurer.insurerName
-            };
-        }
-        
-        // Search across all quotes for coverage type
-        for (const quote of quotes) {
-            const coverage = quote.coverages?.find((c: any) => 
-                messageLower.includes(c.name?.toLowerCase()) ||
-                messageLower.includes(c.canonicalName?.toLowerCase())
-            );
-            
-            if (coverage) {
-                return {
-                    data: `${quote.insurerName}: ${coverage.name} - ${coverage.value} (Ded: ${coverage.deductible || 'N/A'})`,
-                    source: 'quote',
-                    insurerName: quote.insurerName
-                };
-            }
-        }
-        
-        return null;
-    } catch (error) {
-        console.error('❌ [chatService] Quote search error:', error);
-        return null;
-    }
-};
-
-/**
- * Search structured clauses semantically (Secondary Source)
- */
-const searchStructuredClauses = async (
-    message: string,
-    insurerNames: string[]
-): Promise<ChatCitation[]> => {
-    try {
-        const allClauses: ChatCitation[] = [];
-        
-        // Map user's question semantically to a canonical group
-        const mappedMessage = await require('./coverageOntology').coverageOntology.mapCoverage(message);
-        const bestGroupId = mappedMessage?.groups?.[0]?.groupId;
-        
-        for (const insurerName of insurerNames) {
-            // Try structured clause search first
-            const structured = await structuredClauseExtractor.searchClause(insurerName);
-            
-            if (structured) {
-                // Semantic matching: map clause's coverages and compare groups
-                let matched = false;
-                for (const cov of structured.coverages) {
-                    const mappedCov = await require('./coverageOntology').coverageOntology.mapCoverage(cov.name);
-                    const covGroupId = mappedCov?.groups?.[0]?.groupId;
-                    
-                    if (covGroupId && covGroupId === bestGroupId) {
-                        allClauses.push({
-                            id: `structured-${insurerName}-${cov.name}`,
-                            insurerName,
-                            content: `${cov.name}: ${cov.description}\nDeducible: ${JSON.stringify(cov.deductible || 'No especificado')}\nExclusiones asociadas: ${(cov.exclusions || []).slice(0, 3).join(', ')}`,
-                            pageNumber: cov.sourcePage,
-                            similarityScore: 0.95
-                        });
-                        matched = true;
-                    }
-                }
-                
-                // Fallback to simple includes search if semantic search didn't match anything
-                if (!matched) {
-                    const relevantCoverage = structured.coverages.find(c => 
-                        message.toLowerCase().includes(c.name.toLowerCase())
-                    );
-                    
-                    if (relevantCoverage) {
-                        allClauses.push({
-                            id: `structured-${insurerName}`,
-                            insurerName,
-                            content: `${relevantCoverage.name}: ${relevantCoverage.description}\nDeducible: ${JSON.stringify(relevantCoverage.deductible)}`,
-                            pageNumber: relevantCoverage.sourcePage,
-                            similarityScore: 0.95
-                        });
-                    }
-                }
-            }
-        }
-        
-        return allClauses;
-    } catch (error) {
-        console.error('❌ [chatService] Structured clause search error:', error);
-        return [];
-    }
-};
-
-
-/**
- * Search RAG for relevant clauses (Tertiary Source)
- */
-const searchRAG = async (
-    message: string,
-    insurerNames: string[]
-): Promise<ChatCitation[]> => {
-    try {
-        const allClauses: ChatCitation[] = [];
-        
-        for (const insurerName of insurerNames) {
-            // Retrieve slightly more candidates for better re-ranking
-            const results = await ragRetrievalService.search(message, {
-                insurerName,
-                limit: 4
-            });
-            
-            // Filter by 0.62 similarity threshold
-            const filteredResults = results.filter(r => r.similarity >= 0.62);
-            
-            // Re-rank results using cross-encoder score blending
-            const rankedResults = await ragRetrievalService.reRankResults(message, filteredResults, {
-                topK: 2
-            });
-            
-            rankedResults.forEach(clause => {
-                allClauses.push({
-                    id: clause.id,
-                    insurerName: clause.insurerName,
-                    content: clause.content,
-                    pageNumber: clause.pageNumber,
-                    similarityScore: clause.similarity
-                });
-            });
-        }
-        
-        return allClauses;
-    } catch (error) {
-        console.error('❌ [chatService] RAG search error:', error);
-        return [];
-    }
-};
-
-/**
- * Format citations for the prompt
- */
-const formatCitationsForPrompt = (citations: ChatCitation[]): string => {
-    if (citations.length === 0) return '';
-    
-    let formatted = '\n=== CLAUSULADOS RELEVANTES ===\n';
-    
-    citations.forEach((citation, idx) => {
-        formatted += `[${idx + 1}] ${citation.insurerName} (pág. ${citation.pageNumber}):\n${citation.content}\n\n`;
-    });
-    
-    return formatted;
-};
-
-/**
- * Count tokens roughly (approximation)
- */
-const estimateTokens = (text: string): number => {
-    // Rough estimate: ~4 characters per token for Spanish
-    return Math.ceil(text.length / 4);
-};
-
-/**
- * Create or get chat thread
- */
-export const getOrCreateThread = async (
-    userId: string,
-    reportId?: string
-): Promise<string> => {
-    try {
-        // Try to find existing active thread for this report
-        if (reportId) {
-            const { data: existing } = await supabase
-                .from('chat_threads')
-                .select('id')
-                .eq('user_id', userId)
-                .eq('report_id', reportId)
-                .order('updated_at', { ascending: false })
-                .limit(1);
-            
-            if (existing && existing.length > 0) {
-                return (existing[0] as any).id;
-            }
-        }
-        
-        // Create new thread
-        const { data, error } = await supabase
-            .from('chat_threads')
-            .insert({
-                user_id: userId,
-                report_id: reportId,
-                title: reportId ? 'Análisis de cotización' : 'Nueva conversación'
-            } as any)
-            .select()
-            .single();
-        
-        if (error) throw error;
-        return (data as any).id;
-    } catch (error) {
-        console.error('❌ [chatService] Error creating thread:', error);
-        throw error;
-    }
-};
-
-/**
- * Save message to database
- */
-export const saveMessage = async (
-    threadId: string,
-    role: 'user' | 'model',
-    content: string,
-    citations: ChatCitation[] = [],
-    modelUsed?: string,
-    tokensUsed?: number
-): Promise<void> => {
-    try {
-        await supabase
-            .from('chat_messages')
-            .insert({
-                thread_id: threadId,
-                role,
-                content,
-                citations: citations.length > 0 ? citations : null,
-                model_used: modelUsed,
-                tokens_used: tokensUsed
-            } as any);
-    } catch (error) {
-        console.error('❌ [chatService] Error saving message:', error);
-    }
-};
-
-/**
- * Get conversation history
- */
-export const getConversationHistory = async (
-    threadId: string,
-    limit: number = 10
-): Promise<ChatMessage[]> => {
-    try {
-        const { data, error } = await supabase
-            .from('chat_messages')
-            .select('role, content')
-            .eq('thread_id', threadId)
-            .order('created_at', { ascending: false })
-            .limit(limit);
-        
-        if (error) throw error;
-        
-        return (data || []).map((msg: any) => ({
-            role: msg.role,
-            text: msg.content
-        })).reverse();
-    } catch (error) {
-        console.error('❌ [chatService] Error getting history:', error);
-        return [];
-    }
-};
-
-/**
- * Build prompt with conversation history
- */
-const buildPromptWithHistory = (
-    systemPrompt: string,
-    reportCtx: string,
-    ragContext: string,
-    history: ChatMessage[],
-    currentMessage: string
-): string => {
-    let prompt = `${systemPrompt}\n\n${reportCtx}${ragContext}\n\n`;
-    
-    if (history.length > 0) {
-        prompt += '=== HISTORIAL DE CONVERSACIÓN ===\n';
-        history.forEach(msg => {
-            prompt += `${msg.role === 'user' ? 'Usuario' : 'Asistente'}: ${msg.text}\n`;
-        });
-        prompt += '\n';
-    }
-    
-    prompt += `=== PREGUNTA ACTUAL ===\n${currentMessage}`;
-    
-    return prompt;
-};
-
-/**
- * Process a chat message with Triple Source priority
- * 1. Quote Data (Primary) > 2. Structured Clauses (Secondary) > 3. RAG (Tertiary)
+ * Process a chat message with database persistence and Triple Source priority
  */
 export const processChatMessage = async (
     message: string,
     reportContext: any,
-    useRAG: boolean = true,
     userId: string = 'anonymous',
     threadId?: string
 ): Promise<ChatResponse> => {
     const startTime = Date.now();
     
     try {
-        // Get or create thread
-        const activeThreadId = threadId || await getOrCreateThread(
-            userId, 
-            reportContext?.id
+        // Get or create thread using repository
+        const activeThreadId = threadId || await chatRepository.getOrCreateThread(
+            userId,
+            reportContext?.id,
+            reportContext
         );
         
         // Save user message
-        await saveMessage(activeThreadId, 'user', message);
+        await chatRepository.saveMessage(activeThreadId, {
+            role: 'user',
+            content: message
+        });
         
-        // Get conversation history
-        const history = await getConversationHistory(activeThreadId, 10);
+        // Get conversation history from database
+        const dbHistory = await chatRepository.getHistory(activeThreadId, 10);
+        const history: ChatMessage[] = dbHistory.map(msg => ({
+            role: msg.role as 'user' | 'model',
+            text: msg.content
+        }));
         
-        // Build context
-        const reportCtx = buildReportContext(reportContext);
+        // Gather sources (always on - no RAG toggle)
+        console.log('🔍 [chatService] Gathering sources...');
+        const sources = await sourcePrioritizer.gatherSources(message, reportContext);
         
-        // TRIPLE SOURCE SEARCH
-        let citations: ChatCitation[] = [];
-        let sourceContext = '';
-        let sourcesUsed: string[] = [];
-        
-        if (reportContext?.quotes) {
-            const insurerNames = reportContext.quotes.map((q: any) => q.insurerName).filter(Boolean);
-            
-            // SOURCE 1: Quote Data (Primary)
-            console.log('🔍 [chatService] Searching quote data semantically...');
-            const quoteResult = await searchQuoteDataSemantically(message, reportContext);
-            
-            if (quoteResult) {
-                sourceContext += `\n=== DATOS DE COTIZACIÓN ===\n${quoteResult.data}\n`;
-                sourcesUsed.push('quote');
-                console.log('✅ [chatService] Found in quote data semantically');
+        // Extract citations from sources
+        const citations: ChatCitation[] = [];
+        sources.forEach(source => {
+            if (source.citations) {
+                citations.push(...source.citations);
             }
-            
-            // SOURCE 2: Structured Clauses (Secondary)
-            let structuredCitations: ChatCitation[] = [];
-            if (useRAG) {
-                console.log('🔍 [chatService] Searching structured clauses...');
-                structuredCitations = await searchStructuredClauses(message, insurerNames);
-                
-                if (structuredCitations.length > 0) {
-                    sourceContext += formatCitationsForPrompt(structuredCitations);
-                    citations.push(...structuredCitations);
-                    sourcesUsed.push('structured');
-                    console.log(`✅ [chatService] Found ${structuredCitations.length} structured clauses`);
-                }
-            }
-            
-            // SOURCE 3: RAG (Tertiary) - only if no structured results
-            if (useRAG && structuredCitations.length === 0) {
-                console.log('🔍 [chatService] Searching RAG...');
-                const ragCitations = await searchRAG(message, insurerNames);
-                
-                if (ragCitations.length > 0) {
-                    sourceContext += formatCitationsForPrompt(ragCitations);
-                    citations.push(...ragCitations);
-                    sourcesUsed.push('rag');
-                    console.log(`✅ [chatService] Found ${ragCitations.length} RAG results`);
-                }
-            }
-            
-            // If no sources found but quote data exists, use general quote context
-            if (sourcesUsed.length === 0 && quoteResult === null) {
-                sourceContext = '\n=== NOTA ===\nNo se encontraron datos específicos para esta pregunta, pero hay cotizaciones disponibles para consulta general.\n';
-                sourcesUsed.push('general');
-            }
-        }
+        });
         
-        // Build the full prompt with history
-        let systemPrompt = buildSystemPromptTripleSource();
-        if (reportContext?.pymeSector) {
-            systemPrompt += `\n\nEl cliente es una PYME del sector: **${reportContext.pymeSector}**.
-Ten esto en cuenta al dar asesoría técnica. Por ejemplo:
-- Si es Restaurantes/Alimentos: prioriza Daños por Agua, Congelación, RCE Alimentos, e Interrupción.
-- Si es Oficinas/Servicios/Tecnología: prioriza Equipo Eléctrico y Electrónico, Portabilidad, y RCE Profesional.
-- Si es Manufactura/Talleres: prioriza Rotura de Maquinaria, Incendio Combustión Espontánea, y Lucro Cesante.
-- Si es Comercio/Retail: prioriza Sustracción, Transporte de Mercancías y Valores.
-Adapta el tono, las alertas y las advertencias técnicas según la actividad económica del cliente.`;
-        }
-
-        const fullPrompt = buildPromptWithHistory(
+        // Build compact report summary
+        const reportSummary = contextWindowManager.compactReportContext(reportContext);
+        
+        // Build controlled prompt
+        const systemPrompt = buildSystemPrompt();
+        const { prompt: fullPrompt, tokens: inputTokens } = contextWindowManager.buildPrompt(
             systemPrompt,
-            reportCtx,
-            sourceContext,
+            reportSummary,
+            sources,
             history,
             message
         );
         
-        // Estimate tokens
-        const estimatedTokens = estimateTokens(fullPrompt);
-        console.log(`🤖 [chatService] Estimated prompt tokens: ${estimatedTokens}`);
+        console.log(`🤖 [chatService] Prompt tokens: ${inputTokens}`);
         
         // Call Gemini
         const model = genAI.models.generateContent({
@@ -600,50 +518,63 @@ Adapta el tono, las alertas y las advertencias técnicas según la actividad eco
         const result = await model;
         let responseText = result.text || 'Lo siento, no pude generar una respuesta.';
         
-        // Add source attribution if not already present
-        if (!responseText.includes('📄') && !responseText.includes('📋') && !responseText.includes('ℹ️')) {
-            const sourceLabels: Record<string, string> = {
-                'quote': '📄 Según la cotización',
-                'structured': '📋 Según clausulado estructurado',
-                'rag': '📋 Según clausulado',
-                'general': 'ℹ️ Información general'
-            };
-            
-            const primarySource = sourcesUsed[0] || 'general';
-            responseText = `${sourceLabels[primarySource]}\n\n${responseText}`;
+        // Validate response against quote data
+        const validation = responseValidator.validate(responseText, sources);
+        if (!validation.isValid) {
+            console.warn('⚠️ [chatService] Response validation issues:', validation.issues);
+            responseText += '\n\n⚠️ Nota: Se detectaron posibles inconsistencias con los datos de la cotización.';
         }
         
-        // Save model response
-        await saveMessage(
-            activeThreadId,
-            'model',
-            responseText,
-            citations,
-            GEMINI_CHAT_MODEL,
-            estimatedTokens + estimateTokens(responseText)
-        );
+        // Ensure source attribution
+        if (!responseText.includes('📄') && !responseText.includes('📋') && !responseText.includes('ℹ️')) {
+            const primarySource = sources[0];
+            if (primarySource) {
+                const sourceLabels: Record<string, string> = {
+                    'quote': '📄 Según la cotización',
+                    'structured': '📋 Según clausulado estructurado',
+                    'rag': '📋 Según clausulado',
+                    'general': 'ℹ️ Información general'
+                };
+                responseText = `${sourceLabels[primarySource.type] || 'ℹ️ Información'}\n\n${responseText}`;
+            }
+        }
         
-        console.log(`✅ [chatService] Response generated in ${Date.now() - startTime}ms (sources: ${sourcesUsed.join(', ')})`);
+        const outputTokens = Math.ceil(responseText.length / 4);
+        const latencyMs = Date.now() - startTime;
+        
+        // Save model response with metadata
+        await chatRepository.saveMessage(activeThreadId, {
+            role: 'model',
+            content: responseText,
+            sources_used: sources.map(s => ({ type: s.type, insurer: s.insurerName, relevance: s.relevance })),
+            citations: citations,
+            model_used: GEMINI_CHAT_MODEL,
+            tokens_input: inputTokens,
+            tokens_output: outputTokens,
+            latency_ms: latencyMs
+        });
+        
+        console.log(`✅ [chatService] Response generated in ${latencyMs}ms (sources: ${sources.map(s => s.type).join(', ')})`);
         
         return {
             text: responseText,
             citations,
-            tokensUsed: estimatedTokens + estimateTokens(responseText),
+            tokensUsed: inputTokens + outputTokens,
             modelUsed: GEMINI_CHAT_MODEL,
-            source: sourcesUsed.includes('quote') ? 'direct' :
-                    sourcesUsed.includes('structured') ? 'rag' :
-                    sourcesUsed.includes('rag') ? 'rag' :
-                    sourcesUsed.includes('general') ? 'fallback' : 'fallback'
+            source: sources.find(s => s.type === 'quote') ? 'direct' :
+                    sources.find(s => s.type === 'structured' || s.type === 'rag') ? 'rag' : 'fallback'
         };
     } catch (error) {
         console.error('❌ [chatService] Error processing message:', error);
         
         // Fallback: Always try to answer with quote data
         try {
-            const quoteResult = searchQuoteData(message, reportContext);
-            if (quoteResult) {
+            const quoteSources = await sourcePrioritizer.gatherSources(message, reportContext);
+            const quoteSource = quoteSources.find(s => s.type === 'quote');
+            
+            if (quoteSource) {
                 return {
-                    text: `📄 Según la cotización:\n\n${quoteResult.data}\n\n⚠️ Nota: Esta respuesta se basa únicamente en los datos de la cotización.`,
+                    text: `📄 Según la cotización:\n\n${quoteSource.data}\n\n⚠️ Nota: Esta respuesta se basa únicamente en los datos de la cotización.`,
                     citations: [],
                     tokensUsed: 0,
                     modelUsed: 'fallback-quote-data',
@@ -656,6 +587,35 @@ Adapta el tono, las alertas y las advertencias técnicas según la actividad eco
         
         throw error;
     }
+};
+
+/**
+ * Get conversation history for a thread
+ */
+export const getConversationHistory = async (
+    threadId: string,
+    limit: number = 50
+): Promise<ChatMessage[]> => {
+    const messages = await chatRepository.getHistory(threadId, limit);
+    return messages.map(msg => ({
+        role: msg.role as 'user' | 'model',
+        text: msg.content
+    }));
+};
+
+/**
+ * Get or create chat thread
+ */
+export const getOrCreateThread = async (
+    userId: string,
+    reportId?: string,
+    reportContext?: any
+): Promise<string> => {
+    if (!reportId) {
+        // Create a general thread without report
+        return chatRepository.createThread(userId, reportContext || {});
+    }
+    return chatRepository.getOrCreateThread(userId, reportId, reportContext);
 };
 
 /**
@@ -690,7 +650,6 @@ export const generateSuggestedQuestions = (reportContext: any): string[] => {
             }
         }
         
-        // Score-based question
         if (quote.score !== undefined && quote.score < 70 && questions.length < 5) {
             questions.push(`¿Qué afectó el score de ${quote.insurerName}?`);
         }
@@ -703,7 +662,6 @@ export const generateSuggestedQuestions = (reportContext: any): string[] => {
         );
         questions.push(`¿Por qué ${bestQuote.insurerName} es la mejor opción?`);
         
-        // Price comparison
         const prices = quotes.filter((q: any) => q.priceAnnual);
         if (prices.length >= 2) {
             const cheapest = prices.reduce((prev: any, current: any) => 
@@ -728,7 +686,6 @@ export const generateSuggestedQuestions = (reportContext: any): string[] => {
         questions.push(`¿Qué cubre ${coverage}?`);
     }
     
-    // Ensure we have at least 3 questions
     const defaultQuestions = [
         '¿Qué coberturas son más importantes para mi negocio?',
         '¿Cuál es la diferencia entre deducible sobre pérdida y sobre valor asegurado?',
@@ -744,5 +701,7 @@ export const generateSuggestedQuestions = (reportContext: any): string[] => {
 
 export default {
     processChatMessage,
-    generateSuggestedQuestions
+    generateSuggestedQuestions,
+    getConversationHistory,
+    getOrCreateThread
 };

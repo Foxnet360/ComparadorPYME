@@ -10,6 +10,7 @@ import { levenshteinDistance } from '../utils/stringUtils';
 import { groupUncategorizedCoverages } from './semanticGrouper';
 import { coverageOntology, CoverageMapping } from './coverageOntology';
 import { featureFlags } from '../config/featureFlags';
+import { pdfExtractor } from './pdfExtractor';
 
 export type CoverageStatus = 'present' | 'missing' | 'excluded';
 
@@ -25,6 +26,8 @@ export interface CanonicalCoverage {
   needsReview: boolean;
   notes?: string;
   categoryId?: number | string | null;
+  rawTextSnippet?: string;
+  pageNumber?: number | null;
 }
 
 export interface RawCoverage {
@@ -34,6 +37,8 @@ export interface RawCoverage {
   deductible?: string;
   premium?: number;
   notes?: string;
+  rawTextSnippet?: string;
+  pageNumber?: number | null;
 }
 
 export interface InsuredAsset {
@@ -494,11 +499,12 @@ function mapRawToCanonicalSync(rawName: string): string | null {
 export async function buildCanonicalCoverages(
   rawCoverages: RawCoverage[],
   insuredAssets: InsuredAsset[] = [],
-  generalDeductibles: GeneralDeductible[] = []
+  generalDeductibles: GeneralDeductible[] = [],
+  pageTextMap?: Record<number, string>
 ): Promise<NormalizationResult> {
   // Ontology mode (fluid architecture)
   if (featureFlags.isEnabled('semanticCoverageOntology') && !featureFlags.isEnabled('useLegacyCoverageMatcher')) {
-    return buildOntologyBasedCoverages(rawCoverages, insuredAssets, generalDeductibles);
+    return buildOntologyBasedCoverages(rawCoverages, insuredAssets, generalDeductibles, pageTextMap);
   }
 
   // Legacy mode (14 categories)
@@ -659,7 +665,8 @@ export async function buildCanonicalCoverages(
 async function buildOntologyBasedCoverages(
   rawCoverages: RawCoverage[],
   insuredAssets: InsuredAsset[] = [],
-  generalDeductibles: GeneralDeductible[] = []
+  generalDeductibles: GeneralDeductible[] = [],
+  pageTextMap?: Record<number, string>
 ): Promise<NormalizationResult> {
   // Step 1: Resolve deductibles
   const withDeductibles = resolveDeductibles(rawCoverages, generalDeductibles);
@@ -675,6 +682,16 @@ async function buildOntologyBasedCoverages(
   
   for (const coverage of withAmounts) {
     const mapping = await coverageOntology.mapCoverage(coverage.rawName);
+    
+    // Reverse String page mapping using literal rawTextSnippet evidence
+    if (pageTextMap && coverage.rawTextSnippet) {
+      const resolvedPage = pdfExtractor.findExactPageForSnippet(pageTextMap, coverage.rawTextSnippet);
+      if (resolvedPage !== null) {
+        coverage.pageNumber = resolvedPage;
+        mapping.pageNumber = resolvedPage;
+      }
+    }
+
     mappings.push({ coverage, mapping });
     
     // Save for learning
@@ -751,7 +768,9 @@ async function buildOntologyBasedCoverages(
         matchMethod: best.isComposite ? 'ontology-composite' : 'ontology',
         needsReview: groupNeedsReview,
         notes: best.isComposite ? `Cobertura compuesta: ${best.components?.join(', ')}` : undefined,
-        categoryId: category.id
+        categoryId: category.id,
+        rawTextSnippet: best.rawCoverage.rawTextSnippet || undefined,
+        pageNumber: best.rawCoverage.pageNumber || undefined
       });
       
       totalConfidence += avgConfidence * 100;
@@ -794,7 +813,9 @@ async function buildOntologyBasedCoverages(
         rawNames: [coverage.rawName],
         matchMethod: null,
         needsReview: true,
-        notes: 'Sin clasificación semántica'
+        notes: 'Sin clasificación semántica',
+        rawTextSnippet: coverage.rawTextSnippet || undefined,
+        pageNumber: coverage.pageNumber || undefined
       });
     }
   }

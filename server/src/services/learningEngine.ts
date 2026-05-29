@@ -1,6 +1,5 @@
 import { supabase } from '../config/database';
 import { embeddingService } from './vector/embeddingService';
-import { coverageOntology } from './coverageOntology';
 import { deleteCacheValue, getCacheKeys, setCacheValue } from './cache/redisCache';
 
 export interface UserCorrection {
@@ -12,6 +11,10 @@ export interface UserCorrection {
   correctionType: 'coverage_mapping' | 'deductible' | 'exclusion' | 'value';
   quoteId?: string;
   createdAt?: Date;
+  // High certainty columns
+  rawTextSnippet?: string;
+  aiJustification?: string;
+  pageNumber?: number;
 }
 
 export interface LearningMetrics {
@@ -23,21 +26,87 @@ export interface LearningMetrics {
 
 export const learningEngine = {
   /**
+   * Realiza una búsqueda vectorial en memoria de las 3 correcciones de usuario anteriores más similares
+   */
+  async getSimilarCorrections(rawName: string): Promise<any[]> {
+    try {
+      const { data: corrections, error } = await supabase
+        .from('coverage_mappings')
+        .select('*')
+        .eq('user_corrected', true)
+        .limit(50);
+
+      if (error || !corrections || corrections.length === 0) return [];
+
+      const queryEmbedding = await embeddingService.generateEmbedding(rawName);
+      const similarityList: Array<{ correction: any; similarity: number }> = [];
+
+      for (const correction of corrections as any[]) {
+        try {
+          const correctionEmbedding = await embeddingService.generateEmbedding(correction.raw_name);
+          const similarity = embeddingService.cosineSimilarity(queryEmbedding, correctionEmbedding);
+          similarityList.push({ correction, similarity });
+        } catch (e) {
+          // Ignore individual embedding failures
+        }
+      }
+
+      // Sort by similarity descending and take top 3
+      similarityList.sort((a, b) => b.similarity - a.similarity);
+      return similarityList.slice(0, 3).map(item => item.correction);
+    } catch (err) {
+      console.error('⚠️ [LearningEngine] Error recuperando ejemplos de aprendizaje pocos disparos:', err);
+      return [];
+    }
+  },
+
+  /**
    * Save a user correction
    */
   async saveCorrection(correction: UserCorrection): Promise<string> {
     try {
-      const { data, error } = await supabase
+      let data, error;
+      
+      // Intento 1: Guardar con las nuevas columnas de alta certeza
+      const res = await supabase
         .from('coverage_mappings')
         .upsert({
           raw_name: correction.rawName,
-          insurer_name: correction.insurerName,
+          insurer_name: correction.insurerName || '',
           canonical_name: correction.userCorrection,
           user_corrected: true,
-          correction_count: 1
+          correction_count: 1,
+          raw_text_snippet: correction.rawTextSnippet || null,
+          ai_justification: correction.aiJustification || null,
+          page_number: correction.pageNumber || null,
+          needs_human_review: false,
+          updated_at: new Date().toISOString()
         } as any)
         .select('id')
         .single();
+      
+      data = res.data;
+      error = res.error;
+
+      if (error) {
+        // Fallback: guardar solo columnas estándar en caso de que falten en el esquema
+        console.warn('⚠️ [LearningEngine DB] Faltan columnas en Supabase, usando columnas estándar:', error.message);
+        const fallbackRes = await supabase
+          .from('coverage_mappings')
+          .upsert({
+            raw_name: correction.rawName,
+            insurer_name: correction.insurerName || '',
+            canonical_name: correction.userCorrection,
+            user_corrected: true,
+            correction_count: 1,
+            updated_at: new Date().toISOString()
+          } as any)
+          .select('id')
+          .single();
+        
+        data = fallbackRes.data;
+        error = fallbackRes.error;
+      }
 
       if (error) throw error;
 
@@ -153,6 +222,7 @@ export const learningEngine = {
    */
   async updateOntology(correction: UserCorrection): Promise<void> {
     try {
+      const { default: coverageOntology } = await import('./coverageOntology');
       // Save mapping to ontology
       await coverageOntology.saveMapping({
         rawName: correction.rawName,

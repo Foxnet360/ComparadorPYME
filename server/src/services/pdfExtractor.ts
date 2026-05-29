@@ -25,6 +25,7 @@ export interface PDFMetadata {
 export interface PDFExtractionResult {
     text: string;
     pages: PageData[];
+    pageTextMap?: Record<number, string>;
     metadata: PDFMetadata;
     warnings: string[];
     isScanned: boolean;
@@ -150,9 +151,15 @@ export const pdfExtractor = {
                 console.log(`⚠️  Warnings: ${warnings.length}`);
             }
 
+            const pageTextMap: Record<number, string> = {};
+            pages.forEach(p => {
+                pageTextMap[p.pageNumber] = p.text;
+            });
+
             return {
                 text: cleanedText,
                 pages,
+                pageTextMap,
                 metadata,
                 warnings,
                 isScanned,
@@ -339,4 +346,54 @@ export const pdfExtractor = {
             return { valid: false, error: error.message };
         }
     },
+
+    /**
+     * Limpia el texto eliminando caracteres no-alfanuméricos y normalizando espacios para comparaciones substring tolerantes
+     */
+    cleanTextForMatching: (text: string): string => {
+        if (!text) return '';
+        return text
+            .toLowerCase()
+            .replace(/[^a-z0-9]/gi, '')
+            .trim();
+    },
+
+    /**
+     * Busca el snippet literal dentro de las páginas del PDF y devuelve la página (1-indexed) donde se encuentra de forma determinista
+     */
+    findExactPageForSnippet: (pageTextMap: Record<number, string> | undefined, snippet: string | undefined): number | null => {
+        if (!pageTextMap || !snippet || snippet.trim().length === 0) return null;
+        
+        const cleanedSnippet = pdfExtractor.cleanTextForMatching(snippet);
+        if (cleanedSnippet.length < 5) return null;
+
+        // Intentar coincidencia exacta del snippet limpio en cada página limpia
+        for (const [pageNumberStr, text] of Object.entries(pageTextMap)) {
+            const pageNum = parseInt(pageNumberStr, 10);
+            const cleanedPageText = pdfExtractor.cleanTextForMatching(text);
+            
+            if (cleanedPageText.includes(cleanedSnippet)) {
+                return pageNum;
+            }
+        }
+        
+        // Tolerancia a fallos por intersección de palabras significativas
+        const words = snippet.split(/\s+/).filter(w => w.length > 3);
+        if (words.length >= 3) {
+            for (const [pageNumberStr, text] of Object.entries(pageTextMap)) {
+                const pageNum = parseInt(pageNumberStr, 10);
+                const cleanedPageText = pdfExtractor.cleanTextForMatching(text);
+                
+                const sortedWords = [...words].sort((a, b) => b.length - a.length);
+                const topWords = sortedWords.slice(0, 3).map(w => pdfExtractor.cleanTextForMatching(w));
+                
+                if (topWords.every(w => cleanedPageText.includes(w))) {
+                    return pageNum;
+                }
+            }
+        }
+
+        return null;
+    }
 };
+

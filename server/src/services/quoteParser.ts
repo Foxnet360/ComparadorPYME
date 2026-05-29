@@ -26,6 +26,9 @@ export interface ParsedCoverage {
     valueSource?: 'extracted' | 'calculated' | 'inferred';
     // Sublimit information (optional)
     sublimit?: string;
+    // Text evidence tracking for reverse page anchoring
+    rawTextSnippet?: string;
+    calculatedPage?: number;
 }
 
 export interface ExpectedCoverage {
@@ -47,6 +50,8 @@ export interface ParsedQuote {
     rawText: string;
     parseConfidence: number;
     expectedCoverages?: ExpectedCoverage[];
+    // Positional text tracking
+    pageTextMap?: Record<number, string>;
     // Error tracking for graceful degradation
     isFailed?: boolean;
     errorCategory?: string;

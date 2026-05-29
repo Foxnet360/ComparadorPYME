@@ -22,6 +22,7 @@ import { CorrectionUI } from './CorrectionUI';
 import { formatCOP, formatCOPMillions } from '../utils/formatCurrency';
 import { isAdvancedAnalysisEnabled } from '../config/features';
 import { normalizeText } from '../utils/textUtils';
+import { useCellNotes } from '../contexts/AnalysisContext';
 
 interface ComparisonReportProps {
   report: ReportType;
@@ -29,6 +30,9 @@ interface ComparisonReportProps {
 
 const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
   const [activeTab, setActiveTab] = useState<'resumen' | 'coberturas' | 'deducibles' | 'auditoria' | 'analisis-avanzado'>('resumen');
+  
+  // Get cell notes from context
+  const { cellNotes } = useCellNotes();
   
   // Check if advanced analysis is enabled via feature flag and any quote has data
   const hasAdvancedAnalysis = isAdvancedAnalysisEnabled() && report.quotes.some(q => 
@@ -245,7 +249,7 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
                       customTitle: pdfOptions.title,
                       logoBase64: pdfOptions.logo,
                       primaryColor: pdfOptions.color
-                    });
+                    }, cellNotes);
                     setShowExportModal(false);
                   }}
                   className="w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors"

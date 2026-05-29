@@ -7,7 +7,7 @@ import { crossReferenceEngine } from '../crossReferenceEngine';
 import { quoteScorer } from '../quoteScorer';
 import { structuredClauseExtractor } from '../structuredClauseExtractor';
 import { deductibleParser } from '../deductibleParser';
-import { chatService } from '../chatService';
+import chatService from '../chatService';
 
 // Mock external services
 vi.mock('../gemini', () => ({

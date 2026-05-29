@@ -5,6 +5,8 @@
  */
 
 import { Request, Response } from 'express';
+import { z } from 'zod';
+import { v4 as uuidv4 } from 'uuid';
 import { clauseCoverageValidator } from '../services/clauseCoverageValidator';
 import { deductibleAnalyzer } from '../services/deductibleAnalyzer';
 import { inverseCoverageChecker } from '../services/inverseCoverageChecker';
@@ -15,6 +17,7 @@ import { virtualLawyerService } from '../services/virtualLawyerService';
 import { structuredClauseExtractor } from '../services/structuredClauseExtractor';
 import { variableComparator } from '../services/variableComparator';
 import { learningEngine } from '../services/learningEngine';
+import { supabase } from '../config/database';
 
 export const validateCoverages = async (req: Request, res: Response): Promise<void> => {
   const { quote, insurerName } = req.body;
@@ -195,26 +198,75 @@ export const compareVariables = async (req: Request, res: Response): Promise<voi
   });
 };
 
+// Schema Zod para validación de correcciones
+const CorrectionSchema = z.object({
+  correctionId: z.string().optional(), // Para idempotencia
+  rawName: z.string().min(1, 'rawName is required'),
+  insurerName: z.string().min(1, 'insurerName is required'),
+  systemMapping: z.string().min(1, 'systemMapping is required'),
+  userCorrection: z.string().min(1, 'userCorrection is required'),
+  correctionType: z.enum(['coverage_mapping', 'deductible', 'exclusion', 'value']).default('coverage_mapping'),
+  quoteId: z.string().optional(),
+  rawTextSnippet: z.string().max(2000).optional(),
+  aiJustification: z.string().max(2000).optional(),
+  pageNumber: z.number().int().positive().optional(),
+});
+
+type CorrectionInput = z.infer<typeof CorrectionSchema>;
+
 export const saveCorrection = async (req: Request, res: Response): Promise<void> => {
-  const { rawName, insurerName, systemMapping, userCorrection, correctionType, quoteId } = req.body;
-  
-  if (!rawName || !userCorrection) {
-    res.status(400).json({ 
-      error: 'Missing required fields: rawName, userCorrection' 
+  try {
+    // 1. Validación con Zod
+    const parseResult = CorrectionSchema.safeParse(req.body);
+    
+    if (!parseResult.success) {
+      res.status(400).json({
+        error: 'Validation failed',
+        details: parseResult.error.issues.map((err: any) => ({
+          field: err.path.join('.'),
+          message: err.message,
+        })),
+      });
+      return;
+    }
+
+    const correction: CorrectionInput = parseResult.data;
+    
+    // 2. Idempotencia: verificar si ya existe una corrección con el mismo correctionId
+    if (correction.correctionId) {
+      const { data: existingCorrection, error: lookupError } = await supabase
+        .from('coverage_mappings')
+        .select('id')
+        .eq('id', correction.correctionId)
+        .single();
+      
+      if (!lookupError && existingCorrection) {
+        res.json({ id: (existingCorrection as any).id, success: true, cached: true });
+        return;
+      }
+    }
+    
+    // 3. Guardar corrección con campos extendidos
+    const id = await learningEngine.saveCorrection({
+      rawName: correction.rawName,
+      insurerName: correction.insurerName,
+      systemMapping: correction.systemMapping,
+      userCorrection: correction.userCorrection,
+      correctionType: correction.correctionType,
+      quoteId: correction.quoteId,
+      rawTextSnippet: correction.rawTextSnippet,
+      aiJustification: correction.aiJustification,
+      pageNumber: correction.pageNumber,
     });
-    return;
+    
+    res.json({ id, success: true });
+  } catch (error) {
+    console.error('❌ [saveCorrection] Error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error while saving correction',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
-  
-  const id = await learningEngine.saveCorrection({
-    rawName,
-    insurerName,
-    systemMapping,
-    userCorrection,
-    correctionType: correctionType || 'coverage_mapping',
-    quoteId
-  });
-  
-  res.json({ id, success: true });
 };
 
 export const getLearningMetrics = async (req: Request, res: Response): Promise<void> => {
@@ -263,7 +315,10 @@ export const exportAnalysisExcel = async (req: Request, res: Response): Promise<
       location: 'Bogotá D.C.'
     };
     
-    const buffer = await generateExcelBuffer(quotes, clientInfo);
+    // Get cell notes from request body (if provided by frontend)
+    const cellNotes = req.body?.cellNotes as Record<string, string> | undefined;
+    
+    const buffer = await generateExcelBuffer(quotes, clientInfo, cellNotes);
     
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename=comparativa_seguros_${id}.xlsx`);

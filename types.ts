@@ -21,6 +21,11 @@ export interface CoverageItem {
   valueSource?: 'extracted' | 'calculated' | 'inferred';
   // Sublimit information (optional)
   sublimit?: string;
+  // High-certainty ontology fields (Phase 4)
+  rawTextSnippet?: string;
+  needsHumanReview?: boolean;
+  justification?: string;
+  calculatedPage?: number;
 }
 
 export type AlertLevel = 'CRITICAL' | 'WARNING' | 'GOOD' | 'INFO';
@@ -375,6 +380,10 @@ export interface MatrixCell {
   notes?: string;
   pageNumber?: number;
   confidence?: number;
+  rawTextSnippet?: string;
+  needsHumanReview?: boolean;
+  calculatedPage?: number;
+  justification?: string;
 }
 
 export interface MatrixRow {

@@ -2,7 +2,7 @@ import * as ExcelJS from 'exceljs';
 import { QuoteAnalysis, MatrixRow, MatrixCell } from '../types';
 import { transformQuotesToMatrix, parseNumericValue, isExcludedValue } from './matrixTransformer';
 
-export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: any): Promise<Buffer> {
+export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: any, cellNotes?: Record<string, string>): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Agente Comparador CSA';
   workbook.lastModifiedBy = 'Agente Comparador CSA';
@@ -11,6 +11,7 @@ export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: 
 
   // Generate Matrix
   const matrix = transformQuotesToMatrix(quotes);
+  const hasNotes = cellNotes && Object.keys(cellNotes).length > 0;
 
   // Parse Client Info
   const clientName = clientInfo?.name || 'LEIDY MIREYA GARCIA GUEPENDO (LASERHOME)';
@@ -125,7 +126,8 @@ export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: 
   }
 
   // Title block in Coberturas
-  coveragesSheet.mergeCells(1, 1, 2, quotes.length + 1);
+  const notesColumnOffset = hasNotes ? 1 : 0;
+  coveragesSheet.mergeCells(1, 1, 2, quotes.length + 1 + notesColumnOffset);
   const covTitle = coveragesSheet.getCell(1, 1);
   covTitle.value = 'COMPARATIVA DE COBERTURAS Y DEDUCIBLES';
   covTitle.font = { name: 'Calibri', size: 14, bold: true, color: { argb: 'FF0066CC' } };
@@ -147,13 +149,23 @@ export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: 
     insHeader.alignment = { vertical: 'middle', horizontal: 'center' };
   });
 
+  // Add Notes column header if notes exist
+  if (hasNotes) {
+    const notesHeader = coveragesSheet.getCell(4, quotes.length + 2);
+    notesHeader.value = 'INSIGHTS DEL CONSULTOR';
+    notesHeader.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+    notesHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF7C3AED' } }; // Purple header
+    notesHeader.alignment = { vertical: 'middle', horizontal: 'center' };
+    coveragesSheet.getColumn(quotes.length + 2).width = 40;
+  }
+
   // Populate Matrix Rows (sectionId < 100)
   let currentExcelRow = 5;
   const coverageRows = matrix.filter(row => row.sectionId < 100);
 
   for (const row of coverageRows) {
     if (row.type === 'header') {
-      coveragesSheet.mergeCells(currentExcelRow, 1, currentExcelRow, quotes.length + 1);
+      coveragesSheet.mergeCells(currentExcelRow, 1, currentExcelRow, quotes.length + 1 + notesColumnOffset);
       const cell = coveragesSheet.getCell(currentExcelRow, 1);
       cell.value = row.label;
       cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF0066CC' } };
@@ -219,6 +231,23 @@ export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: 
           xlCell.note = `Fuente original: PDF cotización, Página ${cell.pageNumber}`;
         }
       });
+
+      // Add Notes column if exists
+      if (hasNotes) {
+        const cellId = `coverage-${row.id}`;
+        const note = cellNotes?.[cellId];
+        const notesCell = coveragesSheet.getCell(currentExcelRow, quotes.length + 2);
+        notesCell.value = note || '';
+        notesCell.font = { name: 'Calibri', size: 9, color: { argb: 'FF7C3AED' }, italic: true };
+        notesCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+        notesCell.border = {
+          bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+        };
+        if (note) {
+          notesCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3E8FF' } }; // Light purple background
+        }
+      }
 
       currentExcelRow++;
     }
