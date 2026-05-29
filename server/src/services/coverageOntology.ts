@@ -475,7 +475,10 @@ export const coverageOntology = {
           needs_human_review: mapping.needsHumanReview || false,
           last_used_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
-        } as any);
+        } as any, {
+          onConflict: 'raw_name,insurer_name',
+          ignoreDuplicates: false
+        });
 
       if (error) {
         // Fallback: guardar solo columnas estándar en caso de que falten en el esquema
@@ -492,14 +495,27 @@ export const coverageOntology = {
             components: mapping.components || null,
             last_used_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
-          } as any);
+          } as any, {
+            onConflict: 'raw_name,insurer_name',
+            ignoreDuplicates: false
+          });
         
         if (fallbackError) {
+          // Silenciar error de duplicado - no es crítico
+          if (fallbackError.code === '23505') {
+            console.log(`🌳 [Ontology DB] Mapping already exists for "${mapping.rawName}"`);
+            return;
+          }
           throw fallbackError;
         }
       }
       console.log(`🌳 [Ontology DB] Saved mapping for "${mapping.rawName}"`);
-    } catch (error) {
+    } catch (error: any) {
+      // Silenciar error de duplicado - no es crítico
+      if (error?.code === '23505') {
+        console.log(`🌳 [Ontology DB] Mapping already exists for "${mapping.rawName}"`);
+        return;
+      }
       console.error('❌ [Ontology DB] Failed to save mapping:', error);
     }
   }
