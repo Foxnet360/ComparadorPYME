@@ -15,17 +15,9 @@ All monetary values in the generated PDF report SHALL use the same Colombian cur
 - **WHEN** formatting is applied to PDF values
 - **THEN** table columns do not break or overflow
 
-#### Scenario: PDF premium values
-- **WHEN** displaying premium breakdown in PDF
-- **THEN** all monetary values use `formatCOP` with Colombian separators
-
 ### Requirement: PDF deductible section formatting
 Deductible values in the PDF report SHALL use the same formatting as the web UI.
 
 #### Scenario: Deductible text in PDF
 - **WHEN** displaying deductible descriptions in PDF
 - **THEN** percentage values use comma as decimal separator
-
-#### Scenario: PDF price summary
-- **WHEN** displaying price comparison in PDF
-- **THEN** monetary values use `formatCOP` with Colombian separators

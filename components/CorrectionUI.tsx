@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { QuoteAnalysis } from '../types';
 import { AlertTriangle, Check, X, Edit3, Save, RotateCcw, Loader2 } from 'lucide-react';
-import { formatCOP } from '../utils/formatCurrency';
 import { useOptimisticCorrection } from '../hooks/useOptimisticCorrection';
 import { ToastContainer, useToasts } from './ToastNotification';
 
@@ -150,7 +149,7 @@ export const CorrectionUI: React.FC<CorrectionUIProps> = ({ quote, onCorrection 
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-slate-700">{field.label}</span>
               <span className="text-xs text-slate-500">
-                Actual: {field.type === 'price' && field.value ? formatCOP(Number(field.value)) : (field.value || 'No especificado')}
+                Actual: {field.value || 'No especificado'}
               </span>
             </div>
             

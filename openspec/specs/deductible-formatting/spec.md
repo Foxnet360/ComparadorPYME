@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Deductible percentages display with Colombian format
-Deductible percentages displayed in ANY deductible component SHALL use comma as the decimal separator according to Colombian standards.
+Deductible percentages displayed in the DeductiblesComparisonTable SHALL use comma as the decimal separator according to Colombian standards.
 
 #### Scenario: Whole number percentage
 - **WHEN** a deductible percentage is "10"
@@ -12,12 +12,8 @@ Deductible percentages displayed in ANY deductible component SHALL use comma as 
 - **THEN** it displays as "12,5%"
 
 #### Scenario: Deductible minimum amount
-- **WHEN** a deductible has a minimum monetary amount
-- **THEN** the amount is formatted with `formatCOP` using Colombian separators
-
-#### Scenario: Variable comparison deductible display
-- **WHEN** displaying deductibles in VariableComparisonMatrix
-- **THEN** percentage values use comma as decimal separator and monetary values use `formatCOP`
+- **WHEN** a deductible has a minimum of "5 SMMLV"
+- **THEN** the number "5" is formatted with Colombian separators if applicable
 
 ### Requirement: Deductible severity indicators remain functional
 The severity color coding (good/warning/critical) for deductibles SHALL continue to work correctly after formatting changes.

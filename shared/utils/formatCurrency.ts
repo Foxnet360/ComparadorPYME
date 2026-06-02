@@ -1,10 +1,6 @@
 /**
  * Utility functions for formatting Colombian Peso (COP) currency
  * Backend version
- *
- * CONVENTION: All monetary values displayed in the UI MUST use these utilities.
- * Do NOT use inline toLocaleString(), Number.prototype.toFixed(), or string
- * concatenation for currency formatting.
  */
 
 export function formatCOP(

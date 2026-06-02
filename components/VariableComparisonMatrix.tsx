@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { VariableComparison } from '../types/analysis';
 import { BarChart3, ChevronDown, ChevronUp, AlertTriangle, Check, Info } from 'lucide-react';
-import { formatCOP, formatNumber, formatPercentage } from '../utils/formatCurrency';
 
 interface VariableComparisonMatrixProps {
   comparisons: VariableComparison[];
@@ -26,14 +25,9 @@ const VariableComparisonMatrix: React.FC<VariableComparisonMatrixProps> = ({ com
     if (!value) return '-';
     if (typeof value === 'object') {
       if (value.value && value.currency) {
-        return formatCOP(value.value);
+        return `${value.currency} ${value.value.toLocaleString()}`;
       }
       return JSON.stringify(value);
-    }
-    // Try to parse numeric string as monetary value
-    const numValue = Number(value);
-    if (!isNaN(numValue) && numValue > 0 && typeof value === 'string' && /^[\d\s.,]+$/.test(value)) {
-      return formatCOP(numValue);
     }
     return String(value);
   };
@@ -42,10 +36,10 @@ const VariableComparisonMatrix: React.FC<VariableComparisonMatrixProps> = ({ com
     if (!deductible) return '-';
     if (deductible.normalized) {
       const parts = [];
-      if (deductible.normalized.percentage > 0) parts.push(formatPercentage(deductible.normalized.percentage, 0));
-      if (deductible.normalized.minAmount > 0) parts.push(`min: ${formatCOP(deductible.normalized.minAmount)}`);
+      if (deductible.normalized.percentage > 0) parts.push(`${deductible.normalized.percentage}%`);
+      if (deductible.normalized.minAmount > 0) parts.push(`min: ${deductible.normalized.minAmount.toLocaleString()}`);
       if (deductible.normalized.maxAmount > 0 && deductible.normalized.maxAmount !== Infinity) {
-        parts.push(`max: ${formatCOP(deductible.normalized.maxAmount)}`);
+        parts.push(`max: ${deductible.normalized.maxAmount.toLocaleString()}`);
       }
       const formatted = parts.join(', ');
       if (formatted) return formatted;
