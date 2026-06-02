@@ -3,6 +3,8 @@ import { supabase } from '../config/database';
 import { GoogleGenAI } from '@google/genai';
 import { env } from '../config/env';
 import { getCachedCoverageMapping, setCachedCoverageMapping } from './cache/redisCache';
+import { calculateSimilarity } from '../utils/stringUtils';
+
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
@@ -133,8 +135,87 @@ function parseJSONSafe(text: string): any {
 }
 
 /**
+ * Local fast deterministic/fuzzy matching against static seed ontology
+ */
+function localOntologyMatch(rawName: string): { groupId: string; confidence: number; justification: string } | null {
+  const normalizedRaw = rawName.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove accents/tildes
+    .replace(/[^a-z0-9]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!normalizedRaw) return null;
+
+  let bestNode: OntologyNode | null = null;
+  let maxSimilarity = 0;
+  let matchReason = '';
+
+  for (const node of ONTOLOGY_SEED.filter(n => n.level >= 2)) {
+    // Check node name
+    const normalizedName = node.name.toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (normalizedRaw === normalizedName) {
+      return {
+        groupId: node.id,
+        confidence: 0.98,
+        justification: `Coincidencia exacta local con la categoría canónica "${node.name}"`
+      };
+    }
+
+    // Check aliases
+    for (const alias of node.aliases) {
+      const normalizedAlias = alias.toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (normalizedRaw === normalizedAlias) {
+        return {
+          groupId: node.id,
+          confidence: 0.95,
+          justification: `Coincidencia exacta local con el alias "${alias}" de la categoría "${node.name}"`
+        };
+      }
+
+      // Check similarity
+      const sim = calculateSimilarity(normalizedRaw, normalizedAlias);
+      if (sim > maxSimilarity) {
+        maxSimilarity = sim;
+        bestNode = node;
+        matchReason = `Coincidencia difusa local (${Math.round(sim * 100)}%) con el alias "${alias}" de la categoría "${node.name}"`;
+      }
+    }
+
+    // Check similarity on canonical name
+    const simName = calculateSimilarity(normalizedRaw, normalizedName);
+    if (simName > maxSimilarity) {
+      maxSimilarity = simName;
+      bestNode = node;
+      matchReason = `Coincidencia difusa local (${Math.round(simName * 100)}%) con la categoría canónica "${node.name}"`;
+    }
+  }
+
+  // If similarity is extremely high (>= 90%), return it immediately
+  if (maxSimilarity >= 0.90 && bestNode) {
+    return {
+      groupId: bestNode.id,
+      confidence: maxSimilarity,
+      justification: matchReason
+    };
+  }
+
+  return null;
+}
+
+/**
  * Runs stateless, memory-isolated double-agent consensus between Taxonomist and Critic
  */
+
 async function runConsensus(rawName: string): Promise<{
   groupId: string;
   confidence: number;
@@ -325,6 +406,25 @@ export const coverageOntology = {
       console.log(`⚡ [Ontology Cache] Hit for "${rawName}":`, cached);
       return cached;
     }
+
+    // Try fast local match first to eliminate DB/LLM overhead for standard names
+    const localMatch = localOntologyMatch(rawName);
+    if (localMatch) {
+      console.log(`⚡ [Ontology LocalMatch] Hit for "${rawName}" -> "${localMatch.groupId}" (${Math.round(localMatch.confidence * 100)}%)`);
+      const mapping: CoverageMapping = {
+        rawName,
+        insurerName,
+        groups: [{ groupId: localMatch.groupId, confidence: localMatch.confidence }],
+        isComposite: false,
+        confidence: localMatch.confidence,
+        needsHumanReview: false,
+        justification: localMatch.justification
+      };
+      // Cache it for future fast lookups
+      await setCachedCoverageMapping(rawName, mapping, insurerName);
+      return mapping;
+    }
+
 
     // Try DB lookup first
     try {
