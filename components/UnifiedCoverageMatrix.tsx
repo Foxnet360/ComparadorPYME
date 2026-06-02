@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, lazy, Suspense, memo } from 'react'
 import { QuoteAnalysis, MatrixRow, MatrixCell } from '../types';
 import { Info, AlertTriangle, ListChecks, Trophy, DollarSign, Calendar, ShieldCheck, Download, Award, FileText, ChevronDown, Check, AlertCircle, Eye, Loader2, Pin } from 'lucide-react';
 import { DeductibleBadge } from './DeductibleBadge';
-import { formatPercentage } from '../utils/formatCurrency';
+import { formatCOP, formatPercentage } from '../utils/formatCurrency';
 import { useOptimisticCorrection } from '../hooks/useOptimisticCorrection';
 import { usePdfViewer, useCellNotes } from '../contexts/AnalysisContext';
 import { InlineNoteEditor } from './InlineNoteEditor';
@@ -264,11 +264,6 @@ export function parseNumericValue(val: string | undefined | null): number {
   return parseInt(cleaned, 10);
 }
 
-export function formatCurrency(num: number): string {
-  if (num === 0) return 'No informado';
-  return '$' + num.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-}
-
 export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
   const matrix: MatrixRow[] = [];
   const numQuotes = quotes.length;
@@ -477,7 +472,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     label: 'Prima Neta',
     sectionId: 100,
     cells: quotes.map((q, idx) => ({
-      value: netPremiums[idx] > 0 ? formatCurrency(netPremiums[idx]) : 'No informada',
+      value: netPremiums[idx] > 0 ? formatCOP(netPremiums[idx]) : 'No informada',
       isExcluded: netPremiums[idx] === 0,
       isWinner: netPremiums[idx] > 0 && netPremiums[idx] === Math.min(...netPremiums.filter(n => n > 0))
     }))
@@ -489,7 +484,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     label: 'Gastos de Expedición',
     sectionId: 100,
     cells: quotes.map((q, idx) => ({
-      value: netPremiums[idx] > 0 ? formatCurrency(expenses[idx]) : 'No informado',
+      value: netPremiums[idx] > 0 ? formatCOP(expenses[idx]) : 'No informado',
       isExcluded: netPremiums[idx] === 0,
       isWinner: false
     }))
@@ -501,7 +496,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     label: 'Subtotal',
     sectionId: 100,
     cells: quotes.map((q, idx) => ({
-      value: netPremiums[idx] > 0 ? formatCurrency(subtotals[idx]) : 'No informado',
+      value: netPremiums[idx] > 0 ? formatCOP(subtotals[idx]) : 'No informado',
       isExcluded: netPremiums[idx] === 0,
       isWinner: false
     }))
@@ -513,7 +508,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     label: 'IVA (19%)',
     sectionId: 100,
     cells: quotes.map((q, idx) => ({
-      value: netPremiums[idx] > 0 ? formatCurrency(ivas[idx]) : 'No informado',
+      value: netPremiums[idx] > 0 ? formatCOP(ivas[idx]) : 'No informado',
       isExcluded: netPremiums[idx] === 0,
       isWinner: false
     }))
@@ -525,7 +520,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     label: 'TOTAL A PAGAR',
     sectionId: 100,
     cells: quotes.map((q, idx) => ({
-      value: netPremiums[idx] > 0 ? formatCurrency(totals[idx]) : 'No informado',
+      value: netPremiums[idx] > 0 ? formatCOP(totals[idx]) : 'No informado',
       isExcluded: netPremiums[idx] === 0,
       isWinner: netPremiums[idx] > 0 && totals[idx] === minTotal
     }))

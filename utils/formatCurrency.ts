@@ -1,9 +1,26 @@
 /**
  * Utility functions for formatting Colombian Peso (COP) currency
- * 
+ *
  * Format: $12.345.678,90
  * - Thousands separator: dot (.)
  * - Decimal separator: comma (,)
+ *
+ * CONVENTION: All monetary values displayed in the UI MUST use these utilities.
+ * Do NOT use inline toLocaleString(), Number.prototype.toFixed(), or string
+ * concatenation for currency formatting. Import these functions and use them
+ * consistently across all components.
+ *
+ * Usage:
+ *   import { formatCOP, formatNumber, formatPercentage } from '../utils/formatCurrency';
+ *
+ *   // For monetary values (prices, coverage amounts, deductibles)
+ *   formatCOP(500000000);  // "$500.000.000"
+ *
+ *   // For numbers without currency symbol
+ *   formatNumber(500000000);  // "500.000.000"
+ *
+ *   // For percentages
+ *   formatPercentage(12.5);  // "12,5%"
  */
 
 /**

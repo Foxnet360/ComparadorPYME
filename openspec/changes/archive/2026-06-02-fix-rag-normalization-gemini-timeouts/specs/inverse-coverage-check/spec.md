@@ -1,14 +1,4 @@
-## Capability
-
-Detección de coberturas obligatorias en el clausulado que fueron omitidas en la cotización. Análisis inverso que parte del clausulado para verificar completitud de la cotización.
-
-## User Story
-
-**Como** corredor de seguros
-**Quiero** detectar coberturas que el clausulado establece como obligatorias pero la cotización omite
-**Para** asegurar que la póliza contratada cumpla con el mínimo contractual
-
-## Functional Requirements
+## MODIFIED Requirements
 
 ### FR-1: Extracción de coberturas del clausulado
 
@@ -34,38 +24,3 @@ El sistema DEBE comparar las coberturas del clausulado contra las de la cotizaci
 - **WHEN** el clausulado para el nombre normalizado "SBS" menciona "Transporte de Valores" como opcional
 - **AND** la cotización no la incluye
 - **THEN** info: "Cobertura opcional no contratada"
-
-## Dependencies
-- `clause-coverage-validation`: Base de validación de coberturas
-
-## Data Model
-
-```typescript
-interface InverseCoverageCheck {
-  coverageName: string;
-  isMandatory: boolean;
-  existsInClause: boolean;
-  existsInQuote: boolean;
-  status: 'PRESENT' | 'MANDATORY_MISSING' | 'OPTIONAL_MISSING';
-  alertLevel?: 'CRITICAL' | 'INFO';
-  clauseReference?: string;
-}
-```
-
-## API
-
-```
-POST /api/analysis/inverse-check
-Request:
-{
-  quoteId: string,
-  clauseDocumentId: string
-}
-
-Response:
-{
-  results: InverseCoverageCheck[],
-  mandatoryMissingCount: number,
-  optionalMissingCount: number
-}
-```

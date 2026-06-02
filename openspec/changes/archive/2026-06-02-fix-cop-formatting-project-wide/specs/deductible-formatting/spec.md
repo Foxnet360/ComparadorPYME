@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Deductible percentages display with Colombian format
 Deductible percentages displayed in ANY deductible component SHALL use comma as the decimal separator according to Colombian standards.

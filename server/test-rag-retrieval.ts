@@ -30,7 +30,7 @@ async function testRagRetrieval() {
     console.log('\n📋 Test 2: Checking clause availability...');
     const insurersWithClauses: string[] = [];
     
-    for (const insurer of insurers || []) {
+    for (const insurer of (insurers as any[]) || []) {
         const hasClauses = await ragRetrievalService.checkInsurerHasClauses(insurer.name);
         if (hasClauses) {
             insurersWithClauses.push(insurer.name);

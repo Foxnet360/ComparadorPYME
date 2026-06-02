@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle, AlertCircle, CheckCircle } from 'lucide-react';
+import { formatCOP } from '../utils/formatCurrency';
 
 interface DeductibleRiskGaugeProps {
   deductibleRatio: number; // 0.0 to 1.0
@@ -86,16 +87,16 @@ export const DeductibleRiskGauge: React.FC<DeductibleRiskGaugeProps> = ({
       <div className="space-y-1 text-sm">
         <div className="flex justify-between">
           <span className="text-slate-600">Valor Asegurado:</span>
-          <span className="font-medium">{formatCurrency(insuredAmount)}</span>
+          <span className="font-medium">{formatCOP(insuredAmount)}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-slate-600">Deducible Real:</span>
-          <span className="font-medium">{formatCurrency(deductibleAmount)}</span>
+          <span className="font-medium">{formatCOP(deductibleAmount)}</span>
         </div>
         {hasCap && capAmount && (
           <div className="flex justify-between">
             <span className="text-slate-600">Tope Máximo:</span>
-            <span className="font-medium text-green-600">{formatCurrency(capAmount)}</span>
+            <span className="font-medium text-green-600">{formatCOP(capAmount)}</span>
           </div>
         )}
         {!hasCap && (
@@ -109,12 +110,6 @@ export const DeductibleRiskGauge: React.FC<DeductibleRiskGaugeProps> = ({
   );
 };
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    minimumFractionDigits: 0
-  }).format(amount);
-}
+
 
 export default DeductibleRiskGauge;

@@ -1,4 +1,5 @@
 import { supabase } from '../config/database';
+import { insurerNameNormalizer } from './insurerNameNormalizer';
 
 export interface ChunkMetadata {
     insurerName: string;
@@ -221,7 +222,8 @@ export const vectorStore = {
                 .eq('is_active', true);
 
             if (insurerName) {
-                query = query.eq('insurers.name', insurerName);
+                const normalizedInsurer = insurerNameNormalizer.normalize(insurerName);
+                query = query.eq('insurers.name', normalizedInsurer);
             }
 
             const { data: documents, error: docError } = await query;

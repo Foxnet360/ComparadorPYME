@@ -31,7 +31,7 @@ import { comparisonEngineAdapter } from '../services/unifiedComparison/compariso
 import { featureFlags } from '../config/featureFlags';
 
 // Helper to call service with timeout
-const callWithTimeout = async <T>(promise: Promise<T>, timeoutMs: number = 5000, fallback: T): Promise<T> => {
+const callWithTimeout = async <T>(promise: Promise<T>, timeoutMs: number = 15000, fallback: T): Promise<T> => {
   const timeout = new Promise<never>((_, reject) => 
     setTimeout(() => reject(new Error('Timeout')), timeoutMs)
   );

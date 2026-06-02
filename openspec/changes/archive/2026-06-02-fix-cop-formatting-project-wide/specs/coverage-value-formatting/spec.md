@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Coverage values display with Colombian currency format
 All monetary coverage values displayed in ANY matrix or comparison component SHALL use the Colombian currency format with dot as thousands separator and comma as decimal separator.

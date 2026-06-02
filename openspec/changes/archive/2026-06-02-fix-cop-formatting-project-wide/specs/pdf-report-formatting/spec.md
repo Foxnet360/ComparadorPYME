@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: PDF coverage values use Colombian formatting
 All monetary values in the generated PDF report SHALL use the same Colombian currency formatting as the web UI.
