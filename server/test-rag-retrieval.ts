@@ -5,8 +5,8 @@
  * Usage: npx ts-node test-rag-retrieval.ts
  */
 
-import { ragRetrievalService } from '../src/services/ragRetrievalService';
-import { supabase } from '../src/config/database';
+import { ragRetrievalService } from './src/services/ragRetrievalService';
+import { supabase } from './src/config/database';
 
 async function testRagRetrieval() {
     console.log('🧪 RAG Retrieval End-to-End Test');
@@ -94,7 +94,7 @@ async function testRagRetrieval() {
     
     // Test 6: Verify name normalization
     console.log('\n📋 Test 6: Testing name normalization...');
-    const { insurerNameNormalizer } = await import('../src/services/insurerNameNormalizer');
+    const { insurerNameNormalizer } = await import('./src/services/insurerNameNormalizer');
     
     const testNames = [
         'SBS SEGUROS COLOMBIA S.A.',

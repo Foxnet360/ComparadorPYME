@@ -63,6 +63,7 @@ export class UnifiedComparisonEngine {
   async compare(pdfPaths: string[]): Promise<UnifiedComparisonResult> {
     const startTime = Date.now();
     const correlationId = `compare-${Date.now()}`;
+    let uploadedFiles: any[] = [];
     
     console.log(`🔍 [UnifiedComparison] Starting comparison for ${pdfPaths.length} quotes [${correlationId}]`);
 
@@ -82,7 +83,7 @@ export class UnifiedComparisonEngine {
 
     try {
       // 1. Upload PDFs to Gemini
-      const uploadedFiles = await this.uploadFiles(pdfPaths);
+      uploadedFiles = await this.uploadFiles(pdfPaths);
       console.log(`📤 [UnifiedComparison] Uploaded ${uploadedFiles.length} files [${correlationId}]`);
 
       // 2. Build prompt
@@ -130,6 +131,20 @@ export class UnifiedComparisonEngine {
     } catch (error: any) {
       console.error(`❌ [UnifiedComparison] Failed [${correlationId}]:`, error.message);
       throw new Error(`Comparison failed: ${error.message}`);
+    } finally {
+      // Clean up files in Gemini File API
+      if (uploadedFiles.length > 0) {
+        console.log(`🗑️ [UnifiedComparison] Cleaning up ${uploadedFiles.length} files from Gemini File API... [${correlationId}]`);
+        const ai = getGenAI();
+        for (const file of uploadedFiles) {
+          try {
+            await ai.files.delete({ name: file.name });
+            console.log(`   Deleted: ${file.name} (${file.displayName})`);
+          } catch (deleteError: any) {
+            console.warn(`   ⚠️ Failed to delete file ${file.name} from Gemini API:`, deleteError.message);
+          }
+        }
+      }
     }
   }
 
@@ -141,12 +156,13 @@ export class UnifiedComparisonEngine {
     clausePaths: string[]
   ): Promise<UnifiedComparisonResult> {
     const correlationId = `deep-${Date.now()}`;
+    let uploadedClauses: any[] = [];
     
     console.log(`🔍 [DeepMode] Starting clause validation for ${clausePaths.length} clauses [${correlationId}]`);
 
     try {
       // Upload clause PDFs
-      const uploadedClauses = await this.uploadFiles(clausePaths);
+      uploadedClauses = await this.uploadFiles(clausePaths);
       
       // Build deep mode prompt
       const prompt = comparisonPromptBuilder.buildDeepModePrompt(
@@ -168,6 +184,20 @@ export class UnifiedComparisonEngine {
     } catch (error: any) {
       console.error(`❌ [DeepMode] Failed [${correlationId}]:`, error.message);
       throw new Error(`Deep mode validation failed: ${error.message}`);
+    } finally {
+      // Clean up files in Gemini File API
+      if (uploadedClauses.length > 0) {
+        console.log(`🗑️ [DeepMode] Cleaning up ${uploadedClauses.length} files from Gemini File API... [${correlationId}]`);
+        const ai = getGenAI();
+        for (const file of uploadedClauses) {
+          try {
+            await ai.files.delete({ name: file.name });
+            console.log(`   Deleted: ${file.name} (${file.displayName})`);
+          } catch (deleteError: any) {
+            console.warn(`   ⚠️ Failed to delete file ${file.name} from Gemini API:`, deleteError.message);
+          }
+        }
+      }
     }
   }
 

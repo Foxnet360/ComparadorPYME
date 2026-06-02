@@ -469,31 +469,59 @@ export const ragRetrievalService = {
                 console.log(`🔄 [ragRetrieval] Normalized insurer name for clause check: "${insurerName}" → "${normalizedName}"`);
             }
             
-            // First try clause_chunks (correct table with insurer_name column)
-            const { data: clauseData, error: clauseError } = await supabase
-                .from('clause_chunks')
+            // 1. Buscar el id de la aseguradora en el catálogo `insurers`
+            const { data: insurerData, error: insurerError } = await supabase
+                .from('insurers')
                 .select('id')
-                .eq('insurer_name', normalizedName)
+                .eq('name', normalizedName)
                 .limit(1);
 
-            if (!clauseError && clauseData && clauseData.length > 0) {
-                return true;
+            let matchedInsurerId: string | null = null;
+            
+            if (insurerData && insurerData.length > 0) {
+                matchedInsurerId = (insurerData[0] as any).id;
+            } else {
+                // Fuzzy matching ILIKE si no hay match directo
+                const { data: fuzzyData, error: fuzzyError } = await supabase
+                    .from('insurers')
+                    .select('id')
+                    .ilike('name', `%${normalizedName}%`)
+                    .limit(1);
+                
+                if (fuzzyError || !fuzzyData || fuzzyData.length === 0) {
+                    return false;
+                }
+                matchedInsurerId = (fuzzyData[0] as any).id;
             }
 
-            // Fallback: check documents table for clause documents
+            const insurerId = matchedInsurerId!;
+
+            // 2. Consultar documentos activos específicos de esa aseguradora
             const { data: docData, error: docError } = await supabase
                 .from('documents')
-                .select('id, insurer_id')
+                .select('id')
+                .eq('insurer_id', insurerId)
                 .in('document_type', ['CLAUSULADO_GENERAL', 'CLAUSULADO_PARTICULAR'])
                 .eq('is_active', true)
                 .limit(1);
 
-            if (!docError && docData && docData.length > 0) {
-                console.log(`⚠️ [ragRetrieval] No chunks for ${insurerName} but documents exist. Consider indexing.`);
-                return true;
+            if (docError || !docData || docData.length === 0) {
+                return false;
             }
 
-            return false;
+            // 3. Verificación pre-flight opcional: Asegurar que existan chunks indexados
+            const { count, error: chunksError } = await supabase
+                .from('chunks')
+                .select('id', { count: 'exact', head: true })
+                .eq('document_id', (docData[0] as any).id)
+                .limit(1);
+
+            if (chunksError || count === null || count === 0) {
+                console.warn(`⚠️ [ragRetrieval] Document found for ${normalizedName} but has 0 chunks indexados.`);
+                return false;
+            }
+
+            return true;
         } catch (error) {
             console.error('❌ [ragRetrieval] Exception checking clauses:', error);
             return false;
