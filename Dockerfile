@@ -8,6 +8,9 @@ RUN apk add --no-cache python3 make g++
 # Install canvas dependencies (optional, suppresses pdfjs-dist warnings)
 RUN apk add --no-cache cairo-dev pango-dev pixman-dev
 
+# Install GraphicsMagick and Ghostscript for pdf2pic to render PDF pages to images
+RUN apk add --no-cache graphicsmagick ghostscript
+
 # Copy package files
 COPY package*.json ./
 
