@@ -4,6 +4,8 @@ import { GoogleGenAI } from '@google/genai';
 import { env } from '../config/env';
 import { getCachedCoverageMapping, setCachedCoverageMapping } from './cache/redisCache';
 import { calculateSimilarity } from '../utils/stringUtils';
+import { mapCoverageName } from './thesaurusMapper';
+
 
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
@@ -138,7 +140,18 @@ function parseJSONSafe(text: string): any {
  * Local fast deterministic/fuzzy matching against static seed ontology
  */
 function localOntologyMatch(rawName: string): { groupId: string; confidence: number; justification: string } | null {
-  const normalizedRaw = rawName.toLowerCase()
+  // Clean rawName of parenthetical suffixes (e.g. "(Sublímite)", "(Rider)")
+  const cleanedRawName = rawName
+    .replace(/\(sub-?l[ií]mite\)/ig, '')
+    .replace(/\(l[ií]mite\)/ig, '')
+    .replace(/\(amparo\)/ig, '')
+    .replace(/\(rider\)/ig, '')
+    .replace(/\(gastos\)/ig, '')
+    .replace(/\(extensi[oó]n\)/ig, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const normalizedRaw = cleanedRawName.toLowerCase()
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove accents/tildes
     .replace(/[^a-z0-9]/g, ' ')
     .replace(/\s+/g, ' ')
@@ -209,8 +222,63 @@ function localOntologyMatch(rawName: string): { groupId: string; confidence: num
     };
   }
 
+  // Try to match using the thesaurus to resolve main and sub-limits
+  try {
+    const thesaurusMatch = mapCoverageName(cleanedRawName);
+    if (thesaurusMatch && thesaurusMatch.confidence >= 0.7) {
+      // Resolve parent coverage or canonical name to ontology node
+      let targetName = thesaurusMatch.canonicalName;
+      
+      // If it's a sub-limit or extension and has a parent coverage, try to map that parent first
+      if (thesaurusMatch.parentCoverage) {
+        const parentMatch = mapCoverageName(thesaurusMatch.parentCoverage);
+        if (parentMatch && parentMatch.confidence >= 0.7) {
+          targetName = parentMatch.canonicalName;
+        } else {
+          targetName = thesaurusMatch.parentCoverage;
+        }
+      }
+      
+      // Find node by name in ONTOLOGY_SEED (case and accent insensitive)
+      const normalizedTarget = targetName.toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+        
+      const node = ONTOLOGY_SEED.find(n => {
+        const normalizedNodeName = n.name.toLowerCase()
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        if (normalizedNodeName === normalizedTarget) return true;
+        
+        return n.aliases.some(a => {
+          const normalizedAlias = a.toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+          return normalizedAlias === normalizedTarget;
+        });
+      });
+      
+      if (node) {
+        return {
+          groupId: node.id,
+          confidence: Math.max(0.90, thesaurusMatch.confidence),
+          justification: `Coincidencia resuelta vía tesauro/sub-límites: "${thesaurusMatch.canonicalName}" maps to "${node.name}"`
+        };
+      }
+    }
+  } catch (e) {
+    console.warn('⚠️ [Ontology LocalMatch] Thesaurus lookup failed:', e);
+  }
+
   return null;
 }
+
 
 /**
  * Runs stateless, memory-isolated double-agent consensus between Taxonomist and Critic
