@@ -265,8 +265,8 @@ export class UnifiedComparisonEngine {
     console.log(`🤖 [UnifiedComparison] Thinking level: ${this.config.thinkingLevel} [${correlationId}]`);
 
     try {
-      // Add 90-second timeout to prevent hanging
-      const TIMEOUT_MS = 90000;
+      // Add 45-second timeout to prevent hanging
+      const TIMEOUT_MS = 45000;
       const geminiPromise = ai.models.generateContent({
         model: this.config.model,
         contents,

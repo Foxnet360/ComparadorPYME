@@ -5,7 +5,6 @@
 
 import { supabase } from '../config/database';
 import { ragRetrievalService } from './ragRetrievalService';
-import { insurerNameNormalizer } from './insurerNameNormalizer';
 
 export interface InverseCoverageResult {
   coverageName: string;
@@ -39,8 +38,7 @@ export const inverseCoverageChecker = {
     quote: any,
     insurerName: string
   ): Promise<InverseCheckSummary> => {
-    const normalizedInsurer = insurerNameNormalizer.normalize(insurerName);
-    console.log(`🔍 [inverseCoverageChecker] Checking missing coverages for ${insurerName} (normalized: ${normalizedInsurer})...`);
+    console.log(`🔍 [inverseCoverageChecker] Checking missing coverages for ${insurerName}...`);
     
     // Get coverages from quote
     const quoteCoverageNames = (quote.coverages || []).map((c: any) => 
@@ -48,7 +46,7 @@ export const inverseCoverageChecker = {
     );
     
     // Extract coverages from clause document
-    const clauseCoverages = await extractClauseCoverages(normalizedInsurer);
+    const clauseCoverages = await extractClauseCoverages(insurerName);
     
     const results: InverseCoverageResult[] = [];
     let mandatoryMissingCount = 0;
@@ -103,12 +101,11 @@ async function extractClauseCoverages(insurerName: string): Promise<Array<{
   reference?: string;
 }>> {
   try {
-    const normalizedInsurer = insurerNameNormalizer.normalize(insurerName);
     // First try to get from clause_coverages table via documents and insurers
     const { data: cachedCoverages } = await supabase
       .from('clause_coverages')
       .select('*, documents!inner(id, insurers!inner(name))')
-      .eq('documents.insurers.name', normalizedInsurer)
+      .eq('documents.insurers.name', insurerName)
       .order('extracted_at', { ascending: false })
       .limit(50);
     
@@ -132,7 +129,7 @@ async function extractClauseCoverages(insurerName: string): Promise<Array<{
     for (const term of searchTerms) {
       try {
         const clauses = await ragRetrievalService.search(term, {
-          insurerName: normalizedInsurer,
+          insurerName,
           sectionType: 'COBERTURA',
           limit: 5
         });

@@ -31,7 +31,7 @@ import { comparisonEngineAdapter } from '../services/unifiedComparison/compariso
 import { featureFlags } from '../config/featureFlags';
 
 // Helper to call service with timeout
-const callWithTimeout = async <T>(promise: Promise<T>, timeoutMs: number = 15000, fallback: T): Promise<T> => {
+const callWithTimeout = async <T>(promise: Promise<T>, timeoutMs: number = 5000, fallback: T): Promise<T> => {
   const timeout = new Promise<never>((_, reject) => 
     setTimeout(() => reject(new Error('Timeout')), timeoutMs)
   );
@@ -818,73 +818,6 @@ function matrixRowsToComparisonReport(matrixRows: any[], quoteFiles: Express.Mul
         const name = f.originalname.replace(/COTIZACION.*?-\s*/i, '').replace(/\.pdf$/i, '');
         return name || 'Desconocido';
     });
-
-    // Map sectionId -> category name
-    const categoryMap = new Map<number, string>();
-    matrixRows.forEach(row => {
-        if (row.type === 'header' && row.sectionId > 0 && row.sectionId < 100) {
-            categoryMap.set(row.sectionId, row.label);
-        }
-    });
-
-    // Group the data rows by sectionId
-    const sectionRowsMap = new Map<number, any[]>();
-    matrixRows.forEach(row => {
-        if (row.type === 'data' && row.sectionId > 0 && row.sectionId < 100) {
-            if (!sectionRowsMap.has(row.sectionId)) {
-                sectionRowsMap.set(row.sectionId, []);
-            }
-            sectionRowsMap.get(row.sectionId)!.push(row);
-        }
-    });
-
-    function getCanonicalCategory(name: string): { id: number; name: string } | null {
-        const norm = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        
-        if (norm.includes('incendio') || norm.includes('basico') || norm.includes('todo riesgo dano material') || norm.includes('bienes asegurados')) {
-            return { id: 1, name: "Incendio (Edificio y Contenidos)" };
-        }
-        if (norm.includes('terremoto') || norm.includes('sismo') || norm.includes('catastrofico')) {
-            return { id: 14, name: "Terremoto y Eventos Catastróficos" };
-        }
-        if (norm.includes('huelga') || norm.includes('amit') || norm.includes('hmacc') || norm.includes('motin') || norm.includes('asonada')) {
-            return { id: 13, name: "Huelga, Motín, Asonada (HMACC)" };
-        }
-        if (norm.includes('equipo electrico') || norm.includes('electronico') || norm.includes('dano interno')) {
-            return { id: 4, name: "Equipo Eléctrico y Electrónico" };
-        }
-        if (norm.includes('sustraccion') || norm.includes('hurto') || norm.includes('robo')) {
-            return { id: 3, name: "Sustracción / Hurto" };
-        }
-        if (norm.includes('lucro') || norm.includes('consecuencial') || norm.includes('interrupcion')) {
-            return { id: 2, name: "Lucro Cesante" };
-        }
-        if (norm.includes('infidelidad') || norm.includes('manejo')) {
-            return { id: 8, name: "Manejo Global / Infidelidad" };
-        }
-        if (norm.includes('civil') || norm.includes('rce')) {
-            return { id: 6, name: "Responsabilidad Civil (RCE)" };
-        }
-        if (norm.includes('rotura de maquinaria') || norm.includes('rotura maquinaria')) {
-            return { id: 5, name: "Rotura de Maquinaria" };
-        }
-        if (norm.includes('vidrio')) {
-            return { id: 7, name: "Vidrios Planos" };
-        }
-        if (norm.includes('transporte de mercancia') || norm.includes('transporte mercancia')) {
-            return { id: 9, name: "Transporte de Mercancías" };
-        }
-        if (norm.includes('valores') || norm.includes('transporte de valores')) {
-            return { id: 10, name: "Transporte de Valores" };
-        }
-        if (norm.includes('asistencia pyme') || norm.includes('asistencias')) {
-            return { id: 11, name: "Asistencia PYME" };
-        }
-        if (norm.includes('legal') || norm.includes('asistencia legal')) {
-            return { id: 12, name: "Asistencia Legal" };
-        }
-        return null;
-    }
     
     // Build quotes array
     const quotes: any[] = insurerNames.map((insurerName, idx) => {
@@ -892,112 +825,7 @@ function matrixRowsToComparisonReport(matrixRows: any[], quoteFiles: Express.Mul
         const alerts: any[] = [];
         let priceAnnual = 0;
         
-        // 1. Process Grouped Canonical and Exclusive Coverages
-        sectionRowsMap.forEach((rows, sectionId) => {
-            const rawCategoryName = categoryMap.get(sectionId) || 'Cobertura';
-            const canonical = getCanonicalCategory(rawCategoryName);
-            
-            let value = 'No incluido';
-            let deductible = 'No especificado';
-            let cellNotes = '';
-            let isPositive = false;
-            let firstCell: any = null;
-
-            // Separate rows by type/label
-            const valRows = rows.filter(r => !(r.label || '').toLowerCase().includes('deducible') && !(r.label || '').toLowerCase().includes('incluye') && !(r.label || '').toLowerCase().includes('detalles') && !(r.label || '').toLowerCase().includes('notas'));
-            const dedRows = rows.filter(r => (r.label || '').toLowerCase().includes('deducible'));
-            const noteRows = rows.filter(r => (r.label || '').toLowerCase().includes('incluye') || (r.label || '').toLowerCase().includes('detalles') || (r.label || '').toLowerCase().includes('notas'));
-
-            // Extract value
-            if (valRows.length === 1) {
-                const row = valRows[0];
-                const cell = row.cells[idx];
-                const cellVal = cell.value || '';
-                if (cellVal && cellVal !== 'No informado' && cellVal !== 'N.C.') {
-                    value = cellVal;
-                    isPositive = !cell.isExcluded;
-                }
-                if (!firstCell) firstCell = cell;
-            } else if (valRows.length > 1) {
-                const parts: string[] = [];
-                valRows.forEach(row => {
-                    const cell = row.cells[idx];
-                    const cellVal = cell.value || '';
-                    if (cellVal && cellVal !== 'No informado' && cellVal !== 'N.C.' && cellVal !== 'No incluido') {
-                        parts.push(`${row.label}: ${cellVal}`);
-                        if (!cell.isExcluded) isPositive = true;
-                    }
-                });
-                if (parts.length > 0) {
-                    value = parts.join('; ');
-                }
-            }
-
-            // Extract deductible
-            if (dedRows.length === 1) {
-                const row = dedRows[0];
-                const cell = row.cells[idx];
-                const cellVal = cell.value || '';
-                if (cellVal && cellVal !== 'No informado' && cellVal !== 'N.C.' && cellVal !== 'No aplica') {
-                    deductible = cellVal;
-                }
-            } else if (dedRows.length > 1) {
-                const parts: string[] = [];
-                dedRows.forEach(row => {
-                    const cell = row.cells[idx];
-                    const cellVal = cell.value || '';
-                    if (cellVal && cellVal !== 'No informado' && cellVal !== 'N.C.' && cellVal !== 'No aplica') {
-                        parts.push(`${row.label}: ${cellVal}`);
-                    }
-                });
-                if (parts.length > 0) {
-                    deductible = parts.join('; ');
-                }
-            }
-
-            // Extract notes
-            if (noteRows.length === 1) {
-                const row = noteRows[0];
-                const cell = row.cells[idx];
-                cellNotes = cell.value || '';
-            } else if (noteRows.length > 1) {
-                const parts: string[] = [];
-                noteRows.forEach(row => {
-                    const cell = row.cells[idx];
-                    const cellVal = cell.value || '';
-                    if (cellVal && cellVal !== 'No informado' && cellVal !== 'N.C.') {
-                        parts.push(`${row.label}: ${cellVal}`);
-                    }
-                });
-                if (parts.length > 0) {
-                    cellNotes = parts.join('; ');
-                }
-            }
-
-            if (canonical) {
-                coverages.push({
-                    categoryId: canonical.id,
-                    name: canonical.name,
-                    canonicalName: canonical.name,
-                    value: value === 'No incluido' || value === 'N.C.' ? 'No incluido' : value,
-                    deductible: deductible === 'No especificado' || deductible === 'No aplica' ? 'No aplica' : deductible,
-                    isPositive: isPositive,
-                    valueSource: 'extracted' as const,
-                    description: cellNotes || firstCell?.notes || undefined
-                });
-            } else {
-                coverages.push({
-                    name: rawCategoryName,
-                    value: value === 'No incluido' || value === 'N.C.' ? 'No incluido' : value,
-                    deductible: deductible === 'No especificado' || deductible === 'No aplica' ? 'No aplica' : deductible,
-                    isPositive: isPositive,
-                    valueSource: 'extracted' as const,
-                    description: cellNotes || firstCell?.notes || undefined
-                });
-            }
-        });
-
-        // 2. Process Premiums, Metadata, and Warnings
+        // Extract coverages from matrix rows
         matrixRows.forEach(row => {
             if (row.type === 'data' && row.cells && row.cells[idx]) {
                 const cell = row.cells[idx];
@@ -1009,15 +837,28 @@ function matrixRowsToComparisonReport(matrixRows: any[], quoteFiles: Express.Mul
                     if (!isNaN(numericValue)) {
                         priceAnnual = numericValue;
                     }
+                } else if (row.id?.startsWith('premium_')) {
+                    // Skip other premium rows for now
+                } else if (row.id?.startsWith('meta_')) {
+                    // Skip metadata rows
                 } else if (row.id?.startsWith('warning_')) {
                     // Add warning alerts
-                    if (value && value !== 'No informado' && value !== 'N.C.') {
+                    if (value && value !== 'No informado') {
                         alerts.push({
                             level: 'WARNING',
                             title: 'Alerta del Motor Unificado',
                             description: value
                         });
                     }
+                } else {
+                    // Regular coverage row
+                    coverages.push({
+                        name: row.label || 'Cobertura',
+                        value: value === 'No informado' || value === 'N.C.' ? 'No incluido' : value,
+                        deductible: cell.notes || 'No especificado',
+                        isPositive: !cell.isExcluded,
+                        valueSource: 'extracted' as const
+                    });
                 }
             }
         });

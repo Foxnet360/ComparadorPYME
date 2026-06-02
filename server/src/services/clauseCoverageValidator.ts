@@ -10,7 +10,6 @@
 
 import { ragRetrievalService } from './ragRetrievalService';
 import { supabase } from '../config/database';
-import { insurerNameNormalizer } from './insurerNameNormalizer';
 
 export type CoverageValidationStatus = 'VERIFIED' | 'PHANTOM' | 'MANDATORY_MISSING' | 'OPTIONAL_MISSING';
 
@@ -61,11 +60,10 @@ export const clauseCoverageValidator = {
     quote: any,
     insurerName: string
   ): Promise<ClauseValidationSummary> => {
-    const normalizedInsurer = insurerNameNormalizer.normalize(insurerName);
-    console.log(`🔍 [clauseCoverageValidator] Validating coverages for ${insurerName} (normalized: ${normalizedInsurer})...`);
+    console.log(`🔍 [clauseCoverageValidator] Validating coverages for ${insurerName}...`);
     
     // Check if clause document exists for insurer
-    const hasClauseDocument = await checkClauseDocumentExists(normalizedInsurer);
+    const hasClauseDocument = await checkClauseDocumentExists(insurerName);
     
     if (!hasClauseDocument) {
       console.log(`⚠️ [clauseCoverageValidator] No clause document for ${insurerName}`);
@@ -90,7 +88,7 @@ export const clauseCoverageValidator = {
     const quoteValidationResults = await Promise.all(
       quoteCoverages.map(async (coverage: any) => {
         const coverageName = coverage.canonicalName || coverage.name;
-        const existsInClause = await searchCoverageInClause(coverageName, normalizedInsurer);
+        const existsInClause = await searchCoverageInClause(coverageName, insurerName);
         
         return {
           coverageName,
@@ -105,7 +103,7 @@ export const clauseCoverageValidator = {
     );
     
     // Step 2: Validate clause → quote (mandatory coverages in clause)
-    const clauseCoverages = await extractCoveragesFromClause(normalizedInsurer);
+    const clauseCoverages = await extractCoveragesFromClause(insurerName);
     const inverseValidationResults: CoverageExistenceResult[] = [];
     
     for (const clauseCoverage of clauseCoverages) {
@@ -157,11 +155,10 @@ export const clauseCoverageValidator = {
  */
 async function checkClauseDocumentExists(insurerName: string): Promise<boolean> {
   try {
-    const normalizedInsurer = insurerNameNormalizer.normalize(insurerName);
     const { data, error } = await supabase
       .from('documents')
       .select('id, insurers!inner(name)')
-      .eq('insurers.name', normalizedInsurer)
+      .eq('insurers.name', insurerName)
       .eq('is_active', true)
       .limit(1);
     
@@ -203,11 +200,10 @@ async function searchCoverageInClause(coverageName: string, insurerName: string)
  */
 async function extractCoveragesFromClause(insurerName: string): Promise<Array<{name: string; isMandatory: boolean; reference?: string}>> {
   try {
-    const normalizedInsurer = insurerNameNormalizer.normalize(insurerName);
     const { data: cachedCoverages } = await supabase
       .from('clause_coverages')
       .select('*, documents!inner(id, insurers!inner(name))')
-      .eq('documents.insurers.name', normalizedInsurer)
+      .eq('documents.insurers.name', insurerName)
       .order('created_at', { ascending: false })
       .limit(50);
     

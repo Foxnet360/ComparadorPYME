@@ -4,7 +4,6 @@
  */
 
 import { supabase } from '../config/database';
-import { insurerNameNormalizer } from './insurerNameNormalizer';
 
 export interface ClauseVersionDiff {
   type: 'DEDUCTIBLE' | 'EXCLUSION' | 'COVERAGE' | 'CONDITION';
@@ -169,11 +168,10 @@ export const clauseVersionComparator = {
    * Get version history for a clause document
    */
   getVersionHistory: async (insurerName: string, productName?: string) => {
-    const normalizedInsurer = insurerNameNormalizer.normalize(insurerName);
     let query = supabase
       .from('documents')
       .select('*, insurers!inner(name)')
-      .eq('insurers.name', normalizedInsurer)
+      .eq('insurers.name', insurerName)
       .order('created_at', { ascending: false });
     
     if (productName) {
