@@ -71,6 +71,8 @@ const CoverageCell = memo(({
           <span className={`${isWinner ? 'text-amber-950 font-bold' : 'text-slate-800 font-medium'}`}>
             {rowLabel === 'Deducible' && cell.value !== 'No aplica' ? (
               <DeductibleBadge deductible={cell.value} />
+            ) : rowLabel === 'Valor Asegurado' ? (
+              formatMatrixValue(cell.value)
             ) : (
               cell.value
             )}
@@ -267,6 +269,28 @@ export function parseNumericValue(val: string | undefined | null): number {
 export function formatCurrency(num: number): string {
   if (num === 0) return 'No informado';
   return '$' + num.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+export function formatMatrixValue(val: string | undefined | null): string {
+  if (!val) return 'No informado';
+  if (val === 'No incluida' || val === 'NO ESPECIFICADO' || val === 'No contratado' || isExcludedValue(val)) {
+    return val;
+  }
+  
+  // Try parsing to see if it represents a number
+  const cleanVal = val.replace(/[^0-9]/g, '');
+  if (!cleanVal) return val; // No digits (e.g. "Incluido", "No aplica")
+  
+  const num = parseFloat(cleanVal);
+  if (isNaN(num) || num === 0) return val;
+  
+  // Check if it's a simple number representation (only digits, spaces, dots, commas, currency symbol)
+  const isSimpleNumber = /^[$\s\d.,]+$/.test(val);
+  if (isSimpleNumber) {
+    return formatCurrency(num);
+  }
+  
+  return val;
 }
 
 export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
@@ -1035,6 +1059,8 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                               <span className={`${isWinner ? 'text-amber-950 font-bold' : 'text-slate-800 font-medium'}`}>
                                 {row.label === 'Deducible' && cell.value !== 'No aplica' ? (
                                   <DeductibleBadge deductible={cell.value} />
+                                ) : row.label === 'Valor Asegurado' ? (
+                                  formatMatrixValue(cell.value)
                                 ) : (
                                   cell.value
                                 )}

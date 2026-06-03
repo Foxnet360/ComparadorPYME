@@ -96,13 +96,15 @@ export const AuditSection: React.FC<AuditSectionProps> = ({ quotes, viewMode }) 
     reset 
   } = useAuditEnrichment();
 
+  const clausesAvailable = hasClauses || (quotes && quotes.some(q => q.isRagAvailable));
+
   // Auto-enrich on mount when clauses are available
   useEffect(() => {
-    if (hasClauses && !isEnriched && !isLoading && quotes.length > 0) {
+    if (clausesAvailable && !isEnriched && !isLoading && quotes.length > 0) {
       console.log('🔄 [AuditSection] Auto-enriching with clauses...');
       enrich(quotes);
     }
-  }, [hasClauses, isEnriched, isLoading, quotes, enrich]);
+  }, [clausesAvailable, isEnriched, isLoading, quotes, enrich]);
 
   // Defensive check for undefined quotes
   if (!quotes || !Array.isArray(quotes)) {
@@ -148,7 +150,7 @@ export const AuditSection: React.FC<AuditSectionProps> = ({ quotes, viewMode }) 
           </p>
         </div>
         
-        {!hasClauses ? (
+        {!clausesAvailable ? (
           <div className="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 px-3 py-2 rounded-lg">
             <Info size={16} />
             <span>Sin clausulados indexados</span>
@@ -218,7 +220,7 @@ export const AuditSection: React.FC<AuditSectionProps> = ({ quotes, viewMode }) 
       )}
 
       {/* No clauses info message */}
-      {!hasClauses && (
+      {!clausesAvailable && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <Info size={20} className="text-amber-600 mt-0.5" />

@@ -9,35 +9,58 @@ interface DeductibleMatrixProps {
 }
 
 // Helper to parse deductible value for display
-const parseDeductible = (deductible: string): { value: string; isHigh: boolean; isUnspecified: boolean } => {
+const parseDeductible = (deductible: string): { 
+  percentage: number | null; 
+  minimum: number | null; 
+  appliesTo: 'perdida' | 'valor' | null; 
+  rawText: string; 
+  isHigh: boolean; 
+  isUnspecified: boolean; 
+} => {
   if (!deductible || deductible === 'No aplica' || deductible === 'NO ESPECIFICADO') {
-    return { value: deductible || 'N/A', isHigh: false, isUnspecified: !deductible || deductible === 'NO ESPECIFICADO' };
+    return { 
+      percentage: null, 
+      minimum: null, 
+      appliesTo: null, 
+      rawText: deductible || 'N/A', 
+      isHigh: false, 
+      isUnspecified: !deductible || deductible === 'NO ESPECIFICADO' 
+    };
   }
   
-  const upperDed = deductible.toUpperCase();
+  const lower = deductible.toLowerCase();
   
-  // Check for percentage
-  const percentMatch = upperDed.match(/(\d+)%/);
-  if (percentMatch) {
-    const percent = parseInt(percentMatch[1]);
-    return { value: `${percent}%`, isHigh: percent > 10, isUnspecified: false };
+  // Extract percentage (handle both dot and comma as decimal separator)
+  const percentMatch = deductible.match(/(\d+(?:[.,]\d+)?)\s*%/);
+  const percentage = percentMatch ? parseFloat(percentMatch[1].replace(',', '.')) : null;
+  
+  // Extract minimum (SMMLV or values)
+  const minMatch = deductible.match(/(?:m[ií]n\.?|mínimo)\s*:?\s*(\d+(?:\.\d+)?)\s*(?:SMMLV|salarios?)/i);
+  const minimum = minMatch ? parseFloat(minMatch[1]) : null;
+  
+  // Base of application
+  let appliesTo: 'perdida' | 'valor' | null = null;
+  if (lower.includes('valor') || lower.includes('suma')) {
+    appliesTo = 'valor';
+  } else if (lower.includes('perdida') || lower.includes('siniestro')) {
+    appliesTo = 'perdida';
   }
   
-  // Check for SMMLV
-  const smmlvMatch = upperDed.match(/(\d+)\s*SMMLV/i);
-  if (smmlvMatch) {
-    const smmlv = parseInt(smmlvMatch[1]);
-    return { value: `${smmlv} SMMLV`, isHigh: smmlv > 5, isUnspecified: false };
-  }
-  
-  return { value: deductible, isHigh: false, isUnspecified: false };
+  return {
+    percentage,
+    minimum,
+    appliesTo,
+    rawText: deductible,
+    isHigh: percentage ? percentage > 10 : false,
+    isUnspecified: false
+  };
 };
 
-// Get color based on deductible risk
+// Get color based on deductible risk for raw text fallbacks
 const getDeductibleColor = (isHigh: boolean, isUnspecified: boolean): string => {
-  if (isUnspecified) return 'bg-red-100 text-red-700 border-red-200';
-  if (isHigh) return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-  return 'bg-green-100 text-green-700 border-green-200';
+  if (isUnspecified) return 'bg-red-50 text-red-700 border-red-200';
+  if (isHigh) return 'bg-amber-50 text-amber-700 border-amber-200';
+  return 'bg-green-50 text-green-700 border-green-200';
 };
 
 export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes }) => {
@@ -54,8 +77,18 @@ export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes }) =>
       let score = 50; // Default
       
       if (parsed.isUnspecified) score = 0;
-      else if (parsed.isHigh) score = 30;
-      else score = 80;
+      else if (parsed.percentage !== null) {
+        // Base score depends on percentage: lower percentage is better
+        let pctScore = 100 - parsed.percentage * 5;
+        // Applying to Loss (pérdida) is better than applying to Value (valor)
+        if (parsed.appliesTo === 'perdida') pctScore += 20;
+        else if (parsed.appliesTo === 'valor') pctScore -= 25;
+        // Minimum adds risk, penalize slightly based on minimum size
+        if (parsed.minimum) pctScore -= parsed.minimum * 2;
+        score = Math.max(10, Math.min(95, pctScore));
+      } else {
+        score = parsed.isHigh ? 30 : 60;
+      }
       
       return { idx, score, deductible: coverage.deductible };
     });
@@ -83,7 +116,7 @@ export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes }) =>
               <Award className="text-green-600" size={16} />
               <span className="font-semibold text-green-700">Mejor Opción</span>
             </div>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-slate-600 font-medium">
               {quotes.length > 0 ? quotes.reduce((prev, curr) => {
                 const prevScore = prev.coverages?.filter(c => c.deductible && c.deductible !== 'NO ESPECIFICADO').length || 0;
                 const currScore = curr.coverages?.filter(c => c.deductible && c.deductible !== 'NO ESPECIFICADO').length || 0;
@@ -97,7 +130,7 @@ export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes }) =>
               <AlertTriangle className="text-red-600" size={16} />
               <span className="font-semibold text-red-700">Requiere Atención</span>
             </div>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-slate-600 font-medium">
               {quotes.filter(q => q.coverages?.some(c => !c.deductible || c.deductible === 'NO ESPECIFICADO')).length} aseguradoras con deducibles no especificados
             </p>
           </div>
@@ -143,29 +176,66 @@ export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes }) =>
                       const isBest = ranking.best?.idx === qIdx;
                       
                       return (
-                        <td key={qIdx} className={`px-4 py-3 text-center ${isBest ? 'bg-green-50/50' : ''}`}>
+                        <td key={qIdx} className={`px-4 py-4 text-center transition-colors ${isBest ? 'bg-green-50/40' : ''} border-r border-slate-100`}>
                           {coverage ? (
-                            <div className="space-y-1">
-                              <div className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${
-                                parsed ? getDeductibleColor(parsed.isHigh, parsed.isUnspecified) : 'bg-gray-100 text-gray-600'
-                              }`}>
-                                {parsed?.value || 'N/A'}
-                              </div>
-                              
-                              {coverage.value && coverage.value !== 'NO ESPECIFICADO' && coverage.value !== 'No aplica' && (
-                                <div className="text-xs text-slate-500">
-                                  SA: {formatCOP(parseFloat(coverage.value.replace(/[^\d.]/g, '')) || 0)}
+                            <div className="flex flex-col items-center justify-center space-y-2">
+                              {/* Percentage and Minimum */}
+                              {parsed && parsed.percentage !== null ? (
+                                <div className="flex flex-col items-center">
+                                  <span className={`text-base font-extrabold ${parsed.isHigh ? 'text-amber-600' : 'text-slate-800'}`}>
+                                    {parsed.percentage}%
+                                  </span>
+                                  {parsed.minimum !== null && (
+                                    <span className="text-[10px] text-slate-500 font-medium">
+                                      Mín. {parsed.minimum} SMMLV
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
+                                  parsed ? getDeductibleColor(parsed.isHigh, parsed.isUnspecified) : 'bg-gray-100 text-slate-600 border-gray-200'
+                                }`}>
+                                  {parsed?.rawText || 'N/A'}
                                 </div>
                               )}
-                              
+
+                              {/* Base of Application Badge */}
+                              {parsed && parsed.appliesTo && (
+                                <div className={`text-[10px] px-1.5 py-0.5 rounded font-semibold border ${
+                                  parsed.appliesTo === 'perdida'
+                                    ? 'bg-green-50 text-green-700 border-green-200'
+                                    : 'bg-rose-50 text-rose-700 border-rose-200'
+                                }`}>
+                                  {parsed.appliesTo === 'perdida' ? 'Sobre Pérdida' : 'Sobre Valor As.'}
+                                </div>
+                              )}
+
+                              {/* Trophy/Star Indicator for Best option */}
+                              {isBest && (
+                                <div className="flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-100/60 px-1.5 py-0.5 rounded border border-green-200">
+                                  <Award size={10} className="text-green-600 animate-pulse" />
+                                  <span>Mejor Opción</span>
+                                </div>
+                              )}
+
+                              {/* Sum Insured detail */}
+                              {coverage.value && coverage.value !== 'NO ESPECIFICADO' && coverage.value !== 'No aplica' && (
+                                <div className="text-[10px] text-slate-400 font-medium">
+                                  SA: {typeof coverage.value === 'string' && /^\d+$/.test(coverage.value) 
+                                    ? formatCOP(parseFloat(coverage.value)) 
+                                    : coverage.value}
+                                </div>
+                              )}
+
+                              {/* Sublimit detail */}
                               {coverage.sublimit && coverage.sublimit !== 'NO ESPECIFICADO' && (
-                                <div className="text-xs text-indigo-600 font-medium">
+                                <div className="text-[10px] text-indigo-600 font-semibold bg-indigo-50 border border-indigo-100 rounded px-1.5 py-0.5">
                                   Sublímite: {coverage.sublimit}
                                 </div>
                               )}
                             </div>
                           ) : (
-                            <span className="text-slate-300 italic">No incluida</span>
+                            <span className="text-slate-300 italic text-xs">No incluida</span>
                           )}
                         </td>
                       );
@@ -173,7 +243,7 @@ export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes }) =>
                     
                     <td className="px-4 py-3 text-center bg-amber-50/30">
                       {ranking.best ? (
-                        <div className="text-xs font-medium text-green-700">
+                        <div className="text-xs font-semibold text-green-700">
                           {quotes[ranking.best.idx].insurerName}
                         </div>
                       ) : (

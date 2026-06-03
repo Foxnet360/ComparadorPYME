@@ -513,12 +513,6 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
           {/* Deductible Matrix - Structured Comparison */}
           <DeductibleMatrix quotes={report.quotes} />
           
-          {/* Resumen Estructurado de Deducibles */}
-          <DeductibleSummaryTable quotes={report.quotes} />
-          
-          {/* Tabla Comparativa Detallada */}
-          <DeductiblesComparisonTable quotes={report.quotes} />
-          
           {/* Texto Completo de Deducibles - Colapsable */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
             <div className="flex items-center mb-4 pb-3 border-b border-slate-100">
