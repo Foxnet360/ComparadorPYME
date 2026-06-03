@@ -1,4 +1,7 @@
 import { supabase } from '../../config/database';
+import { env } from '../../config/env';
+
+const EMBEDDING_MODEL_NAME = env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-2';
 
 interface CacheEntry {
   embedding: number[];
@@ -82,7 +85,7 @@ export async function getCachedEmbedding(name: string): Promise<number[] | null>
       .from('coverage_embeddings_cache')
       .select('embedding')
       .eq('coverage_name', normalizedName)
-      .eq('model', 'gemini-embedding-001')
+      .eq('model', EMBEDDING_MODEL_NAME)
       .single();
 
     if (error) {
@@ -121,7 +124,7 @@ export async function setCachedEmbedding(name: string, embedding: number[]): Pro
       .upsert({
         coverage_name: normalizedName,
         embedding: embedding as any,
-        model: 'gemini-embedding-001',
+        model: EMBEDDING_MODEL_NAME,
         dimensions: embedding.length
       } as any, {
         onConflict: 'coverage_name,model'
@@ -164,7 +167,7 @@ export async function getBatch(coverageNames: string[]): Promise<Map<string, num
       .from('coverage_embeddings_cache')
       .select('coverage_name, embedding')
       .in('coverage_name', missingFromMemory)
-      .eq('model', 'gemini-embedding-001');
+      .eq('model', EMBEDDING_MODEL_NAME);
 
     if (error) {
       console.warn(`⚠️ [EmbeddingCache] Batch Supabase error: ${error.message}`);
@@ -201,7 +204,7 @@ export async function setBatch(coverageNames: string[], embeddings: number[][]):
     const rows = normalizedNames.map((name, i) => ({
       coverage_name: name,
       embedding: embeddings[i],
-      model: 'gemini-embedding-001',
+      model: EMBEDDING_MODEL_NAME,
       dimensions: embeddings[i].length
     }));
 

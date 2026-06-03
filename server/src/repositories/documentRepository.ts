@@ -34,7 +34,7 @@ export async function getDocumentById(id: string): Promise<DocumentRecord | null
 
 export async function getDocumentsByInsurer(insurerName: string): Promise<DocumentRecord[]> {
   const { data, error } = await supabase
-    .from('documents' as any)
+    .from('document_insurer_view' as any)
     .select('*')
     .eq('insurer_name', insurerName)
     .order('created_at', { ascending: false });

@@ -1,38 +1,41 @@
 # Spec: Vector Storage
 
-## Capability
+## Purpose
 Almacenar chunks con embeddings en Supabase, gestionar imágenes de páginas en Storage, y mantener relaciones entre documentos, chunks e imágenes.
 
 ## User Story
 **Como** sistema de indexación  
 **Quiero** persistir chunks vectoriales y sus imágenes  
 **Para** poder recuperarlos en búsquedas semánticas
-
-## Functional Requirements
-
-### FR-1: Almacenamiento de documentos
+## Requirements
+### Requirement: FR-1: Almacenamiento de documentos
 Tabla `documents`:
 - Crear registro con metadata
 - Asociar a aseguradora (insurer_id)
 - Guardar path en storage
 - Crear/actualizar aseguradora si no existe
 
-### FR-2: Almacenamiento de chunks
-Tabla `chunks`:
+### Requirement: FR-2: Almacenamiento de chunks
+La tabla `chunks` SHALL:
 - Guardar contenido y contenido normalizado
-- Guardar embedding vector(768)
+- Guardar embedding vector(3072)
 - Guardar coverage_tags (array)
 - Guardar section_type
 - Relacionar con document_id
 
-### FR-3: Almacenamiento de imágenes
+#### Scenario: Vector dimensionality update
+- **WHEN** storing chunks
+- **THEN** the system SHALL store embeddings of dimension 3072
+- **AND** utilize the gemini-embedding-2 model
+
+### Requirement: FR-3: Almacenamiento de imágenes
 Tabla `page_images` + Storage:
 - Subir PNG a bucket `clause-pages`
 - Guardar storage_url y storage_path
 - Relacionar con document_id y page_number
 - Almacenar dimensiones (width, height)
 
-### FR-4: Gestión de transacciones
+### Requirement: FR-4: Gestión de transacciones
 - Rollback en caso de error
 - Eliminar datos parciales si falla
 - Cleanup de archivos temporales

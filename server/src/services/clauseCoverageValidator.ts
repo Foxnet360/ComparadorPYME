@@ -156,9 +156,9 @@ export const clauseCoverageValidator = {
 async function checkClauseDocumentExists(insurerName: string): Promise<boolean> {
   try {
     const { data, error } = await supabase
-      .from('documents')
-      .select('id, insurers!inner(name)')
-      .eq('insurers.name', insurerName)
+      .from('document_insurer_view')
+      .select('id')
+      .eq('insurer_name', insurerName)
       .eq('is_active', true)
       .limit(1);
     
