@@ -37,8 +37,8 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   queryExpansion: true,
   hybridSearchV2: true,
   
-  // Unified Comparison Engine (enabled by default for performance)
-  useUnifiedComparisonEngine: process.env.USE_UNIFIED_ENGINE !== 'false',
+  // Unified Comparison Engine (disabled by default for safe rollout)
+  useUnifiedComparisonEngine: process.env.USE_UNIFIED_ENGINE === 'true',
   
   // Backward compatibility flags (for gradual migration)
   useLegacyCoverageMatcher: false,
