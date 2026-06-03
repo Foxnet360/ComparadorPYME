@@ -175,10 +175,60 @@ railway logs --service comparador-csa
 **Sin Redis:** Todo funciona igual, pero usa memoria local (límite: 10,000 entradas).
 
 ### "[ioredis] Unhandled error event: AggregateError [ECONNREFUSED]"
-**Esto es NORMAL si no tienes Redis configurado.** El sistema automáticamente usa cache en memoria como fallback.
-- **Sin acción requerida**: El análisis funciona correctamente sin Redis
-- **Opcional**: Sigue los pasos de "Redis en Railway" arriba para mejor rendimiento
-- **Verificación**: Si ves `⚠️  [Redis] Unavailable - using in-memory cache fallback` en los logs, todo está funcionando correctamente
+
+**Si ya configuraste REDIS_URL y sigue apareciendo este error:**
+
+#### Diagnóstico
+
+1. **Verificar que REDIS_URL esté configurada:**
+   ```bash
+   railway variables --service comparador-csa
+   # Debería mostrar: REDIS_URL=redis://default:... @redis.railway.internal:6379
+   ```
+
+2. **Verificar health check:**
+   ```bash
+   curl https://tu-app.railway.app/health
+   # Debería mostrar: "redis": {"status": "ok"}
+   ```
+
+3. **Verificar logs detallados:**
+   ```bash
+   railway logs --service comparador-csa
+   # Buscar: "REDIS_URL: configured" al inicio
+   ```
+
+#### Soluciones
+
+**Problema 1: Variable no está llegando al servicio**
+- Railway Dashboard → Servicio → Variables
+- Verificar que `REDIS_URL` existe y tiene el valor correcto
+- Hacer click en "Deploy" para aplicar cambios
+
+**Problema 2: Redis está en otro proyecto**
+- Verificar que el servicio Redis está en el mismo proyecto Railway (`miraculous-blessing`)
+- Si está en otro proyecto, usa la URL pública:
+  ```
+  redis://default:YymaPFEKzRuNdHsyCnElykqZXmuaCkHC@kodama.proxy.rlwy.net:42389
+  ```
+
+**Problema 3: Network interna no funciona**
+- Probar con URL pública temporalmente
+- Contactar soporte de Railway si persiste
+
+**Problema 4: Redis no está corriendo**
+- Railway Dashboard → Servicio Redis
+- Verificar que está "Running" (no "Crashed" o "Stopped")
+- Reiniciar el servicio Redis si es necesario
+
+#### Script de diagnóstico
+
+```bash
+# Descargar y ejecutar diagnóstico
+npx ts-node server/src/scripts/diagnose-redis.ts
+```
+
+**Nota:** Sin Redis configurado, el sistema automáticamente usa cache en memoria como fallback. El análisis funciona correctamente sin Redis, solo con menos rendimiento.
 
 ---
 
