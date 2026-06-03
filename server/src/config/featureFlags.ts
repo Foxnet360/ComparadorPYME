@@ -38,7 +38,7 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   hybridSearchV2: true,
   
   // Unified Comparison Engine (disabled by default for safe rollout)
-  useUnifiedComparisonEngine: process.env.USE_UNIFIED_ENGINE === 'true',
+  useUnifiedComparisonEngine: false,
   
   // Backward compatibility flags (for gradual migration)
   useLegacyCoverageMatcher: false,
@@ -76,6 +76,9 @@ class FeatureFlagManager {
     
     // Override from environment variables if present
     this.loadFromEnvironment();
+    
+    // Force useUnifiedComparisonEngine to false to prevent regressions in production
+    this.flags.useUnifiedComparisonEngine = false;
     
     // Log feature flags on startup
     this.logFeatureFlags();
