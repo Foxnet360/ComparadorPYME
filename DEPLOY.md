@@ -109,10 +109,75 @@ docker run -p 8080:8080 --env-file .env comparador-csa
 - Verifica que `NODE_ENV=production` esté configurado
 - Verifica que Express esté sirviendo archivos estáticos de `dist/`
 
+### Redis en Railway
+
+#### Configuración Paso a Paso
+
+**✅ Redis ya está creado en tu proyecto Railway.**
+
+Solo necesitas agregar la variable de entorno `REDIS_URL` a tu servicio.
+
+##### Opción 1: Usando Railway Dashboard (Recomendado)
+
+1. Ir a tu servicio principal (`comparador-csa`)
+2. Tab **"Variables"** → **"New Variable"**
+3. Nombre: `REDIS_URL`
+4. Valor (copia y pega):
+   ```
+   redis://default:YymaPFEKzRuNdHsyCnElykqZXmuaCkHC@redis.railway.internal:6379
+   ```
+5. Click **"Add"** y luego **"Deploy"**
+
+##### Opción 2: Usando Railway CLI
+
+**Staging:**
+```bash
+railway variables --environment staging --set REDIS_URL="redis://default:YymaPFEKzRuNdHsyCnElykqZXmuaCkHC@redis.railway.internal:6379"
+```
+
+**Producción:**
+```bash
+railway variables --environment production --set REDIS_URL="redis://default:YymaPFEKzRuNdHsyCnElykqZXmuaCkHC@redis.railway.internal:6379"
+```
+
+##### Credenciales de Redis
+
+| Campo | Valor |
+|-------|-------|
+| **Host** | `redis.railway.internal` |
+| **Port** | `6379` |
+| **User** | `default` |
+| **Password** | `YymaPFEKzRuNdHsyCnElykqZXmuaCkHC` |
+| **Internal URL** | `redis://default:YymaPFEKzRuNdHsyCnElykqZXmuaCkHC@redis.railway.internal:6379` |
+| **Public URL** | `redis://default:YymaPFEKzRuNdHsyCnElykqZXmuaCkHC@kodama.proxy.rlwy.net:42389` |
+
+**Nota:** Usa siempre la **Internal URL** para la comunicación entre servicios en Railway. La Public URL solo es necesaria para conexiones externas (ej: Redis CLI desde tu computadora).
+
+##### Verificar conexión:
+```bash
+# Ver logs del servicio
+railway logs --service comparador-csa
+
+# Deberías ver:
+✅ [Redis] Connected and available
+```
+
+#### ¿Qué se cachea en Redis?
+
+| Tipo | TTL | Descripción |
+|------|-----|-------------|
+| Embeddings | 7 días | Vectores de texto para búsqueda |
+| Coverage Mapping | 30 días | Mapeo coberturas → categorías |
+| Deductibles | 30 días | Deducibles parseados |
+| Search Results | 1 hora | Resultados RAG |
+| Comparisons | 1 día | Resultados de comparación |
+
+**Sin Redis:** Todo funciona igual, pero usa memoria local (límite: 10,000 entradas).
+
 ### "[ioredis] Unhandled error event: AggregateError [ECONNREFUSED]"
 **Esto es NORMAL si no tienes Redis configurado.** El sistema automáticamente usa cache en memoria como fallback.
 - **Sin acción requerida**: El análisis funciona correctamente sin Redis
-- **Opcional**: Para mejor rendimiento, puedes añadir Redis en Railway Dashboard → Variables → `REDIS_URL`
+- **Opcional**: Sigue los pasos de "Redis en Railway" arriba para mejor rendimiento
 - **Verificación**: Si ves `⚠️  [Redis] Unavailable - using in-memory cache fallback` en los logs, todo está funcionando correctamente
 
 ---
