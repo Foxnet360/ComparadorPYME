@@ -10,4 +10,4 @@
 
 - [x] 3.1 Verify frontend and backend typescript compilation
 - [x] 3.2 Delete temporary script `server/src/scripts/check_excel.ts`
-- [ ] 3.3 Run deploy bot to push and deploy the changes to Railway production
+- [x] 3.3 Run deploy bot to push and deploy the changes to Railway production
