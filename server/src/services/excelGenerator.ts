@@ -340,10 +340,14 @@ export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: 
           xlCell.font = { name: 'Calibri', size: 10, color: { argb: 'FF333333' } };
         } else if (row.id.endsWith('_ratio')) {
           // Format percentage
-          const pct = parseFloat(val.replace(/[^0-9,.]/g, '').replace(',', '.')) / 100;
-          if (!isNaN(pct)) {
-            xlCell.value = pct;
-            xlCell.numFmt = '0.00%';
+          if (typeof val === 'string') {
+            const pct = parseFloat(val.replace(/[^0-9,.]/g, '').replace(',', '.')) / 100;
+            if (!isNaN(pct)) {
+              xlCell.value = pct;
+              xlCell.numFmt = '0.00%';
+            } else {
+              xlCell.value = val;
+            }
           } else {
             xlCell.value = val;
           }

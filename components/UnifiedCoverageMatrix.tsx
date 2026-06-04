@@ -713,7 +713,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
 
   const { submitCorrection } = useOptimisticCorrection();
   const { openPdfViewer } = usePdfViewer();
-  const { setCellNote, getCellNote } = useCellNotes();
+  const { cellNotes, setCellNote, getCellNote } = useCellNotes();
   const [savingCorrections, setSavingCorrections] = useState<Set<string>>(new Set());
   const [editingNote, setEditingNote] = useState<{rowId: string, colIdx: number} | null>(null);
 
