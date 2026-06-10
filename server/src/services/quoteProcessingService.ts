@@ -13,11 +13,19 @@ import { insurerProfileService } from './insurerProfileService';
 import { validateCoverageValues } from './coverageValueValidator';
 import { validateCoverageValues as validateValueSources } from './valueValidationService';
 import { dualExtractionService } from './dualExtractionService';
-import { detectFormatFamily, extractForDetection } from './formatDetector';
+import { detectFormatFamily, extractForDetection, FormatDetectionResult } from './formatDetector';
 import { buildPromptForFamily } from './promptBuilder';
 import { buildCanonicalCoverages } from './coverageNormalizer';
 import { extractPremiumBreakdown, extractPerCoveragePremiums, validatePremiumBreakdown, normalizeCurrency } from './premiumExtractor';
 import { getDeductibleFallback } from './deductibleResolver';
+import {
+  validateQuoteExtractionV2,
+  validateQuoteExtraction,
+  formatZodError,
+  QuoteExtractionV2,
+  QuoteExtraction,
+} from '../schemas/extractionSchemas';
+import { reconciliationService } from './reconciliationService';
 
 // Feature flag for multimodal extraction
 const USE_MULTIMODAL = process.env.ENABLE_MULTIMODAL_EXTRACTION !== 'false';
@@ -151,6 +159,39 @@ async function withTimeout<T>(
   });
 }
 
+interface ZodValidator<T> {
+  (data: unknown): { success: true; data: T } | { success: false; error: any };
+}
+
+/**
+ * Retry wrapper for Gemini calls whose outputs must pass Zod validation.
+ * Validation failures are retried up to maxRetries times before falling back
+ * to the raw (unvalidated) output so the pipeline degrades gracefully.
+ */
+async function extractWithZodValidation<T>(
+  attempt: () => Promise<any>,
+  validate: ZodValidator<T>,
+  context: string,
+  maxRetries = 2
+): Promise<any> {
+  let lastRaw: any;
+  let lastError: any;
+
+  for (let i = 0; i <= maxRetries; i++) {
+    lastRaw = await attempt();
+    const validation = validate(lastRaw);
+    if (validation.success) {
+      return validation.data;
+    }
+    lastError = validation.error;
+    const issues = formatZodError(validation.error);
+    console.warn(`   ⚠️ ${context} Zod validation failed (attempt ${i + 1}/${maxRetries + 1}): ${issues}`);
+  }
+
+  console.warn(`   ⚠️ ${context} exceeded validation retries; using raw extraction. Last issues: ${formatZodError(lastError)}`);
+  return lastRaw;
+}
+
 /**
  * Process a single quote using multimodal extraction
  * Timeout: 5 minutes per quote
@@ -189,59 +230,15 @@ async function processQuoteMultimodalInternal(
       console.warn(`   ⚠️ Native text extraction failed: ${err.message}.`);
     }
     
-    // Phase 1.5: Detect format family from native text (prioritary) or filename (fallback)
+    // Phase 1.5: Detect format family from native text using layout/feature patterns only.
+    // Insurer-name matching has been removed; detection is now 100% delegated to formatDetector.
     console.log(`   📋 Phase 1.5: Detecting format family from content...`);
-    const textPreview = nativeText.substring(0, 1000).toLowerCase();
-    const lowerName = quoteFile.originalname.toLowerCase();
-    let family: any = 'UNKNOWN';
-    let detectionSource = 'default';
-    
-    // Prioritize native text content over filename
-    if (textPreview.includes('hdi') || textPreview.includes('hdi seguros')) {
-      family = 'TABLE-DOUBLE';
-      detectionSource = 'nativeText';
-    } else if (textPreview.includes('chubb')) {
-      family = 'TABLE-INTEGRATED';
-      detectionSource = 'nativeText';
-    } else if (textPreview.includes('axa') || textPreview.includes('colpatria')) {
-      family = 'SECTIONS';
-      detectionSource = 'nativeText';
-    } else if (textPreview.includes('sbs') || textPreview.includes('sbs seguros')) {
-      family = 'DESCRIPTIVE';
-      detectionSource = 'nativeText';
-    } else if (textPreview.includes('liberty') || textPreview.includes('liberty seguros')) {
-      family = 'PRICE-TABLE';
-      detectionSource = 'nativeText';
-    } else if (textPreview.includes('bolivar') || textPreview.includes('bolívar') || textPreview.includes('seguros bolívar')) {
-      family = 'TEXT';
-      detectionSource = 'nativeText';
-    } else if (textPreview.includes('allianz')) {
-      family = 'SECTIONS';
-      detectionSource = 'nativeText';
-    } else if (lowerName.includes('hdi')) {
-      family = 'TABLE-DOUBLE';
-      detectionSource = 'filename';
-    } else if (lowerName.includes('chubb')) {
-      family = 'TABLE-INTEGRATED';
-      detectionSource = 'filename';
-    } else if (lowerName.includes('axa') || lowerName.includes('colpatria')) {
-      family = 'SECTIONS';
-      detectionSource = 'filename';
-    } else if (lowerName.includes('sbs')) {
-      family = 'DESCRIPTIVE';
-      detectionSource = 'filename';
-    } else if (lowerName.includes('liberty')) {
-      family = 'PRICE-TABLE';
-      detectionSource = 'filename';
-    } else if (lowerName.includes('bolivar') || lowerName.includes('bolívar')) {
-      family = 'TEXT';
-      detectionSource = 'filename';
-    } else if (lowerName.includes('allianz')) {
-      family = 'SECTIONS';
-      detectionSource = 'filename';
-    }
-    
-    console.log(`   ✅ Format family detected: ${family} (source: ${detectionSource})`);
+    const textPreview = extractForDetection(nativeText, 2000);
+    const detectionResult: FormatDetectionResult = detectFormatFamily(textPreview);
+    const family = detectionResult.family;
+    const detectionSource = detectionResult.confidence > 0 ? 'nativeText' : 'default';
+
+    console.log(`   ✅ Format family detected: ${family} (confidence: ${detectionResult.confidence}, source: ${detectionSource})`);
     
     // Phase 2: Build specialized prompt
     console.log(`   📝 Phase 2: Building specialized prompt...`);
@@ -251,11 +248,15 @@ async function processQuoteMultimodalInternal(
     
     // Phase 3: Extract using multimodal vision directly on File API
     console.log(`   🔍 Phase 3: Extracting with multimodal vision + text reference...`);
-    const extracted = await geminiService.extractFromPdfWithVision(
-      quoteFile.path,
-      prompt,
-      quoteFile.originalname,
-      nativeText
+    const extracted = await extractWithZodValidation<QuoteExtractionV2>(
+      () => geminiService.extractFromPdfWithVision(
+        quoteFile.path,
+        prompt,
+        quoteFile.originalname,
+        nativeText
+      ),
+      validateQuoteExtractionV2,
+      'Multimodal'
     );
     
     // Phase 4: Normalize coverages
@@ -275,6 +276,43 @@ async function processQuoteMultimodalInternal(
     
     if (premiumValidation.warnings.length > 0) {
       console.log(`   ⚠️ Premium warnings: ${premiumValidation.warnings.join(', ')}`);
+    }
+    
+    // Phase 6: Reconcile quote against clause data
+    console.log(`   🔍 Phase 6: Reconciling quote against clause data...`);
+    let reconciliationResults: import('../schemas/extractionSchemas').ReconciliationResult[] = [];
+    try {
+      const preParsed: ParsedQuote = {
+        insurerName: extracted.insurerName || 'NO ESPECIFICADO',
+        policyName: extracted.policyName || 'NO ESPECIFICADO',
+        priceAnnual: premiumBreakdown.totalPayable || 0,
+        currency: normalizeCurrency(premiumBreakdown.currency),
+        coverages: normalizationResult.canonicalCoverages.map(c => ({
+          name: c.name,
+          canonicalName: c.name,
+          value: c.insuredAmount ? c.insuredAmount.toString() : 'NO ESPECIFICADO',
+          deductible: c.deductible || getDeductibleFallback(c.name, normalizationResult.generalDeductibles),
+          confidence: c.confidence,
+          rawTextSnippet: c.rawTextSnippet,
+          calculatedPage: c.pageNumber || undefined
+        })),
+        specialConditions: [
+          ...(extracted.specialConditions || []),
+          ...(premiumValidation.warnings),
+        ],
+        rawText: JSON.stringify(extracted),
+        parseConfidence: normalizationResult.totalConfidence,
+      };
+      reconciliationResults = await reconciliationService.reconcileQuote(preParsed, {
+        insurerName: extracted.insurerName,
+        productName: extracted.policyName,
+      });
+      const mismatchCount = reconciliationResults.filter(r => r.status === 'MISMATCH').length;
+      if (mismatchCount > 0) {
+        console.log(`   ⚠️ Found ${mismatchCount} deductible discrepancies vs clause data`);
+      }
+    } catch (reconError: any) {
+      console.warn(`   ⚠️ Reconciliation failed (non-blocking): ${reconError.message}`);
     }
     
     // Build ParsedQuote from normalized data
@@ -315,7 +353,8 @@ async function processQuoteMultimodalInternal(
         value: c.insuredAmount ? c.insuredAmount.toString() : null,
         deductible: c.deductible,
       })),
-      pageTextMap: pageTextMap
+      pageTextMap: pageTextMap,
+      reconciliationResults: reconciliationResults.length > 0 ? reconciliationResults : undefined,
     };
     
     console.log(`   ✅ Multimodal extraction: ${parsed.insurerName}, ${parsed.coverages.length} coverages, premium: ${parsed.priceAnnual}`);
@@ -362,10 +401,14 @@ async function processQuoteLegacyInternal(
     // Try structured extraction first (JSON mode)
     let parsed: ParsedQuote;
     try {
-      const structuredResult = await geminiService.extractStructured(
-        quote.text,
-        extractionPrompt,
-        quote.metadata?.pageCount || 1
+      const structuredResult = await extractWithZodValidation<QuoteExtraction>(
+        () => geminiService.extractStructured(
+          quote.text,
+          extractionPrompt,
+          quote.metadata?.pageCount || 1
+        ),
+        validateQuoteExtraction,
+        'Legacy'
       );
       
       // Normalize coverages using thesaurus
@@ -411,6 +454,20 @@ async function processQuoteLegacyInternal(
       parsed = await quoteParser.parse(quote.text);
     }
     
+    // Reconcile legacy quote against clause data
+    try {
+      const reconResults = await reconciliationService.reconcileQuote(parsed);
+      if (reconResults.length > 0) {
+        parsed.reconciliationResults = reconResults;
+        const mismatchCount = reconResults.filter(r => r.status === 'MISMATCH').length;
+        if (mismatchCount > 0) {
+          console.log(`   ⚠️ Legacy: found ${mismatchCount} deductible discrepancies vs clause data`);
+        }
+      }
+    } catch (reconError: any) {
+      console.warn(`   ⚠️ Legacy reconciliation failed (non-blocking): ${reconError.message}`);
+    }
+
     console.log(`   ✅ Legacy extraction: ${parsed.insurerName}, ${parsed.coverages.length} coverages, premium: ${parsed.priceAnnual}`);
     return parsed;
     

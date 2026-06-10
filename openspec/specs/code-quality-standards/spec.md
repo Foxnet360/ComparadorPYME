@@ -67,6 +67,34 @@ The system SHALL enforce code quality via pre-commit hooks.
 
 ---
 
+## Delta from change: robustez-extraccion-cotizaciones-clausulados
+
+## ADDED Requirements
+
+### Requirement: Strict CI Pipeline
+The system MUST enforce a strict CI pipeline where every step fails the build on error.
+
+#### Scenario: TypeScript Error in PR
+- **WHEN** a pull request contains a TypeScript type error
+- **THEN** the CI build job fails
+- **AND** merge is blocked.
+
+#### Scenario: Coverage Below Threshold
+- **WHEN** test coverage drops below 70%
+- **THEN** the CI test-coverage job fails with a report
+- **AND** merge is blocked.
+
+#### Scenario: Schema Drift Detected
+- **WHEN** an untracked Supabase migration exists
+- **THEN** the CI supabase-diff job fails
+- **AND** merge is blocked.
+
+#### Scenario: Admin Override
+- **WHEN** a pull request has the `hotfix` label
+- **THEN** strict checks MAY be bypassed by an admin.
+
+---
+
 ## Delta from change: complete-system-audit-remediation
 
 ## ADDED Requirements

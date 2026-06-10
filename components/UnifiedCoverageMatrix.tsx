@@ -271,6 +271,16 @@ export function formatCurrency(num: number): string {
   return '$' + num.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
+export function buildExportNotes(cellNotes: Record<string, { content?: string }>): Record<string, string> {
+  const exportNotes: Record<string, string> = {};
+  Object.entries(cellNotes).forEach(([key, note]) => {
+    if (note.content) {
+      exportNotes[key] = note.content;
+    }
+  });
+  return exportNotes;
+}
+
 export function formatMatrixValue(val: string | undefined | null): string {
   if (!val) return 'No informado';
   if (val === 'No incluida' || val === 'NO ESPECIFICADO' || val === 'No contratado' || isExcludedValue(val)) {
@@ -809,12 +819,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
     setIsExporting(true);
     try {
       // Create a simplified version of cellNotes for export
-      const exportNotes: Record<string, string> = {};
-      Object.entries(cellNotes).forEach(([key, note]) => {
-        if (note.content) {
-          exportNotes[key] = note.content;
-        }
-      });
+      const exportNotes = buildExportNotes(cellNotes);
 
       // POST request with notes
       const response = await fetch(`/api/analysis/${analysisId}/export`, {

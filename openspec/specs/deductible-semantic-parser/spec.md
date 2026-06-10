@@ -99,3 +99,35 @@ The system SHALL parse complex deductible expressions including percentages, min
 - **WHEN** a complex deductible text like "10% con mínimo de 5 SMMLV" is evaluated
 - **THEN** the system SHALL invoke Gemini with responseSchema and responseMimeType: "application/json"
 - **AND** the extracted components and semantics SHALL conform precisely to the schema
+
+---
+
+## Delta from change: robustez-extraccion-cotizaciones-clausulados
+
+## MODIFIED Requirements
+
+### Requirement: Deterministic Parsing First
+The system MUST attempt regex + benchmark table parsing before falling back to LLM for deductible extraction.
+
+#### Scenario: Regex Hit
+- **WHEN** the text "10% min 5 SMMLV" is parsed
+- **THEN** the regex pattern matches and benchmark tables evaluate the normalized value
+- **AND** no LLM call is made.
+
+#### Scenario: LLM Fallback
+- **WHEN** the text does not match any known regex pattern
+- **THEN** the system falls back to Gemini for parsing
+- **AND** the result is cached in Redis with a versioned key.
+
+#### Scenario: Cache Hit
+- **WHEN** the same unparseable text is submitted again
+- **THEN** Redis returns the cached result
+- **AND** no LLM call is made.
+
+### Requirement: Telemetry for Fallback Monitoring
+The system SHOULD emit structured logs and counters for cache hits, regex hits, and LLM fallbacks.
+
+#### Scenario: Fallback Rate Telemetry
+- **WHEN** the hybrid parser processes multiple deductibles
+- **THEN** counters for `cacheHits`, `regexHits`, and `llmFallbacks` are accumulated
+- **AND** structured logs are emitted for monitoring.

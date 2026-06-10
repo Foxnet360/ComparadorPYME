@@ -67,7 +67,7 @@ describe('deductibleAnalyzer', () => {
         100000000
       );
       
-      expect(result.deductibleAmount).toBe(5 * 1300000); // 5 * SMMLV value
+      expect(result.deductibleAmount).toBe(5 * 1423500); // 5 * DEFAULT SMMLV value from extractionSchemas
     });
 
     it('should handle fixed amount format', async () => {

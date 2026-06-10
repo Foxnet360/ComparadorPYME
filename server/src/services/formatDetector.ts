@@ -29,6 +29,11 @@ interface FormatPattern {
   weight: number;
 }
 
+// Layout/feature weights are boosted above the fallback TEXT/UNKNOWN weight so
+// detection is driven by document structure instead of insurer-name heuristics.
+const LAYOUT_WEIGHT = 1.2;
+const FALLBACK_WEIGHT = 0.5;
+
 const FORMAT_PATTERNS: FormatPattern[] = [
   {
     family: 'TABLE-DOUBLE',
@@ -37,7 +42,7 @@ const FORMAT_PATTERNS: FormatPattern[] = [
       /AMPAROS\s+BASICOS/i,
     ],
     keywords: ['DEDUCIBLES', 'AMPAROS', 'COBERTURAS'],
-    weight: 1.0,
+    weight: LAYOUT_WEIGHT,
   },
   {
     family: 'TABLE-INTEGRATED',
@@ -47,7 +52,7 @@ const FORMAT_PATTERNS: FormatPattern[] = [
       /sub[líi]mite/i,
     ],
     keywords: ['Suma Asegurada', 'Deducible', 'Sublímite'],
-    weight: 1.0,
+    weight: LAYOUT_WEIGHT,
   },
   {
     family: 'SECTIONS',
@@ -55,7 +60,7 @@ const FORMAT_PATTERNS: FormatPattern[] = [
       /SECCION\s+(PRIMERA|SEGUNDA|TERCERA|CUARTA|QUINTA)/i,
     ],
     keywords: ['SECCION', 'AMPARO'],
-    weight: 1.0,
+    weight: LAYOUT_WEIGHT,
   },
   {
     family: 'CONDITIONS',
@@ -67,13 +72,13 @@ const FORMAT_PATTERNS: FormatPattern[] = [
       /^\s*[\d]+\s*\.\s*(?:COBERTURA|SECCION|AMPARO)/im,
     ],
     keywords: ['COBERTURA BÁSICA', 'COBERTURAS ESPECIFICAS', 'condiciones del contrato', 'condiciones particulares'],
-    weight: 0.95,
+    weight: LAYOUT_WEIGHT,
   },
   {
     family: 'TEXT',
     patterns: [],
     keywords: [],
-    weight: 0.5,
+    weight: FALLBACK_WEIGHT,
   },
   {
     family: 'PRICE-TABLE',
@@ -82,7 +87,7 @@ const FORMAT_PATTERNS: FormatPattern[] = [
       /\$\s*[\d.,]+\s*(?:PRIMA|IMPUESTOS)/i,
     ],
     keywords: ['Resumen', 'coberturas', 'primas', 'PRIMA', 'IMPUESTOS'],
-    weight: 1.0,
+    weight: LAYOUT_WEIGHT,
   },
   {
     family: 'DESCRIPTIVE',
@@ -91,7 +96,7 @@ const FORMAT_PATTERNS: FormatPattern[] = [
       /daños\s+súbitos/i,
     ],
     keywords: ['CUBRE', 'EXCLUSION', 'PROPIEDAD', 'DESCRIPCION'],
-    weight: 1.0,
+    weight: LAYOUT_WEIGHT,
   },
 ];
 
@@ -154,11 +159,15 @@ export function detectFormatFamily(text: string): FormatDetectionResult {
   // Detect sections
   hasSections = /SECCION\s+\d|SECCION\s+(PRIMERA|SEGUNDA|TERCERA)/i.test(text);
 
-  // Calculate confidence
-  let confidence = Math.min(bestScore, 100);
-  if (bestFamily === 'TEXT' && bestScore === 0) {
-    confidence = 50; // Default confidence for fallback
+  // If no layout pattern matched, the document is genuinely unknown.
+  // This removes the old "TEXT with 50 confidence" fallback driven by insurer names.
+  const MIN_LAYOUT_SCORE = 20;
+  if (bestScore < MIN_LAYOUT_SCORE) {
+    bestFamily = 'UNKNOWN';
   }
+
+  // Calculate confidence
+  const confidence = Math.min(bestScore, 100);
 
   return {
     family: bestFamily,
@@ -189,13 +198,13 @@ export function extractForDetection(fullText: string, maxChars: number = 2000): 
  */
 export function getFormatFamilyDescription(family: FormatFamily): string {
   const descriptions: Record<FormatFamily, string> = {
-    'TABLE-DOUBLE': 'Tabla de coberturas + tabla de deducibles en página separada (HDI style)',
-    'TABLE-INTEGRATED': 'Tabla única con coberturas, sumas y deducibles (CHUBB style)',
-    'SECTIONS': 'Coberturas agrupadas en secciones numeradas (MAPFRE style)',
-    'DESCRIPTIVE': 'Texto descriptivo extenso por cobertura (AXA style)',
-    'CONDITIONS': 'Documento de condiciones contractuales con bullets (Allianz style)',
-    'PRICE-TABLE': 'Tabla de primas por cobertura (SBS style)',
-    'TEXT': 'Texto corrido/carta sin estructura tabular definida (BOLIVAR style)',
+    'TABLE-DOUBLE': 'Tabla de coberturas + tabla de deducibles en página separada',
+    'TABLE-INTEGRATED': 'Tabla única con coberturas, sumas aseguradas y deducibles',
+    'SECTIONS': 'Coberturas agrupadas en secciones numeradas',
+    'DESCRIPTIVE': 'Texto descriptivo extenso por cobertura con párrafos descriptivos',
+    'CONDITIONS': 'Documento de condiciones contractuales con bullets',
+    'PRICE-TABLE': 'Tabla de primas por cobertura',
+    'TEXT': 'Texto corrido/carta sin estructura tabular definida',
     'UNKNOWN': 'No se pudo determinar el formato',
   };
   return descriptions[family] || 'Formato desconocido';

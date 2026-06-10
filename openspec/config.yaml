@@ -1,20 +1,51 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  Tech stack: TypeScript, React 19, Vite 8, Express 5, Node.js >=18
+  Database: Supabase (PostgreSQL) with pgvector, Redis (ioredis)
+  AI/ML: Google Gemini API, Groq, semantic search, embeddings
+  Styling: Tailwind CSS 3.4, PostCSS, Lucide React
+  Testing: Vitest 4 with jsdom, @testing-library/react
+  Architecture: Fluid ontology — structured clause extraction, semantic coverage mapping, triple-source chat, hybrid RAG (vector + BM25)
+  Domain: Insurance comparison platform (PYME) for Colombian market
+  Deployment: Railway (frontend + backend), Supabase for data
+  Conventions: Conventional commits, feature branch workflow, husky + lint-staged (tsc --noEmit)
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Document feature flag configuration when applicable
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+    - Cover both happy path and edge cases (empty PDFs, malformed clauses)
+  design:
+    - Include sequence diagrams for complex LLM flows
+    - Document architecture decisions with rationale
+    - Reference existing fluid ontology services
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+    - Mark feature flag toggles in task descriptions
+  apply:
+    - Follow existing code patterns in server/src/services/
+    - Maintain strict TypeScript typing
+    tdd: true
+    test_command: "npm test"
+  verify:
+    test_command: "npm test"
+    build_command: "npm run build"
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
+    - Preserve feature flag backward compatibility
+
+testing:
+  strict_tdd: true
+  runner: vitest
+  environment: jsdom
+  coverage: false
+  layers:
+    unit: true
+    integration: true
+    e2e: false

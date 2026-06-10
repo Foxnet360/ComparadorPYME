@@ -17,7 +17,7 @@ const PROMPT_TEMPLATES: Record<FormatFamily, PromptTemplate> = {
     family: 'TABLE-DOUBLE',
     basePrompt: `Eres un extractor experto de cotizaciones de seguros PYME colombianos.
 
-Este PDF tiene el formato "Tabla Doble" típico de HDI y similares:
+Este PDF tiene el formato "Tabla Doble":
 - Página 1: Tabla "AMPAROS Y COBERTURAS" con Descripción y Suma Asegurada
 - Página 2: Tabla separada "DEDUCIBLES QUE APLICAN" por tipo de amparo
 - Página 3+: Detalle de riesgos con bienes asegurados desglosados
@@ -28,9 +28,9 @@ REGLAS CRÍTICAS:
 3. Relaciona deducibles generales con coberturas por el nombre de la sección
 4. Si una cobertura no tiene deducible específico, busca en la tabla de deducibles generales de la página 2
 5. IMPORTANTE: Si no encuentras deducible en ninguna página, usa "No aplica" para servicios (Asistencia PYME, Legal) o busca en cláusulas
-5. EXTRAER primas por cobertura si aparecen (algunas cotizaciones las muestran)
-6. La sección "RESPONSABILIDAD CIVIL" tiene sub-límites que van en subLimits
-7. Los valores "INCLUIDO" son coberturas sin suma asegurada numérica`,
+6. EXTRAER primas por cobertura si aparecen (algunas cotizaciones las muestran)
+7. La sección "RESPONSABILIDAD CIVIL" tiene sub-límites que van en subLimits
+8. Los valores "INCLUIDO" son coberturas sin suma asegurada numérica`,
     formatInstructions: `FORMATO DE SALIDA:
 {
   "insurerName": "nombre exacto",
@@ -62,17 +62,17 @@ REGLAS CRÍTICAS:
     { "appliesTo": "AMPAROS BASICOS", "deductibleText": "5% del valor de la pérdida, mínimo 1 SMMLV" }
   ]
 }`,
-    fewShotExamples: `EJEMPLO HDI:
+    fewShotExamples: `EJEMPLO TABLA DOBLE:
 Entrada: "AMPAROS Y COBERTURAS" tabla con "Incendio y Riesgos Aliados" = $696,700,000
 Página 2: "DEDUCIBLES QUE APLICAN: AMPAROS BASICOS: 5% del valor de la pérdida, mínimo 1 SMMLV"
-Salida: rawName="Incendio y Riesgos Aliados", insuredAmount=696700000, deductible="5% del valor de la pérdida, mínimo 1 SMMLV"`,
+Salida: rawName="Incendio y Riesgos Aliados", insuredAmount=696700000, deductible="5% del valor de la pérdida, mínimo 1 SMMLV`,
   },
 
   'TABLE-INTEGRATED': {
     family: 'TABLE-INTEGRATED',
     basePrompt: `Eres un extractor experto de cotizaciones de seguros PYME colombianos.
 
-Este PDF tiene el formato "Tabla Integrada" típico de CHUBB y similares:
+Este PDF tiene el formato "Tabla Integrada":
 - Tabla única con columnas: Descripción | Suma Asegurada | Deducible
 - Incluye coberturas principales Y sub-límites (marcados con "(Sublímite)")
 - Al final: Desglose de prima en tabla separada
@@ -88,7 +88,7 @@ REGLAS CRÍTICAS:
 8. IMPORTANTE: Si no encuentras deducible en ninguna página, usa "No aplica" para servicios (Asistencia PYME, Legal) o busca en cláusulas`,
     formatInstructions: `FORMATO DE SALIDA:
 {
-  "insurerName": "CHUBB SEGUROS COLOMBIA S.A.",
+  "insurerName": "NOMBRE ASEGURADORA",
   "policyName": "Todo Riesgo Daño Material PYMES",
   "premium": {
     "netPremium": 9005824,
@@ -117,16 +117,16 @@ REGLAS CRÍTICAS:
     }
   ]
 }`,
-    fewShotExamples: `EJEMPLO CHUBB:
+    fewShotExamples: `EJEMPLO TABLA INTEGRADA:
 Entrada: Tabla con "AMPARO BÁSICO" | 1.621.704.283,00 COP | 5,00 % del Siniestro, Mínimo 1 SMMLV
-Salida: rawName="AMPARO BÁSICO TODO RIESGO DE PÉRDIDA O DAÑO MATERIAL", insuredAmount=1621704283, deductible="5,00 % del Siniestro, Mínimo 1 SMMLV"`,
+Salida: rawName="AMPARO BÁSICO TODO RIESGO DE PÉRDIDA O DAÑO MATERIAL", insuredAmount=1621704283, deductible="5,00 % del Siniestro, Mínimo 1 SMMLV`,
   },
 
   'SECTIONS': {
     family: 'SECTIONS',
     basePrompt: `Eres un extractor experto de cotizaciones de seguros PYME colombianos.
 
-Este PDF tiene el formato "Secciones Numeradas" típico de MAPFRE y similares:
+Este PDF tiene el formato "Secciones Numeradas":
 - Secciones numeradas: "SECCION PRIMERA", "SECCION SEGUNDA", etc.
 - Cada sección tiene: nombre, valor asegurado, deducible, descripción
 - Un valor asegurado puede aplicar a múltiples coberturas
@@ -139,10 +139,7 @@ REGLAS CRÍTICAS:
 5. Los deducibles están en formato "10 % PERD Min 1 (SMMLV)"
 6. REVISAR TODAS LAS PÁGINAS para deducibles - cada sección puede tener su propio deducible
 7. IMPORTANTE: Si no encuentras deducible, usa "No aplica" para servicios (Asistencia PYME, Legal) o busca en cláusulas finales`,
-    formatInstructions: `FORMATO DE SALIDA:
-{
-  "insurerName": "MAPFRE SEGUROS",
-  "policyName": "TODO RIESGO PYME INTEGRAL",
+    formatInstructions: `FORMATO DE SALIDA:\n{\n  "insurerName": "NOMBRE ASEGURADORA",\n  "policyName": "TODO RIESGO PYME INTEGRAL",
   "premium": {
     "netPremium": 0,
     "fees": 0,
@@ -162,7 +159,7 @@ REGLAS CRÍTICAS:
     }
   ]
 }`,
-    fewShotExamples: `EJEMPLO MAPFRE:
+    fewShotExamples: `EJEMPLO SECCIONES NUMERADAS:
 Entrada: "SECCION PRIMERA - AMPARO BASICO - TODO RIESGO DANO MATERIAL" = $119,600,000
 Salida: section="SECCION PRIMERA", rawName="AMPARO BASICO - TODO RIESGO DANO MATERIAL", insuredAmount=119600000`,
   },
@@ -171,7 +168,7 @@ Salida: section="SECCION PRIMERA", rawName="AMPARO BASICO - TODO RIESGO DANO MAT
     family: 'DESCRIPTIVE',
     basePrompt: `Eres un extractor experto de cotizaciones de seguros PYME colombianos.
 
-Este PDF tiene el formato "Descriptivo" típico de AXA Colpatria y similares:
+Este PDF tiene el formato "Descriptivo":
 - Texto corrido con párrafos descriptivos de cada cobertura
 - Sección "Bienes y Valores Asegurables" con tabla de activos
 - Prima desglosada al inicio
@@ -185,7 +182,7 @@ REGLAS CRÍTICAS:
 6. IMPORTANTE: Si no encuentras deducible, usa "No aplica" para servicios (Asistencia PYME, Legal) o busca en sección de deducibles`,
     formatInstructions: `FORMATO DE SALIDA:
 {
-  "insurerName": "AXA COLPATRIA",
+  "insurerName": "NOMBRE ASEGURADORA",
   "policyName": "PYME SEGURA",
   "premium": {
     "netPremium": 10343085,
@@ -210,7 +207,7 @@ REGLAS CRÍTICAS:
     }
   ]
 }`,
-    fewShotExamples: `EJEMPLO AXA:
+    fewShotExamples: `EJEMPLO DESCRIPTIVO:
 Entrada: "Valor asegurado: $3,235,531,256" + "Inmuebles: $895,832,342"
 Salida: insuredAssets=[{assetType:"Inmuebles", value:895832342}], rawCoverages=[{rawName:"Todo riesgo incendio", insuredAmount:3235531256}]`,
   },
@@ -219,7 +216,7 @@ Salida: insuredAssets=[{assetType:"Inmuebles", value:895832342}], rawCoverages=[
     family: 'PRICE-TABLE',
     basePrompt: `Eres un extractor experto de cotizaciones de seguros PYME colombianos.
 
-Este PDF tiene el formato "Tabla de Primas" típico de SBS y similares:
+Este PDF tiene el formato "Tabla de Primas":
 - Tabla "Resumen de coberturas y primas" con coberturas y sus primas
 - Muestra PRIMAS por cobertura, NO valores asegurados
 - Desglose de impuestos al final
@@ -234,7 +231,7 @@ REGLAS CRÍTICAS:
 7. La prima total es la suma de primas + impuestos`,
     formatInstructions: `FORMATO DE SALIDA:
 {
-  "insurerName": "SBS SEGUROS COLOMBIA S.A.",
+  "insurerName": "NOMBRE ASEGURADORA",
   "policyName": "SEGURO INTEGRAL PARA LA EMPRESA",
   "premium": {
     "netPremium": 4584105,
@@ -254,7 +251,7 @@ REGLAS CRÍTICAS:
     }
   ]
 }`,
-    fewShotExamples: `EJEMPLO SBS:
+    fewShotExamples: `EJEMPLO TABLA DE PRIMAS:
 Entrada: "Todo riesgo daños materiales | PRIMA $485,151 | IMPUESTOS $92,179"
 Salida: rawName="Todo riesgo daños materiales", premium=485151, insuredAmount=null`,
   },
@@ -263,7 +260,7 @@ Salida: rawName="Todo riesgo daños materiales", premium=485151, insuredAmount=n
     family: 'CONDITIONS',
     basePrompt: `Eres un extractor experto de cotizaciones de seguros PYME colombianos.
 
-Este PDF tiene el formato "Condiciones del Contrato" típico de Allianz y similares:
+Este PDF tiene el formato "Condiciones del Contrato":
 - Es un documento de condiciones contractuales, no una tabla de cotización
 - Secciones numeradas (7, 8, 9...) con descripciones de coberturas
 - Coberturas listadas con bullets (✓) o viñetas
@@ -282,8 +279,8 @@ REGLAS CRÍTICAS:
 9. Los servicios (Asistencia, Legal) usualmente no tienen deducible`,
     formatInstructions: `FORMATO DE SALIDA:
 {
-  "insurerName": "ALLIANZ SEGUROS S.A.",
-  "policyName": "INSTITUCIONES EDUCATIVAS",
+  "insurerName": "NOMBRE ASEGURADORA",
+  "policyName": "NOMBRE PRODUCTO",
   "premium": {
     "netPremium": 16409171,
     "fees": 0,
@@ -314,7 +311,7 @@ REGLAS CRÍTICAS:
     { "appliesTo": "Daños Materiales", "deductibleText": "Ver clausulado" }
   ]
 }`,
-    fewShotExamples: `EJEMPLO ALLIANZ:
+    fewShotExamples: `EJEMPLO CONDICIONES DEL CONTRATO:
 Entrada: Sección 8 "Todo riesgo daño material incluyendo: ✓ Incendio, ✓ Terremoto, ✓ Daño interno"
 Salida: rawName="Incendio", section="Todo Riesgo Daño Material", insuredAmount=16409171035, deductible="Ver clausulado"`,
   },
@@ -323,7 +320,7 @@ Salida: rawName="Incendio", section="Todo Riesgo Daño Material", insuredAmount=
     family: 'TEXT',
     basePrompt: `Eres un extractor experto de cotizaciones de seguros PYME colombianos.
 
-Este PDF tiene un formato de texto corrido o carta (BOLÍVAR y similares):
+Este PDF tiene un formato de texto corrido o carta:
 - No tiene tabla clara de coberturas
 - La información está dispersa en el documento
 - Puede tener múltiples páginas con información diferente
@@ -337,8 +334,8 @@ REGLAS CRÍTICAS:
 6. IMPORTANTE: Si no encuentras deducible, usa "No aplica" para servicios (Asistencia PYME, Legal) o busca en sección de condiciones`,
     formatInstructions: `FORMATO DE SALIDA:
 {
-  "insurerName": "BOLIVAR",
-  "policyName": "TRANQUILIDAD PYMES + DIGITAL",
+  "insurerName": "NOMBRE ASEGURADORA",
+  "policyName": "NOMBRE PRODUCTO",
   "premium": {
     "netPremium": 1187511,
     "fees": 8000,
@@ -356,8 +353,8 @@ REGLAS CRÍTICAS:
     }
   ]
 }`,
-    fewShotExamples: `EJEMPLO BOLIVAR:
-Entrada: "VALOR DE LA PRIMA: $1,187,511" + "ASISTENCIA BOLIVAR: $73,000" + "EMISIÓN DIGITAL: $8,000" + "IVA: $227,147" = "TOTAL: $1,509,528"
+    fewShotExamples: `EJEMPLO TEXTO CORRIDO:
+Entrada: "VALOR DE LA PRIMA: $1,187,511" + "ASISTENCIA: $73,000" + "EMISIÓN DIGITAL: $8,000" + "IVA: $227,147" = "TOTAL: $1,509,528"
 Salida: premium={netPremium:1187511, fees:8000, taxes:227147, otherCharges:73000, totalPayable:1509528}`,
   },
 
@@ -365,12 +362,49 @@ Salida: premium={netPremium:1187511, fees:8000, taxes:227147, otherCharges:73000
     family: 'UNKNOWN',
     basePrompt: `Eres un extractor experto de cotizaciones de seguros PYME colombianos.
 
-Este PDF tiene un formato no reconocido. Extraer toda la información posible:
+Este PDF tiene un formato no reconocido. Extraer toda la información posible siguiendo el schema flexible estándar:
 - Nombre de aseguradora y póliza
-- Primas y desgloses
-- Coberturas con valores y deducibles
-- Cualquier información relevante`,
-    formatInstructions: `FORMATO DE SALIDA: Usar el schema flexible estándar`,
+- Primas y desgloses (netPremium, fees, taxes, otherCharges, totalPayable, currency, periodicity)
+- Bienes asegurados (insuredAssets) si aparecen
+- Coberturas con valores y deducibles (rawCoverages)
+- Sub-límites (subLimits) si existen
+- Deducibles generales (generalDeductibles) si existen
+- Condiciones especiales, exclusiones y garantías
+
+REGLAS CRÍTICAS:
+1. NO inventar coberturas, valores ni deducibles que no estén en el documento
+2. Si un campo no está en el documento, usar null o array vacío
+3. Si no encuentras deducible, usa "No aplica" para servicios (Asistencia PYME, Legal)
+4. Revisar TODAS las páginas antes de marcar un campo como no encontrado`,
+    formatInstructions: `FORMATO DE SALIDA:
+{
+  "insurerName": "NOMBRE ASEGURADORA",
+  "policyName": "NOMBRE PRODUCTO",
+  "premium": {
+    "netPremium": 0,
+    "fees": 0,
+    "taxes": 0,
+    "otherCharges": 0,
+    "totalPayable": 0,
+    "currency": "COP",
+    "periodicity": "ANUAL"
+  },
+  "insuredAssets": [],
+  "rawCoverages": [
+    {
+      "rawName": "Nombre exacto de la cobertura",
+      "insuredAmount": null,
+      "deductible": null,
+      "premium": null,
+      "notes": ""
+    }
+  ],
+  "subLimits": [],
+  "generalDeductibles": [],
+  "specialConditions": [],
+  "exclusions": [],
+  "warranties": []
+}`,
     fewShotExamples: '',
   },
 };

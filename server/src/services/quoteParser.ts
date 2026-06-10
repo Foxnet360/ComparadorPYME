@@ -56,6 +56,8 @@ export interface ParsedQuote {
     isFailed?: boolean;
     errorCategory?: string;
     errorCode?: string;
+    // Quote-clause reconciliation results
+    reconciliationResults?: import('../schemas/extractionSchemas').ReconciliationResult[];
 }
 
 export const quoteParser = {

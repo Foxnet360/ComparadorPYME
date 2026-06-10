@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { detectFormatFamily, FormatFamily } from '../formatDetector';
+import {
+  detectFormatFamily,
+  getFormatConfidence,
+  extractForDetection,
+  getFormatFamilyDescription,
+  type FormatFamily,
+} from '../formatDetector';
 
 // Sample texts from real PDFs extracted during analysis
 const SBS_TEXT = `RAZON SOCIAL
@@ -94,10 +100,10 @@ describe('formatDetector', () => {
       expect(result.confidence).toBeGreaterThan(0);
     });
 
-    it('should fallback to TEXT for unknown formats', () => {
+    it('should fallback to UNKNOWN for unrecognizable text', () => {
       const result = detectFormatFamily('Some random text without any insurance terms');
-      expect(result.family).toBe('TEXT');
-      expect(result.confidence).toBe(50);
+      expect(result.family).toBe('UNKNOWN');
+      expect(result.confidence).toBe(0);
     });
 
     it('should return UNKNOWN for empty text', () => {
@@ -127,6 +133,64 @@ describe('formatDetector', () => {
     it('should include detected patterns', () => {
       const result = detectFormatFamily(HDI_TEXT);
       expect(result.detectedPatterns.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('insurer-name independence', () => {
+    it('should never use insurer-name heuristics', () => {
+      const textWithHDI = 'HDI Seguros\nSuma Asegurada: 500M\nDeducible: 10%';
+      const result = detectFormatFamily(textWithHDI);
+      expect(result.family).toBe('TABLE-INTEGRATED');
+      const hasNamePattern = result.detectedPatterns.some((p) =>
+        /hdi|mapfre|sura|allianz|axa|liberty/i.test(p)
+      );
+      expect(hasNamePattern).toBe(false);
+    });
+
+    it('should detect unknown insurer with TABLE-DOUBLE layout', () => {
+      const text = 'Nueva Aseguradora SA\nAMPAROS BASICOS\nIncendio\n\nDEDUCIBLES QUE APLICAN\n10%';
+      const result = detectFormatFamily(text);
+      expect(result.family).toBe('TABLE-DOUBLE');
+    });
+  });
+
+  describe('getFormatConfidence', () => {
+    it('should return the confidence from result', () => {
+      const result = detectFormatFamily('Suma Asegurada: 100M');
+      expect(getFormatConfidence(result)).toBe(result.confidence);
+    });
+  });
+
+  describe('extractForDetection', () => {
+    it('should truncate text to maxChars', () => {
+      const long = 'A'.repeat(5000);
+      const extracted = extractForDetection(long, 100);
+      expect(extracted.length).toBe(100);
+    });
+
+    it('should return full text when shorter than maxChars', () => {
+      const short = 'Short text';
+      expect(extractForDetection(short, 100)).toBe(short);
+    });
+  });
+
+  describe('getFormatFamilyDescription', () => {
+    it('should return descriptions for all families', () => {
+      const families: FormatFamily[] = [
+        'TABLE-DOUBLE',
+        'TABLE-INTEGRATED',
+        'SECTIONS',
+        'DESCRIPTIVE',
+        'CONDITIONS',
+        'PRICE-TABLE',
+        'TEXT',
+        'UNKNOWN',
+      ];
+      families.forEach((family) => {
+        const desc = getFormatFamilyDescription(family);
+        expect(typeof desc).toBe('string');
+        expect(desc.length).toBeGreaterThan(0);
+      });
     });
   });
 });

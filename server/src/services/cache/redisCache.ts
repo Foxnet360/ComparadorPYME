@@ -159,6 +159,7 @@ export const cacheKeys = {
     clauseStructured: (insurer: string, product?: string) => `clause:${insurer}:${product || 'default'}`,
     searchResults: (query: string) => `search:${Buffer.from(query).toString('base64').substring(0, 32)}`,
     deductibleParsed: (text: string) => `deductible:${Buffer.from(text).toString('base64').substring(0, 32)}`,
+    deductibleV2: (text: string) => `deductible:v2:${Buffer.from(text).toString('base64').substring(0, 32)}`,
     comparisonResult: (fileHash: string) => `comparison:${fileHash}`,
     unifiedResult: (fileHash: string) => `unified:${fileHash}`
 };
@@ -283,6 +284,43 @@ export async function setCachedDeductible(text: string, parsed: any): Promise<vo
         }
     }
     
+    memoryCache.setex(key, cacheTTL.deductibleParsed, value);
+}
+
+export async function getCachedDeductibleV2(text: string): Promise<any | null> {
+    const key = cacheKeys.deductibleV2(text);
+
+    if (redisAvailable) {
+        try {
+            const cached = await redis.get(key);
+            if (cached) {
+                return JSON.parse(cached);
+            }
+        } catch (error) {
+            // Redis failed, try memory
+        }
+    }
+
+    const cached = memoryCache.get(key);
+    if (cached) {
+        return JSON.parse(cached);
+    }
+    return null;
+}
+
+export async function setCachedDeductibleV2(text: string, parsed: any): Promise<void> {
+    const key = cacheKeys.deductibleV2(text);
+    const value = JSON.stringify(parsed);
+
+    if (redisAvailable) {
+        try {
+            await redis.setex(key, cacheTTL.deductibleParsed, value);
+            return;
+        } catch (error) {
+            // Redis failed, store in memory
+        }
+    }
+
     memoryCache.setex(key, cacheTTL.deductibleParsed, value);
 }
 

@@ -5,6 +5,16 @@ import { ClauseDocument } from '../types';
 import { preprocessText } from './textPreprocessor';
 import { parseJsonWithRepair } from './jsonRepair';
 import { extractAndValidatePremium, createPremiumPrompt } from './premiumExtractor';
+import {
+  validateQuoteExtractionV2,
+  validateQuoteExtraction,
+  validateDeductibleStructure,
+  formatZodError,
+  QuoteExtractionV2,
+  QuoteExtraction,
+  DeductibleStructure,
+} from '../schemas/extractionSchemas';
+import { GeminiInvalidResponseError } from '../errors/geminiErrors';
 
 /**
  * JSON Schema V2 for flexible quote extraction
@@ -245,6 +255,20 @@ export const QuoteExtractionSchema: any = {
   required: ["insurerName", "policyName", "priceAnnual", "currency", "coverages", "expectedCoverages"],
 };
 
+function validateGeminiOutput<T>(
+  data: unknown,
+  validator: (d: unknown) => { success: true; data: T } | { success: false; error: any },
+  label: string
+): T {
+  const result = validator(data);
+  if (!result.success) {
+    throw new GeminiInvalidResponseError(
+      `${label} Zod validation failed: ${formatZodError(result.error)}`
+    );
+  }
+  return result.data;
+}
+
 // Initialize Gemini lazily
 const getGenAI = () => {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -410,12 +434,17 @@ export const geminiService = {
                         throw new Error("Empty response from Gemini");
                     }
 
-                    // Parse JSON
+                    // Parse JSON and validate against Zod schema
                     const parseResult = parseJsonWithRepair(responseText);
                     
                     if (parseResult.success) {
-                        console.log(`📄 [Gemini] PDF extraction: ${parseResult.data.insurerName}, ${parseResult.data.rawCoverages?.length || 0} coverages`);
-                        return parseResult.data;
+                        const validated = validateGeminiOutput<QuoteExtractionV2>(
+                            parseResult.data,
+                            validateQuoteExtractionV2,
+                            'PDF Vision'
+                        );
+                        console.log(`📄 [Gemini] PDF extraction: ${validated.insurerName}, ${validated.rawCoverages?.length || 0} coverages`);
+                        return validated;
                     } else {
                         throw new Error(`JSON parsing failed: ${parseResult.error}`);
                     }
@@ -488,7 +517,10 @@ export const geminiService = {
     /**
      * Extrae la estructura de un deducible utilizando Structured Outputs
      */
-    extractDeductible: async (deductibleText: string): Promise<any> => {
+    extractDeductible: async (
+        deductibleText: string,
+        options?: { skipValidation?: boolean }
+    ): Promise<DeductibleStructure> => {
         try {
             const ai = getGenAI();
             const extractionModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
@@ -523,7 +555,14 @@ Instrucciones para el análisis:
 
             const parseResult = parseJsonWithRepair(responseText);
             if (parseResult.success) {
-                return parseResult.data;
+                if (options?.skipValidation) {
+                    return parseResult.data as DeductibleStructure;
+                }
+                return validateGeminiOutput<DeductibleStructure>(
+                    parseResult.data,
+                    validateDeductibleStructure,
+                    'Deductible'
+                );
             } else {
                 throw new Error(`JSON parsing failed: ${parseResult.error}`);
             }
@@ -711,8 +750,13 @@ Instrucciones para el análisis:
                         data.premiumConfidence = 95;
                     }
                     
-                    console.log(`📄 [Gemini] Structured extraction: ${data.insurerName}, ${data.coverages?.length || 0} coverages, premium: ${data.priceAnnual || 0}`);
-                    return data;
+                    const validated = validateGeminiOutput<QuoteExtraction>(
+                        data,
+                        validateQuoteExtraction,
+                        'Structured'
+                    );
+                    console.log(`📄 [Gemini] Structured extraction: ${validated.insurerName}, ${validated.coverages?.length || 0} coverages, premium: ${validated.priceAnnual || 0}`);
+                    return validated;
                 } else {
                     throw new Error(`JSON parsing failed: ${parseResult.error}`);
                 }

@@ -1,6 +1,11 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import { supabase } from '../config/database';
 import { env } from '../config/env';
+import {
+  validateStructuredClause,
+  formatZodError,
+  StructuredClauseValidated,
+} from '../schemas/extractionSchemas';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
@@ -148,49 +153,104 @@ export const structuredClauseExtractor = {
     const modelName = env.GEMINI_CLAUSE_MODEL || 'gemini-2.5-flash';
     console.log(`📄 [StructuredExtractor] Extracting clauses for ${insurerName} using model ${modelName}...`);
     
-    try {
-      const prompt = `${CLAUSE_EXTRACTION_PROMPT}\n\n${clauseText}`;
-      
-      const result = await genAI.models.generateContent({
-        model: modelName,
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        config: {
-          temperature: 0.1,
-          maxOutputTokens: 32768,
-          responseMimeType: 'application/json',
-          responseSchema: StructuredClauseSchema
+    const prompt = `${CLAUSE_EXTRACTION_PROMPT}\n\n${clauseText}`;
+    const maxRetries = 2;
+    let lastResponseText = '{}';
+    let lastError: any;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const result = await genAI.models.generateContent({
+          model: modelName,
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          config: {
+            temperature: 0.1,
+            maxOutputTokens: 32768,
+            responseMimeType: 'application/json',
+            responseSchema: StructuredClauseSchema
+          }
+        });
+
+        lastResponseText = result.text || '{}';
+        const extracted = JSON.parse(lastResponseText);
+        const validation = validateStructuredClause(extracted);
+
+        if (validation.success) {
+          const validated = validation.data as StructuredClauseValidated;
+          const structured: StructuredClause = {
+            insurer: insurerName,
+            product: productName,
+            documentType,
+            coverages: (validated.coverages || []).map(c => ({
+              name: c.name,
+              description: c.description,
+              insuredAmount: c.insuredAmount ?? undefined,
+              deductible: c.deductible
+                ? {
+                    components: c.deductible.components.map(comp => ({
+                      type: comp.type,
+                      value: comp.value,
+                      currency: comp.currency ?? undefined,
+                    })),
+                    rawText: c.deductible.rawText,
+                  }
+                : undefined,
+              sublimit: c.sublimit ?? undefined,
+              exclusions: c.exclusions || [],
+              conditions: c.conditions || [],
+              sourcePage: c.sourcePage,
+            })),
+            generalExclusions: validated.generalExclusions || [],
+            generalConditions: validated.generalConditions || [],
+            definitions: validated.definitions || {}
+          };
+
+          console.log(`✅ [StructuredExtractor] Extracted ${structured.coverages.length} coverages`);
+          return structured;
         }
-      });
-      
-      const responseText = result.text || '{}';
-      const extracted = JSON.parse(responseText);
-      
-      const structured: StructuredClause = {
-        insurer: insurerName,
-        product: productName,
-        documentType,
-        coverages: extracted.coverages || [],
-        generalExclusions: extracted.generalExclusions || [],
-        generalConditions: extracted.generalConditions || [],
-        definitions: extracted.definitions || {}
-      };
-      
-      console.log(`✅ [StructuredExtractor] Extracted ${structured.coverages.length} coverages`);
-      return structured;
-      
-    } catch (error) {
-      console.error('❌ [StructuredExtractor] Extraction failed:', error);
-      throw error;
+
+        lastError = validation.error;
+        console.warn(
+          `⚠️ [StructuredExtractor] Validation failed (attempt ${attempt + 1}/${maxRetries + 1}): ${formatZodError(validation.error)}`
+        );
+      } catch (error) {
+        lastError = error;
+        console.warn(`⚠️ [StructuredExtractor] Attempt ${attempt + 1} failed:`, error);
+      }
     }
+
+    // Graceful degradation: if validation keeps failing, return the last raw extraction
+    // so upstream callers can decide how to handle it.
+    console.error('❌ [StructuredExtractor] Extraction failed after retries:', lastError);
+    const fallback = JSON.parse(lastResponseText || '{}');
+    return {
+      insurer: insurerName,
+      product: productName,
+      documentType,
+      coverages: fallback.coverages || [],
+      generalExclusions: fallback.generalExclusions || [],
+      generalConditions: fallback.generalConditions || [],
+      definitions: fallback.definitions || {}
+    };
   },
 
   /**
    * Store structured clause in database
+   *
+   * Validates the clause data with Zod before persisting to ensure
+   * compatibility with downstream reconciliation service.
    */
   async storeStructuredClause(
     structured: StructuredClause,
     documentId?: string
   ): Promise<string> {
+    const validation = validateStructuredClause(structured);
+    if (!validation.success) {
+      const issues = formatZodError(validation.error);
+      console.error(`❌ [StructuredExtractor] Storage rejected — Zod validation failed: ${issues}`);
+      throw new Error(`Clause validation failed: ${issues}`);
+    }
+
     try {
       const { data, error } = await supabase
         .from('structured_clauses')

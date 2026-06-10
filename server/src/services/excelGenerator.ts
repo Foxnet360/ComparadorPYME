@@ -2,6 +2,19 @@ import * as ExcelJS from 'exceljs';
 import { QuoteAnalysis, MatrixRow, MatrixCell } from '../types';
 import { transformQuotesToMatrix, parseNumericValue, isExcludedValue } from './matrixTransformer';
 
+export function formatRatioCell(val: any): { value: any; numFmt?: string } {
+  if (typeof val === 'string') {
+    const pct = parseFloat(val.replace(/[^0-9,.]/g, '').replace(',', '.')) / 100;
+    if (!isNaN(pct)) {
+      return { value: pct, numFmt: '0.00%' };
+    } else {
+      return { value: val };
+    }
+  } else {
+    return { value: val };
+  }
+}
+
 export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: any, cellNotes?: Record<string, string>): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Agente Comparador CSA';
@@ -340,17 +353,9 @@ export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: 
           xlCell.font = { name: 'Calibri', size: 10, color: { argb: 'FF333333' } };
         } else if (row.id.endsWith('_ratio')) {
           // Format percentage
-          if (typeof val === 'string') {
-            const pct = parseFloat(val.replace(/[^0-9,.]/g, '').replace(',', '.')) / 100;
-            if (!isNaN(pct)) {
-              xlCell.value = pct;
-              xlCell.numFmt = '0.00%';
-            } else {
-              xlCell.value = val;
-            }
-          } else {
-            xlCell.value = val;
-          }
+          const { value: ratioValue, numFmt } = formatRatioCell(val);
+          xlCell.value = ratioValue;
+          if (numFmt) xlCell.numFmt = numFmt;
           xlCell.font = { name: 'Calibri', size: 10, color: { argb: 'FF333333' } };
         } else {
           xlCell.value = val;

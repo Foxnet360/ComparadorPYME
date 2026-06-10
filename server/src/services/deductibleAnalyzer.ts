@@ -4,7 +4,7 @@
  * Uses the new semantic deductible parser for compound structures
  */
 
-import { deductibleParser } from './deductibleParser';
+import { hybridDeductibleParser } from './hybridDeductibleParser';
 import { deductibleBenchmarks } from './deductibleBenchmarks';
 
 export interface DeductibleAnalysis {
@@ -42,9 +42,9 @@ export const deductibleAnalyzer = {
   ): Promise<DeductibleAnalysis> => {
     console.log(`💰 [deductibleAnalyzer] Analyzing deductible for ${coverageName}...`);
     
-    // Parse using new semantic parser
-    const quoteStructure = await deductibleParser.parse(quoteDeductibleText);
-    const clauseStructure = clauseDeductibleText ? await deductibleParser.parse(clauseDeductibleText) : null;
+    // Parse using hybrid cache-first regex+LLM parser
+    const quoteStructure = await hybridDeductibleParser.parse(quoteDeductibleText, coverageName);
+    const clauseStructure = clauseDeductibleText ? await hybridDeductibleParser.parse(clauseDeductibleText, coverageName) : null;
     
     // Use clause deductible as source of truth (or quote if clause not available)
     const effectiveStructure = clauseStructure && (

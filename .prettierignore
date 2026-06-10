@@ -1,0 +1,11 @@
+dist/
+node_modules/
+server/dist/
+coverage/
+*.log
+package-lock.json
+.agent/
+.opencode/
+supabase/
+*.md
+.prettierignore
