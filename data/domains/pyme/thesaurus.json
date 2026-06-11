@@ -1,0 +1,442 @@
+{
+  "version": "1.0.0",
+  "domain": "pyme",
+  "entries": [
+    {
+      "canonicalName": "Incendio (Edificio y Contenidos)",
+      "variants": [
+        "Amparo Básico (Incendio)",
+        "Incendio y Rayo",
+        "Amparos Aliados",
+        "Actos de la Naturaleza",
+        "Daños Materiales Básicos",
+        "Incendio y Líneas Aliadas (ILA)",
+        "Edificios (mejoras Locativas)",
+        "Muebles y Enseres",
+        "Inmuebles y mejoras locativas",
+        "AMPARO BÁSICO TODO RIESGO DE PÉRDIDA O DAÑO MATERIAL",
+        "Todo Riesgo Daño Material"
+      ],
+      "category": "Patrimoniales"
+    },
+    {
+      "canonicalName": "Terremoto y Eventos Catastróficos",
+      "variants": [
+        "Eventos Catastróficos",
+        "Amparo de TTEV",
+        "Terremoto",
+        "Eventos de la Naturaleza (Catastróficos)",
+        "Terremoto, Temblor y Erupción (TTEV)",
+        "Terremoto, temblor y/o erupción volcánica"
+      ],
+      "category": "Patrimoniales"
+    },
+    {
+      "canonicalName": "Sustracción / Hurto",
+      "variants": [
+        "Sustracción",
+        "Amparo de Hurto",
+        "Hurto Calificado y Atraco",
+        "Robo con Violencia",
+        "Sustracción de Contenidos",
+        "Sustracción con Violencia (Hurto Calificado)",
+        "Sustracción con violencia y/o Hurto Calificado",
+        "Equipo Eléctrico y Electrónico Móvil y Portátil",
+        "Hurto Simple",
+        "Sustracción sin Violencia"
+      ],
+      "category": "Patrimoniales"
+    },
+    {
+      "canonicalName": "Lucro Cesante",
+      "variants": [
+        "Pérdida de Beneficios",
+        "Interrupción de Negocios",
+        "Business Interruption (BI)",
+        "Pérdida de Utilidad Bruta",
+        "Gastos Fijos y Utilidad Neta",
+        "Lucro Cesante (Por Incendio / Riesgos Nombrados)",
+        "Lucro Cesante por Incendio"
+      ],
+      "category": "Patrimoniales"
+    },
+    {
+      "canonicalName": "Equipo Eléctrico y Electrónico",
+      "variants": [
+        "Daño Interno de Equipos",
+        "Amparo de Equipo Electrónico",
+        "EE Fijos y Móviles",
+        "Corto Circuito y Sobretensión",
+        "Equipo Electrónico (Daño Interno)",
+        "Equipo eléctrico y electrónico fijo",
+        "Equipo Eléctrico y Electrónico (Daños internos directos)",
+        "Hurto de Equipo Electrónico"
+      ],
+      "category": "Patrimoniales"
+    },
+    {
+      "canonicalName": "Rotura de Maquinaria",
+      "variants": [
+        "Daño Interno de Maquinaria",
+        "RM",
+        "Daño Súbito e Imprevisto (Maquinaria)",
+        "Vidrios Planos"
+      ],
+      "category": "Patrimoniales"
+    },
+    {
+      "canonicalName": "Vidrios Planos",
+      "variants": [
+        "Vidrios Planos",
+        "Cristales",
+        "Rotura de Vidrios"
+      ],
+      "category": "Patrimoniales"
+    },
+    {
+      "canonicalName": "Manejo Global / Infidelidad",
+      "variants": [
+        "Infidelidad de Empleados",
+        "Deshonestidad",
+        "Póliza de Manejo",
+        "Fraude de Empleados",
+        "Apropiación Indebida",
+        "Manejo Global y Deshonestidad"
+      ],
+      "category": "Patrimoniales"
+    },
+    {
+      "canonicalName": "Transporte de Mercancías",
+      "variants": [
+        "Transporte Propia Mercancía",
+        "Amparo de Transporte",
+        "Daños a la Mercancía en Tránsito",
+        "Transporte de Mercancías (Terrestre)"
+      ],
+      "category": "Patrimoniales"
+    },
+    {
+      "canonicalName": "Transporte de Valores",
+      "variants": [
+        "Transporte de Valores",
+        "Dinero en Caja Fuerte",
+        "Dinero en Tránsito"
+      ],
+      "category": "Patrimoniales"
+    },
+    {
+      "canonicalName": "Asistencia PYME",
+      "variants": [
+        "Asistencia",
+        "Asistencia PYME",
+        "Servicios de Asistencia"
+      ],
+      "category": "Patrimoniales"
+    },
+    {
+      "canonicalName": "Asistencia Legal",
+      "variants": [
+        "Asistencia Legal",
+        "Asesoría Legal",
+        "Servicios Legales"
+      ],
+      "category": "Patrimoniales"
+    },
+    {
+      "canonicalName": "Huelga, Motín, Asonada (HMACC)",
+      "variants": [
+        "AMIT",
+        "Terrorismo",
+        "Huelga, Motín, Asonada (HMA)",
+        "Vandalismo",
+        "Daños por Huelga",
+        "Actos Malintencionados de Terceros (AMIT-HMACC)",
+        "Asonada, Motín, Conmoción Civil o Popular y Huelga (AMCH)",
+        "Actos Malintencionados de Terceros (AMIT)",
+        "Daños por Agua"
+      ],
+      "category": "Patrimoniales"
+    },
+    {
+      "canonicalName": "Responsabilidad Civil (RCE)",
+      "variants": [
+        "RCE Predios, Labores y Operaciones",
+        "Daños a Terceros (RCE)",
+        "Amparo Básico de RC",
+        "RC General",
+        "RC Básica",
+        "Responsabilidad Civil Extracontractual (RCE)",
+        "Responsabilidad civil extracontractual"
+      ],
+      "category": "Responsabilidad Civil"
+    }
+  ],
+  "extensions": [
+    {
+      "parentCoverage": "Incendio y Líneas Aliadas (ILA)",
+      "canonicalName": "Remoción de Escombros",
+      "variants": [
+        "Remocion de escombros",
+        "Gastos de remoción",
+        "Limpieza de escombros"
+      ],
+      "type": "sub-limit"
+    },
+    {
+      "parentCoverage": "Incendio y Líneas Aliadas (ILA)",
+      "canonicalName": "Honorarios Profesionales",
+      "variants": [
+        "Honorarios profesionales",
+        "Gastos de peritos",
+        "Honorarios de auditores",
+        "Honorarios de arquitectos"
+      ],
+      "type": "sub-limit"
+    },
+    {
+      "parentCoverage": "Incendio y Líneas Aliadas (ILA)",
+      "canonicalName": "Gastos de Extinción del Siniestro",
+      "variants": [
+        "Extinción del fuego",
+        "Gastos de extinción",
+        "Medios de extinción",
+        "Costos de bomberos"
+      ],
+      "type": "sub-limit"
+    },
+    {
+      "parentCoverage": "Incendio y Líneas Aliadas (ILA)",
+      "canonicalName": "Preservación de Bienes",
+      "variants": [
+        "Gastos de preservación",
+        "Bienes no destruidos",
+        "Protección de bienes",
+        "Salvamento"
+      ],
+      "type": "sub-limit"
+    },
+    {
+      "parentCoverage": "Incendio y Líneas Aliadas (ILA)",
+      "canonicalName": "Gastos de Reposición de Archivos",
+      "variants": [
+        "Reposición de archivos",
+        "Reconstrucción de documentos",
+        "Recuperación de registros"
+      ],
+      "type": "sub-limit"
+    },
+    {
+      "parentCoverage": "Incendio y Líneas Aliadas (ILA)",
+      "canonicalName": "Gastos Adicionales",
+      "variants": [
+        "Gastos adicionales",
+        "Costos extraordinarios",
+        "Gastos de emergencia"
+      ],
+      "type": "sub-limit"
+    },
+    {
+      "parentCoverage": "Incendio y Líneas Aliadas (ILA)",
+      "canonicalName": "Propiedad Personal de Empleados",
+      "variants": [
+        "Propiedad de empleados",
+        "Bienes personales del personal",
+        "Efectos personales"
+      ],
+      "type": "sub-limit"
+    },
+    {
+      "parentCoverage": "Incendio y Líneas Aliadas (ILA)",
+      "canonicalName": "Bienes Bajo Cuidado, Tenencia y Control",
+      "variants": [
+        "Bienes de terceros",
+        "Bienes en custodia",
+        "Mercancías bajo control"
+      ],
+      "type": "sub-limit"
+    },
+    {
+      "parentCoverage": "Equipo Electrónico (Daño Interno)",
+      "canonicalName": "Equipos Móviles y Portátiles",
+      "variants": [
+        "Equipos móviles",
+        "Portátiles",
+        "Tablets",
+        "Celulares",
+        "Laptops"
+      ],
+      "type": "sub-limit"
+    },
+    {
+      "parentCoverage": "Equipo Electrónico (Daño Interno)",
+      "canonicalName": "Corto Circuito y Sobretensión",
+      "variants": [
+        "Corto circuito",
+        "Sobretensión",
+        "Daño por tensión",
+        "Falla eléctrica"
+      ],
+      "type": "sub-limit"
+    },
+    {
+      "parentCoverage": "Equipo Electrónico (Daño Interno)",
+      "canonicalName": "Equipos de Reemplazo",
+      "variants": [
+        "Equipo de reemplazo",
+        "Equipos de préstamo",
+        "Equipos sustitutos"
+      ],
+      "type": "sub-limit"
+    },
+    {
+      "parentCoverage": "Incendio y Líneas Aliadas (ILA)",
+      "canonicalName": "Amparo Automático de Nuevos Bienes",
+      "variants": [
+        "Nuevos bienes",
+        "Amparo automático",
+        "Bienes adquiridos"
+      ],
+      "type": "rider"
+    },
+    {
+      "parentCoverage": "Incendio y Líneas Aliadas (ILA)",
+      "canonicalName": "Amparo de Traslado Temporal de Bienes",
+      "variants": [
+        "Traslado temporal",
+        "Mudanza temporal",
+        "Bienes en tránsito interno"
+      ],
+      "type": "rider"
+    },
+    {
+      "parentCoverage": "Incendio y Líneas Aliadas (ILA)",
+      "canonicalName": "Amparo para Bienes en Ferias y Exposiciones",
+      "variants": [
+        "Ferias",
+        "Exposiciones",
+        "Bienes en exhibición",
+        "Eventos"
+      ],
+      "type": "rider"
+    },
+    {
+      "parentCoverage": "Incendio y Líneas Aliadas (ILA)",
+      "canonicalName": "Amparo de Equipos de Reemplazo",
+      "variants": [
+        "Equipos de reemplazo",
+        "Préstamo de equipos",
+        "Equipos sustitutos"
+      ],
+      "type": "rider"
+    },
+    {
+      "parentCoverage": "Transporte de Mercancías",
+      "canonicalName": "Transporte de Valores",
+      "variants": [
+        "Valores en tránsito",
+        "Transporte de dinero",
+        "Mensajería de valores"
+      ],
+      "type": "rider"
+    },
+    {
+      "parentCoverage": "Sustracción con Violencia",
+      "canonicalName": "Sustracción sin Violencia",
+      "variants": [
+        "Hurto simple",
+        "Sustracción menor",
+        "Hurto no calificado"
+      ],
+      "type": "rider"
+    },
+    {
+      "parentCoverage": "Lucro Cesante",
+      "canonicalName": "Pérdida de Beneficios",
+      "variants": [
+        "Pérdida de beneficios",
+        "Pérdida de ganancias",
+        "Pérdida de utilidad"
+      ],
+      "type": "gastos"
+    },
+    {
+      "parentCoverage": "Lucro Cesante",
+      "canonicalName": "Interrupción de Negocios",
+      "variants": [
+        "Interrupción de negocios",
+        "Paralización",
+        "Suspensión de operaciones"
+      ],
+      "type": "gastos"
+    },
+    {
+      "parentCoverage": "Lucro Cesante",
+      "canonicalName": "Gastos Fijos y Utilidad Neta",
+      "variants": [
+        "Gastos fijos",
+        "Utilidad neta",
+        "Costos operativos fijos"
+      ],
+      "type": "gastos"
+    },
+    {
+      "parentCoverage": "Lucro Cesante",
+      "canonicalName": "Gastos por Alojamiento Temporal",
+      "variants": [
+        "Alojamiento temporal",
+        "Pérdida de arrendamiento",
+        "Gastos de traslado temporal"
+      ],
+      "type": "gastos"
+    },
+    {
+      "parentCoverage": "Lucro Cesante",
+      "canonicalName": "Gastos de Investigación y Ajuste",
+      "variants": [
+        "Investigación de reclamos",
+        "Ajuste de siniestros",
+        "Gastos de ajustadores"
+      ],
+      "type": "gastos"
+    },
+    {
+      "parentCoverage": "Responsabilidad Civil (RCE)",
+      "canonicalName": "RC Patronal",
+      "variants": [
+        "Culpa patronal",
+        "Exceso de ARL",
+        "Accidentes de trabajo"
+      ],
+      "type": "extension"
+    },
+    {
+      "parentCoverage": "Responsabilidad Civil (RCE)",
+      "canonicalName": "RC Productos",
+      "variants": [
+        "Productos defectuosos",
+        "RC por calidad",
+        "Garantía de productos"
+      ],
+      "type": "extension"
+    },
+    {
+      "parentCoverage": "Responsabilidad Civil (RCE)",
+      "canonicalName": "RC Profesional",
+      "variants": [
+        "Errores y omisiones",
+        "Negligencia profesional",
+        "E&O"
+      ],
+      "type": "extension"
+    },
+    {
+      "parentCoverage": "Responsabilidad Civil (RCE)",
+      "canonicalName": "RC Parqueaderos",
+      "variants": [
+        "Vehículos en parqueadero",
+        "Posesión de vehículos de terceros"
+      ],
+      "type": "extension"
+    }
+  ]
+}

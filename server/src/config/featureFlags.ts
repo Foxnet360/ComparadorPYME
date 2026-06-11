@@ -14,6 +14,9 @@ export interface FeatureFlags {
   queryExpansion: boolean;
   hybridSearchV2: boolean;
   
+  // Auto-extraction pipeline
+  autoExtractStructuredClauses: boolean;
+  
   // Unified Comparison Engine
   useUnifiedComparisonEngine: boolean;
   
@@ -36,7 +39,10 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   learningEngine: redisAvailable, // Only enable if Redis is configured
   queryExpansion: true,
   hybridSearchV2: true,
-  
+
+  // Auto-extraction pipeline (disabled by default for safe rollout)
+  autoExtractStructuredClauses: false,
+
   // Unified Comparison Engine (disabled by default for safe rollout)
   useUnifiedComparisonEngine: false,
   
@@ -119,7 +125,8 @@ class FeatureFlagManager {
       'LEARNING_ENGINE',
       'QUERY_EXPANSION',
       'HYBRID_SEARCH_V2',
-      'USE_UNIFIED_COMPARISON_ENGINE'
+      'USE_UNIFIED_COMPARISON_ENGINE',
+      'AUTO_EXTRACT_STRUCTURED_CLAUSES'
     ];
     
     for (const varName of featureVars) {

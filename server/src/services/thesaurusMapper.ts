@@ -24,17 +24,14 @@ export interface MappingResult {
   parentCoverage?: string;
 }
 
-// In-memory cache
-let thesaurusCache: ThesaurusEntry[] | null = null;
+// In-memory cache por dominio
+const thesaurusCache = new Map<string, ThesaurusEntry[]>();
 
 /**
- * Load thesaurus from file
- * Parses the markdown thesaurus file into structured format
- */
-/**
  * Find thesaurus files by checking multiple possible paths
+ * Supports per-domain markdown files (e.g. tesauro(pyme).md)
  */
-function findThesaurusPaths(): { main: string | null; extensions: string | null } {
+function findThesaurusPaths(domain: string = 'pyme'): { main: string | null; extensions: string | null } {
   const possiblePaths = [
     process.cwd(),
     path.resolve(process.cwd(), '..'),
@@ -48,11 +45,18 @@ function findThesaurusPaths(): { main: string | null; extensions: string | null 
 
   for (const basePath of possiblePaths) {
     if (!mainPath) {
-      const candidate = path.join(basePath, 'tesauro(pyme).md');
+      const candidate = path.join(basePath, `tesauro(${domain}).md`);
       if (fs.existsSync(candidate)) {
         mainPath = candidate;
       }
     }
+    if (!extensionsPath) {
+      const candidate = path.join(basePath, `tesauro-extensiones-${domain}.md`);
+      if (fs.existsSync(candidate)) {
+        extensionsPath = candidate;
+      }
+    }
+    // Fallback genérico para extensiones si no hay archivo específico de dominio
     if (!extensionsPath) {
       const candidate = path.join(basePath, 'tesauro-extensiones.md');
       if (fs.existsSync(candidate)) {
@@ -65,24 +69,24 @@ function findThesaurusPaths(): { main: string | null; extensions: string | null 
   return { main: mainPath, extensions: extensionsPath };
 }
 
-export function loadThesaurus(): ThesaurusEntry[] {
-  if (thesaurusCache) return thesaurusCache;
+export function loadThesaurus(domain: string = 'pyme'): ThesaurusEntry[] {
+  if (thesaurusCache.has(domain)) return thesaurusCache.get(domain)!;
 
-  const paths = findThesaurusPaths();
+  const paths = findThesaurusPaths(domain);
   let entries: ThesaurusEntry[] = [];
 
   // Load main thesaurus
   if (!paths.main) {
-    console.warn('Thesaurus file not found, using built-in thesaurus');
-    entries = getBuiltInThesaurus();
+    console.warn(`Thesaurus file not found for domain "${domain}", using built-in thesaurus`);
+    entries = getBuiltInThesaurus(domain);
   } else {
     try {
       const content = fs.readFileSync(paths.main, 'utf-8');
       entries = parseThesaurusMarkdown(content);
       console.log(`📚 [Thesaurus] Loaded ${entries.length} entries from ${paths.main}`);
     } catch (error) {
-      console.warn('Failed to load thesaurus, using built-in:', error);
-      entries = getBuiltInThesaurus();
+      console.warn(`Failed to load thesaurus for domain "${domain}", using built-in:`, error);
+      entries = getBuiltInThesaurus(domain);
     }
   }
 
@@ -98,8 +102,8 @@ export function loadThesaurus(): ThesaurusEntry[] {
     }
   }
 
-  thesaurusCache = entries;
-  return thesaurusCache;
+  thesaurusCache.set(domain, entries);
+  return entries;
 }
 
 /**
@@ -229,7 +233,10 @@ function parseExtensionMarkdown(content: string): ThesaurusEntry[] {
  * Built-in thesaurus for PYME coverages
  * Used when file is not available
  */
-function getBuiltInThesaurus(): ThesaurusEntry[] {
+function getBuiltInThesaurus(domain: string = 'pyme'): ThesaurusEntry[] {
+  if (domain !== 'pyme') {
+    console.warn(`[ThesaurusMapper] No built-in thesaurus for domain "${domain}", falling back to PYME`);
+  }
   return [
     {
       canonicalName: "Incendio (Edificio y Contenidos)",
@@ -418,9 +425,10 @@ function getBuiltInThesaurus(): ThesaurusEntry[] {
  */
 export function mapCoverageName(
   extractedName: string,
-  threshold: number = 0.7
+  threshold: number = 0.7,
+  domain?: string
 ): MappingResult {
-  const thesaurus = loadThesaurus();
+  const thesaurus = loadThesaurus(domain ?? 'pyme');
   let bestMatch: { entry: ThesaurusEntry; variant: string; score: number } | null = null;
 
   for (const entry of thesaurus) {
@@ -555,7 +563,10 @@ export function normalizeDeductible(deductible: string): {
 /**
  * Normalize all coverages in a quote using thesaurus
  */
-export function normalizeCoverages(coverages: Array<{ name: string; value: string; deductible: string }>): {
+export function normalizeCoverages(
+  coverages: Array<{ name: string; value: string; deductible: string }>,
+  domain?: string
+): {
   normalized: Array<{
     name: string;
     value: string;
@@ -568,7 +579,7 @@ export function normalizeCoverages(coverages: Array<{ name: string; value: strin
   needsReview: boolean;
 } {
   const normalized = coverages.map(coverage => {
-    const mapping = mapCoverageName(coverage.name);
+    const mapping = mapCoverageName(coverage.name, 0.7, domain);
     const deductibleNorm = normalizeDeductible(coverage.deductible);
 
     return {

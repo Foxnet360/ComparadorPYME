@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { structuredClauseExtractor, StructuredClause } from '../structuredClauseExtractor';
 
 // Mock the database and genai
-vi.mock('../config/database', () => ({
+vi.mock('../../config/database', () => ({
   supabase: {
     from: vi.fn(() => ({
       insert: vi.fn(() => ({

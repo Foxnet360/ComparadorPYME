@@ -199,10 +199,11 @@ async function extractWithZodValidation<T>(
 export async function processQuoteMultimodal(
   quoteFile: Express.Multer.File,
   index: number,
-  total: number
+  total: number,
+  options?: { domain?: string }
 ): Promise<ParsedQuote> {
   return withTimeout(
-    processQuoteMultimodalInternal(quoteFile, index, total),
+    processQuoteMultimodalInternal(quoteFile, index, total, options),
     5 * 60 * 1000, // 5 minutes max per quote
     `Quote processing timeout (${quoteFile.originalname})`
   );
@@ -211,8 +212,10 @@ export async function processQuoteMultimodal(
 async function processQuoteMultimodalInternal(
   quoteFile: Express.Multer.File,
   index: number,
-  total: number
+  total: number,
+  options?: { domain?: string }
 ): Promise<ParsedQuote> {
+  const domain = options?.domain ?? 'pyme';
   console.log(`   Quote ${index + 1}/${total}: ${quoteFile.originalname}`);
   
   try {
@@ -260,12 +263,13 @@ async function processQuoteMultimodalInternal(
     );
     
     // Phase 4: Normalize coverages
-    console.log(`   🔄 Phase 4: Normalizing coverages...`);
+    console.log(`   🔄 Phase 4: Normalizing coverages... (domain: ${domain})`);
     const normalizationResult = await buildCanonicalCoverages(
       extracted.rawCoverages || [],
       extracted.insuredAssets || [],
       extracted.generalDeductibles || [],
-      pageTextMap
+      pageTextMap,
+      domain
     );
     
     // Phase 5: Extract premium breakdown
@@ -306,6 +310,7 @@ async function processQuoteMultimodalInternal(
       reconciliationResults = await reconciliationService.reconcileQuote(preParsed, {
         insurerName: extracted.insurerName,
         productName: extracted.policyName,
+        domain,
       });
       const mismatchCount = reconciliationResults.filter(r => r.status === 'MISMATCH').length;
       if (mismatchCount > 0) {
@@ -373,10 +378,11 @@ async function processQuoteMultimodalInternal(
 export async function processQuoteLegacy(
   quote: any,
   index: number,
-  total: number
+  total: number,
+  options?: { domain?: string }
 ): Promise<ParsedQuote> {
   return withTimeout(
-    processQuoteLegacyInternal(quote, index, total),
+    processQuoteLegacyInternal(quote, index, total, options),
     5 * 60 * 1000, // 5 minutes max per quote
     `Quote processing timeout (legacy) (${quote.filename || 'unknown'})`
   );
@@ -385,8 +391,10 @@ export async function processQuoteLegacy(
 async function processQuoteLegacyInternal(
   quote: any,
   index: number,
-  total: number
+  total: number,
+  options?: { domain?: string }
 ): Promise<ParsedQuote> {
+  const domain = options?.domain ?? 'pyme';
   console.log(`   Quote ${index + 1}/${total}: ${quote.filename}`);
   
   try {
@@ -417,7 +425,8 @@ async function processQuoteLegacyInternal(
           name: c.name,
           value: c.value,
           deductible: c.deductible
-        }))
+        })),
+        domain
       );
       
       if (normalizedCoverages.needsReview) {
@@ -456,7 +465,7 @@ async function processQuoteLegacyInternal(
     
     // Reconcile legacy quote against clause data
     try {
-      const reconResults = await reconciliationService.reconcileQuote(parsed);
+      const reconResults = await reconciliationService.reconcileQuote(parsed, { domain });
       if (reconResults.length > 0) {
         parsed.reconciliationResults = reconResults;
         const mismatchCount = reconResults.filter(r => r.status === 'MISMATCH').length;

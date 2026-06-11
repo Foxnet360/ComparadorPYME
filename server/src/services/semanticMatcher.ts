@@ -12,6 +12,8 @@ import { levenshteinDistance } from '../utils/stringUtils';
 import { coverageOntology, CoverageMapping } from './coverageOntology';
 import { featureFlags } from '../config/featureFlags';
 import { getBatch, setBatch } from './cache/embeddingCacheService';
+import { assertTaxonomyBundle } from '../schemas/domainBundleSchema';
+import { loadDomainJson } from './domainBundleLoader';
 
 export interface SemanticMatchResult {
     categoryId: number | null;
@@ -34,23 +36,18 @@ export interface ProbabilisticMatchResult {
     rawName: string;
 }
 
-// Las 14 categorías canónicas de la Plantilla PYME
-export const CANONICAL_CATEGORIES = [
-    { id: 1, name: 'Incendio (Edificio y Contenidos)' },
-    { id: 2, name: 'Lucro Cesante' },
-    { id: 3, name: 'Sustracción / Hurto' },
-    { id: 4, name: 'Equipo Eléctrico y Electrónico' },
-    { id: 5, name: 'Rotura de Maquinaria' },
-    { id: 6, name: 'Responsabilidad Civil (RCE)' },
-    { id: 7, name: 'Vidrios Planos' },
-    { id: 8, name: 'Manejo Global / Infidelidad' },
-    { id: 9, name: 'Transporte de Mercancías' },
-    { id: 10, name: 'Transporte de Valores' },
-    { id: 11, name: 'Asistencia PYME' },
-    { id: 12, name: 'Asistencia Legal' },
-    { id: 13, name: 'Huelga, Motín, Asonada (HMACC)' },
-    { id: 14, name: 'Terremoto y Eventos Catastróficos' },
-];
+const canonicalCategoriesCache = new Map<string, Array<{ id: number; name: string }>>();
+
+function loadCanonicalCategories(domain: string = 'pyme'): Array<{ id: number; name: string }> {
+  if (canonicalCategoriesCache.has(domain)) {
+    return canonicalCategoriesCache.get(domain)!;
+  }
+
+  const bundle = assertTaxonomyBundle(loadDomainJson(domain, 'taxonomy.json'));
+  const categories = bundle.categories.map(c => ({ id: c.id, name: c.name }));
+  canonicalCategoriesCache.set(domain, categories);
+  return categories;
+}
 
 // Umbrales de confianza
 export const CONFIDENCE_THRESHOLDS = {
@@ -63,41 +60,43 @@ export const CONFIDENCE_THRESHOLDS = {
 
 // Cache de embeddings para evitar regeneración
 const embeddingCache = new Map<string, number[]>();
-let categoryEmbeddingsCache: Map<number, number[]> | null = null;
-let categoryEmbeddingsInitialized = false;
+const categoryEmbeddingsCache = new Map<string, Map<number, number[]>>();
+const categoryEmbeddingsInitialized = new Map<string, boolean>();
 
 /**
- * Precalculate embeddings for all 14 canonical categories at module load time
+ * Precalculate embeddings for canonical categories at module load time
  * This eliminates redundant API calls during quote processing
  */
-async function initializeCategoryEmbeddings(): Promise<void> {
-    if (categoryEmbeddingsInitialized) return;
-    
+async function initializeCategoryEmbeddings(domain: string = 'pyme'): Promise<void> {
+    if (categoryEmbeddingsInitialized.get(domain)) return;
+
     try {
-        console.log('🚀 [SemanticMatcher] Pre-calculating embeddings for 14 canonical categories...');
-        categoryEmbeddingsCache = new Map();
-        const categoryTexts = CANONICAL_CATEGORIES.map(c => c.name);
+        const categories = loadCanonicalCategories(domain);
+        console.log(`🚀 [SemanticMatcher] Pre-calculating embeddings for ${categories.length} canonical categories (domain: ${domain})...`);
+        const cache = new Map<number, number[]>();
+        const categoryTexts = categories.map(c => c.name);
         const categoryEmbeddings = await embeddingService.generateEmbeddingsBatch(categoryTexts);
-        
+
         let successCount = 0;
-        for (let i = 0; i < CANONICAL_CATEGORIES.length; i++) {
+        for (let i = 0; i < categories.length; i++) {
             if (categoryEmbeddings[i]?.embedding) {
-                categoryEmbeddingsCache.set(CANONICAL_CATEGORIES[i].id, categoryEmbeddings[i].embedding);
+                cache.set(categories[i].id, categoryEmbeddings[i].embedding);
                 successCount++;
             }
         }
-        
-        categoryEmbeddingsInitialized = true;
-        console.log(`✅ [SemanticMatcher] Category embeddings ready: ${successCount}/${CANONICAL_CATEGORIES.length} categories`);
+
+        categoryEmbeddingsCache.set(domain, cache);
+        categoryEmbeddingsInitialized.set(domain, true);
+        console.log(`✅ [SemanticMatcher] Category embeddings ready: ${successCount}/${categories.length} categories (domain: ${domain})`);
     } catch (error) {
         console.error('❌ [SemanticMatcher] Failed to pre-calculate category embeddings:', error);
         // Don't set initialized flag, allow retry on next call
-        categoryEmbeddingsCache = null;
+        categoryEmbeddingsCache.delete(domain);
     }
 }
 
-// Start initialization immediately when module loads
-initializeCategoryEmbeddings().catch(err => {
+// Start initialization immediately for default domain when module loads
+initializeCategoryEmbeddings('pyme').catch(err => {
     console.error('❌ [SemanticMatcher] Initialization error:', err);
 });
 
@@ -119,15 +118,16 @@ function normalizeForPartialMatch(text: string): string {
 /**
  * Capa 1: Matching por Thesaurus Exacto
  */
-function matchByThesaurus(coverageName: string): SemanticMatchResult | null {
+function matchByThesaurus(coverageName: string, domain: string = 'pyme'): SemanticMatchResult | null {
     const normalized = normalizeText(coverageName);
-    
+
     let bestPartialMatch: SemanticMatchResult | null = null;
     let bestPartialMatchLength = 0;
     const normalizedForPartial = normalizeForPartialMatch(coverageName);
+    const categories = loadCanonicalCategories(domain);
 
     // Buscar en cada categoría
-    for (const category of CANONICAL_CATEGORIES) {
+    for (const category of categories) {
         const categoryNormalized = normalizeText(category.name);
 
         // Coincidencia exacta con nombre de categoría
@@ -184,12 +184,13 @@ function matchByThesaurus(coverageName: string): SemanticMatchResult | null {
 /**
  * Capa 2: Matching por Fuzzy Similarity
  */
-function matchByFuzzy(coverageName: string): SemanticMatchResult | null {
+function matchByFuzzy(coverageName: string, domain: string = 'pyme'): SemanticMatchResult | null {
     const normalized = normalizeText(coverageName);
     let bestMatch: SemanticMatchResult | null = null;
     let bestConfidence = 0;
+    const categories = loadCanonicalCategories(domain);
 
-    for (const category of CANONICAL_CATEGORIES) {
+    for (const category of categories) {
         const categoryNormalized = normalizeText(category.name);
         
         // Calcular distancia Levenshtein
@@ -237,32 +238,33 @@ function matchByFuzzy(coverageName: string): SemanticMatchResult | null {
 /**
  * Capa 3: Matching por Embedding Similarity
  */
-async function matchByEmbedding(coverageName: string): Promise<SemanticMatchResult | null> {
+async function matchByEmbedding(coverageName: string, domain: string = 'pyme'): Promise<SemanticMatchResult | null> {
     try {
         // Generar embedding para la cobertura (con cache)
         let coverageEmbedding: number[];
         const cacheKey = normalizeText(coverageName);
-        
+
         if (embeddingCache.has(cacheKey)) {
             coverageEmbedding = embeddingCache.get(cacheKey)!;
         } else {
             coverageEmbedding = await embeddingService.generateEmbedding(coverageName);
             embeddingCache.set(cacheKey, coverageEmbedding);
         }
-        
+
         // Ensure category embeddings are initialized (will use pre-calculated if available)
-        if (!categoryEmbeddingsInitialized || !categoryEmbeddingsCache) {
-            await initializeCategoryEmbeddings();
+        if (!categoryEmbeddingsInitialized.get(domain) || !categoryEmbeddingsCache.has(domain)) {
+            await initializeCategoryEmbeddings(domain);
         }
-        
+
         // categoryEmbeddingsCache is guaranteed to be non-null after initialization
-        const cache = categoryEmbeddingsCache!;
-        
+        const cache = categoryEmbeddingsCache.get(domain)!;
+        const categories = loadCanonicalCategories(domain);
+
         // Comparar con cada categoría
         let bestMatch: SemanticMatchResult | null = null;
         let bestSimilarity = 0;
-        
-        for (const category of CANONICAL_CATEGORIES) {
+
+        for (const category of categories) {
             const categoryEmbedding = cache.get(category.id);
             if (!categoryEmbedding) continue;
             
@@ -289,18 +291,19 @@ async function matchByEmbedding(coverageName: string): Promise<SemanticMatchResu
 /**
  * Helper: Match coverage using pre-computed embedding vector
  */
-async function matchByEmbeddingWithVector(coverageName: string, coverageEmbedding: number[]): Promise<SemanticMatchResult | null> {
+async function matchByEmbeddingWithVector(coverageName: string, coverageEmbedding: number[], domain: string = 'pyme'): Promise<SemanticMatchResult | null> {
     try {
         // Ensure category embeddings are initialized
-        if (!categoryEmbeddingsInitialized || !categoryEmbeddingsCache) {
-            await initializeCategoryEmbeddings();
+        if (!categoryEmbeddingsInitialized.get(domain) || !categoryEmbeddingsCache.has(domain)) {
+            await initializeCategoryEmbeddings(domain);
         }
 
-        const cache = categoryEmbeddingsCache!;
+        const cache = categoryEmbeddingsCache.get(domain)!;
+        const categories = loadCanonicalCategories(domain);
         let bestMatch: SemanticMatchResult | null = null;
         let bestSimilarity = 0;
 
-        for (const category of CANONICAL_CATEGORIES) {
+        for (const category of categories) {
             const categoryEmbedding = cache.get(category.id);
             if (!categoryEmbedding) continue;
 
@@ -327,31 +330,14 @@ async function matchByEmbeddingWithVector(coverageName: string, coverageEmbeddin
 /**
  * Capa 4: LLM Fallback
  */
-async function matchByLLM(coverageName: string): Promise<SemanticMatchResult | null> {
+async function matchByLLM(coverageName: string, domain: string = 'pyme'): Promise<SemanticMatchResult | null> {
     try {
-        const prompt = `Clasifica la siguiente cobertura de seguro PYME en una de estas 14 categorías:
+        const categories = loadCanonicalCategories(domain);
+        const categoryList = categories
+            .map((c, idx) => `${idx + 1}. ${c.name}`)
+            .join('\n');
 
-CATEGORÍAS:
-1. Incendio (Edificio y Contenidos)
-2. Lucro Cesante
-3. Sustracción / Hurto
-4. Equipo Eléctrico y Electrónico
-5. Rotura de Maquinaria
-6. Responsabilidad Civil (RCE)
-7. Vidrios Planos
-8. Manejo Global / Infidelidad
-9. Transporte de Mercancías
-10. Transporte de Valores
-11. Asistencia PYME
-12. Asistencia Legal
-13. Huelga, Motín, Asonada (HMACC)
-14. Terremoto y Eventos Catastróficos
-
-COBERTURA A CLASIFICAR: "${coverageName}"
-
-Responde ÚNICAMENTE con el número de la categoría (1-14) y un score de confianza (0-1).
-Formato: "CATEGORIA: [número]\nCONFIANZA: [score]"
-Si no estás seguro, responde: "CATEGORIA: 0\nCONFIANZA: 0"`;
+        const prompt = `Clasifica la siguiente cobertura de seguro en una de estas categorías:\n\nCATEGORÍAS:\n${categoryList}\n\nCOBERTURA A CLASIFICAR: "${coverageName}"\n\nResponde ÚNICAMENTE con el número de la categoría y un score de confianza (0-1).\nFormato: "CATEGORIA: [número]\nCONFIANZA: [score]"\nSi no estás seguro, responde: "CATEGORIA: 0\nCONFIANZA: 0"`;
 
         const response = await geminiService.extractText('', prompt);
         
@@ -362,8 +348,8 @@ Si no estás seguro, responde: "CATEGORIA: 0\nCONFIANZA: 0"`;
             const categoryId = parseInt(categoryMatch[1]);
             const confidence = parseFloat(confidenceMatch[1]);
             
-            if (categoryId >= 1 && categoryId <= 14 && confidence >= CONFIDENCE_THRESHOLDS.LLM_MIN) {
-                const category = CANONICAL_CATEGORIES.find(c => c.id === categoryId);
+            if (categoryId >= 1 && confidence >= CONFIDENCE_THRESHOLDS.LLM_MIN) {
+                const category = categories.find(c => c.id === categoryId);
                 if (category) {
                     return {
                         categoryId: category.id,
@@ -386,7 +372,7 @@ Si no estás seguro, responde: "CATEGORIA: 0\nCONFIANZA: 0"`;
  * Probabilistic matching using semantic ontology
  * Returns multiple possible mappings with confidence scores
  */
-async function matchProbabilistic(coverageName: string): Promise<ProbabilisticMatchResult> {
+async function matchProbabilistic(coverageName: string, domain: string = 'pyme'): Promise<ProbabilisticMatchResult> {
     console.log(`🔍 [SemanticMatcher] Probabilistic matching: "${coverageName}"`);
     
     if (!coverageName || coverageName.trim().length === 0) {
@@ -399,7 +385,7 @@ async function matchProbabilistic(coverageName: string): Promise<ProbabilisticMa
     
     try {
         // Use ontology for probabilistic mapping
-        const mapping = await coverageOntology.mapCoverage(coverageName);
+        const mapping = await coverageOntology.mapCoverage(coverageName, undefined, domain);
         
         const matches: ProbabilisticMatch[] = mapping.groups.map(g => {
             const node = coverageOntology.getNodeById(g.groupId);
@@ -434,9 +420,10 @@ export const semanticMatcher = {
     /**
      * Match una cobertura usando las 4 capas en cascada
      */
-    matchCoverage: async (coverageName: string): Promise<SemanticMatchResult> => {
-        console.log(`🔍 [SemanticMatcher] Matching coverage: "${coverageName}"`);
-        
+    matchCoverage: async (coverageName: string, domain?: string): Promise<SemanticMatchResult> => {
+        const d = domain ?? 'pyme';
+        console.log(`🔍 [SemanticMatcher] Matching coverage: "${coverageName}" domain: ${d}`);
+
         // Return null for empty or invalid input
         if (!coverageName || coverageName.trim().length === 0) {
             console.log(`⚠️ [SemanticMatcher] Empty coverage name, skipping match`);
@@ -447,35 +434,35 @@ export const semanticMatcher = {
                 method: null,
             };
         }
-        
+
         // Capa 1: Thesaurus exacto
-        const thesaurusResult = matchByThesaurus(coverageName);
+        const thesaurusResult = matchByThesaurus(coverageName, d);
         if (thesaurusResult) {
             console.log(`✅ [SemanticMatcher] Thesaurus match: ${thesaurusResult.canonicalName} (${thesaurusResult.confidence})`);
             return thesaurusResult;
         }
-        
+
         // Capa 2: Fuzzy
-        const fuzzyResult = matchByFuzzy(coverageName);
+        const fuzzyResult = matchByFuzzy(coverageName, d);
         if (fuzzyResult) {
             console.log(`✅ [SemanticMatcher] Fuzzy match: ${fuzzyResult.canonicalName} (${fuzzyResult.confidence})`);
             return fuzzyResult;
         }
-        
+
         // Capa 3: Embedding
-        const embeddingResult = await matchByEmbedding(coverageName);
+        const embeddingResult = await matchByEmbedding(coverageName, d);
         if (embeddingResult) {
             console.log(`✅ [SemanticMatcher] Embedding match: ${embeddingResult.canonicalName} (${embeddingResult.confidence})`);
             return embeddingResult;
         }
-        
+
         // Capa 4: LLM Fallback
-        const llmResult = await matchByLLM(coverageName);
+        const llmResult = await matchByLLM(coverageName, d);
         if (llmResult) {
             console.log(`✅ [SemanticMatcher] LLM match: ${llmResult.canonicalName} (${llmResult.confidence})`);
             return llmResult;
         }
-        
+
         // No match found
         console.log(`⚠️ [SemanticMatcher] No match found for "${coverageName}"`);
         return {
@@ -489,14 +476,14 @@ export const semanticMatcher = {
     /**
      * Match múltiples coberturas
      */
-    matchCoverages: async (coverageNames: string[]): Promise<SemanticMatchResult[]> => {
+    matchCoverages: async (coverageNames: string[], domain?: string): Promise<SemanticMatchResult[]> => {
         const results: SemanticMatchResult[] = [];
-        
+
         for (const name of coverageNames) {
-            const result = await semanticMatcher.matchCoverage(name);
+            const result = await semanticMatcher.matchCoverage(name, domain);
             results.push(result);
         }
-        
+
         return results;
     },
 
@@ -504,13 +491,13 @@ export const semanticMatcher = {
      * Probabilistic matching using semantic ontology
      * Returns multiple possible group mappings with confidence scores
      */
-    matchProbabilistic: async (coverageName: string): Promise<ProbabilisticMatchResult> => {
+    matchProbabilistic: async (coverageName: string, domain?: string): Promise<ProbabilisticMatchResult> => {
         if (featureFlags.isEnabled('semanticCoverageOntology')) {
-            return matchProbabilistic(coverageName);
+            return matchProbabilistic(coverageName, domain);
         }
-        
+
         // Fallback to legacy single match
-        const legacyResult = await semanticMatcher.matchCoverage(coverageName);
+        const legacyResult = await semanticMatcher.matchCoverage(coverageName, domain);
         return {
             matches: legacyResult.canonicalName ? [{
                 categoryId: legacyResult.categoryId || 0,
@@ -526,53 +513,56 @@ export const semanticMatcher = {
     /**
      * Batch probabilistic matching
      */
-    matchCoveragesProbabilistic: async (coverageNames: string[]): Promise<ProbabilisticMatchResult[]> => {
+    matchCoveragesProbabilistic: async (coverageNames: string[], domain?: string): Promise<ProbabilisticMatchResult[]> => {
         const results: ProbabilisticMatchResult[] = [];
-        
+
         for (const name of coverageNames) {
-            const result = await semanticMatcher.matchProbabilistic(name);
+            const result = await semanticMatcher.matchProbabilistic(name, domain);
             results.push(result);
         }
-        
+
         return results;
     },
 
     /**
      * Obtiene el nombre canónico de una categoría por ID
      */
-    getCategoryName: (categoryId: number): string | null => {
-        const category = CANONICAL_CATEGORIES.find(c => c.id === categoryId);
+    getCategoryName: (categoryId: number, domain?: string): string | null => {
+        const categories = loadCanonicalCategories(domain ?? 'pyme');
+        const category = categories.find(c => c.id === categoryId);
         return category?.name || null;
     },
 
     /**
      * Lista todas las categorías canónicas
      */
-    getAllCategories: () => [...CANONICAL_CATEGORIES],
+    getAllCategories: (domain?: string) => [...loadCanonicalCategories(domain ?? 'pyme')],
 
     /**
      * Normalización por lotes con pipeline híbrido
      * 1. Thesaurus exacto → 2. Fuzzy → 3. Cache persistente → 4. Batch embeddings → 5. LLM fallback
      */
-    normalizeBatch: async (coverageNames: string[]): Promise<SemanticMatchResult[]> => {
+    normalizeBatch: async (coverageNames: string[], domain?: string): Promise<SemanticMatchResult[]> => {
         const startTime = Date.now();
         const results: SemanticMatchResult[] = new Array(coverageNames.length).fill(null);
         const pendingIndices: number[] = [];
         const pendingNames: string[] = [];
+
+        const d = domain ?? 'pyme';
 
         // Paso 1 & 2: Thesaurus + Fuzzy (rápido, sin API)
         for (let i = 0; i < coverageNames.length; i++) {
             const name = coverageNames[i];
 
             // Capa 1: Thesaurus exacto
-            const thesaurusResult = await matchByThesaurus(name);
+            const thesaurusResult = await matchByThesaurus(name, d);
             if (thesaurusResult) {
                 results[i] = thesaurusResult;
                 continue;
             }
 
             // Capa 2: Fuzzy matching
-            const fuzzyResult = await matchByFuzzy(name);
+            const fuzzyResult = await matchByFuzzy(name, d);
             if (fuzzyResult && fuzzyResult.confidence >= CONFIDENCE_THRESHOLDS.FUZZY_MIN) {
                 results[i] = fuzzyResult;
                 continue;
@@ -599,7 +589,7 @@ export const semanticMatcher = {
             const cached = cacheHits.get(pendingNames[i].toLowerCase().trim());
             if (cached) {
                 // Encontrado en cache, comparar con categorías
-                const match = await matchByEmbeddingWithVector(pendingNames[i], cached);
+                const match = await matchByEmbeddingWithVector(pendingNames[i], cached, d);
                 results[pendingIndices[i]] = match || {
                     categoryId: null,
                     canonicalName: null,
@@ -636,7 +626,7 @@ export const semanticMatcher = {
                     });
 
                     // Comparar con categorías
-                    const match = await matchByEmbeddingWithVector(stillPendingNames[i], result.embedding);
+                    const match = await matchByEmbeddingWithVector(stillPendingNames[i], result.embedding, d);
                     results[originalIndex] = match || {
                         categoryId: null,
                         canonicalName: null,
@@ -645,7 +635,7 @@ export const semanticMatcher = {
                     };
                 } else {
                     // Fallback a LLM si el embedding falló
-                    const llmMatch = await matchByLLM(stillPendingNames[i]);
+                    const llmMatch = await matchByLLM(stillPendingNames[i], d);
                     results[originalIndex] = llmMatch || {
                         categoryId: null,
                         canonicalName: null,
@@ -668,7 +658,7 @@ export const semanticMatcher = {
             console.error(`❌ [SemanticMatcher] Batch embedding failed:`, error);
             // Fallback individual a LLM
             for (let i = 0; i < stillPendingNames.length; i++) {
-                const llmMatch = await matchByLLM(stillPendingNames[i]);
+                const llmMatch = await matchByLLM(stillPendingNames[i], d);
                 results[stillPendingIndices[i]] = llmMatch || {
                     categoryId: null,
                     canonicalName: null,
@@ -686,7 +676,9 @@ export const semanticMatcher = {
      */
     clearCache: (): void => {
         embeddingCache.clear();
-        categoryEmbeddingsCache = null;
+        categoryEmbeddingsCache.clear();
+        categoryEmbeddingsInitialized.clear();
+        canonicalCategoriesCache.clear();
         console.log('🧹 [SemanticMatcher] Embedding cache cleared');
     },
 };

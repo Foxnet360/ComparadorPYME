@@ -1,0 +1,203 @@
+{
+  "version": "1.0.0",
+  "domain": "pyme",
+  "metadata": {
+    "region": "Colombia",
+    "currency": "COP",
+    "salaryReference": "SMMLV",
+    "salaryValue2024": 1300000,
+    "uvtValue2024": 42412
+  },
+  "categories": [
+    {
+      "id": 1,
+      "name": "Incendio (Edificio y Contenidos)",
+      "aliases": [
+        "Incendio",
+        "Edificio",
+        "Contenidos",
+        "Inmuebles",
+        "Todo riesgo daños materiales",
+        "Daños Materiales",
+        "Amparo Básico",
+        "Daños por Agua",
+        "Anegación",
+        "Inundación",
+        "Huracan, vientos fuertes, granizo, impacto y humo",
+        "Vientos Fuertes",
+        "Granizo",
+        "Impacto",
+        "Humo",
+        "Daño Físico"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Lucro Cesante",
+      "aliases": [
+        "Lucro Cesante",
+        "Pérdida de Beneficios",
+        "Interrupción de Negocio",
+        "Gastos por Parálisis",
+        "Interrupción",
+        "Lucro cesante por daños materiales"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Sustracción / Hurto",
+      "aliases": [
+        "Sustracción",
+        "Hurto",
+        "Robo",
+        "Hurto Calificado",
+        "Hurto Simple",
+        "Sustracción con Violencia",
+        "Sustracción sin Violencia",
+        "Saqueo",
+        "Hurto calificado",
+        "Sustracción con violencia",
+        "Sustracción sin violencia"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Equipo Eléctrico y Electrónico",
+      "aliases": [
+        "Equipo Eléctrico",
+        "Electrónico",
+        "EEE",
+        "Equipo Eléctrico y Electrónico",
+        "Computadores",
+        "Servidores",
+        "Daño Interno",
+        "Cobertura Fuera de Predios",
+        "Vehículos propios y no propios",
+        "Responsabilidad profesional por pérdida de datos – Cyber"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Rotura de Maquinaria",
+      "aliases": [
+        "Rotura de Maquinaria",
+        "Rotura",
+        "Daño Interno de Maquinaria",
+        "Máquinas",
+        "Rotura de maquinaria"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Responsabilidad Civil (RCE)",
+      "aliases": [
+        "RCE",
+        "Responsabilidad Civil Extracontractual",
+        "Daño a Terceros",
+        "PLO",
+        "Predios, labores y operaciones",
+        "Predios, labores y operaciones (PLO)",
+        "Responsabilidad Civil Productos",
+        "RC Cruzada",
+        "Parqueaderos",
+        "Contratistas o subcontratistas",
+        "Vehículos propios y no propios",
+        "Amparo básico daños y perjuicios a terceros",
+        "Responsabilidad civil patronal",
+        "Accidentes personales"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Vidrios Planos",
+      "aliases": [
+        "Vidrios",
+        "Placas",
+        "Cristales",
+        "Vidrios Planos",
+        "Vidrios planos"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Manejo Global / Infidelidad",
+      "aliases": [
+        "Manejo",
+        "Infidelidad",
+        "Fraude de Empleados",
+        "Manejo Global",
+        "Manejo Global Comercial",
+        "Manejo global comercial",
+        "Fraude Empleados"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Transporte de Mercancías",
+      "aliases": [
+        "Transporte de Mercancías",
+        "Tránsito de Mercancías",
+        "Transporte",
+        "Transporte de mercancias"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "Transporte de Valores",
+      "aliases": [
+        "Transporte de Valores",
+        "Dinero en Tránsito",
+        "Valores en Tránsito",
+        "Dinero Local",
+        "Transporte de valores"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "Asistencia PYME",
+      "aliases": [
+        "Asistencia",
+        "Servicios PYME",
+        "Servicios de asistencia",
+        "Asistencia pyme"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "Asistencia Legal",
+      "aliases": [
+        "Legal",
+        "Asesoría Legal",
+        "Asistencia Jurídica",
+        "Asistencia legal"
+      ]
+    },
+    {
+      "id": 13,
+      "name": "Huelga, Motín, Asonada (HMACC)",
+      "aliases": [
+        "HMACC",
+        "Asonada",
+        "Motín",
+        "Huelga",
+        "Huelga, Motín, Asonada",
+        "Huelga, Motín, Asonada (HMACC)",
+        "Actos mal intencionados de terceros"
+      ]
+    },
+    {
+      "id": 14,
+      "name": "Terremoto y Eventos Catastróficos",
+      "aliases": [
+        "Terremoto",
+        "Sismo",
+        "Catastróficos",
+        "Erupción",
+        "Terremoto y Eventos Catastróficos",
+        "Terremoto, maremoto o tsunami, temblor o erupción volcánica",
+        "Terremoto y eventos catastrificos",
+        "Terremoto y eventos catastróficos"
+      ]
+    }
+  ]
+}

@@ -1,7 +1,12 @@
 import fs from 'fs';
 import path from 'path';
+import {
+  assertTaxonomyBundle,
+  TaxonomyBundle,
+} from '../../schemas/domainBundleSchema';
+import { loadDomainJson } from '../domainBundleLoader';
 
-function resolveThesaurusPath(): string {
+function resolveLegacyThesaurusPath(): string {
   const candidates = [
     path.join(__dirname, '../../data/thesaurus.json'),
     path.join(__dirname, '../data/thesaurus.json'),
@@ -18,9 +23,21 @@ function resolveThesaurusPath(): string {
   return candidates[0];
 }
 
-// Cargar tesauro al iniciar
-const thesaurusPath = resolveThesaurusPath();
-let thesaurusCache: ThesaurusData | null = null;
+let legacyThesaurusCache: ThesaurusData | null = null;
+
+function loadLegacyThesaurus(): ThesaurusData {
+  if (legacyThesaurusCache) {
+    return legacyThesaurusCache;
+  }
+
+  const legacyPath = resolveLegacyThesaurusPath();
+  const data = JSON.parse(fs.readFileSync(legacyPath, 'utf-8')) as ThesaurusData;
+  legacyThesaurusCache = data;
+  return data;
+}
+
+// Cache por dominio
+const thesaurusCache = new Map<string, ThesaurusData>();
 
 export interface ThesaurusData {
   version: string;
@@ -93,16 +110,78 @@ export interface AlertaDefinicion {
   ventaja?: string;
 }
 
-function loadThesaurus(): ThesaurusData {
-  if (thesaurusCache) {
-    return thesaurusCache;
+function toKebabId(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+function buildThesaurusData(
+  domain: string,
+  taxonomy: TaxonomyBundle,
+  legacy: ThesaurusData
+): ThesaurusData {
+  const coberturas_plantilla: Record<string, CoberturaDefinition> = {};
+
+  if (domain === 'pyme') {
+    // Para PYME conservamos el tesauro histórico detallado para mantener
+    // comportamiento idéntico al pre-cambio.
+    Object.assign(coberturas_plantilla, legacy.coberturas_plantilla);
+  }
+
+  // Aseguramos que todas las categorías del bundle tengan una definición;
+  // para dominios nuevos se genera una definición mínima a partir de aliases.
+  for (const category of taxonomy.categories) {
+    const existing = coberturas_plantilla[category.name];
+    const aliases = category.aliases || [];
+    coberturas_plantilla[category.name] = {
+      id: existing?.id || toKebabId(category.name),
+      sinonimos: existing?.sinonimos || aliases,
+      terminos_busqueda: existing?.terminos_busqueda || aliases,
+      exclusiones_comunes: existing?.exclusiones_comunes,
+      alertas_criticas: existing?.alertas_criticas,
+      deducibles_tipicos: existing?.deducibles_tipicos,
+      tipos: existing?.tipos,
+      nota_tecnica: existing?.nota_tecnica,
+    };
+  }
+
+  const metadata = taxonomy.metadata
+    ? {
+        region: taxonomy.metadata.region,
+        currency: taxonomy.metadata.currency,
+        salary_reference: taxonomy.metadata.salaryReference,
+        salary_value_2024: taxonomy.metadata.salaryValue2024,
+        uvt_value_2024: taxonomy.metadata.uvtValue2024,
+      }
+    : legacy.metadata;
+
+  return {
+    version: taxonomy.version,
+    last_updated: new Date().toISOString().split('T')[0],
+    metadata,
+    coberturas_plantilla,
+    deducibles: legacy.deducibles,
+    terminos_legales: legacy.terminos_legales,
+    alertas_auditores: legacy.alertas_auditores,
+  };
+}
+
+function loadThesaurus(domain: string = 'pyme'): ThesaurusData {
+  if (thesaurusCache.has(domain)) {
+    return thesaurusCache.get(domain)!;
   }
 
   try {
-    const data = fs.readFileSync(thesaurusPath, 'utf-8');
-    thesaurusCache = JSON.parse(data);
-    console.log('📚 [Thesaurus Service] Loaded version:', thesaurusCache?.version);
-    return thesaurusCache!;
+    const taxonomy = assertTaxonomyBundle(loadDomainJson(domain, 'taxonomy.json'));
+    const legacy = loadLegacyThesaurus();
+    const data = buildThesaurusData(domain, taxonomy, legacy);
+    thesaurusCache.set(domain, data);
+    console.log('📚 [Thesaurus Service] Loaded version:', data.version, 'domain:', domain);
+    return data;
   } catch (error) {
     console.error('❌ [Thesaurus Service] Failed to load thesaurus:', error);
     throw new Error('Failed to load thesaurus data');
@@ -111,25 +190,28 @@ function loadThesaurus(): ThesaurusData {
 
 export const thesaurusService = {
   /**
-   * Obtiene el tesauro completo
+   * Obtiene el tesauro completo para un dominio
    */
-  getThesaurus: (): ThesaurusData => {
-    return loadThesaurus();
+  getThesaurus: (domain?: string): ThesaurusData => {
+    return loadThesaurus(domain ?? 'pyme');
   },
 
   /**
    * Obtiene la definición de una cobertura de la plantilla
    */
-  getCoberturaDefinition: (nombrePlantilla: string): CoberturaDefinition | null => {
-    const thesaurus = loadThesaurus();
+  getCoberturaDefinition: (
+    nombrePlantilla: string,
+    domain?: string
+  ): CoberturaDefinition | null => {
+    const thesaurus = loadThesaurus(domain ?? 'pyme');
     return thesaurus.coberturas_plantilla[nombrePlantilla] || null;
   },
 
   /**
-   * Lista todas las coberturas de la plantilla PYME
+   * Lista todas las coberturas de la plantilla para un dominio
    */
-  listCoberturas: (): string[] => {
-    const thesaurus = loadThesaurus();
+  listCoberturas: (domain?: string): string[] => {
+    const thesaurus = loadThesaurus(domain ?? 'pyme');
     return Object.keys(thesaurus.coberturas_plantilla);
   },
 
@@ -148,8 +230,8 @@ export const thesaurusService = {
   /**
    * Obtiene sinónimos para un término estándar
    */
-  getSynonyms: (standardTerm: string): string[] => {
-    const definition = thesaurusService.getCoberturaDefinition(standardTerm);
+  getSynonyms: (standardTerm: string, domain?: string): string[] => {
+    const definition = thesaurusService.getCoberturaDefinition(standardTerm, domain);
     if (definition) {
       return definition.sinonimos;
     }
@@ -159,27 +241,29 @@ export const thesaurusService = {
   /**
    * Expande una query con términos relacionados del tesauro
    */
-  expandQuery: (query: string, coberturaNombre?: string): string[] => {
+  expandQuery: (query: string, coberturaNombre?: string, domain?: string): string[] => {
     const terms: string[] = [query];
     const normalizedQuery = thesaurusService.normalizeTerm(query);
 
     // Si se especifica una cobertura de plantilla, usar sus términos de búsqueda
     if (coberturaNombre) {
-      const definition = thesaurusService.getCoberturaDefinition(coberturaNombre);
+      const definition = thesaurusService.getCoberturaDefinition(coberturaNombre, domain);
       if (definition) {
         terms.push(...definition.terminos_busqueda);
       }
     }
 
     // Buscar en todas las coberturas si el query coincide con algún sinónimo
-    const thesaurus = loadThesaurus();
+    const thesaurus = loadThesaurus(domain ?? 'pyme');
     for (const [nombre, definicion] of Object.entries(thesaurus.coberturas_plantilla)) {
-      const sinonimosNormalizados = definicion.sinonimos.map(s => 
+      const sinonimosNormalizados = definicion.sinonimos.map((s) =>
         thesaurusService.normalizeTerm(s)
       );
-      
-      if (sinonimosNormalizados.includes(normalizedQuery) || 
-          thesaurusService.normalizeTerm(nombre).includes(normalizedQuery)) {
+
+      if (
+        sinonimosNormalizados.includes(normalizedQuery) ||
+        thesaurusService.normalizeTerm(nombre).includes(normalizedQuery)
+      ) {
         terms.push(nombre);
         terms.push(...definicion.terminos_busqueda);
       }
@@ -192,10 +276,14 @@ export const thesaurusService = {
   /**
    * Encuentra la cobertura de plantilla que mejor coincida con un término
    */
-  matchCobertura: (term: string): { nombre: string; definicion: CoberturaDefinition; confidence: number } | null => {
+  matchCobertura: (
+    term: string,
+    domain?: string
+  ): { nombre: string; definicion: CoberturaDefinition; confidence: number } | null => {
     const normalizedTerm = thesaurusService.normalizeTerm(term);
-    const thesaurus = loadThesaurus();
-    let bestMatch: { nombre: string; definicion: CoberturaDefinition; confidence: number } | null = null;
+    const thesaurus = loadThesaurus(domain ?? 'pyme');
+    let bestMatch: { nombre: string; definicion: CoberturaDefinition; confidence: number } | null =
+      null;
 
     for (const [nombre, definicion] of Object.entries(thesaurus.coberturas_plantilla)) {
       // Coincidencia exacta con nombre
@@ -204,19 +292,19 @@ export const thesaurusService = {
       }
 
       // Coincidencia con sinónimos
-      const sinonimosNormalizados = definicion.sinonimos.map(s => 
+      const sinonimosNormalizados = definicion.sinonimos.map((s) =>
         thesaurusService.normalizeTerm(s)
       );
-      
+
       if (sinonimosNormalizados.includes(normalizedTerm)) {
         return { nombre, definicion, confidence: 0.9 };
       }
 
       // Coincidencia parcial
-      const partialMatch = sinonimosNormalizados.some(s => 
-        s.includes(normalizedTerm) || normalizedTerm.includes(s)
+      const partialMatch = sinonimosNormalizados.some(
+        (s) => s.includes(normalizedTerm) || normalizedTerm.includes(s)
       );
-      
+
       if (partialMatch && (!bestMatch || bestMatch.confidence < 0.7)) {
         bestMatch = { nombre, definicion, confidence: 0.7 };
       }
@@ -228,24 +316,24 @@ export const thesaurusService = {
   /**
    * Obtiene los patrones de regex para parsing de deducibles
    */
-  getDeductiblePatterns: (): Record<string, DeducibleFormato> => {
-    const thesaurus = loadThesaurus();
+  getDeductiblePatterns: (domain?: string): Record<string, DeducibleFormato> => {
+    const thesaurus = loadThesaurus(domain ?? 'pyme');
     return thesaurus.deducibles.formatos;
   },
 
   /**
    * Obtiene los tipos de aplicación de deducibles
    */
-  getDeductibleTypes: (): Record<string, TipoAplicacion> => {
-    const thesaurus = loadThesaurus();
+  getDeductibleTypes: (domain?: string): Record<string, TipoAplicacion> => {
+    const thesaurus = loadThesaurus(domain ?? 'pyme');
     return thesaurus.deducibles.tipo_aplicacion;
   },
 
   /**
    * Obtiene SMMLV y UVT actuales
    */
-  getSalaryValues: (): { smmlv: number; uvt: number } => {
-    const thesaurus = loadThesaurus();
+  getSalaryValues: (domain?: string): { smmlv: number; uvt: number } => {
+    const thesaurus = loadThesaurus(domain ?? 'pyme');
     return {
       smmlv: thesaurus.metadata.salary_value_2024,
       uvt: thesaurus.metadata.uvt_value_2024,
@@ -255,35 +343,35 @@ export const thesaurusService = {
   /**
    * Obtiene definición de una alerta por ID
    */
-  getAlertDefinition: (alertId: string): AlertaDefinicion | null => {
-    const thesaurus = loadThesaurus();
-    
+  getAlertDefinition: (alertId: string, domain?: string): AlertaDefinicion | null => {
+    const thesaurus = loadThesaurus(domain ?? 'pyme');
+
     const allAlerts = [
       ...thesaurus.alertas_auditores.criticas,
       ...thesaurus.alertas_auditores.atencion,
       ...thesaurus.alertas_auditores.destacadas,
     ];
 
-    return allAlerts.find(a => a.id === alertId) || null;
+    return allAlerts.find((a) => a.id === alertId) || null;
   },
 
   /**
    * Lista todas las alertas de auditoría
    */
-  listAllAlerts: (): {
+  listAllAlerts: (domain?: string): {
     criticas: AlertaDefinicion[];
     atencion: AlertaDefinicion[];
     destacadas: AlertaDefinicion[];
   } => {
-    const thesaurus = loadThesaurus();
+    const thesaurus = loadThesaurus(domain ?? 'pyme');
     return thesaurus.alertas_auditores;
   },
 
   /**
    * Detecta términos legales en un texto
    */
-  detectLegalTerms: (text: string): Array<{ term: string; type: string; description: string }> => {
-    const thesaurus = loadThesaurus();
+  detectLegalTerms: (text: string, domain?: string): Array<{ term: string; type: string; description: string }> => {
+    const thesaurus = loadThesaurus(domain ?? 'pyme');
     const detected: Array<{ term: string; type: string; description: string }> = [];
     const normalizedText = thesaurusService.normalizeTerm(text);
 
@@ -305,10 +393,11 @@ export const thesaurusService = {
   /**
    * Recarga el tesauro (útil para hot-reload en desarrollo)
    */
-  reload: (): void => {
-    thesaurusCache = null;
-    loadThesaurus();
-    console.log('🔄 [Thesaurus Service] Reloaded');
+  reload: (domain?: string): void => {
+    const d = domain ?? 'pyme';
+    thesaurusCache.delete(d);
+    loadThesaurus(d);
+    console.log('🔄 [Thesaurus Service] Reloaded domain:', d);
   },
 };
 

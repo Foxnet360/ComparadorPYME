@@ -6,6 +6,7 @@ import {
 } from '../schemas/extractionSchemas';
 import { hybridDeductibleParser, HybridDeductibleResult } from './hybridDeductibleParser';
 import { structuredClauseExtractor, StructuredClause, ExtractedCoverage } from './structuredClauseExtractor';
+import { insurerNameNormalizer } from './insurerNameNormalizer';
 import { ParsedQuote, ParsedCoverage } from './quoteParser';
 
 // ---------------------------------------------------------------------------
@@ -244,6 +245,7 @@ function findClauseCoverage(
 export interface ReconcileQuoteOptions {
   insurerName?: string;
   productName?: string;
+  domain?: string;
 }
 
 export const reconciliationService = {
@@ -260,10 +262,23 @@ export const reconciliationService = {
     quote: ParsedQuote,
     options: ReconcileQuoteOptions = {}
   ): Promise<ReconciliationResult[]> {
-    const insurerName = options.insurerName || quote.insurerName;
-    if (!insurerName || insurerName === 'NO ESPECIFICADO') {
+    const rawInsurerName = options.insurerName || quote.insurerName;
+    if (!rawInsurerName || rawInsurerName === 'NO ESPECIFICADO') {
       console.warn('⚠️ [ReconciliationService] Cannot reconcile quote without insurer name');
       return [];
+    }
+
+    // Normalize insurer name before searching
+    const normalizedInsurerName = insurerNameNormalizer.normalize(rawInsurerName);
+    const insurerName = normalizedInsurerName || rawInsurerName;
+
+    // Telemetry: log unmapped insurer names (only when no mapping exists and it's not already a known canonical name)
+    const knownCanonicalNames = insurerNameNormalizer.getKnownInsurers();
+    const isAlreadyCanonical = knownCanonicalNames.some(
+      known => known.toUpperCase() === rawInsurerName.toUpperCase()
+    );
+    if (normalizedInsurerName === rawInsurerName && !isAlreadyCanonical) {
+      console.warn(`⚠️ [ReconciliationService] Unmapped insurer name encountered: "${rawInsurerName}"`);
     }
 
     const results: ReconciliationResult[] = [];

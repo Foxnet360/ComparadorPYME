@@ -11,6 +11,8 @@ import { DeductibleStructure, ReconciliationResult } from '../../schemas/extract
 
 const mockParse = vi.fn();
 const mockSearchClause = vi.fn();
+const mockNormalize = vi.fn();
+const mockGetKnownInsurers = vi.fn();
 
 vi.mock('../hybridDeductibleParser', () => ({
   hybridDeductibleParser: {
@@ -21,6 +23,14 @@ vi.mock('../hybridDeductibleParser', () => ({
 vi.mock('../structuredClauseExtractor', () => ({
   structuredClauseExtractor: {
     searchClause: (insurer: string, coverage?: string) => mockSearchClause(insurer, coverage),
+  },
+}));
+
+vi.mock('../insurerNameNormalizer', () => ({
+  insurerNameNormalizer: {
+    normalize: (name: string) => mockNormalize(name),
+    getKnownInsurers: () => mockGetKnownInsurers(),
+    verifyMatch: (extracted: string, db: string) => mockNormalize(extracted).toUpperCase() === db.toUpperCase(),
   },
 }));
 
@@ -80,7 +90,13 @@ describe('reconciliationService', () => {
   beforeEach(() => {
     mockParse.mockReset();
     mockSearchClause.mockReset();
+    mockNormalize.mockReset();
+    mockGetKnownInsurers.mockReset();
     delete process.env.RECONCILIATION_THRESHOLDS;
+
+    // Default normalization behavior: pass-through for unknown names, normalize for known ones
+    mockNormalize.mockImplementation((name: string) => name);
+    mockGetKnownInsurers.mockReturnValue(['SBS', 'AXA Colpatria', 'BBVA', 'CHUBB', 'HDI', 'MAPFRE']);
   });
 
   // ========================================================================
@@ -728,6 +744,166 @@ describe('reconciliationService', () => {
       const results = await reconciliationService.reconcileQuote(quote);
 
       expect(results[0].status).toBe('MATCH');
+    });
+  });
+
+  // ========================================================================
+  // Insurer name normalization
+  // ========================================================================
+  describe('insurer name normalization', () => {
+    it('should normalize insurer name before searching clause', async () => {
+      mockNormalize.mockReturnValue('SBS');
+      mockSearchClause.mockResolvedValue({
+        insurer: 'SBS',
+        product: 'PYME',
+        documentType: 'CLAUSULADO_GENERAL',
+        coverages: [
+          {
+            name: 'Incendio (Edificio y Contenidos)',
+            description: '...',
+            deductible: {
+              components: [{ type: 'percentage', value: 10 }],
+              rawText: '10%',
+            },
+            exclusions: [],
+            conditions: [],
+            sourcePage: 1,
+          },
+        ],
+        generalExclusions: [],
+        generalConditions: [],
+        definitions: {},
+      });
+
+      mockParse.mockResolvedValue(
+        makeQuoteDeductible({
+          components: [{ type: 'percentage', value: 10 }],
+          isZero: false,
+          hasMinimum: false,
+          hasMaximum: false,
+          isComposite: false,
+          rawText: '10%',
+          normalized: { minAmount: 0, maxAmount: 0, percentage: 10, isPercentageBased: true },
+        })
+      );
+
+      const quote = makeParsedQuote('SBS SEGUROS COLOMBIA S.A.', [
+        { name: 'Incendio (Edificio y Contenidos)', deductible: '10%' },
+      ]);
+
+      const results = await reconciliationService.reconcileQuote(quote);
+
+      expect(mockNormalize).toHaveBeenCalledWith('SBS SEGUROS COLOMBIA S.A.');
+      expect(mockSearchClause).toHaveBeenCalledWith('SBS', undefined);
+      expect(results[0].status).toBe('MATCH');
+    });
+
+    it('should fallback to raw name when normalizer returns null/empty', async () => {
+      mockNormalize.mockReturnValue('');
+      mockSearchClause.mockResolvedValue(null);
+
+      mockParse.mockResolvedValue(
+        makeQuoteDeductible({
+          components: [{ type: 'percentage', value: 10 }],
+          isZero: false,
+          hasMinimum: false,
+          hasMaximum: false,
+          isComposite: false,
+          rawText: '10%',
+          normalized: { minAmount: 0, maxAmount: 0, percentage: 10, isPercentageBased: true },
+        })
+      );
+
+      const quote = makeParsedQuote('UNKNOWN INSURER LTD', [
+        { name: 'Incendio (Edificio y Contenidos)', deductible: '10%' },
+      ]);
+
+      const results = await reconciliationService.reconcileQuote(quote);
+
+      expect(mockNormalize).toHaveBeenCalledWith('UNKNOWN INSURER LTD');
+      expect(mockSearchClause).toHaveBeenCalledWith('UNKNOWN INSURER LTD', undefined);
+      expect(results[0].status).toBe('MISSING_CLAUSE');
+    });
+
+    it('should log warning for unmapped insurer names', async () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mockNormalize.mockImplementation((name: string) => name);
+      mockSearchClause.mockResolvedValue(null);
+
+      mockParse.mockResolvedValue(
+        makeQuoteDeductible({
+          components: [{ type: 'percentage', value: 10 }],
+          isZero: false,
+          hasMinimum: false,
+          hasMaximum: false,
+          isComposite: false,
+          rawText: '10%',
+          normalized: { minAmount: 0, maxAmount: 0, percentage: 10, isPercentageBased: true },
+        })
+      );
+
+      const quote = makeParsedQuote('NOVEL INSURER INC', [
+        { name: 'Incendio (Edificio y Contenidos)', deductible: '10%' },
+      ]);
+
+      await reconciliationService.reconcileQuote(quote);
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Unmapped insurer name encountered: "NOVEL INSURER INC"')
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should NOT log warning for known canonical insurer names', async () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mockNormalize.mockImplementation((name: string) => name);
+      mockSearchClause.mockResolvedValue({
+        insurer: 'SBS',
+        product: 'PYME',
+        documentType: 'CLAUSULADO_GENERAL',
+        coverages: [
+          {
+            name: 'Incendio (Edificio y Contenidos)',
+            description: '...',
+            deductible: {
+              components: [{ type: 'percentage', value: 10 }],
+              rawText: '10%',
+            },
+            exclusions: [],
+            conditions: [],
+            sourcePage: 1,
+          },
+        ],
+        generalExclusions: [],
+        generalConditions: [],
+        definitions: {},
+      });
+
+      mockParse.mockResolvedValue(
+        makeQuoteDeductible({
+          components: [{ type: 'percentage', value: 10 }],
+          isZero: false,
+          hasMinimum: false,
+          hasMaximum: false,
+          isComposite: false,
+          rawText: '10%',
+          normalized: { minAmount: 0, maxAmount: 0, percentage: 10, isPercentageBased: true },
+        })
+      );
+
+      const quote = makeParsedQuote('SBS', [
+        { name: 'Incendio (Edificio y Contenidos)', deductible: '10%' },
+      ]);
+
+      await reconciliationService.reconcileQuote(quote);
+
+      const unmappedWarnings = consoleSpy.mock.calls.filter(
+        call => typeof call[0] === 'string' && call[0].includes('Unmapped insurer name')
+      );
+      expect(unmappedWarnings).toHaveLength(0);
+
+      consoleSpy.mockRestore();
     });
   });
 });

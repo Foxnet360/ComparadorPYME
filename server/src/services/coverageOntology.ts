@@ -38,66 +38,63 @@ export interface CoverageMapping {
   pageNumber?: number;
 }
 
-// Initial ontology structure
-const ONTOLOGY_SEED: OntologyNode[] = [
-  // Level 1: Families
-  { id: 'patrimoniales', name: 'Patrimoniales', level: 1, childrenIds: ['incendio', 'lucro-cesante', 'equipo-electronico', 'rotura-maquinaria', 'sustraccion', 'vidrios', 'manejo'], aliases: ['Daño Material', 'Propiedad', 'Bienes'], riskType: 'property' },
-  { id: 'responsabilidad-civil', name: 'Responsabilidad Civil', level: 1, childrenIds: ['rce'], aliases: ['RC', 'RCE', 'Civil Liability'], riskType: 'liability' },
-  { id: 'asistencias', name: 'Asistencias y Servicios', level: 1, childrenIds: ['asistencia-pyme', 'asistencia-legal'], aliases: ['Servicios', 'Asistencia'], riskType: 'assistance' },
-  { id: 'riesgos-especiales', name: 'Riesgos Especiales', level: 1, childrenIds: ['terremoto', 'hmacc', 'transporte-mercancias', 'transporte-valores'], aliases: ['Especiales', 'Catastróficos'], riskType: 'special' },
-  
-  // Level 2: Sub-families matching the 14 CANONICAL CATEGORIES exactly
-  { id: 'incendio', name: 'Incendio (Edificio y Contenidos)', level: 2, parentId: 'patrimoniales', childrenIds: [], aliases: ['Incendio', 'Edificio', 'Contenidos', 'Inmuebles', 'Todo riesgo daños materiales', 'Daños Materiales', 'Amparo Básico', 'Daños por Agua', 'Anegación', 'Inundación', 'Huracan, vientos fuertes, granizo, impacto y humo', 'Vientos Fuertes', 'Granizo', 'Impacto', 'Humo', 'Daño Físico'], riskType: 'property', typicalDeductible: '10%' },
-  { id: 'lucro-cesante', name: 'Lucro Cesante', level: 2, parentId: 'patrimoniales', childrenIds: [], aliases: ['Lucro Cesante', 'Pérdida de Beneficios', 'Interrupción de Negocio', 'Gastos por Parálisis', 'Interrupción', 'Lucro cesante por daños materiales'], riskType: 'business', typicalDeductible: '0%' },
-  { id: 'sustraccion', name: 'Sustracción / Hurto', level: 2, parentId: 'patrimoniales', childrenIds: [], aliases: ['Sustracción', 'Hurto', 'Robo', 'Hurto Calificado', 'Hurto Simple', 'Sustracción con Violencia', 'Sustracción sin Violencia', 'Saqueo', 'Hurto calificado', 'Sustracción con violencia', 'Sustracción sin violencia'], riskType: 'theft', typicalDeductible: '10% min 1 SMMLV' },
-  { id: 'equipo-electronico', name: 'Equipo Eléctrico y Electrónico', level: 2, parentId: 'patrimoniales', childrenIds: [], aliases: ['Equipo Eléctrico', 'Electrónico', 'EEE', 'Equipo Eléctrico y Electrónico', 'Computadores', 'Servidores', 'Daño Interno', 'Cobertura Fuera de Predios', 'Vehículos propios y no propios', 'Responsabilidad profesional por pérdida de datos – Cyber'], riskType: 'equipment', typicalDeductible: '10%' },
-  { id: 'rotura-maquinaria', name: 'Rotura de Maquinaria', level: 2, parentId: 'patrimoniales', childrenIds: [], aliases: ['Rotura de Maquinaria', 'Rotura', 'Daño Interno de Maquinaria', 'Máquinas', 'Rotura de maquinaria'], riskType: 'equipment', typicalDeductible: '10%' },
-  { id: 'rce', name: 'Responsabilidad Civil (RCE)', level: 2, parentId: 'responsabilidad-civil', childrenIds: [], aliases: ['RCE', 'Responsabilidad Civil Extracontractual', 'Daño a Terceros', 'PLO', 'Predios, labores y operaciones', 'Predios, labores y operaciones (PLO)', 'Responsabilidad Civil Productos', 'RC Cruzada', 'Parqueaderos', 'Contratistas o subcontratistas', 'Vehículos propios y no propios', 'Amparo básico daños y perjuicios a terceros', 'Responsabilidad civil patronal', 'Accidentes personales'], riskType: 'liability', typicalDeductible: '0%' },
-  { id: 'vidrios', name: 'Vidrios Planos', level: 2, parentId: 'patrimoniales', childrenIds: [], aliases: ['Vidrios', 'Placas', 'Cristales', 'Vidrios Planos', 'Vidrios planos'], riskType: 'property', typicalDeductible: '10%' },
-  { id: 'manejo', name: 'Manejo Global / Infidelidad', level: 2, parentId: 'patrimoniales', childrenIds: [], aliases: ['Manejo', 'Infidelidad', 'Fraude de Empleados', 'Manejo Global', 'Manejo Global Comercial', 'Manejo global comercial', 'Fraude Empleados'], riskType: 'theft', typicalDeductible: '10% min 1 SMMLV' },
-  { id: 'transporte-mercancias', name: 'Transporte de Mercancías', level: 2, parentId: 'riesgos-especiales', childrenIds: [], aliases: ['Transporte de Mercancías', 'Tránsito de Mercancías', 'Transporte', 'Transporte de mercancias'], riskType: 'transit', typicalDeductible: '10%' },
-  { id: 'transporte-valores', name: 'Transporte de Valores', level: 2, parentId: 'riesgos-especiales', childrenIds: [], aliases: ['Transporte de Valores', 'Dinero en Tránsito', 'Valores en Tránsito', 'Dinero Local', 'Transporte de valores'], riskType: 'transit', typicalDeductible: '10%' },
-  { id: 'asistencia-pyme', name: 'Asistencia PYME', level: 2, parentId: 'asistencias', childrenIds: [], aliases: ['Asistencia', 'Servicios PYME', 'Servicios de asistencia', 'Asistencia pyme'], riskType: 'assistance', typicalDeductible: '0%' },
-  { id: 'asistencia-legal', name: 'Asistencia Legal', level: 2, parentId: 'asistencias', childrenIds: [], aliases: ['Legal', 'Asesoría Legal', 'Asistencia Jurídica', 'Asistencia legal'], riskType: 'assistance', typicalDeductible: '0%' },
-  { id: 'terremoto', name: 'Terremoto y Eventos Catastróficos', level: 2, parentId: 'riesgos-especiales', childrenIds: [], aliases: ['Terremoto', 'Sismo', 'Catastróficos', 'Erupción', 'Terremoto y Eventos Catastróficos', 'Terremoto, maremoto o tsunami, temblor o erupción volcánica', 'Terremoto y eventos catastrificos', 'Terremoto y eventos catastróficos'], riskType: 'catastrophe', typicalDeductible: '10% min 5 SMMLV' },
-  { id: 'hmacc', name: 'Huelga, Motín, Asonada (HMACC)', level: 2, parentId: 'riesgos-especiales', childrenIds: [], aliases: ['HMACC', 'Asonada', 'Motín', 'Huelga', 'Huelga, Motín, Asonada', 'Huelga, Motín, Asonada (HMACC)', 'Actos mal intencionados de terceros'], riskType: 'special', typicalDeductible: '10%' }
-];
+import { assertOntologyBundle } from '../schemas/domainBundleSchema';
+import { loadDomainJson } from './domainBundleLoader';
 
-// Composite coverage patterns
-const COMPOSITE_PATTERNS = [
-  {
-    pattern: /todo\s+riesgo|amparo\s+básico|amparo\s+basico/i,
-    components: ['incendio', 'terremoto', 'hmacc', 'sustraccion'],
-    confidence: 0.85
-  },
-  {
-    pattern: /daño\s+material|pérdida\s+o\s+daño/i,
-    components: ['incendio', 'equipo-electronico', 'rotura-maquinaria'],
-    confidence: 0.75
+interface CompositePattern {
+  pattern: RegExp;
+  components: string[];
+  confidence: number;
+}
+
+// Cache por dominio
+const ontologyCache = new Map<string, OntologyNode[]>();
+const compositePatternsCache = new Map<string, CompositePattern[]>();
+
+function loadOntology(domain: string = 'pyme'): { nodes: OntologyNode[]; compositePatterns: CompositePattern[] } {
+  if (ontologyCache.has(domain) && compositePatternsCache.has(domain)) {
+    return {
+      nodes: ontologyCache.get(domain)!,
+      compositePatterns: compositePatternsCache.get(domain)!,
+    };
   }
-];
+
+  const bundle = assertOntologyBundle(loadDomainJson(domain, 'ontology.json'));
+
+  const nodes = bundle.nodes.map(n => ({ ...n, level: n.level as 1 | 2 | 3 }));
+  const compositePatterns = (bundle.compositePatterns || []).map(p => ({
+    pattern: new RegExp(p.pattern, 'i'),
+    components: p.components,
+    confidence: p.confidence,
+  }));
+
+  ontologyCache.set(domain, nodes);
+  compositePatternsCache.set(domain, compositePatterns);
+  return { nodes, compositePatterns };
+}
 
 // Cache in-memory for static ontology embeddings to eliminate HTTP overhead
-let ontologyEmbeddingsCache: Map<string, number[]> | null = null;
-let isInitializingCache = false;
+const ontologyEmbeddingsCache = new Map<string, Map<string, number[]>>();
+const isInitializingCache = new Map<string, boolean>();
 
 /**
  * Ensures that ontology node and alias embeddings are pre-calculated in batch
  */
-async function ensureOntologyEmbeddingsCache(): Promise<Map<string, number[]>> {
-  if (ontologyEmbeddingsCache) return ontologyEmbeddingsCache;
-  if (isInitializingCache) {
+async function ensureOntologyEmbeddingsCache(domain: string = 'pyme'): Promise<Map<string, number[]>> {
+  if (ontologyEmbeddingsCache.has(domain)) return ontologyEmbeddingsCache.get(domain)!;
+  if (isInitializingCache.get(domain)) {
     // Wait briefly if initialization is already in progress
     await new Promise(resolve => setTimeout(resolve, 500));
-    if (ontologyEmbeddingsCache) return ontologyEmbeddingsCache;
+    if (ontologyEmbeddingsCache.has(domain)) return ontologyEmbeddingsCache.get(domain)!;
   }
-  
-  isInitializingCache = true;
+
+  isInitializingCache.set(domain, true);
   console.log('🧠 [Ontology] Initializing static embeddings cache...');
   const cache = new Map<string, number[]>();
-  
+
+  const { nodes } = loadOntology(domain);
   const textsToEmbed: string[] = [];
-  for (const node of ONTOLOGY_SEED.filter(n => n.level >= 2)) {
+  for (const node of nodes.filter(n => n.level >= 2)) {
     textsToEmbed.push(node.name);
     for (const alias of node.aliases) {
       textsToEmbed.push(alias);
@@ -112,16 +109,16 @@ async function ensureOntologyEmbeddingsCache(): Promise<Map<string, number[]>> {
       cache.set(res.text, res.embedding);
     }
     console.log(`✅ [Ontology] Static embeddings cache initialized with ${cache.size} embeddings`);
-    ontologyEmbeddingsCache = cache;
+    ontologyEmbeddingsCache.set(domain, cache);
   } catch (error: any) {
     console.error('❌ [Ontology] Failed to pre-calculate embeddings in batch:', error.message);
     // Fallback: populate on-demand in mapCoverage
-    ontologyEmbeddingsCache = cache;
+    ontologyEmbeddingsCache.set(domain, cache);
   } finally {
-    isInitializingCache = false;
+    isInitializingCache.set(domain, false);
   }
-  
-  return ontologyEmbeddingsCache;
+
+  return ontologyEmbeddingsCache.get(domain)!;
 }
 
 /**
@@ -139,7 +136,10 @@ function parseJSONSafe(text: string): any {
 /**
  * Local fast deterministic/fuzzy matching against static seed ontology
  */
-function localOntologyMatch(rawName: string): { groupId: string; confidence: number; justification: string } | null {
+function localOntologyMatch(
+  rawName: string,
+  domain: string = 'pyme'
+): { groupId: string; confidence: number; justification: string } | null {
   // Clean rawName of parenthetical suffixes (e.g. "(Sublímite)", "(Rider)")
   const cleanedRawName = rawName
     .replace(/\(sub-?l[ií]mite\)/ig, '')
@@ -159,11 +159,12 @@ function localOntologyMatch(rawName: string): { groupId: string; confidence: num
 
   if (!normalizedRaw) return null;
 
+  const { nodes } = loadOntology(domain);
   let bestNode: OntologyNode | null = null;
   let maxSimilarity = 0;
   let matchReason = '';
 
-  for (const node of ONTOLOGY_SEED.filter(n => n.level >= 2)) {
+  for (const node of nodes.filter(n => n.level >= 2)) {
     // Check node name
     const normalizedName = node.name.toLowerCase()
       .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -224,29 +225,29 @@ function localOntologyMatch(rawName: string): { groupId: string; confidence: num
 
   // Try to match using the thesaurus to resolve main and sub-limits
   try {
-    const thesaurusMatch = mapCoverageName(cleanedRawName);
+    const thesaurusMatch = mapCoverageName(cleanedRawName, 0.7, domain);
     if (thesaurusMatch && thesaurusMatch.confidence >= 0.7) {
       // Resolve parent coverage or canonical name to ontology node
       let targetName = thesaurusMatch.canonicalName;
-      
+
       // If it's a sub-limit or extension and has a parent coverage, try to map that parent first
       if (thesaurusMatch.parentCoverage) {
-        const parentMatch = mapCoverageName(thesaurusMatch.parentCoverage);
+        const parentMatch = mapCoverageName(thesaurusMatch.parentCoverage, 0.7, domain);
         if (parentMatch && parentMatch.confidence >= 0.7) {
           targetName = parentMatch.canonicalName;
         } else {
           targetName = thesaurusMatch.parentCoverage;
         }
       }
-      
-      // Find node by name in ONTOLOGY_SEED (case and accent insensitive)
+
+      // Find node by name in ontology (case and accent insensitive)
       const normalizedTarget = targetName.toLowerCase()
         .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
         .replace(/[^a-z0-9]/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
-        
-      const node = ONTOLOGY_SEED.find(n => {
+
+      const node = nodes.find(n => {
         const normalizedNodeName = n.name.toLowerCase()
           .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
           .replace(/[^a-z0-9]/g, ' ')
@@ -284,7 +285,10 @@ function localOntologyMatch(rawName: string): { groupId: string; confidence: num
  * Runs stateless, memory-isolated double-agent consensus between Taxonomist and Critic
  */
 
-async function runConsensus(rawName: string): Promise<{
+async function runConsensus(
+  rawName: string,
+  domain: string = 'pyme'
+): Promise<{
   groupId: string;
   confidence: number;
   justification: string;
@@ -300,7 +304,8 @@ async function runConsensus(rawName: string): Promise<{
   }
 
   try {
-    const canonicalCategoriesList = ONTOLOGY_SEED.filter(n => n.level >= 2);
+    const { nodes } = loadOntology(domain);
+    const canonicalCategoriesList = nodes.filter(n => n.level >= 2);
     
     // Import learningEngine dynamically to prevent circular dependencies
     const { learningEngine } = await import('./learningEngine');
@@ -354,7 +359,7 @@ Tu respuesta debe ser un JSON válido, sin bloques de código markdown, solo el 
     console.log(`🤖 [Consensus] Agent A proposed: "${proposedGroupId}" - Reason: "${taxonomistJustification}"`);
 
     // 2. Critic Agent (Agent B) Prompt in isolated, stateless context
-    const proposedNode = ONTOLOGY_SEED.find(n => n.id === proposedGroupId);
+    const proposedNode = nodes.find(n => n.id === proposedGroupId);
     const proposedName = proposedNode ? proposedNode.name : proposedGroupId;
 
     const criticPrompt = `Actúas como un Crítico de Suscripción de Seguros PYME (Agente Crítico).
@@ -435,25 +440,25 @@ Tu respuesta debe ser un JSON válido, sin bloques de código markdown, solo el 
 
 export const coverageOntology = {
   /**
-   * Get all ontology nodes
+   * Get all ontology nodes for a domain
    */
-  getNodes(): OntologyNode[] {
-    return ONTOLOGY_SEED;
+  getNodes(domain?: string): OntologyNode[] {
+    return loadOntology(domain ?? 'pyme').nodes;
   },
 
   /**
-   * Get node by ID
+   * Get node by ID for a domain
    */
-  getNodeById(id: string): OntologyNode | undefined {
-    return ONTOLOGY_SEED.find(n => n.id === id);
+  getNodeById(id: string, domain?: string): OntologyNode | undefined {
+    return loadOntology(domain ?? 'pyme').nodes.find(n => n.id === id);
   },
 
   /**
-   * Find nodes by name or alias
+   * Find nodes by name or alias for a domain
    */
-  findNodesByName(name: string): OntologyNode[] {
+  findNodesByName(name: string, domain?: string): OntologyNode[] {
     const normalized = name.toLowerCase();
-    return ONTOLOGY_SEED.filter(n => 
+    return loadOntology(domain ?? 'pyme').nodes.filter(n =>
       n.name.toLowerCase().includes(normalized) ||
       n.aliases.some(a => a.toLowerCase().includes(normalized))
     );
@@ -464,10 +469,12 @@ export const coverageOntology = {
    */
   async mapCoverage(
     rawName: string,
-    insurerName?: string
+    insurerName?: string,
+    domain?: string
   ): Promise<CoverageMapping> {
-    console.log(`🧠 [Ontology] Mapping: "${rawName}"`);
-    
+    const d = domain ?? 'pyme';
+    console.log(`🧠 [Ontology] Mapping: "${rawName}" domain: ${d}`);
+
     // Task 3.5: Fast cache lookup using Redis/Memory Cache
     const cached = await getCachedCoverageMapping(rawName, insurerName);
     if (cached) {
@@ -476,7 +483,7 @@ export const coverageOntology = {
     }
 
     // Try fast local match first to eliminate DB/LLM overhead for standard names
-    const localMatch = localOntologyMatch(rawName);
+    const localMatch = localOntologyMatch(rawName, d);
     if (localMatch) {
       console.log(`⚡ [Ontology LocalMatch] Hit for "${rawName}" -> "${localMatch.groupId}" (${Math.round(localMatch.confidence * 100)}%)`);
       const mapping: CoverageMapping = {
@@ -528,10 +535,11 @@ export const coverageOntology = {
     }
     
     // Check for composite patterns
-    const isComposite = COMPOSITE_PATTERNS.some(p => p.pattern.test(rawName));
-    
+    const { compositePatterns } = loadOntology(d);
+    const isComposite = compositePatterns.some(p => p.pattern.test(rawName));
+
     if (isComposite) {
-      const match = COMPOSITE_PATTERNS.find(p => p.pattern.test(rawName));
+      const match = compositePatterns.find(p => p.pattern.test(rawName));
       const mapping = {
         rawName,
         insurerName,
@@ -549,7 +557,7 @@ export const coverageOntology = {
     }
 
     // Call Double-Agent Consensus flow for high certainty mapping
-    const consensus = await runConsensus(rawName);
+    const consensus = await runConsensus(rawName, d);
 
     let groups: Array<{ groupId: string; confidence: number }> = [];
     if (consensus.groupId !== 'EXCLUSIVE') {
@@ -577,19 +585,20 @@ export const coverageOntology = {
    * Group coverages by semantic similarity
    */
   async groupCoverages(
-    coverages: Array<{ name: string; insurerName: string }>
+    coverages: Array<{ name: string; insurerName: string }>,
+    domain?: string
   ): Promise<Array<{
     groupName: string;
     coverages: Array<{ name: string; insurerName: string; confidence: number }>;
   }>> {
     const groups: Record<string, Array<{ name: string; insurerName: string; confidence: number }>> = {};
-    
+
     for (const coverage of coverages) {
-      const mapping = await this.mapCoverage(coverage.name, coverage.insurerName);
-      
+      const mapping = await this.mapCoverage(coverage.name, coverage.insurerName, domain);
+
       if (mapping.groups.length > 0) {
         const bestGroup = mapping.groups[0];
-        const node = this.getNodeById(bestGroup.groupId);
+        const node = this.getNodeById(bestGroup.groupId, domain);
         
         if (node) {
           const groupName = node.name;
@@ -616,8 +625,8 @@ export const coverageOntology = {
   /**
    * Get typical deductible for a coverage type
    */
-  getTypicalDeductible(groupId: string): string | undefined {
-    const node = this.getNodeById(groupId);
+  getTypicalDeductible(groupId: string, domain?: string): string | undefined {
+    const node = this.getNodeById(groupId, domain);
     return node?.typicalDeductible;
   },
 

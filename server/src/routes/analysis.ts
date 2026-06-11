@@ -23,6 +23,7 @@ import {
   batchRetrain,
   exportAnalysisExcel
 } from '../controllers/analysisValidationController';
+import { getReviewQueueCoverages } from '../controllers/reviewQueueController';
 
 const router = Router();
 
@@ -40,6 +41,7 @@ router.post('/correction', asyncHandler(saveCorrection));
 router.get('/learning-metrics', asyncHandler(getLearningMetrics));
 router.get('/monthly-report', asyncHandler(getMonthlyReport));
 router.post('/batch-retrain', asyncHandler(batchRetrain));
+router.get('/review-queue/coverages', asyncHandler(getReviewQueueCoverages));
 router.get('/:id/export', asyncHandler(exportAnalysisExcel));
 router.post('/:id/export', asyncHandler(exportAnalysisExcel));
 

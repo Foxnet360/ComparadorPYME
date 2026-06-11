@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { semanticMatcher, CANONICAL_CATEGORIES, CONFIDENCE_THRESHOLDS } from '../semanticMatcher';
+import { semanticMatcher, CONFIDENCE_THRESHOLDS } from '../semanticMatcher';
 import { embeddingService } from '../vector/embeddingService';
 import { geminiService } from '../gemini';
 
@@ -119,7 +119,7 @@ describe('semanticMatcher', () => {
       
       vi.mocked(embeddingService.generateEmbedding).mockResolvedValue(mockCoverageEmbedding);
       vi.mocked(embeddingService.generateEmbeddingsBatch).mockResolvedValue(
-        CANONICAL_CATEGORIES.map(cat => ({
+        semanticMatcher.getAllCategories().map(cat => ({
           embedding: mockCategoryEmbedding,
           text: cat.name,
           model: 'gemini-embedding-001'
@@ -139,7 +139,7 @@ describe('semanticMatcher', () => {
       
       vi.mocked(embeddingService.generateEmbedding).mockResolvedValue(mockEmbedding);
       vi.mocked(embeddingService.generateEmbeddingsBatch).mockResolvedValue(
-        CANONICAL_CATEGORIES.map(cat => ({
+        semanticMatcher.getAllCategories().map(cat => ({
           embedding: mockEmbedding,
           text: cat.name,
           model: 'gemini-embedding-001'
@@ -165,7 +165,7 @@ describe('semanticMatcher', () => {
       
       vi.mocked(embeddingService.generateEmbedding).mockResolvedValue(mockEmbedding);
       vi.mocked(embeddingService.generateEmbeddingsBatch).mockResolvedValue(
-        CANONICAL_CATEGORIES.map(cat => ({
+        semanticMatcher.getAllCategories().map(cat => ({
           embedding: mockEmbedding,
           text: cat.name,
           model: 'gemini-embedding-001'

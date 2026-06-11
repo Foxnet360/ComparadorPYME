@@ -2,48 +2,99 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '../types/database';
 import WebSocket from 'ws';
 
-const SUPABASE_URL = process.env.SUPABASE_URL || '';
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-  console.error('❌ [Supabase Config] Missing required environment variables:');
-  if (!SUPABASE_URL) console.error('   - SUPABASE_URL');
-  if (!SUPABASE_SERVICE_KEY) console.error('   - SUPABASE_SERVICE_ROLE_KEY');
-  throw new Error('Supabase configuration incomplete');
-}
-
 // Opciones para Node.js 20 (sin WebSocket nativo)
 const realtimeOptions = {
   transport: WebSocket as any,
 };
 
-// Cliente con Service Role (privilegios completos - solo backend)
-export const supabase: SupabaseClient<Database> = createClient<Database>(
-  SUPABASE_URL,
-  SUPABASE_SERVICE_KEY,
-  {
+/**
+ * Factory: Crea el cliente de Supabase con Service Role.
+ * Valida variables de entorno y lanza error descriptivo si faltan.
+ */
+export function createSupabaseClient(): SupabaseClient<Database> {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    throw new Error(
+      'Supabase configuration incomplete: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required'
+    );
+  }
+  return createClient<Database>(url, key, {
     auth: {
       autoRefreshToken: false,
-      persistSession: false
+      persistSession: false,
     },
-    realtime: realtimeOptions
-  }
-);
+    realtime: realtimeOptions,
+  });
+}
 
-// Cliente anónimo (solo para operaciones públicas si es necesario)
-export const supabaseAnon = process.env.SUPABASE_ANON_KEY 
-  ? createClient<Database>(
-      SUPABASE_URL,
-      process.env.SUPABASE_ANON_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        },
-        realtime: realtimeOptions
+/**
+ * Factory: Crea el cliente anónimo de Supabase.
+ * Retorna null si falta SUPABASE_ANON_KEY.
+ */
+export function createSupabaseAnonClient(): SupabaseClient<Database> | null {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) {
+    return null;
+  }
+  return createClient<Database>(url, key, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+    realtime: realtimeOptions,
+  });
+}
+
+// Proxy singleton para lazy initialization del cliente principal
+let _supabaseInstance: SupabaseClient<Database> | null = null;
+
+function getSupabaseInstance(): SupabaseClient<Database> {
+  if (!_supabaseInstance) {
+    _supabaseInstance = createSupabaseClient();
+    console.log('📦 [Supabase] Client initialized for project:', process.env.SUPABASE_URL);
+  }
+  return _supabaseInstance;
+}
+
+export const supabase: SupabaseClient<Database> = new Proxy({} as SupabaseClient<Database>, {
+  get(_target, prop) {
+    const instance = getSupabaseInstance();
+    const value = (instance as any)[prop];
+    if (typeof value === 'function') {
+      return value.bind(instance);
+    }
+    return value;
+  },
+});
+
+// Proxy singleton para lazy initialization del cliente anónimo
+let _supabaseAnonInstance: SupabaseClient<Database> | null = null;
+
+function getSupabaseAnonInstance(): SupabaseClient<Database> | null {
+  if (_supabaseAnonInstance === null) {
+    _supabaseAnonInstance = createSupabaseAnonClient();
+  }
+  return _supabaseAnonInstance;
+}
+
+export const supabaseAnon: SupabaseClient<Database> | null = new Proxy(
+  {} as SupabaseClient<Database>,
+  {
+    get(_target, prop) {
+      const instance = getSupabaseAnonInstance();
+      if (!instance) {
+        return undefined;
       }
-    )
-  : null;
+      const value = (instance as any)[prop];
+      if (typeof value === 'function') {
+        return value.bind(instance);
+      }
+      return value;
+    },
+  }
+) as any;
 
 // Verificar conexión
 export async function verifySupabaseConnection(): Promise<boolean> {
@@ -71,5 +122,3 @@ export function handleSupabaseError(error: any): Error {
   }
   return new Error(error.message || 'Database error');
 }
-
-console.log('📦 [Supabase] Client initialized for project:', SUPABASE_URL);

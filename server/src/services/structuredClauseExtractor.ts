@@ -242,7 +242,8 @@ export const structuredClauseExtractor = {
    */
   async storeStructuredClause(
     structured: StructuredClause,
-    documentId?: string
+    documentId?: string,
+    domain?: string
   ): Promise<string> {
     const validation = validateStructuredClause(structured);
     if (!validation.success) {
@@ -259,7 +260,8 @@ export const structuredClauseExtractor = {
           product_name: structured.product,
           document_type: structured.documentType,
           extracted_data: structured,
-          document_id: documentId
+          document_id: documentId,
+          domain: domain || 'pyme'
         } as any)
         .select('id')
         .single();

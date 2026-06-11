@@ -135,16 +135,17 @@ export const analysisController = {
             }
 
             let parsedQuotes: ParsedQuote[] = [];
+            const domain = req.body?.domain ?? 'pyme';
 
             if (isMultimodalEnabled()) {
                 // NEW: Multimodal extraction pipeline (PARALLEL)
                 console.log('🤖 Using multimodal extraction with Gemini 2.5 Pro (PARALLEL)...');
-                
+
                 // Process all quotes in parallel with concurrency limit
                 const CONCURRENCY_LIMIT = 2; // Limit to 2 simultaneous Gemini calls
                 const processQuote = async (file: Express.Multer.File, index: number) => {
                     try {
-                        const parsed = await processQuoteMultimodal(file, index, quoteFiles.length);
+                        const parsed = await processQuoteMultimodal(file, index, quoteFiles.length, { domain });
                         return { index, parsed, error: null };
                     } catch (error: any) {
                         const errorMessage = error?.message || 'Unknown error';
@@ -157,11 +158,11 @@ export const analysisController = {
                         } else {
                             console.error(`   ❌ Error processing quote ${index + 1}:`, errorMessage);
                         }
-                        
+
                         // Fallback to legacy pipeline
                         console.log(`   🔄 Falling back to legacy pipeline...`);
                         try {
-                            const fallback = await processQuoteLegacy(file, index, quoteFiles.length);
+                            const fallback = await processQuoteLegacy(file, index, quoteFiles.length, { domain });
                             return { index, parsed: fallback, error: null };
                         } catch (fallbackError: any) {
                             console.error(`   ❌ Legacy fallback also failed:`, fallbackError?.message);
@@ -221,7 +222,7 @@ export const analysisController = {
                 console.log('🤖 Phase 2/5: Extracting structured data with Gemini (PARALLEL)...');
                 
                 const legacyPromises = extractedQuotes.map((quote, i) =>
-                    processQuoteLegacy(quote, i, extractedQuotes.length)
+                    processQuoteLegacy(quote, i, extractedQuotes.length, { domain })
                 );
                 parsedQuotes = await Promise.all(legacyPromises);
             }

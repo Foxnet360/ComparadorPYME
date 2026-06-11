@@ -5,6 +5,8 @@ import { embeddingService } from './vector/embeddingService';
 import { pdfRenderer, RenderedPage } from './pdfRenderer';
 import { handleSupabaseError } from '../config/database';
 import { geminiService } from './gemini';
+import { featureFlags } from '../config/featureFlags';
+import { structuredClauseExtractor } from './structuredClauseExtractor';
 
 export interface DocumentMetadata {
   insurerName: string;
@@ -227,7 +229,38 @@ export class DocumentIndexingService {
 
       console.log(`✅ Documento, imágenes y chunks guardados atómicamente: ${documentId}`);
 
-      // 8. Completar
+      // 8. Auto-extract structured clauses (gated by feature flag)
+      if (featureFlags.isEnabled('autoExtractStructuredClauses')) {
+        this.reportProgress({
+          stage: 'storing',
+          message: 'Extrayendo cláusulas estructuradas',
+          percent: 95,
+        });
+
+        try {
+          const extractionPromise = structuredClauseExtractor.extractFromText(
+            extractionResult.text,
+            metadata.insurerName,
+            metadata.productName || metadata.documentName,
+            metadata.documentType as 'CLAUSULADO_GENERAL' | 'CLAUSULADO_PARTICULAR'
+          );
+
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Structured clause extraction timed out after 30s')), 30000)
+          );
+
+          const structured = await Promise.race([extractionPromise, timeoutPromise]);
+
+          await structuredClauseExtractor.storeStructuredClause(structured, documentId, 'pyme');
+          console.log(`✅ [DocumentIndexingService] Structured clause extracted and stored for document ${documentId}`);
+        } catch (extractError: any) {
+          const errorMsg = extractError?.message || String(extractError);
+          console.warn(`⚠️ [DocumentIndexingService] Structured clause extraction failed for ${documentId}:`, errorMsg);
+          warnings.push(`Extracción estructurada fallida: ${errorMsg}`);
+        }
+      }
+
+      // 9. Completar
       this.reportProgress({
         stage: 'complete',
         message: 'Indexación completada',
