@@ -1,0 +1,37 @@
+{
+  "fixtureId": "mixed-001",
+  "insurer": "MIXED",
+  "templateId": null,
+  "fileName": "mixed-001.pdf",
+  "pdfText": "COTIZACIÓN SEGURO PYME\nAseguradora: MIXED\nCoberturas varias sin formato específico.\nResponsabilidad Civil (RCE): $1.000.000.000 ded No aplica\nAsistencia Legal: $500.000.000 ded 0%\nEquipo Eléctrico y Electrónico: $100.000.000 ded No aplica\nHuelga, Motín, Asonada (HMACC): $2.000.000.000 ded 10%\nTerremoto y Eventos Catastróficos: $500.000.000 ded 15%",
+  "pageTextItems": [],
+  "expectedCoverages": [
+    {
+      "canonicalName": "Responsabilidad Civil (RCE)",
+      "insuredAmount": 1000000000,
+      "deductible": "No aplica"
+    },
+    {
+      "canonicalName": "Asistencia Legal",
+      "insuredAmount": 500000000,
+      "deductible": "0%"
+    },
+    {
+      "canonicalName": "Equipo Eléctrico y Electrónico",
+      "insuredAmount": 100000000,
+      "deductible": "No aplica"
+    },
+    {
+      "canonicalName": "Huelga, Motín, Asonada (HMACC)",
+      "insuredAmount": 2000000000,
+      "deductible": "10%"
+    },
+    {
+      "canonicalName": "Terremoto y Eventos Catastróficos",
+      "insuredAmount": 500000000,
+      "deductible": "15%"
+    }
+  ],
+  "annotatedBy": "golden-set-analyst",
+  "notes": "Synthetic mixed/unknown quote 1"
+}

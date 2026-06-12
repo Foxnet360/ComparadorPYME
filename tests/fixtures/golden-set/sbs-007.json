@@ -1,0 +1,258 @@
+{
+  "fixtureId": "sbs-007",
+  "insurer": "SBS",
+  "templateId": "sbs-pyme-v1",
+  "fileName": "sbs-007.pdf",
+  "pdfText": "SEGUROS SBS\nResumen de coberturas y primas\nAseguradora: SBS\n\nCobertura | Suma Asegurada | Deducible | Prima\nEquipo Eléctrico | $1.000.000.000 | 5 SMMLV | $2000000\nTransporte de Mercancías | $1.000.000.000 | 10 SMMLV | $2000000\nAsistencia Pyme | $2.000.000.000 | 10 SMMLV | $4000000\nLucro Cesante | $200.000.000 | 15% | $400000\nVidrios | $200.000.000 | 5% | $400000\nRotura de Maquinaria | $1.000.000.000 | No aplica | $2000000",
+  "pageTextItems": [
+    {
+      "page": 1,
+      "items": [
+        {
+          "text": "SBS",
+          "x": 480,
+          "y": 40,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "SBS",
+          "x": 120,
+          "y": 80,
+          "width": 120,
+          "height": 14
+        },
+        {
+          "text": "Cobertura",
+          "x": 50,
+          "y": 150,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "Suma Asegurada",
+          "x": 200,
+          "y": 150,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "Deducible",
+          "x": 360,
+          "y": 150,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "Prima",
+          "x": 490,
+          "y": 150,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Equipo Eléctrico",
+          "x": 50,
+          "y": 180,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$1.000.000.000",
+          "x": 200,
+          "y": 180,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "5 SMMLV",
+          "x": 360,
+          "y": 180,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$2000000",
+          "x": 490,
+          "y": 180,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Transporte de Mercancías",
+          "x": 50,
+          "y": 205,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$1.000.000.000",
+          "x": 200,
+          "y": 205,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "10 SMMLV",
+          "x": 360,
+          "y": 205,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$2000000",
+          "x": 490,
+          "y": 205,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Asistencia Pyme",
+          "x": 50,
+          "y": 230,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$2.000.000.000",
+          "x": 200,
+          "y": 230,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "10 SMMLV",
+          "x": 360,
+          "y": 230,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$4000000",
+          "x": 490,
+          "y": 230,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Lucro Cesante",
+          "x": 50,
+          "y": 255,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$200.000.000",
+          "x": 200,
+          "y": 255,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "15%",
+          "x": 360,
+          "y": 255,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$400000",
+          "x": 490,
+          "y": 255,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Vidrios",
+          "x": 50,
+          "y": 280,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$200.000.000",
+          "x": 200,
+          "y": 280,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "5%",
+          "x": 360,
+          "y": 280,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$400000",
+          "x": 490,
+          "y": 280,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Rotura de Maquinaria",
+          "x": 50,
+          "y": 305,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$1.000.000.000",
+          "x": 200,
+          "y": 305,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "No aplica",
+          "x": 360,
+          "y": 305,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$2000000",
+          "x": 490,
+          "y": 305,
+          "width": 80,
+          "height": 12
+        }
+      ]
+    }
+  ],
+  "expectedCoverages": [
+    {
+      "canonicalName": "Equipo Eléctrico y Electrónico",
+      "insuredAmount": 1000000000,
+      "deductible": "5 SMMLV"
+    },
+    {
+      "canonicalName": "Transporte de Mercancías",
+      "insuredAmount": 1000000000,
+      "deductible": "10 SMMLV"
+    },
+    {
+      "canonicalName": "Asistencia PYME",
+      "insuredAmount": 2000000000,
+      "deductible": "10 SMMLV"
+    },
+    {
+      "canonicalName": "Lucro Cesante",
+      "insuredAmount": 200000000,
+      "deductible": "15%"
+    },
+    {
+      "canonicalName": "Vidrios Planos",
+      "insuredAmount": 200000000,
+      "deductible": "5%"
+    },
+    {
+      "canonicalName": "Rotura de Maquinaria",
+      "insuredAmount": 1000000000,
+      "deductible": "No aplica"
+    }
+  ],
+  "annotatedBy": "golden-set-analyst",
+  "notes": "Synthetic SBS quote 7 for evaluation harness"
+}

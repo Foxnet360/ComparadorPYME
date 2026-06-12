@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 import {
   evaluateFixture,
   computeAggregateMetrics,
@@ -245,6 +247,25 @@ describe('loadGoldenSet', () => {
 
     expect(fixtures).toHaveLength(2);
     expect(fixtures.map((f) => f.fixtureId).sort()).toEqual(['bbva-001', 'sbs-001']);
+  });
+
+  it('loads the real golden-set fixture directory', async () => {
+    const fixturesDir = path.resolve(process.cwd(), 'tests/fixtures/golden-set');
+    const fixtures = await loadGoldenSet(fixturesDir, {
+      readdir: (dir) => fs.readdir(dir),
+      readFile: (filePath) => fs.readFile(filePath, 'utf8'),
+    });
+
+    expect(fixtures.length).toBeGreaterThanOrEqual(30);
+    const insurers = new Set(fixtures.map((f) => f.insurer));
+    expect(insurers.has('BBVA')).toBe(true);
+    expect(insurers.has('SBS')).toBe(true);
+    expect(insurers.has('MAPFRE')).toBe(true);
+    for (const f of fixtures) {
+      expect(f.fixtureId).toBeDefined();
+      expect(f.expectedCoverages.length).toBeGreaterThan(0);
+      expect(f.annotatedBy).toBeDefined();
+    }
   });
 
   it('skips non-JSON files and invalid entries', async () => {
