@@ -70,6 +70,52 @@
 - Structured logs are emitted synchronously to stdout; high-throughput workloads may want an async batching sink in the future.
 - `quoteProcessingService` logs the pipeline path only in `selectExtractionPrompt`; full end-to-end observability of `processQuoteMultimodalInternal` could be enhanced in a follow-up.
 
+## Post-Verification Remediation
+
+**Status**: success  
+**Mode**: Strict TDD (Vitest)  
+**Branch**: `feature/mejora-extraccion-coberturas-slice-6`  
+**Chain strategy**: `stacked-to-main`
+
+### Remediation Tasks
+
+- [x] Fix `server/src/services/__tests__/semanticMatcher.graph.test.ts` clean-environment failure by adding the missing `../../config/env` mock (plus `database`, `redisCache`, and `@google/genai` mocks to match the setup used by sibling graph tests).
+- [x] Synchronize Engram `sdd/mejora-extraccion-coberturas/tasks` with OpenSpec `openspec/changes/mejora-extraccion-coberturas/tasks.md` so all 32 tasks are marked complete.
+
+### TDD Cycle Evidence (Remediation)
+
+| Task | Test File | Layer | Safety Net | RED | GREEN | TRIANGULATE | REFACTOR |
+|------|-----------|-------|------------|-----|-------|-------------|----------|
+| Fix clean-env failure | `server/src/services/__tests__/semanticMatcher.graph.test.ts` | Unit | N/A (test-only fix) | Observed: `process.exit(1)` from `env.ts` when `GEMINI_API_KEY`/`SUPABASE_*` are unset | Passed: 5/5 tests in clean environment | Verified both clean env (no vars) and dummy-env runs | Clean — only added deterministic mocks |
+
+### Files Changed in Remediation
+
+| File | Action | Notes |
+|------|--------|-------|
+| `server/src/services/__tests__/semanticMatcher.graph.test.ts` | Modified | Added `env`, `database`, `redisCache`, and `@google/genai` mocks so the test passes without real environment variables |
+| Engram `sdd/mejora-extraccion-coberturas/tasks` | Updated | Marked all Phase 4–7 tasks complete to match OpenSpec |
+| `openspec/changes/mejora-extraccion-coberturas/apply-progress.md` | Modified | Added this remediation section |
+
+### Remediation Test Summary
+
+- **Target test file**: `server/src/services/__tests__/semanticMatcher.graph.test.ts`
+- **Result in clean environment**: 5/5 passing
+- **Related graph tests (dummy env)**: 26/26 passing across `semanticMatcher.graph.test.ts`, `coverageOntology.graph.test.ts`, and `coverageGraphService.test.ts`
+- **Type-check**: `npm run typecheck:backend` passed with no errors
+
+### Deviations / Issues
+
+- None for this remediation.
+
+### Risks
+
+- Full test suite still has pre-existing failures unrelated to this change (documented in previous slices).
+- Future tests that import `coverageOntology` indirectly should include the same env/database/cache mocks to avoid clean-environment failures.
+
+### Next Recommended Phase
+
+`sdd-verify` — re-run verification to confirm the two critical findings are resolved.
+
 ## Slice 1 — Foundation
 
 **Status**: success  
