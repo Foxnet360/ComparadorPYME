@@ -11,6 +11,7 @@ import { groupUncategorizedCoverages } from './semanticGrouper';
 import { coverageOntology, CoverageMapping } from './coverageOntology';
 import { featureFlags } from '../config/featureFlags';
 import { pdfExtractor } from './pdfExtractor';
+import { coverageGraphService } from './coverageGraphService';
 
 export type CoverageStatus = 'present' | 'missing' | 'excluded';
 
@@ -21,8 +22,9 @@ export interface CanonicalCoverage {
   deductible: string | null;
   premium: number | null;
   confidence: number;
+  graphConfidence: number | null;
   rawNames: string[];
-  matchMethod: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'implicit' | 'derived' | 'semantic-group' | 'ontology' | 'ontology-composite' | null;
+  matchMethod: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'implicit' | 'derived' | 'semantic-group' | 'ontology' | 'ontology-composite' | 'graph' | null;
   needsReview: boolean;
   notes?: string;
   categoryId?: number | string | null;
@@ -113,14 +115,16 @@ const IMPLICIT_COVERAGE_PATTERNS: Array<{
  */
 export async function mapRawToCanonical(
   rawName: string,
-  domain?: string
+  domain?: string,
+  insurer?: string
 ): Promise<{
   canonicalName: string | null;
   confidence: number;
-  method: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'ontology' | null;
+  graphConfidence: number | null;
+  method: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'ontology' | 'graph' | null;
 }> {
   if (!rawName || rawName.trim().length === 0) {
-    return { canonicalName: null, confidence: 0, method: null };
+    return { canonicalName: null, confidence: 0, graphConfidence: null, method: null };
   }
 
   const d = domain ?? 'pyme';
@@ -136,7 +140,7 @@ export async function mapRawToCanonical(
   // Layer 1: Thesaurus exact match
   const thesaurusResult = await matchByThesaurusExact(rawName, d);
   if (thesaurusResult) {
-    return { canonicalName: thesaurusResult, confidence: 100, method: 'exact' };
+    return { canonicalName: thesaurusResult, confidence: 100, graphConfidence: null, method: 'exact' };
   }
 
   // Layer 2: Fuzzy match
@@ -145,6 +149,7 @@ export async function mapRawToCanonical(
     return {
       canonicalName: fuzzyResult.canonicalName,
       confidence: fuzzyResult.confidence,
+      graphConfidence: null,
       method: 'fuzzy',
     };
   }
@@ -155,6 +160,7 @@ export async function mapRawToCanonical(
     return {
       canonicalName: semanticResult.canonicalName,
       confidence: Math.round(semanticResult.confidence * 100),
+      graphConfidence: null,
       method: 'embedding',
     };
   }
@@ -165,11 +171,40 @@ export async function mapRawToCanonical(
     return {
       canonicalName: llmResult.canonicalName,
       confidence: Math.round(llmResult.confidence * 100),
+      graphConfidence: null,
       method: 'llm',
     };
   }
 
-  return { canonicalName: null, confidence: 0, method: null };
+  // Layer 5: Coverage semantic graph fallback
+  if (featureFlags.isEnabled('useTemplateGraphPipeline')) {
+    try {
+      const graphResult = await coverageGraphService.query(rawName, { domain: d, insurer });
+      if (graphResult.mappings.length > 0) {
+        const best = graphResult.mappings[0];
+        const confidence = Math.round(best.confidence * 100);
+        if (confidence >= 50) {
+          let canonicalName = best.canonicalId;
+          // Graph may return numeric category ids; resolve to canonical name
+          const numericId = parseInt(best.canonicalId, 10);
+          if (!Number.isNaN(numericId) && numericId > 0) {
+            const resolvedName = semanticMatcher.getCategoryName(numericId, d);
+            if (resolvedName) canonicalName = resolvedName;
+          }
+          return {
+            canonicalName,
+            confidence,
+            graphConfidence: confidence,
+            method: 'graph',
+          };
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ [CoverageNormalizer] Graph fallback failed:', error);
+    }
+  }
+
+  return { canonicalName: null, confidence: 0, graphConfidence: null, method: null };
 }
 
 /**
@@ -178,11 +213,13 @@ export async function mapRawToCanonical(
  */
 export async function mapRawToCanonicalBatch(
   rawNames: string[],
-  domain?: string
+  domain?: string,
+  insurer?: string
 ): Promise<Array<{
     canonicalName: string | null;
     confidence: number;
-    method: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'ontology' | 'thesaurus' | null;
+    graphConfidence: number | null;
+    method: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'ontology' | 'thesaurus' | 'graph' | null;
   }>> {
   const startTime = Date.now();
   const d = domain ?? 'pyme';
@@ -192,13 +229,14 @@ export async function mapRawToCanonicalBatch(
     .filter(item => item.name && item.name.trim().length > 0);
 
   if (validIndices.length === 0) {
-    return rawNames.map(() => ({ canonicalName: null, confidence: 0, method: null }));
+    return rawNames.map(() => ({ canonicalName: null, confidence: 0, graphConfidence: null, method: null }));
   }
 
   const results = new Array(rawNames.length).fill(null).map(() => ({
     canonicalName: null as string | null,
     confidence: 0,
-    method: null as 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'ontology' | 'thesaurus' | null,
+    graphConfidence: null as number | null,
+    method: null as 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'ontology' | 'thesaurus' | 'graph' | null,
   }));
 
   // Separate names that can be resolved without embeddings (thesaurus/fuzzy)
@@ -209,7 +247,7 @@ export async function mapRawToCanonicalBatch(
     // Check thesaurus exact match first
     const thesaurusResult = await matchByThesaurusExact(name, d);
     if (thesaurusResult) {
-      results[index] = { canonicalName: thesaurusResult, confidence: 100, method: 'exact' };
+      results[index] = { canonicalName: thesaurusResult, confidence: 100, graphConfidence: null, method: 'exact' };
       continue;
     }
 
@@ -219,6 +257,7 @@ export async function mapRawToCanonicalBatch(
       results[index] = {
         canonicalName: fuzzyResult.canonicalName,
         confidence: fuzzyResult.confidence,
+        graphConfidence: null,
         method: 'fuzzy',
       };
       continue;
@@ -244,6 +283,7 @@ export async function mapRawToCanonicalBatch(
           results[originalIndex] = {
             canonicalName: result.canonicalName,
             confidence: Math.round(result.confidence * 100),
+            graphConfidence: null,
             method: result.method || 'embedding',
           };
         } else {
@@ -253,6 +293,7 @@ export async function mapRawToCanonicalBatch(
             results[originalIndex] = {
               canonicalName: llmResult.canonicalName,
               confidence: Math.round(llmResult.confidence * 100),
+              graphConfidence: null,
               method: 'llm',
             };
           }
@@ -264,8 +305,39 @@ export async function mapRawToCanonicalBatch(
       console.error(`❌ [CoverageNormalizer] Batch processing failed:`, error);
       // Fallback to individual processing
       for (let i = 0; i < namesNeedingEmbeddings.length; i++) {
-        const singleResult = await mapRawToCanonical(namesNeedingEmbeddings[i], d);
+        const singleResult = await mapRawToCanonical(namesNeedingEmbeddings[i], d, insurer);
         results[embeddingIndices[i]] = singleResult;
+      }
+    }
+  }
+
+  // Graph fallback for unresolved names
+  if (featureFlags.isEnabled('useTemplateGraphPipeline')) {
+    for (let i = 0; i < results.length; i++) {
+      if (!results[i].canonicalName) {
+        try {
+          const graphResult = await coverageGraphService.query(rawNames[i], { domain: d, insurer });
+          if (graphResult.mappings.length > 0) {
+            const best = graphResult.mappings[0];
+            const confidence = Math.round(best.confidence * 100);
+            if (confidence >= 50) {
+              let canonicalName = best.canonicalId;
+              const numericId = parseInt(best.canonicalId, 10);
+              if (!Number.isNaN(numericId) && numericId > 0) {
+                const resolvedName = semanticMatcher.getCategoryName(numericId, d);
+                if (resolvedName) canonicalName = resolvedName;
+              }
+              results[i] = {
+                canonicalName,
+                confidence,
+                graphConfidence: confidence,
+                method: 'graph',
+              };
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ [CoverageNormalizer] Batch graph fallback failed:', error);
+        }
       }
     }
   }
@@ -329,7 +401,7 @@ function matchByFuzzy(rawName: string, domain: string = 'pyme'): { canonicalName
 async function mapWithOntology(
   rawName: string,
   domain: string = 'pyme'
-): Promise<{ canonicalName: string; confidence: number; method: 'ontology' } | null> {
+): Promise<{ canonicalName: string; confidence: number; graphConfidence: number | null; method: 'ontology' } | null> {
   try {
     const mapping = await coverageOntology.mapCoverage(rawName, undefined, domain);
 
@@ -351,6 +423,7 @@ async function mapWithOntology(
     return {
       canonicalName: node.name,
       confidence: Math.round(best.confidence * 100),
+      graphConfidence: null,
       method: 'ontology'
     };
   } catch (error) {
@@ -445,17 +518,19 @@ export function deriveInsuredAmounts(
 }
 
 /**
- * Detect implicit coverages from broad coverage patterns
+ * Detect implicit coverages from broad coverage patterns and graph decomposition rules
  */
-export function detectImplicitCoverages(
+export async function detectImplicitCoverages(
   rawCoverages: RawCoverage[],
-  domain?: string
-): Array<{ rawName: string; canonicalName: string; confidence: number }> {
+  domain?: string,
+  insurer?: string
+): Promise<Array<{ rawName: string; canonicalName: string; confidence: number }>> {
   const implicit: Array<{ rawName: string; canonicalName: string; confidence: number }> = [];
-  
+
   for (const raw of rawCoverages) {
     const nameUpper = raw.rawName.toUpperCase();
-    
+
+    // Static patterns
     for (const pattern of IMPLICIT_COVERAGE_PATTERNS) {
       if (pattern.pattern.test(nameUpper)) {
         for (const coverageName of pattern.coverages) {
@@ -464,7 +539,7 @@ export function detectImplicitCoverages(
             const mapped = mapRawToCanonicalSync(r.rawName, domain ?? 'pyme');
             return mapped === coverageName;
           });
-          
+
           if (!alreadyPresent) {
             implicit.push({
               rawName: raw.rawName,
@@ -475,8 +550,41 @@ export function detectImplicitCoverages(
         }
       }
     }
+
+    // Graph composite decomposition
+    if (featureFlags.isEnabled('useTemplateGraphPipeline')) {
+      try {
+        const graphResult = await coverageGraphService.query(raw.rawName, {
+          domain: domain ?? 'pyme',
+          insurer,
+        });
+        if (graphResult.composite && graphResult.components) {
+          for (const componentId of graphResult.components) {
+            const componentName = semanticMatcher.getCategoryName(
+              parseInt(componentId, 10),
+              domain ?? 'pyme'
+            ) ?? componentId;
+
+            const alreadyPresent = rawCoverages.some(r => {
+              const mapped = mapRawToCanonicalSync(r.rawName, domain ?? 'pyme');
+              return mapped === componentName;
+            });
+
+            if (!alreadyPresent && !implicit.some(i => i.rawName === raw.rawName && i.canonicalName === componentName)) {
+              implicit.push({
+                rawName: raw.rawName,
+                canonicalName: componentName,
+                confidence: 50,
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ [CoverageNormalizer] Graph implicit detection failed:', error);
+      }
+    }
   }
-  
+
   return implicit;
 }
 
@@ -533,6 +641,7 @@ export async function buildCanonicalCoverages(
     coverage: RawCoverage;
     canonicalName: string | null;
     confidence: number;
+    graphConfidence: number | null;
     method: string | null;
   }> = [];
 
@@ -546,12 +655,13 @@ export async function buildCanonicalCoverages(
       coverage: withAmounts[i],
       canonicalName: result.canonicalName,
       confidence: result.confidence,
+      graphConfidence: result.graphConfidence,
       method: result.method,
     });
   }
 
-  // Step 4: Detect implicit coverages
-  const implicit = detectImplicitCoverages(rawCoverages, d);
+  // Step 4: Detect implicit coverages (static patterns + graph decomposition)
+  const implicit = await detectImplicitCoverages(rawCoverages, d);
 
   // Step 5: Build canonical coverages for the active domain
   const canonicalCategories = semanticMatcher.getAllCategories(d);
@@ -568,7 +678,7 @@ export async function buildCanonicalCoverages(
     
     if (explicitMatches.length > 0) {
       // Use best explicit match
-      const best = explicitMatches.reduce((a, b) => 
+      const best = explicitMatches.reduce((a, b) =>
         a.confidence > b.confidence ? a : b
       );
       
@@ -579,6 +689,7 @@ export async function buildCanonicalCoverages(
         deductible: best.coverage.deductible || null,
         premium: best.coverage.premium || null,
         confidence: best.confidence,
+        graphConfidence: best.graphConfidence,
         rawNames: explicitMatches.map(m => m.coverage.rawName),
         matchMethod: best.method as any,
         needsReview: best.confidence < 70,
@@ -600,6 +711,7 @@ export async function buildCanonicalCoverages(
         deductible: parentCoverage?.deductible || null,
         premium: parentCoverage?.premium || null,
         confidence: bestImplicit.confidence,
+        graphConfidence: null,
         rawNames: [bestImplicit.rawName],
         matchMethod: 'implicit',
         needsReview: true,
@@ -619,6 +731,7 @@ export async function buildCanonicalCoverages(
         deductible: null,
         premium: null,
         confidence: 0,
+        graphConfidence: null,
         rawNames: [],
         matchMethod: null,
         needsReview: false,
@@ -650,6 +763,7 @@ export async function buildCanonicalCoverages(
         deductible: coverage.deductible,
         premium: coverage.premium,
         confidence: 0,
+        graphConfidence: null,
         rawNames: [coverage.rawName],
         matchMethod: 'semantic-group',
         needsReview: true,
@@ -782,6 +896,7 @@ async function buildOntologyBasedCoverages(
         deductible: best.rawCoverage.deductible || null,
         premium: best.rawCoverage.premium || null,
         confidence: Math.round(avgConfidence * 100),
+        graphConfidence: null,
         rawNames: groupData.coverages.map(c => c.rawCoverage.rawName),
         matchMethod: best.isComposite ? 'ontology-composite' : 'ontology',
         needsReview: groupNeedsReview,
@@ -803,6 +918,7 @@ async function buildOntologyBasedCoverages(
         deductible: null,
         premium: null,
         confidence: 0,
+        graphConfidence: null,
         rawNames: [],
         matchMethod: null,
         needsReview: false,
@@ -828,6 +944,7 @@ async function buildOntologyBasedCoverages(
         deductible: coverage.deductible || null,
         premium: coverage.premium || null,
         confidence: 0,
+        graphConfidence: null,
         rawNames: [coverage.rawName],
         matchMethod: null,
         needsReview: true,
