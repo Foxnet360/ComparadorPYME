@@ -35,9 +35,9 @@ Chain strategy: stacked-to-main
 
 ## Phase 2: Template Registry (TDD)
 
-- [ ] 2.1 RED: Write unit tests for fingerprint scoring and schema validation.
-- [ ] 2.2 GREEN: Implement `server/src/services/templateRegistry.ts`.
-- [ ] 2.3 REFACTOR: Add cache refresh and `TemplateRegistryEntry` interfaces.
+- [x] 2.1 RED: Write unit tests for fingerprint scoring and schema validation.
+- [x] 2.2 GREEN: Implement `server/src/services/templateRegistry.ts`.
+- [x] 2.3 REFACTOR: Add cache refresh and `TemplateRegistryEntry` interfaces.
 - [ ] 2.4 Modify `server/src/services/insurerProfileService.ts` to expose registry seeds.
 
 ## Phase 3: Layout Parser (TDD)
