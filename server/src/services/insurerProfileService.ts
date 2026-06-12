@@ -3,6 +3,9 @@
  * Provides extraction profiles specific to each insurance company's quote format
  */
 
+import { loadDomainJson } from './domainBundleLoader';
+import { TemplateRegistryEntry } from '../types/templateGraph';
+
 export interface CoverageMapping {
   canonicalName: string;
   variations: string[];
@@ -234,6 +237,23 @@ export const insurerProfileService = {
    */
   getSupportedInsurers(): string[] {
     return Array.from(PROFILES.keys()).filter(k => k !== 'GENERIC');
+  },
+
+  /**
+   * Get the registry seed entry for a supported insurer.
+   */
+  getRegistrySeed(insurerName: string): TemplateRegistryEntry | undefined {
+    const seeds = loadDomainJson<TemplateRegistryEntry[]>('pyme', 'template-seeds.json');
+    return seeds.find((seed) => seed.insurer.toUpperCase() === insurerName.toUpperCase());
+  },
+
+  /**
+   * Get registry seed entries for all supported insurers.
+   */
+  getAllRegistrySeeds(): TemplateRegistryEntry[] {
+    const seeds = loadDomainJson<TemplateRegistryEntry[]>('pyme', 'template-seeds.json');
+    const supported = new Set(this.getSupportedInsurers().map((name) => name.toUpperCase()));
+    return seeds.filter((seed) => supported.has(seed.insurer.toUpperCase()));
   },
 
   /**
