@@ -1,0 +1,141 @@
+[
+  {
+    "templateId": "bbva-pyme-v1",
+    "insurer": "BBVA",
+    "displayName": "BBVA PYME",
+    "version": 1,
+    "fingerprints": {
+      "textMarkers": [
+        "BBVA SEGUROS",
+        "COBERTURAS / DEDUCIBLE"
+      ],
+      "layoutMarkers": [
+        {
+          "page": 1,
+          "region": "top-right",
+          "textRegex": "BBVA"
+        }
+      ],
+      "minConfidence": 90
+    },
+    "schema": {
+      "type": "object",
+      "required": ["coverages"],
+      "properties": {
+        "coverages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["rawName", "insuredAmount", "deductible"],
+            "properties": {
+              "rawName": { "type": "string" },
+              "insuredAmount": { "type": "string" },
+              "deductible": { "type": "string" },
+              "premium": { "type": "string" },
+              "subLimits": { "type": "array" }
+            }
+          }
+        }
+      }
+    },
+    "extractionHints": {
+      "coverageTablePage": 1,
+      "deductibleColumnIndex": 2,
+      "premiumColumnIndex": 3
+    },
+    "promptAddon": "Extrae las coberturas del cuadro 'COBERTURAS / DEDUCIBLE'. Para cada fila devuelve rawName, insuredAmount, deductible, premium y subLimits si aplica. No inventes coberturas que no estén en la tabla."
+  },
+  {
+    "templateId": "sbs-pyme-v1",
+    "insurer": "SBS",
+    "displayName": "SBS PYME",
+    "version": 1,
+    "fingerprints": {
+      "textMarkers": [
+        "SEGUROS SBS",
+        "Resumen de coberturas y primas"
+      ],
+      "layoutMarkers": [
+        {
+          "page": 1,
+          "region": "top-center",
+          "textRegex": "SBS"
+        }
+      ],
+      "minConfidence": 90
+    },
+    "schema": {
+      "type": "object",
+      "required": ["coverages"],
+      "properties": {
+        "coverages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["rawName", "insuredAmount", "deductible"],
+            "properties": {
+              "rawName": { "type": "string" },
+              "insuredAmount": { "type": "string" },
+              "deductible": { "type": "string" },
+              "premium": { "type": "string" },
+              "subLimits": { "type": "array" }
+            }
+          }
+        }
+      }
+    },
+    "extractionHints": {
+      "coverageTablePage": 1,
+      "deductibleColumnIndex": 2,
+      "premiumColumnIndex": 3
+    },
+    "promptAddon": "Extrae las coberturas del 'Resumen de coberturas y primas'. Para cada fila devuelve rawName, insuredAmount, deductible, premium y subLimits si aplica. Respeta los encabezados de columna."
+  },
+  {
+    "templateId": "mapfre-pyme-v1",
+    "insurer": "MAPFRE",
+    "displayName": "MAPFRE PYME",
+    "version": 1,
+    "fingerprints": {
+      "textMarkers": [
+        "MAPFRE",
+        "SECCION PRIMERA",
+        "SECCION SEGUNDA"
+      ],
+      "layoutMarkers": [
+        {
+          "page": 1,
+          "region": "top-left",
+          "textRegex": "MAPFRE"
+        }
+      ],
+      "minConfidence": 90
+    },
+    "schema": {
+      "type": "object",
+      "required": ["coverages"],
+      "properties": {
+        "coverages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["rawName", "insuredAmount", "deductible"],
+            "properties": {
+              "rawName": { "type": "string" },
+              "insuredAmount": { "type": "string" },
+              "deductible": { "type": "string" },
+              "premium": { "type": "string" },
+              "subLimits": { "type": "array" }
+            }
+          }
+        }
+      }
+    },
+    "extractionHints": {
+      "coverageTablePage": 1,
+      "deductibleColumnIndex": 2,
+      "premiumColumnIndex": 3
+    },
+    "promptAddon": "Extrae las coberturas agrupadas por 'SECCION PRIMERA' y 'SECCION SEGUNDA'. Para cada cobertura devuelve rawName, insuredAmount, deductible, premium y subLimits si aplica."
+  }
+]
