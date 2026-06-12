@@ -21,6 +21,7 @@ export interface TextItem {
   y: number;
   width: number;
   height: number;
+  rotation?: number;
 }
 
 export interface PageTextItems {
