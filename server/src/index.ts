@@ -36,6 +36,12 @@ import auditRoutes from './routes/audit';
 import chatRoutes from './routes/chat';
 import analysisRoutes from './routes/analysis';
 import comparisonRoutes from './routes/comparisonRoutes';
+import monitoringRoutes from './routes/monitoring';
+import templateRegistryRoutes from './routes/templateRegistry';
+
+// Graph seeding lifecycle
+import { buildGraphEdgesFromDomain, seedCoverageGraph } from './services/graphSeeder';
+import { supabase } from './config/database';
 
 const app = express();
 const port = parseInt(process.env.PORT || '8080', 10);
@@ -177,8 +183,10 @@ app.use('/api/analysis', analysisRoutes);
 app.use('/api/chat', chatRoutes);
 
 // NEW: Monitoring routes
-import monitoringRoutes from './routes/monitoring';
 app.use('/api/monitoring', monitoringRoutes);
+
+// NEW: Template registry routes
+app.use('/api/templates/registry', templateRegistryRoutes);
 
 // NEW: Unified Comparison routes
 app.use('/api/comparison', comparisonRoutes);
@@ -236,6 +244,33 @@ console.log('📍 NODE_ENV:', process.env.NODE_ENV);
 console.log('📍 Static path:', path.join(__dirname, '../../dist'));
 console.log('📍 Static exists:', fs.existsSync(path.join(__dirname, '../../dist')));
 
-app.listen(port, '0.0.0.0', () => {
-    console.log(`✅ Server running on port ${port}`);
-});
+console.log('🚀 About to start server...');
+console.log('📍 Port:', port);
+console.log('📍 Host: 0.0.0.0');
+console.log('📍 NODE_ENV:', process.env.NODE_ENV);
+console.log('📍 Static path:', path.join(__dirname, '../../dist'));
+console.log('📍 Static exists:', fs.existsSync(path.join(__dirname, '../../dist')));
+
+async function seedCoverageGraphOnStartup(): Promise<void> {
+    if (!featureFlags.isEnabled('useTemplateGraphPipeline')) {
+        return;
+    }
+
+    try {
+        const edges = buildGraphEdgesFromDomain('pyme');
+        await seedCoverageGraph(supabase, 'pyme', edges);
+        console.log(`🌱 Seeded ${edges.length} coverage graph edges on startup`);
+    } catch (error) {
+        console.error('❌ Failed to seed coverage graph on startup:', error);
+    }
+}
+
+async function bootstrap(): Promise<void> {
+    await seedCoverageGraphOnStartup();
+
+    app.listen(port, '0.0.0.0', () => {
+        console.log(`✅ Server running on port ${port}`);
+    });
+}
+
+bootstrap();
