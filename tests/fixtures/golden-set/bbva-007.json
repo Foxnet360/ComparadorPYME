@@ -1,0 +1,258 @@
+{
+  "fixtureId": "bbva-007",
+  "insurer": "BBVA",
+  "templateId": "bbva-pyme-v1",
+  "fileName": "bbva-007.pdf",
+  "pdfText": "BBVA SEGUROS\nCOBERTURAS / DEDUCIBLE\nAseguradora: BBVA\n\nCobertura | Suma Asegurada | Deducible | Prima\nAsistencia Legal | $500.000.000 | 5 SMMLV | $1000000\nEEE | $1.000.000.000 | 5% | $2000000\nRotura Maquinaria | $500.000.000 | 15% | $1000000\nTransporte de Mercancías | $1.000.000.000 | 5% | $2000000\nManejo Global | $200.000.000 | 5 SMMLV | $400000\nIncendio Edificio y Contenidos | $100.000.000 | 0% | $200000",
+  "pageTextItems": [
+    {
+      "page": 1,
+      "items": [
+        {
+          "text": "BBVA",
+          "x": 480,
+          "y": 40,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "BBVA",
+          "x": 120,
+          "y": 80,
+          "width": 120,
+          "height": 14
+        },
+        {
+          "text": "Cobertura",
+          "x": 50,
+          "y": 150,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "Suma Asegurada",
+          "x": 200,
+          "y": 150,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "Deducible",
+          "x": 360,
+          "y": 150,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "Prima",
+          "x": 490,
+          "y": 150,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Asistencia Legal",
+          "x": 50,
+          "y": 180,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$500.000.000",
+          "x": 200,
+          "y": 180,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "5 SMMLV",
+          "x": 360,
+          "y": 180,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$1000000",
+          "x": 490,
+          "y": 180,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "EEE",
+          "x": 50,
+          "y": 205,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$1.000.000.000",
+          "x": 200,
+          "y": 205,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "5%",
+          "x": 360,
+          "y": 205,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$2000000",
+          "x": 490,
+          "y": 205,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Rotura Maquinaria",
+          "x": 50,
+          "y": 230,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$500.000.000",
+          "x": 200,
+          "y": 230,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "15%",
+          "x": 360,
+          "y": 230,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$1000000",
+          "x": 490,
+          "y": 230,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Transporte de Mercancías",
+          "x": 50,
+          "y": 255,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$1.000.000.000",
+          "x": 200,
+          "y": 255,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "5%",
+          "x": 360,
+          "y": 255,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$2000000",
+          "x": 490,
+          "y": 255,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Manejo Global",
+          "x": 50,
+          "y": 280,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$200.000.000",
+          "x": 200,
+          "y": 280,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "5 SMMLV",
+          "x": 360,
+          "y": 280,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$400000",
+          "x": 490,
+          "y": 280,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Incendio Edificio y Contenidos",
+          "x": 50,
+          "y": 305,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$100.000.000",
+          "x": 200,
+          "y": 305,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "0%",
+          "x": 360,
+          "y": 305,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$200000",
+          "x": 490,
+          "y": 305,
+          "width": 80,
+          "height": 12
+        }
+      ]
+    }
+  ],
+  "expectedCoverages": [
+    {
+      "canonicalName": "Asistencia Legal",
+      "insuredAmount": 500000000,
+      "deductible": "5 SMMLV"
+    },
+    {
+      "canonicalName": "Equipo Eléctrico y Electrónico",
+      "insuredAmount": 1000000000,
+      "deductible": "5%"
+    },
+    {
+      "canonicalName": "Rotura de Maquinaria",
+      "insuredAmount": 500000000,
+      "deductible": "15%"
+    },
+    {
+      "canonicalName": "Transporte de Mercancías",
+      "insuredAmount": 1000000000,
+      "deductible": "5%"
+    },
+    {
+      "canonicalName": "Manejo Global / Infidelidad",
+      "insuredAmount": 200000000,
+      "deductible": "5 SMMLV"
+    },
+    {
+      "canonicalName": "Incendio (Edificio y Contenidos)",
+      "insuredAmount": 100000000,
+      "deductible": "0%"
+    }
+  ],
+  "annotatedBy": "golden-set-analyst",
+  "notes": "Synthetic BBVA quote 7 for evaluation harness"
+}

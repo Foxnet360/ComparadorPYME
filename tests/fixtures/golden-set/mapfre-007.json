@@ -1,0 +1,258 @@
+{
+  "fixtureId": "mapfre-007",
+  "insurer": "MAPFRE",
+  "templateId": "mapfre-pyme-v1",
+  "fileName": "mapfre-007.pdf",
+  "pdfText": "MAPFRE\nSECCION PRIMERA\nSECCION SEGUNDA\nAseguradora: MAPFRE\n\nCobertura | Suma Asegurada | Deducible | Prima\nIncendio | $2.000.000.000 | 0% | $4000000\nRotura de Maquinaria | $500.000.000 | 5% | $1000000\nEquipo Eléctrico y Electrónico | $1.000.000.000 | 15% | $2000000\nTerremoto y Eventos Catastróficos | $1.000.000.000 | 0% | $2000000\nSustracción | $1.000.000.000 | 15% | $2000000\nTransporte Valores | $500.000.000 | 10 SMMLV | $1000000",
+  "pageTextItems": [
+    {
+      "page": 1,
+      "items": [
+        {
+          "text": "MAPFRE",
+          "x": 480,
+          "y": 40,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "MAPFRE",
+          "x": 120,
+          "y": 80,
+          "width": 120,
+          "height": 14
+        },
+        {
+          "text": "Cobertura",
+          "x": 50,
+          "y": 150,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "Suma Asegurada",
+          "x": 200,
+          "y": 150,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "Deducible",
+          "x": 360,
+          "y": 150,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "Prima",
+          "x": 490,
+          "y": 150,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Incendio",
+          "x": 50,
+          "y": 180,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$2.000.000.000",
+          "x": 200,
+          "y": 180,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "0%",
+          "x": 360,
+          "y": 180,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$4000000",
+          "x": 490,
+          "y": 180,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Rotura de Maquinaria",
+          "x": 50,
+          "y": 205,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$500.000.000",
+          "x": 200,
+          "y": 205,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "5%",
+          "x": 360,
+          "y": 205,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$1000000",
+          "x": 490,
+          "y": 205,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Equipo Eléctrico y Electrónico",
+          "x": 50,
+          "y": 230,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$1.000.000.000",
+          "x": 200,
+          "y": 230,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "15%",
+          "x": 360,
+          "y": 230,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$2000000",
+          "x": 490,
+          "y": 230,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Terremoto y Eventos Catastróficos",
+          "x": 50,
+          "y": 255,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$1.000.000.000",
+          "x": 200,
+          "y": 255,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "0%",
+          "x": 360,
+          "y": 255,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$2000000",
+          "x": 490,
+          "y": 255,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Sustracción",
+          "x": 50,
+          "y": 280,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$1.000.000.000",
+          "x": 200,
+          "y": 280,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "15%",
+          "x": 360,
+          "y": 280,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$2000000",
+          "x": 490,
+          "y": 280,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Transporte Valores",
+          "x": 50,
+          "y": 305,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$500.000.000",
+          "x": 200,
+          "y": 305,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "10 SMMLV",
+          "x": 360,
+          "y": 305,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$1000000",
+          "x": 490,
+          "y": 305,
+          "width": 80,
+          "height": 12
+        }
+      ]
+    }
+  ],
+  "expectedCoverages": [
+    {
+      "canonicalName": "Incendio (Edificio y Contenidos)",
+      "insuredAmount": 2000000000,
+      "deductible": "0%"
+    },
+    {
+      "canonicalName": "Rotura de Maquinaria",
+      "insuredAmount": 500000000,
+      "deductible": "5%"
+    },
+    {
+      "canonicalName": "Equipo Eléctrico y Electrónico",
+      "insuredAmount": 1000000000,
+      "deductible": "15%"
+    },
+    {
+      "canonicalName": "Terremoto y Eventos Catastróficos",
+      "insuredAmount": 1000000000,
+      "deductible": "0%"
+    },
+    {
+      "canonicalName": "Sustracción / Hurto",
+      "insuredAmount": 1000000000,
+      "deductible": "15%"
+    },
+    {
+      "canonicalName": "Transporte de Valores",
+      "insuredAmount": 500000000,
+      "deductible": "10 SMMLV"
+    }
+  ],
+  "annotatedBy": "golden-set-analyst",
+  "notes": "Synthetic MAPFRE quote 7 for evaluation harness"
+}

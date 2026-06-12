@@ -1,0 +1,258 @@
+{
+  "fixtureId": "mapfre-001",
+  "insurer": "MAPFRE",
+  "templateId": "mapfre-pyme-v1",
+  "fileName": "mapfre-001.pdf",
+  "pdfText": "MAPFRE\nSECCION PRIMERA\nSECCION SEGUNDA\nAseguradora: MAPFRE\n\nCobertura | Suma Asegurada | Deducible | Prima\nTerremoto y Eventos Catastróficos | $200.000.000 | No aplica | $400000\nTransporte Mercancías | $100.000.000 | 15% | $200000\nSustracción | $200.000.000 | 5 SMMLV | $400000\nRotura de Maquinaria | $200.000.000 | 0% | $400000\nHuelga Motín Asonada | $100.000.000 | 5 SMMLV | $200000\nManejo Global | $2.000.000.000 | 5 SMMLV | $4000000",
+  "pageTextItems": [
+    {
+      "page": 1,
+      "items": [
+        {
+          "text": "MAPFRE",
+          "x": 480,
+          "y": 40,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "MAPFRE",
+          "x": 120,
+          "y": 80,
+          "width": 120,
+          "height": 14
+        },
+        {
+          "text": "Cobertura",
+          "x": 50,
+          "y": 150,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "Suma Asegurada",
+          "x": 200,
+          "y": 150,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "Deducible",
+          "x": 360,
+          "y": 150,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "Prima",
+          "x": 490,
+          "y": 150,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Terremoto y Eventos Catastróficos",
+          "x": 50,
+          "y": 180,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$200.000.000",
+          "x": 200,
+          "y": 180,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "No aplica",
+          "x": 360,
+          "y": 180,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$400000",
+          "x": 490,
+          "y": 180,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Transporte Mercancías",
+          "x": 50,
+          "y": 205,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$100.000.000",
+          "x": 200,
+          "y": 205,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "15%",
+          "x": 360,
+          "y": 205,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$200000",
+          "x": 490,
+          "y": 205,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Sustracción",
+          "x": 50,
+          "y": 230,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$200.000.000",
+          "x": 200,
+          "y": 230,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "5 SMMLV",
+          "x": 360,
+          "y": 230,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$400000",
+          "x": 490,
+          "y": 230,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Rotura de Maquinaria",
+          "x": 50,
+          "y": 255,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$200.000.000",
+          "x": 200,
+          "y": 255,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "0%",
+          "x": 360,
+          "y": 255,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$400000",
+          "x": 490,
+          "y": 255,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Huelga Motín Asonada",
+          "x": 50,
+          "y": 280,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$100.000.000",
+          "x": 200,
+          "y": 280,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "5 SMMLV",
+          "x": 360,
+          "y": 280,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$200000",
+          "x": 490,
+          "y": 280,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Manejo Global",
+          "x": 50,
+          "y": 305,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$2.000.000.000",
+          "x": 200,
+          "y": 305,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "5 SMMLV",
+          "x": 360,
+          "y": 305,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$4000000",
+          "x": 490,
+          "y": 305,
+          "width": 80,
+          "height": 12
+        }
+      ]
+    }
+  ],
+  "expectedCoverages": [
+    {
+      "canonicalName": "Terremoto y Eventos Catastróficos",
+      "insuredAmount": 200000000,
+      "deductible": "No aplica"
+    },
+    {
+      "canonicalName": "Transporte de Mercancías",
+      "insuredAmount": 100000000,
+      "deductible": "15%"
+    },
+    {
+      "canonicalName": "Sustracción / Hurto",
+      "insuredAmount": 200000000,
+      "deductible": "5 SMMLV"
+    },
+    {
+      "canonicalName": "Rotura de Maquinaria",
+      "insuredAmount": 200000000,
+      "deductible": "0%"
+    },
+    {
+      "canonicalName": "Huelga, Motín, Asonada (HMACC)",
+      "insuredAmount": 100000000,
+      "deductible": "5 SMMLV"
+    },
+    {
+      "canonicalName": "Manejo Global / Infidelidad",
+      "insuredAmount": 2000000000,
+      "deductible": "5 SMMLV"
+    }
+  ],
+  "annotatedBy": "golden-set-analyst",
+  "notes": "Synthetic MAPFRE quote 1 for evaluation harness"
+}

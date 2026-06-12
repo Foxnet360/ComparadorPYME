@@ -1,0 +1,357 @@
+{
+  "fixtureId": "bbva-010",
+  "insurer": "BBVA",
+  "templateId": "bbva-pyme-v1",
+  "fileName": "bbva-010.pdf",
+  "pdfText": "BBVA SEGUROS\nCOBERTURAS / DEDUCIBLE\nAseguradora: BBVA\n\nCobertura | Suma Asegurada | Deducible | Prima\nHuelga Motin Asonada | $200.000.000 | 10% | $400000\nRotura de Maquinaria | $200.000.000 | 0% | $400000\nManejo Global | $2.000.000.000 | 0% | $4000000\nAsistencia PYME | $1.000.000.000 | 10% | $2000000\nVidrios Planos | $1.000.000.000 | 5 SMMLV | $2000000\nTerremoto | $2.000.000.000 | No aplica | $4000000\nEEE | $2.000.000.000 | 0% | $4000000\nTransporte de Mercancías | $2.000.000.000 | 5% | $4000000\nResponsabilidad Civil | $200.000.000 | 0% | $400000",
+  "pageTextItems": [
+    {
+      "page": 1,
+      "items": [
+        {
+          "text": "BBVA",
+          "x": 480,
+          "y": 40,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "BBVA",
+          "x": 120,
+          "y": 80,
+          "width": 120,
+          "height": 14
+        },
+        {
+          "text": "Cobertura",
+          "x": 50,
+          "y": 150,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "Suma Asegurada",
+          "x": 200,
+          "y": 150,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "Deducible",
+          "x": 360,
+          "y": 150,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "Prima",
+          "x": 490,
+          "y": 150,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Huelga Motin Asonada",
+          "x": 50,
+          "y": 180,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$200.000.000",
+          "x": 200,
+          "y": 180,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "10%",
+          "x": 360,
+          "y": 180,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$400000",
+          "x": 490,
+          "y": 180,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Rotura de Maquinaria",
+          "x": 50,
+          "y": 205,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$200.000.000",
+          "x": 200,
+          "y": 205,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "0%",
+          "x": 360,
+          "y": 205,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$400000",
+          "x": 490,
+          "y": 205,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Manejo Global",
+          "x": 50,
+          "y": 230,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$2.000.000.000",
+          "x": 200,
+          "y": 230,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "0%",
+          "x": 360,
+          "y": 230,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$4000000",
+          "x": 490,
+          "y": 230,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Asistencia PYME",
+          "x": 50,
+          "y": 255,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$1.000.000.000",
+          "x": 200,
+          "y": 255,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "10%",
+          "x": 360,
+          "y": 255,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$2000000",
+          "x": 490,
+          "y": 255,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Vidrios Planos",
+          "x": 50,
+          "y": 280,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$1.000.000.000",
+          "x": 200,
+          "y": 280,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "5 SMMLV",
+          "x": 360,
+          "y": 280,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$2000000",
+          "x": 490,
+          "y": 280,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Terremoto",
+          "x": 50,
+          "y": 305,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$2.000.000.000",
+          "x": 200,
+          "y": 305,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "No aplica",
+          "x": 360,
+          "y": 305,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$4000000",
+          "x": 490,
+          "y": 305,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "EEE",
+          "x": 50,
+          "y": 330,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$2.000.000.000",
+          "x": 200,
+          "y": 330,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "0%",
+          "x": 360,
+          "y": 330,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$4000000",
+          "x": 490,
+          "y": 330,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Transporte de Mercancías",
+          "x": 50,
+          "y": 355,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$2.000.000.000",
+          "x": 200,
+          "y": 355,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "5%",
+          "x": 360,
+          "y": 355,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$4000000",
+          "x": 490,
+          "y": 355,
+          "width": 80,
+          "height": 12
+        },
+        {
+          "text": "Responsabilidad Civil",
+          "x": 50,
+          "y": 380,
+          "width": 140,
+          "height": 12
+        },
+        {
+          "text": "$200.000.000",
+          "x": 200,
+          "y": 380,
+          "width": 120,
+          "height": 12
+        },
+        {
+          "text": "0%",
+          "x": 360,
+          "y": 380,
+          "width": 100,
+          "height": 12
+        },
+        {
+          "text": "$400000",
+          "x": 490,
+          "y": 380,
+          "width": 80,
+          "height": 12
+        }
+      ]
+    }
+  ],
+  "expectedCoverages": [
+    {
+      "canonicalName": "Huelga, Motín, Asonada (HMACC)",
+      "insuredAmount": 200000000,
+      "deductible": "10%"
+    },
+    {
+      "canonicalName": "Rotura de Maquinaria",
+      "insuredAmount": 200000000,
+      "deductible": "0%"
+    },
+    {
+      "canonicalName": "Manejo Global / Infidelidad",
+      "insuredAmount": 2000000000,
+      "deductible": "0%"
+    },
+    {
+      "canonicalName": "Asistencia PYME",
+      "insuredAmount": 1000000000,
+      "deductible": "10%"
+    },
+    {
+      "canonicalName": "Vidrios Planos",
+      "insuredAmount": 1000000000,
+      "deductible": "5 SMMLV"
+    },
+    {
+      "canonicalName": "Terremoto y Eventos Catastróficos",
+      "insuredAmount": 2000000000,
+      "deductible": "No aplica"
+    },
+    {
+      "canonicalName": "Equipo Eléctrico y Electrónico",
+      "insuredAmount": 2000000000,
+      "deductible": "0%"
+    },
+    {
+      "canonicalName": "Transporte de Mercancías",
+      "insuredAmount": 2000000000,
+      "deductible": "5%"
+    },
+    {
+      "canonicalName": "Responsabilidad Civil (RCE)",
+      "insuredAmount": 200000000,
+      "deductible": "0%"
+    }
+  ],
+  "annotatedBy": "golden-set-analyst",
+  "notes": "Synthetic BBVA quote 10 for evaluation harness"
+}

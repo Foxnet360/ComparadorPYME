@@ -1,0 +1,42 @@
+{
+  "fixtureId": "mixed-002",
+  "insurer": "MIXED",
+  "templateId": null,
+  "fileName": "mixed-002.pdf",
+  "pdfText": "COTIZACIÓN SEGURO PYME\nAseguradora: MIXED\nCoberturas varias sin formato específico.\nTransporte de Mercancías: $500.000.000 ded 0%\nVidrios Planos: $1.000.000.000 ded 5 SMMLV\nTerremoto y Eventos Catastróficos: $100.000.000 ded 5 SMMLV\nIncendio (Edificio y Contenidos): $1.000.000.000 ded 10%\nSustracción / Hurto: $1.000.000.000 ded 10%\nManejo Global / Infidelidad: $100.000.000 ded 10%",
+  "pageTextItems": [],
+  "expectedCoverages": [
+    {
+      "canonicalName": "Transporte de Mercancías",
+      "insuredAmount": 500000000,
+      "deductible": "0%"
+    },
+    {
+      "canonicalName": "Vidrios Planos",
+      "insuredAmount": 1000000000,
+      "deductible": "5 SMMLV"
+    },
+    {
+      "canonicalName": "Terremoto y Eventos Catastróficos",
+      "insuredAmount": 100000000,
+      "deductible": "5 SMMLV"
+    },
+    {
+      "canonicalName": "Incendio (Edificio y Contenidos)",
+      "insuredAmount": 1000000000,
+      "deductible": "10%"
+    },
+    {
+      "canonicalName": "Sustracción / Hurto",
+      "insuredAmount": 1000000000,
+      "deductible": "10%"
+    },
+    {
+      "canonicalName": "Manejo Global / Infidelidad",
+      "insuredAmount": 100000000,
+      "deductible": "10%"
+    }
+  ],
+  "annotatedBy": "golden-set-analyst",
+  "notes": "Synthetic mixed/unknown quote 2"
+}
