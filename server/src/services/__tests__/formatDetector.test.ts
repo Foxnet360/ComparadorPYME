@@ -1,11 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import {
   detectFormatFamily,
+  detectFormatWithRegistry,
   getFormatConfidence,
   extractForDetection,
   getFormatFamilyDescription,
   type FormatFamily,
 } from '../formatDetector';
+import { createTemplateRegistryService } from '../templateRegistryService';
+import { featureFlags } from '../../config/featureFlags';
 
 // Sample texts from real PDFs extracted during analysis
 const SBS_TEXT = `RAZON SOCIAL
@@ -191,6 +194,73 @@ describe('formatDetector', () => {
         expect(typeof desc).toBe('string');
         expect(desc.length).toBeGreaterThan(0);
       });
+    });
+  });
+
+  describe('detectFormatWithRegistry', () => {
+    const bbvaText = `BBVA SEGUROS
+COT-2026-001
+COBERTURAS / DEDUCIBLE
+Todo Riesgo Daño Material`;
+
+    const sbsText = `SEGUROS SBS
+Resumen de coberturas y primas
+Todo riesgo daños materiales`;
+
+    it('returns the BBVA template when registry matches and flags are enabled', async () => {
+      featureFlags.updateFlag('useTemplateGraphPipeline', true);
+      featureFlags.updateFlag('templateBbvaV1', true);
+
+      const registry = createTemplateRegistryService();
+      const result = await detectFormatWithRegistry(bbvaText, registry, { domain: 'pyme' });
+
+      expect(result.templateId).toBe('bbva-pyme-v1');
+      expect(result.templateConfidence).toBeGreaterThanOrEqual(90);
+      expect(result.family).toBe('TABLE-INTEGRATED');
+    });
+
+    it('returns the SBS template when registry matches', async () => {
+      featureFlags.updateFlag('useTemplateGraphPipeline', true);
+      featureFlags.updateFlag('templateSbsV1', true);
+
+      const registry = createTemplateRegistryService();
+      const result = await detectFormatWithRegistry(sbsText, registry, { domain: 'pyme' });
+
+      expect(result.templateId).toBe('sbs-pyme-v1');
+      expect(result.templateConfidence).toBeGreaterThanOrEqual(90);
+    });
+
+    it('falls back to generic family when no template matches', async () => {
+      featureFlags.updateFlag('useTemplateGraphPipeline', true);
+
+      const registry = createTemplateRegistryService();
+      const result = await detectFormatWithRegistry('Some random text without any insurance terms', registry, { domain: 'pyme' });
+
+      expect(result.templateId).toBeNull();
+      expect(result.templateConfidence).toBeNull();
+      expect(result.family).toBe('UNKNOWN');
+    });
+
+    it('ignores template match when master pipeline flag is disabled', async () => {
+      featureFlags.updateFlag('useTemplateGraphPipeline', false);
+      featureFlags.updateFlag('templateBbvaV1', true);
+
+      const registry = createTemplateRegistryService();
+      const result = await detectFormatWithRegistry(bbvaText, registry, { domain: 'pyme' });
+
+      expect(result.templateId).toBeNull();
+      expect(result.templateConfidence).toBeNull();
+    });
+
+    it('ignores a template match when its per-insurer flag is disabled', async () => {
+      featureFlags.updateFlag('useTemplateGraphPipeline', true);
+      featureFlags.updateFlag('templateBbvaV1', false);
+
+      const registry = createTemplateRegistryService();
+      const result = await detectFormatWithRegistry(bbvaText, registry, { domain: 'pyme' });
+
+      expect(result.templateId).toBeNull();
+      expect(result.templateConfidence).toBeNull();
     });
   });
 });

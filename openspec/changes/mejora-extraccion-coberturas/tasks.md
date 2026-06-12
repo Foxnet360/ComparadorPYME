@@ -35,10 +35,10 @@ Chain strategy: stacked-to-main
 
 ## Phase 2: Template Registry (TDD)
 
-- [ ] 2.1 RED: Write unit tests for fingerprint scoring and schema validation.
-- [ ] 2.2 GREEN: Implement `server/src/services/templateRegistry.ts`.
-- [ ] 2.3 REFACTOR: Add cache refresh and `TemplateRegistryEntry` interfaces.
-- [ ] 2.4 Modify `server/src/services/insurerProfileService.ts` to expose registry seeds.
+- [x] 2.1 RED: Write unit tests for fingerprint scoring and schema validation.
+- [x] 2.2 GREEN: Implement `server/src/services/templateRegistry.ts`.
+- [x] 2.3 REFACTOR: Add cache refresh and `TemplateRegistryEntry` interfaces.
+- [x] 2.4 Modify `server/src/services/insurerProfileService.ts` to expose registry seeds.
 
 ## Phase 3: Layout Parser (TDD)
 
@@ -54,7 +54,7 @@ Chain strategy: stacked-to-main
 
 ## Phase 5: Pipeline Integration
 
-- [ ] 5.1 Modify `formatDetector.ts` to return `templateId`/`templateConfidence`.
+- [x] 5.1 Modify `formatDetector.ts` to return `templateId`/`templateConfidence`.
 - [ ] 5.2 Modify `promptBuilder.ts` to add `buildTemplatePrompt`.
 - [ ] 5.3 Modify `quoteProcessingService.ts` to route known templates.
 - [ ] 5.4 Modify `coverageNormalizer.ts` to use graph probabilities and decompositions.
