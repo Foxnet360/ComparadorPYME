@@ -21,7 +21,7 @@ export interface ParsedCoverage {
     // Semantic matching fields
     categoryId?: number | null;
     matchConfidence?: number;
-    matchMethod?: 'thesaurus' | 'fuzzy' | 'embedding' | 'llm' | null;
+    matchMethod?: 'thesaurus' | 'fuzzy' | 'embedding' | 'llm' | 'graph' | null;
     // Value source tracking (anti-hallucination)
     valueSource?: 'extracted' | 'calculated' | 'inferred';
     // Sublimit information (optional)

@@ -6,6 +6,8 @@
 import fs from 'fs';
 import path from 'path';
 import { levenshteinDistance, calculateSimilarity } from '../utils/stringUtils';
+import { coverageGraphService } from './coverageGraphService';
+import type { GraphEdge } from '../types/templateGraph';
 
 export interface ThesaurusEntry {
   canonicalName: string;
@@ -600,4 +602,64 @@ export function normalizeCoverages(
   });
 
   return { normalized, needsReview };
+}
+
+/**
+ * Seed coverage graph alias edges from a list of thesaurus entries.
+ * Each variant becomes an `alias_of` edge pointing to the canonical coverage name.
+ */
+export async function seedGraphFromEntries(
+  entries: ThesaurusEntry[],
+  options: {
+    domain?: string;
+    insurer?: string;
+    weight?: number;
+    clearExisting?: boolean;
+  } = {}
+): Promise<void> {
+  const { domain = 'pyme', insurer, weight = 0.85, clearExisting } = options;
+
+  if (clearExisting) {
+    const existing = await coverageGraphService.listEdges({
+      type: 'alias_of',
+      domain,
+      insurer,
+    });
+    for (const edge of existing) {
+      await coverageGraphService.deleteEdge(edge.from, edge.to, edge.type, insurer, domain);
+    }
+  }
+
+  const edges: GraphEdge[] = [];
+  for (const entry of entries) {
+    for (const variant of entry.variants) {
+      edges.push({
+        from: variant,
+        to: entry.canonicalName,
+        type: 'alias_of',
+        weight,
+        insurer,
+        domain,
+      });
+    }
+  }
+
+  if (edges.length > 0) {
+    await coverageGraphService.addEdges(edges);
+  }
+}
+
+/**
+ * Load the thesaurus for a domain and seed the coverage graph with alias edges.
+ */
+export async function seedGraphFromThesaurus(
+  domain: string = 'pyme',
+  options: {
+    insurer?: string;
+    weight?: number;
+    clearExisting?: boolean;
+  } = {}
+): Promise<void> {
+  const entries = loadThesaurus(domain);
+  await seedGraphFromEntries(entries, { ...options, domain });
 }

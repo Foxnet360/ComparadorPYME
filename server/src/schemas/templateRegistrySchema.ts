@@ -73,9 +73,12 @@ export const GraphNodeTypeSchema = z.enum([
 
 export const GraphEdgeTypeSchema = z.enum([
   'alias',
+  'alias_of',
   'maps_to',
   'decomposes_to',
   'applies_to',
+  'deductible_for',
+  'excludes',
   'learned',
 ]);
 
