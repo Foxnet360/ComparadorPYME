@@ -318,7 +318,6 @@ async function processQuoteMultimodalInternal(
     let pageTextMap: Record<number, string> = {};
     let extractionResult: { text?: string; pageTextMap?: Record<number, string>; pageTextItems?: PageTextItems[]; metadata?: { pageCount: number } } = {};
     try {
-      const { pdfExtractor } = require('./pdfExtractor');
       extractionResult = await pdfExtractor.extractTextFromPdf(quoteFile.path);
       nativeText = extractionResult.text || '';
       pageTextMap = extractionResult.pageTextMap || {};
