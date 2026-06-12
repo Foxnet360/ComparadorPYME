@@ -14,12 +14,13 @@ import { featureFlags } from '../config/featureFlags';
 import { getBatch, setBatch } from './cache/embeddingCacheService';
 import { assertTaxonomyBundle } from '../schemas/domainBundleSchema';
 import { loadDomainJson } from './domainBundleLoader';
+import { coverageGraphService } from './coverageGraphService';
 
 export interface SemanticMatchResult {
     categoryId: number | null;
     canonicalName: string | null;
     confidence: number;
-    method: 'thesaurus' | 'fuzzy' | 'embedding' | 'llm' | null;
+    method: 'thesaurus' | 'fuzzy' | 'embedding' | 'llm' | 'graph' | null;
 }
 
 export interface ProbabilisticMatch {
@@ -461,6 +462,46 @@ export const semanticMatcher = {
         if (llmResult) {
             console.log(`✅ [SemanticMatcher] LLM match: ${llmResult.canonicalName} (${llmResult.confidence})`);
             return llmResult;
+        }
+
+        // Capa 5: Coverage semantic graph fallback
+        if (featureFlags.isEnabled('useTemplateGraphPipeline')) {
+            try {
+                const graphResult = await coverageGraphService.query(coverageName, { domain: d });
+                if (graphResult.mappings.length > 0) {
+                    const best = graphResult.mappings[0];
+                    if (best.confidence >= 0.5) {
+                        const categories = loadCanonicalCategories(d);
+                        let categoryId: number | null = null;
+                        let canonicalName = best.canonicalId;
+
+                        const numericId = parseInt(best.canonicalId, 10);
+                        if (!Number.isNaN(numericId) && numericId > 0) {
+                            categoryId = numericId;
+                            canonicalName = categories.find(c => c.id === numericId)?.name || best.canonicalId;
+                        } else {
+                            const normalizedCanonicalId = normalizeText(best.canonicalId);
+                            const matchedCategory = categories.find(c => normalizeText(c.name) === normalizedCanonicalId);
+                            if (matchedCategory) {
+                                categoryId = matchedCategory.id;
+                                canonicalName = matchedCategory.name;
+                            }
+                        }
+
+                        if (categoryId !== null) {
+                            console.log(`✅ [SemanticMatcher] Graph match: ${canonicalName} (${best.confidence})`);
+                            return {
+                                categoryId,
+                                canonicalName,
+                                confidence: best.confidence,
+                                method: 'graph',
+                            };
+                        }
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ [SemanticMatcher] Graph fallback failed:', error);
+            }
         }
 
         // No match found
