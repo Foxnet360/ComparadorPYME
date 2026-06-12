@@ -48,20 +48,20 @@ Chain strategy: stacked-to-main
 
 ## Phase 4: Coverage Semantic Graph (TDD)
 
-- [ ] 4.1 RED: Write unit tests for graph query, propagation, and learning.
-- [ ] 4.2 GREEN: Implement `server/src/services/coverageGraph.ts`.
-- [ ] 4.3 REFACTOR: Add Redis cache and periodic propagation.
+- [x] 4.1 RED: Write unit tests for graph query, propagation, and learning.
+- [x] 4.2 GREEN: Implement `server/src/services/coverageGraphService.ts`.
+- [x] 4.3 REFACTOR: Add Redis cache and periodic propagation.
 
 ## Phase 5: Pipeline Integration
 
 - [x] 5.1 Modify `formatDetector.ts` to return `templateId`/`templateConfidence`.
-- [ ] 5.2 Modify `promptBuilder.ts` to add `buildTemplatePrompt`.
-- [ ] 5.3 Modify `quoteProcessingService.ts` to route known templates.
-- [ ] 5.4 Modify `coverageNormalizer.ts` to use graph probabilities and decompositions.
-- [ ] 5.5 Modify `coverageOntology.ts` to use graph consensus scoring.
-- [ ] 5.6 Modify `semanticMatcher.ts` to rank with graph probabilities.
-- [ ] 5.7 Modify `hybridDeductibleParser.ts` with template hints and `appliesTo` rules.
-- [ ] 5.8 Modify `thesaurusMapper.ts` and `learningEngine.ts` to write graph edges.
+- [x] 5.2 Modify `promptBuilder.ts` to add `buildTemplatePrompt`.
+- [x] 5.3 Modify `quoteProcessingService.ts` to route known templates.
+- [x] 5.4 Modify `coverageNormalizer.ts` to use graph probabilities and decompositions.
+- [x] 5.5 Modify `coverageOntology.ts` to use graph consensus scoring.
+- [x] 5.6 Modify `semanticMatcher.ts` to rank with graph probabilities.
+- [x] 5.7 Modify `hybridDeductibleParser.ts` with template hints and `appliesTo` rules.
+- [x] 5.8 Modify `thesaurusMapper.ts` and `learningEngine.ts` to write graph edges.
 
 ## Phase 6: Evaluation & Rollout
 
