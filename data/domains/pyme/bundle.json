@@ -4,6 +4,7 @@
   "files": [
     "taxonomy.json",
     "ontology.json",
-    "thesaurus.json"
+    "thesaurus.json",
+    "template-seeds.json"
   ]
 }

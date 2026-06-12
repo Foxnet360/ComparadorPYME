@@ -13,13 +13,20 @@ export interface FeatureFlags {
   learningEngine: boolean;
   queryExpansion: boolean;
   hybridSearchV2: boolean;
-  
+
+  // Template + graph pipeline (new)
+  useTemplateGraphPipeline: boolean;
+  templateBbvaV1: boolean;
+  templateSbsV1: boolean;
+  templateMapfreV1: boolean;
+  graphLearningEnabled: boolean;
+
   // Auto-extraction pipeline
   autoExtractStructuredClauses: boolean;
-  
+
   // Unified Comparison Engine
   useUnifiedComparisonEngine: boolean;
-  
+
   // Backward compatibility
   useLegacyCoverageMatcher: boolean;
   useLegacyDeductibleParser: boolean;
@@ -40,12 +47,19 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   queryExpansion: true,
   hybridSearchV2: true,
 
+  // Template + graph pipeline (disabled by default for safe rollout)
+  useTemplateGraphPipeline: false,
+  templateBbvaV1: false,
+  templateSbsV1: false,
+  templateMapfreV1: false,
+  graphLearningEnabled: false,
+
   // Auto-extraction pipeline (disabled by default for safe rollout)
   autoExtractStructuredClauses: false,
 
   // Unified Comparison Engine (disabled by default for safe rollout)
   useUnifiedComparisonEngine: false,
-  
+
   // Backward compatibility flags (for gradual migration)
   useLegacyCoverageMatcher: false,
   useLegacyDeductibleParser: false,
@@ -69,12 +83,37 @@ export const PRODUCTION_ROLLOUT_FLAGS: FeatureFlags = {
   learningEngine: true,
   queryExpansion: true,
   hybridSearchV2: true,
+  useTemplateGraphPipeline: false,
+  templateBbvaV1: false,
+  templateSbsV1: false,
+  templateMapfreV1: false,
+  graphLearningEnabled: false,
   useLegacyCoverageMatcher: false,
   useLegacyDeductibleParser: false,
   useLegacyChatOnlyRAG: false
 };
 
-class FeatureFlagManager {
+// Maps recognized env var names to FeatureFlags keys. Fixes the old key
+// derivation bug (lowercase + strip underscores did not match camelCase keys).
+const ENV_FLAG_MAP: Record<string, keyof FeatureFlags> = {
+  FEATURE_STRUCTURED_CLAUSE_EXTRACTION: 'structuredClauseExtraction',
+  FEATURE_SEMANTIC_COVERAGE_ONTOLOGY: 'semanticCoverageOntology',
+  FEATURE_VARIABLE_COMPARISON_ENGINE: 'variableComparisonEngine',
+  FEATURE_DEDUCTIBLE_SEMANTIC_PARSER: 'deductibleSemanticParser',
+  FEATURE_TRIPLE_SOURCE_CHAT: 'tripleSourceChat',
+  FEATURE_LEARNING_ENGINE: 'learningEngine',
+  FEATURE_QUERY_EXPANSION: 'queryExpansion',
+  FEATURE_HYBRID_SEARCH_V2: 'hybridSearchV2',
+  FEATURE_USE_UNIFIED_COMPARISON_ENGINE: 'useUnifiedComparisonEngine',
+  FEATURE_AUTO_EXTRACT_STRUCTURED_CLAUSES: 'autoExtractStructuredClauses',
+  USE_TEMPLATE_GRAPH_PIPELINE: 'useTemplateGraphPipeline',
+  TEMPLATE_BBVA_V1: 'templateBbvaV1',
+  TEMPLATE_SBS_V1: 'templateSbsV1',
+  TEMPLATE_MAPFRE_V1: 'templateMapfreV1',
+  GRAPH_LEARNING_ENABLED: 'graphLearningEnabled',
+};
+
+export class FeatureFlagManager {
   private flags: FeatureFlags;
   
   constructor(flags: FeatureFlags = DEFAULT_FEATURE_FLAGS) {
@@ -114,26 +153,12 @@ class FeatureFlagManager {
         console.error('❌ [FeatureFlags] Failed to parse FEATURE_FLAGS:', error);
       }
     }
-    
-    // Individual feature overrides
-    const featureVars = [
-      'STRUCTURED_CLAUSE_EXTRACTION',
-      'SEMANTIC_COVERAGE_ONTOLOGY',
-      'VARIABLE_COMPARISON_ENGINE',
-      'DEDUCTIBLE_SEMANTIC_PARSER',
-      'TRIPLE_SOURCE_CHAT',
-      'LEARNING_ENGINE',
-      'QUERY_EXPANSION',
-      'HYBRID_SEARCH_V2',
-      'USE_UNIFIED_COMPARISON_ENGINE',
-      'AUTO_EXTRACT_STRUCTURED_CLAUSES'
-    ];
-    
-    for (const varName of featureVars) {
-      const envValue = process.env[`FEATURE_${varName}`];
+
+    // Individual feature overrides via explicit env var → key mapping.
+    for (const [envName, flagKey] of Object.entries(ENV_FLAG_MAP)) {
+      const envValue = process.env[envName];
       if (envValue !== undefined) {
-        const key = varName.toLowerCase().replace(/_/g, '') as keyof FeatureFlags;
-        (this.flags as any)[key] = envValue === 'true' || envValue === '1';
+        (this.flags as any)[flagKey] = envValue === 'true' || envValue === '1';
       }
     }
   }

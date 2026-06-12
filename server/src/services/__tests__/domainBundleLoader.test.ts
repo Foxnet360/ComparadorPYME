@@ -10,14 +10,16 @@ describe('domainBundleLoader', () => {
       expect(manifest.files).toContain('taxonomy.json');
       expect(manifest.files).toContain('ontology.json');
       expect(manifest.files).toContain('thesaurus.json');
-      expect(manifest.files).toHaveLength(3);
+      expect(manifest.files).toContain('template-seeds.json');
+      expect(manifest.files).toHaveLength(4);
     });
 
     it('falls back to pyme manifest for a nonexistent domain', () => {
       const manifest = loadDomainBundleManifest('nonexistent-domain-test');
       expect(manifest.domain).toBe('pyme');
       expect(manifest.version).toBe('1.0.0');
-      expect(manifest.files).toHaveLength(3);
+      expect(manifest.files).toContain('template-seeds.json');
+      expect(manifest.files).toHaveLength(4);
     });
   });
 });
