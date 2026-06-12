@@ -42,9 +42,9 @@ Chain strategy: stacked-to-main
 
 ## Phase 3: Layout Parser (TDD)
 
-- [ ] 3.1 RED: Write unit tests for row/column clustering with mocked `pdfjs` items.
-- [ ] 3.2 GREEN: Implement `server/src/services/layoutParser.ts`.
-- [ ] 3.3 REFACTOR: Add rotated-page detection and `layout_parse_failed` logging.
+- [x] 3.1 RED: Write unit tests for row/column clustering with mocked `pdfjs` items.
+- [x] 3.2 GREEN: Implement `server/src/services/layoutParser.ts`.
+- [x] 3.3 REFACTOR: Add rotated-page detection and `layout_parse_failed` logging.
 
 ## Phase 4: Coverage Semantic Graph (TDD)
 

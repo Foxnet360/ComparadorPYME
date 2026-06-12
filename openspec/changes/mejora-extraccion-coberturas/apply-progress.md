@@ -14,6 +14,13 @@
 **Branch**: `feature/mejora-extraccion-coberturas-slice-2`  
 **Chain strategy**: `stacked-to-main` — this PR targets `feature/mejora-extraccion-coberturas-slice-1`
 
+## Slice 3 — Layout Parser
+
+**Status**: success  
+**Mode**: Strict TDD (Vitest)  
+**Branch**: `feature/mejora-extraccion-coberturas-slice-3`  
+**Chain strategy**: `stacked-to-main` — this PR targets `feature/mejora-extraccion-coberturas-slice-2`
+
 ## Completed Tasks
 
 ### Phase 1: Foundation
@@ -29,15 +36,15 @@
 - [x] 2.3 REFACTOR: Add cache refresh and `TemplateRegistryEntry` interfaces.
 - [x] 2.4 Modify `server/src/services/insurerProfileService.ts` to expose registry seeds.
 
-### Phase 5: Pipeline Integration (partial, started in this slice)
+### Phase 3: Layout Parser (TDD)
+- [x] 3.1 RED: Write unit tests for row/column clustering with mocked `pdfjs` items.
+- [x] 3.2 GREEN: Implement `server/src/services/layoutParser.ts`.
+- [x] 3.3 REFACTOR: Add rotated-page detection and `layout_parse_failed` logging.
+
+### Phase 5: Pipeline Integration (partial)
 - [x] 5.1 Modify `formatDetector.ts` to return `templateId`/`templateConfidence`.
 
 ## Remaining Tasks
-
-### Phase 3: Layout Parser (TDD)
-- [ ] 3.1 RED: Write unit tests for row/column clustering with mocked `pdfjs` items.
-- [ ] 3.2 GREEN: Implement `server/src/services/layoutParser.ts`.
-- [ ] 3.3 REFACTOR: Add rotated-page detection and `layout_parse_failed` logging.
 
 ### Phase 4: Coverage Semantic Graph (TDD)
 - [ ] 4.1 RED: Write unit tests for graph query, propagation, and learning.
@@ -63,63 +70,58 @@
 - [ ] 7.1 Document template schemas and graph edge semantics.
 - [ ] 7.2 Add metrics/logging for matches, layout failures, and cold-start misses.
 
-## Files Changed in Slice 2
+## Files Changed in Slice 3
 
 | File | Action | Notes |
 |------|--------|-------|
-| `server/src/services/templateRegistryService.ts` | Created | Fingerprint scoring, schema validation (AJV), cache, CRUD |
-| `server/src/services/__tests__/templateRegistryService.test.ts` | Created | 16 unit tests covering detection, validation, cache, CRUD |
-| `server/src/services/insurerProfileService.ts` | Modified | Added `getRegistrySeed` / `getAllRegistrySeeds` |
-| `server/src/services/__tests__/insurerProfileService.test.ts` | Created | Registry seed exposure tests |
-| `server/src/services/formatDetector.ts` | Modified | Added `templateId`/`templateConfidence` and `detectFormatWithRegistry` |
-| `server/src/services/__tests__/formatDetector.test.ts` | Modified | Added registry integration tests |
-| `server/src/routes/templateRegistry.ts` | Created | Admin/ops CRUD + cache refresh + seed-graph endpoints |
-| `server/src/routes/__tests__/templateRegistry.test.ts` | Created | Route authorization and CRUD tests |
-| `server/src/index.ts` | Modified | Wired `/api/templates/registry` and startup `seedCoverageGraph` bootstrap |
-| `server/src/services/templateRegistryService.ts` | Modified | Added `TemplateRegistryService` interface for typed consumers |
-| `package.json` / `package-lock.json` | Modified | Added `ajv` dependency for JSON Schema enforcement |
+| `server/src/services/layoutParser.ts` | Created | Row/column clustering, table reconstruction, region detection, rotation detection |
+| `server/src/services/__tests__/layoutParser.test.ts` | Created | 9 unit tests covering clustering, headers, merged cells, rotation, regions |
+| `server/src/services/layoutAwarePromptBuilder.ts` | Created | Combines template schema + reconstructed tables into LLM prompt |
+| `server/src/services/__tests__/layoutAwarePromptBuilder.test.ts` | Created | 5 unit tests for prompt content |
+| `server/src/services/pdfExtractor.ts` | Modified | Optional `pageTextItems` layout path gated by `useTemplateGraphPipeline`; added `extractLayoutFromPdf` |
+| `server/src/services/__tests__/pdfExtractor.layout.test.ts` | Created | 3 unit tests mocking `pdfjs` items and feature flags |
+| `server/src/services/templateRegistryService.ts` | Modified | Added optional `rotation` to `TextItem` to carry pdfjs rotation angle |
 
 ## TDD Cycle Evidence
 
 | Task | Test File | Layer | Safety Net | RED | GREEN | TRIANGULATE | REFACTOR |
 |------|-----------|-------|------------|-----|-------|-------------|----------|
-| 2.1/2.2 | `server/src/services/__tests__/templateRegistryService.test.ts` | Unit | N/A (new) | Written | Passed | 5 match cases + 3 schema/cache/CRUD cases | Clean |
-| 2.3 | `server/src/services/__tests__/templateRegistryService.test.ts` | Unit | N/A (new) | Written | Passed | Cache hit/miss, refresh, invalidate | Clean |
-| 2.4 | `server/src/services/__tests__/insurerProfileService.test.ts` | Unit | N/A (new) | Written | Passed | 4 insurer/seed cases | Clean |
-| 5.1 | `server/src/services/__tests__/formatDetector.test.ts` | Unit | 18/18 passed | Written | Passed | 5 registry/fallback cases | Clean |
-| Routes | `server/src/routes/__tests__/templateRegistry.test.ts` | Integration | N/A (new) | Written | Passed | 8 admin/CRUD/auth cases | Clean |
+| 3.1/3.2 | `server/src/services/__tests__/layoutParser.test.ts` | Unit | N/A (new) | Written | Passed | 9 cases (simple table, two tables, single column, empty, regions, merged cells, rotation) | Clean |
+| 3.3 | `server/src/services/__tests__/layoutParser.test.ts` | Unit | N/A (new) | Written | Passed | rotated page detection + failure logging | Clean |
+| Prompt builder | `server/src/services/__tests__/layoutAwarePromptBuilder.test.ts` | Unit | N/A (new) | Written | Passed | 5 cases (schema, markdown, hints, empty tables, merged cells) | Clean |
+| pdfExtractor layout path | `server/src/services/__tests__/pdfExtractor.layout.test.ts` | Unit | 6/6 passed | Written | Passed | 3 cases (layout extraction, flag on, flag off) | Clean |
 
 ### Test Summary
-- **Total tests written**: 51 (slice 2 only)
-- **Total tests passing**: 51 (slice 2 only)
-- **Layers used**: Unit (43), Integration (8)
+- **Total tests written**: 17 (slice 3 only)
+- **Total tests passing**: 17 (slice 3 only)
+- **Layers used**: Unit (17)
 - **Approval tests**: None — no refactoring-only tasks
-- **Pure functions created**: `scoreEntry`, `layoutMarkerMatches`, `regionPredicate`, `validatePayload`, `isInsurerTemplateEnabled`
+- **Pure functions created**: `clusterRows`, `deriveColumnBoundaries`, `detectTableHeader`, `detectRotatedPages`, `extractTables`, `buildTemplatePrompt`, `parseTextItem`
 
 ## Deviations from Design
 
-- The service file is named `templateRegistryService.ts` instead of the design's `templateRegistry.ts` to match the project's `*Service` naming convention.
-- `detectFormatFamily` remains synchronous and backwards-compatible; registry consultation is provided by the new async `detectFormatWithRegistry`. This avoids breaking existing callers (`quoteProcessingService`, `compareController`) in this slice.
-- Layout region thresholds (top/bottom/left/right/center) use heuristic coordinate bands because real PDF page dimensions are not available from plain text items. The thresholds can be refined during golden-set validation.
+- `layoutParser.ts` uses gap-based column clustering instead of full DBSCAN/k-means; this keeps the service dependency-free while still producing stable column boundaries for typical insurer tables.
+- Region detection uses y-coordinate bands relative to the page’s item bounds because real page dimensions are not always available from `pdfjs` text items alone.
+- `extractLayoutFromPdf` is exposed as a standalone function rather than only through `extractTextFromPdf`, so callers can request layout reconstruction without forcing the master pipeline flag on.
 
 ## Issues Found
 
-- Existing full test suite has unrelated pre-existing failures due to missing `GEMINI_API_KEY`, `SUPABASE_*` credentials, and other environment requirements. Slice 2 tests pass independently.
-- `ajv` was not previously a dependency; added to enforce JSON Schema validation per the design.
+- Existing full test suite has unrelated pre-existing failures due to missing `GEMINI_API_KEY`, `SUPABASE_*` credentials, and other environment requirements. Slice 3 tests pass independently.
+- `TextItem` needed an optional `rotation` field to propagate pdfjs rotation angles to the layout parser; this is a backward-compatible type extension.
 
 ## Risks
 
-- Layout marker scoring relies on arbitrary coordinate bands; real PDFs may need dimension-aware region mapping.
-- `seedCoverageGraph` is now wired into the startup bootstrap but only runs when `useTemplateGraphPipeline` is enabled. If the flag is toggled on without a reachable Supabase instance, the server will log an error but still start.
-- The default `templateRegistryService` instance has no `db` unless created with `supabase`. The route uses the instance with `supabase`, but callers that use the no-`db` default will get errors on upsert/delete.
-- Feature flags are global mutable state; `detectFormatWithRegistry` tests mutate them and could affect other tests if run concurrently. The tests reset flags per case, but this is a known fragility.
+- Column clustering relies on a fixed x-tolerance default (12 pts); tables with very narrow or irregular columns may need per-template tuning.
+- Layout region detection is heuristic (15% top/bottom bands); it may misclassify pages with unusual margins.
+- `extractTextFromPdf` now imports `featureFlags`, so any test that mutates the global flag can affect concurrent tests. Tests reset the flag in `beforeEach`.
+- The `layoutAwarePromptBuilder` prompt is in Spanish because the existing extraction prompts are Spanish; this matches project conventions.
 
 ## Next Recommended Phase
 
-`sdd-apply` slice 3 — Phase 3: Layout Parser (row/column clustering with mocked `pdfjs` items).
+`sdd-apply` slice 4 — Phase 4: Coverage Semantic Graph (graph model, query, propagation, and learning).
 
 ## Branch / PR Boundary
 
-- Slice 2 PR branch: `feature/mejora-extraccion-coberturas-slice-2`
-- Target (stacked-to-main): `feature/mejora-extraccion-coberturas-slice-1`
-- Estimated review budget impact: ~550 changed lines (slightly above the 400-line soft budget, but consistent with the auto-forecast chained PR plan).
+- Slice 3 PR branch: `feature/mejora-extraccion-coberturas-slice-3`
+- Target (stacked-to-main): `feature/mejora-extraccion-coberturas-slice-2`
+- Estimated review budget impact: ~700 changed lines (above the 400-line soft budget, consistent with the auto-forecast chained PR plan).

@@ -1,7 +1,61 @@
 import fs from 'fs';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.js';
+import { featureFlags } from '../config/featureFlags';
+import { PageTextItems, TextItem } from './templateRegistryService';
 
 export type DocumentType = 'COTIZACIÓN' | 'CLAUSULADO_GENERAL' | 'CLAUSULADO_PARTICULAR';
+
+export type { PageTextItems, TextItem };
+
+// ---------------------------------------------------------------------------
+// Layout helpers (used when the template/graph pipeline is enabled)
+// ---------------------------------------------------------------------------
+
+interface PdfjsTextItem {
+  str: string;
+  transform: number[];
+  width: number;
+  height: number;
+}
+
+function isPdfjsTextItem(item: unknown): item is PdfjsTextItem {
+  if (typeof item !== 'object' || item === null) {
+    return false;
+  }
+
+  const record = item as Record<string, unknown>;
+  const transform = record.transform;
+
+  return (
+    typeof record.str === 'string' &&
+    Array.isArray(transform) &&
+    (transform as number[]).length >= 6
+  );
+}
+
+function parseTextItem(item: unknown): TextItem | null {
+  if (!isPdfjsTextItem(item)) {
+    return null;
+  }
+
+  const [a, b, , , x, y] = item.transform;
+  const rotation = Math.round((Math.atan2(b, a) * 180) / Math.PI);
+
+  return {
+    text: item.str,
+    x,
+    y,
+    width: item.width ?? 0,
+    height: item.height ?? 0,
+    rotation,
+  };
+}
+
+function extractPageTextItems(items: unknown[]): TextItem[] {
+  return items
+    .map(parseTextItem)
+    .filter((item): item is TextItem => item !== null && item.text.trim().length > 0);
+}
 
 export interface PageData {
     pageNumber: number;
@@ -26,6 +80,7 @@ export interface PDFExtractionResult {
     text: string;
     pages: PageData[];
     pageTextMap?: Record<number, string>;
+    pageTextItems?: PageTextItems[];
     metadata: PDFMetadata;
     warnings: string[];
     isScanned: boolean;
@@ -88,6 +143,8 @@ export const pdfExtractor = {
             const pages: PageData[] = [];
             let totalTextLength = 0;
             let pagesWithContent = 0;
+            const includeLayout = featureFlags.isEnabled('useTemplateGraphPipeline');
+            const pageTextItems: PageTextItems[] = includeLayout ? [] : undefined as unknown as PageTextItems[];
 
             for (let i = 1; i <= pageCount; i++) {
                 try {
@@ -100,6 +157,13 @@ export const pdfExtractor = {
                         .map((item: any) => item.str || '')
                         .join(' ')
                         .trim();
+
+                    if (includeLayout && pageTextItems) {
+                        pageTextItems.push({
+                            page: i,
+                            items: extractPageTextItems(textContent.items),
+                        });
+                    }
 
                     const wordCount = pageText.split(/\s+/).filter((word: string) => word.length > 0).length;
                     const hasContent = pageText.length > 0 && wordCount > 5; // Mínimo 5 palabras
@@ -121,6 +185,9 @@ export const pdfExtractor = {
 
                 } catch (pageError: any) {
                     warnings.push(`Error extracting page ${i}: ${pageError.message}`);
+                    if (includeLayout && pageTextItems) {
+                        pageTextItems.push({ page: i, items: [] });
+                    }
                     pages.push({
                         pageNumber: i,
                         text: '',
@@ -160,6 +227,7 @@ export const pdfExtractor = {
                 text: cleanedText,
                 pages,
                 pageTextMap,
+                ...(includeLayout && pageTextItems ? { pageTextItems } : {}),
                 metadata,
                 warnings,
                 isScanned,
@@ -304,6 +372,63 @@ export const pdfExtractor = {
      */
     combineExtractedTexts: (documents: ExtractedDocument[]): string => {
         return documents.map(doc => doc.text).join('\n\n');
+    },
+
+    /**
+     * Extrae los items de texto con posiciones (x, y) y rotación para cada página.
+     * No depende de feature flags; está pensado para consumidores que necesitan
+     * la reconstrucción de layout.
+     */
+    extractLayoutFromPdf: async (filePath: string): Promise<PageTextItems[]> => {
+        console.log(`📄 [pdfExtractor] Extracting layout from: ${filePath}`);
+
+        if (!fs.existsSync(filePath)) {
+            throw new PDFExtractionError(`File not found: ${filePath}`, 'FILE_NOT_FOUND');
+        }
+
+        const validation = pdfExtractor.validatePdf(filePath);
+        if (!validation.valid) {
+            throw new PDFExtractionError(validation.error || 'Invalid PDF', 'INVALID_PDF');
+        }
+
+        let pdfDoc: any = null;
+        try {
+            const dataBuffer = await fs.promises.readFile(filePath);
+            const pdfBytes = new Uint8Array(dataBuffer);
+            const loadingTask = getDocument({ data: pdfBytes });
+            pdfDoc = await loadingTask.promise;
+
+            const pageTextItems: PageTextItems[] = [];
+            for (let i = 1; i <= pdfDoc.numPages; i++) {
+                try {
+                    const page = await pdfDoc.getPage(i);
+                    const textContent = await page.getTextContent();
+                    pageTextItems.push({
+                        page: i,
+                        items: extractPageTextItems(textContent.items),
+                    });
+                } catch (pageError: any) {
+                    console.warn(`⚠️ [pdfExtractor] Layout extraction failed for page ${i}: ${pageError.message}`);
+                    pageTextItems.push({ page: i, items: [] });
+                }
+            }
+
+            return pageTextItems;
+        } catch (error: any) {
+            if (error instanceof PDFExtractionError) {
+                throw error;
+            }
+            console.error(`❌ [pdfExtractor] Layout extraction error: ${error.message}`);
+            throw new PDFExtractionError(`Failed to extract layout: ${error.message}`, 'LAYOUT_EXTRACTION_FAILED');
+        } finally {
+            if (pdfDoc) {
+                try {
+                    await pdfDoc.destroy();
+                } catch (destroyError) {
+                    console.warn('⚠️ Error destroying PDF document:', destroyError);
+                }
+            }
+        }
     },
 
     /**
