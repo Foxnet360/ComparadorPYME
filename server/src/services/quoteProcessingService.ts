@@ -13,8 +13,13 @@ import { insurerProfileService } from './insurerProfileService';
 import { validateCoverageValues } from './coverageValueValidator';
 import { validateCoverageValues as validateValueSources } from './valueValidationService';
 import { dualExtractionService } from './dualExtractionService';
-import { detectFormatFamily, extractForDetection, FormatDetectionResult } from './formatDetector';
-import { buildPromptForFamily } from './promptBuilder';
+import {
+  detectFormatFamily,
+  detectFormatWithRegistry,
+  extractForDetection,
+  FormatDetectionResult,
+} from './formatDetector';
+import { buildPromptForFamily, buildTemplatePrompt } from './promptBuilder';
 import { buildCanonicalCoverages } from './coverageNormalizer';
 import { extractPremiumBreakdown, extractPerCoveragePremiums, validatePremiumBreakdown, normalizeCurrency } from './premiumExtractor';
 import { getDeductibleFallback } from './deductibleResolver';
@@ -26,9 +31,97 @@ import {
   QuoteExtraction,
 } from '../schemas/extractionSchemas';
 import { reconciliationService } from './reconciliationService';
+import { featureFlags } from '../config/featureFlags';
+import { templateRegistryService, PageTextItems } from './templateRegistryService';
+import { TemplateRegistryEntry } from '../schemas/templateRegistrySchema';
+import { extractTables, LayoutParserResult } from './layoutParser';
+import { coverageGraphService } from './coverageGraphService';
+import { GraphQueryResult } from '../types/templateGraph';
 
 // Feature flag for multimodal extraction
 const USE_MULTIMODAL = process.env.ENABLE_MULTIMODAL_EXTRACTION !== 'false';
+
+export interface ExtractionPromptSelection {
+  prompt: string;
+  usedTemplate: boolean;
+  templateId?: string | null;
+}
+
+export interface GraphEnrichedCoverage {
+  rawName: string;
+  insuredAmount?: number;
+  deductible?: string;
+  premium?: number;
+  notes?: string;
+  rawTextSnippet?: string;
+  pageNumber?: number | null;
+  graphConfidence?: number;
+  graphProvenance?: string;
+  isComposite?: boolean;
+  graphComponents?: string[];
+}
+
+export function selectExtractionPrompt(
+  detection: FormatDetectionResult,
+  template: TemplateRegistryEntry | undefined,
+  layoutResult: LayoutParserResult,
+  context: { pageCount?: number }
+): ExtractionPromptSelection {
+  const templateMatches =
+    detection.templateId &&
+    template &&
+    !layoutResult.failed &&
+    layoutResult.tables.length > 0;
+
+  if (templateMatches) {
+    const prompt = buildTemplatePrompt(detection.templateId!, template, layoutResult.tables);
+    return { prompt, usedTemplate: true, templateId: detection.templateId };
+  }
+
+  const prompt = buildPromptForFamily(detection.family, {
+    pageCount: context.pageCount,
+    hasTables: detection.hasTables,
+  });
+
+  return { prompt, usedTemplate: false, templateId: null };
+}
+
+export async function enrichRawCoveragesWithGraph(
+  rawCoverages: Array<{ rawName: string; [key: string]: any }>,
+  insurer?: string,
+  domain: string = 'pyme'
+): Promise<GraphEnrichedCoverage[]> {
+  if (!featureFlags.isEnabled('useTemplateGraphPipeline')) {
+    return rawCoverages as GraphEnrichedCoverage[];
+  }
+
+  return Promise.all(
+    rawCoverages.map(async (coverage) => {
+      try {
+        const graphResult: GraphQueryResult = await coverageGraphService.query(coverage.rawName, {
+          insurer,
+          domain,
+        });
+
+        if (graphResult.mappings.length === 0) {
+          return coverage as GraphEnrichedCoverage;
+        }
+
+        const best = graphResult.mappings[0];
+        return {
+          ...coverage,
+          graphConfidence: Math.round(best.confidence * 100),
+          graphProvenance: best.provenance,
+          isComposite: graphResult.composite,
+          graphComponents: graphResult.components,
+        };
+      } catch (error: any) {
+        console.warn(`⚠️ [quoteProcessingService] Graph enrichment failed for "${coverage.rawName}": ${error.message}`);
+        return coverage as GraphEnrichedCoverage;
+      }
+    })
+  );
+}
 
 const STRUCTURED_EXTRACTION_PROMPT = `Eres un extractor experto de cotizaciones de seguros PYME colombianos.
 
@@ -223,9 +316,10 @@ async function processQuoteMultimodalInternal(
     console.log(`   📄 Phase 1: Extracting native PDF text for detection...`);
     let nativeText = '';
     let pageTextMap: Record<number, string> = {};
+    let extractionResult: { text?: string; pageTextMap?: Record<number, string>; pageTextItems?: PageTextItems[]; metadata?: { pageCount: number } } = {};
     try {
       const { pdfExtractor } = require('./pdfExtractor');
-      const extractionResult = await pdfExtractor.extractTextFromPdf(quoteFile.path);
+      extractionResult = await pdfExtractor.extractTextFromPdf(quoteFile.path);
       nativeText = extractionResult.text || '';
       pageTextMap = extractionResult.pageTextMap || {};
       console.log(`   ✅ Extracted ${nativeText.length} characters of native text.`);
@@ -233,34 +327,100 @@ async function processQuoteMultimodalInternal(
       console.warn(`   ⚠️ Native text extraction failed: ${err.message}.`);
     }
     
-    // Phase 1.5: Detect format family from native text using layout/feature patterns only.
-    // Insurer-name matching has been removed; detection is now 100% delegated to formatDetector.
-    console.log(`   📋 Phase 1.5: Detecting format family from content...`);
+    // Phase 1.5: Detect format family and insurer-specific template.
+    // When the template/graph pipeline is enabled, consult the Template Registry
+    // before falling back to generic format-family detection.
+    console.log(`   📋 Phase 1.5: Detecting format family and insurer template from content...`);
     const textPreview = extractForDetection(nativeText, 2000);
-    const detectionResult: FormatDetectionResult = detectFormatFamily(textPreview);
+    const pageTextItems = extractionResult.pageTextItems;
+
+    let detectionResult: FormatDetectionResult;
+    let template: TemplateRegistryEntry | undefined;
+
+    if (featureFlags.isEnabled('useTemplateGraphPipeline')) {
+      detectionResult = await detectFormatWithRegistry(textPreview, templateRegistryService, {
+        domain,
+        pages: pageTextItems,
+      });
+      if (detectionResult.templateId) {
+        template = await templateRegistryService.getTemplate(detectionResult.templateId, domain);
+      }
+    } else {
+      detectionResult = detectFormatFamily(textPreview);
+    }
+
     const family = detectionResult.family;
     const detectionSource = detectionResult.confidence > 0 ? 'nativeText' : 'default';
 
-    console.log(`   ✅ Format family detected: ${family} (confidence: ${detectionResult.confidence}, source: ${detectionSource})`);
-    
-    // Phase 2: Build specialized prompt
-    console.log(`   📝 Phase 2: Building specialized prompt...`);
-    const prompt = buildPromptForFamily(family, {
-      hasTables: family !== 'TEXT' && family !== 'UNKNOWN',
-    });
-    
+    console.log(
+      `   ✅ Format family detected: ${family} (confidence: ${detectionResult.confidence}, source: ${detectionSource})` +
+        (detectionResult.templateId ? `, template: ${detectionResult.templateId} (${detectionResult.templateConfidence}%)` : '')
+    );
+
+    // Phase 2: Build specialized or template-aware prompt
+    console.log(`   📝 Phase 2: Building extraction prompt...`);
+    let layoutResult: LayoutParserResult = { tables: [], regions: [], rotatedPages: [], failed: false };
+    if (featureFlags.isEnabled('useTemplateGraphPipeline') && detectionResult.templateId && pageTextItems) {
+      layoutResult = extractTables(pageTextItems);
+    }
+
+    const { prompt: extractionPrompt, usedTemplate } = selectExtractionPrompt(
+      detectionResult,
+      template,
+      layoutResult,
+      { pageCount: extractionResult.metadata?.pageCount ?? 1 }
+    );
+
+    if (usedTemplate && template) {
+      console.log(`   📐 Using layout-aware template prompt for ${detectionResult.templateId}`);
+    } else if (detectionResult.templateId) {
+      console.log(`   ⚠️ Template ${detectionResult.templateId} matched but layout parsing failed or was disabled; falling back to generic prompt`);
+    }
+
     // Phase 3: Extract using multimodal vision directly on File API
     console.log(`   🔍 Phase 3: Extracting with multimodal vision + text reference...`);
-    const extracted = await extractWithZodValidation<QuoteExtractionV2>(
+    let extracted = await extractWithZodValidation<QuoteExtractionV2>(
       () => geminiService.extractFromPdfWithVision(
         quoteFile.path,
-        prompt,
+        extractionPrompt,
         quoteFile.originalname,
         nativeText
       ),
       validateQuoteExtractionV2,
       'Multimodal'
     );
+
+    // Validate template schema when a template was used.
+    if (usedTemplate && template && detectionResult.templateId) {
+      const validation = templateRegistryService.validatePayload(detectionResult.templateId, extracted, domain);
+      if (!validation.valid) {
+        console.warn(`   ⚠️ Template schema validation failed: ${validation.errors?.join('; ')}. Falling back to generic extraction.`);
+        const genericPrompt = buildPromptForFamily(family, {
+          pageCount: extractionResult.metadata?.pageCount ?? 1,
+          hasTables: detectionResult.hasTables,
+        });
+        extracted = await extractWithZodValidation<QuoteExtractionV2>(
+          () => geminiService.extractFromPdfWithVision(
+            quoteFile.path,
+            genericPrompt,
+            quoteFile.originalname,
+            nativeText
+          ),
+          validateQuoteExtractionV2,
+          'Multimodal'
+        );
+      }
+    }
+
+    // Phase 3.5: Enrich extracted raw coverages with graph metadata when enabled.
+    if (featureFlags.isEnabled('useTemplateGraphPipeline')) {
+      const insurerName = extracted.insurerName || detectionResult.templateId ? template?.insurer : undefined;
+      extracted.rawCoverages = await enrichRawCoveragesWithGraph(
+        extracted.rawCoverages || [],
+        insurerName,
+        domain
+      );
+    }
     
     // Phase 4: Normalize coverages
     console.log(`   🔄 Phase 4: Normalizing coverages... (domain: ${domain})`);

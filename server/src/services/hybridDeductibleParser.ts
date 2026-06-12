@@ -2,6 +2,9 @@ import { geminiService } from './gemini';
 import { getCachedDeductibleV2, setCachedDeductibleV2 } from './cache/redisCache';
 import { DeductibleStructure, normalizeValueToCOP, CurrencyRates } from '../schemas/extractionSchemas';
 import { deductibleBenchmarks } from './deductibleBenchmarks';
+import { coverageGraphService } from './coverageGraphService';
+import { featureFlags } from '../config/featureFlags';
+import type { TemplateExtractionHints } from '../schemas/templateRegistrySchema';
 
 const DEFAULT_RATES: CurrencyRates = {
   smmlv: parseInt(process.env.SMMLV_VALUE || '1423500', 10),
@@ -69,6 +72,22 @@ export interface HybridDeductibleResult extends DeductibleStructure {
     assessment: string;
     notes: string;
   };
+  appliesTo?: {
+    coverageName: string;
+    confidence: number;
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Parse options
+// ---------------------------------------------------------------------------
+
+export interface DeductibleParseOptions {
+  coverageName?: string;
+  insurer?: string;
+  domain?: string;
+  templateHints?: TemplateExtractionHints;
+  useGraph?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -300,16 +319,30 @@ export const hybridDeductibleParser = {
    * Parse deductible text using a cache-first, regex-first, LLM-fallback strategy.
    *
    * Flow:
-   *   1. Check Redis/memory cache (key: deductible:v2:<hash>)
-   *   2. Try deterministic regex patterns
-   *   3. Evaluate against benchmarks (optional, when coverageName provided)
-   *   4. Fall back to Gemini structured extraction
-   *   5. Cache successful results
+   *   1. Resolve applicable coverage from explicit argument or graph rules
+   *   2. Check Redis/memory cache (key: deductible:v2:<hash>)
+   *   3. Try deterministic regex patterns
+   *   4. Evaluate against benchmarks (optional, when coverage resolved)
+   *   5. Fall back to Gemini structured extraction
+   *   6. Cache successful structures
    */
   async parse(
     deductibleText: string,
-    coverageName?: string
+    coverageNameOrOptions?: string | DeductibleParseOptions,
+    maybeOptions?: DeductibleParseOptions
   ): Promise<HybridDeductibleResult> {
+    // Backward-compatible signature: parse(text, coverageName, options?) or parse(text, options?)
+    let explicitCoverageName: string | undefined;
+    let options: DeductibleParseOptions | undefined;
+
+    if (typeof coverageNameOrOptions === 'string') {
+      explicitCoverageName = coverageNameOrOptions;
+      options = maybeOptions;
+    } else {
+      options = coverageNameOrOptions;
+      explicitCoverageName = options?.coverageName;
+    }
+
     if (!deductibleText || deductibleText.trim().length === 0) {
       return {
         components: [{ type: 'unknown', value: 0 }],
@@ -323,8 +356,34 @@ export const hybridDeductibleParser = {
     }
 
     const text = deductibleText.trim();
+    const domain = options?.domain ?? 'pyme';
 
-    // 1. Cache lookup
+    // 1. Resolve applicable coverage from explicit argument or graph rules
+    let resolvedCoverage = explicitCoverageName;
+    let appliesTo: HybridDeductibleResult['appliesTo'] = undefined;
+
+    if (!resolvedCoverage && options?.useGraph !== false && featureFlags.isEnabled('useTemplateGraphPipeline')) {
+      try {
+        const links = await coverageGraphService.queryDeductible(text, {
+          insurer: options?.insurer,
+          domain,
+        });
+
+        const best = links[0];
+        if (best && best.confidence >= 0.7) {
+          resolvedCoverage = best.appliesTo;
+          appliesTo = { coverageName: best.appliesTo, confidence: best.confidence };
+        }
+      } catch (error: any) {
+        console.warn(`⚠️ [HybridDeductibleParser] Graph deductible lookup failed: ${error.message}`);
+      }
+    }
+
+    if (explicitCoverageName && !appliesTo) {
+      appliesTo = { coverageName: explicitCoverageName, confidence: 1 };
+    }
+
+    // 2. Cache lookup
     const cached = await getCachedDeductibleV2(text);
     if (cached) {
       telemetry.cacheHits++;
@@ -336,11 +395,12 @@ export const hybridDeductibleParser = {
         ...structure,
         rawText: text,
         normalized,
-        benchmark: evaluateBenchmark(coverageName, normalized),
+        benchmark: evaluateBenchmark(resolvedCoverage, normalized),
+        appliesTo,
       };
     }
 
-    // 2. Regex path
+    // 3. Regex path
     const regexResult = parseSimple(text);
     if (regexResult) {
       telemetry.regexHits++;
@@ -350,7 +410,8 @@ export const hybridDeductibleParser = {
         ...regexResult,
         rawText: text,
         normalized,
-        benchmark: evaluateBenchmark(coverageName, normalized),
+        benchmark: evaluateBenchmark(resolvedCoverage, normalized),
+        appliesTo,
       };
 
       // Cache regex results too
@@ -367,7 +428,8 @@ export const hybridDeductibleParser = {
       ...llmResult,
       rawText: text,
       normalized,
-      benchmark: evaluateBenchmark(coverageName, normalized),
+      benchmark: evaluateBenchmark(resolvedCoverage, normalized),
+      appliesTo,
     };
 
     // 5. Cache fallback results

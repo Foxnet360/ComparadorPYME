@@ -4,6 +4,8 @@
  */
 
 import { FormatFamily } from './formatDetector';
+import { buildTemplatePrompt as buildTemplatePromptInternal } from './layoutAwarePromptBuilder';
+import { TemplateRegistryEntry, LayoutTable } from '../schemas/templateRegistrySchema';
 
 interface PromptTemplate {
   family: FormatFamily;
@@ -459,4 +461,18 @@ export function getSupportedFormatFamilies(): FormatFamily[] {
  */
 export function isFormatFamilySupported(family: FormatFamily): boolean {
   return family in PROMPT_TEMPLATES && family !== 'UNKNOWN';
+}
+
+/**
+ * Build a layout-aware extraction prompt for a known insurer template.
+ *
+ * Delegates to the layout-aware prompt builder so template schemas, extraction
+ * hints, and reconstructed tables live in one place.
+ */
+export function buildTemplatePrompt(
+  templateId: string,
+  template: TemplateRegistryEntry,
+  tables: LayoutTable[]
+): string {
+  return buildTemplatePromptInternal(templateId, template, tables);
 }

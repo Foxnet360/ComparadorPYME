@@ -1,6 +1,10 @@
 import { supabase } from '../config/database';
 import { embeddingService } from './vector/embeddingService';
 import { deleteCacheValue, getCacheKeys, setCacheValue } from './cache/redisCache';
+import { coverageGraphService } from './coverageGraphService';
+import { featureFlags } from '../config/featureFlags';
+import { normalizeText } from '../utils/textUtils';
+import { GraphEdgeType } from '../schemas/templateRegistrySchema';
 
 export interface UserCorrection {
   id?: string;
@@ -140,6 +144,9 @@ export const learningEngine = {
       
       // 4. Update ontology if needed
       await this.updateOntology(correction);
+
+      // 5. Write graph edge if graph learning is enabled
+      await this.updateGraph(correction);
       
     } catch (error) {
       console.error('❌ [LearningEngine] Failed to apply correction:', error);
@@ -238,6 +245,62 @@ export const learningEngine = {
       console.log(`🌳 [LearningEngine] Updated ontology for "${correction.rawName}"`);
     } catch (error) {
       console.error('❌ [LearningEngine] Ontology update failed:', error);
+    }
+  },
+
+  /**
+   * Update coverage semantic graph with learned correction edges
+   */
+  async updateGraph(correction: UserCorrection, domain: string = 'pyme'): Promise<void> {
+    if (!featureFlags.isEnabled('graphLearningEnabled')) {
+      return;
+    }
+
+    const raw = normalizeText(correction.rawName, true).replace(/\s+/g, ' ').trim();
+    const canonical = correction.userCorrection.trim();
+    const insurer = correction.insurerName || '';
+
+    if (!raw || !canonical) {
+      return;
+    }
+
+    try {
+      switch (correction.correctionType) {
+        case 'coverage_mapping':
+          await coverageGraphService.learnCorrection(raw, canonical, insurer, domain);
+          console.log(`🌐 [LearningEngine] Graph learned: "${raw}" → "${canonical}"`);
+          break;
+
+        case 'deductible':
+          await coverageGraphService.addEdge({
+            from: raw,
+            to: canonical,
+            type: 'deductible_for' as GraphEdgeType,
+            weight: 0.9,
+            insurer,
+            domain,
+          });
+          console.log(`🌐 [LearningEngine] Graph deductible rule: "${raw}" → "${canonical}"`);
+          break;
+
+        case 'exclusion':
+          await coverageGraphService.addEdge({
+            from: raw,
+            to: canonical,
+            type: 'excludes' as GraphEdgeType,
+            weight: 0.9,
+            insurer,
+            domain,
+          });
+          console.log(`🌐 [LearningEngine] Graph exclusion rule: "${raw}" → "${canonical}"`);
+          break;
+
+        default:
+          // value corrections and unknown types are not represented as graph edges
+          break;
+      }
+    } catch (error: any) {
+      console.warn(`⚠️ [LearningEngine] Graph update failed: ${error.message}`);
     }
   },
 

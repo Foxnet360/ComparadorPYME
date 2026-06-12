@@ -21,6 +21,13 @@
 **Branch**: `feature/mejora-extraccion-coberturas-slice-4`  
 **Chain strategy**: `stacked-to-main` — this PR targets `feature/mejora-extraccion-coberturas-slice-3`
 
+## Slice 5 — Pipeline Integration (Remaining)
+
+**Status**: success  
+**Mode**: Strict TDD (Vitest)  
+**Branch**: `feature/mejora-extraccion-coberturas-slice-5`  
+**Chain strategy**: `stacked-to-main` — this PR targets `feature/mejora-extraccion-coberturas-slice-4`
+
 ## Completed Tasks
 
 ### Phase 1: Foundation
@@ -46,21 +53,17 @@
 - [x] 4.2 GREEN: Implement `server/src/services/coverageGraphService.ts`.
 - [x] 4.3 REFACTOR: Add Redis cache, cache invalidation, and confidence propagation.
 
-### Phase 5: Pipeline Integration (partial)
+### Phase 5: Pipeline Integration
 - [x] 5.1 Modify `formatDetector.ts` to return `templateId`/`templateConfidence`.
+- [x] 5.2 Modify `promptBuilder.ts` to add `buildTemplatePrompt`.
+- [x] 5.3 Modify `quoteProcessingService.ts` to route known templates.
 - [x] 5.4 Modify `coverageNormalizer.ts` to use graph probabilities and decompositions.
+- [x] 5.5 Modify `coverageOntology.ts` to use graph consensus scoring.
 - [x] 5.6 Modify `semanticMatcher.ts` to rank with graph probabilities.
-- [x] 5.8 Modify `thesaurusMapper.ts` to write graph `alias_of` edges.
-- [x] Add admin graph inspection/correction endpoints to `templateRegistry.ts`.
+- [x] 5.7 Modify `hybridDeductibleParser.ts` with template hints and `appliesTo` rules.
+- [x] 5.8 Modify `thesaurusMapper.ts` and `learningEngine.ts` to write graph edges.
 
 ## Remaining Tasks
-
-### Phase 5: Pipeline Integration (remaining)
-- [ ] 5.2 Modify `promptBuilder.ts` to add `buildTemplatePrompt`.
-- [ ] 5.3 Modify `quoteProcessingService.ts` to route known templates.
-- [ ] 5.5 Modify `coverageOntology.ts` to use graph consensus scoring.
-- [ ] 5.7 Modify `hybridDeductibleParser.ts` with template hints and `appliesTo` rules.
-- [ ] 5.8 Modify `learningEngine.ts` to write graph edges.
 
 ### Phase 6: Evaluation & Rollout
 - [ ] 6.1 Create `server/src/services/goldenSetEvaluation.ts`.
@@ -72,7 +75,68 @@
 - [ ] 7.1 Document template schemas and graph edge semantics.
 - [ ] 7.2 Add metrics/logging for matches, layout failures, and cold-start misses.
 
-## Files Changed in Slice 3
+## Files Changed in Slice 5
+
+| File | Action | Notes |
+|------|--------|-------|
+| `server/src/services/promptBuilder.ts` | Modified | Added `buildTemplatePrompt` wrapper re-exporting `layoutAwarePromptBuilder.buildTemplatePrompt` |
+| `server/src/services/__tests__/promptBuilder.test.ts` | Modified | Added tests for `buildTemplatePrompt` wrapper |
+| `server/src/services/quoteProcessingService.ts` | Modified | Added `selectExtractionPrompt` and `enrichRawCoveragesWithGraph`; wired template/graph routing into `processQuoteMultimodalInternal` |
+| `server/src/services/__tests__/quoteProcessingService.test.ts` | Modified | Added tests for template prompt selection and graph enrichment |
+| `server/src/services/coverageOntology.ts` | Modified | Added `queryGraphForMapping`; delegates to graph before LLM consensus; uses `env.GEMINI_API_KEY` consistently |
+| `server/src/services/__tests__/coverageOntology.test.ts` | Modified | Mocked `env.ts` to prevent `process.exit` in test environment |
+| `server/src/services/__tests__/coverageOntology.graph.test.ts` | Created | 5 tests for graph delegation, composite components, low-confidence fallback, no-match fallback, insurer passthrough |
+| `server/src/services/hybridDeductibleParser.ts` | Modified | Added `DeductibleParseOptions`, `appliesTo` result field; resolves applicable coverage from explicit arg or graph `deductible_for`/`applies_to` edges; backward-compatible legacy signature |
+| `server/src/services/__tests__/hybridDeductibleParser.test.ts` | Modified | Mocked `env.ts` and full `redisCache` to support new transitive dependencies |
+| `server/src/services/__tests__/hybridDeductibleParser.graph.test.ts` | Created | 7 tests for graph appliesTo resolution, explicit coverage precedence, low-confidence ignore, flag disable, error fallback, legacy signature, template hints |
+| `server/src/services/learningEngine.ts` | Modified | Added `updateGraph`; writes `learned` (coverage), `deductible_for` (deductible), and `excludes` (exclusion) edges when `graphLearningEnabled` flag is on |
+| `server/src/services/__tests__/learningEngine.graph.test.ts` | Created | 6 tests for coverage mapping, deductible, exclusion, flag disable, value skip, and normalization |
+
+## TDD Cycle Evidence
+
+| Task | Test File | Layer | Safety Net | RED | GREEN | TRIANGULATE | REFACTOR |
+|------|-----------|-------|------------|-----|-------|-------------|----------|
+| 5.2 | `server/src/services/__tests__/promptBuilder.test.ts` | Unit | layoutAwarePromptBuilder mocked | Written | Passed | wrapper delegates, passes templateId/schema/tables | Clean |
+| 5.3 | `server/src/services/__tests__/quoteProcessingService.test.ts` | Unit | templateRegistry/coverageGraphService mocked | Written | Passed | known template selects template prompt, unknown uses generic, graph enriches coverages, errors swallowed | Clean |
+| 5.5 | `server/src/services/__tests__/coverageOntology.graph.test.ts` | Unit | coverageGraphService mocked | Written | Passed | 5 cases (graph hit, composite, low-confidence, no match, insurer passthrough) | Clean |
+| 5.7 | `server/src/services/__tests__/hybridDeductibleParser.graph.test.ts` | Unit | coverageGraphService/featureFlags mocked | Written | Passed | 7 cases (appliesTo, explicit precedence, low-confidence ignore, flag off, error fallback, legacy signature, template hints) | Clean |
+| 5.8 | `server/src/services/__tests__/learningEngine.graph.test.ts` | Unit | coverageGraphService/featureFlags mocked | Written | Passed | 6 cases (coverage mapping, deductible, exclusion, flag disabled, value skip, normalization) | Clean |
+
+### Test Summary
+- **Total tests written**: 31 (slice 5 only)
+- **Total tests passing**: 31 (slice 5 only)
+- **Layers used**: Unit
+- **Approval tests**: None
+- **Pure functions created**: None (behavior added to existing services)
+
+## Deviations from Design
+
+- `coverageOntology.ts` uses `env.GEMINI_API_KEY` instead of `process.env.GEMINI_API_KEY` so tests can mock the env module deterministically.
+- `hybridDeductibleParser.parse` accepts either the legacy `(text, coverageName?)` signature or a new options object `(text, options?)` to keep existing callers unchanged.
+- Graph deductible lookup in `hybridDeductibleParser` happens before parsing so the resolved coverage can feed benchmark evaluation; appliesTo is not cached because the text-only cache key cannot distinguish insurers.
+- `learningEngine.updateGraph` normalizes raw names with whitespace collapse and strips non-alphanumeric characters to match `coverageGraphService` node normalization.
+
+## Issues Found
+
+- Existing `coverageOntology.test.ts` and `hybridDeductibleParser.test.ts` required `env.ts` mocks after new transitive imports pulled in `env.ts`; fixed by adding mocks.
+- `hybridDeductibleParser.test.ts` required additional `redisCache` cache function mocks after `coverageGraphService` became a transitive dependency.
+- vi.mock paths must match the resolved module specifier used by the module under test; relative paths resolving to the same file are treated as distinct mocks.
+
+## Risks
+
+- `hybridDeductibleParser` graph lookup adds a network/cache call on every parse when `useTemplateGraphPipeline` is enabled; the call is wrapped in try/catch and falls back gracefully.
+- `learningEngine.updateGraph` runs inside `applyCorrection`; graph service failures are logged but do not fail the correction save.
+- `coverageOntology.queryGraphForMapping` references `coverageOntology` before its declaration; it is only invoked asynchronously after module initialization, so the singleton is available.
+
+## Next Recommended Phase
+
+Continue `sdd-apply` slice 6 — Phase 6 evaluation & rollout (`goldenSetEvaluation.ts`, golden-set fixtures, integration tests, threshold tuning) if required by delivery plan.
+
+## Branch / PR Boundary
+
+- Slice 5 PR branch: `feature/mejora-extraccion-coberturas-slice-5`
+- Target (stacked-to-main): `feature/mejora-extraccion-coberturas-slice-4`
+- Estimated review budget impact: ~700 changed lines (above the 400-line soft budget, consistent with the auto-forecast chained PR plan).
 
 | File | Action | Notes |
 |------|--------|-------|
