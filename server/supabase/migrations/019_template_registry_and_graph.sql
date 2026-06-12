@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS coverage_graph_edges (
   to_node TEXT NOT NULL,
   edge_type TEXT NOT NULL,
   weight FLOAT NOT NULL DEFAULT 0,
-  insurer TEXT,
+  insurer TEXT NOT NULL DEFAULT '',
   correction_count INTEGER NOT NULL DEFAULT 0,
   domain TEXT NOT NULL DEFAULT 'pyme',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -54,6 +54,6 @@ CREATE INDEX IF NOT EXISTS idx_coverage_graph_edges_to_node
 CREATE INDEX IF NOT EXISTS idx_coverage_graph_edges_insurer
   ON coverage_graph_edges(insurer, domain);
 
--- Unique partial index to support idempotent upserts of semantic graph edges.
+-- Unique index to support idempotent upserts of semantic graph edges.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_coverage_graph_edges_unique
-  ON coverage_graph_edges(from_node, to_node, edge_type, COALESCE(insurer, ''), domain);
+  ON coverage_graph_edges(from_node, to_node, edge_type, insurer, domain);
