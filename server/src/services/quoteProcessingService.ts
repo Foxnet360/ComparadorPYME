@@ -39,7 +39,6 @@ import { coverageGraphService } from './coverageGraphService';
 import { GraphQueryResult } from '../types/templateGraph';
 import {
   createStructuredLogger,
-  createMetricCollector,
   globalMetrics,
   StructuredLogger,
   MetricCollector,

@@ -12,7 +12,6 @@ import {
 } from './cache/redisCache';
 import {
   createStructuredLogger,
-  createMetricCollector,
   globalMetrics,
   StructuredLogger,
   MetricCollector,

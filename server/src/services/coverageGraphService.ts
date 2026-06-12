@@ -16,7 +16,6 @@ import {
   StructuredLogger,
   MetricCollector,
   createStructuredLogger,
-  createMetricCollector,
   globalMetrics,
 } from '../utils/structuredLogger';
 import {
