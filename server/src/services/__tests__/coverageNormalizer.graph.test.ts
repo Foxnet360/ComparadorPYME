@@ -194,6 +194,28 @@ describe('coverageNormalizer graph integration', () => {
       expect(result.uncategorizedCoverages?.length).toBeGreaterThan(0);
       expect(result.uncategorizedCoverages?.[0].name).toBe('XYZ123 Unknown Coverage');
     });
+
+    it('falls back to uncategorized coverage when graph pipeline is disabled and ontology has no groups', async () => {
+      vi.mocked(featureFlags.isEnabled).mockImplementation((flag: string) => flag !== 'useTemplateGraphPipeline');
+      vi.mocked(coverageOntology.mapCoverage).mockResolvedValue({
+        rawName: 'Cobertura Desconocida',
+        groups: [],
+        isComposite: false,
+        confidence: 0,
+      });
+
+      const result = await buildCanonicalCoverages(
+        [{ rawName: 'Cobertura Desconocida' }],
+        [],
+        [],
+        undefined,
+        'pyme'
+      );
+
+      expect(coverageGraphService.query).not.toHaveBeenCalled();
+      expect(result.uncategorizedCoverages?.length).toBe(1);
+      expect(result.uncategorizedCoverages?.[0].name).toBe('Cobertura Desconocida');
+    });
   });
 
   describe('detectImplicitCoverages', () => {

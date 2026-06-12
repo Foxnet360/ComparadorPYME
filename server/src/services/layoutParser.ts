@@ -4,7 +4,6 @@ import {
 } from '../schemas/templateRegistrySchema';
 import {
   createStructuredLogger,
-  createMetricCollector,
   globalMetrics,
   StructuredLogger,
   MetricCollector,
@@ -477,8 +476,6 @@ export function extractTables(
     return fail(`rotated pages detected: ${result.rotatedPages.join(', ')}`, 'rotation');
   }
 
-  let pageSuccessCount = 0;
-
   for (const page of pages) {
     if (page.items.length === 0) continue;
 
@@ -513,7 +510,6 @@ export function extractTables(
     result.regions.push(...detectRegions(page, pageTables, opts));
 
     if (pageTables.length > 0) {
-      pageSuccessCount++;
       logger.info('layout_parse_success', 'Layout parsed successfully', {
         page: page.page,
         tableCount: pageTables.length,

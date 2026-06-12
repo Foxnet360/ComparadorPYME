@@ -18,6 +18,31 @@ vi.mock('../gemini', () => ({
   }
 }));
 
+vi.mock('../../config/env', () => ({
+  env: {
+    GEMINI_API_KEY: 'dummy',
+    GEMINI_MODEL: 'gemini-3.5-flash',
+    GEMINI_CHAT_MODEL: 'gemini-2.5-flash-lite',
+    GEMINI_CLAUSE_MODEL: 'gemini-3.5-flash',
+    GEMINI_EMBEDDING_MODEL: 'gemini-embedding-2',
+    SUPABASE_URL: 'https://test.supabase.co',
+    SUPABASE_ANON_KEY: 'dummy',
+    SUPABASE_SERVICE_ROLE_KEY: 'dummy',
+    SUPABASE_JWT_SECRET: 'dummy',
+    PORT: 8080,
+    NODE_ENV: 'test',
+    REGION: 'CO',
+    SMMLV_VALUE: 1423500,
+    UVT_VALUE: 42412,
+    CURRENCY: 'COP',
+    CLAUSE_PAGES_BUCKET: 'clause-pages',
+    MAX_FILE_SIZE: 52428800,
+    MAX_PAGES_LIMIT: 100,
+    UPLOAD_TIMEOUT: 300000,
+    LOG_LEVEL: 'info',
+  },
+}));
+
 describe('semanticMatcher', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -132,6 +157,16 @@ describe('semanticMatcher', () => {
       
       expect(result.method).toBe('embedding');
       expect(result.confidence).toBeGreaterThanOrEqual(CONFIDENCE_THRESHOLDS.EMBEDDING_MIN);
+    });
+
+    it('should fall back to LLM when embedding generation throws', async () => {
+      vi.mocked(embeddingService.generateEmbedding).mockRejectedValue(new Error('Embedding API unavailable'));
+      vi.mocked(geminiService.extractText).mockResolvedValue('CATEGORIA: 6\nCONFIANZA: 0.85');
+
+      const result = await semanticMatcher.matchCoverage('FallbackCoverageAfterEmbeddingFailure');
+
+      expect(result.method).toBe('llm');
+      expect(result.categoryId).toBe(6);
     });
 
     it('should use cached embeddings for repeated queries', async () => {

@@ -213,6 +213,55 @@ describe('hybridDeductibleParser', () => {
         expect.objectContaining({ components: [{ type: 'percentage', value: 20 }] })
       );
     });
+
+    it('should parse fixed amount deductible in USD without LLM', async () => {
+      mockGetCachedDeductibleV2.mockResolvedValue(null);
+
+      const result = await hybridDeductibleParser.parse('$500 USD');
+
+      expect(result.components[0].type).toBe('fixed');
+      expect(result.components[0].value).toBe(500);
+      expect(result.components[0].currency).toBe('USD');
+      expect(result.normalized.minAmount).toBe(500);
+      expect(mockExtractDeductible).not.toHaveBeenCalled();
+    });
+
+    it('should parse compound deductible with minimum in UVT without LLM', async () => {
+      mockGetCachedDeductibleV2.mockResolvedValue(null);
+
+      const result = await hybridDeductibleParser.parse('10% con mínimo de 5 UVT');
+
+      expect(result.isComposite).toBe(true);
+      expect(result.components).toContainEqual({ type: 'percentage', value: 10 });
+      expect(result.components).toContainEqual({ type: 'minimum', value: 5, currency: 'UVT' });
+      expect(result.normalized.minAmount).toBe(5 * 42_412);
+      expect(mockExtractDeductible).not.toHaveBeenCalled();
+    });
+
+    it('should log telemetry summary when operation count reaches a multiple of 10', async () => {
+      mockGetCachedDeductibleV2.mockResolvedValue(null);
+      mockExtractDeductible.mockResolvedValue({
+        components: [{ type: 'unknown', value: 0 }],
+        isZero: false,
+        hasMinimum: false,
+        hasMaximum: false,
+        isComposite: false,
+      });
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      try {
+        for (let i = 0; i < 10; i++) {
+          await hybridDeductibleParser.parse(`texto raro ${i}`);
+        }
+
+        const telemetryLog = logSpy.mock.calls.find(
+          (call) => typeof call[0] === 'string' && call[0].includes('[HybridDeductibleParser] Telemetry')
+        );
+        expect(telemetryLog).toBeDefined();
+      } finally {
+        logSpy.mockRestore();
+      }
+    });
   });
 
   // ========================================================================
@@ -348,6 +397,7 @@ describe('hybridDeductibleParser', () => {
   // ========================================================================
   // Telemetry
   // ========================================================================
+
   describe('telemetry', () => {
     it('should accumulate stats across multiple calls', async () => {
       mockGetCachedDeductibleV2

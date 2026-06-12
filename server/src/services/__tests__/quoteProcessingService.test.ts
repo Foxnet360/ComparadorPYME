@@ -2,10 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   selectExtractionPrompt,
   enrichRawCoveragesWithGraph,
+  createDefaultScoringResult,
 } from '../quoteProcessingService';
 import { FormatDetectionResult } from '../formatDetector';
 import { LayoutParserResult } from '../layoutParser';
 import { TemplateRegistryEntry } from '../../schemas/templateRegistrySchema';
+import { ParsedQuote } from '../quoteParser';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -243,5 +245,39 @@ describe('enrichRawCoveragesWithGraph', () => {
     const result = await enrichRawCoveragesWithGraph(rawCoverages, 'BBVA', 'pyme');
 
     expect(result[0].graphConfidence).toBeUndefined();
+  });
+});
+
+describe('createDefaultScoringResult', () => {
+  function makeParsedQuote(coverageCount = 2): ParsedQuote {
+    return {
+      insurerName: 'BBVA',
+      policyName: 'PYME',
+      priceAnnual: 0,
+      currency: 'COP',
+      coverages: Array.from({ length: coverageCount }, (_, i) => ({
+        name: `Coverage ${i}`,
+        canonicalName: `Coverage ${i}`,
+        value: '0',
+        deductible: 'No aplica',
+        confidence: 0,
+      })),
+      specialConditions: [],
+      rawText: '',
+      parseConfidence: 0,
+    };
+  }
+
+  it('returns a zeroed scoring result that reflects the quote coverage count', () => {
+    const quote = makeParsedQuote(3);
+    const result = createDefaultScoringResult(quote);
+
+    expect(result.totalScore).toBe(0);
+    expect(result.dataQualityScore).toBe(0);
+    expect(result.verificationConfidence).toBe(0);
+    expect(result.breakdown.coverage).toBe(0);
+    expect(result.coverageCount).toBe(3);
+    expect(result.expectedCoverageCount).toBe(0);
+    expect(result.criticalAlerts).toBe(0);
   });
 });
