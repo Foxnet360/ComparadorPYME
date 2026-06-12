@@ -145,3 +145,51 @@ The system SHALL produce an array of exactly 14 canonical coverages with statuse
 - `multimodal-pdf-extraction` for raw coverage data
 - `semantic-matching` (existing) for embedding matching
 - `thesaurus` (existing) for canonical names
+
+---
+
+## Delta from change: mejora-extraccion-coberturas
+
+## MODIFIED Requirements
+
+### Requirement: Map raw coverages to canonical categories
+
+The system SHALL map each raw coverage name to one of the 14 canonical PYME categories using a 4-layer matching system, and SHALL augment results with graph-derived probabilities and decomposed implicit coverages.
+
+(Previously: mapping produced a single canonical result per coverage without graph probabilities or decomposition.)
+
+#### Scenario: Exact thesaurus match
+
+- **WHEN** a raw coverage name exactly matches a thesaurus entry
+- **THEN** the system SHALL return the canonical name with confidence 100%
+- **AND** matchMethod SHALL be "thesaurus"
+
+#### Scenario: Graph probability augmentation
+
+- **WHEN** a coverage maps to a canonical category
+- **THEN** the system SHALL include `graphConfidence` when available
+- **AND** use the maximum of graph confidence and layer confidence for ranking
+
+#### Scenario: Decomposed coverage injection
+
+- **WHEN** a composite coverage is decomposed into implicit coverages
+- **THEN** the system SHALL inject each implicit coverage into the canonical array
+- **AND** preserve the original raw coverage as a parent reference
+
+### Requirement: Build final canonical coverage array
+
+The system SHALL produce an array of canonical coverages with statuses, including decomposed implicit coverages and graph confidence metadata.
+
+(Previously: the array did not include graph-derived decompositions or probabilities.)
+
+#### Scenario: Present coverage with graph metadata
+
+- **WHEN** a canonical coverage is found (explicit or implicit)
+- **THEN** status SHALL be "present"
+- **AND** it SHALL include `insuredAmount`, `deductible`, `premium`, `confidence`, `graphConfidence`, `matchMethod`
+
+#### Scenario: Missing coverage
+
+- **WHEN** a canonical coverage is not found
+- **THEN** status SHALL be "missing"
+- **AND** all values SHALL be null

@@ -1,5 +1,121 @@
 # Apply Progress: Improve Coverage, Deductible, and Condition Extraction
 
+## Slice 7 — Documentation & Observability
+
+**Status**: success  
+**Mode**: Strict TDD (Vitest)  
+**Branch**: `feature/mejora-extraccion-coberturas-slice-7`  
+**Chain strategy**: `stacked-to-main` — this PR targets `feature/mejora-extraccion-coberturas-slice-6`
+
+### Completed in Slice 7
+
+- Created `docs/template-registry.md` documenting template schema, fingerprints, layout regions, extraction hints, and admin API endpoints.
+- Created `docs/coverage-semantic-graph.md` documenting node/edge types, query propagation, ambiguity resolution, and analyst correction learning.
+- Created `docs/golden-set-evaluation.md` documenting `npm run evaluate:golden`, fixture format, metrics, thresholds, and report interpretation.
+- Added `server/src/utils/structuredLogger.ts` with JSON structured logging and a lightweight metric collector.
+- Instrumented `templateRegistryService`, `layoutParser`, `coverageGraphService`, and `quoteProcessingService` with structured logs and counters for matches, misses, parse failures, graph hits/misses, and pipeline path selection.
+- Added unit tests for the logger and per-service metrics/logging behavior.
+- Marked Phase 7 tasks complete in `tasks.md`.
+
+### Slice 7 — Files Changed
+
+| File | Action | Notes |
+|------|--------|-------|
+| `server/src/utils/structuredLogger.ts` | Created | JSON structured logger and metric collector with default stdout sink and injectable sink for tests |
+| `server/src/utils/__tests__/structuredLogger.test.ts` | Created | 6 unit tests for log entry emission, levels, default sink, counters, tags, and zero-default counters |
+| `server/src/services/templateRegistryService.ts` | Modified | Added logger/metrics injection; emits `template_match`, `template_miss`, `schema_validation_failed`, `cache_refresh` |
+| `server/src/services/__tests__/templateRegistryService.metrics.test.ts` | Created | 5 tests for match/miss/validation/cache metrics and logs |
+| `server/src/services/layoutParser.ts` | Modified | Added logger/metrics injection; emits `layout_parse_success` and `layout_parse_failed` with reason tags |
+| `server/src/services/__tests__/layoutParser.metrics.test.ts` | Created | 4 tests for success, empty, rotation, and insufficient-column failure paths |
+| `server/src/services/coverageGraphService.ts` | Modified | Added logger/metrics injection; emits `graph_hit`, `graph_db_hit`, `graph_cold_start_miss`, `graph_learned`, `graph_query_failed` |
+| `server/src/services/__tests__/coverageGraphService.metrics.test.ts` | Created | 5 tests for cache hit, cold-start miss, db hit, learning, and query failure |
+| `server/src/services/quoteProcessingService.ts` | Modified | `selectExtractionPrompt` logs `pipeline_path_taken` (template vs generic) with fallback reason |
+| `server/src/services/__tests__/quoteProcessingService.metrics.test.ts` | Created | 3 tests for template path, layout-failure fallback, and no-template fallback |
+| `docs/template-registry.md` | Created | Operator/admin documentation for the template registry |
+| `docs/coverage-semantic-graph.md` | Created | Operator/admin documentation for the coverage semantic graph |
+| `docs/golden-set-evaluation.md` | Created | Operator/admin documentation for golden-set evaluation |
+
+### Slice 7 — TDD Cycle Evidence
+
+| Task | Test File | Layer | Safety Net | RED | GREEN | TRIANGULATE | REFACTOR |
+|------|-----------|-------|------------|-----|-------|-------------|----------|
+| Logger utility | `server/src/utils/__tests__/structuredLogger.test.ts` | Unit | N/A (new) | Written | Passed | 6 cases (info, warn/error, default sink, counters, tags, zero default) | Clean |
+| Template registry metrics | `server/src/services/__tests__/templateRegistryService.metrics.test.ts` | Unit | N/A (new) | Written | Passed | 5 cases (match, miss, validation, cache refresh, default logger) | Clean |
+| Layout parser metrics | `server/src/services/__tests__/layoutParser.metrics.test.ts` | Unit | N/A (new) | Written | Passed | 4 cases (success, empty, rotation, insufficient columns) | Clean |
+| Coverage graph metrics | `server/src/services/__tests__/coverageGraphService.metrics.test.ts` | Unit | N/A (new) | Written | Passed | 5 cases (cache hit, cold-start miss, db hit, learned, query failed) | Clean |
+| Quote processing metrics | `server/src/services/__tests__/quoteProcessingService.metrics.test.ts` | Unit | N/A (new) | Written | Passed | 3 cases (template path, layout fallback, no-template fallback) | Clean |
+
+### Slice 7 — Test Summary
+
+- **Total tests written**: 23 (slice 7 only)
+- **Total tests passing**: 23 (slice 7 only)
+- **Layers used**: Unit
+- **Approval tests**: None
+- **Pure functions created**: `createStructuredLogger`, `createMetricCollector`, `encodeTags` (within `structuredLogger.ts`)
+
+### Slice 7 — Deviations from Design
+
+- The metric collector stores counters under deterministic tag-sorted keys (e.g. `coverageGraph.hit|domain=pyme|source=cache`) so tests and dashboards can reference them consistently.
+- `selectExtractionPrompt` now accepts an `ExtractionPromptContext` object with optional `logger` and `metrics` instead of only `{ pageCount }`, while remaining backward-compatible with the existing caller that passes `{ pageCount }`.
+- `layoutParser` defaults `logger`/`metrics` to `undefined` in `DEFAULT_OPTIONS` because `Required<LayoutParserOptions>` would otherwise force callers to supply them.
+
+### Slice 7 — Issues Found
+
+- Existing tests now emit additional JSON log lines to stdout because the default structured logger writes to `console.log`/`warn`/`error`. This is expected and does not affect test outcomes.
+- Pre-commit type checking caught a `Required<LayoutParserOptions>` mismatch after adding optional logger/metrics fields; fixed by adding `undefined` placeholders to `DEFAULT_OPTIONS`.
+
+### Slice 7 — Risks
+
+- The global `globalMetrics` collector is process-local; in a multi-process deployment, metrics should be aggregated by the log sink or an external collector (e.g., Datadog, Prometheus exporter).
+- Structured logs are emitted synchronously to stdout; high-throughput workloads may want an async batching sink in the future.
+- `quoteProcessingService` logs the pipeline path only in `selectExtractionPrompt`; full end-to-end observability of `processQuoteMultimodalInternal` could be enhanced in a follow-up.
+
+## Post-Verification Remediation
+
+**Status**: success  
+**Mode**: Strict TDD (Vitest)  
+**Branch**: `feature/mejora-extraccion-coberturas-slice-6`  
+**Chain strategy**: `stacked-to-main`
+
+### Remediation Tasks
+
+- [x] Fix `server/src/services/__tests__/semanticMatcher.graph.test.ts` clean-environment failure by adding the missing `../../config/env` mock (plus `database`, `redisCache`, and `@google/genai` mocks to match the setup used by sibling graph tests).
+- [x] Synchronize Engram `sdd/mejora-extraccion-coberturas/tasks` with OpenSpec `openspec/changes/mejora-extraccion-coberturas/tasks.md` so all 32 tasks are marked complete.
+
+### TDD Cycle Evidence (Remediation)
+
+| Task | Test File | Layer | Safety Net | RED | GREEN | TRIANGULATE | REFACTOR |
+|------|-----------|-------|------------|-----|-------|-------------|----------|
+| Fix clean-env failure | `server/src/services/__tests__/semanticMatcher.graph.test.ts` | Unit | N/A (test-only fix) | Observed: `process.exit(1)` from `env.ts` when `GEMINI_API_KEY`/`SUPABASE_*` are unset | Passed: 5/5 tests in clean environment | Verified both clean env (no vars) and dummy-env runs | Clean — only added deterministic mocks |
+
+### Files Changed in Remediation
+
+| File | Action | Notes |
+|------|--------|-------|
+| `server/src/services/__tests__/semanticMatcher.graph.test.ts` | Modified | Added `env`, `database`, `redisCache`, and `@google/genai` mocks so the test passes without real environment variables |
+| Engram `sdd/mejora-extraccion-coberturas/tasks` | Updated | Marked all Phase 4–7 tasks complete to match OpenSpec |
+| `openspec/changes/mejora-extraccion-coberturas/apply-progress.md` | Modified | Added this remediation section |
+
+### Remediation Test Summary
+
+- **Target test file**: `server/src/services/__tests__/semanticMatcher.graph.test.ts`
+- **Result in clean environment**: 5/5 passing
+- **Related graph tests (dummy env)**: 26/26 passing across `semanticMatcher.graph.test.ts`, `coverageOntology.graph.test.ts`, and `coverageGraphService.test.ts`
+- **Type-check**: `npm run typecheck:backend` passed with no errors
+
+### Deviations / Issues
+
+- None for this remediation.
+
+### Risks
+
+- Full test suite still has pre-existing failures unrelated to this change (documented in previous slices).
+- Future tests that import `coverageOntology` indirectly should include the same env/database/cache mocks to avoid clean-environment failures.
+
+### Next Recommended Phase
+
+`sdd-verify` — re-run verification to confirm the two critical findings are resolved.
+
 ## Slice 1 — Foundation
 
 **Status**: success  
@@ -78,9 +194,7 @@
 
 ## Remaining Tasks
 
-### Phase 7: Documentation
-- [ ] 7.1 Document template schemas and graph edge semantics.
-- [ ] 7.2 Add metrics/logging for matches, layout failures, and cold-start misses.
+All tasks across all phases are complete. The change is ready for the `sdd-verify` phase.
 
 ## Files Changed in Slice 5
 
@@ -223,7 +337,7 @@ Continue `sdd-apply` slice 6 — Phase 6 evaluation & rollout (`goldenSetEvaluat
 
 ## Next Recommended Phase
 
-Continue `sdd-apply` slice 7 — Phase 7 documentation (template schemas/graph edge semantics, metrics/logging for matches/layout failures/cold-start misses) to complete the change.
+`sdd-verify` — validate that the implementation matches the specs, design, and tasks before archiving.
 
 ## Slice 6 — Files Changed
 

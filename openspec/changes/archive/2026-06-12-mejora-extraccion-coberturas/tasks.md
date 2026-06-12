@@ -72,5 +72,5 @@ Chain strategy: stacked-to-main
 
 ## Phase 7: Documentation
 
-- [ ] 7.1 Document template schemas and graph edge semantics.
-- [ ] 7.2 Add metrics/logging for matches, layout failures, and cold-start misses.
+- [x] 7.1 Document template schemas and graph edge semantics.
+- [x] 7.2 Add metrics/logging for matches, layout failures, and cold-start misses.

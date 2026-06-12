@@ -10,6 +10,13 @@ import {
   deleteCacheValue,
   getCacheKeys,
 } from './cache/redisCache';
+import {
+  createStructuredLogger,
+  createMetricCollector,
+  globalMetrics,
+  StructuredLogger,
+  MetricCollector,
+} from '../utils/structuredLogger';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -53,6 +60,8 @@ export interface TemplateRegistryServiceDependencies {
   cache?: RegistryCache;
   loadSeeds?: (domain: string) => TemplateRegistryEntry[];
   cacheTTLSeconds?: number;
+  logger?: StructuredLogger;
+  metrics?: MetricCollector;
 }
 
 // ---------------------------------------------------------------------------
@@ -224,6 +233,8 @@ export function createTemplateRegistryService(
   const cache = deps.cache ?? defaultCache;
   const loadSeeds = deps.loadSeeds ?? defaultLoadSeeds;
   const cacheTTL = deps.cacheTTLSeconds ?? DEFAULT_CACHE_TTL;
+  const logger = deps.logger ?? createStructuredLogger('templateRegistryService');
+  const metrics = deps.metrics ?? globalMetrics;
 
   const templateCache = new Map<string, TemplateRegistryEntry[]>();
 
@@ -321,8 +332,25 @@ export function createTemplateRegistryService(
     }
 
     if (!best) {
+      logger.info('template_miss', 'No template matched the input', {
+        domain,
+        inputLength: input.text.length,
+        hasPages: (input.pages?.length ?? 0) > 0,
+      });
+      metrics.increment('templateRegistry.miss', { domain });
       return { templateId: null, templateConfidence: null, template: null };
     }
+
+    logger.info('template_match', 'Template matched', {
+      domain,
+      templateId: best.templateId,
+      insurer: best.insurer,
+      confidence: bestScore,
+    });
+    metrics.increment('templateRegistry.match', {
+      domain,
+      templateId: best.templateId,
+    });
 
     return {
       templateId: best.templateId,
@@ -361,10 +389,18 @@ export function createTemplateRegistryService(
         `${err.instancePath || '/'}: ${err.message ?? 'invalid value'}`
       ) ?? ['Schema validation failed'];
 
+    logger.warn('schema_validation_failed', 'Template payload validation failed', {
+      domain,
+      templateId,
+      errors,
+    });
+    metrics.increment('templateRegistry.schema_validation_failed', { domain, templateId });
+
     return { valid: false, errors };
   }
 
   async function refreshCache(domain: string = DEFAULT_DOMAIN): Promise<void> {
+    logger.info('cache_refresh', 'Refreshing template registry cache', { domain });
     await invalidateCache('*', domain);
     await loadTemplates(domain);
   }

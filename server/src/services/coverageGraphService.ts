@@ -13,6 +13,13 @@ import {
 import { calculateSimilarity } from '../utils/stringUtils';
 import { normalizeText } from '../utils/textUtils';
 import {
+  StructuredLogger,
+  MetricCollector,
+  createStructuredLogger,
+  createMetricCollector,
+  globalMetrics,
+} from '../utils/structuredLogger';
+import {
   GraphEdge,
   GraphEdgeType,
   GraphDeductibleLink,
@@ -174,6 +181,8 @@ export function createCoverageGraphService(deps: {
     setex: (key: string, ttl: number, value: string) => Promise<void>;
     del: (key: string) => Promise<void>;
   };
+  logger?: StructuredLogger;
+  metrics?: MetricCollector;
 } = {}): CoverageGraphService {
   const db = deps.db ?? supabase;
   const cache = deps.cache ?? {
@@ -181,6 +190,8 @@ export function createCoverageGraphService(deps: {
     setex: async (key: string, ttl: number, value: string) => setCacheValue(key, ttl, value),
     del: deleteCacheValue,
   };
+  const logger = deps.logger ?? createStructuredLogger('coverageGraphService');
+  const metrics = deps.metrics ?? globalMetrics;
 
   async function fetchEdges(where: {
     from?: string;
@@ -210,7 +221,11 @@ export function createCoverageGraphService(deps: {
 
     const { data, error } = await query;
     if (error) {
-      console.error('❌ [CoverageGraph] DB query failed:', error);
+      logger.error('graph_query_failed', 'Coverage graph DB query failed', {
+        table: 'coverage_graph_edges',
+        error: error.message ?? String(error),
+      });
+      metrics.increment('coverageGraph.query_failed');
       return [];
     }
 
@@ -227,7 +242,11 @@ export function createCoverageGraphService(deps: {
       .select('*')
       .eq('domain', domain);
     if (error) {
-      console.error('❌ [CoverageGraph] Failed to load edges:', error);
+      logger.error('graph_query_failed', 'Failed to load coverage graph edges', {
+        domain,
+        error: error.message ?? String(error),
+      });
+      metrics.increment('coverageGraph.query_failed', { domain });
       return [];
     }
     return (data ?? []) as DbEdge[];
@@ -405,6 +424,14 @@ export function createCoverageGraphService(deps: {
         try {
           const parsed = JSON.parse(cached);
           if (parsed && Array.isArray(parsed.mappings)) {
+            logger.info('graph_hit', 'Coverage graph query resolved from cache', {
+              rawName,
+              domain,
+              insurer: insurer || undefined,
+              source: 'cache',
+              mappingCount: parsed.mappings.length,
+            });
+            metrics.increment('coverageGraph.hit', { source: 'cache', domain });
             return parsed as GraphQueryResult;
           }
         } catch {
@@ -414,6 +441,25 @@ export function createCoverageGraphService(deps: {
 
       const result = await queryInternal(rawName, options);
       await cache.setex(key, CACHE_TTL_SECONDS, JSON.stringify(result));
+
+      if (result.mappings.length === 0) {
+        logger.info('graph_cold_start_miss', 'No coverage graph mappings found', {
+          rawName,
+          domain,
+          insurer: insurer || undefined,
+        });
+        metrics.increment('coverageGraph.cold_start_miss', { domain });
+      } else {
+        logger.info('graph_db_hit', 'Coverage graph query resolved from database', {
+          rawName,
+          domain,
+          insurer: insurer || undefined,
+          source: 'db',
+          mappingCount: result.mappings.length,
+        });
+        metrics.increment('coverageGraph.hit', { source: 'db', domain });
+      }
+
       return result;
     },
 
@@ -546,6 +592,21 @@ export function createCoverageGraphService(deps: {
       if (error) {
         throw new Error(`Failed to learn correction: ${error.message}`);
       }
+
+      logger.info('graph_learned', 'Coverage graph learned from analyst correction', {
+        raw,
+        canonical,
+        normalizedRaw,
+        canonicalId,
+        insurer: insurer || undefined,
+        domain: domain ?? 'pyme',
+        correctionCount,
+        weight,
+      });
+      metrics.increment('coverageGraph.learned', {
+        domain: domain ?? 'pyme',
+        insurer: insurer || 'global',
+      });
 
       await this.invalidateCache(raw, insurer, domain);
     },

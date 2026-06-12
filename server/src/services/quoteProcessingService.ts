@@ -37,6 +37,13 @@ import { TemplateRegistryEntry } from '../schemas/templateRegistrySchema';
 import { extractTables, LayoutParserResult } from './layoutParser';
 import { coverageGraphService } from './coverageGraphService';
 import { GraphQueryResult } from '../types/templateGraph';
+import {
+  createStructuredLogger,
+  createMetricCollector,
+  globalMetrics,
+  StructuredLogger,
+  MetricCollector,
+} from '../utils/structuredLogger';
 
 // Feature flag for multimodal extraction
 const USE_MULTIMODAL = process.env.ENABLE_MULTIMODAL_EXTRACTION !== 'false';
@@ -45,6 +52,12 @@ export interface ExtractionPromptSelection {
   prompt: string;
   usedTemplate: boolean;
   templateId?: string | null;
+}
+
+export interface ExtractionPromptContext {
+  pageCount?: number;
+  logger?: StructuredLogger;
+  metrics?: MetricCollector;
 }
 
 export interface GraphEnrichedCoverage {
@@ -65,8 +78,12 @@ export function selectExtractionPrompt(
   detection: FormatDetectionResult,
   template: TemplateRegistryEntry | undefined,
   layoutResult: LayoutParserResult,
-  context: { pageCount?: number }
+  context: ExtractionPromptContext
 ): ExtractionPromptSelection {
+  const logger = context.logger ?? createStructuredLogger('quoteProcessingService');
+  const metrics = context.metrics ?? globalMetrics;
+  const pageCount = context.pageCount;
+
   const templateMatches =
     detection.templateId &&
     template &&
@@ -75,13 +92,34 @@ export function selectExtractionPrompt(
 
   if (templateMatches) {
     const prompt = buildTemplatePrompt(detection.templateId!, template, layoutResult.tables);
+    logger.info('pipeline_path_taken', 'Selected template-aware extraction prompt', {
+      path: 'template',
+      templateId: detection.templateId,
+      insurer: template.insurer,
+      tableCount: layoutResult.tables.length,
+    });
+    metrics.increment('quoteProcessing.pipeline_path', { path: 'template' });
     return { prompt, usedTemplate: true, templateId: detection.templateId };
   }
 
+  const fallbackReason = !detection.templateId
+    ? 'no template matched'
+    : layoutResult.failed
+    ? `layout parsing failed: ${layoutResult.failureReason}`
+    : 'template matched but no usable tables';
+
   const prompt = buildPromptForFamily(detection.family, {
-    pageCount: context.pageCount,
+    pageCount,
     hasTables: detection.hasTables,
   });
+
+  logger.info('pipeline_path_taken', 'Selected generic extraction prompt', {
+    path: 'generic',
+    family: detection.family,
+    fallbackReason,
+    templateId: detection.templateId ?? undefined,
+  });
+  metrics.increment('quoteProcessing.pipeline_path', { path: 'generic' });
 
   return { prompt, usedTemplate: false, templateId: null };
 }

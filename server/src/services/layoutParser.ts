@@ -2,6 +2,13 @@ import {
   LayoutTable,
   LayoutCell,
 } from '../schemas/templateRegistrySchema';
+import {
+  createStructuredLogger,
+  createMetricCollector,
+  globalMetrics,
+  StructuredLogger,
+  MetricCollector,
+} from '../utils/structuredLogger';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -51,6 +58,8 @@ export interface LayoutParserOptions {
   rotatedItemRatio?: number;
   tableGapFactor?: number;
   regionBandRatio?: number;
+  logger?: StructuredLogger;
+  metrics?: MetricCollector;
 }
 
 // ---------------------------------------------------------------------------
@@ -79,6 +88,8 @@ const DEFAULT_OPTIONS: Required<LayoutParserOptions> = {
   rotatedItemRatio: 0.5,
   tableGapFactor: 3,
   regionBandRatio: 0.15,
+  logger: undefined as any,
+  metrics: undefined as any,
 };
 
 function withDefaults(options?: LayoutParserOptions): Required<LayoutParserOptions> {
@@ -432,6 +443,9 @@ export function extractTables(
   options?: LayoutParserOptions
 ): LayoutParserResult {
   const opts = withDefaults(options);
+  const logger = options?.logger ?? createStructuredLogger('layoutParser');
+  const metrics = options?.metrics ?? globalMetrics;
+
   const result: LayoutParserResult = {
     tables: [],
     regions: [],
@@ -443,17 +457,27 @@ export function extractTables(
     failed: false,
   };
 
-  if (pages.length === 0 || pages.every((p) => p.items.length === 0)) {
+  function fail(reason: string, reasonTag: string): LayoutParserResult {
     result.failed = true;
-    result.failureReason = 'No text items found in any page';
+    result.failureReason = reason;
+    logger.warn('layout_parse_failed', 'Layout parsing failed', {
+      reason,
+      pageCount: pages.length,
+      rotatedPages: result.rotatedPages,
+    });
+    metrics.increment('layoutParser.failure', { reason: reasonTag });
     return result;
   }
 
-  if (result.rotatedPages.length > 0) {
-    result.failed = true;
-    result.failureReason = `rotated pages detected: ${result.rotatedPages.join(', ')}`;
-    return result;
+  if (pages.length === 0 || pages.every((p) => p.items.length === 0)) {
+    return fail('No text items found in any page', 'empty');
   }
+
+  if (result.rotatedPages.length > 0) {
+    return fail(`rotated pages detected: ${result.rotatedPages.join(', ')}`, 'rotation');
+  }
+
+  let pageSuccessCount = 0;
 
   for (const page of pages) {
     if (page.items.length === 0) continue;
@@ -471,6 +495,12 @@ export function extractTables(
     if (boundaries.length < opts.minColumns) {
       result.failed = true;
       result.failureReason = `Insufficient columns detected on page ${page.page}: ${boundaries.length}`;
+      logger.warn('layout_parse_failed', 'Layout parsing failed', {
+        reason: result.failureReason,
+        page: page.page,
+        columnCount: boundaries.length,
+      });
+      metrics.increment('layoutParser.failure', { reason: 'insufficient_columns' });
       continue;
     }
 
@@ -481,11 +511,20 @@ export function extractTables(
 
     result.tables.push(...pageTables);
     result.regions.push(...detectRegions(page, pageTables, opts));
+
+    if (pageTables.length > 0) {
+      pageSuccessCount++;
+      logger.info('layout_parse_success', 'Layout parsed successfully', {
+        page: page.page,
+        tableCount: pageTables.length,
+        columnCount: boundaries.length,
+      });
+      metrics.increment('layoutParser.success', { page: page.page });
+    }
   }
 
   if (result.tables.length === 0 && !result.failed) {
-    result.failed = true;
-    result.failureReason = 'No tables could be reconstructed';
+    return fail('No tables could be reconstructed', 'no_tables');
   }
 
   if (result.failed && !result.failureReason) {

@@ -131,3 +131,48 @@ The system SHOULD emit structured logs and counters for cache hits, regex hits, 
 - **WHEN** the hybrid parser processes multiple deductibles
 - **THEN** counters for `cacheHits`, `regexHits`, and `llmFallbacks` are accumulated
 - **AND** structured logs are emitted for monitoring.
+
+---
+
+## Delta from change: mejora-extraccion-coberturas
+
+## MODIFIED Requirements
+
+### Requirement: Parse compound deductible structures
+
+The system SHALL parse complex deductible expressions using deterministic regex, template-specific location hints, and graph deductible-applicability rules.
+
+(Previously: parsing used regex and LLM fallback without insurer-template locations or graph rules.)
+
+#### Scenario: Template-specific deductible location
+
+- **GIVEN** a known template places deductible text in column 3
+- **WHEN** the system parses deductible cells
+- **THEN** it SHALL prefer column 3 text for that template
+- **AND** fall back to regex on the full row if column text is empty
+
+#### Scenario: Graph rule determines applicability
+
+- **GIVEN** a deductible text is parsed
+- **WHEN** the graph contains an `appliesTo` rule for the current insurer
+- **THEN** the system SHALL assign the deductible to the linked coverages
+- **AND** include `applicabilityConfidence` in the result
+
+### Requirement: Deterministic Parsing First
+
+The system MUST attempt regex + benchmark table parsing before falling back to LLM for deductible extraction, and SHALL consult graph applicability rules before assigning deductibles to coverages.
+
+(Previously: deterministic parsing did not consult graph applicability rules.)
+
+#### Scenario: Regex and graph rule hit
+
+- **WHEN** the text "10% min 5 SMMLV" is parsed
+- **THEN** the regex pattern matches and benchmark tables evaluate the normalized value
+- **AND** the graph links the deductible to the applicable coverage
+- **AND** no LLM call is made
+
+#### Scenario: LLM Fallback
+
+- **WHEN** the text does not match any known regex pattern
+- **THEN** the system falls back to Gemini for parsing
+- **AND** the result is cached in Redis with a versioned key

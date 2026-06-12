@@ -156,3 +156,80 @@ The format detection patterns SHALL include CONDITIONS patterns.
 - `formatDetector.ts`: Add CONDITIONS to FormatFamily union type and patterns
 - `promptBuilder.ts`: Add CONDITIONS prompt template
 - All format consumers: Update switch statements to handle CONDITIONS
+
+---
+
+## Delta from change: mejora-extraccion-coberturas
+
+## ADDED Requirements
+
+### Requirement: Detect insurer-specific templates
+
+The system SHALL identify known insurer templates from PDF layout and text markers before extraction.
+
+#### Scenario: BBVA template detected
+
+- **GIVEN** a PDF contains "BBVA SEGUROS" and a table headed "COBERTURAS / DEDUCIBLE"
+- **WHEN** format detection runs
+- **THEN** the system SHALL return templateId `"bbva-pyme-v1"` with confidence >= 90%
+- **AND** route extraction through the BBVA schema
+
+#### Scenario: SBS template detected
+
+- **GIVEN** a PDF contains "SEGUROS SBS" and "Resumen de coberturas y primas"
+- **WHEN** format detection runs
+- **THEN** the system SHALL return templateId `"sbs-pyme-v1"` with confidence >= 90%
+- **AND** route extraction through the SBS schema
+
+#### Scenario: MAPFRE template detected
+
+- **GIVEN** a PDF contains "MAPFRE" and section markers "SECCION PRIMERA/SEGUNDA"
+- **WHEN** format detection runs
+- **THEN** the system SHALL return templateId `"mapfre-pyme-v1"` with confidence >= 90%
+- **AND** route extraction through the MAPFRE schema
+
+#### Scenario: Unknown insurer falls back to graph
+
+- **GIVEN** a PDF matches no registered template
+- **WHEN** extraction runs
+- **THEN** the system SHALL use the legacy vision path
+- **AND** send extracted coverages through the semantic graph
+
+## MODIFIED Requirements
+
+### Requirement: Detect format family from PDF text
+
+The system SHALL analyze extracted text and classify it into one of six format families, and SHALL additionally detect insurer-specific templates.
+
+(Previously: format detection selected only among six generic families.)
+
+#### Scenario: TABLE-DOUBLE detection (HDI style)
+
+- **WHEN** extracted text contains "DEDUCIBLES QUE APLICAN" AND "AMPAROS BASICOS"
+- **THEN** the system SHALL classify as "TABLE-DOUBLE"
+- **AND** set confidence to 95%
+
+#### Scenario: Insurer template takes precedence over generic family
+
+- **WHEN** a PDF matches both a generic family and a registered insurer template
+- **THEN** the system SHALL return the insurer templateId
+- **AND** set `formatFamily` to the corresponding generic family for compatibility
+
+### Requirement: Provide format metadata
+
+The system SHALL return format family information alongside detection results, including template metadata when applicable.
+
+(Previously: metadata did not include insurer template fields.)
+
+#### Scenario: Return format metadata
+
+- **WHEN** format detection completes
+- **THEN** the system SHALL return:
+  - `family`: string (one of the 6 families)
+  - `confidence`: number (0-100)
+  - `detectedPatterns`: string[]
+  - `templateId`: string | null
+  - `templateConfidence`: number | null
+  - `pageCount`: number
+  - `hasTables`: boolean
+  - `hasSections`: boolean
