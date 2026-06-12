@@ -1,6 +1,32 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { coverageOntology, CoverageMapping } from '../coverageOntology';
 
+// Mock environment variables so env.ts does not call process.exit
+vi.mock('../../config/env', () => ({
+  env: {
+    GEMINI_API_KEY: 'dummy',
+    GEMINI_MODEL: 'gemini-3.5-flash',
+    GEMINI_CHAT_MODEL: 'gemini-2.5-flash-lite',
+    GEMINI_CLAUSE_MODEL: 'gemini-3.5-flash',
+    GEMINI_EMBEDDING_MODEL: 'gemini-embedding-2',
+    SUPABASE_URL: 'https://test.supabase.co',
+    SUPABASE_ANON_KEY: 'dummy',
+    SUPABASE_SERVICE_ROLE_KEY: 'dummy',
+    SUPABASE_JWT_SECRET: 'dummy',
+    PORT: 8080,
+    NODE_ENV: 'test',
+    REGION: 'CO',
+    SMMLV_VALUE: 1423500,
+    UVT_VALUE: 42412,
+    CURRENCY: 'COP',
+    CLAUSE_PAGES_BUCKET: 'clause-pages',
+    MAX_FILE_SIZE: 52428800,
+    MAX_PAGES_LIMIT: 100,
+    UPLOAD_TIMEOUT: 300000,
+    LOG_LEVEL: 'info',
+  },
+}));
+
 // Mock Supabase database calls
 vi.mock('../../config/database', () => {
   const mockSupabase = {

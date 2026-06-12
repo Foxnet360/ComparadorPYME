@@ -5,10 +5,11 @@ import { env } from '../config/env';
 import { getCachedCoverageMapping, setCachedCoverageMapping } from './cache/redisCache';
 import { calculateSimilarity } from '../utils/stringUtils';
 import { mapCoverageName } from './thesaurusMapper';
+import { coverageGraphService } from './coverageGraphService';
 
 
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const GEMINI_API_KEY = env.GEMINI_API_KEY || '';
 const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 export interface OntologyNode {
@@ -280,6 +281,52 @@ function localOntologyMatch(
   return null;
 }
 
+/**
+ * Query the coverage semantic graph before falling back to LLM consensus.
+ * Returns a mapping if the best graph result exceeds the confidence threshold.
+ */
+async function queryGraphForMapping(
+  rawName: string,
+  insurerName: string | undefined,
+  domain: string = 'pyme',
+  threshold: number = 0.7
+): Promise<CoverageMapping | null> {
+  try {
+    const graphResult = await coverageGraphService.query(rawName, {
+      insurer: insurerName,
+      domain,
+    });
+
+    if (graphResult.mappings.length === 0) {
+      return null;
+    }
+
+    const best = graphResult.mappings[0];
+    if (best.confidence < threshold) {
+      return null;
+    }
+
+    const node = coverageOntology.getNodeById(best.canonicalId, domain);
+    const groupId = node ? node.id : best.canonicalId;
+
+    return {
+      rawName,
+      insurerName,
+      groups: graphResult.mappings.map((m) => ({
+        groupId: coverageOntology.getNodeById(m.canonicalId, domain)?.id ?? m.canonicalId,
+        confidence: m.confidence,
+      })),
+      isComposite: graphResult.composite,
+      components: graphResult.components,
+      confidence: best.confidence,
+      needsHumanReview: best.confidence < 0.85,
+      justification: `Graph consensus via ${best.provenance} (confidence ${Math.round(best.confidence * 100)}%)`,
+    };
+  } catch (error: any) {
+    console.warn(`⚠️ [Ontology Graph] Query failed for "${rawName}": ${error.message}`);
+    return null;
+  }
+}
 
 /**
  * Runs stateless, memory-isolated double-agent consensus between Taxonomist and Critic
@@ -554,6 +601,14 @@ export const coverageOntology = {
 
       await setCachedCoverageMapping(rawName, mapping, insurerName);
       return mapping;
+    }
+
+    // Query coverage semantic graph before expensive LLM consensus
+    const graphMapping = await queryGraphForMapping(rawName, insurerName, d);
+    if (graphMapping) {
+      console.log(`🌐 [Ontology Graph] Hit for "${rawName}" -> "${graphMapping.groups[0]?.groupId}" (${Math.round(graphMapping.confidence * 100)}%)`);
+      await setCachedCoverageMapping(rawName, graphMapping, insurerName);
+      return graphMapping;
     }
 
     // Call Double-Agent Consensus flow for high certainty mapping
