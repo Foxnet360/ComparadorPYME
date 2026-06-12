@@ -187,3 +187,30 @@ The system SHALL compute similarities efficiently for batches.
 - **WHEN** 10 coverage embeddings are ready
 - **THEN** compute cosine similarity against 14 category embeddings using matrix operations
 - **AND** return best match for each coverage
+
+---
+
+## Delta from change: mejora-extraccion-coberturas
+
+## MODIFIED Requirements
+
+### Requirement: Support probabilistic coverage mapping
+
+The system SHALL map coverage names to canonical categories using graph probabilities and composite decomposition rules, in addition to the existing thesaurus/fuzzy/embedding/LLM layers.
+
+(Previously: mapping returned a flat list of semantic groups without insurer-aware graph probabilities or composite decomposition.)
+
+#### Scenario: Probabilistic mapping with graph
+
+- **WHEN** "AMPARO BASICO - TODO RIESGO DANO MATERIAL" is processed
+- **THEN** the system returns graph-ranked mappings:
+  - `incendio-edificio-contenidos`: 0.85
+  - `equipo-electronico`: 0.60
+  - `terremoto-catastrofico`: 0.45
+- **AND** flags the coverage as composite when a decomposition rule matches
+
+#### Scenario: Composite detection uses graph rules
+
+- **WHEN** a coverage matches a graph decomposition rule
+- **THEN** the system flags it as composite
+- **AND** lists component coverages derived from the rule

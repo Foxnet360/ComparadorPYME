@@ -81,3 +81,35 @@ The system SHALL retrieve historical human corrections and inject them as few-sh
 - Supabase (tabla coverage_mappings)
 - Embedding service
 - Redis cache
+
+---
+
+## Delta from change: mejora-extraccion-coberturas
+
+## MODIFIED Requirements
+
+### Requirement: Capture user corrections
+
+The system SHALL provide an interface for users to correct system mappings and extractions, and SHALL persist corrections as graph edges/aliases in addition to the existing thesaurus/cache updates.
+
+(Previously: corrections updated the thesaurus and cache only.)
+
+#### Scenario: User corrects coverage mapping
+
+- **WHEN** a user corrects a coverage mapping or deductible in the comparison grid
+- **THEN** the system SHALL store this correction in the database
+- **AND** add or update a learned edge in the semantic graph
+- **AND** invalidate affected cache entries immediately
+
+### Requirement: Update thesaurus from corrections
+
+The system SHALL automatically update the thesaurus and the semantic graph when users make corrections.
+
+(Previously: corrections updated the thesaurus only.)
+
+#### Scenario: Thesaurus and graph update
+
+- **WHEN** a user corrects a mapping
+- **THEN** the system adds the raw name as a synonym for the corrected category
+- **AND** adds/updates a graph edge from raw term to canonical category
+- **AND** increments a correction count for that mapping
