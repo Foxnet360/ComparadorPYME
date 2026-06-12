@@ -1,7 +1,14 @@
 /**
  * Format Family Detection Service
  * Detects document layout family from extracted text patterns
+ * and consults the template registry for insurer-specific templates.
  */
+
+import { featureFlags } from '../config/featureFlags';
+import type {
+  TemplateRegistryService,
+  PageTextItems,
+} from './templateRegistryService';
 
 export type FormatFamily =
   | 'TABLE-DOUBLE'
@@ -17,6 +24,8 @@ export interface FormatDetectionResult {
   family: FormatFamily;
   confidence: number;
   detectedPatterns: string[];
+  templateId: string | null;
+  templateConfidence: number | null;
   pageCount: number;
   hasTables: boolean;
   hasSections: boolean;
@@ -109,6 +118,8 @@ export function detectFormatFamily(text: string): FormatDetectionResult {
       family: 'UNKNOWN',
       confidence: 0,
       detectedPatterns: [],
+      templateId: null,
+      templateConfidence: null,
       pageCount: 0,
       hasTables: false,
       hasSections: false,
@@ -173,10 +184,61 @@ export function detectFormatFamily(text: string): FormatDetectionResult {
     family: bestFamily,
     confidence,
     detectedPatterns: [...new Set(detectedPatterns)],
+    templateId: null,
+    templateConfidence: null,
     pageCount: 0, // Will be set by caller
     hasTables,
     hasSections,
   };
+}
+
+function isInsurerTemplateEnabled(insurer: string): boolean {
+  switch (insurer.toUpperCase()) {
+    case 'BBVA':
+      return featureFlags.isEnabled('templateBbvaV1');
+    case 'SBS':
+      return featureFlags.isEnabled('templateSbsV1');
+    case 'MAPFRE':
+      return featureFlags.isEnabled('templateMapfreV1');
+    default:
+      return true;
+  }
+}
+
+/**
+ * Detect format family and insurer-specific template.
+ * Consults the Template Registry before falling back to generic format families.
+ */
+export async function detectFormatWithRegistry(
+  text: string,
+  registry: TemplateRegistryService,
+  options?: { domain?: string; pages?: PageTextItems[] }
+): Promise<FormatDetectionResult> {
+  const base = detectFormatFamily(text);
+
+  if (!featureFlags.isEnabled('useTemplateGraphPipeline')) {
+    return { ...base, templateId: null, templateConfidence: null };
+  }
+
+  const match = await registry.matchTemplate({
+    text,
+    pages: options?.pages,
+    domain: options?.domain,
+  });
+
+  if (
+    match.templateId &&
+    match.template &&
+    isInsurerTemplateEnabled(match.template.insurer)
+  ) {
+    return {
+      ...base,
+      templateId: match.templateId,
+      templateConfidence: match.templateConfidence,
+    };
+  }
+
+  return { ...base, templateId: null, templateConfidence: null };
 }
 
 /**

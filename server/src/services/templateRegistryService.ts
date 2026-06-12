@@ -201,9 +201,7 @@ function entryToRow(entry: TemplateRegistryEntry, domain: string): any {
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createTemplateRegistryService(
-  deps: TemplateRegistryServiceDependencies = {}
-): {
+export interface TemplateRegistryService {
   loadTemplates(domain?: string): Promise<TemplateRegistryEntry[]>;
   matchTemplate(input: TemplateMatchInput): Promise<TemplateMatchResult>;
   getTemplate(templateId: string, domain?: string): TemplateRegistryEntry | undefined;
@@ -216,7 +214,11 @@ export function createTemplateRegistryService(
   invalidateCache(templateId: string, domain?: string): Promise<void>;
   upsertTemplate(entry: TemplateRegistryEntry, domain?: string): Promise<void>;
   deleteTemplate(templateId: string, domain?: string): Promise<void>;
-} {
+}
+
+export function createTemplateRegistryService(
+  deps: TemplateRegistryServiceDependencies = {}
+): TemplateRegistryService {
   const db = deps.db;
   const cache = deps.cache ?? defaultCache;
   const loadSeeds = deps.loadSeeds ?? defaultLoadSeeds;

@@ -54,7 +54,7 @@ Chain strategy: stacked-to-main
 
 ## Phase 5: Pipeline Integration
 
-- [ ] 5.1 Modify `formatDetector.ts` to return `templateId`/`templateConfidence`.
+- [x] 5.1 Modify `formatDetector.ts` to return `templateId`/`templateConfidence`.
 - [ ] 5.2 Modify `promptBuilder.ts` to add `buildTemplatePrompt`.
 - [ ] 5.3 Modify `quoteProcessingService.ts` to route known templates.
 - [ ] 5.4 Modify `coverageNormalizer.ts` to use graph probabilities and decompositions.
