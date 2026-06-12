@@ -65,10 +65,10 @@ Chain strategy: stacked-to-main
 
 ## Phase 6: Evaluation & Rollout
 
-- [ ] 6.1 Create `server/src/services/goldenSetEvaluation.ts`.
-- [ ] 6.2 Build 30-quote annotated golden-set fixtures.
-- [ ] 6.3 Add integration tests for template and graph paths.
-- [ ] 6.4 Run golden-set evaluation and set thresholds before enabling flags.
+- [x] 6.1 Create `server/src/services/goldenSetEvaluation.ts`.
+- [x] 6.2 Build 30-quote annotated golden-set fixtures.
+- [x] 6.3 Add integration tests for template and graph paths.
+- [x] 6.4 Run golden-set evaluation and set thresholds before enabling flags.
 
 ## Phase 7: Documentation
 
