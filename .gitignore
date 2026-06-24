@@ -38,3 +38,10 @@ server/uploads
 
 # ChromaDB data
 chroma_data/
+
+# Coverage reports
+coverage/
+
+# OpenCode caches
+.atl/
+
