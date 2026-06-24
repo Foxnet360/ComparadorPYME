@@ -250,7 +250,7 @@ describe('loadGoldenSet', () => {
   });
 
   it('loads the real golden-set fixture directory', async () => {
-    const fixturesDir = path.resolve(process.cwd(), 'tests/fixtures/golden-set');
+    const fixturesDir = path.resolve(__dirname, '..', '..', '..', '..', 'tests', 'fixtures', 'golden-set');
     const fixtures = await loadGoldenSet(fixturesDir, {
       readdir: (dir) => fs.readdir(dir),
       readFile: (filePath) => fs.readFile(filePath, 'utf8'),

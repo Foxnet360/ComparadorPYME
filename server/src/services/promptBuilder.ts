@@ -420,6 +420,7 @@ export function buildPromptForFamily(
     pageCount?: number;
     hasTables?: boolean;
     insurerName?: string;
+    formatFamily?: string;
   }
 ): string {
   const template = PROMPT_TEMPLATES[family] || PROMPT_TEMPLATES['UNKNOWN'];
@@ -442,10 +443,32 @@ export function buildPromptForFamily(
     if (context.insurerName) {
       prompt += `\n- Aseguradora detectada: ${context.insurerName}`;
     }
+    if (context.formatFamily) {
+      prompt += `\n- Format family: ${context.formatFamily}`;
+    }
   }
   
-  prompt += `\n\nINSTRUCCIONES FINALES:\n1. Extraer TODA la información disponible\n2. NO inventar valores que no estén en el documento\n3. Si un campo no está en el documento, usar null o array vacío\n4. Para cada cobertura en 'rawCoverages', DEBES extraer obligatoriamente en 'rawTextSnippet' un fragmento textual literal continuo de 50 a 100 caracteres adyacente a la cobertura en el PDF de origen. Copia este fragmento de forma exacta y sin modificaciones.\n5. Devolver SOLO el JSON, sin texto adicional`;
-  
+  prompt += `\n\n### GROUNDING RULES (REQUIRED)
+
+For every coverage row you emit:
+1. rawTextSnippet MUST be a contiguous substring of 50-150 characters copied verbatim from the PDF.
+2. pageNumber MUST be the 1-based page number where that substring appears.
+3. If you cannot locate the coverage in the PDF, set the coverage value to "NO ESPECIFICADO" and still provide your best snippet + page.
+4. Do NOT invent snippet text. If the exact wording is unclear, copy the nearest relevant clause text.
+
+### ANTI-HALLUCINATION RULES
+
+- If a field is not present in the document, use "NO ESPECIFICADO" (for text) or 0/null (for numbers) — never invent a value.
+- Do NOT list coverages you believe "should" be in a PYME policy unless they appear in the document.
+- Premium totalPayable must match a visible total in the PDF.
+
+INSTRUCCIONES FINALES:
+1. Extraer TODA la información disponible
+2. NO inventar valores que no estén en el documento
+3. Si un campo no está en el documento, usar null o array vacío
+4. Para cada cobertura en 'rawCoverages', DEBES extraer obligatoriamente 'rawTextSnippet' y 'pageNumber'.
+5. Devolver SOLO el JSON, sin texto adicional`;
+
   return prompt;
 }
 

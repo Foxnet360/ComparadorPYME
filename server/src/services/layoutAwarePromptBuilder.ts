@@ -47,7 +47,21 @@ REGLAS CRÍTICAS:
 2. Si una celda está vacía o no se pudo reconstruir, usa null o un string vacío según el schema.
 3. NO inventes coberturas, valores ni deducibles que no aparezcan en el documento.
 4. Los deducibles deben extraerse de la columna indicada en extractionHints cuando exista.
-5. Devuelve SOLO el JSON válido, sin texto adicional.`;
+5. Devuelve SOLO el JSON válido, sin texto adicional.
+
+### GROUNDING RULES (REQUIRED)
+
+For every coverage row you emit:
+1. rawTextSnippet MUST be a contiguous substring of 50-150 characters copied verbatim from the PDF.
+2. pageNumber MUST be the 1-based page number where that substring appears.
+3. If you cannot locate the coverage in the PDF, set the coverage value to "NO ESPECIFICADO" and still provide your best snippet + page.
+4. Do NOT invent snippet text. If the exact wording is unclear, copy the nearest relevant clause text.
+
+### ANTI-HALLUCINATION RULES
+
+- If a field is not present in the document, use "NO ESPECIFICADO" (for text) or 0/null (for numbers) — never invent a value.
+- Do NOT list coverages you believe "should" be in a PYME policy unless they appear in the document.
+- Premium totalPayable must match a visible total in the PDF.`;
 }
 
 function renderCell(cell: LayoutCell | undefined): string {

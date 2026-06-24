@@ -149,7 +149,7 @@ function buildSyntheticExtraction(fixture: import('../evaluationHarness').Golden
 }
 
 async function loadFirstFixtureOfInsurer(insurer: string) {
-  const fixturesDir = path.resolve(process.cwd(), 'tests/fixtures/golden-set');
+  const fixturesDir = path.resolve(__dirname, '..', '..', '..', '..', 'tests', 'fixtures', 'golden-set');
   const fixtures = await loadGoldenSet(fixturesDir, {
     readdir: (dir) => fs.readdir(dir),
     readFile: (filePath) => fs.readFile(filePath, 'utf8'),
@@ -231,7 +231,7 @@ describe('processQuoteMultimodal - golden-set integration', () => {
   });
 
   it('falls back to generic extraction for an unknown/mixed fixture', async () => {
-    const fixturesDir = path.resolve(process.cwd(), 'tests/fixtures/golden-set');
+    const fixturesDir = path.resolve(__dirname, '..', '..', '..', '..', 'tests', 'fixtures', 'golden-set');
     const fixtures = await loadGoldenSet(fixturesDir, {
       readdir: (dir) => fs.readdir(dir),
       readFile: (filePath) => fs.readFile(filePath, 'utf8'),

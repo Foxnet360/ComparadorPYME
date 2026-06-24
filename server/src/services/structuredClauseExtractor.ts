@@ -150,6 +150,10 @@ export const structuredClauseExtractor = {
     productName: string = '',
     documentType: 'CLAUSULADO_GENERAL' | 'CLAUSULADO_PARTICULAR' = 'CLAUSULADO_GENERAL'
   ): Promise<StructuredClause> {
+    if (!clauseText || clauseText.trim().length === 0) {
+      throw new Error('Clause text is required for structured extraction');
+    }
+
     const modelName = env.GEMINI_CLAUSE_MODEL || 'gemini-2.5-flash';
     console.log(`📄 [StructuredExtractor] Extracting clauses for ${insurerName} using model ${modelName}...`);
     

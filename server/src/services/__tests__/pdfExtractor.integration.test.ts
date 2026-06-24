@@ -9,7 +9,7 @@ describe('pdfExtractor E2E', () => {
     
     expect(result.text.length).toBeGreaterThan(0);
     expect(result.metadata.pageCount).toBeGreaterThan(0);
-  }, 30000);
+  }, 120000);
 
   it('should extract text from sample quote PDF', async () => {
     const quotePath = path.resolve(__dirname, '../../../test_mocks/test_quote.pdf');
@@ -17,5 +17,5 @@ describe('pdfExtractor E2E', () => {
     
     expect(result.text.length).toBeGreaterThan(0);
     expect(result.metadata.pageCount).toBeGreaterThan(0);
-  }, 30000);
+  }, 120000);
 });

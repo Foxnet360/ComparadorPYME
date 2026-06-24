@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { GoogleGenAI } from '@google/genai';
 import { structuredClauseExtractor, StructuredClause } from '../structuredClauseExtractor';
 
 // Mock the database and genai
@@ -26,34 +27,43 @@ vi.mock('../../config/database', () => ({
 }));
 
 vi.mock('@google/genai', () => ({
-  GoogleGenAI: vi.fn(() => ({
-    models: {
-      generateContent: vi.fn(() => Promise.resolve({
-        text: JSON.stringify({
-          coverages: [
-            {
-              name: 'AMPARO BASICO',
-              description: 'Cobertura todo riesgo',
-              insuredAmount: '$500,000,000',
-              deductible: {
-                components: [
-                  { type: 'percentage', value: 10 },
-                  { type: 'minimum', value: 5, currency: 'SMMLV' }
-                ],
-                rawText: '10% con mínimo de 5 SMMLV'
-              },
-              exclusions: ['Guerra', 'Terrorismo'],
-              conditions: ['Mantenimiento preventivo'],
-              sourcePage: 1
-            }
-          ],
-          generalExclusions: ['Actos dolosos'],
-          generalConditions: ['Pago de prima'],
-          definitions: { SMMLV: 'Salario Mínimo Mensual Legal Vigente' }
-        })
-      }))
-    }
-  }))
+  Type: {
+    STRING: 'string',
+    NUMBER: 'number',
+    ARRAY: 'array',
+    OBJECT: 'object',
+    BOOLEAN: 'boolean',
+  },
+  GoogleGenAI: vi.fn(function () {
+    return {
+      models: {
+        generateContent: vi.fn(() => Promise.resolve({
+          text: JSON.stringify({
+            coverages: [
+              {
+                name: 'AMPARO BASICO',
+                description: 'Cobertura todo riesgo',
+                insuredAmount: '$500,000,000',
+                deductible: {
+                  components: [
+                    { type: 'percentage', value: 10 },
+                    { type: 'minimum', value: 5, currency: 'SMMLV' }
+                  ],
+                  rawText: '10% con mínimo de 5 SMMLV'
+                },
+                exclusions: ['Guerra', 'Terrorismo'],
+                conditions: ['Mantenimiento preventivo'],
+                sourcePage: 1
+              }
+            ],
+            generalExclusions: ['Actos dolosos'],
+            generalConditions: ['Pago de prima'],
+            definitions: { SMMLV: 'Salario Mínimo Mensual Legal Vigente' }
+          })
+        }))
+      }
+    };
+  })
 }));
 
 describe('structuredClauseExtractor', () => {
@@ -75,13 +85,16 @@ describe('structuredClauseExtractor', () => {
     });
 
     it('should handle empty or invalid input', async () => {
-      vi.mocked(require('@google/genai').GoogleGenAI).mockImplementationOnce(() => ({
-        models: {
-          generateContent: vi.fn(() => Promise.resolve({
-            text: 'invalid json'
-          }))
-        }
-      }));
+      const mockedGenAI = vi.mocked(GoogleGenAI);
+      mockedGenAI.mockImplementationOnce(function () {
+        return {
+          models: {
+            generateContent: vi.fn(() => Promise.resolve({
+              text: 'invalid json'
+            }))
+          }
+        } as any;
+      });
 
       await expect(
         structuredClauseExtractor.extractFromText('', 'TEST')

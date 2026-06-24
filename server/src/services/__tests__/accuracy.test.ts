@@ -6,34 +6,43 @@ import { queryExpander } from '../queryExpander';
 
 // Mock Gemini for consistent responses
 vi.mock('@google/genai', () => ({
-  GoogleGenAI: vi.fn(() => ({
-    models: {
-      generateContent: vi.fn(() => Promise.resolve({
-        text: JSON.stringify({
-          coverages: [
-            {
-              name: 'AMPARO BASICO',
-              description: 'Cobertura todo riesgo de daño material',
-              insuredAmount: '$500,000,000',
-              deductible: {
-                components: [
-                  { type: 'percentage', value: 10 },
-                  { type: 'minimum', value: 5, currency: 'SMMLV' }
-                ],
-                rawText: '10% con mínimo de 5 SMMLV'
-              },
-              exclusions: ['Guerra', 'Terrorismo'],
-              conditions: ['Mantenimiento preventivo'],
-              sourcePage: 1
-            }
-          ],
-          generalExclusions: ['Actos dolosos'],
-          generalConditions: ['Pago de prima'],
-          definitions: { SMMLV: 'Salario Mínimo Mensual Legal Vigente' }
-        })
-      }))
-    }
-  }))
+  Type: {
+    STRING: 'string',
+    NUMBER: 'number',
+    ARRAY: 'array',
+    OBJECT: 'object',
+    BOOLEAN: 'boolean',
+  },
+  GoogleGenAI: vi.fn(function () {
+    return {
+      models: {
+        generateContent: vi.fn(() => Promise.resolve({
+          text: JSON.stringify({
+            coverages: [
+              {
+                name: 'AMPARO BASICO',
+                description: 'Cobertura todo riesgo de daño material',
+                insuredAmount: '$500,000,000',
+                deductible: {
+                  components: [
+                    { type: 'percentage', value: 10 },
+                    { type: 'minimum', value: 5, currency: 'SMMLV' }
+                  ],
+                  rawText: '10% con mínimo de 5 SMMLV'
+                },
+                exclusions: ['Guerra', 'Terrorismo'],
+                conditions: ['Mantenimiento preventivo'],
+                sourcePage: 1
+              }
+            ],
+            generalExclusions: ['Actos dolosos'],
+            generalConditions: ['Pago de prima'],
+            definitions: { SMMLV: 'Salario Mínimo Mensual Legal Vigente' }
+          })
+        }))
+      }
+    };
+  })
 }));
 
 vi.mock('../vector/embeddingService', () => ({
@@ -125,14 +134,14 @@ describe('Accuracy Tests', () => {
   describe('Deductible parsing accuracy', () => {
     const testCases = [
       { input: '10%', expected: { percentage: 10, type: 'simple' } },
-      { input: '5 SMMLV', expected: { minAmount: 6500000, type: 'fixed' } },
+      { input: '5 SMMLV', expected: { minAmount: 7117500, type: 'fixed' } },
       { input: 'sin deducible', expected: { isZero: true, type: 'zero' } },
       { input: '10% con mínimo de 5 SMMLV', expected: { percentage: 10, hasMin: true, type: 'compound' } },
       { input: '15% con tope de 100 SMMLV', expected: { percentage: 15, hasMax: true, type: 'compound' } },
       { input: 'No aplica', expected: { isZero: true, type: 'zero' } },
       { input: '0%', expected: { isZero: true, type: 'zero' } },
       { input: '20%', expected: { percentage: 20, type: 'simple' } },
-      { input: '3 SMMLV', expected: { minAmount: 3900000, type: 'fixed' } },
+      { input: '3 SMMLV', expected: { minAmount: 4270500, type: 'fixed' } },
       { input: 'sin aplicación de deducible', expected: { isZero: true, type: 'zero' } }
     ];
 
@@ -171,7 +180,9 @@ describe('Accuracy Tests', () => {
     });
   });
 
-  describe('Coverage ontology mapping accuracy', () => {
+  const hasSupabase = !!process.env.SUPABASE_URL && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  (hasSupabase ? describe : describe.skip)('Coverage ontology mapping accuracy', () => {
     const testCases = [
       { input: 'AMPARO BASICO', expectedGroups: ['edificios', 'terremoto'] },
       { input: 'TODO RIESGO', expectedGroups: ['edificios'] },

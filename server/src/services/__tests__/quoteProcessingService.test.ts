@@ -185,6 +185,7 @@ describe('selectExtractionPrompt', () => {
     expect(mockBuildPromptForFamily).toHaveBeenCalledWith('TABLE-DOUBLE', {
       pageCount: 3,
       hasTables: true,
+      formatFamily: 'TABLE-DOUBLE',
     });
   });
 });

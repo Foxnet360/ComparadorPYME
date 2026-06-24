@@ -11,10 +11,29 @@ export interface JsonRepairResult {
   error?: string;
 }
 
+export interface JsonRepairOptions {
+  /** Called once after a successful repair with a stable category name. */
+  onRepairUsed?: (category: string) => void;
+}
+
+const REPAIR_CATEGORY_MAP: Record<string, string> = {
+  repairTrailingCommas: 'trailing_comma',
+  repairUnterminatedStrings: 'unterminated_string',
+  repairTruncatedJson: 'truncated_object',
+  repairInvalidEscapes: 'invalid_escape',
+  repairMissingQuotes: 'missing_quotes',
+  partial_extraction: 'partial_extraction',
+};
+
+function getRepairCategory(repairType: string | undefined): string {
+  if (!repairType) return 'unknown';
+  return REPAIR_CATEGORY_MAP[repairType] ?? 'unknown';
+}
+
 /**
  * Attempt to parse JSON, with automatic repair on failure
  */
-export function parseJsonWithRepair(jsonText: string): JsonRepairResult {
+export function parseJsonWithRepair(jsonText: string, options?: JsonRepairOptions): JsonRepairResult {
   // First, try standard parsing
   try {
     const data = JSON.parse(jsonText);
@@ -38,11 +57,13 @@ export function parseJsonWithRepair(jsonText: string): JsonRepairResult {
         const repaired = strategy(jsonText);
         if (repaired !== jsonText) {
           const data = JSON.parse(repaired);
+          const repairType = strategy.name;
+          options?.onRepairUsed?.(getRepairCategory(repairType));
           return {
             success: true,
             data,
             wasRepaired: true,
-            repairType: strategy.name,
+            repairType,
           };
         }
       } catch {
@@ -54,6 +75,7 @@ export function parseJsonWithRepair(jsonText: string): JsonRepairResult {
     try {
       const partialData = extractPartialData(jsonText);
       if (partialData && Object.keys(partialData).length > 0) {
+        options?.onRepairUsed?.(getRepairCategory('partial_extraction'));
         return {
           success: true,
           data: partialData,

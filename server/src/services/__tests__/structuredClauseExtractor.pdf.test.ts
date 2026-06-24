@@ -35,34 +35,43 @@ const fileExists = (filePath: string): boolean => {
 
 // Mock Gemini for testing
 vi.mock('@google/genai', () => ({
-  GoogleGenAI: vi.fn(() => ({
-    models: {
-      generateContent: vi.fn(() => Promise.resolve({
-        text: JSON.stringify({
-          coverages: [
-            {
-              name: 'AMPARO BASICO',
-              description: 'Cobertura todo riesgo de daño material',
-              insuredAmount: '$500,000,000',
-              deductible: {
-                components: [
-                  { type: 'percentage', value: 10 },
-                  { type: 'minimum', value: 5, currency: 'SMMLV' }
-                ],
-                rawText: '10% con mínimo de 5 SMMLV'
-              },
-              exclusions: ['Guerra', 'Terrorismo'],
-              conditions: ['Mantenimiento preventivo'],
-              sourcePage: 1
-            }
-          ],
-          generalExclusions: ['Actos dolosos'],
-          generalConditions: ['Pago de prima'],
-          definitions: { SMMLV: 'Salario Mínimo Mensual Legal Vigente' }
-        })
-      }))
-    }
-  }))
+  Type: {
+    STRING: 'string',
+    NUMBER: 'number',
+    ARRAY: 'array',
+    OBJECT: 'object',
+    BOOLEAN: 'boolean',
+  },
+  GoogleGenAI: vi.fn(function () {
+    return {
+      models: {
+        generateContent: vi.fn(() => Promise.resolve({
+          text: JSON.stringify({
+            coverages: [
+              {
+                name: 'AMPARO BASICO',
+                description: 'Cobertura todo riesgo de daño material',
+                insuredAmount: '$500,000,000',
+                deductible: {
+                  components: [
+                    { type: 'percentage', value: 10 },
+                    { type: 'minimum', value: 5, currency: 'SMMLV' }
+                  ],
+                  rawText: '10% con mínimo de 5 SMMLV'
+                },
+                exclusions: ['Guerra', 'Terrorismo'],
+                conditions: ['Mantenimiento preventivo'],
+                sourcePage: 1
+              }
+            ],
+            generalExclusions: ['Actos dolosos'],
+            generalConditions: ['Pago de prima'],
+            definitions: { SMMLV: 'Salario Mínimo Mensual Legal Vigente' }
+          })
+        }))
+      }
+    };
+  })
 }));
 
 describe('Structured Clause Extraction - Real PDFs', () => {

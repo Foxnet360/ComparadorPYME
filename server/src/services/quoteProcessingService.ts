@@ -5,7 +5,7 @@
  */
 
 import { geminiService } from './gemini';
-import { pdfExtractor } from './pdfExtractor';
+import { pdfExtractor, PDFExtractionResult } from './pdfExtractor';
 import { quoteParser, ParsedQuote } from './quoteParser';
 import { quoteScorer, ScoringResult } from './quoteScorer';
 import { normalizeCoverages } from './thesaurusMapper';
@@ -43,9 +43,19 @@ import {
   StructuredLogger,
   MetricCollector,
 } from '../utils/structuredLogger';
+import {
+  createExtractionMetricsEmitter,
+  ExtractionMetricsEmitter,
+} from './extractionMetrics';
+import { randomUUID } from 'crypto';
 
-// Feature flag for multimodal extraction
-const USE_MULTIMODAL = process.env.ENABLE_MULTIMODAL_EXTRACTION !== 'false';
+export interface NativeTextResult {
+  text: string;
+  pageTextMap: Record<number, string>;
+  pageTextItems?: PageTextItems[];
+  metadata?: { pageCount: number };
+  isScanned: boolean;
+}
 
 export interface ExtractionPromptSelection {
   prompt: string;
@@ -55,6 +65,7 @@ export interface ExtractionPromptSelection {
 
 export interface ExtractionPromptContext {
   pageCount?: number;
+  formatFamily?: string;
   logger?: StructuredLogger;
   metrics?: MetricCollector;
 }
@@ -110,6 +121,7 @@ export function selectExtractionPrompt(
   const prompt = buildPromptForFamily(detection.family, {
     pageCount,
     hasTables: detection.hasTables,
+    formatFamily: detection.family,
   });
 
   logger.info('pipeline_path_taken', 'Selected generic extraction prompt', {
@@ -303,7 +315,7 @@ async function extractWithZodValidation<T>(
   validate: ZodValidator<T>,
   context: string,
   maxRetries = 2
-): Promise<any> {
+): Promise<{ data: T; wasRawFallback: boolean }> {
   let lastRaw: any;
   let lastError: any;
 
@@ -311,7 +323,7 @@ async function extractWithZodValidation<T>(
     lastRaw = await attempt();
     const validation = validate(lastRaw);
     if (validation.success) {
-      return validation.data;
+      return { data: validation.data, wasRawFallback: false };
     }
     lastError = validation.error;
     const issues = formatZodError(validation.error);
@@ -319,18 +331,25 @@ async function extractWithZodValidation<T>(
   }
 
   console.warn(`   ⚠️ ${context} exceeded validation retries; using raw extraction. Last issues: ${formatZodError(lastError)}`);
-  return lastRaw;
+  return { data: lastRaw, wasRawFallback: true };
 }
 
 /**
  * Process a single quote using multimodal extraction
  * Timeout: 5 minutes per quote
  */
+export interface ProcessQuoteOptions {
+  domain?: string;
+  quoteId: string;
+  metrics: ExtractionMetricsEmitter;
+  nativeTextResult?: NativeTextResult;
+}
+
 export async function processQuoteMultimodal(
   quoteFile: Express.Multer.File,
   index: number,
   total: number,
-  options?: { domain?: string }
+  options?: ProcessQuoteOptions
 ): Promise<ParsedQuote> {
   return withTimeout(
     processQuoteMultimodalInternal(quoteFile, index, total, options),
@@ -343,29 +362,46 @@ async function processQuoteMultimodalInternal(
   quoteFile: Express.Multer.File,
   index: number,
   total: number,
-  options?: { domain?: string }
+  options?: ProcessQuoteOptions
 ): Promise<ParsedQuote> {
   const domain = options?.domain ?? 'pyme';
+  const quoteId = options?.quoteId ?? randomUUID();
+  const metrics = options?.metrics ?? createExtractionMetricsEmitter();
+
   console.log(`   Quote ${index + 1}/${total}: ${quoteFile.originalname}`);
-  
+
   try {
-    // Phase 1: Extract native text for robust insurer/format detection
+    // Phase 1: Extract native text for robust insurer/format detection.
+    // If the controller already extracted it, reuse it to avoid double work.
     console.log(`   📄 Phase 1: Extracting native PDF text for detection...`);
     let nativeText = '';
     let pageTextMap: Record<number, string> = {};
-    let extractionResult: { text?: string; pageTextMap?: Record<number, string>; pageTextItems?: PageTextItems[]; metadata?: { pageCount: number } } = {};
-    try {
-      extractionResult = await pdfExtractor.extractTextFromPdf(quoteFile.path);
-      nativeText = extractionResult.text || '';
-      pageTextMap = extractionResult.pageTextMap || {};
-      console.log(`   ✅ Extracted ${nativeText.length} characters of native text.`);
-    } catch (err: any) {
-      console.warn(`   ⚠️ Native text extraction failed: ${err.message}.`);
+    let extractionResult: Partial<PDFExtractionResult> = options?.nativeTextResult ?? {};
+
+    if (options?.nativeTextResult) {
+      nativeText = options.nativeTextResult.text || '';
+      pageTextMap = options.nativeTextResult.pageTextMap || {};
+      console.log(`   ✅ Reused native text: ${nativeText.length} characters.`);
+    } else {
+      try {
+        extractionResult = await pdfExtractor.extractTextFromPdf(quoteFile.path);
+        nativeText = extractionResult.text || '';
+        pageTextMap = extractionResult.pageTextMap || {};
+        console.log(`   ✅ Extracted ${nativeText.length} characters of native text.`);
+      } catch (err: any) {
+        console.warn(`   ⚠️ Native text extraction failed: ${err.message}.`);
+      }
     }
-    
+
+    metrics.emit({
+      quoteId,
+      index,
+      total,
+      pageCount: extractionResult.metadata?.pageCount ?? 1,
+      isScanned: extractionResult.isScanned ?? false,
+    });
+
     // Phase 1.5: Detect format family and insurer-specific template.
-    // When the template/graph pipeline is enabled, consult the Template Registry
-    // before falling back to generic format-family detection.
     console.log(`   📋 Phase 1.5: Detecting format family and insurer template from content...`);
     const textPreview = extractForDetection(nativeText, 2000);
     const pageTextItems = extractionResult.pageTextItems;
@@ -393,6 +429,24 @@ async function processQuoteMultimodalInternal(
         (detectionResult.templateId ? `, template: ${detectionResult.templateId} (${detectionResult.templateConfidence}%)` : '')
     );
 
+    const detectedInsurer = insurerProfileService.detectInsurer(nativeText);
+    metrics.emit({
+      quoteId,
+      index,
+      total,
+      path: 'v2',
+      insurer: detectedInsurer,
+      insurerDetectionSource: 'unknown',
+      formatFamily: family,
+    });
+    metrics.emit({
+      quoteId,
+      index,
+      total,
+      path: 'v2',
+      formatFamily: family,
+    });
+
     // Phase 2: Build specialized or template-aware prompt
     console.log(`   📝 Phase 2: Building extraction prompt...`);
     let layoutResult: LayoutParserResult = { tables: [], regions: [], rotatedPages: [], failed: false };
@@ -404,7 +458,7 @@ async function processQuoteMultimodalInternal(
       detectionResult,
       template,
       layoutResult,
-      { pageCount: extractionResult.metadata?.pageCount ?? 1 }
+      { pageCount: extractionResult.metadata?.pageCount ?? 1, formatFamily: family }
     );
 
     if (usedTemplate && template) {
@@ -413,71 +467,166 @@ async function processQuoteMultimodalInternal(
       console.log(`   ⚠️ Template ${detectionResult.templateId} matched but layout parsing failed or was disabled; falling back to generic prompt`);
     }
 
-    // Phase 3: Extract using multimodal vision directly on File API
+    // Phase 3: Extract using multimodal vision directly on File API.
+    // Fallback ladder: strict validation → retry up to 2× → raw extraction → legacy V1 → failed placeholder.
     console.log(`   🔍 Phase 3: Extracting with multimodal vision + text reference...`);
-    let extracted = await extractWithZodValidation<QuoteExtractionV2>(
-      () => geminiService.extractFromPdfWithVision(
-        quoteFile.path,
-        extractionPrompt,
-        quoteFile.originalname,
-        nativeText
-      ),
-      validateQuoteExtractionV2,
-      'Multimodal'
-    );
+    let extracted: QuoteExtractionV2 | null = null;
+    let repairUsed = false;
+    let repairType: string | undefined;
+    let repairAttempts = 0;
+
+    try {
+      const result = await extractWithZodValidation<QuoteExtractionV2>(
+        () => geminiService.extractFromPdfWithVision(
+          quoteFile.path,
+          extractionPrompt,
+          quoteFile.originalname,
+          nativeText,
+          {
+            skipValidation: true,
+            onRepairUsed: (category) => {
+              repairUsed = true;
+              repairType = category;
+              repairAttempts++;
+            },
+          }
+        ),
+        validateQuoteExtractionV2,
+        'Multimodal'
+      );
+      extracted = result.data;
+
+      if (result.wasRawFallback) {
+        metrics.emit({
+          quoteId,
+          index,
+          total,
+          result: 'raw_extraction_fallback',
+          repairAttempts,
+          repairType,
+          path: 'v2',
+        });
+      } else if (repairUsed) {
+        metrics.emit({
+          quoteId,
+          index,
+          total,
+          result: 'success_after_repair',
+          repairAttempts,
+          repairType,
+          path: 'v2',
+        });
+      } else {
+        metrics.emit({
+          quoteId,
+          index,
+          total,
+          result: 'success',
+          repairAttempts,
+          path: 'v2',
+        });
+      }
+    } catch (v2Error: any) {
+      console.warn(`   ⚠️ V2 extraction failed after retries/repair: ${v2Error.message}`);
+    }
 
     // Validate template schema when a template was used.
-    if (usedTemplate && template && detectionResult.templateId) {
+    if (extracted && usedTemplate && template && detectionResult.templateId) {
       const validation = templateRegistryService.validatePayload(detectionResult.templateId, extracted, domain);
       if (!validation.valid) {
         console.warn(`   ⚠️ Template schema validation failed: ${validation.errors?.join('; ')}. Falling back to generic extraction.`);
         const genericPrompt = buildPromptForFamily(family, {
           pageCount: extractionResult.metadata?.pageCount ?? 1,
           hasTables: detectionResult.hasTables,
+          formatFamily: family,
         });
-        extracted = await extractWithZodValidation<QuoteExtractionV2>(
-          () => geminiService.extractFromPdfWithVision(
-            quoteFile.path,
-            genericPrompt,
-            quoteFile.originalname,
-            nativeText
-          ),
-          validateQuoteExtractionV2,
-          'Multimodal'
-        );
+        try {
+          const genericResult = await extractWithZodValidation<QuoteExtractionV2>(
+            () => geminiService.extractFromPdfWithVision(
+              quoteFile.path,
+              genericPrompt,
+              quoteFile.originalname,
+              nativeText,
+              { skipValidation: true }
+            ),
+            validateQuoteExtractionV2,
+            'Multimodal'
+          );
+          extracted = genericResult.data;
+        } catch (genericError: any) {
+          console.warn(`   ⚠️ Generic extraction fallback failed: ${genericError.message}`);
+          extracted = null;
+        }
       }
+    }
+
+    // Legacy V1 fallback when V2 produced nothing usable.
+    if (!extracted || !extracted.rawCoverages || extracted.rawCoverages.length === 0) {
+      console.log(`   🔄 Falling back to legacy V1 extraction...`);
+      metrics.emit({
+        quoteId,
+        index,
+        total,
+        result: 'legacy_fallback',
+        path: 'legacy',
+        legacyFallback: true,
+        repairAttempts,
+      });
+      try {
+        return await processQuoteLegacy(
+          {
+            text: nativeText,
+            metadata: extractionResult.metadata,
+            filename: quoteFile.originalname,
+            isScanned: extractionResult.isScanned ?? false,
+          },
+          index,
+          total,
+          { domain, quoteId, metrics }
+        );
+      } catch (legacyError: any) {
+        console.error(`   ❌ Legacy fallback also failed:`, legacyError.message);
+        return createFailedPlaceholder(quoteFile, legacyError);
+      }
+    }
+
+    // Detect and log format family mismatch, but accept the model output.
+    if (extracted.formatFamily && extracted.formatFamily !== family) {
+      console.warn(
+        `   ⚠️ Format family mismatch: detected ${family}, model reported ${extracted.formatFamily}`
+      );
     }
 
     // Phase 3.5: Enrich extracted raw coverages with graph metadata when enabled.
     if (featureFlags.isEnabled('useTemplateGraphPipeline')) {
       const insurerName = extracted.insurerName || detectionResult.templateId ? template?.insurer : undefined;
-      extracted.rawCoverages = await enrichRawCoveragesWithGraph(
+      extracted.rawCoverages = (await enrichRawCoveragesWithGraph(
         extracted.rawCoverages || [],
         insurerName,
         domain
-      );
+      )) as any;
     }
-    
+
     // Phase 4: Normalize coverages
     console.log(`   🔄 Phase 4: Normalizing coverages... (domain: ${domain})`);
     const normalizationResult = await buildCanonicalCoverages(
-      extracted.rawCoverages || [],
-      extracted.insuredAssets || [],
-      extracted.generalDeductibles || [],
+      (extracted.rawCoverages || []) as any[],
+      (extracted.insuredAssets || []) as any[],
+      (extracted.generalDeductibles || []) as any[],
       pageTextMap,
       domain
     );
-    
+
     // Phase 5: Extract premium breakdown
     console.log(`   💰 Phase 5: Extracting premium breakdown...`);
     const premiumBreakdown = extractPremiumBreakdown(extracted);
     const perCoveragePremiums = extractPerCoveragePremiums(extracted.rawCoverages || []);
     const premiumValidation = validatePremiumBreakdown(premiumBreakdown, perCoveragePremiums);
-    
+
     if (premiumValidation.warnings.length > 0) {
       console.log(`   ⚠️ Premium warnings: ${premiumValidation.warnings.join(', ')}`);
     }
-    
+
     // Phase 6: Reconcile quote against clause data
     console.log(`   🔍 Phase 6: Reconciling quote against clause data...`);
     let reconciliationResults: import('../schemas/extractionSchemas').ReconciliationResult[] = [];
@@ -515,7 +664,7 @@ async function processQuoteMultimodalInternal(
     } catch (reconError: any) {
       console.warn(`   ⚠️ Reconciliation failed (non-blocking): ${reconError.message}`);
     }
-    
+
     // Build ParsedQuote from normalized data
     const parsed: ParsedQuote = {
       insurerName: extracted.insurerName || 'NO ESPECIFICADO',
@@ -540,7 +689,7 @@ async function processQuoteMultimodalInternal(
         rawTextSnippet: c.rawTextSnippet,
         calculatedPage: c.pageNumber || undefined
       })),
-      validityPeriod: extracted.validityPeriod,
+      validityPeriod: extracted.validityPeriod ?? undefined,
       specialConditions: [
         ...(extracted.specialConditions || []),
         ...(premiumValidation.warnings),
@@ -557,13 +706,21 @@ async function processQuoteMultimodalInternal(
       pageTextMap: pageTextMap,
       reconciliationResults: reconciliationResults.length > 0 ? reconciliationResults : undefined,
     };
-    
+
+    metrics.emit({
+      quoteId,
+      index,
+      total,
+      rawCoverageCount: extracted.rawCoverages?.length ?? 0,
+      canonicalCoverageCount: normalizationResult.canonicalCoverages.length,
+    });
+
     console.log(`   ✅ Multimodal extraction: ${parsed.insurerName}, ${parsed.coverages.length} coverages, premium: ${parsed.priceAnnual}`);
     return parsed;
-    
+
   } catch (error: any) {
     console.error(`   ❌ Multimodal extraction failed:`, error.message);
-    throw error;
+    return createFailedPlaceholder(quoteFile, error);
   }
 }
 
@@ -575,7 +732,7 @@ export async function processQuoteLegacy(
   quote: any,
   index: number,
   total: number,
-  options?: { domain?: string }
+  options?: ProcessQuoteOptions
 ): Promise<ParsedQuote> {
   return withTimeout(
     processQuoteLegacyInternal(quote, index, total, options),
@@ -588,14 +745,33 @@ async function processQuoteLegacyInternal(
   quote: any,
   index: number,
   total: number,
-  options?: { domain?: string }
+  options?: ProcessQuoteOptions
 ): Promise<ParsedQuote> {
   const domain = options?.domain ?? 'pyme';
+  const quoteId = options?.quoteId ?? randomUUID();
+  const metrics = options?.metrics ?? createExtractionMetricsEmitter();
+
   console.log(`   Quote ${index + 1}/${total}: ${quote.filename}`);
   
   try {
+    metrics.emit({
+      quoteId,
+      index,
+      total,
+      pageCount: quote.metadata?.pageCount ?? 1,
+      isScanned: quote.isScanned ?? false,
+    });
+
     // Detect insurer and get profile
     const detectedInsurer = insurerProfileService.detectInsurer(quote.text);
+    metrics.emit({
+      quoteId,
+      index,
+      total,
+      insurer: detectedInsurer,
+      insurerDetectionSource: 'unknown',
+      formatFamily: 'legacy',
+    });
     const profile = insurerProfileService.getProfile(detectedInsurer);
     console.log(`   🔍 Detected insurer: ${detectedInsurer} (${profile.displayName})`);
     
@@ -605,7 +781,7 @@ async function processQuoteLegacyInternal(
     // Try structured extraction first (JSON mode)
     let parsed: ParsedQuote;
     try {
-      const structuredResult = await extractWithZodValidation<QuoteExtraction>(
+      const { data: structuredResult } = await extractWithZodValidation<QuoteExtraction>(
         () => geminiService.extractStructured(
           quote.text,
           extractionPrompt,
@@ -614,7 +790,7 @@ async function processQuoteLegacyInternal(
         validateQuoteExtraction,
         'Legacy'
       );
-      
+
       // Normalize coverages using thesaurus
       const normalizedCoverages = normalizeCoverages(
         (structuredResult.coverages || []).map((c: any) => ({
@@ -624,11 +800,11 @@ async function processQuoteLegacyInternal(
         })),
         domain
       );
-      
+
       if (normalizedCoverages.needsReview) {
         console.log(`   ⚠️ Some coverages need review after thesaurus normalization`);
       }
-      
+
       // Convert structured result to ParsedQuote format
       parsed = {
         insurerName: structuredResult.insurerName || 'NO ESPECIFICADO',
@@ -683,6 +859,38 @@ async function processQuoteLegacyInternal(
 }
 
 /**
+ * Create a failed placeholder quote when all extraction paths fail.
+ * Keeps the /api/analyze response shape stable.
+ */
+export function createFailedPlaceholder(
+  quoteFile: Express.Multer.File,
+  error: any
+): ParsedQuote {
+  const errorMessage = error?.message || 'Unknown error';
+  const isServiceError =
+    errorMessage.includes('503') ||
+    errorMessage.includes('Service Unavailable') ||
+    errorMessage.includes('high demand');
+  const displayError = isServiceError
+    ? 'Servicio temporalmente no disponible. Intente nuevamente en unos momentos.'
+    : errorMessage;
+
+  return {
+    insurerName: quoteFile.originalname.replace(/COTIZACION.*?-\s*/i, '').replace(/\.pdf$/i, '') || 'Desconocido',
+    policyName: 'Error en procesamiento',
+    priceAnnual: 0,
+    currency: 'COP',
+    coverages: [],
+    specialConditions: [`Error: ${displayError}`],
+    rawText: '',
+    parseConfidence: 0,
+    isFailed: true,
+    errorCategory: isServiceError ? 'SERVICE_UNAVAILABLE' : 'EXTRACTION_FAILED',
+    errorCode: isServiceError ? 'GEMINI_SERVICE_UNAVAILABLE' : 'EXTRACTION_ERROR',
+  };
+}
+
+/**
  * Create a default scoring result for error cases
  */
 export function createDefaultScoringResult(quote: ParsedQuote): ScoringResult {
@@ -710,10 +918,25 @@ export function createDefaultScoringResult(quote: ParsedQuote): ScoringResult {
 }
 
 /**
- * Determines whether to use multimodal extraction
+ * Determines whether to use multimodal extraction.
+ * The ENABLE_MULTIMODAL_EXTRACTION=false env var is kept as an emergency escape hatch.
  */
 export function isMultimodalEnabled(): boolean {
-  return USE_MULTIMODAL;
+  return featureFlags.isEnabled('enableMultimodalExtraction');
+}
+
+/**
+ * Decide whether a given PDF should use the V2 multimodal extraction path.
+ * V2 is the default for every non-scanned PDF. Legacy is used when V2 is
+ * explicitly disabled or the PDF appears to be image-only.
+ */
+export function shouldUseV2(
+  _file: Express.Multer.File,
+  nativeTextResult: NativeTextResult
+): boolean {
+  if (!isMultimodalEnabled()) return false;
+  if (nativeTextResult.isScanned) return false;
+  return true;
 }
 
 export { calculateDynamicTimeout, withTimeout };

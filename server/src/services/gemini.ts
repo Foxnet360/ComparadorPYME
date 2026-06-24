@@ -39,6 +39,11 @@ export const QuoteExtractionSchemaV2: any = {
       description: "Policy validity period",
       nullable: true,
     },
+    formatFamily: {
+      type: SchemaType.STRING,
+      description: "Detected format family of the quote (e.g. TABLE-DOUBLE, SECTIONS)",
+      nullable: false,
+    },
     premium: {
       type: SchemaType.OBJECT,
       description: "Premium breakdown",
@@ -75,11 +80,20 @@ export const QuoteExtractionSchemaV2: any = {
           rawName: { type: SchemaType.STRING, description: "Exact coverage name from document" },
           insuredAmount: { type: SchemaType.NUMBER, description: "Insured amount", nullable: true },
           deductible: { type: SchemaType.STRING, description: "Deductible text as it appears in the document. If the coverage has no deductible, use null. If not found in the main table, search ALL pages including clauses, conditions, and annexes.", nullable: true },
-          rawTextSnippet: { type: SchemaType.STRING, description: "Un fragmento continuo de 50-100 caracteres de texto adyacente a la cobertura en el PDF de origen para auditoría posicional", nullable: true },
+          rawTextSnippet: {
+            type: SchemaType.STRING,
+            description: "Exact contiguous text snippet (50-150 chars) from the PDF where this coverage appears. Must be verifiable in the native text.",
+            nullable: false,
+          },
+          pageNumber: {
+            type: SchemaType.NUMBER,
+            description: "1-based PDF page number where rawTextSnippet appears.",
+            nullable: false,
+          },
           premium: { type: SchemaType.NUMBER, description: "Premium for this coverage", nullable: true },
           notes: { type: SchemaType.STRING, nullable: true },
         },
-        required: ["rawName"],
+        required: ["rawName", "rawTextSnippet", "pageNumber"],
       },
     },
     subLimits: {
@@ -121,7 +135,7 @@ export const QuoteExtractionSchemaV2: any = {
       items: { type: SchemaType.STRING },
     },
   },
-  required: ["insurerName", "policyName", "premium", "rawCoverages"],
+  required: ["insurerName", "policyName", "formatFamily", "premium", "rawCoverages"],
 };
 
 export const DeductibleSchema: any = {
@@ -375,7 +389,8 @@ export const geminiService = {
         pdfPath: string,
         prompt: string,
         filename: string,
-        extractedText?: string
+        extractedText?: string,
+        options?: { skipValidation?: boolean; onRepairUsed?: (category: string) => void }
     ): Promise<any> => {
         let uploadedFile: any = null;
         try {
@@ -438,6 +453,14 @@ export const geminiService = {
                     const parseResult = parseJsonWithRepair(responseText);
                     
                     if (parseResult.success) {
+                        if (options?.onRepairUsed && parseResult.wasRepaired && parseResult.repairType) {
+                            options.onRepairUsed(parseResult.repairType);
+                        }
+
+                        if (options?.skipValidation) {
+                            return parseResult.data;
+                        }
+
                         const validated = validateGeminiOutput<QuoteExtractionV2>(
                             parseResult.data,
                             validateQuoteExtractionV2,

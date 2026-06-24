@@ -32,6 +32,8 @@ describe('extractionSchemas', () => {
           rawName: 'Incendio',
           insuredAmount: 500000000,
           deductible: '10%',
+          rawTextSnippet: 'Incendio cubre 500M con deducible 10%',
+          pageNumber: 1,
         },
       ],
     };
@@ -95,10 +97,12 @@ describe('extractionSchemas', () => {
         { type: 'percentage', value: 10 },
         { type: 'minimum', value: 5, currency: 'SMMLV' },
       ],
+      compoundOperator: 'greater_of',
       isZero: false,
       hasMinimum: true,
       hasMaximum: false,
       isComposite: true,
+      rawText: '10% / mín. 5 SMMLV',
     };
 
     it('accepts a valid deductible structure', () => {

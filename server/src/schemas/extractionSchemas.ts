@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { env } from '../config/env';
 
 /**
  * Shared Zod schemas for LLM extraction outputs.
@@ -7,10 +8,10 @@ import { z } from 'zod';
  * Strictness can be increased via `ZOD_SCHEMA_VERSION` when the rollout is stable.
  */
 
-const isStrict = (process.env.ZOD_SCHEMA_VERSION || 'v1') !== 'v1';
+const isStrict = (process.env.ZOD_SCHEMA_VERSION || 'v1') === 'v2';
 const passthrough = <T extends z.ZodRawShape>(shape: T) => {
   const base = z.object(shape);
-  return isStrict ? base.strict() : base.passthrough();
+  return isStrict ? base.catchall(z.never()) : base;
 };
 
 // -----------------------------------------------------------------------------
@@ -51,7 +52,8 @@ export const RawCoverageSchema = passthrough({
   rawName: z.string().min(1),
   insuredAmount: z.number().min(0).nullish(),
   deductible: z.string().nullish(),
-  rawTextSnippet: z.string().nullish(),
+  rawTextSnippet: z.string().min(10).max(500),
+  pageNumber: z.number().int().min(1),
   premium: z.number().min(0).nullish(),
   notes: z.string().nullish(),
 });
@@ -76,6 +78,7 @@ export const QuoteExtractionSchemaV2 = passthrough({
   insurerName: z.string().min(1),
   policyName: z.string().min(1),
   validityPeriod: z.string().nullish(),
+  formatFamily: z.string().min(1).default('UNKNOWN'),
   premium: PremiumSchema,
   insuredAssets: z.array(InsuredAssetSchema).nullish(),
   rawCoverages: z.array(RawCoverageSchema).min(1),
@@ -116,12 +119,22 @@ export const DeductibleComponentSchema = passthrough({
   currency: z.string().nullish(),
 });
 
+export const DeductibleCompoundOperatorSchema = z.enum([
+  'none',
+  'greater_of',
+  'lesser_of',
+  'sum',
+  'and',
+]);
+
 export const DeductibleStructureSchema = passthrough({
   components: z.array(DeductibleComponentSchema),
+  compoundOperator: DeductibleCompoundOperatorSchema.default('none'),
   isZero: z.boolean(),
   hasMinimum: z.boolean(),
   hasMaximum: z.boolean(),
   isComposite: z.boolean(),
+  rawText: z.string(),
 });
 
 // -----------------------------------------------------------------------------
@@ -222,8 +235,8 @@ export interface CurrencyRates {
 }
 
 const DEFAULT_RATES: CurrencyRates = {
-  smmlv: parseInt(process.env.SMMLV_VALUE || '1423500', 10),
-  uvt: parseInt(process.env.UVT_VALUE || '42412', 10),
+  smmlv: env.SMMLV_VALUE,
+  uvt: env.UVT_VALUE,
 };
 
 export function normalizeValueToCOP(
