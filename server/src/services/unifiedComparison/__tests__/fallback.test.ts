@@ -3,6 +3,7 @@
  * Tests automatic fallback when unified engine fails
  */
 
+import { describe, it, expect, vi } from 'vitest';
 import { comparisonEngineAdapter } from '../comparisonEngineAdapter';
 import { unifiedComparisonEngine } from '../unifiedComparisonEngine';
 import { featureFlags } from '../../../config/featureFlags';
@@ -18,7 +19,7 @@ describe('Fallback Mechanism', () => {
   it('should fallback to legacy when unified engine throws error', async () => {
     // Mock the unified engine to fail
     const originalCompare = unifiedComparisonEngine.compare;
-    unifiedComparisonEngine.compare = jest.fn().mockRejectedValue(
+    unifiedComparisonEngine.compare = vi.fn().mockRejectedValue(
       new Error('Simulated unified engine failure')
     );
 
@@ -42,7 +43,7 @@ describe('Fallback Mechanism', () => {
     featureFlags.updateFlag('useUnifiedComparisonEngine', false);
 
     // The adapter should not call unified engine
-    const compareSpy = jest.spyOn(unifiedComparisonEngine, 'compare');
+    const compareSpy = vi.spyOn(unifiedComparisonEngine, 'compare');
 
     try {
       await comparisonEngineAdapter.generateComparison(['fake1.pdf']);
@@ -58,7 +59,7 @@ describe('Fallback Mechanism', () => {
 
   it('should handle network errors gracefully', async () => {
     const originalCompare = unifiedComparisonEngine.compare;
-    unifiedComparisonEngine.compare = jest.fn().mockRejectedValue(
+    unifiedComparisonEngine.compare = vi.fn().mockRejectedValue(
       new Error('Network error: Connection refused')
     );
 
@@ -73,7 +74,7 @@ describe('Fallback Mechanism', () => {
 
   it('should handle timeout errors gracefully', async () => {
     const originalCompare = unifiedComparisonEngine.compare;
-    unifiedComparisonEngine.compare = jest.fn().mockRejectedValue(
+    unifiedComparisonEngine.compare = vi.fn().mockRejectedValue(
       new Error('Request timeout after 30000ms')
     );
 

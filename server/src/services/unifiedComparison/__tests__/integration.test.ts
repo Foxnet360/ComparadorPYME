@@ -8,6 +8,7 @@
 import { unifiedComparisonEngine } from '../unifiedComparisonEngine';
 import { comparisonEngineAdapter } from '../comparisonEngineAdapter';
 import { featureFlags } from '../../../config/featureFlags';
+import { setCachedUnifiedResult, getCachedUnifiedResult } from '../../cache/redisCache';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -18,11 +19,12 @@ featureFlags.updateFlag('useUnifiedComparisonEngine', true);
 
 describe('Unified Comparison Engine Integration', () => {
   const testPdfDir = path.join(__dirname, '..', '..', '..', '..', '..', 'Ejemplos', 'kimi_resultados');
-  
-  // Skip tests if no test PDFs available
+
+  // Skip tests if no test PDFs available or no Gemini API key is configured
   const hasTestPdfs = fs.existsSync(testPdfDir);
-  
-  (hasTestPdfs ? describe : describe.skip)('with sample quotes', () => {
+  const hasGeminiKey = !!process.env.GEMINI_API_KEY;
+
+  (hasTestPdfs && hasGeminiKey ? describe : describe.skip)('with sample quotes', () => {
     it('should process multiple quotes and return valid result', async () => {
       // Find test PDFs
       const pdfFiles = fs.readdirSync(testPdfDir)
@@ -117,20 +119,18 @@ describe('Unified Comparison Engine Integration', () => {
   
   describe('caching', () => {
     it('should cache and retrieve results', async () => {
-      const { setCachedUnifiedResult, getCachedUnifiedResult } = require('../../cache/redisCache');
-      
       const testResult = {
         metadata: { test: true },
         insurers: [],
         coverageMatrix: []
       };
-      
+
       await setCachedUnifiedResult('test-hash', testResult);
       const cached = await getCachedUnifiedResult('test-hash');
-      
+
       expect(cached).toBeDefined();
       expect(cached.metadata.test).toBe(true);
-      
+
       console.log('✅ Cache test passed');
     });
   });
