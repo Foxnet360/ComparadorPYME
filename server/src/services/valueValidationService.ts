@@ -146,7 +146,7 @@ function isSuspiciousValue(value: string): boolean {
 /**
  * Batch validate multiple coverage values
  */
-export function validateCoverageValues(
+export function validateValueSources(
     coverages: Array<{ name: string; value: string }>,
     rawText: string
 ): Array<{ coverageName: string; value: string; validation: ValueValidationResult }> {
@@ -159,5 +159,5 @@ export function validateCoverageValues(
 
 export default {
     validateValueAgainstRawText,
-    validateCoverageValues
+    validateValueSources
 };

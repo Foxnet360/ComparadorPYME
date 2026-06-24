@@ -11,7 +11,7 @@ import { quoteScorer, ScoringResult } from './quoteScorer';
 import { normalizeCoverages } from './thesaurusMapper';
 import { insurerProfileService } from './insurerProfileService';
 import { validateCoverageValues } from './coverageValueValidator';
-import { validateCoverageValues as validateValueSources } from './valueValidationService';
+import { validateValueSources } from './valueValidationService';
 import { dualExtractionService } from './dualExtractionService';
 import {
   detectFormatFamily,

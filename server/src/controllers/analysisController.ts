@@ -19,7 +19,7 @@ import { insurerProfileService } from '../services/insurerProfileService';
 import { saveAnalysisHistory, getAnalysisHistoryByUser } from '../repositories/analysisRepository';
 import { formatCOP } from '../utils/formatCurrency';
 import { validateCoverageValues } from '../services/coverageValueValidator';
-import { validateCoverageValues as validateValueSources } from '../services/valueValidationService';
+import { validateValueSources } from '../services/valueValidationService';
 import { dualExtractionService, DualExtractionResult } from '../services/dualExtractionService';
 import {
   processQuoteMultimodal,
