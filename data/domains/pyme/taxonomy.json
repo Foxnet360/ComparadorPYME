@@ -5,8 +5,9 @@
     "region": "Colombia",
     "currency": "COP",
     "salaryReference": "SMMLV",
-    "salaryValue2024": 1300000,
-    "uvtValue2024": 42412
+    "salaryValue2024": 1423500,
+    "uvtValue2024": 42412,
+    "source": "SMMLV 2024: Ministerio de Trabajo de Colombia (Resolución 0000 de 2024); UVT 2024: DIAN (Unidad de Valor Tributario para el año gravable 2024)"
   },
   "categories": [
     {

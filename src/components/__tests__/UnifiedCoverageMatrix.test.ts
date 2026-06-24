@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatMatrixValue, buildExportNotes } from '../../../components/UnifiedCoverageMatrix';
+import { formatMatrixValue, buildExportNotes, transformQuotesToMatrix, CATEGORY_CONFIGS } from '../../../components/UnifiedCoverageMatrix';
 
 describe('UnifiedCoverageMatrix - Pure Functions', () => {
   describe('formatMatrixValue', () => {
@@ -91,6 +91,86 @@ describe('UnifiedCoverageMatrix - Pure Functions', () => {
         'row1-0': 'Keep this',
         'row2-1': 'Also keep'
       });
+    });
+  });
+
+  describe('Dynamic Category Configuration & Grouping', () => {
+    it('should load categories dynamically from taxonomy.json', () => {
+      expect(CATEGORY_CONFIGS).toBeDefined();
+      expect(CATEGORY_CONFIGS.length).toBeGreaterThan(0);
+      
+      const incendio = CATEGORY_CONFIGS.find(c => c.id === 1);
+      expect(incendio).toBeDefined();
+      expect(incendio?.canonicalName).toBe('Incendio (Edificio y Contenidos)');
+    });
+
+    it('should group exclusive coverages semantically when similarity is >= 0.70', () => {
+      const mockQuotes = [
+        {
+          insurerName: 'Insurer A',
+          coverages: [
+            {
+              name: 'Robo con Violencia',
+              categoryId: null,
+              value: '$10.000.000',
+              deductible: '10%'
+            }
+          ]
+        },
+        {
+          insurerName: 'Insurer B',
+          coverages: [
+            {
+              name: 'Robo con Biolencia',
+              categoryId: null,
+              value: '$8.000.000',
+              deductible: '15%'
+            }
+          ]
+        }
+      ] as any[];
+
+      const matrix = transformQuotesToMatrix(mockQuotes);
+
+      const exclusiveRows = matrix.filter(r => r.sectionId === 99 && r.type === 'data');
+      
+      expect(exclusiveRows).toHaveLength(1);
+      expect(exclusiveRows[0].label).toBe('Robo con Violencia');
+      expect(exclusiveRows[0].cells[0].value).toBe('$10.000.000 (Ded: 10%)');
+      expect(exclusiveRows[0].cells[1].value).toBe('$8.000.000 (Ded: 15%)');
+    });
+
+    it('should NOT group exclusive coverages when similarity is < 0.70', () => {
+      const mockQuotes = [
+        {
+          insurerName: 'Insurer A',
+          coverages: [
+            {
+              name: 'Robo con Violencia',
+              categoryId: null,
+              value: '$10.000.000'
+            }
+          ]
+        },
+        {
+          insurerName: 'Insurer B',
+          coverages: [
+            {
+              name: 'Daños por Agua Raros',
+              categoryId: null,
+              value: 'Incluido'
+            }
+          ]
+        }
+      ] as any[];
+
+      const matrix = transformQuotesToMatrix(mockQuotes);
+
+      const exclusiveRows = matrix.filter(r => r.sectionId === 99 && r.type === 'data');
+      
+      expect(exclusiveRows).toHaveLength(2);
+      expect(exclusiveRows.map(r => r.label)).toContain('Robo con Violencia');
+      expect(exclusiveRows.map(r => r.label)).toContain('Daños por Agua Raros');
     });
   });
 });

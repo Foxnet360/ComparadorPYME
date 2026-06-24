@@ -1,19 +1,6 @@
-export const PLANTILLA_ITEMS = [
-  "Incendio (Edificio y Contenidos)",
-  "Lucro Cesante",
-  "Sustracción / Hurto",
-  "Equipo Eléctrico y Electrónico",
-  "Rotura de Maquinaria",
-  "Responsabilidad Civil (RCE)",
-  "Vidrios Planos",
-  "Manejo Global / Infidelidad",
-  "Transporte de Mercancías",
-  "Transporte de Valores",
-  "Asistencia PYME",
-  "Asistencia Legal",
-  "Huelga, Motín, Asonada (HMACC)",
-  "Terremoto y Eventos Catastróficos"
-];
+import pymeTaxonomy from './data/domains/pyme/taxonomy.json';
+
+export const PLANTILLA_ITEMS = pymeTaxonomy.categories.map((c) => c.name);
 
 export const SYSTEM_INSTRUCTION_ANALYZER = `
 Eres el "Agente Comparador CSA" (v7.0). Tu misión es auditar cotizaciones de seguros con rigor técnico y presentar insights estratégicos.

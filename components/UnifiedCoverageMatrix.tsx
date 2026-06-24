@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, lazy, Suspense, memo } from 'react';
 import { QuoteAnalysis, MatrixRow, MatrixCell } from '../types';
+import { PLANTILLA_ITEMS } from '../constants';
 import { Info, AlertTriangle, ListChecks, Trophy, DollarSign, Calendar, ShieldCheck, Download, Award, FileText, ChevronDown, Check, AlertCircle, Eye, Loader2, Pin } from 'lucide-react';
 import { DeductibleBadge } from './DeductibleBadge';
 import { formatPercentage } from '../utils/formatCurrency';
@@ -85,24 +86,6 @@ const CoverageCell = memo(({
 
 CoverageCell.displayName = 'CoverageCell';
 
-// Config and transformer duplicated locally to avoid bundle import issues in Vite
-export const PLANTILLA_ITEMS = [
-  "Incendio (Edificio y Contenidos)",
-  "Lucro Cesante",
-  "Sustracción / Hurto",
-  "Equipo Eléctrico y Electrónico",
-  "Rotura de Maquinaria",
-  "Responsabilidad Civil (RCE)",
-  "Vidrios Planos",
-  "Manejo Global / Infidelidad",
-  "Transporte de Mercancías",
-  "Transporte de Valores",
-  "Asistencia PYME",
-  "Asistencia Legal",
-  "Huelga, Motín, Asonada (HMACC)",
-  "Terremoto y Eventos Catastróficos"
-];
-
 interface CategoryConfig {
   id: number;
   canonicalName: string;
@@ -113,134 +96,67 @@ interface CategoryConfig {
   }>;
 }
 
-export const CATEGORY_CONFIGS: CategoryConfig[] = [
-  {
-    id: 1,
-    canonicalName: "Incendio (Edificio y Contenidos)",
-    headerLabel: "AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL",
-    rows: [
-      { label: "Valor Asegurado", field: "value" },
-      { label: "Deducible", field: "deductible" },
-      { label: "Incluye", field: "details" }
-    ]
-  },
-  {
-    id: 14,
-    canonicalName: "Terremoto y Eventos Catastróficos",
-    headerLabel: "TERREMOTO / TEMBLOR / ERUPCIÓN VOLCÁNICA",
-    rows: [
-      { label: "Valor Asegurado", field: "value" },
-      { label: "Deducible", field: "deductible" }
-    ]
-  },
-  {
-    id: 13,
-    canonicalName: "Huelga, Motín, Asonada (HMACC)",
-    headerLabel: "AMIT / HMACC (HUELGA, MOTÍN, ASONADA, CONMOCIÓN CIVIL)",
-    rows: [
-      { label: "Valor Asegurado", field: "value" },
-      { label: "Deducible", field: "deductible" }
-    ]
-  },
-  {
-    id: 4,
-    canonicalName: "Equipo Eléctrico y Electrónico",
-    headerLabel: "DAÑO INTERNO - EQUIPO ELÉCTRICO Y ELECTRÓNICO",
-    rows: [
-      { label: "Valor Asegurado", field: "value" },
-      { label: "Deducible", field: "deductible" }
-    ]
-  },
-  {
-    id: 3,
-    canonicalName: "Sustracción / Hurto",
-    headerLabel: "HURTO CALIFICADO / SUSTRACCIÓN CON VIOLENCIA",
-    rows: [
-      { label: "Valor Asegurado", field: "value" },
-      { label: "Deducible", field: "deductible" }
-    ]
-  },
-  {
-    id: 2,
-    canonicalName: "Lucro Cesante",
-    headerLabel: "LUCRO CESANTE / PÉRDIDAS CONSECUENCIALES",
-    rows: [
-      { label: "Valor Asegurado", field: "value" },
-      { label: "Deducible", field: "deductible" }
-    ]
-  },
-  {
-    id: 8,
-    canonicalName: "Manejo Global / Infidelidad",
-    headerLabel: "INFIDELIDAD DE EMPLEADOS",
-    rows: [
-      { label: "Valor Asegurado", field: "value" },
-      { label: "Deducible", field: "deductible" }
-    ]
-  },
-  {
-    id: 6,
-    canonicalName: "Responsabilidad Civil (RCE)",
-    headerLabel: "RESPONSABILIDAD CIVIL EXTRACONTRACTUAL (RCE)",
-    rows: [
-      { label: "Valor Asegurado", field: "value" },
-      { label: "Deducible", field: "deductible" },
-      { label: "Incluye", field: "details" }
-    ]
-  },
-  {
-    id: 5,
-    canonicalName: "Rotura de Maquinaria",
-    headerLabel: "ROTURA DE MAQUINARIA",
-    rows: [
-      { label: "Cobertura", field: "value" },
-      { label: "Deducible", field: "deductible" }
-    ]
-  },
-  {
-    id: 7,
-    canonicalName: "Vidrios Planos",
-    headerLabel: "ROTURA ACCIDENTAL DE VIDRIOS",
-    rows: [
-      { label: "Sublímite", field: "value" },
-      { label: "Deducible", field: "deductible" }
-    ]
-  },
-  {
-    id: 9,
-    canonicalName: "Transporte de Mercancías",
-    headerLabel: "TRANSPORTE DE MERCANCÍAS",
-    rows: [
-      { label: "Valor Asegurado", field: "value" },
-      { label: "Deducible", field: "deductible" }
-    ]
-  },
-  {
-    id: 10,
-    canonicalName: "Transporte de Valores",
-    headerLabel: "TRANSPORTE DE VALORES",
-    rows: [
-      { label: "Valor Asegurado", field: "value" },
-      { label: "Deducible", field: "deductible" }
-    ]
-  },
-  {
-    id: 11,
-    canonicalName: "Asistencia PYME",
-    headerLabel: "ASISTENCIAS",
-    rows: [
-      { label: "Incluida", field: "details" }
-    ]
-  },
-  {
-    id: 12,
-    canonicalName: "Asistencia Legal",
-    headerLabel: "ASISTENCIA LEGAL",
-    rows: [
-      { label: "Incluida", field: "details" }
-    ]
-  }
-];
+import taxonomyData from '../data/domains/pyme/taxonomy.json';
+
+const HEADER_LABEL_MAPPING: Record<number, string> = {
+  1: "AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL",
+  14: "TERREMOTO / TEMBLOR / ERUPCIÓN VOLCÁNICA",
+  13: "AMIT / HMACC (HUELGA, MOTÍN, ASONADA, CONMOCIÓN CIVIL)",
+  4: "DAÑO INTERNO - EQUIPO ELÉCTRICO Y ELECTRÓNICO",
+  3: "HURTO CALIFICADO / SUSTRACCIÓN CON VIOLENCIA",
+  2: "LUCRO CESANTE / PÉRDIDAS CONSECUENCIALES",
+  8: "INFIDELIDAD DE EMPLEADOS",
+  6: "RESPONSABILIDAD CIVIL EXTRACONTRACTUAL (RCE)",
+  5: "ROTURA DE MAQUINARIA",
+  7: "ROTURA ACCIDENTAL DE VIDRIOS",
+  9: "TRANSPORTE DE MERCANCÍAS",
+  10: "TRANSPORTE DE VALORES",
+  11: "ASISTENCIAS",
+  12: "ASISTENCIA LEGAL"
+};
+
+const ROWS_MAPPING: Record<number, Array<{ label: string; field: 'value' | 'deductible' | 'details' }>> = {
+  1: [
+    { label: "Valor Asegurado", field: "value" },
+    { label: "Deducible", field: "deductible" },
+    { label: "Incluye", field: "details" }
+  ],
+  6: [
+    { label: "Valor Asegurado", field: "value" },
+    { label: "Deducible", field: "deductible" },
+    { label: "Incluye", field: "details" }
+  ],
+  5: [
+    { label: "Cobertura", field: "value" },
+    { label: "Deducible", field: "deductible" }
+  ],
+  7: [
+    { label: "Sublímite", field: "value" },
+    { label: "Deducible", field: "deductible" }
+  ],
+  11: [
+    { label: "Incluida", field: "details" }
+  ],
+  12: [
+    { label: "Incluida", field: "details" }
+  ]
+};
+
+export const CATEGORY_CONFIGS: CategoryConfig[] = (taxonomyData.categories || []).map(cat => {
+  const id = cat.id;
+  const canonicalName = cat.name;
+  const headerLabel = HEADER_LABEL_MAPPING[id] || canonicalName.toUpperCase();
+  const rows = ROWS_MAPPING[id] || [
+    { label: "Valor Asegurado", field: "value" },
+    { label: "Deducible", field: "deductible" }
+  ];
+  return {
+    id,
+    canonicalName,
+    headerLabel,
+    rows
+  };
+});
 
 export function isExcludedValue(val: string | undefined | null): boolean {
   if (!val) return true;
@@ -301,6 +217,40 @@ export function formatMatrixValue(val: string | undefined | null): string {
   }
   
   return val;
+}
+
+function localLevenshteinDistance(str1: string, str2: string): number {
+  const matrix: number[][] = [];
+  for (let i = 0; i <= str1.length; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= str2.length; j++) {
+    matrix[0][j] = j;
+  }
+  for (let i = 1; i <= str1.length; i++) {
+    for (let j = 1; j <= str2.length; j++) {
+      const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost
+      );
+    }
+  }
+  return matrix[str1.length][str2.length];
+}
+
+function calculateSimilarity(str1: string, str2: string): number {
+  const n1 = str1.toLowerCase().trim();
+  const n2 = str2.toLowerCase().trim();
+  if (n1 === n2) return 1.0;
+  if (n1.includes(n2) || n2.includes(n1)) {
+    const ratio = Math.min(n1.length, n2.length) / Math.max(n1.length, n2.length);
+    return 0.7 + ratio * 0.2;
+  }
+  const maxLen = Math.max(n1.length, n2.length);
+  if (maxLen === 0) return 1.0;
+  return 1 - localLevenshteinDistance(n1, n2) / maxLen;
 }
 
 export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
@@ -407,23 +357,37 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
   }
 
   // 2. Exclusive Coverages
-  const exclusiveGroups = new Map<string, Array<{ quoteIdx: number; item: any }>>();
+  const exclusiveGroups: Array<{
+    representativeName: string;
+    items: Array<{ quoteIdx: number; item: any }>;
+  }> = [];
+
   quotes.forEach((quote, quoteIdx) => {
     quote.coverages.forEach(c => {
       const isUnmapped = c.categoryId === undefined || c.categoryId === null;
       const isLowConfidence = c.matchConfidence !== undefined && c.matchConfidence !== null && c.matchConfidence < 0.65;
       
       if (isUnmapped || isLowConfidence) {
-        const key = (c.canonicalName || c.name).trim().toLowerCase();
-        if (!exclusiveGroups.has(key)) {
-          exclusiveGroups.set(key, []);
+        const coverageName = (c.canonicalName || c.name).trim();
+        
+        // Find if there is an existing group that is semantically similar (similarity >= 0.70)
+        let foundGroup = exclusiveGroups.find(g => 
+          calculateSimilarity(g.representativeName, coverageName) >= 0.70
+        );
+        
+        if (foundGroup) {
+          foundGroup.items.push({ quoteIdx, item: c });
+        } else {
+          exclusiveGroups.push({
+            representativeName: coverageName,
+            items: [{ quoteIdx, item: c }]
+          });
         }
-        exclusiveGroups.get(key)!.push({ quoteIdx, item: c });
       }
     });
   });
 
-  if (exclusiveGroups.size > 0) {
+  if (exclusiveGroups.length > 0) {
     matrix.push({
       type: 'header',
       id: 'section_exclusive_header',
@@ -432,29 +396,35 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
       cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false }))
     });
 
-    exclusiveGroups.forEach((groupItems, rawKey) => {
+    exclusiveGroups.forEach((group) => {
       const cells: MatrixCell[] = [];
-      const repName = groupItems[0].item.canonicalName || groupItems[0].item.name;
+      const repName = group.representativeName;
 
       for (let i = 0; i < numQuotes; i++) {
-        const matchingItem = groupItems.find(gi => gi.quoteIdx === i);
-        if (matchingItem) {
-          const item = matchingItem.item;
-          let displayVal = item.value || 'Incluido';
-          if (item.deductible && item.deductible !== 'No aplica' && item.deductible !== '') {
-            displayVal += ` (Ded: ${item.deductible})`;
-          }
+        const matchingItems = group.items.filter(gi => gi.quoteIdx === i);
+        if (matchingItems.length > 0) {
+          const displayVals = matchingItems.map(mi => {
+            const item = mi.item;
+            let displayVal = item.value || 'Incluido';
+            if (item.deductible && item.deductible !== 'No aplica' && item.deductible !== '') {
+              displayVal += ` (Ded: ${item.deductible})`;
+            }
+            return displayVal;
+          });
+          
+          const bestItem = matchingItems[0].item;
+          
           cells.push({
-            value: displayVal,
-            isExcluded: isExcludedValue(item.value),
+            value: displayVals.join(' / '),
+            isExcluded: matchingItems.every(mi => isExcludedValue(mi.item.value)),
             isWinner: true,
-            notes: item.description,
-            pageNumber: item.citations?.[0]?.page,
-            confidence: item.matchConfidence,
-            rawTextSnippet: item.rawTextSnippet,
-            needsHumanReview: item.needsHumanReview,
-            calculatedPage: item.calculatedPage,
-            justification: item.justification
+            notes: bestItem.description,
+            pageNumber: bestItem.citations?.[0]?.page,
+            confidence: bestItem.matchConfidence,
+            rawTextSnippet: bestItem.rawTextSnippet,
+            needsHumanReview: bestItem.needsHumanReview,
+            calculatedPage: bestItem.calculatedPage,
+            justification: bestItem.justification
           });
         } else {
           cells.push({
@@ -467,7 +437,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
 
       matrix.push({
         type: 'data',
-        id: `exclusive_${rawKey.replace(/[^a-z0-9]/g, '_')}`,
+        id: `exclusive_${repName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
         label: repName,
         sectionId: 99,
         cells
