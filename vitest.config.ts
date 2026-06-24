@@ -7,6 +7,7 @@ export default defineConfig({
       'src/**/*.test.tsx',
       'src/**/*.test.ts',
       'hooks/**/*.test.ts',
+      'tests/server/**/*.test.ts',
     ],
     exclude: ['server/dist/**', 'node_modules/**', 'dist/**'],
     environment: 'jsdom',

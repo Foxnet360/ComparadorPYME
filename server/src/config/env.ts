@@ -4,6 +4,8 @@
  */
 
 import logger from './logger';
+import { loadDomainJson } from '../services/domainBundleLoader';
+
 export interface EnvConfig {
   // Server
   PORT: number;
@@ -57,6 +59,63 @@ const optionalVars = [
   'VITE_GEMINI_API_KEY',
 ];
 
+interface TaxonomyMetadata {
+  salaryValue2024?: number;
+  uvtValue2024?: number;
+  source?: string;
+}
+
+function isWithinDrift(a: number, b: number, threshold = 0.01): boolean {
+  if (a === 0 && b === 0) return true;
+  if (a === 0 || b === 0) return false;
+  return Math.abs(a - b) / Math.max(Math.abs(a), Math.abs(b)) <= threshold;
+}
+
+/**
+ * Compare runtime env SMMLV/UVT values with the offline taxonomy metadata.
+ * Warns when the drift exceeds 1%. Throws only when both env and taxonomy are
+ * missing, which should never happen because env has documented defaults.
+ */
+export function checkEnvTaxonomyConsistency(config: EnvConfig): void {
+  let metadata: TaxonomyMetadata | undefined;
+
+  try {
+    const taxonomy = loadDomainJson<{ metadata: TaxonomyMetadata }>('pyme', 'taxonomy.json');
+    metadata = taxonomy.metadata;
+  } catch (error: any) {
+    logger.warn(`⚠️ Could not load taxonomy metadata for consistency check: ${error.message}`);
+  }
+
+  const envSmmlv = process.env.SMMLV_VALUE;
+  const envUvt = process.env.UVT_VALUE;
+
+  if (!envSmmlv && metadata?.salaryValue2024) {
+    logger.warn(`⚠️ SMMLV_VALUE not set; using taxonomy metadata ${metadata.salaryValue2024}. Source: ${metadata.source || 'unknown'}`);
+  }
+  if (!envUvt && metadata?.uvtValue2024) {
+    logger.warn(`⚠️ UVT_VALUE not set; using taxonomy metadata ${metadata.uvtValue2024}. Source: ${metadata.source || 'unknown'}`);
+  }
+
+  if (!envSmmlv && !metadata?.salaryValue2024) {
+    throw new Error('SMMLV_VALUE is not configured and taxonomy metadata is missing');
+  }
+  if (!envUvt && !metadata?.uvtValue2024) {
+    throw new Error('UVT_VALUE is not configured and taxonomy metadata is missing');
+  }
+
+  if (metadata?.salaryValue2024 && !isWithinDrift(config.SMMLV_VALUE, metadata.salaryValue2024)) {
+    logger.warn(
+      `⚠️ SMMLV_VALUE (${config.SMMLV_VALUE}) differs from taxonomy metadata (${metadata.salaryValue2024}) by more than 1%. Source: ${metadata.source || 'unknown'}`
+    );
+  }
+
+  if (metadata?.uvtValue2024 && !isWithinDrift(config.UVT_VALUE, metadata.uvtValue2024)) {
+    logger.warn(
+      `⚠️ UVT_VALUE (${config.UVT_VALUE}) differs from taxonomy metadata (${metadata.uvtValue2024}) by more than 1%. Source: ${metadata.source || 'unknown'}`
+    );
+  }
+}
+
 function validateEnv(): EnvConfig {
   const missing: string[] = [];
   
@@ -78,7 +137,12 @@ function validateEnv(): EnvConfig {
     });
     logger.error('Please set these variables in your .env file or environment.');
     logger.error('See .env.example for a template.');
-    process.exit(1);
+
+    if (process.env.NODE_ENV === 'test') {
+      logger.warn('⚠️ Skipping process.exit because NODE_ENV is test');
+    } else {
+      process.exit(1);
+    }
   }
   
   const config: EnvConfig = {
@@ -120,7 +184,9 @@ function validateEnv(): EnvConfig {
   logger.info(`   REGION: ${config.REGION}`);
   logger.info(`   CURRENCY: ${config.CURRENCY}`);
   logger.info(`   REDIS_URL: ${config.REDIS_URL ? 'configured' : 'not configured'}`);
-  
+
+  checkEnvTaxonomyConsistency(config);
+
   return config;
 }
 

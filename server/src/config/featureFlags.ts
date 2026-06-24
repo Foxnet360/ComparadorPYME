@@ -14,6 +14,9 @@ export interface FeatureFlags {
   queryExpansion: boolean;
   hybridSearchV2: boolean;
 
+  // Multimodal V2 extraction (deprecated runtime opt-out; false forces legacy)
+  enableMultimodalExtraction: boolean;
+
   // Template + graph pipeline (new)
   useTemplateGraphPipeline: boolean;
   templateBbvaV1: boolean;
@@ -46,6 +49,9 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   learningEngine: redisAvailable, // Only enable if Redis is configured
   queryExpansion: true,
   hybridSearchV2: true,
+
+  // Multimodal V2 extraction: default true; set ENABLE_MULTIMODAL_EXTRACTION=false for emergency legacy-only fallback
+  enableMultimodalExtraction: true,
 
   // Template + graph pipeline (disabled by default for safe rollout)
   useTemplateGraphPipeline: false,
@@ -104,6 +110,7 @@ const ENV_FLAG_MAP: Record<string, keyof FeatureFlags> = {
   FEATURE_LEARNING_ENGINE: 'learningEngine',
   FEATURE_QUERY_EXPANSION: 'queryExpansion',
   FEATURE_HYBRID_SEARCH_V2: 'hybridSearchV2',
+  ENABLE_MULTIMODAL_EXTRACTION: 'enableMultimodalExtraction',
   FEATURE_USE_UNIFIED_COMPARISON_ENGINE: 'useUnifiedComparisonEngine',
   FEATURE_AUTO_EXTRACT_STRUCTURED_CLAUSES: 'autoExtractStructuredClauses',
   USE_TEMPLATE_GRAPH_PIPELINE: 'useTemplateGraphPipeline',
