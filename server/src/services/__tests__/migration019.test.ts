@@ -4,8 +4,13 @@ import path from 'path';
 
 describe('migration 019_template_registry_and_graph', () => {
   const migrationPath = path.resolve(
-    process.cwd(),
-    'server/supabase/migrations/019_template_registry_and_graph.sql'
+    __dirname,
+    '..',
+    '..',
+    '..',
+    'supabase',
+    'migrations',
+    '019_template_registry_and_graph.sql'
   );
 
   it('exists as the next migration file', () => {

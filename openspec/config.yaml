@@ -30,12 +30,9 @@ rules:
   apply:
     - Follow existing code patterns in server/src/services/
     - Maintain strict TypeScript typing
-    tdd: true
-    test_command: "npm test"
   verify:
-    test_command: "npm test"
-    build_command: "npm run build"
-    coverage_threshold: 0
+    - Run npm test to verify all tests pass
+    - Run npm run build to check for TypeScript/build errors
   archive:
     - Warn before merging destructive deltas
     - Preserve feature flag backward compatibility

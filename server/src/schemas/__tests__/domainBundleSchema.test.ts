@@ -23,7 +23,7 @@ describe('domainBundleSchema', () => {
         region: 'Colombia',
         currency: 'COP',
         salaryReference: 'SMMLV',
-        salaryValue2024: 1300000,
+        salaryValue2024: 1423500,
         uvtValue2024: 42412,
       },
       categories: [
