@@ -472,8 +472,17 @@ export function mapCoverageName(
   };
 }
 
+import { hybridDeductibleParser } from './hybridDeductibleParser';
+import {
+  formatDeductibleForDisplay,
+  extractDeductibleContext,
+} from './deductibleFormatter';
+
 /**
- * Normalize deductible format
+ * Normalize deductible format using the canonical structured parser.
+ *
+ * This function no longer contains deductible regexes; it delegates to
+ * hybridDeductibleParser.parseSync and deductibleFormatter helpers.
  */
 export function normalizeDeductible(deductible: string): {
   normalized: string;
@@ -487,79 +496,12 @@ export function normalizeDeductible(deductible: string): {
     return { normalized: 'No aplica', needsReview: false };
   }
 
-  // Handle "No aplica" variants
-  if (/^no\s*aplica/i.test(trimmed)) {
-    return { normalized: 'No aplica', needsReview: false };
-  }
+  const structure = hybridDeductibleParser.parseSync(trimmed);
+  const normalized = formatDeductibleForDisplay(structure);
+  const context = extractDeductibleContext(structure.rawText);
+  const needsReview = structure.components.some((c) => c.type === 'unknown');
 
-  // Handle "Sin deducible" or "No tiene deducible" or "NO APLICA DEDUCIBLE"
-  if (/^(sin\s+deducible|no\s*tiene\s*deducible|no\s*aplica\s*deducible)/i.test(trimmed)) {
-    return { normalized: 'Sin deducible', needsReview: false };
-  }
-
-  // Handle "DEDUCIBLE: SIN" variant
-  if (/^sin$/i.test(trimmed) || /^sin\s*deducible$/i.test(trimmed)) {
-    return { normalized: 'Sin deducible', needsReview: false };
-  }
-
-  // Handle "NO TIENE" or "NO POSEE" deductible
-  if (/^(no\s*tiene|no\s*poss?ee|no\s*aplica)/i.test(trimmed)) {
-    return { normalized: 'No aplica', needsReview: false };
-  }
-
-  // Handle "No aplica Deducible" → extract "No aplica"
-  const noAplicaMatch = trimmed.match(/^(no\s*aplica)\s*(?:deducible)?/i);
-  if (noAplicaMatch) {
-    return { normalized: 'No aplica', needsReview: false };
-  }
-
-  // Handle "APLICA" or "SI APLICA" → means there IS a deductible
-  if (/^(?:si\s+)?aplica/i.test(trimmed)) {
-    return { normalized: 'Aplica', needsReview: false };
-  }
-
-  // Handle "INCLUIDA" or "INCLUIDO" → included in coverage, no separate deductible
-  if (/^incluid[oa]/i.test(trimmed)) {
-    return { normalized: 'Incluido', needsReview: false };
-  }
-
-  // Handle "No especificado" or "No especificada"
-  if (/^no\s+especificad[oa]/i.test(trimmed)) {
-    return { normalized: 'No especificado', needsReview: false };
-  }
-
-  // Handle percentage with context: "10% / Mín. 2 SMMLV (aplica sobre pérdida)"
-  // Also handles: "10 % PERD Min 1 (SMMLV)", "5% PERD Min 2 SMMLV Max 50 SMMLV"
-  // Handle decimal percentages: "12,5%" or "12.5%"
-  const percentWithContext = trimmed.match(/([\d.,]+\s*%)\s*(.*)/);
-  if (percentWithContext) {
-    const context = percentWithContext[2].trim();
-    // Include context in normalized string for frontend severity parsing
-    const normalizedWithContext = context 
-      ? `${percentWithContext[1].replace(/\s+/g, '')} ${context}` 
-      : percentWithContext[1].replace(/\s+/g, '');
-    return {
-      normalized: normalizedWithContext,
-      context: context || undefined,
-      needsReview: false,
-    };
-  }
-
-  // Handle SMMLV: "5 SMMLV" or "5 SM"
-  const smmlvMatch = trimmed.match(/(\d+)\s*(?:SMMLV|SM)/i);
-  if (smmlvMatch) {
-    return { normalized: `${smmlvMatch[1]} SMMLV`, needsReview: false };
-  }
-
-  // Handle fixed amount: "$500,000" or "$500000" (must have $ or be at least 5 digits)
-  const fixedMatch = trimmed.match(/(?:\$\s*)(\d{1,3}(?:[,\.]\d{3})*|\d{5,})/);
-  if (fixedMatch) {
-    const cleanNumber = fixedMatch[1].replace(/[,\.]/g, '');
-    return { normalized: `$${cleanNumber}`, needsReview: false };
-  }
-
-  // Unknown format
-  return { normalized: trimmed, needsReview: true };
+  return { normalized, context, needsReview };
 }
 
 /**

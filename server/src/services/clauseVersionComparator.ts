@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '../config/database';
+import { getDomainConstants } from '../config/domainConstants';
 
 export interface ClauseVersionDiff {
   type: 'DEDUCTIBLE' | 'EXCLUSION' | 'COVERAGE' | 'CONDITION';
@@ -208,7 +209,7 @@ function parseDeductibleAmount(deductibleText: string): number {
   // SMMLV
   const smmlvMatch = text.match(/(\d+)\s*(?:smmlv|sm)/);
   if (smmlvMatch) {
-    return parseFloat(smmlvMatch[1]) * 1300000; // Convert to COP
+    return parseFloat(smmlvMatch[1]) * getDomainConstants().smmlv; // Convert to COP
   }
   
   // Fixed amount

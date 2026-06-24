@@ -2,6 +2,31 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { semanticMatcher, CONFIDENCE_THRESHOLDS } from '../semanticMatcher';
 import { embeddingService } from '../vector/embeddingService';
 import { geminiService } from '../gemini';
+import { featureFlags } from '../../config/featureFlags';
+import { coverageOntology } from '../coverageOntology';
+
+vi.mock('../coverageOntology', () => ({
+  coverageOntology: {
+    mapCoverage: vi.fn(async () => ({
+      rawName: '',
+      groups: [],
+      isComposite: false,
+      confidence: 0,
+    })),
+    saveMapping: vi.fn(async () => {}),
+    getNodeById: vi.fn(),
+  },
+  default: {
+    mapCoverage: vi.fn(async () => ({
+      rawName: '',
+      groups: [],
+      isComposite: false,
+      confidence: 0,
+    })),
+    saveMapping: vi.fn(async () => {}),
+    getNodeById: vi.fn(),
+  }
+}));
 
 // Mock dependencies
 vi.mock('../vector/embeddingService', () => ({
@@ -319,6 +344,63 @@ describe('semanticMatcher', () => {
         expect(result.method).toBe('thesaurus');
         expect(result.confidence).toBeGreaterThanOrEqual(0.9);
       });
+    });
+  });
+
+  describe('Probabilistic Matching (Ontology Alignment)', () => {
+    beforeEach(() => {
+      vi.spyOn(featureFlags, 'isEnabled').mockImplementation((flag) => {
+        if (flag === 'semanticCoverageOntology') return true;
+        return false;
+      });
+    });
+
+    it('should align string ontology IDs to numeric taxonomy category IDs and not default to 0', async () => {
+      vi.mocked(coverageOntology.mapCoverage).mockResolvedValue({
+        rawName: 'Robo con Violencia',
+        insurerName: '',
+        groups: [
+          { groupId: 'sustraccion_hurto', confidence: 0.95 }
+        ],
+        isComposite: false,
+        confidence: 0.95
+      });
+
+      vi.mocked(coverageOntology.getNodeById).mockReturnValue({
+        id: 'sustraccion_hurto',
+        name: 'Sustracción / Hurto',
+        level: 2,
+        childrenIds: [],
+        aliases: ['Robo', 'Hurto', 'Sustracción'],
+        riskType: 'general'
+      });
+
+      const result = await semanticMatcher.matchProbabilistic('Robo con Violencia');
+
+      expect(result.matches).toHaveLength(1);
+      expect(result.matches[0].categoryId).toBe(3); // "Sustracción / Hurto" has ID 3 in taxonomy
+      expect(result.matches[0].canonicalName).toBe('Sustracción / Hurto');
+      expect(result.matches[0].confidence).toBe(0.95);
+    });
+
+    it('should keep categoryId as null (no default to 0 fallback) when unmatched', async () => {
+      vi.mocked(coverageOntology.mapCoverage).mockResolvedValue({
+        rawName: 'Amparo Inexistente Muy Raro',
+        insurerName: '',
+        groups: [
+          { groupId: 'unknown_ontology_id', confidence: 0.5 }
+        ],
+        isComposite: false,
+        confidence: 0.5
+      });
+
+      vi.mocked(coverageOntology.getNodeById).mockReturnValue(undefined);
+
+      const result = await semanticMatcher.matchProbabilistic('Amparo Inexistente Muy Raro');
+
+      expect(result.matches).toHaveLength(1);
+      expect(result.matches[0].categoryId).toBeNull(); // Should be null, not 0
+      expect(result.matches[0].canonicalName).toBe('unknown_ontology_id');
     });
   });
 });

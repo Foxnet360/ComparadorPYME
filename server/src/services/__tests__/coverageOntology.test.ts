@@ -58,6 +58,13 @@ vi.mock('@google/genai', () => {
     };
   }
   return {
+    Type: {
+      STRING: 'string',
+      NUMBER: 'number',
+      ARRAY: 'array',
+      OBJECT: 'object',
+      BOOLEAN: 'boolean',
+    },
     GoogleGenAI: MockGoogleGenAI
   };
 });

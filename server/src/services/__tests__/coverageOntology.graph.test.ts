@@ -54,6 +54,13 @@ vi.mock('../cache/redisCache', () => ({
 }));
 
 vi.mock('@google/genai', () => ({
+  Type: {
+    STRING: 'string',
+    NUMBER: 'number',
+    ARRAY: 'array',
+    OBJECT: 'object',
+    BOOLEAN: 'boolean',
+  },
   GoogleGenAI: class {
     models = {
       generateContent: vi.fn().mockResolvedValue({

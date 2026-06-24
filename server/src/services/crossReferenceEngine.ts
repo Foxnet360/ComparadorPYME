@@ -6,7 +6,11 @@
 import { ragRetrievalService, RetrievedClause } from './ragRetrievalService';
 import { ParsedCoverage, ParsedQuote } from './quoteParser';
 import { structuredClauseExtractor } from './structuredClauseExtractor';
-import { deductibleParser } from './deductibleParser';
+import { hybridDeductibleParser, HybridDeductibleResult } from './hybridDeductibleParser';
+import {
+  deductibleEquals,
+  extractDeductibleFromClauseText,
+} from './deductibleFormatter';
 import { featureFlags } from '../config/featureFlags';
 
 export type AlertLevel = 'CRITICAL' | 'WARNING' | 'INFO' | 'GOOD';
@@ -121,38 +125,43 @@ export const crossReferenceEngine = {
 
             // Semantic deductible comparison
             if (coverage.deductible && coverage.deductible !== 'No aplica' && coverage.deductible !== 'NO ESPECIFICADO') {
-                const quoteDeductibleStructure = await deductibleParser.parse(coverage.deductible);
+                const quoteDeductibleStructure = await hybridDeductibleParser.parse(coverage.deductible);
                 const matchingDeductible = matchingCoverage.deductible;
                 const clauseDeductibleStructure = matchingDeductible
-                    ? await deductibleParser.parse(matchingDeductible.rawText)
+                    ? buildDeductibleStructureFromClause(matchingDeductible)
                     : null;
 
-                if (clauseDeductibleStructure && matchingDeductible) {
-                    const comparison = compareDeductibleStructures(
-                        quoteDeductibleStructure,
-                        clauseDeductibleStructure
-                    );
+                if (clauseDeductibleStructure) {
+                    const clauseRawText = clauseDeductibleStructure.rawText;
+                    if (deductibleEquals(quoteDeductibleStructure, clauseDeductibleStructure)) {
+                        // Equal deductibles: no alert needed.
+                    } else {
+                        const comparison = compareDeductibleStructures(
+                            quoteDeductibleStructure,
+                            clauseDeductibleStructure
+                        );
 
-                    if (comparison.isBetter) {
-                        result.alerts.push({
-                            level: 'GOOD',
-                            coverageName: result.coverageName,
-                            title: 'Deducible favorable',
-                            description: `La cotización ofrece mejores condiciones de deducible (${coverage.deductible}) vs clausulado (${matchingDeductible.rawText}).`,
-                            quoteValue: coverage.deductible,
-                            clauseValue: matchingDeductible.rawText,
-                            isFallback: false
-                        });
-                    } else if (comparison.isWorse) {
-                        result.alerts.push({
-                            level: 'CRITICAL',
-                            coverageName: result.coverageName,
-                            title: 'Discrepancia en deducible',
-                            description: `El clausulado establece condiciones menos favorables (${matchingDeductible.rawText}) que la cotización (${coverage.deductible}).`,
-                            quoteValue: coverage.deductible,
-                            clauseValue: matchingDeductible.rawText,
-                            isFallback: false
-                        });
+                        if (comparison.isBetter) {
+                            result.alerts.push({
+                                level: 'GOOD',
+                                coverageName: result.coverageName,
+                                title: 'Deducible favorable',
+                                description: `La cotización ofrece mejores condiciones de deducible (${coverage.deductible}) vs clausulado (${clauseRawText}).`,
+                                quoteValue: coverage.deductible,
+                                clauseValue: clauseRawText,
+                                isFallback: false
+                            });
+                        } else if (comparison.isWorse) {
+                            result.alerts.push({
+                                level: 'CRITICAL',
+                                coverageName: result.coverageName,
+                                title: 'Discrepancia en deducible',
+                                description: `El clausulado establece condiciones menos favorables (${clauseRawText}) que la cotización (${coverage.deductible}).`,
+                                quoteValue: coverage.deductible,
+                                clauseValue: clauseRawText,
+                                isFallback: false
+                            });
+                        }
                     }
                 }
             }
@@ -364,12 +373,18 @@ async function crossReferenceCoverageLegacy(
         result.clauseData = clauseData;
         result.isVerified = true;
 
-        // Compare deductibles
+        // Compare deductibles using structured parser output
         if (coverage.deductible && coverage.deductible !== 'No aplica' && coverage.deductible !== 'NO ESPECIFICADO') {
-            const quoteDeductible = parseDeductible(coverage.deductible);
-            const clauseDeductible = clauseData.deductible ? parseDeductible(clauseData.deductible) : null;
+            const quoteDeductible = await parseDeductibleValue(coverage.deductible);
+            const clauseDeductible = clauseData.deductible
+                ? await parseDeductibleValue(clauseData.deductible)
+                : null;
 
-            if (clauseDeductible && quoteDeductible && quoteDeductible < clauseDeductible) {
+            if (quoteDeductible === null) {
+                // Unparseable quote deductible; skip numeric comparison.
+            } else if (clauseDeductible === null) {
+                // No clause data to compare, neutral
+            } else if (clauseDeductible > quoteDeductible) {
                 result.alerts.push({
                     level: 'CRITICAL',
                     coverageName: result.coverageName,
@@ -380,7 +395,7 @@ async function crossReferenceCoverageLegacy(
                     clauseReference: clauses[0]?.content.substring(0, 200),
                     isFallback
                 });
-            } else if (clauseDeductible && quoteDeductible && quoteDeductible > clauseDeductible) {
+            } else if (clauseDeductible < quoteDeductible) {
                 result.alerts.push({
                     level: 'GOOD',
                     coverageName: result.coverageName,
@@ -439,6 +454,14 @@ async function crossReferenceCoverageLegacy(
 // Helper Functions
 // ====================
 
+function buildDeductibleStructureFromClause(
+    clauseDeductible: { components: any[]; rawText: string }
+): HybridDeductibleResult {
+    // Re-parse the clause raw text with the canonical parser so that the
+    // resulting structure carries normalised COP amounts for comparison.
+    return hybridDeductibleParser.parseSync(clauseDeductible.rawText);
+}
+
 function extractClauseData(clauses: RetrievedClause[], coverageName: string): {
     value?: string;
     deductible?: string;
@@ -458,11 +481,11 @@ function extractClauseData(clauses: RetrievedClause[], coverageName: string): {
     for (const clause of clauses) {
         const content = clause.content.toLowerCase();
         
-        // Extract deductible
+        // Extract deductible using the canonical formatter helper.
         if (!data.deductible) {
-            const dedMatch = content.match(/deducible[\s:]+(\d+%?[^\n.]*)/i);
-            if (dedMatch) {
-                data.deductible = dedMatch[1].trim();
+            const extracted = extractDeductibleFromClauseText(clause.content);
+            if (extracted) {
+                data.deductible = extracted;
             }
         }
 
@@ -496,23 +519,25 @@ function extractClauseData(clauses: RetrievedClause[], coverageName: string): {
     return data;
 }
 
-function parseDeductible(deducibleText: string): number | null {
-    if (!deducibleText || deducibleText === 'No aplica' || deducibleText === 'NO ESPECIFICADO') {
+async function parseDeductibleValue(deducibleText: string): Promise<number | null> {
+    if (!deducibleText || 
+        deducibleText === 'No aplica' || 
+        deducibleText === 'NO ESPECIFICADO' ||
+        deducibleText === 'N/A') {
         return null;
     }
 
-    // Try to extract percentage
-    const percentMatch = deducibleText.match(/(\d+(?:\.\d+)?)\s*%/);
-    if (percentMatch) {
-        return parseFloat(percentMatch[1]);
+    const structure = await hybridDeductibleParser.parse(deducibleText);
+    if (structure.components.some((c) => c.type === 'unknown')) {
+        return null;
     }
 
-    // Try to extract numeric value (SMMLV, SM, etc)
-    const smmlvMatch = deducibleText.match(/(\d+)\s*(?:SMMLV|SM)/i);
-    if (smmlvMatch) {
-        return parseFloat(smmlvMatch[1]);
+    if (structure.normalized.isPercentageBased && structure.normalized.percentage > 0) {
+        return structure.normalized.percentage;
     }
-
+    if (structure.normalized.minAmount > 0) {
+        return structure.normalized.minAmount;
+    }
     return null;
 }
 

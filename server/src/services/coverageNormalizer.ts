@@ -805,31 +805,46 @@ async function buildOntologyBasedCoverages(
   // Step 2: Derive insured amounts
   const withAmounts = deriveInsuredAmounts(withDeductibles, insuredAssets);
   
-  // Step 3: Map using ontology
+  // Step 3: Map using ontology with concurrency pool (max 5)
   const mappings: Array<{
     coverage: RawCoverage;
     mapping: CoverageMapping;
-  }> = [];
+  }> = new Array(withAmounts.length);
   
-  for (const coverage of withAmounts) {
-    const mapping = await coverageOntology.mapCoverage(coverage.rawName, undefined, d);
+  const limit = 5;
+  const executing: Set<Promise<void>> = new Set();
+  
+  for (let i = 0; i < withAmounts.length; i++) {
+    const coverage = withAmounts[i];
+    const task = (async () => {
+      const mapping = await coverageOntology.mapCoverage(coverage.rawName, undefined, d);
 
-    // Reverse String page mapping using literal rawTextSnippet evidence
-    if (pageTextMap && coverage.rawTextSnippet) {
-      const resolvedPage = pdfExtractor.findExactPageForSnippet(pageTextMap, coverage.rawTextSnippet);
-      if (resolvedPage !== null) {
-        coverage.pageNumber = resolvedPage;
-        mapping.pageNumber = resolvedPage;
+      // Reverse String page mapping using literal rawTextSnippet evidence
+      if (pageTextMap && coverage.rawTextSnippet) {
+        const resolvedPage = pdfExtractor.findExactPageForSnippet(pageTextMap, coverage.rawTextSnippet);
+        if (resolvedPage !== null) {
+          coverage.pageNumber = resolvedPage;
+          mapping.pageNumber = resolvedPage;
+        }
       }
-    }
 
-    mappings.push({ coverage, mapping });
-    
-    // Save for learning
-    if (mapping.confidence > 0.5) {
-      await coverageOntology.saveMapping(mapping).catch(() => {});
+      mappings[i] = { coverage, mapping };
+      
+      // Save for learning
+      if (mapping.confidence > 0.5) {
+        await coverageOntology.saveMapping(mapping).catch(() => {});
+      }
+    })();
+
+    executing.add(task);
+    const cleanUp = () => executing.delete(task);
+    task.then(cleanUp, cleanUp);
+
+    if (executing.size >= limit) {
+      await Promise.race(executing);
     }
   }
+  await Promise.all(executing);
   
   // Step 4: Group by semantic similarity
   const groups: Record<string, {
@@ -971,10 +986,4 @@ async function buildOntologyBasedCoverages(
   };
 }
 
-export default {
-  mapRawToCanonical,
-  resolveDeductibles,
-  deriveInsuredAmounts,
-  detectImplicitCoverages,
-  buildCanonicalCoverages,
-};
+

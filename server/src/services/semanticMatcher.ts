@@ -24,7 +24,7 @@ export interface SemanticMatchResult {
 }
 
 export interface ProbabilisticMatch {
-    categoryId: number;
+    categoryId: number | null;
     canonicalName: string;
     confidence: number;
     method: string;
@@ -388,11 +388,35 @@ async function matchProbabilistic(coverageName: string, domain: string = 'pyme')
         // Use ontology for probabilistic mapping
         const mapping = await coverageOntology.mapCoverage(coverageName, undefined, domain);
         
+        const categories = loadCanonicalCategories(domain);
         const matches: ProbabilisticMatch[] = mapping.groups.map(g => {
-            const node = coverageOntology.getNodeById(g.groupId);
+            const node = coverageOntology.getNodeById(g.groupId, domain);
+            const resolvedName = node?.name || g.groupId;
+            const normalizedResolved = normalizeText(resolvedName);
+            const normalizedGroupId = normalizeText(g.groupId);
+            
+            let category = categories.find(c => 
+                normalizeText(c.name) === normalizedResolved ||
+                normalizeText(c.name) === normalizedGroupId ||
+                c.id.toString() === g.groupId
+            );
+
+            if (!category) {
+                for (const c of categories) {
+                    const definition = thesaurusService.getCoberturaDefinition(c.name, domain);
+                    if (definition) {
+                        const allTerms = [...definition.sinonimos, ...definition.terminos_busqueda].map(t => normalizeText(t));
+                        if (allTerms.includes(normalizedResolved) || allTerms.includes(normalizedGroupId)) {
+                            category = c;
+                            break;
+                        }
+                    }
+                }
+            }
+
             return {
-                categoryId: 0, // Ontology uses string IDs, not numeric
-                canonicalName: node?.name || g.groupId,
+                categoryId: category ? category.id : null,
+                canonicalName: resolvedName,
                 confidence: g.confidence,
                 method: mapping.isComposite ? 'ontology-composite' : 'ontology'
             };
@@ -541,7 +565,7 @@ export const semanticMatcher = {
         const legacyResult = await semanticMatcher.matchCoverage(coverageName, domain);
         return {
             matches: legacyResult.canonicalName ? [{
-                categoryId: legacyResult.categoryId || 0,
+                categoryId: legacyResult.categoryId,
                 canonicalName: legacyResult.canonicalName,
                 confidence: legacyResult.confidence,
                 method: legacyResult.method || 'legacy'

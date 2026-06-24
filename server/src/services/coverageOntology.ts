@@ -1,6 +1,6 @@
 import { embeddingService } from './vector/embeddingService';
 import { supabase } from '../config/database';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Type } from '@google/genai';
 import { env } from '../config/env';
 import { getCachedCoverageMapping, setCachedCoverageMapping } from './cache/redisCache';
 import { calculateSimilarity } from '../utils/stringUtils';
@@ -388,11 +388,34 @@ Tu respuesta debe ser un JSON válido, sin bloques de código markdown, solo el 
     const modelName = env.GEMINI_MODEL || 'gemini-3.5-flash';
     console.log(`🤖 [Consensus] Agent A (Taxonomist) evaluating: "${rawName}" using ${modelName}`);
 
+    const TaxonomistResponseSchema = {
+      type: Type.OBJECT,
+      properties: {
+        proposedGroupId: { type: Type.STRING },
+        justification: { type: Type.STRING }
+      },
+      required: ["proposedGroupId", "justification"]
+    };
+
+    const CriticResponseSchema = {
+      type: Type.OBJECT,
+      properties: {
+        approved: { type: Type.BOOLEAN },
+        alternativeGroupId: { type: Type.STRING, nullable: true },
+        reason: { type: Type.STRING }
+      },
+      required: ["approved", "alternativeGroupId", "reason"]
+    };
+
     // Call Agent A
     const agentAResult = await genAI.models.generateContent({
       model: modelName,
       contents: taxonomistPrompt,
-      config: { temperature: 0.1 }
+      config: {
+        temperature: 0.1,
+        responseMimeType: 'application/json',
+        responseSchema: TaxonomistResponseSchema
+      }
     });
 
     const parsedA = parseJSONSafe(agentAResult.text || '');
@@ -440,7 +463,11 @@ Tu respuesta debe ser un JSON válido, sin bloques de código markdown, solo el 
     const agentBResult = await genAI.models.generateContent({
       model: modelName,
       contents: criticPrompt,
-      config: { temperature: 0.3 }
+      config: {
+        temperature: 0.3,
+        responseMimeType: 'application/json',
+        responseSchema: CriticResponseSchema
+      }
     });
 
     const parsedB = parseJSONSafe(agentBResult.text || '');

@@ -10,6 +10,7 @@
 
 import { ragRetrievalService } from './ragRetrievalService';
 import { supabase } from '../config/database';
+import { getCanonicalCoverageNames } from '../config/domainConstants';
 
 export type CoverageValidationStatus = 'VERIFIED' | 'PHANTOM' | 'MANDATORY_MISSING' | 'OPTIONAL_MISSING';
 
@@ -34,22 +35,7 @@ export interface ClauseValidationSummary {
 }
 
 // Expected canonical coverages for PYME policies
-const EXPECTED_COVERAGES = [
-  'incendio (edificio y contenidos)',
-  'lucro cesante',
-  'sustraccion / hurto',
-  'equipo electrico y electronico',
-  'rotura de maquinaria',
-  'responsabilidad civil (rce)',
-  'vidrios planos',
-  'manejo global / infidelidad',
-  'transporte de mercancias',
-  'transporte de valores',
-  'asistencia pyme',
-  'asistencia legal',
-  'huelga, motin, asonada (hmacc)',
-  'terremoto y eventos catastroficos'
-];
+const EXPECTED_COVERAGES = getCanonicalCoverageNames().map((name) => name.toLowerCase());
 
 export const clauseCoverageValidator = {
   /**
