@@ -24,6 +24,7 @@
     "format:check": "prettier --check .",
     "format:write": "prettier --write .",
     "typecheck:backend": "cd server && tsc --noEmit",
+    "typecheck:frontend": "tsc --noEmit --project tsconfig.json",
     "test:smoke": "./scripts/smoke-tests.sh",
     "evaluate:golden": "cd server && ts-node --transpile-only src/scripts/runEvaluation.ts",
     "deploy": "node .opencode/skills/railway-deploy/deploy.js",

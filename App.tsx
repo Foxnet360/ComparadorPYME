@@ -1,13 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Sparkles, MessageSquare, ShieldCheck, LogOut, LayoutDashboard, BookOpen, Activity, Library } from 'lucide-react';
 import FileUploader from './components/FileUploader';
-import ComparisonReport from './components/ComparisonReport';
-import ChatBot from './components/ChatBot';
 import { AnalysisProvider } from './contexts/AnalysisContext';
 import LoginScreen from './components/LoginScreen';
-import TechnicalDashboard from './components/TechnicalDashboard';
 import ClientSelector from './components/ClientSelector';
-import { ClauseAdmin } from './components/ClauseAdmin';
 import { ClauseSelector } from './components/ClauseSelector';
 import { analyzeQuotesWithGemini } from './services/geminiService';
 import { storageService } from './services/storageService';
@@ -15,8 +11,14 @@ import { ComparisonReport as ReportType, AppStatus, UserProfile, Client } from '
 // Chat is now handled via backend API
 
 import RegisterScreen from './components/RegisterScreen';
-import ProfileScreen from './components/ProfileScreen';
 import LandingPage from './components/LandingPage';
+
+// Lazy load heavy components
+const ComparisonReport = lazy(() => import('./components/ComparisonReport'));
+const ChatBot = lazy(() => import('./components/ChatBot'));
+const TechnicalDashboard = lazy(() => import('./components/TechnicalDashboard'));
+const ClauseAdmin = lazy(() => import('./components/ClauseAdmin'));
+const ProfileScreen = lazy(() => import('./components/ProfileScreen'));
 
 type ViewState = 'LANDING' | 'LOGIN' | 'REGISTER' | 'DASHBOARD' | 'ANALYZER' | 'REPORT';
 
@@ -251,10 +253,12 @@ const App: React.FC = () => {
 
         {/* VIEW: DASHBOARD */}
         {currentView === 'DASHBOARD' && (
-          <TechnicalDashboard
-            onNewAnalysis={() => setCurrentView('ANALYZER')}
-            onViewReport={handleViewExistingReport}
-          />
+          <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div></div>}>
+            <TechnicalDashboard
+              onNewAnalysis={() => setCurrentView('ANALYZER')}
+              onViewReport={handleViewExistingReport}
+            />
+          </Suspense>
         )}
 
         {/* VIEW: ANALYZER (Upload) */}
@@ -402,7 +406,9 @@ const App: React.FC = () => {
                   Nueva Auditoría
                 </button>
               </div>
-              <ComparisonReport report={report} />
+              <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div></div>}>
+                <ComparisonReport report={report} />
+              </Suspense>
             </div>
           </AnalysisProvider>
         )}
@@ -411,24 +417,30 @@ const App: React.FC = () => {
 
       {/* Profile Modal */}
       {showProfile && currentUser && (
-        <ProfileScreen
-          currentUser={currentUser}
-          onUpdateProfile={setCurrentUser}
-          onClose={() => setShowProfile(false)}
-        />
+        <Suspense fallback={null}>
+          <ProfileScreen
+            currentUser={currentUser}
+            onUpdateProfile={setCurrentUser}
+            onClose={() => setShowProfile(false)}
+          />
+        </Suspense>
       )}
 
       {/* Clause Library Admin Modal */}
       {showClauseAdmin && (
-        <ClauseAdmin onClose={() => setShowClauseAdmin(false)} />
+        <Suspense fallback={null}>
+          <ClauseAdmin onClose={() => setShowClauseAdmin(false)} />
+        </Suspense>
       )}
 
       {/* Chat Interface */}
-      <ChatBot
-        reportContext={report || undefined}
-        isOpen={chatOpen}
-        onClose={() => setChatOpen(false)}
-      />
+      <Suspense fallback={null}>
+        <ChatBot
+          reportContext={report || undefined}
+          isOpen={chatOpen}
+          onClose={() => setChatOpen(false)}
+        />
+      </Suspense>
 
     </div>
   );

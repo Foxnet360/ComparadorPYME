@@ -43,6 +43,7 @@ export default defineConfig(({ mode }) => {
       ]
     },
     build: {
+      chunkSizeWarningLimit: 600,
       rollupOptions: {
         external: [
           'express',
@@ -52,8 +53,27 @@ export default defineConfig(({ mode }) => {
           'pdf-parse',
           'sharp',
           'ws',
-        ]
-      }
+        ],
+        output: {
+          manualChunks(id: string) {
+            if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+              return 'vendor-react';
+            }
+            if (id.includes('node_modules/recharts')) {
+              return 'vendor-charts';
+            }
+            if (id.includes('node_modules/pdfjs-dist') || id.includes('node_modules/jspdf')) {
+              return 'vendor-pdf';
+            }
+            if (id.includes('node_modules/exceljs')) {
+              return 'vendor-excel';
+            }
+            if (id.includes('node_modules/lucide-react') || id.includes('node_modules/react-markdown') || id.includes('node_modules/marked')) {
+              return 'vendor-utils';
+            }
+          },
+        },
+      },
     }
   };
 });
