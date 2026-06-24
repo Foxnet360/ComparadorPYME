@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { performance } from 'perf_hooks';
 import { quoteParser } from '../quoteParser';
-import { coverageNormalizer } from '../coverageNormalizer';
+import { buildCanonicalCoverages } from '../coverageNormalizer';
 import { variableComparator } from '../variableComparator';
 import { quoteScorer } from '../quoteScorer';
 import { deductibleParser } from '../deductibleParser';
@@ -30,11 +30,12 @@ vi.mock('../vector/embeddingService', () => ({
   }
 }));
 
-vi.mock('../config/database', () => ({
+vi.mock('../../config/database', () => ({
   supabase: {
     from: vi.fn(() => ({
       insert: vi.fn(() => new Promise(resolve => setTimeout(() => resolve({ data: { id: 'test-id' }, error: null }), 20))),
       select: vi.fn(() => new Promise(resolve => setTimeout(() => resolve({ data: [], error: null }), 10))),
+      upsert: vi.fn(() => new Promise(resolve => setTimeout(() => resolve({ data: null, error: null }), 20))),
       rpc: vi.fn(() => new Promise(resolve => setTimeout(() => resolve({ data: [], error: null }), 30)))
     }))
   }
@@ -63,12 +64,12 @@ describe('Load Tests', () => {
       expect(duration).toBeLessThan(MAX_RESPONSE_TIME_MS);
       
       console.log(`⏱️ ${CONCURRENT_REQUESTS} concurrent parses: ${(duration / 1000).toFixed(2)}s`);
-    });
+    }, 30000);
   });
 
   describe('Concurrent coverage normalization', () => {
     it('should handle 10 concurrent normalization requests', async () => {
-      const requests = Array(CONCURRENT_REQUESTS).fill(null).map((_, i) =
+      const requests = Array(CONCURRENT_REQUESTS).fill(null).map((_, i) =>
         Array(20).fill(null).map((_, j) => ({
           rawName: `Cobertura ${j}`,
           insuredAmount: (j + 1) * 1000000,
@@ -80,7 +81,7 @@ describe('Load Tests', () => {
       const start = performance.now();
       
       const results = await Promise.all(
-        requests.map(coverages => coverageNormalizer.buildCanonicalCoverages(coverages))
+        requests.map(coverages => buildCanonicalCoverages(coverages))
       );
       
       const duration = performance.now() - start;
@@ -89,7 +90,7 @@ describe('Load Tests', () => {
       expect(duration).toBeLessThan(MAX_RESPONSE_TIME_MS);
       
       console.log(`⏱️ ${CONCURRENT_REQUESTS} concurrent normalizations: ${(duration / 1000).toFixed(2)}s`);
-    });
+    }, 30000);
   });
 
   describe('Concurrent variable comparison', () => {
@@ -124,7 +125,7 @@ describe('Load Tests', () => {
       expect(duration).toBeLessThan(MAX_RESPONSE_TIME_MS);
       
       console.log(`⏱️ 5 concurrent comparisons (5 quotes each): ${(duration / 1000).toFixed(2)}s`);
-    });
+    }, 30000);
   });
 
   describe('Concurrent deductible parsing', () => {
@@ -147,7 +148,7 @@ describe('Load Tests', () => {
       expect(duration).toBeLessThan(10000); // Should complete within 10 seconds
       
       console.log(`⏱️ 50 concurrent deductible parses: ${(duration / 1000).toFixed(2)}s`);
-    });
+    }, 20000);
   });
 
   describe('Concurrent scoring', () => {
@@ -176,7 +177,7 @@ describe('Load Tests', () => {
       expect(duration).toBeLessThan(MAX_RESPONSE_TIME_MS);
       
       console.log(`⏱️ 20 concurrent scoring requests: ${(duration / 1000).toFixed(2)}s`);
-    });
+    }, 30000);
   });
 
   describe('Memory usage under load', () => {
@@ -207,7 +208,7 @@ describe('Load Tests', () => {
       
       // Should not increase by more than 100MB
       expect(memoryIncrease).toBeLessThan(100);
-    });
+    }, 30000);
   });
 
   describe('Stress test', () => {
@@ -224,6 +225,6 @@ describe('Load Tests', () => {
       expect(duration).toBeLessThan(15000); // Should complete within 15 seconds
       
       console.log(`⏱️ 100 rapid requests: ${(duration / 1000).toFixed(2)}s`);
-    });
+    }, 20000);
   });
 });

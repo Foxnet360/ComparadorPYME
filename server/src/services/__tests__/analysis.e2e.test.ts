@@ -1,26 +1,16 @@
-import { describe, it, expect, vi, beforeAll } from 'vitest';
-import { analysisController } from '../../controllers/analysisController';
+import { describe, it, expect, vi } from 'vitest';
 import { quoteParser } from '../quoteParser';
-import { coverageNormalizer } from '../coverageNormalizer';
+import { buildCanonicalCoverages } from '../coverageNormalizer';
 import { variableComparator } from '../variableComparator';
-import { crossReferenceEngine } from '../crossReferenceEngine';
 import { quoteScorer } from '../quoteScorer';
 import { structuredClauseExtractor } from '../structuredClauseExtractor';
 import { deductibleParser } from '../deductibleParser';
-import chatService from '../chatService';
+import { getDomainConstants } from '../../config/domainConstants';
+
+const hasGemini = !!process.env.GEMINI_API_KEY;
+const hasSupabase = !!process.env.SUPABASE_URL && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Mock external services
-vi.mock('../gemini', () => ({
-  geminiService: {
-    extractText: vi.fn(() => Promise.resolve(JSON.stringify({
-      coverages: [
-        { name: 'Incendio', value: '$500M', deductible: '10%' },
-        { name: 'Responsabilidad Civil', value: '$1M', deductible: 'No aplica' }
-      ]
-    })))
-  }
-}));
-
 vi.mock('../vector/embeddingService', () => ({
   embeddingService: {
     generateEmbedding: vi.fn(() => Promise.resolve([0.1, 0.2, 0.3])),
@@ -38,11 +28,63 @@ vi.mock('../config/database', () => ({
   }
 }));
 
+vi.mock('@google/genai', () => ({
+  Type: {
+    STRING: 'string',
+    NUMBER: 'number',
+    ARRAY: 'array',
+    OBJECT: 'object',
+    BOOLEAN: 'boolean',
+  },
+  GoogleGenAI: vi.fn(function () {
+    return {
+      models: {
+        generateContent: vi.fn(() => Promise.resolve({
+          text: JSON.stringify({
+            coverages: [
+              {
+                name: 'AMPARO BASICO',
+                description: 'Cobertura todo riesgo de daño material',
+                insuredAmount: '$500,000,000',
+                deductible: {
+                  components: [
+                    { type: 'percentage', value: 10 },
+                    { type: 'minimum', value: 5, currency: 'SMMLV' }
+                  ],
+                  rawText: '10% con mínimo de 5 SMMLV'
+                },
+                exclusions: ['Guerra', 'Terrorismo'],
+                conditions: ['Mantenimiento preventivo'],
+                sourcePage: 1
+              }
+            ],
+            generalExclusions: ['Actos dolosos'],
+            generalConditions: ['Pago de prima'],
+            definitions: { SMMLV: 'Salario Mínimo Mensual Legal Vigente' }
+          })
+        }))
+      }
+    };
+  })
+}));
+
 describe('End-to-End Analysis Flow', () => {
   const mockQuotes = [
     {
       insurerName: 'MAPFRE',
-      pdfText: 'Cotización MAPFRE\nIncendio: $500M - Deducible 10%\nResponsabilidad Civil: $1M - Sin deducible',
+      pdfText: `ASEGURADORA: MAPFRE
+PÓLIZA: PYME BÁSICA
+PRIMA ANUAL: 3300000
+MONEDA: COP
+VIGENCIA: 1 año
+COBERTURAS:
+- Incendio: $500M
+  Deducible: 10%
+- Responsabilidad Civil: $1M
+  Deducible: No aplica
+CONDICIONES ESPECIALES:
+- Pago trimestral
+=== FIN`,
       coverages: [
         { name: 'Incendio', value: '$500M', deductible: '10%', premium: 2500000 },
         { name: 'Responsabilidad Civil', value: '$1M', deductible: 'No aplica', premium: 800000 }
@@ -50,7 +92,19 @@ describe('End-to-End Analysis Flow', () => {
     },
     {
       insurerName: 'CHUBB',
-      pdfText: 'Cotización CHUBB\nTodo Riesgo: $450M - Deducible 10% min 5 SMMLV\nResponsabilidad Civil: $1M - Sin deducible',
+      pdfText: `ASEGURADORA: CHUBB
+PÓLIZA: PYME PLUS
+PRIMA ANUAL: 3550000
+MONEDA: COP
+VIGENCIA: 1 año
+COBERTURAS:
+- Todo Riesgo: $450M
+  Deducible: 10% min 5 SMMLV
+- Responsabilidad Civil: $1M
+  Deducible: No aplica
+CONDICIONES ESPECIALES:
+- Pago anual
+=== FIN`,
       coverages: [
         { name: 'Todo Riesgo', value: '$450M', deductible: '10% min 5 SMMLV', premium: 2800000 },
         { name: 'Responsabilidad Civil', value: '$1M', deductible: 'No aplica', premium: 750000 }
@@ -61,7 +115,7 @@ describe('End-to-End Analysis Flow', () => {
   describe('Complete analysis pipeline', () => {
     it('should parse quotes from PDF text', async () => {
       for (const quote of mockQuotes) {
-        const parsed = await quoteParser.parse(quote.pdfText, quote.insurerName);
+        const parsed = await quoteParser.parse(quote.pdfText);
         expect(parsed).toBeDefined();
         expect(parsed.insurerName).toBe(quote.insurerName);
         expect(parsed.coverages.length).toBeGreaterThan(0);
@@ -76,7 +130,7 @@ describe('End-to-End Analysis Flow', () => {
         premium: c.premium
       }));
 
-      const normalized = await coverageNormalizer.buildCanonicalCoverages(rawCoverages);
+      const normalized = await buildCanonicalCoverages(rawCoverages);
       
       expect(normalized.canonicalCoverages.length).toBeGreaterThan(0);
       expect(normalized.totalConfidence).toBeGreaterThan(0);
@@ -142,7 +196,7 @@ describe('End-to-End Analysis Flow', () => {
       }
     });
 
-    it('should handle structured clause extraction', async () => {
+    (hasGemini ? it : it.skip)('should handle structured clause extraction', async () => {
       const clauseText = `
         AMPARO BASICO - TODO RIESGO
         Cobertura de daño material con deducible del 10%
@@ -164,7 +218,7 @@ describe('End-to-End Analysis Flow', () => {
     it('should parse deductibles correctly', async () => {
       const testCases = [
         { text: '10%', expectedPercentage: 10 },
-        { text: '5 SMMLV', expectedMin: 6500000 },
+        { text: '5 SMMLV', expectedMin: 5 * getDomainConstants().smmlv },
         { text: 'sin deducible', expectedZero: true }
       ];
 
@@ -184,8 +238,9 @@ describe('End-to-End Analysis Flow', () => {
     });
   });
 
-  describe('Chat integration', () => {
+  (hasGemini && hasSupabase ? describe : describe.skip)('Chat integration', () => {
     it('should answer questions using quote data', async () => {
+      const { processChatMessage } = await import('../chatService');
       const reportContext = {
         quotes: [
           {
@@ -197,10 +252,10 @@ describe('End-to-End Analysis Flow', () => {
         ]
       };
 
-      const response = await chatService.sendMessage(
+      const response = await processChatMessage(
         '¿Cuál es el deducible de incendio?',
-        [],
-        reportContext
+        reportContext,
+        'test-user'
       );
 
       expect(response.text).toBeTruthy();

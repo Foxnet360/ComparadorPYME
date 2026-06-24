@@ -26,7 +26,7 @@ vi.mock('../../config/env', () => {
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || '',
     SUPABASE_JWT_SECRET: process.env.SUPABASE_JWT_SECRET || '',
     REGION: process.env.REGION || 'CO',
-    SMMLV_VALUE: parseInt(process.env.SMMLV_VALUE || '1300000', 10),
+    SMMLV_VALUE: parseInt(process.env.SMMLV_VALUE || '1423500', 10),
     UVT_VALUE: parseInt(process.env.UVT_VALUE || '42412', 10),
     CURRENCY: process.env.CURRENCY || 'COP',
     CLAUSE_PAGES_BUCKET: process.env.CLAUSE_PAGES_BUCKET || 'clause-pages',
@@ -86,6 +86,9 @@ vi.mock('../../services/vector/embeddingService', () => ({
 
 // Mock cache to avoid Redis dependency
 vi.mock('../../services/cache/redisCache', () => ({
+  getCacheValue: vi.fn(() => Promise.resolve(null)),
+  setCacheValue: vi.fn(() => Promise.resolve(undefined)),
+  deleteCacheValue: vi.fn(() => Promise.resolve(undefined)),
   getCachedCoverageMapping: vi.fn(() => Promise.resolve(null)),
   setCachedCoverageMapping: vi.fn(() => Promise.resolve())
 }));

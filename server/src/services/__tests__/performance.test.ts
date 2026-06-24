@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { performance } from 'perf_hooks';
 import { quoteParser } from '../quoteParser';
-import { coverageNormalizer } from '../coverageNormalizer';
+import { buildCanonicalCoverages } from '../coverageNormalizer';
 import { variableComparator } from '../variableComparator';
 import { quoteScorer } from '../quoteScorer';
 import { deductibleParser } from '../deductibleParser';
@@ -82,7 +82,7 @@ describe('Performance Tests', () => {
       }));
 
       const start = performance.now();
-      await coverageNormalizer.buildCanonicalCoverages(coverages);
+      await buildCanonicalCoverages(coverages);
       const duration = performance.now() - start;
 
       expect(duration).toBeLessThan(10000);
@@ -190,7 +190,7 @@ describe('Performance Tests', () => {
         const parsed = await quoteParser.parse(`Cotización ${insurer}`, insurer);
         
         // Normalize
-        const normalized = await coverageNormalizer.buildCanonicalCoverages(
+        const normalized = await buildCanonicalCoverages(
           parsed.coverages.map((c: any) => ({
             rawName: c.name,
             insuredAmount: 1000000,

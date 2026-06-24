@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { ragRetrievalService, RetrievedClause } from '../ragRetrievalService';
 
 // Mock dependencies
-vi.mock('../config/database', () => ({
+vi.mock('../../config/database', () => ({
   supabase: {
     rpc: vi.fn((procedure: string, params: any) => {
       // Mock responses for different RPC calls
@@ -33,7 +33,7 @@ vi.mock('../config/database', () => ({
           error: null
         });
       }
-      
+
       if (procedure === 'get_parent_chunks') {
         return Promise.resolve({
           data: [
@@ -51,7 +51,7 @@ vi.mock('../config/database', () => ({
           error: null
         });
       }
-      
+
       return Promise.resolve({ data: [], error: null });
     })
   }
@@ -65,12 +65,9 @@ vi.mock('../vector/embeddingService', () => ({
 }));
 
 vi.mock('../cache/redisCache', () => ({
-  redis: {
-    get: vi.fn(() => Promise.resolve(null)),
-    setex: vi.fn(() => Promise.resolve('OK')),
-    del: vi.fn(() => Promise.resolve(1)),
-    keys: vi.fn(() => Promise.resolve([]))
-  }
+  getCacheValue: vi.fn(() => Promise.resolve(null)),
+  setCacheValue: vi.fn(() => Promise.resolve(undefined)),
+  deleteCacheValue: vi.fn(() => Promise.resolve(undefined))
 }));
 
 describe('ragRetrievalService - Search Quality', () => {
