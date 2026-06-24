@@ -171,7 +171,7 @@ function repairTruncatedJson(json: string): string {
 function repairInvalidEscapes(json: string): string {
   // Replace invalid escapes with their literal equivalents
   return json
-    .replace(/\\([^"\\\/bfnrtu])/g, '$1')  // Remove invalid single char escapes
+    .replace(/\\([^"\\/bfnrtu])/g, '$1')  // Remove invalid single char escapes
     .replace(/\\x([0-9a-fA-F]{2})/g, (_, hex) => 
       String.fromCharCode(parseInt(hex, 16))
     );
@@ -264,6 +264,7 @@ export function isTruncated(json: string): boolean {
 export function sanitizeJsonText(text: string): string {
   return text
     // Remove control characters except tab, newline, carriage return
+    // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
     // Fix common Unicode issues
     .replace(/\uFFFD/g, '')

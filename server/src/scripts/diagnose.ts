@@ -17,7 +17,7 @@ console.log('   - NODE_ENV:', process.env.NODE_ENV || 'development (default)');
 console.log('\n2. Probando conexión con Supabase...');
 const testSupabase = async () => {
   try {
-    const { supabase } = require('../config/database');
+    const { supabase } = await import('../config/database');
     const { data, error } = await supabase.from('analysis_history').select('count');
     
     if (error) {
@@ -36,7 +36,7 @@ const testSupabase = async () => {
 console.log('\n3. Probando conexión con Gemini...');
 const testGemini = async () => {
   try {
-    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const apiKey = process.env.GEMINI_API_KEY;
     
     if (!apiKey) {

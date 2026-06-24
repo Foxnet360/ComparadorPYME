@@ -308,7 +308,7 @@ export function removeArtifacts(text: string): string {
   cleaned = cleaned.replace(/^(CotizaciÃ³n|Cotizacion|Page|Pagina|PÃ¡gina)\s*\d+.*$/gmi, '');
 
   // Remove lines that are just repeated dashes or equal signs
-  cleaned = cleaned.replace(/^[\-=]{3,}$/gm, '');
+  cleaned = cleaned.replace(/^[-=]{3,}$/gm, '');
 
   // Remove empty lines
   cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
@@ -326,8 +326,8 @@ export function extractRelevantSections(text: string): string {
   
   // Look for coverage-related sections
   const coveragePatterns = [
-    /(?:COBERTURAS?|AMPAROS?|GARANTIAS?|SECCION(?:ES)?)[\s\S]*?(?:(?:DEDUCIBLES?|CONDICIONES|CLÃ\u0081USULAS|NOTAS?|ANEXOS?)[\s\S]*?)?(?=\n\s*\n|\Z)/i,
-    /(?:DESGLOSE|DETALLE|ESPECIFICACIONES|DESCRIPCIÃ\u0093N)[\s\S]*?(?:(?:PRIMA|VALOR|TOTAL|SUMA ASEGURADA)[\s\S]*?)?(?=\n\s*\n|\Z)/i,
+    /(?:COBERTURAS?|AMPAROS?|GARANTIAS?|SECCION(?:ES)?)[\s\S]*?(?:(?:DEDUCIBLES?|CONDICIONES|CLÁUSULAS|NOTAS?|ANEXOS?)[\s\S]*?)?(?=\n\s*\n|$)/i,
+    /(?:DESGLOSE|DETALLE|ESPECIFICACIONES|DESCRIPCIÓN)[\s\S]*?(?:(?:PRIMA|VALOR|TOTAL|SUMA ASEGURADA)[\s\S]*?)?(?=\n\s*\n|$)/i,
   ];
 
   for (const pattern of coveragePatterns) {

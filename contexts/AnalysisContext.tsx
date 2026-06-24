@@ -151,9 +151,10 @@ function analysisReducer(state: AnalysisState, action: AnalysisAction): Analysis
         ...state,
         cellNotes: { ...state.cellNotes, [action.payload.cellId]: action.payload },
       };
-    case 'DELETE_CELL_NOTE':
+    case 'DELETE_CELL_NOTE': {
       const { [action.payload]: _, ...remainingNotes } = state.cellNotes;
       return { ...state, cellNotes: remainingNotes };
+    }
     case 'OPEN_PDF_VIEWER':
       return { ...state, pdfViewer: action.payload };
     case 'CLOSE_PDF_VIEWER':

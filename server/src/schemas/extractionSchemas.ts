@@ -221,7 +221,7 @@ export function parseNumeric(value: unknown): number | null {
   if (typeof value !== 'string') return null;
 
   const cleaned = value
-    .replace(/[^\d.,\-]/g, '')
+    .replace(/[^\d.,-]/g, '')
     .replace(/\./g, '') // thousands separator
     .replace(/,/g, '.');
 

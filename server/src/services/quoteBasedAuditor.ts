@@ -255,19 +255,19 @@ const extractSpecialConditions = (quote: QuoteAnalysis): SpecialCondition[] => {
   // Patterns for special conditions
   const patterns = [
     {
-      regex: /(?:condici[oó]n especial|nota importante|advertencia):\s*([^\.\n]+)/gi,
+      regex: /(?:condici[oó]n especial|nota importante|advertencia):\s*([^.]+)/gi,
       impact: 'WARNING' as const
     },
     {
-      regex: /(?:sujeto a|bajo la condici[oó]n de):\s*([^\.\n]+)/gi,
+      regex: /(?:sujeto a|bajo la condici[oó]n de):\s*([^.]+)/gi,
       impact: 'WARNING' as const
     },
     {
-      regex: /(?:no cubre|excluye|exclusi[oó]n total):\s*([^\.\n]+)/gi,
+      regex: /(?:no cubre|excluye|exclusi[oó]n total):\s*([^.]+)/gi,
       impact: 'CRITICAL' as const
     },
     {
-      regex: /(?:limitado a|m[aá]ximo|tope):\s*([^\.\n]+)/gi,
+      regex: /(?:limitado a|m[aá]ximo|tope):\s*([^.]+)/gi,
       impact: 'WARNING' as const
     }
   ];

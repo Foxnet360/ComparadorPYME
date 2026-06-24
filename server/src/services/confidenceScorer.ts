@@ -76,7 +76,7 @@ function isValidCoverageValue(value: string): boolean {
   const trimmed = value.trim().toLowerCase();
   
   // Numeric values
-  const cleaned = value.replace(/[\$\s.,]/g, '');
+  const cleaned = value.replace(/[$\s.,]/g, '');
   if (!isNaN(parseFloat(cleaned)) && cleaned !== '') return true;
   
   // Common descriptive values that indicate valid coverage

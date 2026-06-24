@@ -98,7 +98,7 @@ function debugNumericParseSuccess(quote: ParsedQuote, label: string): { score: n
   for (const coverage of quote.coverages) {
     if (coverage.value && coverage.value !== 'NO ESPECIFICADO' && coverage.value !== 'EXCLUIDO') {
       totalNumericFields++;
-      const cleaned = coverage.value.replace(/[\$\s.,]/g, '');
+      const cleaned = coverage.value.replace(/[$\s.,]/g, '');
       if (!isNaN(parseFloat(cleaned)) && cleaned !== '') {
         successfulParses++;
         details += `    "${coverage.name}": "${coverage.value}" → ${parseFloat(cleaned)} ✅\n`;

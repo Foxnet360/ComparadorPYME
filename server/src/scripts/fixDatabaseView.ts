@@ -5,7 +5,7 @@ import * as path from 'path';
 dotenv.config({ path: path.join(__dirname, '../../../.env.local') });
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
-const { supabase } = require('../config/database');
+import { supabase } from '../config/database';
 
 const SQL_FIX = `
 -- 1. Recompilar la vista document_insurer_view con JOIN correcto a insurers

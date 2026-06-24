@@ -185,7 +185,7 @@ export const chatRepository = {
   async archiveThread(threadId: string): Promise<void> {
     const { error } = await supabase
       .from('chat_threads')
-      // @ts-ignore - Supabase type inference issue
+      // @ts-expect-error - Supabase type inference issue
       .update({ status: 'archived' })
       .eq('id', threadId);
     

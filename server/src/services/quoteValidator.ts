@@ -186,7 +186,7 @@ export function validateCoverageValues(quote: ParsedQuote): ValidationFlag[] {
 
     // Check if value looks like a monetary amount
     if (coverage.value !== 'NO ESPECIFICADO' && coverage.value !== 'EXCLUIDO') {
-      const numericValue = parseFloat(coverage.value.replace(/[\$\s.,]/g, ''));
+      const numericValue = parseFloat(coverage.value.replace(/[$\s.,]/g, ''));
       if (!isNaN(numericValue) && numericValue > INSURED_AMOUNT_MAX) {
         flags.push({
           field: `coverage.${coverage.name}.value`,
@@ -219,7 +219,7 @@ function isValidCoverageValue(value: string): boolean {
   const trimmed = value.trim().toLowerCase();
   
   // Numeric values
-  const cleaned = value.replace(/[\$\s.,]/g, '');
+  const cleaned = value.replace(/[$\s.,]/g, '');
   if (!isNaN(parseFloat(cleaned)) && cleaned !== '') return true;
   
   // Common descriptive values that indicate valid coverage
@@ -286,7 +286,7 @@ export function validateConsistency(quote: ParsedQuote): ValidationFlag[] {
   const coverageValues = (quote.coverages || [])
     .map(c => {
       if (c.value === 'NO ESPECIFICADO' || c.value === 'EXCLUIDO') return 0;
-      return parseFloat(c.value.replace(/[\$\s.,]/g, '')) || 0;
+      return parseFloat(c.value.replace(/[$\s.,]/g, '')) || 0;
     })
     .filter(v => v > 0);
 

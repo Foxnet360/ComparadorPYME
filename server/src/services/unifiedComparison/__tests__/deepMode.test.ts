@@ -5,6 +5,7 @@
 
 import { deepClauseValidator } from '../deepClauseValidator';
 import { UnifiedComparisonResult } from '../../types/unifiedComparison';
+import * as fs from 'fs';
 
 describe('Deep Mode Validation', () => {
   
@@ -74,7 +75,6 @@ describe('Deep Mode Validation', () => {
     it('should validate comparison with clause PDFs', async () => {
       // Skip if no clause PDFs available
       const testClauseDir = './test-clauses';
-      const fs = require('fs');
       
       if (!fs.existsSync(testClauseDir)) {
         console.log('No test clause PDFs available, skipping deep mode test');
@@ -120,7 +120,6 @@ describe('Deep Mode Validation', () => {
 
     it('should preserve original comparison in result', async () => {
       // Skip if no clause PDFs available
-      const fs = require('fs');
       const testClauseDir = './test-clauses';
       
       if (!fs.existsSync(testClauseDir)) {
@@ -149,7 +148,6 @@ describe('Deep Mode Validation', () => {
     }, 120000);
 
     it('should update confidence after validation', async () => {
-      const fs = require('fs');
       const testClauseDir = './test-clauses';
       
       if (!fs.existsSync(testClauseDir)) {

@@ -33,7 +33,7 @@ function parseEmbedding(val: any): number[] | null {
   if (Array.isArray(val)) return val;
   if (typeof val === 'string') {
     try {
-      const cleaned = val.replace(/[\[\]]/g, '').trim();
+      const cleaned = val.replace(/[\][]/g, '').trim();
       if (!cleaned) return null;
       return cleaned.split(',').map(Number);
     } catch {

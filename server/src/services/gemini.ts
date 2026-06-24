@@ -14,7 +14,7 @@ import {
   QuoteExtraction,
   DeductibleStructure,
 } from '../schemas/extractionSchemas';
-import { GeminiInvalidResponseError } from '../errors/geminiErrors';
+import { GeminiInvalidResponseError, categorizeGeminiError, GeminiRateLimitError, GeminiServiceUnavailableError } from '../errors/geminiErrors';
 
 /**
  * JSON Schema V2 for flexible quote extraction
@@ -473,11 +473,10 @@ export const geminiService = {
                     }
 
                 } catch (error: any) {
-                    const { categorizeGeminiError } = require('../errors/geminiErrors');
                     const geminiError = categorizeGeminiError(error);
                     
-                    const isRateLimit = geminiError instanceof (require('../errors/geminiErrors').GeminiRateLimitError);
-                    const isServiceUnavailable = geminiError instanceof (require('../errors/geminiErrors').GeminiServiceUnavailableError);
+                    const isRateLimit = geminiError instanceof GeminiRateLimitError;
+                    const isServiceUnavailable = geminiError instanceof GeminiServiceUnavailableError;
 
                     if (isRateLimit || isServiceUnavailable) {
                         const backoffMs = Math.min(20000 * Math.pow(2, retries), 120000);
@@ -679,10 +678,9 @@ Instrucciones para el análisis:
                 
                 return responseText;
             } catch (error: any) {
-                const { categorizeGeminiError } = require('../errors/geminiErrors');
                 const geminiError = categorizeGeminiError(error);
                 
-                const isRateLimit = geminiError instanceof (require('../errors/geminiErrors').GeminiRateLimitError);
+                const isRateLimit = geminiError instanceof GeminiRateLimitError;
 
                 if (isRateLimit) {
                     console.log(`Rate limit hit. Retry attempt ${retries + 1} of ${maxRetries}...`);
@@ -784,10 +782,9 @@ Instrucciones para el análisis:
                     throw new Error(`JSON parsing failed: ${parseResult.error}`);
                 }
             } catch (error: any) {
-                const { categorizeGeminiError } = require('../errors/geminiErrors');
                 const geminiError = categorizeGeminiError(error);
                 
-                const isRateLimit = geminiError instanceof (require('../errors/geminiErrors').GeminiRateLimitError);
+                const isRateLimit = geminiError instanceof GeminiRateLimitError;
 
                 if (isRateLimit) {
                     console.log(`Rate limit hit. Retry attempt ${retries + 1} of ${maxRetries}...`);
@@ -803,7 +800,7 @@ Instrucciones para el análisis:
                 // If JSON parsing fails or schema validation fails, throw
                 if (error.message?.includes("JSON") || error.message?.includes("schema")) {
                     console.error("❌ [Gemini] Structured extraction failed:", error.message);
-                    throw new (require('../errors/geminiErrors').GeminiInvalidResponseError)(`Structured extraction failed: ${error.message}`);
+                    throw new GeminiInvalidResponseError(`Structured extraction failed: ${error.message}`);
                 }
 
                 console.error("Error generating structured content:", error);

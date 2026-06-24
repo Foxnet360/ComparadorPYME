@@ -6,6 +6,8 @@
 import { unifiedComparisonEngine } from '../unifiedComparisonEngine';
 import { comparisonEngineAdapter } from '../comparisonEngineAdapter';
 import { validateAgainstExcelStructure } from '../excelStructureValidator';
+import * as fs from 'fs';
+import * as path from 'path';
 
 describe('Edge Cases', () => {
   
@@ -14,7 +16,6 @@ describe('Edge Cases', () => {
   describe('1 quote', () => {
     
     it('should handle single quote processing', async () => {
-      const fs = require('fs');
       const testPdfDir = './test-quotes';
       
       if (!fs.existsSync(testPdfDir)) {
@@ -48,7 +49,6 @@ describe('Edge Cases', () => {
     }, TEST_TIMEOUT);
 
     it('should handle single quote with incomplete data', async () => {
-      const fs = require('fs');
       const testPdfDir = './test-quotes';
       
       if (!fs.existsSync(testPdfDir)) {
@@ -92,7 +92,6 @@ describe('Edge Cases', () => {
   describe('8+ quotes', () => {
     
     it('should handle many quotes (8+)', async () => {
-      const fs = require('fs');
       const testPdfDir = './test-quotes';
       
       if (!fs.existsSync(testPdfDir)) {
@@ -130,7 +129,6 @@ describe('Edge Cases', () => {
     }, 180000); // 3 minutes
 
     it('should handle all cells having values for 8+ insurers', async () => {
-      const fs = require('fs');
       const testPdfDir = './test-quotes';
       
       if (!fs.existsSync(testPdfDir)) {
@@ -172,7 +170,6 @@ describe('Edge Cases', () => {
   describe('Quotes with missing data', () => {
     
     it('should handle quotes with missing coverages', async () => {
-      const fs = require('fs');
       const testPdfDir = './test-quotes';
       
       if (!fs.existsSync(testPdfDir)) {
@@ -219,7 +216,6 @@ describe('Edge Cases', () => {
     }, TEST_TIMEOUT);
 
     it('should handle quotes with ambiguous deductibles', async () => {
-      const fs = require('fs');
       const testPdfDir = './test-quotes';
       
       if (!fs.existsSync(testPdfDir)) {
@@ -258,7 +254,6 @@ describe('Edge Cases', () => {
     }, TEST_TIMEOUT);
 
     it('should handle quotes with 0 premium', async () => {
-      const fs = require('fs');
       const testPdfDir = './test-quotes';
       
       if (!fs.existsSync(testPdfDir)) {
@@ -314,8 +309,6 @@ describe('Edge Cases', () => {
     });
 
     it('should handle corrupted PDF files', async () => {
-      const fs = require('fs');
-      const path = require('path');
       
       // Create a corrupted PDF
       const corruptedPath = '/tmp/corrupted.pdf';
@@ -337,7 +330,6 @@ describe('Edge Cases', () => {
   describe('Large file handling', () => {
     
     it('should handle large PDF files (10+ MB)', async () => {
-      const fs = require('fs');
       const testPdfDir = './test-quotes';
       
       if (!fs.existsSync(testPdfDir)) {
