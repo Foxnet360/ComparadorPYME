@@ -1,4 +1,6 @@
 import { geminiService } from './gemini';
+import { getDomainConstants, resolveValueToCOP } from '../config/domainConstants';
+import { hybridDeductibleParser, HybridDeductibleResult } from './hybridDeductibleParser';
 
 export interface DeductibleComponent {
   type: 'percentage' | 'fixed' | 'smmlv' | 'uvt' | 'minimum' | 'maximum' | 'na' | 'unknown';
@@ -24,197 +26,62 @@ export interface DeductibleStructure {
   rawText: string;
 }
 
-// Simple regex patterns for common cases
-const SIMPLE_PATTERNS = {
-  zero: /^(sin\s+deducible(?:\s+alguno)?|no\s+aplica(?:\s+deducible)?|sin\s+aplicaci[oó]n(?:\s+de\s+deducible)?|incluido|0\s*%|0)$/i,
-  percentage: /^(\d+(?:\.\d+)?)\s*%$/,
-  smmlv: /^(\d+)\s*(?:SMMLV|SM)$/i,
-  uvt: /^(\d+)\s*(?:UVT)$/i,
-  fixed: /^(?:\$?\s*)([\d.,]+)$/
-};
+/**
+ * @deprecated This module is a backward-compatible proxy to the canonical
+ * `hybridDeductibleParser`. New code should import `hybridDeductibleParser`
+ * directly or use `deductibleFormatter` helpers.
+ */
+function toLegacyStructure(result: HybridDeductibleResult): DeductibleStructure {
+  return {
+    components: result.components.map((c) => ({
+      type: c.type,
+      value: c.value,
+      currency: c.currency ? String(c.currency) : undefined,
+    })) as DeductibleComponent[],
+    semantics: {
+      isZero: result.isZero,
+      hasMinimum: result.hasMinimum,
+      hasMaximum: result.hasMaximum,
+      isComposite: result.isComposite,
+      appliesTo: result.appliesTo ? [result.appliesTo.coverageName] : undefined,
+    },
+    normalized: {
+      minAmount: result.normalized.minAmount,
+      maxAmount: result.normalized.maxAmount,
+      percentage: result.normalized.percentage,
+      isPercentageBased: result.normalized.isPercentageBased,
+    },
+    rawText: result.rawText,
+  };
+}
 
-const SMMLV_VALUE = 1300000; // 1.3M COP
-const UVT_VALUE = 42412; // 2024
-
+/**
+ * @deprecated Use `hybridDeductibleParser` directly.
+ */
 export const deductibleParser = {
   /**
-   * Parse deductible text to structured format
+   * Parse deductible text to structured format (backward-compatible proxy).
    */
   async parse(deductibleText: string): Promise<DeductibleStructure> {
-    if (!deductibleText || deductibleText.trim().length === 0) {
-      return this.createUnknownStructure('');
-    }
-
-    const text = deductibleText.trim();
-    
-    // Try simple regex first for performance
-    const simpleResult = this.parseSimple(text);
-    if (simpleResult) {
-      return simpleResult;
-    }
-    
-    // For complex cases, use LLM
-    return this.parseWithLLM(text);
+    const result = await hybridDeductibleParser.parse(deductibleText);
+    return toLegacyStructure(result);
   },
 
   /**
-   * Parse simple deductible patterns with regex
+   * Parse simple deductible patterns with regex (backward-compatible proxy).
+   * Returns null when the deterministic parser cannot produce a known structure.
    */
   parseSimple(text: string): DeductibleStructure | null {
-    // Zero deductible
-    if (SIMPLE_PATTERNS.zero.test(text)) {
-      return {
-        components: [{ type: 'na', value: 0 }],
-        semantics: { isZero: true, hasMinimum: false, hasMaximum: false, isComposite: false },
-        normalized: { minAmount: 0, maxAmount: 0, percentage: 0, isPercentageBased: false },
-        rawText: text
-      };
+    const result = hybridDeductibleParser.parseSync(text);
+    if (result.components.some((c) => c.type === 'unknown')) {
+      return null;
     }
-    
-    // Pure percentage
-    const percentMatch = text.match(SIMPLE_PATTERNS.percentage);
-    if (percentMatch) {
-      const percentage = parseFloat(percentMatch[1]);
-      return {
-        components: [{ type: 'percentage', value: percentage }],
-        semantics: { isZero: false, hasMinimum: false, hasMaximum: false, isComposite: false },
-        normalized: { minAmount: 0, maxAmount: Infinity, percentage, isPercentageBased: true },
-        rawText: text
-      };
-    }
-    
-    // Pure SMMLV
-    const smmlvMatch = text.match(SIMPLE_PATTERNS.smmlv);
-    if (smmlvMatch) {
-      const smmlv = parseInt(smmlvMatch[1]);
-      const amount = smmlv * SMMLV_VALUE;
-      return {
-        components: [{ type: 'smmlv', value: smmlv, currency: 'SMMLV' }],
-        semantics: { isZero: false, hasMinimum: false, hasMaximum: false, isComposite: false },
-        normalized: { minAmount: amount, maxAmount: amount, percentage: 0, isPercentageBased: false },
-        rawText: text
-      };
-    }
-
-    // Pure Fixed
-    const fixedMatch = text.match(SIMPLE_PATTERNS.fixed);
-    if (fixedMatch) {
-      const valStr = fixedMatch[1].replace(/,/g, '');
-      const value = parseFloat(valStr);
-      return {
-        components: [{ type: 'fixed', value }],
-        semantics: { isZero: false, hasMinimum: false, hasMaximum: false, isComposite: false },
-        normalized: { minAmount: value, maxAmount: value, percentage: 0, isPercentageBased: false },
-        rawText: text
-      };
-    }
-
-    // Pure UVT
-    const uvtMatch = text.match(SIMPLE_PATTERNS.uvt);
-    if (uvtMatch) {
-      const uvt = parseInt(uvtMatch[1]);
-      const amount = uvt * UVT_VALUE;
-      return {
-        components: [{ type: 'fixed', value: uvt, currency: 'UVT' }],
-        semantics: { isZero: false, hasMinimum: false, hasMaximum: false, isComposite: false },
-        normalized: { minAmount: amount, maxAmount: amount, percentage: 0, isPercentageBased: false },
-        rawText: text
-      };
-    }
-
-    // Colombian Compound Deductibles (Percentage + Min/Max in SMMLV/COP/UVT)
-    const pctMatch = text.match(/(\d+(?:\.\d+)?)\s*%/);
-    const hasMinWord = /m[ií]n/i.test(text);
-    const hasMaxWord = /m[aá]x|tope|l[ií]mite/i.test(text);
-    
-    if (pctMatch || hasMinWord || hasMaxWord) {
-      const percentage = pctMatch ? parseFloat(pctMatch[1]) : 0;
-      const isPercentageBased = percentage > 0;
-      
-      let minAmount = 0;
-      let hasMinimum = false;
-      const minMatch = text.match(/(?:m[ií]n(?:imo|o|\.|\b)?)(?:\s+de)?\s*(?:\$?\s*)(\d+(?:[.,]\d+)*)\s*(smmlv|sm|cop|pesos|uvt)?/i);
-      if (minMatch) {
-        hasMinimum = true;
-        const val = parseFloat(minMatch[1].replace(/[.,]/g, ''));
-        const unit = minMatch[2]?.toLowerCase() || '';
-        if (unit.startsWith('sm')) {
-          minAmount = val * SMMLV_VALUE;
-        } else if (unit.startsWith('uvt')) {
-          minAmount = val * UVT_VALUE;
-        } else {
-          if (val < 50 && isPercentageBased) {
-            minAmount = val * SMMLV_VALUE;
-          } else {
-            minAmount = val;
-          }
-        }
-      }
-      
-      let maxAmount = 0;
-      let hasMaximum = false;
-      const maxMatch = text.match(/(?:m[aá]x(?:imo|o|\.|\b)?|tope|l[ií]mite)(?:\s+de)?\s*(?:\$?\s*)(\d+(?:[.,]\d+)*)\s*(smmlv|sm|cop|pesos|uvt)?/i);
-      if (maxMatch) {
-        hasMaximum = true;
-        const val = parseFloat(maxMatch[1].replace(/[.,]/g, ''));
-        const unit = maxMatch[2]?.toLowerCase() || '';
-        if (unit.startsWith('sm')) {
-          maxAmount = val * SMMLV_VALUE;
-        } else if (unit.startsWith('uvt')) {
-          maxAmount = val * UVT_VALUE;
-        } else {
-          if (val < 500 && isPercentageBased) {
-            maxAmount = val * SMMLV_VALUE;
-          } else {
-            maxAmount = val;
-          }
-        }
-      }
-      
-      // If we matched at least a percentage or a min/max, we can construct the structure
-      if (isPercentageBased || hasMinimum || hasMaximum) {
-        const components: DeductibleComponent[] = [];
-        if (isPercentageBased) {
-          components.push({ type: 'percentage', value: percentage });
-        }
-        if (hasMinimum) {
-          components.push({ type: 'minimum', value: minAmount });
-        }
-        if (hasMaximum) {
-          components.push({ type: 'maximum', value: maxAmount });
-        }
-        
-        return {
-          components,
-          semantics: {
-            isZero: false,
-            hasMinimum,
-            hasMaximum,
-            isComposite: components.length > 1
-          },
-          normalized: {
-            minAmount,
-            maxAmount,
-            percentage,
-            isPercentageBased
-          },
-          rawText: text
-        };
-      }
-    }
-    
-    // If text is short, doesn't match simple patterns, and contains no numbers or key terms, it's likely garbage/unparseable
-    const hasNumbers = /\d/.test(text);
-    const hasKeywords = /smmlv|uvt|%|deducible|aplica/i.test(text);
-    if (text.length < 20 && !hasNumbers && !hasKeywords) {
-      return this.createUnknownStructure(text);
-    }
-    
-    return null; // Needs LLM parsing
+    return toLegacyStructure(result);
   },
 
   /**
    * Parse complex deductible with LLM using Gemini Structured Outputs
+   * (backward-compatible proxy).
    */
   async parseWithLLM(text: string): Promise<DeductibleStructure> {
     try {
@@ -227,17 +94,21 @@ export const deductibleParser = {
   },
 
   /**
-   * Build structured deductible from parsed JSON
+   * Build structured deductible from parsed JSON (backward-compatible shape).
    */
   buildStructureFromParsed(parsed: any, rawText: string): DeductibleStructure {
-    const components: DeductibleComponent[] = parsed.components || [];
-    
+    const components: DeductibleComponent[] = ((parsed.components || []).map((c: any) => ({
+      type: c.type,
+      value: c.value,
+      currency: c.currency ? String(c.currency) : undefined,
+    })) as unknown) as DeductibleComponent[];
+
     // Calculate normalized values
     let minAmount = 0;
-    let maxAmount = Infinity;
+    let maxAmount = 0;
     let percentage = 0;
     let isPercentageBased = false;
-    
+
     for (const comp of components) {
       switch (comp.type) {
         case 'percentage':
@@ -255,11 +126,11 @@ export const deductibleParser = {
           maxAmount = minAmount;
           break;
         case 'smmlv':
-          minAmount = comp.value * SMMLV_VALUE;
+          minAmount = comp.value * getDomainConstants().smmlv;
           maxAmount = minAmount;
           break;
         case 'uvt':
-          minAmount = comp.value * UVT_VALUE;
+          minAmount = comp.value * getDomainConstants().uvt;
           maxAmount = minAmount;
           break;
         case 'na':
@@ -269,80 +140,70 @@ export const deductibleParser = {
           break;
       }
     }
-    
+
     return {
       components,
       semantics: {
         isZero: parsed.isZero || false,
         hasMinimum: parsed.hasMinimum || false,
         hasMaximum: parsed.hasMaximum || false,
-        isComposite: parsed.isComposite || false
+        isComposite: parsed.isComposite || false,
       },
       normalized: {
         minAmount,
         maxAmount: maxAmount === Infinity ? 0 : maxAmount,
         percentage,
-        isPercentageBased
+        isPercentageBased,
       },
-      rawText
+      rawText,
     };
   },
 
   /**
-   * Convert value to COP based on currency
+   * Convert value to COP based on currency (backward-compatible proxy).
    */
   convertToCOP(value: number, currency?: string): number {
-    if (!currency) return value;
-    
-    const upper = currency.toUpperCase();
-    if (upper.includes('SMMLV') || upper === 'SM') {
-      return value * SMMLV_VALUE;
-    }
-    if (upper.includes('UVT')) {
-      return value * UVT_VALUE;
-    }
-    
-    return value;
+    return resolveValueToCOP(value, (currency as any) || null) ?? value;
   },
 
   /**
-   * Create structure for unknown deductible
+   * Create structure for unknown deductible.
    */
   createUnknownStructure(rawText: string): DeductibleStructure {
     return {
       components: [{ type: 'unknown', value: 0 }],
       semantics: { isZero: false, hasMinimum: false, hasMaximum: false, isComposite: false },
       normalized: { minAmount: 0, maxAmount: 0, percentage: 0, isPercentageBased: false },
-      rawText
+      rawText,
     };
   },
 
   /**
-   * Validate deductible structure
+   * Validate deductible structure.
    */
   validate(structure: DeductibleStructure): { isValid: boolean; issues: string[] } {
     const issues: string[] = [];
-    
+
     // Check percentage range
     if (structure.normalized.percentage < 0 || structure.normalized.percentage > 100) {
       issues.push(`Invalid percentage: ${structure.normalized.percentage}%`);
     }
-    
+
     // Check min < max
     if (structure.normalized.minAmount > structure.normalized.maxAmount && structure.normalized.maxAmount > 0) {
       issues.push(`Minimum (${structure.normalized.minAmount}) exceeds maximum (${structure.normalized.maxAmount})`);
     }
-    
+
     // Check for negative values
     if (structure.normalized.minAmount < 0 || structure.normalized.maxAmount < 0) {
       issues.push('Negative amounts found');
     }
-    
+
     return {
       isValid: issues.length === 0,
-      issues
+      issues,
     };
-  }
+  },
 };
 
 export default deductibleParser;

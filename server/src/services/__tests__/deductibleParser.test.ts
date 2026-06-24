@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { deductibleParser } from '../deductibleParser';
+import { getDomainConstants } from '../../config/domainConstants';
 
 // Mock gemini service for LLM parsing tests
 vi.mock('../gemini', () => ({
@@ -79,7 +80,7 @@ describe('deductibleParser', () => {
     it('should parse SMMLV deductible', async () => {
       const result = await deductibleParser.parse('5 SMMLV');
       expect(result.semantics.isZero).toBe(false);
-      expect(result.normalized.minAmount).toBe(5 * 1300000);
+      expect(result.normalized.minAmount).toBe(5 * getDomainConstants().smmlv);
     });
 
     it('should parse fixed amount deductible', async () => {
@@ -94,15 +95,15 @@ describe('deductibleParser', () => {
       const result = await deductibleParser.parse('10% con mínimo de 5 SMMLV y tope de 50 SMMLV');
       expect(result.semantics.isZero).toBe(false);
       expect(result.normalized.percentage).toBe(10);
-      expect(result.normalized.minAmount).toBe(5 * 1300000);
-      expect(result.normalized.maxAmount).toBe(50 * 1300000);
+      expect(result.normalized.minAmount).toBe(5 * getDomainConstants().smmlv);
+      expect(result.normalized.maxAmount).toBe(50 * getDomainConstants().smmlv);
     });
 
     it('should parse percentage with maximum only', async () => {
       const result = await deductibleParser.parse('15% con tope de 100 SMMLV');
       expect(result.semantics.isZero).toBe(false);
       expect(result.normalized.percentage).toBe(15);
-      expect(result.normalized.maxAmount).toBe(100 * 1300000);
+      expect(result.normalized.maxAmount).toBe(100 * getDomainConstants().smmlv);
     });
 
     it('should parse "sin aplicación de deducible"', async () => {
@@ -212,7 +213,7 @@ describe('deductibleParser', () => {
   describe('convertToCOP', () => {
     it('should convert SMMLV to COP', () => {
       const result = (deductibleParser as any).convertToCOP(5, 'SMMLV');
-      expect(result).toBe(6500000);
+      expect(result).toBe(5 * getDomainConstants().smmlv);
     });
 
     it('should convert UVT to COP', () => {

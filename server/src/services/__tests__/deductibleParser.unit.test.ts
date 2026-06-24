@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { deductibleParser } from '../deductibleParser';
+import { getDomainConstants } from '../../config/domainConstants';
 
 // Mock gemini service for LLM parsing tests
 vi.mock('../gemini', () => ({
@@ -71,7 +72,7 @@ describe('deductibleParser - Unit Tests', () => {
 
     it('should parse SMMLV format', async () => {
       const result = await deductibleParser.parse('5 SMMLV');
-      expect(result.normalized.minAmount).toBe(6500000); // 5 * 1.3M
+      expect(result.normalized.minAmount).toBe(5 * getDomainConstants().smmlv);
     });
 
     it('should parse fixed amount', async () => {
@@ -160,7 +161,7 @@ describe('deductibleParser - Unit Tests', () => {
   describe('convertToCOP', () => {
     it('should convert SMMLV to COP', () => {
       const result = (deductibleParser as any).convertToCOP(5, 'SMMLV');
-      expect(result).toBe(6500000);
+      expect(result).toBe(5 * getDomainConstants().smmlv);
     });
 
     it('should convert UVT to COP', () => {

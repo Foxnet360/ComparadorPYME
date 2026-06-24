@@ -1,7 +1,7 @@
 /**
  * Deductible Analyzer
  * Analyzes deductible risk considering insured amount, caps, and proportions
- * Uses the new semantic deductible parser for compound structures
+ * Uses the canonical hybrid deductible parser for compound structures
  */
 
 import { hybridDeductibleParser } from './hybridDeductibleParser';
@@ -26,13 +26,10 @@ export interface DeductibleAnalysis {
   };
 }
 
-// SMMLV value (approximate, should be configurable)
-const SMMLV_VALUE = 1300000; // ~1.3M COP
-
 export const deductibleAnalyzer = {
   /**
    * Analyze deductible risk for a specific coverage
-   * Uses the new semantic deductible parser for compound structures
+   * Uses the canonical hybrid deductible parser for compound structures
    */
   analyze: async (
     coverageName: string,
@@ -164,63 +161,6 @@ export const deductibleAnalyzer = {
     return results;
   }
 };
-
-interface ParsedDeductible {
-  type: 'PERCENTAGE' | 'SMMLV' | 'FIXED' | 'UNKNOWN';
-  amount: number;
-  capAmount: number;
-}
-
-function parseDeductible(deductibleText: string): ParsedDeductible {
-  if (!deductibleText || deductibleText === 'No aplica' || deductibleText === 'NO ESPECIFICADO') {
-    return { type: 'UNKNOWN', amount: 0, capAmount: 0 };
-  }
-  
-  const text = deductibleText.toLowerCase();
-  let amount = 0;
-  let capAmount = 0;
-  let type: 'PERCENTAGE' | 'SMMLV' | 'FIXED' | 'UNKNOWN' = 'UNKNOWN';
-  
-  // Check for percentage: "10%", "10 %"
-  const percentMatch = text.match(/(\d+(?:\.\d+)?)\s*%/);
-  if (percentMatch) {
-    amount = parseFloat(percentMatch[1]);
-    type = 'PERCENTAGE';
-  }
-  
-  // Check for SMMLV: "5 SMMLV", "2 SM" (only if no percentage found)
-  if (type === 'UNKNOWN') {
-    const smmlvMatch = text.match(/(\d+)\s*(?:smmlv|sm)/);
-    if (smmlvMatch) {
-      amount = parseFloat(smmlvMatch[1]);
-      type = 'SMMLV';
-    }
-  }
-  
-  // Check for fixed amount: "$500,000", "500000"
-  if (type === 'UNKNOWN') {
-    const fixedMatch = text.match(/[$\s]*(\d+(?:[.,]\d+)*)/);
-    if (fixedMatch) {
-      const cleaned = fixedMatch[1].replace(/[.,]/g, '');
-      amount = parseFloat(cleaned);
-      if (amount > 1000) { // Likely a fixed amount, not a percentage
-        type = 'FIXED';
-      }
-    }
-  }
-  
-  // Check for cap: "Máx. 500 SMMLV", "Tope $5M"
-  const capMatch = text.match(/(?:máx|tope|max)\S*\s*(\d+(?:\.\d+)?)\s*(?:smmlv|sm|\$?)/i);
-  if (capMatch) {
-    capAmount = parseFloat(capMatch[1]);
-    // If cap is in SMMLV, convert
-    if (text.includes('smmlv') || text.includes('sm')) {
-      capAmount = capAmount * SMMLV_VALUE;
-    }
-  }
-  
-  return { type, amount, capAmount };
-}
 
 function parseInsuredAmount(value: string): number {
   if (!value || value === 'NO ESPECIFICADO' || value === 'EXCLUIDO') {
