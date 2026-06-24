@@ -9,8 +9,9 @@ import { CrossReferenceResult, DiscrepancyAlert } from './crossReferenceEngine';
 import { formatNumber } from '../utils/formatCurrency';
 import { CoverageExistenceResult } from './clauseCoverageValidator';
 import { variableComparator } from './variableComparator';
-import { deductibleParser } from './deductibleParser';
+import { hybridDeductibleParser } from './hybridDeductibleParser';
 import { featureFlags } from '../config/featureFlags';
+import { getCanonicalCoverageNames } from '../config/domainConstants';
 
 export interface ScoreWeights {
     coverage: number;
@@ -57,22 +58,7 @@ const DEFAULT_WEIGHTS: ScoreWeights = {
 
 // Expected coverages for a typical PYME policy
 // Aligned with frontend PLANTILLA_ITEMS (14 canonical coverages)
-const EXPECTED_COVERAGES = [
-    'incendio (edificio y contenidos)',
-    'lucro cesante',
-    'sustraccion / hurto',
-    'equipo electrico y electronico',
-    'rotura de maquinaria',
-    'responsabilidad civil (rce)',
-    'vidrios planos',
-    'manejo global / infidelidad',
-    'transporte de mercancias',
-    'transporte de valores',
-    'asistencia pyme',
-    'asistencia legal',
-    'huelga, motin, asonada (hmacc)',
-    'terremoto y eventos catastroficos'
-];
+const EXPECTED_COVERAGES = getCanonicalCoverageNames().map((name) => name.toLowerCase());
 
 // Market price benchmarks (in COP millions, annual)
 // Used when no other quotes are available for comparison
@@ -487,23 +473,16 @@ function parseDeductibleValue(deducibleText: string): number | null {
         return null;
     }
 
-    // Try to extract percentage
-    const percentMatch = deducibleText.match(/(\d+(?:\.\d+)?)\s*%/);
-    if (percentMatch) {
-        return parseFloat(percentMatch[1]);
+    const structure = hybridDeductibleParser.parseSync(deducibleText);
+    if (structure.components.some((c) => c.type === 'unknown')) {
+        return null;
     }
 
-    // Try to extract numeric value (SMMLV, SM, etc)
-    const smmlvMatch = deducibleText.match(/(\d+)\s*(?:SMMLV|SM)/i);
-    if (smmlvMatch) {
-        return parseFloat(smmlvMatch[1]);
+    if (structure.normalized.isPercentageBased && structure.normalized.percentage > 0) {
+        return structure.normalized.percentage;
     }
-
-    // Try to extract plain number (assumes thousands)
-    const plainMatch = deducibleText.match(/(\d+(?:[.,]\d+)?)/);
-    if (plainMatch) {
-        const num = parseFloat(plainMatch[1].replace(',', '.'));
-        if (!isNaN(num)) return num;
+    if (structure.normalized.minAmount > 0) {
+        return structure.normalized.minAmount;
     }
 
     return null;
@@ -584,7 +563,7 @@ async function calculateVariableBasedScores(
             if (!result.quoteData.deductible || result.quoteData.deductible === 'No aplica') continue;
             
             try {
-                const quoteDed = await deductibleParser.parse(result.quoteData.deductible);
+                const quoteDed = await hybridDeductibleParser.parse(result.quoteData.deductible);
                 
                 // Find best deductible among all quotes for this coverage
                 const coverageName = result.coverageName;
@@ -596,7 +575,7 @@ async function calculateVariableBasedScores(
                 );
                 
                 if (allDeds.length > 1) {
-                    const parsedDeds = await Promise.all(allDeds.map(d => deductibleParser.parse(d)));
+                    const parsedDeds = await Promise.all(allDeds.map(d => hybridDeductibleParser.parse(d)));
                     const minDed = Math.min(...parsedDeds.map(d => d.normalized.minAmount || d.normalized.percentage || Infinity));
                     const quoteMin = quoteDed.normalized.minAmount || quoteDed.normalized.percentage || Infinity;
                     

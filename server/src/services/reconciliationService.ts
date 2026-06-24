@@ -5,9 +5,11 @@ import {
   ReconciliationThresholdConfig,
 } from '../schemas/extractionSchemas';
 import { hybridDeductibleParser, HybridDeductibleResult } from './hybridDeductibleParser';
+import { deductibleEquals } from './deductibleFormatter';
 import { structuredClauseExtractor, StructuredClause, ExtractedCoverage } from './structuredClauseExtractor';
 import { insurerNameNormalizer } from './insurerNameNormalizer';
 import { ParsedQuote, ParsedCoverage } from './quoteParser';
+import { env } from '../config/env';
 
 // ---------------------------------------------------------------------------
 // Threshold configuration
@@ -77,10 +79,12 @@ function buildDeductibleStructureFromClause(
 
   return {
     components,
+    compoundOperator: 'none',
     isZero,
     hasMinimum,
     hasMaximum,
     isComposite,
+    rawText: ded.rawText || '',
   };
 }
 
@@ -128,15 +132,13 @@ function normalizeDeductible(structure: DeductibleStructure): NormalizedDeductib
         result.maxAmount = comp.value;
         break;
       case 'smmlv': {
-        const smmlv = parseInt(process.env.SMMLV_VALUE || '1423500', 10);
-        result.minAmount = comp.value * smmlv;
-        result.maxAmount = comp.value * smmlv;
+        result.minAmount = comp.value * env.SMMLV_VALUE;
+        result.maxAmount = comp.value * env.SMMLV_VALUE;
         break;
       }
       case 'uvt': {
-        const uvt = parseInt(process.env.UVT_VALUE || '42412', 10);
-        result.minAmount = comp.value * uvt;
-        result.maxAmount = comp.value * uvt;
+        result.minAmount = comp.value * env.UVT_VALUE;
+        result.maxAmount = comp.value * env.UVT_VALUE;
         break;
       }
       case 'na':
@@ -308,12 +310,21 @@ export const reconciliationService = {
         console.warn(`⚠️ [ReconciliationService] Failed to parse quote deductible for ${coverageName}:`, err.message);
         quoteDedResult = {
           components: [{ type: 'unknown', value: 0 }],
+          compoundOperator: 'none',
           isZero: false,
           hasMinimum: false,
           hasMaximum: false,
           isComposite: false,
           rawText: coverage.deductible || '',
-          normalized: { minAmount: 0, maxAmount: 0, percentage: 0, isPercentageBased: false },
+          normalized: {
+            minAmount: 0,
+            minAmountCOP: 0,
+            maxAmount: 0,
+            maxAmountCOP: 0,
+            percentage: 0,
+            isPercentageBased: false,
+          },
+          parseMethod: 'empty',
         };
       }
 
@@ -346,22 +357,30 @@ export const reconciliationService = {
         confidence = 0.55;
         details.push(`Cotización no especifica deducible para "${coverageName}"`);
       } else {
-        const quoteNormalized = normalizeDeductible(quoteDedResult);
-        const clauseNormalized = normalizeDeductible(clauseDedStructure);
-        const comparison = compareDeductibles(quoteNormalized, clauseNormalized, threshold);
-        status = comparison.status;
-        confidence = comparison.confidence;
-        details = comparison.details;
+        // Short-circuit exact semantic equality via the formatter helper.
+        if (deductibleEquals(quoteDedResult, clauseDedStructure)) {
+          status = 'MATCH';
+          confidence = 0.99;
+        } else {
+          const quoteNormalized = normalizeDeductible(quoteDedResult);
+          const clauseNormalized = normalizeDeductible(clauseDedStructure);
+          const comparison = compareDeductibles(quoteNormalized, clauseNormalized, threshold);
+          status = comparison.status;
+          confidence = comparison.confidence;
+          details = comparison.details;
+        }
       }
 
       results.push({
         coverageName,
         quoteDeductible: {
           components: quoteDedResult.components,
+          compoundOperator: quoteDedResult.compoundOperator,
           isZero: quoteDedResult.isZero,
           hasMinimum: quoteDedResult.hasMinimum,
           hasMaximum: quoteDedResult.hasMaximum,
           isComposite: quoteDedResult.isComposite,
+          rawText: quoteDedResult.rawText,
         },
         clauseDeductible: clauseDedStructure,
         status,

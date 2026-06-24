@@ -5,6 +5,8 @@
  */
 
 import { ParsedQuote } from './quoteParser';
+import { getCanonicalCoverageNames, getPremiumRange } from '../config/domainConstants';
+import { hybridDeductibleParser } from './hybridDeductibleParser';
 
 export interface ValidationFlag {
   field: string;
@@ -22,27 +24,11 @@ export interface ValidationResult {
   premiumSource?: string;
 }
 
-// Expected PYME coverages
-const EXPECTED_COVERAGES = [
-  'Incendio (Edificio y Contenidos)',
-  'Lucro Cesante',
-  'Sustracción / Hurto',
-  'Equipo Eléctrico y Electrónico',
-  'Rotura de Maquinaria',
-  'Responsabilidad Civil (RCE)',
-  'Vidrios Planos',
-  'Manejo Global / Infidelidad',
-  'Transporte de Mercancías',
-  'Transporte de Valores',
-  'Asistencia PYME',
-  'Asistencia Legal',
-  'Huelga, Motín, Asonada (HMACC)',
-  'Terremoto y Eventos Catastróficos'
-];
+// Expected PYME coverages loaded from the canonical taxonomy
+const EXPECTED_COVERAGES = getCanonicalCoverageNames();
 
 // Validation constants
-const PREMIUM_MIN = 100000;
-const PREMIUM_MAX = 500000000;
+const PREMIUM_RANGE = getPremiumRange();
 const INSURED_AMOUNT_MAX = 10000000000;
 const HIGH_DEDUCTIBLE_PERCENTAGE = 50;
 
@@ -59,20 +45,20 @@ export function validatePremium(quote: ParsedQuote): ValidationFlag | null {
     };
   }
 
-  if (quote.priceAnnual < PREMIUM_MIN) {
+  if (quote.priceAnnual < PREMIUM_RANGE.min) {
     return {
       field: 'priceAnnual',
       severity: 'WARNING',
-      message: `Prima anual (${quote.priceAnnual}) está por debajo del mínimo esperado (${PREMIUM_MIN})`,
+      message: `Prima anual (${quote.priceAnnual}) está por debajo del mínimo esperado (${PREMIUM_RANGE.min})`,
       code: 'PREMIUM_SUSPECT'
     };
   }
 
-  if (quote.priceAnnual > PREMIUM_MAX) {
+  if (quote.priceAnnual > PREMIUM_RANGE.max) {
     return {
       field: 'priceAnnual',
       severity: 'WARNING',
-      message: `Prima anual (${quote.priceAnnual}) excede el máximo esperado (${PREMIUM_MAX})`,
+      message: `Prima anual (${quote.priceAnnual}) excede el máximo esperado (${PREMIUM_RANGE.max})`,
       code: 'PREMIUM_SUSPECT'
     };
   }
@@ -140,76 +126,44 @@ export function validateCoverageCompleteness(quote: ParsedQuote): ValidationFlag
 }
 
 /**
- * Validate deductible format
+ * Validate deductible format using the canonical structured parser.
+ *
+ * Returns INFO for unknown formats and WARNING for percentages above the
+ * configured threshold. Valid structured deductibles return null.
  */
 export function validateDeductibleFormat(deductible: string): ValidationFlag | null {
   if (!deductible || deductible.trim() === '') {
     return null; // Empty is acceptable
   }
 
-  const cleanDeductible = deductible.trim().toLowerCase();
+  const structure = hybridDeductibleParser.parseSync(deductible);
 
-  // Valid text values that indicate no deductible
-  const noDeductibleValues = ['no aplica', 'sin deducible', 'aplica', 'incluido', 'no especificado'];
-  if (noDeductibleValues.includes(cleanDeductible)) {
+  // Zero / NA deductibles are always acceptable.
+  if (structure.isZero) {
     return null;
   }
 
-  // Check for percentage format with minimum (e.g., "10% PERD Min 1 SMMLV", "5% del siniestro, mínimo 1 SMMLV")
-  const percentageWithMinMatch = cleanDeductible.match(/(\d+(?:\.\d+)?)\s*%\s*(?:perd|del\s*siniestro|sobre\s*(?:el\s*)?valor|del\s*valor)?[\s,]*(?:m[ií]nimo|m[ií]n|min)?\s*(?:(\d+)\s*(?:smmlv|sm))?/);
-  if (percentageWithMinMatch) {
-    const percentage = parseFloat(percentageWithMinMatch[1]);
-    if (percentage > HIGH_DEDUCTIBLE_PERCENTAGE) {
-      return {
-        field: 'deductible',
-        severity: 'WARNING',
-        message: `Deducible de ${percentage}% es inusualmente alto`,
-        code: 'DEDUCTIBLE_HIGH_PERCENTAGE'
-      };
-    }
-    return null;
+  // Unknown formats are flagged for review but do not block processing.
+  if (structure.components.some((c) => c.type === 'unknown')) {
+    return {
+      field: 'deductible',
+      severity: 'INFO',
+      message: `Formato de deducible no reconocido: "${deductible}"`,
+      code: 'DEDUCTIBLE_UNRECOGNIZED_FORMAT'
+    };
   }
 
-  // Check for simple percentage format (e.g., "10%", "10 %")
-  const simplePercentageMatch = cleanDeductible.match(/(\d+(?:\.\d+)?)\s*%/);
-  if (simplePercentageMatch) {
-    const percentage = parseFloat(simplePercentageMatch[1]);
-    if (percentage > HIGH_DEDUCTIBLE_PERCENTAGE) {
-      return {
-        field: 'deductible',
-        severity: 'WARNING',
-        message: `Deducible de ${percentage}% es inusualmente alto`,
-        code: 'DEDUCTIBLE_HIGH_PERCENTAGE'
-      };
-    }
-    return null;
+  // High percentage check.
+  if (structure.normalized.percentage > HIGH_DEDUCTIBLE_PERCENTAGE) {
+    return {
+      field: 'deductible',
+      severity: 'WARNING',
+      message: `Deducible de ${structure.normalized.percentage}% es inusualmente alto`,
+      code: 'DEDUCTIBLE_HIGH_PERCENTAGE'
+    };
   }
 
-  // Check for SMMLV format (e.g., "5 SMMLV", "2 SM", "1 SMMLV")
-  const smmlvMatch = cleanDeductible.match(/(\d+)\s*(?:smmlv|sm)/);
-  if (smmlvMatch) {
-    return null;
-  }
-
-  // Check for fixed amount with currency (e.g., "$500,000", "$500.000", "500000 COP")
-  const fixedAmountMatch = cleanDeductible.match(/[$\s]*(\d{1,3}(?:[.,]\d{3})+|\d+)(?:\s*cop)?/);
-  if (fixedAmountMatch) {
-    return null;
-  }
-
-  // Check for plain number (e.g., "500000")
-  const plainNumberMatch = cleanDeductible.match(/^\d+$/);
-  if (plainNumberMatch) {
-    return null;
-  }
-
-  // Unrecognized format - log but don't flag as error
-  return {
-    field: 'deductible',
-    severity: 'INFO',
-    message: `Formato de deducible no reconocido: "${deductible}"`,
-    code: 'DEDUCTIBLE_UNRECOGNIZED_FORMAT'
-  };
+  return null;
 }
 
 /**

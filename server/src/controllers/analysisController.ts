@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { geminiService } from '../services/gemini';
-import { pdfExtractor } from '../services/pdfExtractor';
+import { pdfExtractor, PDFExtractionResult } from '../services/pdfExtractor';
 import { quoteParser, ParsedQuote } from '../services/quoteParser';
 import { crossReferenceEngine, CrossReferenceResult } from '../services/crossReferenceEngine';
 import { ragRetrievalService } from '../services/ragRetrievalService';
@@ -25,10 +25,18 @@ import {
   processQuoteMultimodal,
   processQuoteLegacy,
   createDefaultScoringResult,
-  isMultimodalEnabled
+  isMultimodalEnabled,
+  shouldUseV2,
+  NativeTextResult,
 } from '../services/quoteProcessingService';
 import { comparisonEngineAdapter } from '../services/unifiedComparison/comparisonEngineAdapter';
 import { featureFlags } from '../config/featureFlags';
+import {
+  createExtractionMetricsEmitter,
+  ExtractionMetricsEmitter,
+} from '../services/extractionMetrics';
+import { ExtractionResult } from '../types/extractionMetrics';
+import { randomUUID } from 'crypto';
 
 // Helper to call service with timeout
 const callWithTimeout = async <T>(promise: Promise<T>, timeoutMs: number = 5000, fallback: T): Promise<T> => {
@@ -50,11 +58,11 @@ export const analysisController = {
         const startTime = Date.now();
         
         try {
-            const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-            const quoteFiles = files['quotes'] || [];
+            const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+            const quoteFiles = files?.['quotes'] || [];
 
             if (quoteFiles.length === 0) {
-                res.status(400).json({ error: "No quote files uploaded" });
+                res.status(400).json({ success: false, error: "No quote files uploaded" });
                 return;
             }
 
@@ -137,94 +145,170 @@ export const analysisController = {
             let parsedQuotes: ParsedQuote[] = [];
             const domain = req.body?.domain ?? 'pyme';
 
-            if (isMultimodalEnabled()) {
-                // NEW: Multimodal extraction pipeline (PARALLEL)
-                console.log('🤖 Using multimodal extraction with Gemini 2.5 Pro (PARALLEL)...');
+            console.log(`🤖 V2 multimodal is ${isMultimodalEnabled() ? 'enabled' : 'disabled'}; extracting native text first for path selection...`);
 
-                // Process all quotes in parallel with concurrency limit
-                const CONCURRENCY_LIMIT = 2; // Limit to 2 simultaneous Gemini calls
-                const processQuote = async (file: Express.Multer.File, index: number) => {
-                    try {
-                        const parsed = await processQuoteMultimodal(file, index, quoteFiles.length, { domain });
-                        return { index, parsed, error: null };
-                    } catch (error: any) {
-                        const errorMessage = error?.message || 'Unknown error';
-                        const isServiceError = errorMessage.includes('503') || 
-                                               errorMessage.includes('Service Unavailable') ||
-                                               errorMessage.includes('high demand');
-                        
-                        if (isServiceError) {
-                            console.error(`   ❌ Error processing quote ${index + 1}: Servicio de IA temporalmente no disponible (503)`);
-                        } else {
-                            console.error(`   ❌ Error processing quote ${index + 1}:`, errorMessage);
-                        }
+            // Phase 0: Extract native text once per file to decide V2 vs legacy path.
+            const nativeTextResults: { file: Express.Multer.File; result: PDFExtractionResult }[] = [];
+            for (const file of quoteFiles) {
+              try {
+                const result = await pdfExtractor.extractTextFromPdf(file.path);
+                nativeTextResults.push({ file, result });
+              } catch (err: any) {
+                console.warn(`⚠️ Native text extraction failed for ${file.originalname}: ${err.message}`);
+                nativeTextResults.push({
+                  file,
+                  result: {
+                    text: '',
+                    pages: [],
+                    pageTextMap: {},
+                    metadata: { pageCount: 1 },
+                    warnings: [err.message],
+                    isScanned: false,
+                  },
+                });
+              }
+            }
 
-                        // Fallback to legacy pipeline
-                        console.log(`   🔄 Falling back to legacy pipeline...`);
-                        try {
-                            const fallback = await processQuoteLegacy(file, index, quoteFiles.length, { domain });
-                            return { index, parsed: fallback, error: null };
-                        } catch (fallbackError: any) {
-                            console.error(`   ❌ Legacy fallback also failed:`, fallbackError?.message);
-                            return { index, parsed: null, error: error }; // Return original error for better messaging
-                        }
-                    }
+            // Process all quotes with V2 as the default; legacy is used for scanned PDFs or V2 failures.
+            const CONCURRENCY_LIMIT = 2; // Limit to 2 simultaneous Gemini calls
+            const processQuote = async (
+              file: Express.Multer.File,
+              nativeResult: PDFExtractionResult,
+              index: number
+            ) => {
+              const quoteId = randomUUID();
+              const metrics = createExtractionMetricsEmitter();
+              const quoteStartTime = Date.now();
+
+              metrics.emit({
+                quoteId,
+                index,
+                total: quoteFiles.length,
+                filename: file.originalname,
+              });
+
+              try {
+                const nativeTextResult: NativeTextResult = {
+                  text: nativeResult.text,
+                  pageTextMap: nativeResult.pageTextMap || {},
+                  pageTextItems: nativeResult.pageTextItems,
+                  metadata: nativeResult.metadata,
+                  isScanned: nativeResult.isScanned ?? false,
                 };
-                
-                // Process in batches to limit concurrency
-                for (let i = 0; i < quoteFiles.length; i += CONCURRENCY_LIMIT) {
-                    const batch = quoteFiles.slice(i, i + CONCURRENCY_LIMIT);
-                    const batchResults = await Promise.all(
-                        batch.map((file, batchIdx) => processQuote(file, i + batchIdx))
-                    );
-                    
-                    for (const result of batchResults) {
-                        if (result.parsed) {
-                            parsedQuotes[result.index] = result.parsed;
-                        } else {
-                            // Create error placeholder
-                            const filename = quoteFiles[result.index]?.originalname || 'Unknown';
-                            const insurerName = filename.replace(/COTIZACION.*?-\s*/i, '').replace(/\.pdf$/i, '') || filename;
-                            const errorMessage = result.error?.message || 'Unknown error';
-                            const isServiceError = errorMessage.includes('503') || 
-                                                   errorMessage.includes('Service Unavailable') ||
-                                                   errorMessage.includes('high demand');
-                            const displayError = isServiceError 
-                                ? 'Servicio temporalmente no disponible. Intente nuevamente en unos momentos.'
-                                : errorMessage;
-                            
-                            parsedQuotes[result.index] = {
-                                insurerName: insurerName,
-                                policyName: 'Error en procesamiento',
-                                priceAnnual: 0,
-                                currency: 'COP',
-                                coverages: [],
-                                specialConditions: [`Error: ${displayError}`],
-                                rawText: '',
-                                parseConfidence: 0,
-                                isFailed: true,
-                                errorCategory: isServiceError ? 'SERVICE_UNAVAILABLE' : 'EXTRACTION_FAILED',
-                                errorCode: isServiceError ? 'GEMINI_SERVICE_UNAVAILABLE' : 'EXTRACTION_ERROR'
-                            };
-                        }
-                    }
-                }
-            } else {
-                // LEGACY: Text-based extraction pipeline
-                // Phase 1: Extract text from quote PDFs
-                console.log('📑 Phase 1/5: Extracting text from PDFs...');
-                const extractedQuotes = await pdfExtractor.processMultiplePdfs(
-                    quoteFiles.map(f => ({ path: f.path, originalname: f.originalname })),
-                    'COTIZACIÓN'
-                );
 
-                // Phase 2: Process each quote in parallel with Gemini
-                console.log('🤖 Phase 2/5: Extracting structured data with Gemini (PARALLEL)...');
-                
-                const legacyPromises = extractedQuotes.map((quote, i) =>
-                    processQuoteLegacy(quote, i, extractedQuotes.length, { domain })
-                );
-                parsedQuotes = await Promise.all(legacyPromises);
+                if (shouldUseV2(file, nativeTextResult)) {
+                  console.log(`   🤖 Quote ${index + 1}: using V2 multimodal path`);
+                  const parsed = await processQuoteMultimodal(file, index, quoteFiles.length, {
+                    domain,
+                    quoteId,
+                    metrics,
+                    nativeTextResult,
+                  });
+                  metrics.emit({
+                    quoteId,
+                    index,
+                    total: quoteFiles.length,
+                    result: 'success' as ExtractionResult,
+                    durationMs: Date.now() - quoteStartTime,
+                    path: 'v2',
+                  });
+                  return { index, parsed, error: null };
+                }
+
+                console.log(`   📑 Quote ${index + 1}: using legacy path (${nativeTextResult.isScanned ? 'scanned PDF' : 'V2 disabled'})`);
+                metrics.emit({
+                  quoteId,
+                  index,
+                  total: quoteFiles.length,
+                  path: 'legacy',
+                });
+                const quote = {
+                  text: nativeResult.text,
+                  metadata: nativeResult.metadata,
+                  filename: file.originalname,
+                  isScanned: nativeResult.isScanned ?? false,
+                };
+                const parsed = await processQuoteLegacy(quote, index, quoteFiles.length, {
+                  domain,
+                  quoteId,
+                  metrics,
+                });
+                metrics.emit({
+                  quoteId,
+                  index,
+                  total: quoteFiles.length,
+                  result: 'success' as ExtractionResult,
+                  durationMs: Date.now() - quoteStartTime,
+                  path: 'legacy',
+                });
+                return { index, parsed, error: null };
+              } catch (error: any) {
+                const errorMessage = error?.message || 'Unknown error';
+                const isServiceError =
+                  errorMessage.includes('503') ||
+                  errorMessage.includes('Service Unavailable') ||
+                  errorMessage.includes('high demand');
+
+                if (isServiceError) {
+                  console.error(`   ❌ Error processing quote ${index + 1}: Servicio de IA temporalmente no disponible (503)`);
+                } else {
+                  console.error(`   ❌ Error processing quote ${index + 1}:`, errorMessage);
+                }
+
+                metrics.emit({
+                  quoteId,
+                  index,
+                  total: quoteFiles.length,
+                  result: 'failed' as ExtractionResult,
+                  durationMs: Date.now() - quoteStartTime,
+                  path: 'legacy',
+                  errorCategory: isServiceError ? 'SERVICE_UNAVAILABLE' : 'EXTRACTION_FAILED',
+                  errorCode: isServiceError ? 'GEMINI_SERVICE_UNAVAILABLE' : 'EXTRACTION_ERROR',
+                });
+
+                return { index, parsed: null, error };
+              }
+            };
+
+            // Process in batches to limit concurrency
+            for (let i = 0; i < quoteFiles.length; i += CONCURRENCY_LIMIT) {
+              const batch = quoteFiles.slice(i, i + CONCURRENCY_LIMIT);
+              const batchNativeResults = nativeTextResults.slice(i, i + CONCURRENCY_LIMIT);
+              const batchResults = await Promise.all(
+                batch.map((file, batchIdx) => processQuote(file, batchNativeResults[batchIdx].result, i + batchIdx))
+              );
+
+              for (const result of batchResults) {
+                if (result.parsed) {
+                  parsedQuotes[result.index] = result.parsed;
+                } else {
+                  // Create error placeholder
+                  const filename = quoteFiles[result.index]?.originalname || 'Unknown';
+                  const insurerName = filename.replace(/COTIZACION.*?-\s*/i, '').replace(/\.pdf$/i, '') || filename;
+                  const errorMessage = result.error?.message || 'Unknown error';
+                  const isServiceError =
+                    errorMessage.includes('503') ||
+                    errorMessage.includes('Service Unavailable') ||
+                    errorMessage.includes('high demand');
+                  const displayError = isServiceError
+                    ? 'Servicio temporalmente no disponible. Intente nuevamente en unos momentos.'
+                    : errorMessage;
+
+                  parsedQuotes[result.index] = {
+                    insurerName: insurerName,
+                    policyName: 'Error en procesamiento',
+                    priceAnnual: 0,
+                    currency: 'COP',
+                    coverages: [],
+                    specialConditions: [`Error: ${displayError}`],
+                    rawText: '',
+                    parseConfidence: 0,
+                    isFailed: true,
+                    errorCategory: isServiceError ? 'SERVICE_UNAVAILABLE' : 'EXTRACTION_FAILED',
+                    errorCode: isServiceError ? 'GEMINI_SERVICE_UNAVAILABLE' : 'EXTRACTION_ERROR'
+                  };
+                }
+              }
             }
 
             // Phase 2.5: Validate coverage values against raw text (anti-hallucination)
@@ -643,17 +727,31 @@ export const analysisController = {
 
     getHistory: async (req: Request, res: Response): Promise<void> => {
         try {
-            const userId = req.query.userId as string;
+            const userId = (req.query.userId as string) || (req as any).user?.id;
             if (!userId) {
-                res.json([]);
+                res.status(401).json({ success: false, error: "Authentication required" });
+                return;
+            }
+
+            const rawLimit = req.query.limit;
+            const rawOffset = req.query.offset;
+            const limit = rawLimit !== undefined ? parseInt(rawLimit as string, 10) : 20;
+            const offset = rawOffset !== undefined ? parseInt(rawOffset as string, 10) : 0;
+
+            if (Number.isNaN(limit) || Number.isNaN(offset) || limit < 1 || offset < 0) {
+                res.status(400).json({ success: false, error: "Invalid pagination parameters" });
                 return;
             }
 
             const history = await getAnalysisHistoryByUser(userId);
-            res.json(history);
+            res.json({
+                success: true,
+                data: history.slice(offset, offset + limit),
+                pagination: { limit, offset, total: history.length }
+            });
         } catch (error) {
             console.error("Error fetching history:", error);
-            res.status(500).json({ error: "Failed to fetch history" });
+            res.status(500).json({ success: false, error: "Failed to fetch history" });
         }
     }
 };

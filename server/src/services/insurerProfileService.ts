@@ -5,6 +5,7 @@
 
 import { loadDomainJson } from './domainBundleLoader';
 import { TemplateRegistryEntry } from '../types/templateGraph';
+import { getCanonicalCoverageName, getCanonicalCoverageNames } from '../config/domainConstants';
 
 export interface CoverageMapping {
   canonicalName: string;
@@ -28,22 +29,22 @@ export interface InsurerExtractionProfile {
   fewShotExamples: string[];
 }
 
-// Canonical coverage names for PYME
-const CANONICAL_COVERAGES = {
-  INCENDIO: 'Incendio (Edificio y Contenidos)',
-  LUCRO_CESANTE: 'Lucro Cesante',
-  SUSTRACCION: 'Sustracción / Hurto',
-  EQUIPO_ELECTRICO: 'Equipo Eléctrico y Electrónico',
-  ROTURA_MAQUINARIA: 'Rotura de Maquinaria',
-  RC: 'Responsabilidad Civil (RCE)',
-  VIDRIOS: 'Vidrios Planos',
-  MANEJO_GLOBAL: 'Manejo Global / Infidelidad',
-  TRANSPORTE_MERCANCIAS: 'Transporte de Mercancías',
-  TRANSPORTE_VALORES: 'Transporte de Valores',
-  ASISTENCIA_PYME: 'Asistencia PYME',
-  ASISTENCIA_LEGAL: 'Asistencia Legal',
-  HMACC: 'Huelga, Motín, Asonada (HMACC)',
-  TERREMOTO: 'Terremoto y Eventos Catastróficos'
+// Canonical coverage names for PYME (loaded from data/domains/pyme/taxonomy.json)
+const C = {
+  INCENDIO: () => getCanonicalCoverageName('pyme', 0),
+  LUCRO_CESANTE: () => getCanonicalCoverageName('pyme', 1),
+  SUSTRACCION: () => getCanonicalCoverageName('pyme', 2),
+  EQUIPO_ELECTRICO: () => getCanonicalCoverageName('pyme', 3),
+  ROTURA_MAQUINARIA: () => getCanonicalCoverageName('pyme', 4),
+  RC: () => getCanonicalCoverageName('pyme', 5),
+  VIDRIOS: () => getCanonicalCoverageName('pyme', 6),
+  MANEJO_GLOBAL: () => getCanonicalCoverageName('pyme', 7),
+  TRANSPORTE_MERCANCIAS: () => getCanonicalCoverageName('pyme', 8),
+  TRANSPORTE_VALORES: () => getCanonicalCoverageName('pyme', 9),
+  ASISTENCIA_PYME: () => getCanonicalCoverageName('pyme', 10),
+  ASISTENCIA_LEGAL: () => getCanonicalCoverageName('pyme', 11),
+  HMACC: () => getCanonicalCoverageName('pyme', 12),
+  TERREMOTO: () => getCanonicalCoverageName('pyme', 13),
 };
 
 const BBVA_PROFILE: InsurerExtractionProfile = {
@@ -55,11 +56,11 @@ const BBVA_PROFILE: InsurerExtractionProfile = {
     /TODO\s+RIESGO\s+DAÑO\s+MATERIAL/i
   ],
   coverageMappings: [
-    { canonicalName: CANONICAL_COVERAGES.INCENDIO, variations: ['Todo Riesgo Daños Materiales', 'Incendio', 'Daño Material'] },
-    { canonicalName: CANONICAL_COVERAGES.RC, variations: ['Responsabilidad Civil', 'RC'] },
-    { canonicalName: CANONICAL_COVERAGES.SUSTRACCION, variations: ['Hurto', 'Sustracción'] },
-    { canonicalName: CANONICAL_COVERAGES.LUCRO_CESANTE, variations: ['Lucro Cesante'] },
-    { canonicalName: CANONICAL_COVERAGES.EQUIPO_ELECTRICO, variations: ['Equipo Eléctrico', 'Equipo Electrónico'] }
+    { canonicalName: C.INCENDIO(), variations: ['Todo Riesgo Daños Materiales', 'Incendio', 'Daño Material'] },
+    { canonicalName: C.RC(), variations: ['Responsabilidad Civil', 'RC'] },
+    { canonicalName: C.SUSTRACCION(), variations: ['Hurto', 'Sustracción'] },
+    { canonicalName: C.LUCRO_CESANTE(), variations: ['Lucro Cesante'] },
+    { canonicalName: C.EQUIPO_ELECTRICO(), variations: ['Equipo Eléctrico', 'Equipo Electrónico'] }
   ],
   validationRules: [
     { field: 'priceAnnual', type: 'range', value: { min: 100000, max: 500000000 }, errorMessage: 'Prima fuera de rango esperado' }
@@ -87,11 +88,11 @@ const SBS_PROFILE: InsurerExtractionProfile = {
     /SEGURO\s+INTEGRAL/i
   ],
   coverageMappings: [
-    { canonicalName: CANONICAL_COVERAGES.INCENDIO, variations: ['Todo riesgo daños materiales', 'Daños Materiales'] },
-    { canonicalName: CANONICAL_COVERAGES.SUSTRACCION, variations: ['Hurto calificado', 'Hurto'] },
-    { canonicalName: CANONICAL_COVERAGES.RC, variations: ['Responsabilidad civil extracontractual', 'RC'] },
-    { canonicalName: CANONICAL_COVERAGES.MANEJO_GLOBAL, variations: ['Manejo global comercial', 'Manejo Global'] },
-    { canonicalName: CANONICAL_COVERAGES.LUCRO_CESANTE, variations: ['Lucro cesante por daños materiales', 'Lucro Cesante'] }
+    { canonicalName: C.INCENDIO(), variations: ['Todo riesgo daños materiales', 'Daños Materiales'] },
+    { canonicalName: C.SUSTRACCION(), variations: ['Hurto calificado', 'Hurto'] },
+    { canonicalName: C.RC(), variations: ['Responsabilidad civil extracontractual', 'RC'] },
+    { canonicalName: C.MANEJO_GLOBAL(), variations: ['Manejo global comercial', 'Manejo Global'] },
+    { canonicalName: C.LUCRO_CESANTE(), variations: ['Lucro cesante por daños materiales', 'Lucro Cesante'] }
   ],
   validationRules: [
     { field: 'priceAnnual', type: 'range', value: { min: 100000, max: 500000000 }, errorMessage: 'Prima fuera de rango esperado' }
@@ -119,9 +120,9 @@ const MAPFRE_PROFILE: InsurerExtractionProfile = {
     /PÓLIZA\s+PYME/i
   ],
   coverageMappings: [
-    { canonicalName: CANONICAL_COVERAGES.INCENDIO, variations: ['Incendio y/o Líneas Aliadas', 'Incendio'] },
-    { canonicalName: CANONICAL_COVERAGES.SUSTRACCION, variations: ['Robo y/o Hurto', 'Sustracción'] },
-    { canonicalName: CANONICAL_COVERAGES.RC, variations: ['Responsabilidad Civil', 'RC'] }
+    { canonicalName: C.INCENDIO(), variations: ['Incendio y/o Líneas Aliadas', 'Incendio'] },
+    { canonicalName: C.SUSTRACCION(), variations: ['Robo y/o Hurto', 'Sustracción'] },
+    { canonicalName: C.RC(), variations: ['Responsabilidad Civil', 'RC'] }
   ],
   validationRules: [
     { field: 'priceAnnual', type: 'range', value: { min: 100000, max: 500000000 }, errorMessage: 'Prima fuera de rango esperado' }
@@ -143,7 +144,7 @@ const GENERIC_PROFILE: InsurerExtractionProfile = {
   insurerName: 'GENERIC',
   displayName: 'Genérico',
   formatPatterns: [],
-  coverageMappings: Object.values(CANONICAL_COVERAGES).map(name => ({
+  coverageMappings: getCanonicalCoverageNames().map(name => ({
     canonicalName: name,
     variations: [name]
   })),

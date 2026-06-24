@@ -28,6 +28,49 @@ export interface LearningMetrics {
   topCorrectedMappings: Array<{ rawName: string; count: number }>;
 }
 
+function parseEmbedding(val: any): number[] | null {
+  if (!val) return null;
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string') {
+    try {
+      const cleaned = val.replace(/[\[\]]/g, '').trim();
+      if (!cleaned) return null;
+      return cleaned.split(',').map(Number);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function sorensenDiceSimilarity(str1: string, str2: string): number {
+  const s1 = str1.toLowerCase().replace(/\s+/g, '');
+  const s2 = str2.toLowerCase().replace(/\s+/g, '');
+  
+  if (s1 === s2) return 1.0;
+  if (s1.length < 2 || s2.length < 2) return 0.0;
+  
+  const getBigrams = (str: string): Set<string> => {
+    const bigrams = new Set<string>();
+    for (let i = 0; i < str.length - 1; i++) {
+      bigrams.add(str.substring(i, i + 2));
+    }
+    return bigrams;
+  };
+  
+  const bigrams1 = getBigrams(s1);
+  const bigrams2 = getBigrams(s2);
+  
+  let intersection = 0;
+  for (const val of bigrams1) {
+    if (bigrams2.has(val)) {
+      intersection++;
+    }
+  }
+  
+  return (2 * intersection) / (bigrams1.size + bigrams2.size);
+}
+
 export const learningEngine = {
   /**
    * Realiza una búsqueda vectorial en memoria de las 3 correcciones de usuario anteriores más similares
@@ -42,17 +85,25 @@ export const learningEngine = {
 
       if (error || !corrections || corrections.length === 0) return [];
 
-      const queryEmbedding = await embeddingService.generateEmbedding(rawName);
+      let queryEmbedding: number[] | null = null;
+      try {
+        queryEmbedding = await embeddingService.generateEmbedding(rawName);
+      } catch (err) {
+        console.warn('⚠️ [LearningEngine] Could not generate query embedding, using Sørensen-Dice fallback');
+      }
+
       const similarityList: Array<{ correction: any; similarity: number }> = [];
 
       for (const correction of corrections as any[]) {
-        try {
-          const correctionEmbedding = await embeddingService.generateEmbedding(correction.raw_name);
-          const similarity = embeddingService.cosineSimilarity(queryEmbedding, correctionEmbedding);
-          similarityList.push({ correction, similarity });
-        } catch (e) {
-          // Ignore individual embedding failures
+        let similarity = 0;
+        const correctionEmb = parseEmbedding(correction.embedding);
+
+        if (queryEmbedding && correctionEmb && queryEmbedding.length === correctionEmb.length) {
+          similarity = embeddingService.cosineSimilarity(queryEmbedding, correctionEmb);
+        } else {
+          similarity = sorensenDiceSimilarity(rawName, correction.raw_name);
         }
+        similarityList.push({ correction, similarity });
       }
 
       // Sort by similarity descending and take top 3
@@ -71,6 +122,13 @@ export const learningEngine = {
     try {
       let data, error;
       
+      let embedding: number[] | null = null;
+      try {
+        embedding = await embeddingService.generateEmbedding(correction.rawName);
+      } catch (embErr) {
+        console.warn('⚠️ [LearningEngine] Could not generate embedding for new correction:', embErr);
+      }
+      
       // Intento 1: Guardar con las nuevas columnas de alta certeza
       const res = await supabase
         .from('coverage_mappings')
@@ -80,6 +138,7 @@ export const learningEngine = {
           canonical_name: correction.userCorrection,
           user_corrected: true,
           correction_count: 1,
+          embedding: embedding || null,
           raw_text_snippet: correction.rawTextSnippet || null,
           ai_justification: correction.aiJustification || null,
           page_number: correction.pageNumber || null,
@@ -103,6 +162,7 @@ export const learningEngine = {
             canonical_name: correction.userCorrection,
             user_corrected: true,
             correction_count: 1,
+            embedding: embedding || null,
             updated_at: new Date().toISOString()
           } as any)
           .select('id')

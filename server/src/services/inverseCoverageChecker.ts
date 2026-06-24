@@ -5,6 +5,7 @@
 
 import { supabase } from '../config/database';
 import { ragRetrievalService } from './ragRetrievalService';
+import { getCanonicalCoverageNames } from '../config/domainConstants';
 
 export interface InverseCoverageResult {
   coverageName: string;
@@ -24,11 +25,12 @@ export interface InverseCheckSummary {
 }
 
 // Expected mandatory coverages for PYME policies
-const MANDATORY_COVERAGES = [
-  'incendio (edificio y contenidos)',
-  'responsabilidad civil (rce)',
-  'lucro cesante'
-];
+function getMandatoryCoverageNames(): string[] {
+  const canonical = getCanonicalCoverageNames();
+  // Canonical order is stable: Incendio, Lucro Cesante, ..., Responsabilidad Civil (RCE) at index 5
+  const mandatoryIndices = [0, 1, 5];
+  return mandatoryIndices.map((i) => canonical[i]?.toLowerCase()).filter(Boolean);
+}
 
 export const inverseCoverageChecker = {
   /**
@@ -58,8 +60,8 @@ export const inverseCoverageChecker = {
       );
       
       if (!existsInQuote) {
-        const isMandatory = clauseCoverage.isMandatory || 
-          MANDATORY_COVERAGES.some(mc => isSameCoverage(mc, clauseCoverage.name));
+        const isMandatory = clauseCoverage.isMandatory ||
+          getMandatoryCoverageNames().some(mc => isSameCoverage(mc, clauseCoverage.name));
         
         const result: InverseCoverageResult = {
           coverageName: clauseCoverage.name,
@@ -176,17 +178,12 @@ async function extractClauseCoverages(insurerName: string): Promise<Array<{
  * Get expected coverages as fallback
  */
 function getExpectedCoverages(): Array<{name: string; isMandatory: boolean; reference?: string}> {
-  return [
-    { name: 'Incendio (Edificio y Contenidos)', isMandatory: true },
-    { name: 'Lucro Cesante', isMandatory: true },
-    { name: 'Responsabilidad Civil (RCE)', isMandatory: true },
-    { name: 'Sustracción / Hurto', isMandatory: false },
-    { name: 'Equipo Eléctrico y Electrónico', isMandatory: false },
-    { name: 'Rotura de Maquinaria', isMandatory: false },
-    { name: 'Vidrios Planos', isMandatory: false },
-    { name: 'Transporte de Mercancías', isMandatory: false },
-    { name: 'Transporte de Valores', isMandatory: false }
-  ];
+  const canonical = getCanonicalCoverageNames();
+  const mandatory = new Set(getMandatoryCoverageNames());
+  return canonical.slice(0, 9).map((name) => ({
+    name,
+    isMandatory: mandatory.has(name.toLowerCase()),
+  }));
 }
 
 /**
