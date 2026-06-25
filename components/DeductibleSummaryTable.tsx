@@ -1,6 +1,6 @@
 import React from 'react';
 import { Scale, AlertTriangle, CheckCircle, Info, TrendingUp, ChevronDown } from 'lucide-react';
-import { QuoteAnalysis } from '../types';
+import { QuoteAnalysis, CoverageItem } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
 import { formatPercentage, formatNumber } from '../utils/formatCurrency';
 import { calculateDeductibleSeverity, getSeverityWidth } from '../utils/severityCalculator';
@@ -69,7 +69,7 @@ export const DeductibleSummaryTable: React.FC<DeductibleSummaryTableProps> = ({ 
 
   // Helper to find coverage by category for a quote
   const findCoverageByCategory = (quote: QuoteAnalysis, categoryId: number, categoryName: string) => {
-    return quote.coverages?.find((c: any) => {
+    return quote.coverages?.find((c: CoverageItem) => {
       if (c.categoryId === categoryId) return true;
       const coverageName = c.canonicalName || c.name;
       if (normalizeText(coverageName) === normalizeText(categoryName)) return true;
@@ -79,7 +79,7 @@ export const DeductibleSummaryTable: React.FC<DeductibleSummaryTableProps> = ({ 
   
   // Check if any quote has deductibles
   const hasAnyDeductibles = quotes.some(q => 
-    q.coverages?.some((c: any) => c.deductible && c.deductible !== 'No aplica' && c.deductible !== '')
+    q.coverages?.some((c: CoverageItem) => c.deductible && c.deductible !== 'No aplica' && c.deductible !== '')
   );
   
   if (!hasAnyDeductibles) {

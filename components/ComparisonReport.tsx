@@ -73,7 +73,7 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
     { subject: 'Sublímites', fullMark: 10 },
     { subject: 'Garantías', fullMark: 10 },
   ].map((dim, i) => {
-    const dataPoint: any = { subject: dim.subject, fullMark: 10 };
+    const dataPoint: Record<string, string | number> = { subject: dim.subject, fullMark: 10 };
     report.quotes.forEach(q => {
       const bd = q.scoringBreakdown || { coverage: 5, deductibles: 5, exclusions: 5, priceRatio: 5, sublimits: 5, warranties: 5 };
       const values = [bd.coverage, bd.deductibles, bd.exclusions, bd.priceRatio, bd.sublimits, bd.warranties];
@@ -231,7 +231,7 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
                     { c: '#059669', v: [5, 150, 105] },
                     { c: '#dc2626', v: [220, 38, 38] },
                     { c: '#2563eb', v: [37, 99, 235] }
-                  ].map((color: any, i) => (
+                  ].map((color: { c: string; v: [number, number, number] }, i) => (
                     <button
                       key={i}
                       className={`w-6 h-6 rounded-full border-2 ${pdfOptions.color[0] === color.v[0] ? 'border-slate-800 ring-1 ring-slate-800' : 'border-transparent'}`}
