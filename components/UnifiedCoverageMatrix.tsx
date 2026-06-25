@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, lazy, Suspense, memo } from 'react';
-import { QuoteAnalysis, MatrixRow, MatrixCell } from '../types';
+import { QuoteAnalysis, MatrixRow, MatrixCell, CoverageItem } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
 import { Info, AlertTriangle, ListChecks, Trophy, DollarSign, Calendar, ShieldCheck, Download, Award, ChevronDown, Check, AlertCircle, Eye, Loader2, Pin } from 'lucide-react';
 import { DeductibleBadge } from './DeductibleBadge';
@@ -286,7 +286,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
           } else if (rowConfig.field === 'deductible') {
             cellValue = cov.deductible || 'No aplica';
           } else {
-            cellValue = cov.description || (cov as any).details || 'Incluido bajo condiciones generales';
+            cellValue = cov.description || (cov as CoverageItem & { details?: string }).details || 'Incluido bajo condiciones generales';
           }
 
           // In a deductible row, "No aplica" is not an exclusion
@@ -359,7 +359,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
   // 2. Exclusive Coverages
   const exclusiveGroups: Array<{
     representativeName: string;
-    items: Array<{ quoteIdx: number; item: any }>;
+    items: Array<{ quoteIdx: number; item: CoverageItem }>;
   }> = [];
 
   quotes.forEach((quote, quoteIdx) => {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AlertCircle, AlertTriangle, CheckCircle, Info, Shield, FileText, Sparkles, Loader2, RefreshCw, LayoutGrid, Radar, Handshake, Trophy, TrendingDown } from 'lucide-react';
-import { QuoteAnalysis, AlertLevel } from '../types';
+import { QuoteAnalysis, AlertLevel, EnrichedAlert } from '../types';
 import { AuditDashboard } from './AuditDashboard';
 import { EvidenceCard } from './EvidenceCard';
 import { useAuditEnrichment } from '../hooks/useAuditEnrichment';
@@ -54,7 +54,14 @@ const getAlertStyles = (level: AlertLevel) => {
   }
 };
 
-const AlertCard: React.FC<{ alert: any; styles: any }> = ({ alert, styles }) => {
+interface AlertStyles {
+  container: string;
+  header: string;
+  title: string;
+  badge: string;
+}
+
+const AlertCard: React.FC<{ alert: EnrichedAlert; styles: AlertStyles }> = ({ alert, styles }) => {
   return (
     <div className={`rounded-lg border ${styles.container} overflow-hidden`}>
       <div className={`p-3 ${styles.header} flex items-start gap-3`}>

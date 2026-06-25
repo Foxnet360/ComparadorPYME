@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { VariableComparison } from '../types/analysis';
+import { CoverageVariables, VariableComparison } from '../types/analysis';
 import { BarChart3, ChevronDown, ChevronUp, AlertTriangle, Check} from 'lucide-react';
 
 interface VariableComparisonMatrixProps {
@@ -21,18 +21,19 @@ const VariableComparisonMatrix: React.FC<VariableComparisonMatrixProps> = ({ com
     setExpandedGroups(newExpanded);
   };
 
-  const formatValue = (value: any): string => {
+  const formatValue = (value: unknown): string => {
     if (!value) return '-';
     if (typeof value === 'object') {
-      if (value.value && value.currency) {
-        return `${value.currency} ${value.value.toLocaleString()}`;
+      const obj = value as Record<string, unknown>;
+      if (obj.value && obj.currency && typeof obj.value === 'number' && typeof obj.currency === 'string') {
+        return `${obj.currency} ${obj.value.toLocaleString()}`;
       }
       return JSON.stringify(value);
     }
     return String(value);
   };
 
-  const formatDeductible = (deductible: any): string => {
+  const formatDeductible = (deductible: CoverageVariables['deductible']): string => {
     if (!deductible) return '-';
     if (deductible.normalized) {
       const parts = [];
