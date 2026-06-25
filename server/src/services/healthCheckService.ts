@@ -76,11 +76,11 @@ async function checkGemini(): Promise<ServiceHealth> {
     await genAI.models.list({});
     
     return { status: 'ok', latency: Date.now() - start };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return { 
       status: 'error', 
       latency: Date.now() - start,
-      message: error.message || 'Failed to connect to Gemini API'
+      message: error instanceof Error ? error.message : 'Failed to connect to Gemini API'
     };
   }
 }
@@ -107,11 +107,11 @@ async function checkSupabase(): Promise<ServiceHealth> {
     }
     
     return { status: 'ok', latency: Date.now() - start };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return { 
       status: 'error', 
       latency: Date.now() - start,
-      message: error.message || 'Failed to connect to Supabase'
+      message: error instanceof Error ? error.message : 'Failed to connect to Supabase'
     };
   }
 }
@@ -132,11 +132,11 @@ async function checkRedis(): Promise<ServiceHealth> {
     await redis.quit();
     
     return { status: 'ok', latency: Date.now() - start };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return { 
       status: 'error', 
       latency: Date.now() - start,
-      message: error.message || 'Failed to connect to Redis'
+      message: error instanceof Error ? error.message : 'Failed to connect to Redis'
     };
   }
 }
