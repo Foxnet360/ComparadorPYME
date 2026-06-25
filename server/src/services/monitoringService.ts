@@ -31,8 +31,37 @@ export interface PerformanceMetrics {
   timestamp: string;
 }
 
+interface BufferedMetric {
+  operation: string;
+  duration_ms: number;
+  success: boolean;
+  metadata?: Record<string, unknown>;
+  timestamp: string;
+}
+
+interface AccuracyLogRow {
+  is_correct: boolean;
+}
+
+interface PerformanceLogRow {
+  duration_ms: number;
+  success: boolean;
+}
+
+interface FeedbackRow {
+  feature: string;
+  rating: number;
+}
+
+interface EngineComparisonRow {
+  engine_type: string;
+  processing_time_ms: number;
+  confidence_score: number;
+  fallback_reason?: string;
+}
+
 class MonitoringService {
-  private metricsBuffer: any[] = [];
+  private metricsBuffer: BufferedMetric[] = [];
   private bufferSize = 100;
 
   /**
@@ -52,7 +81,7 @@ class MonitoringService {
         correct_value: correctValue,
         is_correct: isCorrect,
         timestamp: new Date().toISOString()
-      } as any);
+      } as unknown as never[]);
     } catch (error) {
       console.error('❌ [Monitoring] Failed to record extraction accuracy:', error);
     }
@@ -63,7 +92,7 @@ class MonitoringService {
    */
   async recordDeductibleAccuracy(
     rawText: string,
-    parsedResult: any,
+    parsedResult: Record<string, unknown>,
     isCorrect: boolean,
     errorType?: string
   ): Promise<void> {
@@ -75,7 +104,7 @@ class MonitoringService {
         is_correct: isCorrect,
         error_type: errorType,
         timestamp: new Date().toISOString()
-      } as any);
+      } as unknown as never[]);
     } catch (error) {
       console.error('❌ [Monitoring] Failed to record deductible accuracy:', error);
     }
@@ -99,7 +128,7 @@ class MonitoringService {
         user_rating: userRating,
         was_helpful: wasHelpful,
         timestamp: new Date().toISOString()
-      } as any);
+      } as unknown as never[]);
     } catch (error) {
       console.error('❌ [Monitoring] Failed to record chat quality:', error);
     }
@@ -116,7 +145,7 @@ class MonitoringService {
         comment: feedback.comment,
         user_id: feedback.userId,
         created_at: new Date().toISOString()
-      } as any);
+      } as unknown as never[]);
     } catch (error) {
       console.error('❌ [Monitoring] Failed to collect feedback:', error);
     }
@@ -129,7 +158,7 @@ class MonitoringService {
     operation: string,
     durationMs: number,
     success: boolean,
-    metadata?: any
+    metadata?: Record<string, unknown>
   ): Promise<void> {
     const metric = {
       operation,
@@ -160,7 +189,7 @@ class MonitoringService {
           success: m.success,
           metadata: m.metadata,
           timestamp: m.timestamp
-        })) as any
+        })) as unknown as never[]
       );
       this.metricsBuffer = [];
     } catch (error) {
@@ -190,8 +219,8 @@ class MonitoringService {
         .gte('timestamp', startDate)
         .lte('timestamp', endDate);
 
-      const extractionList = (extractionData || []) as any[];
-      const deductibleList = (deductibleData || []) as any[];
+      const extractionList = (extractionData || []) as AccuracyLogRow[];
+      const deductibleList = (deductibleData || []) as AccuracyLogRow[];
       const extractionTotal = extractionList.length;
       const extractionCorrect = extractionList.filter(d => d.is_correct).length;
       const deductibleTotal = deductibleList.length;
@@ -230,17 +259,7 @@ class MonitoringService {
         .gte('timestamp', startDate)
         .lte('timestamp', endDate);
 
-      const dataList = (data || []) as any[];
-      if (dataList.length === 0) {
-        return {
-          avgAnalysisTime: 0,
-          avgChatResponseTime: 0,
-          p95AnalysisTime: 0,
-          p99AnalysisTime: 0,
-          errorRate: 0,
-          timestamp: new Date().toISOString()
-        };
-      }
+      const dataList = (data || []) as PerformanceLogRow[];
 
       const durations = dataList.map(d => d.duration_ms).sort((a, b) => a - b);
       const total = durations.length;
@@ -285,14 +304,7 @@ class MonitoringService {
         .gte('created_at', startDate)
         .lte('created_at', endDate);
 
-      const dataList = (data || []) as any[];
-      if (dataList.length === 0) {
-        return {
-          avgRating: 0,
-          totalFeedback: 0,
-          byFeature: {}
-        };
-      }
+      const dataList = (data || []) as FeedbackRow[];
 
       const byFeature: Record<string, { ratings: number[]; count: number }> = {};
       
@@ -360,7 +372,7 @@ class MonitoringService {
         .lte('created_at', endDate)
         .not('engine_type', 'is', null);
 
-      const records = (data || []) as any[];
+      const records = (data || []) as EngineComparisonRow[];
 
       const unifiedRecords = records.filter(r => r.engine_type === 'unified');
       const legacyRecords = records.filter(r => r.engine_type === 'legacy');

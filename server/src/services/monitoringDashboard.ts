@@ -55,7 +55,11 @@ export const monitoringDashboard = {
         .gte('created_at', oneHourAgo.toISOString());
 
       if (analysisError) throw analysisError;
-      const analyses = (analysesRaw || []) as any[];
+      const analyses = (analysesRaw || []) as Array<{
+        duration_ms: number;
+        status: string;
+        error_type?: string;
+      }>;
 
       // Calculate metrics
       const totalAnalyses = analyses?.length || 0;
@@ -155,7 +159,7 @@ export const monitoringDashboard = {
         status,
         error_type: errorType,
         created_at: new Date().toISOString()
-      } as any);
+      } as unknown as never[]);
     } catch (error) {
       console.error('❌ [Monitoring] Error logging analysis:', error);
     }
@@ -206,7 +210,10 @@ export const monitoringDashboard = {
 
       if (error) throw error;
 
-      const mappings = (data || []) as any[];
+      const mappings = (data || []) as Array<{
+        confidence: number;
+        user_corrected: boolean;
+      }>;
       const total = mappings.length;
       
       if (total === 0) {
