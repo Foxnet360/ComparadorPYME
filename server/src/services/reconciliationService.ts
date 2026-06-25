@@ -288,8 +288,8 @@ export const reconciliationService = {
     let clause: StructuredClause | null = null;
     try {
       clause = await structuredClauseExtractor.searchClause(insurerName);
-    } catch (err: any) {
-      console.warn(`⚠️ [ReconciliationService] Clause search failed for ${insurerName}:`, err.message);
+    } catch (err: unknown) {
+      console.warn(`⚠️ [ReconciliationService] Clause search failed for ${insurerName}:`, err instanceof Error ? err.message : String(err));
     }
 
     const coveragesToReconcile = quote.coverages || [];
@@ -305,8 +305,8 @@ export const reconciliationService = {
           coverage.deductible || '',
           coverageName
         );
-      } catch (err: any) {
-        console.warn(`⚠️ [ReconciliationService] Failed to parse quote deductible for ${coverageName}:`, err.message);
+      } catch (err: unknown) {
+        console.warn(`⚠️ [ReconciliationService] Failed to parse quote deductible for ${coverageName}:`, err instanceof Error ? err.message : String(err));
         quoteDedResult = {
           components: [{ type: 'unknown', value: 0 }],
           compoundOperator: 'none',

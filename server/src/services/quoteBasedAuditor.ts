@@ -4,6 +4,8 @@
  * Generates audit alerts from coverage data, deductibles, and special conditions
  */
 
+import { ScoringBreakdown } from '../types';
+
 // Local type definitions to avoid importing from outside rootDir
 interface CoverageItem {
   name: string;
@@ -31,7 +33,7 @@ interface QuoteAnalysis {
   coverages: CoverageItem[];
   alerts: AlertItem[];
   rawText?: string;
-  scoringBreakdown?: any;
+  scoringBreakdown?: ScoringBreakdown;
   clientAnalysis?: string;
   technicalAnalysis?: string;
   score?: number;
