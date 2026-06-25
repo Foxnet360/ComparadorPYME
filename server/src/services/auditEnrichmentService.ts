@@ -48,6 +48,17 @@ export interface CrossInsurerRisk {
     severity: 'CRITICAL' | 'WARNING' | 'GOOD';
 }
 
+interface AlertInput {
+    title: string;
+    description: string;
+    level: 'CRITICAL' | 'WARNING' | 'GOOD';
+}
+
+interface QuoteWithAlerts {
+    insurerName: string;
+    alerts?: AlertInput[];
+}
+
 /**
  * Check if clause documents exist for given insurers
  * Checks chunks first (actual table populated by indexing service), then clause_chunks, then documents table
@@ -98,7 +109,7 @@ export const checkClausesAvailability = async (insurerNames: string[]): Promise<
 /**
  * Extract key terms from alert for RAG search
  */
-const extractSearchTerms = (alert: any): string => {
+const extractSearchTerms = (alert: AlertInput): string => {
     const terms: string[] = [];
     
     if (alert.title) terms.push(alert.title);
@@ -123,7 +134,7 @@ const extractSearchTerms = (alert: any): string => {
  * Enrich a single alert with RAG evidence
  */
 const enrichAlert = async (
-    alert: any,
+    alert: AlertInput,
     insurerName: string,
     clientProfile?: ClientProfile
 ): Promise<EnrichedAlert> => {
@@ -173,7 +184,7 @@ const enrichAlert = async (
  * Generate business context for an alert
  * Uses client profile when available for personalized context
  */
-const generateBusinessContext = (alert: any, clientProfile?: ClientProfile): string => {
+const generateBusinessContext = (alert: AlertInput, clientProfile?: ClientProfile): string => {
     const text = `${alert.title} ${alert.description}`.toLowerCase();
     
     if (text.includes('manufactura') || text.includes('fabricación') || text.includes('planta')) {
@@ -204,7 +215,7 @@ const generateBusinessContext = (alert: any, clientProfile?: ClientProfile): str
     return 'Este riesgo debe evaluarse según la naturaleza específica del negocio y su impacto en la operación.';
 };
 
-function getLocationContext(alert: any, profile: ClientProfile): string | null {
+function getLocationContext(alert: AlertInput, profile: ClientProfile): string | null {
     const text = `${alert.title} ${alert.description}`.toLowerCase();
     
     if ((text.includes('inundación') || text.includes('inundacion')) && profile.locationZone === 'costera') {
@@ -222,7 +233,7 @@ function getLocationContext(alert: any, profile: ClientProfile): string | null {
     return null;
 }
 
-function getIndustryContext(alert: any, profile: ClientProfile): string | null {
+function getIndustryContext(alert: AlertInput, profile: ClientProfile): string | null {
     const text = `${alert.title} ${alert.description}`.toLowerCase();
     
     if (text.includes('construcción') && profile.industryType === 'construccion') {
@@ -296,7 +307,7 @@ const normalizeRiskKey = (title: string): string => {
  * Main enrichment function
  */
 export const enrichAuditAlerts = async (
-    quotes: any[],
+    quotes: QuoteWithAlerts[],
     clientProfile?: ClientProfile,
     onProgress?: ProgressCallback
 ): Promise<AuditEnrichmentResult> => {
