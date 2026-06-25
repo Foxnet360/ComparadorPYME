@@ -77,15 +77,15 @@ export const vectorStore = {
             content: chunk.content,
             content_normalized: chunk.content.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''),
             embedding: embeddingToString(chunk.embedding),
-            metadata: chunk.metadata as any,
+            metadata: chunk.metadata as unknown,
             coverage_tags: extractCoverageTags(chunk.content),
-            section_type: detectSectionType(chunk.content) as any,
+            section_type: detectSectionType(chunk.content),
         }));
 
         // Insertar en Supabase
         const { error } = await supabase
             .from('chunks')
-            .upsert(records as any, { onConflict: 'id' });
+            .upsert(records as unknown as never[], { onConflict: 'id' });
 
         if (error) {
             console.error('❌ [VectorStore] Error saving chunks:', error);
@@ -112,7 +112,7 @@ export const vectorStore = {
                     match_threshold: 0.5,
                     match_count: limit,
                     insurer_filter: insurerName
-                } as any);
+                } as unknown as never);
 
             if (error) {
                 console.warn('⚠️ [VectorStore] RPC match_chunks failed, falling back to text search:', error);
@@ -122,11 +122,11 @@ export const vectorStore = {
 
             if (!data) return [];
 
-            return (data as any[]).map((row: any) => ({
-                id: row.id,
-                content: row.content,
+            return (data as Array<Record<string, unknown>>).map(row => ({
+                id: row.id as string,
+                content: row.content as string,
                 metadata: row.metadata as ChunkMetadata,
-                distance: 1 - (row.similarity || 0), // Convertir similitud a distancia
+                distance: 1 - ((row.similarity as number) || 0), // Convertir similitud a distancia
             }));
         } catch (error) {
             console.error('❌ [VectorStore] Search error:', error);
@@ -160,9 +160,9 @@ export const vectorStore = {
             return [];
         }
 
-        return (data || []).map((row: any) => ({
-            id: row.id,
-            content: row.content,
+        return ((data || []) as Array<Record<string, unknown>>).map(row => ({
+            id: row.id as string,
+            content: row.content as string,
             metadata: row.metadata as ChunkMetadata,
             distance: 0, // No tenemos distancia real en búsqueda de texto
         }));
@@ -188,7 +188,7 @@ export const vectorStore = {
             return;
         }
 
-        const documentIds = (documents as any[]).map(d => d.id);
+        const documentIds = (documents as Array<Record<string, unknown>>).map(d => d.id as string);
 
         // Eliminar chunks asociados
         const { error: deleteError } = await supabase
@@ -233,11 +233,15 @@ export const vectorStore = {
 
             if (!documents) return [];
 
-            return (documents as any[]).map((doc: any) => ({
-                insurerName: doc.insurers?.name || 'Unknown',
-                documentName: doc.document_name,
-                chunkCount: doc.chunks?.[0]?.count || 0,
-            }));
+            return (documents as Array<Record<string, unknown>>).map(doc => {
+                const insurers = doc.insurers as Record<string, unknown> | undefined;
+                const chunks = doc.chunks as Array<Record<string, unknown>> | undefined;
+                return {
+                    insurerName: (insurers?.name as string) || 'Unknown',
+                    documentName: doc.document_name as string,
+                    chunkCount: (chunks?.[0]?.count as number) || 0,
+                };
+            });
         } catch (error) {
             console.error('❌ [VectorStore] Error in listDocuments:', error);
             return [];
