@@ -3,6 +3,33 @@ import { supabase } from '../config/database';
 import { embeddingService } from '../services/vector/embeddingService';
 import { handleSupabaseError } from '../config/database';
 
+interface SearchChunkResult {
+  id: string;
+  content: string;
+  page_number: number;
+  document_id: string;
+  document_name: string;
+  document_type: string;
+  section_type: string;
+  coverage_tags: string[];
+  similarity: number;
+}
+
+interface ChunkImageResult {
+  chunk_id: string;
+  image_url: string;
+  image_path: string;
+}
+
+interface CoverageChunkResult {
+  id: string;
+  content: string;
+  page_number: number;
+  section_type: string;
+  coverage_tags: string[];
+  documents: unknown;
+}
+
 export const searchController = {
   /**
    * POST /api/search - Búsqueda semántica
@@ -44,13 +71,13 @@ export const searchController = {
         p_section_types: sectionType ? [sectionType] : null,
         p_match_count: parseInt(limit),
         p_min_similarity: 0.6,
-      } as any);
+      } as never);
 
       if (error) {
         throw handleSupabaseError(error);
       }
 
-      const chunksData = (chunks as unknown as any[]) || [];
+      const chunksData = (chunks || []) as SearchChunkResult[];
       if (chunksData.length === 0) {
         res.json({
           success: true,
@@ -62,16 +89,16 @@ export const searchController = {
       }
 
       // Obtener imágenes de páginas para los resultados
-      const chunkIds = chunksData.map((c: any) => c.id);
+      const chunkIds = chunksData.map((c) => c.id);
       const { data: chunksWithImagesRaw } = await supabase.rpc('get_chunks_with_images', {
         p_chunk_ids: chunkIds,
-      } as any);
+      } as never);
 
-      const chunksWithImages = (chunksWithImagesRaw || []) as any[];
+      const chunksWithImages = (chunksWithImagesRaw || []) as ChunkImageResult[];
 
       // Combinar resultados con imágenes
-      const results = chunksData.map((chunk: any) => {
-        const imageData = chunksWithImages?.find((img: any) => img.chunk_id === chunk.id);
+      const results = chunksData.map((chunk) => {
+        const imageData = chunksWithImages?.find((img) => img.chunk_id === chunk.id);
         return {
           chunkId: chunk.id,
           content: chunk.content,
@@ -94,12 +121,12 @@ export const searchController = {
         count: results.length,
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ [searchController] Error:', error);
       res.status(500).json({
         success: false,
         error: 'Search failed',
-        details: error.message,
+        details: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   },
@@ -157,7 +184,8 @@ export const searchController = {
         throw handleSupabaseError(error);
       }
 
-      const results = data?.map((chunk: any) => ({
+      const rows = (data || []) as CoverageChunkResult[];
+      const results = rows.map((chunk) => ({
         chunkId: chunk.id,
         content: chunk.content,
         pageNumber: chunk.page_number,
@@ -173,12 +201,12 @@ export const searchController = {
         count: results.length,
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ [searchController] Error:', error);
       res.status(500).json({
         success: false,
         error: 'Search failed',
-        details: error.message,
+        details: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   },
@@ -230,7 +258,7 @@ export const searchController = {
         p_clause_document_id: clauseDocumentId,
         p_coverage_tag: coverageTag || 'general',
         p_match_count: 5,
-      } as any);
+      } as never);
 
       if (error) {
         throw handleSupabaseError(error);
@@ -244,12 +272,12 @@ export const searchController = {
         matches: comparison || [],
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ [searchController] Error:', error);
       res.status(500).json({
         success: false,
         error: 'Comparison failed',
-        details: error.message,
+        details: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   },
