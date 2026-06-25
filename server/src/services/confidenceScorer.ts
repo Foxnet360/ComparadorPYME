@@ -40,10 +40,10 @@ const WEIGHTS = {
  */
 function calculateCoverageCompleteness(quote: ParsedQuote): number {
   // Use expectedCoverages if available for more accurate scoring
-  if ((quote as any).expectedCoverages && Array.isArray((quote as any).expectedCoverages)) {
-    const expectedCoverages = (quote as any).expectedCoverages;
+  if (quote.expectedCoverages && Array.isArray(quote.expectedCoverages)) {
+    const expectedCoverages = quote.expectedCoverages;
     const expectedCount = expectedCoverages.length;
-    const presentCount = expectedCoverages.filter((c: any) => c.status === 'present').length;
+    const presentCount = expectedCoverages.filter((c) => c.status === 'present').length;
     
     if (expectedCount === 0) return 0;
     

@@ -24,6 +24,10 @@ export interface ValidationResult {
   premiumSource?: string;
 }
 
+interface QuoteWithPremiumSource extends ParsedQuote {
+  premiumSource?: string;
+}
+
 // Expected PYME coverages loaded from the canonical taxonomy
 const EXPECTED_COVERAGES = getCanonicalCoverageNames();
 
@@ -72,14 +76,14 @@ export function validatePremium(quote: ParsedQuote): ValidationFlag | null {
  */
 export function validateCoverageCompleteness(quote: ParsedQuote): ValidationFlag | null {
   // Use expectedCoverages if available (from structured extraction)
-  if ((quote as any).expectedCoverages && Array.isArray((quote as any).expectedCoverages)) {
-    const expectedCoverages = (quote as any).expectedCoverages;
-    const missingCount = expectedCoverages.filter((c: any) => c.status === 'missing').length;
-    
+  if (quote.expectedCoverages && Array.isArray(quote.expectedCoverages)) {
+    const expectedCoverages = quote.expectedCoverages;
+    const missingCount = expectedCoverages.filter((c) => c.status === 'missing').length;
+
     if (missingCount > 0) {
       const missingNames = expectedCoverages
-        .filter((c: any) => c.status === 'missing')
-        .map((c: any) => c.name)
+        .filter((c) => c.status === 'missing')
+        .map((c) => c.name)
         .slice(0, 3);
       
       return {
@@ -335,7 +339,7 @@ export function validateQuote(quote: ParsedQuote): ValidationResult {
     coverageCount: quote.coverages?.length || 0,
     expectedCoverageCount: EXPECTED_COVERAGES.length,
     numericParseSuccess: !numericFlag,
-    premiumSource: (quote as any).premiumSource || 'unknown'
+    premiumSource: (quote as QuoteWithPremiumSource).premiumSource || 'unknown'
   };
 }
 
