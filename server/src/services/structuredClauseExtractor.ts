@@ -160,7 +160,7 @@ export const structuredClauseExtractor = {
     const prompt = `${CLAUSE_EXTRACTION_PROMPT}\n\n${clauseText}`;
     const maxRetries = 2;
     let lastResponseText = '{}';
-    let lastError: any;
+    let lastError: unknown;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
@@ -266,15 +266,15 @@ export const structuredClauseExtractor = {
           extracted_data: structured,
           document_id: documentId,
           domain: domain || 'pyme'
-        } as any)
+        } as unknown as never[])
         .select('id')
         .single();
       
       if (error) throw error;
       
-      const resultId = (data as any)?.id;
+      const resultId = (data as { id: string } | null)?.id;
       console.log(`✅ [StructuredExtractor] Stored clause with ID: ${resultId}`);
-      return resultId;
+      return resultId ?? '';
       
     } catch (error) {
       console.error('❌ [StructuredExtractor] Storage failed:', error);
@@ -295,10 +295,10 @@ export const structuredClauseExtractor = {
           p_insurer_name: insurerName,
           p_coverage_name: coverageName,
           match_count: 1
-        } as any);
+        } as unknown as never);
       
       if (error) throw error;
-      const dataList = (data || []) as any[];
+      const dataList = (data || []) as Array<{ extracted_data: StructuredClause }>;
       if (dataList.length === 0) return null;
       
       return dataList[0].extracted_data as StructuredClause;
@@ -315,19 +315,19 @@ export const structuredClauseExtractor = {
   async getDeductible(
     insurerName: string,
     coverageName: string
-  ): Promise<any | null> {
+  ): Promise<Record<string, unknown> | null> {
     try {
       const { data, error } = await supabase
         .rpc('get_clause_deductible', {
           p_insurer_name: insurerName,
           p_coverage_name: coverageName
-        } as any);
+        } as unknown as never);
       
       if (error) throw error;
-      const dataList = (data || []) as any[];
+      const dataList = (data || []) as Record<string, unknown>[];
       if (dataList.length === 0) return null;
       
-      return data[0];
+      return dataList[0];
       
     } catch (error) {
       console.error('❌ [StructuredExtractor] Get deductible failed:', error);

@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.js';
+import type { PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
 import { featureFlags } from '../config/featureFlags';
 import { PageTextItems, TextItem } from './templateRegistryService';
 
@@ -109,7 +110,7 @@ export const pdfExtractor = {
         console.log(`📄 [pdfExtractor] Extracting from: ${filePath}`);
 
         const warnings: string[] = [];
-        let pdfDoc: any = null;
+        let pdfDoc: PDFDocumentProxy | null = null;
 
         try {
             // Validar archivo existe
@@ -153,8 +154,7 @@ export const pdfExtractor = {
                     
                     // Extraer texto de la página
                     const pageText = textContent.items
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        .map((item: any) => item.str || '')
+                        .map((item) => (item as { str?: string }).str || '')
                         .join(' ')
                         .trim();
 
@@ -183,8 +183,8 @@ export const pdfExtractor = {
 
                     totalTextLength += pageText.length;
 
-                } catch (pageError: any) {
-                    warnings.push(`Error extracting page ${i}: ${pageError.message}`);
+                } catch (pageError: unknown) {
+                    warnings.push(`Error extracting page ${i}: ${pageError instanceof Error ? pageError.message : String(pageError)}`);
                     if (includeLayout && pageTextItems) {
                         pageTextItems.push({ page: i, items: [] });
                     }
@@ -233,12 +233,12 @@ export const pdfExtractor = {
                 isScanned,
             };
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             if (error instanceof PDFExtractionError) {
                 throw error;
             }
-            console.error(`❌ [pdfExtractor] Error: ${error.message}`);
-            throw new PDFExtractionError(`Failed to extract PDF: ${error.message}`, 'EXTRACTION_FAILED');
+            console.error(`❌ [pdfExtractor] Error: ${error instanceof Error ? error.message : String(error)}`);
+            throw new PDFExtractionError(`Failed to extract PDF: ${error instanceof Error ? error.message : String(error)}`, 'EXTRACTION_FAILED');
         } finally {
             if (pdfDoc) {
                 try {
@@ -253,21 +253,21 @@ export const pdfExtractor = {
     /**
      * Extrae metadata del documento PDF
      */
-    extractMetadata: async (pdfDoc: any, pageCount: number): Promise<PDFMetadata> => {
+    extractMetadata: async (pdfDoc: PDFDocumentProxy, pageCount: number): Promise<PDFMetadata> => {
         try {
             const metadata = await pdfDoc.getMetadata();
-            const info = metadata?.info || {};
+            const info = (metadata?.info || {}) as Record<string, unknown>;
 
             return {
                 pageCount,
-                title: info.Title || undefined,
-                author: info.Author || undefined,
-                subject: info.Subject || undefined,
-                keywords: info.Keywords || undefined,
-                creator: info.Creator || undefined,
-                producer: info.Producer || undefined,
-                creationDate: info.CreationDate ? new Date(info.CreationDate) : undefined,
-                modificationDate: info.ModDate ? new Date(info.ModDate) : undefined,
+                title: info.Title as string | undefined,
+                author: info.Author as string | undefined,
+                subject: info.Subject as string | undefined,
+                keywords: info.Keywords as string | undefined,
+                creator: info.Creator as string | undefined,
+                producer: info.Producer as string | undefined,
+                creationDate: info.CreationDate ? new Date(info.CreationDate as string) : undefined,
+                modificationDate: info.ModDate ? new Date(info.ModDate as string) : undefined,
             };
         } catch (_error) {
             // Si no se puede extraer metadata, retornar solo pageCount
@@ -359,8 +359,8 @@ export const pdfExtractor = {
                 } else {
                     console.warn(`⚠️ Empty text from ${file.originalname}`);
                 }
-            } catch (error: any) {
-                console.error(`❌ Skipping ${file.originalname}: ${error.message}`);
+            } catch (error: unknown) {
+                console.error(`❌ Skipping ${file.originalname}: ${error instanceof Error ? error.message : String(error)}`);
             }
         }
 
@@ -391,7 +391,7 @@ export const pdfExtractor = {
             throw new PDFExtractionError(validation.error || 'Invalid PDF', 'INVALID_PDF');
         }
 
-        let pdfDoc: any = null;
+        let pdfDoc: PDFDocumentProxy | null = null;
         try {
             const dataBuffer = await fs.promises.readFile(filePath);
             const pdfBytes = new Uint8Array(dataBuffer);
@@ -407,19 +407,19 @@ export const pdfExtractor = {
                         page: i,
                         items: extractPageTextItems(textContent.items),
                     });
-                } catch (pageError: any) {
-                    console.warn(`⚠️ [pdfExtractor] Layout extraction failed for page ${i}: ${pageError.message}`);
+                } catch (pageError: unknown) {
+                    console.warn(`⚠️ [pdfExtractor] Layout extraction failed for page ${i}: ${pageError instanceof Error ? pageError.message : String(pageError)}`);
                     pageTextItems.push({ page: i, items: [] });
                 }
             }
 
             return pageTextItems;
-        } catch (error: any) {
+        } catch (error: unknown) {
             if (error instanceof PDFExtractionError) {
                 throw error;
             }
-            console.error(`❌ [pdfExtractor] Layout extraction error: ${error.message}`);
-            throw new PDFExtractionError(`Failed to extract layout: ${error.message}`, 'LAYOUT_EXTRACTION_FAILED');
+            console.error(`❌ [pdfExtractor] Layout extraction error: ${error instanceof Error ? error.message : String(error)}`);
+            throw new PDFExtractionError(`Failed to extract layout: ${error instanceof Error ? error.message : String(error)}`, 'LAYOUT_EXTRACTION_FAILED');
         } finally {
             if (pdfDoc) {
                 try {
@@ -467,8 +467,8 @@ export const pdfExtractor = {
             }
             
             return { valid: true };
-        } catch (error: any) {
-            return { valid: false, error: error.message };
+        } catch (error: unknown) {
+            return { valid: false, error: error instanceof Error ? error.message : String(error) };
         }
     },
 

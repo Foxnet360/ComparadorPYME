@@ -96,12 +96,16 @@ export const deductibleParser = {
   /**
    * Build structured deductible from parsed JSON (backward-compatible shape).
    */
-  buildStructureFromParsed(parsed: any, rawText: string): DeductibleStructure {
-    const components: DeductibleComponent[] = ((parsed.components || []).map((c: any) => ({
-      type: c.type,
-      value: c.value,
+  buildStructureFromParsed(parsed: Record<string, unknown>, rawText: string): DeductibleStructure {
+    const components: DeductibleComponent[] = ((parsed.components || []) as Array<{
+      type: string;
+      value: unknown;
+      currency?: unknown;
+    }>).map((c) => ({
+      type: c.type as DeductibleComponent['type'],
+      value: typeof c.value === 'number' ? c.value : Number(c.value) || 0,
       currency: c.currency ? String(c.currency) : undefined,
-    })) as unknown) as DeductibleComponent[];
+    }));
 
     // Calculate normalized values
     let minAmount = 0;
@@ -144,10 +148,10 @@ export const deductibleParser = {
     return {
       components,
       semantics: {
-        isZero: parsed.isZero || false,
-        hasMinimum: parsed.hasMinimum || false,
-        hasMaximum: parsed.hasMaximum || false,
-        isComposite: parsed.isComposite || false,
+        isZero: Boolean(parsed.isZero),
+        hasMinimum: Boolean(parsed.hasMinimum),
+        hasMaximum: Boolean(parsed.hasMaximum),
+        isComposite: Boolean(parsed.isComposite),
       },
       normalized: {
         minAmount,
@@ -163,7 +167,7 @@ export const deductibleParser = {
    * Convert value to COP based on currency (backward-compatible proxy).
    */
   convertToCOP(value: number, currency?: string): number {
-    return resolveValueToCOP(value, (currency as any) || null) ?? value;
+    return resolveValueToCOP(value, (currency as 'SMMLV' | 'UVT' | 'COP' | null) || null) ?? value;
   },
 
   /**

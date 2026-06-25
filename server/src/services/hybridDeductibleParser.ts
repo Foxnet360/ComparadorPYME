@@ -527,13 +527,13 @@ function evaluateBenchmark(
 async function parseWithLLM(text: string): Promise<DeductibleStructure> {
   try {
     const parsed = await geminiService.extractDeductible(text);
-    const components: ComponentInput[] = (parsed.components || []).map((c: any) => ({
+    const components: ComponentInput[] = (parsed.components || []).map((c: Record<string, unknown>) => ({
       type: c.type as DeductibleComponentType,
       value: Number(c.value) || 0,
-      currency: c.currency ?? undefined,
+      currency: c.currency ? String(c.currency) : undefined,
     }));
     return {
-      components: components as any,
+      components: components as DeductibleStructure['components'],
       compoundOperator: (parsed.compoundOperator as CompoundOperator) || 'none',
       isZero: parsed.isZero || false,
       hasMinimum: parsed.hasMinimum || false,
@@ -541,8 +541,8 @@ async function parseWithLLM(text: string): Promise<DeductibleStructure> {
       isComposite: parsed.isComposite || false,
       rawText: text,
     };
-  } catch (error: any) {
-    console.error('❌ [HybridDeductibleParser] LLM fallback failed:', error.message);
+  } catch (error: unknown) {
+    console.error('❌ [HybridDeductibleParser] LLM fallback failed:', error instanceof Error ? error.message : String(error));
     // Return a safe "unknown" structure so callers don't crash
     return {
       components: [{ type: 'unknown', value: 0 }],
@@ -688,8 +688,8 @@ export const hybridDeductibleParser = {
           resolvedCoverage = best.appliesTo;
           appliesTo = { coverageName: best.appliesTo, confidence: best.confidence };
         }
-      } catch (error: any) {
-        console.warn(`⚠️ [HybridDeductibleParser] Graph deductible lookup failed: ${error.message}`);
+      } catch (error: unknown) {
+        console.warn(`⚠️ [HybridDeductibleParser] Graph deductible lookup failed: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 

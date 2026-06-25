@@ -163,11 +163,17 @@ export interface PremiumValidationResult {
   warnings: string[];
 }
 
+export interface RawCoveragePremium {
+  rawName?: string;
+  name?: string;
+  premium?: number | null;
+}
+
 /**
  * Extract premium breakdown with all components
  */
-export function extractPremiumBreakdown(data: any): PremiumBreakdown {
-  const premium = data.premium || {};
+export function extractPremiumBreakdown(data: { premium?: unknown }): PremiumBreakdown {
+  const premium = (data.premium || {}) as Partial<PremiumBreakdown>;
   
   return {
     netPremium: premium.netPremium || 0,
@@ -183,12 +189,12 @@ export function extractPremiumBreakdown(data: any): PremiumBreakdown {
 /**
  * Extract per-coverage premiums from raw coverages
  */
-export function extractPerCoveragePremiums(rawCoverages: any[]): PerCoveragePremium[] {
+export function extractPerCoveragePremiums(rawCoverages: RawCoveragePremium[]): PerCoveragePremium[] {
   return rawCoverages
-    .filter((c: any) => c.premium && c.premium > 0)
-    .map((c: any) => ({
+    .filter((c) => c.premium && c.premium > 0)
+    .map((c) => ({
       coverageName: c.rawName || c.name || 'Unknown',
-      premium: c.premium,
+      premium: c.premium || 0,
     }));
 }
 

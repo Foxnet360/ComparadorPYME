@@ -131,9 +131,10 @@ export class DocumentIndexingService {
                 ocrRan = true;
                 console.log(`   ✅ Transcribed ${page.text.length} characters for page ${page.pageNumber}`);
               }
-            } catch (ocrError: any) {
-              console.warn(`   ⚠️ Failed to transcribe page ${page.pageNumber} via Gemini OCR:`, ocrError.message);
-              warnings.push(`Fallo al transcribir página ${page.pageNumber} vía OCR: ${ocrError.message}`);
+            } catch (ocrError: unknown) {
+              const ocrMessage = ocrError instanceof Error ? ocrError.message : String(ocrError);
+              console.warn(`   ⚠️ Failed to transcribe page ${page.pageNumber} via Gemini OCR:`, ocrMessage);
+              warnings.push(`Fallo al transcribir página ${page.pageNumber} vía OCR: ${ocrMessage}`);
             }
           }
         }
@@ -221,7 +222,7 @@ export class DocumentIndexingService {
           p_images: imagesPayload,
           p_chunks: chunksPayload,
           p_product_name: metadata.productName || metadata.documentName,
-        } as any);
+        } as unknown as never);
 
       if (rpcError) {
         throw new Error(`Transacción atómica fallida: ${rpcError.message}`);
@@ -253,8 +254,8 @@ export class DocumentIndexingService {
 
           await structuredClauseExtractor.storeStructuredClause(structured, documentId, 'pyme');
           console.log(`✅ [DocumentIndexingService] Structured clause extracted and stored for document ${documentId}`);
-        } catch (extractError: any) {
-          const errorMsg = extractError?.message || String(extractError);
+        } catch (extractError: unknown) {
+          const errorMsg = extractError instanceof Error ? extractError.message : String(extractError);
           console.warn(`⚠️ [DocumentIndexingService] Structured clause extraction failed for ${documentId}:`, errorMsg);
           warnings.push(`Extracción estructurada fallida: ${errorMsg}`);
         }
@@ -285,9 +286,9 @@ export class DocumentIndexingService {
         warnings,
       };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ [DocumentIndexingService] Error:', error);
-      errors.push(error.message);
+      errors.push(error instanceof Error ? error.message : String(error));
 
       return {
         success: false,
@@ -320,13 +321,13 @@ export class DocumentIndexingService {
       }
 
       if (existing) {
-        return (existing as any).id;
+        return (existing as { id: string }).id;
       }
 
       // Crear nueva aseguradora
       const { data: created, error: createError } = await supabase
         .from('insurers')
-        .insert({ name } as any)
+        .insert({ name } as unknown as never[])
         .select('id')
         .single();
 
@@ -334,7 +335,11 @@ export class DocumentIndexingService {
         throw handleSupabaseError(createError);
       }
 
-      return (created as any).id;
+      if (!created) {
+        throw new Error('Failed to create insurer: no data returned');
+      }
+
+      return (created as { id: string }).id;
     } catch (error) {
       console.error('❌ Error getting/creating insurer:', error);
       throw error;
@@ -402,7 +407,7 @@ export class DocumentIndexingService {
         .eq('document_id', documentId);
 
       if (images && images.length > 0) {
-        const paths = (images as any[]).map(img => img.storage_path);
+        const paths = (images as Array<{ storage_path: string }>).map(img => img.storage_path);
         await supabase.storage.from('clause-pages').remove(paths);
       }
 

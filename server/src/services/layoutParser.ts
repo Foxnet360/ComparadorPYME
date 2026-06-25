@@ -87,8 +87,8 @@ const DEFAULT_OPTIONS: Required<LayoutParserOptions> = {
   rotatedItemRatio: 0.5,
   tableGapFactor: 3,
   regionBandRatio: 0.15,
-  logger: undefined as any,
-  metrics: undefined as any,
+  logger: undefined as unknown as StructuredLogger,
+  metrics: undefined as unknown as MetricCollector,
 };
 
 function withDefaults(options?: LayoutParserOptions): Required<LayoutParserOptions> {
