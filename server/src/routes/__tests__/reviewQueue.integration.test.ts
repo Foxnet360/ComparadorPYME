@@ -152,7 +152,7 @@ describe('Review Queue E2E Flow', () => {
         expect(response.body).toHaveProperty('pagination');
         expect(response.body.pagination.total).toBeGreaterThan(0);
 
-        const match = response.body.data.find((r: any) => r.rawName === rawName);
+        const match = response.body.data.find((r: Record<string, unknown>) => r.rawName === rawName);
         expect(match).toBeDefined();
         expect(match).toHaveProperty('id');
         expect(match).toHaveProperty('rawName');

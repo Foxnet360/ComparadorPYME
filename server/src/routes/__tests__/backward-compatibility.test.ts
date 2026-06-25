@@ -345,7 +345,7 @@ describe('Backward Compatibility', () => {
     expect(response.body.quotes.length).toBeGreaterThan(0);
     
     // Each quote should have consistent structure
-    response.body.quotes.forEach((quote: any) => {
+    response.body.quotes.forEach((quote: Record<string, unknown>) => {
       expect(quote).toHaveProperty('insurerName');
       expect(quote).toHaveProperty('priceAnnual');
       expect(quote).toHaveProperty('coverages');

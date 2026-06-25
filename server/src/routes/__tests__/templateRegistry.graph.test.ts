@@ -1,24 +1,28 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import express from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import request from 'supertest';
 import { createTemplateRegistryRoutes } from '../templateRegistry';
 import { coverageGraphService } from '../../services/coverageGraphService';
 import { seedGraphFromThesaurus } from '../../services/thesaurusMapper';
+import type { AuthenticatedRequest } from '../../middleware/auth';
+import type { TemplateRegistryService } from '../../services/templateRegistryService';
+import type { GraphEdge } from '../../schemas/templateRegistrySchema';
 
 vi.mock('../../middleware/auth', () => ({
-  authMiddleware: (req: any, _res: any, next: any) => {
+  authMiddleware: (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
     if (!req.user) {
       req.user = { id: 'admin-user', role: 'admin' };
     }
     next();
   },
-  optionalAuthMiddleware: (req: any, _res: any, next: any) => {
+  optionalAuthMiddleware: (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
     if (!req.user) {
       req.user = { id: 'admin-user', role: 'admin' };
     }
     next();
   },
-  AuthenticatedRequest: {} as any,
+  AuthenticatedRequest: {},
 }));
 
 vi.mock('../../services/coverageGraphService', () => ({
@@ -52,10 +56,10 @@ function buildApp(role: string = 'admin') {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
-    (req as any).user = { id: 'user', role };
+    (req as AuthenticatedRequest).user = { id: 'user', role };
     next();
   });
-  app.use('/api/templates/registry', createTemplateRegistryRoutes(service as any));
+  app.use('/api/templates/registry', createTemplateRegistryRoutes(service as unknown as TemplateRegistryService));
   return { app, service };
 }
 
@@ -67,7 +71,7 @@ describe('templateRegistry graph admin routes', () => {
   it('lists graph edges with filters', async () => {
     vi.mocked(coverageGraphService.listEdges).mockResolvedValue([
       { from: 'Fuego', to: 'Incendio', type: 'alias_of', weight: 0.85, domain: 'pyme' },
-    ] as any);
+    ] as unknown as GraphEdge[]);
 
     const { app } = buildApp();
     const response = await request(app)

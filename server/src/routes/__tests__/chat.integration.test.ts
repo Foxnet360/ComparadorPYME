@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import chatRoutes from '../chat';
+import type { ChatThread } from '../../repositories/chatRepository';
 
 // Create test app
 const app = express();
@@ -173,7 +174,7 @@ describe('Chat Routes v2.0', () => {
         status: 'active',
         created_at: '2024-01-01T00:00:00Z',
         updated_at: '2024-01-01T00:00:00Z'
-      } as any);
+      } as unknown as ChatThread);
 
       const response = await request(app)
         .get('/api/chat/threads/report/report-456')

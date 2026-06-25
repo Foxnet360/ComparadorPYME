@@ -1,23 +1,26 @@
 import { describe, it, expect, vi } from 'vitest';
 import express from 'express';
+import type { Response, NextFunction } from 'express';
 import request from 'supertest';
 import { createTemplateRegistryRoutes } from '../templateRegistry';
 import { TemplateRegistryEntry } from '../../types/templateGraph';
+import type { AuthenticatedRequest } from '../../middleware/auth';
+import type { TemplateRegistryService } from '../../services/templateRegistryService';
 
 vi.mock('../../middleware/auth', () => ({
-  authMiddleware: (req: any, _res: any, next: any) => {
+  authMiddleware: (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
     if (!req.user) {
       req.user = { id: 'admin-user', role: 'admin' };
     }
     next();
   },
-  optionalAuthMiddleware: (req: any, _res: any, next: any) => {
+  optionalAuthMiddleware: (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
     if (!req.user) {
       req.user = { id: 'admin-user', role: 'admin' };
     }
     next();
   },
-  AuthenticatedRequest: {} as any,
+  AuthenticatedRequest: {},
 }));
 
 function createMockService() {
@@ -51,10 +54,10 @@ function buildApp(role: string = 'admin') {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
-    (req as any).user = { id: 'user', role };
+    (req as AuthenticatedRequest).user = { id: 'user', role };
     next();
   });
-  app.use('/api/templates/registry', createTemplateRegistryRoutes(service as any));
+  app.use('/api/templates/registry', createTemplateRegistryRoutes(service as unknown as TemplateRegistryService));
   return { app, service };
 }
 
