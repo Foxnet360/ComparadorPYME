@@ -8,6 +8,13 @@ interface CacheEntry {
   timestamp: number;
 }
 
+interface CoverageEmbeddingRecord {
+  coverage_name: string;
+  embedding: number[];
+  model: string;
+  dimensions: number;
+}
+
 // In-memory LRU cache with TTL
 class MemoryCache {
   private cache: Map<string, CacheEntry> = new Map();
@@ -95,8 +102,8 @@ export async function getCachedEmbedding(name: string): Promise<number[] | null>
       return null;
     }
 
-    if (data && (data as any).embedding) {
-      const embedding = (data as any).embedding as number[];
+    if (data && (data as CoverageEmbeddingRecord).embedding) {
+      const embedding = (data as CoverageEmbeddingRecord).embedding;
       // Store in memory cache
       memoryCache.set(normalizedName, embedding);
       return embedding;
@@ -123,10 +130,10 @@ export async function setCachedEmbedding(name: string, embedding: number[]): Pro
       .from('coverage_embeddings_cache')
       .upsert({
         coverage_name: normalizedName,
-        embedding: embedding as any,
+        embedding,
         model: EMBEDDING_MODEL_NAME,
         dimensions: embedding.length
-      } as any, {
+      } as unknown as never, {
         onConflict: 'coverage_name,model'
       });
 
@@ -175,8 +182,8 @@ export async function getBatch(coverageNames: string[]): Promise<Map<string, num
     }
 
     if (data) {
-      for (const row of data as any[]) {
-        const embedding = row.embedding as number[];
+      for (const row of data as CoverageEmbeddingRecord[]) {
+        const embedding = row.embedding;
         result.set(row.coverage_name, embedding);
         memoryCache.set(row.coverage_name, embedding);
       }
@@ -210,7 +217,7 @@ export async function setBatch(coverageNames: string[], embeddings: number[][]):
 
     const { error } = await supabase
       .from('coverage_embeddings_cache')
-      .upsert(rows as any, {
+      .upsert(rows as unknown as never[], {
         onConflict: 'coverage_name,model'
       });
 
