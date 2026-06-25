@@ -19,7 +19,7 @@ export interface DocumentRecord {
 
 export async function getDocumentById(id: string): Promise<DocumentRecord | null> {
   const { data, error } = await supabase
-    .from('documents' as any)
+    .from('documents')
     .select('*')
     .eq('id', id)
     .single();
@@ -29,12 +29,12 @@ export async function getDocumentById(id: string): Promise<DocumentRecord | null
     handleDbError(error, 'Failed to fetch document');
   }
 
-  return data;
+  return data as DocumentRecord | null;
 }
 
 export async function getDocumentsByInsurer(insurerName: string): Promise<DocumentRecord[]> {
   const { data, error } = await supabase
-    .from('document_insurer_view' as any)
+    .from('document_insurer_view' as never)
     .select('*')
     .eq('insurer_name', insurerName)
     .order('created_at', { ascending: false });
@@ -43,13 +43,13 @@ export async function getDocumentsByInsurer(insurerName: string): Promise<Docume
     handleDbError(error, 'Failed to fetch documents by insurer');
   }
 
-  return data || [];
+  return (data || []) as DocumentRecord[];
 }
 
 export async function archiveDocument(id: string): Promise<void> {
-  const { error } = await (supabase
-    .from('documents' as any) as any)
-    .update({ status: 'archived', updated_at: new Date().toISOString() })
+  const { error } = await supabase
+    .from('documents')
+    .update({ status: 'archived', updated_at: new Date().toISOString() } as never)
     .eq('id', id);
 
   if (error) {
@@ -59,8 +59,8 @@ export async function archiveDocument(id: string): Promise<void> {
 
 export async function getDocumentCounts(id: string): Promise<{ chunks: number; images: number }> {
   const [{ count: chunkCount }, { count: imageCount }] = await Promise.all([
-    supabase.from('document_chunks' as any).select('*', { count: 'exact', head: true }).eq('document_id', id),
-    supabase.from('document_images' as any).select('*', { count: 'exact', head: true }).eq('document_id', id),
+    supabase.from('document_chunks' as never).select('*', { count: 'exact', head: true }).eq('document_id', id),
+    supabase.from('document_images' as never).select('*', { count: 'exact', head: true }).eq('document_id', id),
   ]);
 
   return { chunks: chunkCount || 0, images: imageCount || 0 };
