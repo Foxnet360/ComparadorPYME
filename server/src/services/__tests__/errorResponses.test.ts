@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { Request, Response } from 'express';
 
 import { errorHandler } from '../../middleware/errorHandler';
 import {
@@ -19,8 +20,8 @@ vi.mock('../../config/logger', () => ({
 }));
 
 describe('Error Response Format', () => {
-  const createMockResponse = (): any => {
-    const res: any = {
+  const createMockResponse = (): Response => {
+    const res = {
       statusCode: 200,
       json: vi.fn(),
       status: vi.fn(function(code: number) {
@@ -31,13 +32,13 @@ describe('Error Response Format', () => {
         requestId: 'test-request-id-123'
       },
       setHeader: vi.fn()
-    };
+    } as unknown as Response;
     return res;
   };
 
-  const createMockRequest = (): any => ({
+  const createMockRequest = (): Request => ({
     headers: {}
-  });
+  } as unknown as Request);
 
   describe('GeminiError responses', () => {
     it('should include requestId in Gemini error responses', () => {

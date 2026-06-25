@@ -73,7 +73,7 @@ describe('coverageNormalizer graph integration', () => {
       canonicalName: null,
       confidence: 0,
       method: null,
-    } as any);
+    });
     vi.mocked(semanticMatcher.normalizeBatch).mockResolvedValue([]);
     vi.mocked(featureFlags.isEnabled).mockImplementation((flag: string) => flag === 'useTemplateGraphPipeline');
   });
@@ -111,12 +111,12 @@ describe('coverageNormalizer graph integration', () => {
     });
 
     it('returns standard match when available and does not call graph', async () => {
-      vi.mocked(semanticMatcher.matchCoverage).mockResolvedValue({
-        categoryId: 1,
-        canonicalName: 'Incendio (Edificio y Contenidos)',
-        confidence: 0.95,
-        method: 'embedding',
-      } as any);
+    vi.mocked(semanticMatcher.matchCoverage).mockResolvedValue({
+      categoryId: 1,
+      canonicalName: 'Incendio (Edificio y Contenidos)',
+      confidence: 0.95,
+      method: 'embedding',
+    });
 
       const result = await mapRawToCanonical('Algo', 'pyme');
 

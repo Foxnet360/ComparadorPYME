@@ -6,8 +6,11 @@ import {
   computeAggregateMetrics,
   buildEvaluationReport,
   loadGoldenSet,
+  GoldenQuote,
+  FixtureResult,
+  PipelineOutput,
+  FileSystemLike,
 } from '../evaluationHarness';
-import { GoldenQuote, FixtureResult, PipelineOutput } from '../evaluationHarness';
 
 function makeGolden(overrides: Partial<GoldenQuote> = {}): GoldenQuote {
   return {
@@ -243,7 +246,7 @@ describe('loadGoldenSet', () => {
       },
     };
 
-    const fixtures = await loadGoldenSet('/fixtures', fs as any);
+    const fixtures = await loadGoldenSet('/fixtures', fs as unknown as FileSystemLike);
 
     expect(fixtures).toHaveLength(2);
     expect(fixtures.map((f) => f.fixtureId).sort()).toEqual(['bbva-001', 'sbs-001']);
@@ -278,7 +281,7 @@ describe('loadGoldenSet', () => {
       },
     };
 
-    const fixtures = await loadGoldenSet('/fixtures', fs as any);
+    const fixtures = await loadGoldenSet('/fixtures', fs as unknown as FileSystemLike);
 
     expect(fixtures).toHaveLength(1);
     expect(fixtures[0].fixtureId).toBe('fixture-001');

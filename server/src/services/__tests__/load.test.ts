@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { performance } from 'perf_hooks';
-import { quoteParser } from '../quoteParser';
+import { quoteParser, ParsedQuote } from '../quoteParser';
 import { buildCanonicalCoverages } from '../coverageNormalizer';
 import { variableComparator } from '../variableComparator';
 import { quoteScorer } from '../quoteScorer';
@@ -168,7 +168,7 @@ describe('Load Tests', () => {
       const start = performance.now();
       
       const results = await Promise.all(
-        quotes.map(quote => quoteScorer.calculateScore(quote as any, [], quotes as any))
+        quotes.map(quote => quoteScorer.calculateScore(quote as unknown as ParsedQuote, [], quotes as unknown as ParsedQuote[]))
       );
       
       const duration = performance.now() - start;
@@ -198,7 +198,7 @@ describe('Load Tests', () => {
       }));
 
       for (const quote of quotes) {
-        await quoteScorer.calculateScore(quote as any, [], [quote as any]);
+        await quoteScorer.calculateScore(quote as unknown as ParsedQuote, [], [quote as unknown as ParsedQuote]);
       }
 
       const finalMemory = process.memoryUsage().heapUsed;

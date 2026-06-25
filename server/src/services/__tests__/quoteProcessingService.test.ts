@@ -19,13 +19,13 @@ const mockCoverageGraphQuery = vi.fn();
 const mockFeatureFlags = { isEnabled: vi.fn() };
 
 vi.mock('../promptBuilder', () => ({
-  buildTemplatePrompt: (...args: any[]) => mockBuildTemplatePrompt(...args),
-  buildPromptForFamily: (...args: any[]) => mockBuildPromptForFamily(...args),
+  buildTemplatePrompt: (...args: unknown[]) => mockBuildTemplatePrompt(...args),
+  buildPromptForFamily: (...args: unknown[]) => mockBuildPromptForFamily(...args),
 }));
 
 vi.mock('../coverageGraphService', () => ({
   coverageGraphService: {
-    query: (...args: any[]) => mockCoverageGraphQuery(...args),
+    query: (...args: unknown[]) => mockCoverageGraphQuery(...args),
   },
 }));
 
