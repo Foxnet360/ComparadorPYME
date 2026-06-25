@@ -4,7 +4,7 @@
  */
 
 import { Router } from 'express';
-import { processChatMessage, generateSuggestedQuestions, getConversationHistory, getOrCreateThread } from '../services/chatService';
+import { processChatMessage, generateSuggestedQuestions, getConversationHistory} from '../services/chatService';
 import { chatRepository } from '../repositories/chatRepository';
 import { asyncHandler } from '../utils/asyncHandler';
 

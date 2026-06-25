@@ -133,7 +133,7 @@ export async function compareExtraction(req: Request, res: Response) {
       // Cleanup
       try {
         fs.unlinkSync(file.path);
-      } catch (e) {
+      } catch (_e) {
         // Ignore cleanup errors
       }
     }

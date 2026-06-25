@@ -52,7 +52,7 @@ export const ragRetrievalService = {
         } = {}
     ): Promise<RetrievedClause[]> => {
         const startTime = Date.now();
-        let { insurerName, coverageTags, sectionType, limit = 15, minSimilarity = MIN_SIMILARITY_THRESHOLD } = options;
+        let { insurerName, coverageTags, sectionType, limit = 15 } = options;
         
         // Normalize insurer name before searching
         if (insurerName) {
@@ -470,7 +470,7 @@ export const ragRetrievalService = {
             }
             
             // 1. Buscar el id de la aseguradora en el catálogo `insurers`
-            const { data: insurerData, error: insurerError } = await supabase
+            const { data: insurerData } = await supabase
                 .from('insurers')
                 .select('id')
                 .eq('name', normalizedName)

@@ -3,7 +3,7 @@
  * Validates business rules and calculates confidence score for comparison results
  */
 
-import { UnifiedComparisonResult, ValidationResult } from "../../types/unifiedComparison";
+import { ValidationResult } from "../../types/unifiedComparison";
 
 export class ComparisonResultValidator {
   

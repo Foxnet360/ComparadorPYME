@@ -3,7 +3,7 @@
  * Determines the best option per coverage category
  */
 
-import { QuoteAnalysis, CoverageItem } from '../types';
+import { QuoteAnalysis} from '../types';
 
 export interface WinnerResult {
     quoteIdx: number;

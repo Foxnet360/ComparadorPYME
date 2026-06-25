@@ -1,6 +1,6 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient} from '@supabase/supabase-js';
 import { GoogleGenAI } from '@google/genai';
-import logger from '../config/logger';
+
 
 interface ServiceHealth {
   status: 'ok' | 'error';

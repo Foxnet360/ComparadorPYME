@@ -4,10 +4,7 @@
  * Based on the successful reference prompt from prompt_agente_comparativa_seguros.md
  */
 
-import { GoogleGenAI, Type } from "@google/genai";
 import { UnifiedComparisonSchema } from './comparisonSchema';
-
-const SchemaType = Type;
 
 export interface PromptContext {
   insurerCount: number;

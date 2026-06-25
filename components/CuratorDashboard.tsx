@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState} from 'react';
 import { 
   BarChart, 
   Bar, 
@@ -43,20 +43,6 @@ interface LearningMetric {
   page?: number;
 }
 
-interface ConsensusMetric {
-  date: string;
-  totalClassifications: number;
-  consensusRate: number;
-  discrepancies: number;
-  avgConfidence: number;
-}
-
-interface CuratorDashboardProps {
-  metrics?: LearningMetric[];
-  consensusHistory?: ConsensusMetric[];
-  isLoading?: boolean;
-}
-
 const COLORS = ['#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6'];
 
 export const CuratorDashboard = ({ 
@@ -94,7 +80,7 @@ export const CuratorDashboard = ({
   // Confidence trend over time
   const confidenceTrend = metrics
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-    .reduce((acc, metric, idx) => {
+    .reduce((acc, metric, _idx) => {
       const date = new Date(metric.timestamp).toLocaleDateString('es-CO');
       const existing = acc.find(item => item.date === date);
       if (existing) {

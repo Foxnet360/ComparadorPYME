@@ -9,7 +9,7 @@ import { embeddingService } from './vector/embeddingService';
 import { geminiService } from './gemini';
 import { normalizeText } from '../utils/textUtils';
 import { levenshteinDistance } from '../utils/stringUtils';
-import { coverageOntology, CoverageMapping } from './coverageOntology';
+import { coverageOntology} from './coverageOntology';
 import { featureFlags } from '../config/featureFlags';
 import { getBatch, setBatch } from './cache/embeddingCacheService';
 import { assertTaxonomyBundle } from '../schemas/domainBundleSchema';

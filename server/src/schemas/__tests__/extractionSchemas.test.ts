@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {
-  QuoteExtractionSchemaV2,
-  QuoteExtractionSchema,
-  DeductibleStructureSchema,
-  StructuredClauseSchema,
   validateQuoteExtractionV2,
   validateQuoteExtraction,
   validateDeductibleStructure,

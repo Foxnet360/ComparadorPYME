@@ -5,7 +5,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { levenshteinDistance, calculateSimilarity } from '../utils/stringUtils';
+import { calculateSimilarity } from '../utils/stringUtils';
 import { coverageGraphService } from './coverageGraphService';
 import type { GraphEdge } from '../types/templateGraph';
 

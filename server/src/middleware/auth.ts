@@ -39,7 +39,7 @@ export const authMiddleware = (
           email: decoded.email,
           role: decoded.role,
         };
-      } catch (jwtError) {
+      } catch (_jwtError) {
         throw new AuthenticationError('Invalid or expired token');
       }
     } else {

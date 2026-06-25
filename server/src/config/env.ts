@@ -54,11 +54,6 @@ const requiredVars = [
   'SUPABASE_ANON_KEY',
 ];
 
-const optionalVars = [
-  'REDIS_URL',
-  'VITE_GEMINI_API_KEY',
-];
-
 interface TaxonomyMetadata {
   salaryValue2024?: number;
   uvtValue2024?: number;

@@ -387,8 +387,6 @@ router.post('/unified-engine/admin/users', asyncHandler(async (req, res) => {
         });
     }
     
-    const currentConfig = unifiedComparisonFlag.getRolloutConfig();
-    
     switch (action) {
         case 'add':
             users.forEach(userId => unifiedComparisonFlag.addEnabledUser(userId));

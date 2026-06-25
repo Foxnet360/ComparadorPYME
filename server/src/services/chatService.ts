@@ -71,7 +71,7 @@ class ContextWindowManager {
         compact += `Cliente: ${reportContext.clientName || 'No especificado'}\n`;
         compact += `Aseguradoras: ${quotes.length}\n\n`;
         
-        quotes.forEach((quote: any, idx: number) => {
+        quotes.forEach((quote: any, _idx: number) => {
             compact += `--- ${quote.insurerName} ---\n`;
             compact += `Score: ${quote.score || 'N/A'}/100 | Prima: ${quote.priceAnnual || 'N/A'}\n`;
             
@@ -394,13 +394,11 @@ class ResponseValidator {
             // Check for common contradiction patterns
             // This is a basic implementation - could be enhanced with NLP
             const quoteData = quoteSource.data.toLowerCase();
-            const responseLower = response.toLowerCase();
             
             // Simple heuristic: if response mentions a different deductible or value
             // Extract deductible patterns
             const deductibleMatch = quoteData.match(/deducible[:\s]+([^\n]+)/i);
             if (deductibleMatch) {
-                const quoteDeductible = deductibleMatch[1].trim();
                 // Check if response mentions a different deductible
                 // This is a simplified check - production would need more sophisticated parsing
             }

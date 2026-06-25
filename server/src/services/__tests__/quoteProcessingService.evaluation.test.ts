@@ -201,7 +201,6 @@ describe('processQuoteMultimodal - golden-set integration', () => {
 
     expect(result.insurerName).toBe('BBVA');
     expect(result.coverages.length).toBeGreaterThan(0);
-    const expectedNames = new Set(fixture.expectedCoverages.map((c) => c.canonicalName));
     for (const expected of fixture.expectedCoverages) {
       const found = result.coverages.find((c) => c.canonicalName === expected.canonicalName || c.name === expected.canonicalName);
       expect(found).toBeDefined();

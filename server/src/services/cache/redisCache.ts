@@ -29,7 +29,6 @@ redis.on('error', (err) => {
 
 // ====== Redis Availability Detection ======
 let redisAvailable = false;
-let redisCheckInterval: NodeJS.Timeout | null = null;
 
 async function checkRedisAvailability(): Promise<boolean> {
     try {
@@ -51,7 +50,7 @@ async function checkRedisAvailability(): Promise<boolean> {
 })();
 
 // Periodic health check every 60 seconds
-redisCheckInterval = setInterval(async () => {
+setInterval(async () => {
     const wasAvailable = redisAvailable;
     redisAvailable = await checkRedisAvailability();
     if (!wasAvailable && redisAvailable) {
@@ -184,7 +183,7 @@ export async function getCachedEmbedding(text: string): Promise<number[] | null>
             if (cached) {
                 return JSON.parse(cached);
             }
-        } catch (error) {
+        } catch (_error) {
             // Redis failed, try memory
         }
     }
@@ -205,7 +204,7 @@ export async function setCachedEmbedding(text: string, embedding: number[]): Pro
         try {
             await redis.setex(key, cacheTTL.embedding, value);
             return;
-        } catch (error) {
+        } catch (_error) {
             // Redis failed, store in memory
         }
     }
@@ -222,7 +221,7 @@ export async function getCachedCoverageMapping(rawName: string, insurer?: string
             if (cached) {
                 return JSON.parse(cached);
             }
-        } catch (error) {
+        } catch (_error) {
             // Redis failed, try memory
         }
     }
@@ -242,7 +241,7 @@ export async function setCachedCoverageMapping(rawName: string, mapping: any, in
         try {
             await redis.setex(key, cacheTTL.coverageMapping, value);
             return;
-        } catch (error) {
+        } catch (_error) {
             // Redis failed, store in memory
         }
     }
@@ -259,7 +258,7 @@ export async function getCachedDeductible(text: string): Promise<any | null> {
             if (cached) {
                 return JSON.parse(cached);
             }
-        } catch (error) {
+        } catch (_error) {
             // Redis failed, try memory
         }
     }
@@ -279,7 +278,7 @@ export async function setCachedDeductible(text: string, parsed: any): Promise<vo
         try {
             await redis.setex(key, cacheTTL.deductibleParsed, value);
             return;
-        } catch (error) {
+        } catch (_error) {
             // Redis failed, store in memory
         }
     }
@@ -296,7 +295,7 @@ export async function getCachedDeductibleV2(text: string): Promise<any | null> {
             if (cached) {
                 return JSON.parse(cached);
             }
-        } catch (error) {
+        } catch (_error) {
             // Redis failed, try memory
         }
     }
@@ -316,7 +315,7 @@ export async function setCachedDeductibleV2(text: string, parsed: any): Promise<
         try {
             await redis.setex(key, cacheTTL.deductibleParsed, value);
             return;
-        } catch (error) {
+        } catch (_error) {
             // Redis failed, store in memory
         }
     }
@@ -384,7 +383,7 @@ export async function getCachedComparisonResult(fileHash: string): Promise<any |
             if (cached) {
                 return JSON.parse(cached);
             }
-        } catch (error) {
+        } catch (_error) {
             // Redis failed, try memory
         }
     }
@@ -404,7 +403,7 @@ export async function setCachedComparisonResult(fileHash: string, result: any): 
         try {
             await redis.setex(key, cacheTTL.comparisonResult, value);
             return;
-        } catch (error) {
+        } catch (_error) {
             // Redis failed, store in memory
         }
     }
@@ -421,7 +420,7 @@ export async function getCachedUnifiedResult(fileHash: string): Promise<any | nu
             if (cached) {
                 return JSON.parse(cached);
             }
-        } catch (error) {
+        } catch (_error) {
             // Redis failed, try memory
         }
     }
@@ -441,7 +440,7 @@ export async function setCachedUnifiedResult(fileHash: string, result: any): Pro
         try {
             await redis.setex(key, cacheTTL.unifiedResult, value);
             return;
-        } catch (error) {
+        } catch (_error) {
             // Redis failed, store in memory
         }
     }

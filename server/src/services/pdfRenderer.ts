@@ -134,7 +134,7 @@ export const pdfRenderer = {
           // Limpiar archivo temporal
           try {
             fs.unlinkSync(tempFilePath);
-          } catch (e) {
+          } catch (_e) {
             // Ignorar errores de limpieza
           }
 
@@ -196,7 +196,7 @@ export const pdfRenderer = {
       // Limpiar temporal
       try {
         fs.unlinkSync(tempFilePath);
-      } catch (e) {
+      } catch (_e) {
         // Ignorar
       }
 

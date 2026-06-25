@@ -47,7 +47,7 @@ describe('Fallback Mechanism', () => {
 
     try {
       await comparisonEngineAdapter.generateComparison(['fake1.pdf']);
-    } catch (error) {
+    } catch (_error) {
       // Expected to fail since we don't have real legacy implementation
     }
 

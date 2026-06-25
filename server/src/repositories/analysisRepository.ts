@@ -3,7 +3,7 @@
  * Database operations for analysis_history table
  */
 
-import { supabase, handleDbError, RepositoryError } from './baseRepository';
+import { supabase, handleDbError} from './baseRepository';
 
 export interface AnalysisHistoryRecord {
   id?: string;

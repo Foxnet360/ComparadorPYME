@@ -99,7 +99,7 @@ export const supabaseAnon: SupabaseClient<Database> | null = new Proxy(
 // Verificar conexión
 export async function verifySupabaseConnection(): Promise<boolean> {
   try {
-    const { data, error } = await supabase.from('insurers').select('count').limit(1);
+    const { error } = await supabase.from('insurers').select('count').limit(1);
     if (error) throw error;
     console.log('✅ [Supabase] Connection verified successfully');
     return true;

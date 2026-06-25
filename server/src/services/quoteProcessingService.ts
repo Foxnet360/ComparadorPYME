@@ -10,9 +10,9 @@ import { quoteParser, ParsedQuote } from './quoteParser';
 import { quoteScorer, ScoringResult } from './quoteScorer';
 import { normalizeCoverages } from './thesaurusMapper';
 import { insurerProfileService } from './insurerProfileService';
-import { validateCoverageValues } from './coverageValueValidator';
-import { validateValueSources } from './valueValidationService';
-import { dualExtractionService } from './dualExtractionService';
+
+
+
 import {
   detectFormatFamily,
   detectFormatWithRegistry,
@@ -829,7 +829,7 @@ async function processQuoteLegacyInternal(
         })),
       };
       
-    } catch (jsonError: any) {
+    } catch (_jsonError: any) {
       // Fallback to text-based parsing
       console.log(`   📝 JSON extraction failed, falling back to text parsing...`);
       parsed = await quoteParser.parse(quote.text);

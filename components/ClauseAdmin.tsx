@@ -27,7 +27,6 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose }) => {
     const [error, setError] = useState<string | null>(null);
     const [filterInsurer, setFilterInsurer] = useState('');
     const [filterStatus, setFilterStatus] = useState<'ALL' | 'ACTIVE' | 'ARCHIVED'>('ALL');
-    const [showVersionsFor, setShowVersionsFor] = useState<string | null>(null);
 
     // Form state
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -109,9 +108,9 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose }) => {
 
     const handleViewVersions = async (insurerId: string) => {
         try {
-            const versions = await clauseService.getDocumentVersions(insurerId);
+            await clauseService.getDocumentVersions(insurerId);
             // Store versions in state to show in modal
-            setShowVersionsFor(insurerId);
+            // (Functionality removed - versions not used)
         } catch (err: any) {
             setError(err.message);
         }

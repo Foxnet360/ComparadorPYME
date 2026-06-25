@@ -82,7 +82,7 @@ export const InsurerRadar: React.FC<InsurerRadarProps> = ({ quotes, isOpen, onCl
     { subject: 'Riesgo', fullMark: 10 },
   ];
 
-  quotes.forEach((quote, idx) => {
+  quotes.forEach((quote, _idx) => {
     const scores = calculateScores(quote);
     radarData[0][quote.insurerName] = scores.price;
     radarData[1][quote.insurerName] = scores.coverage;

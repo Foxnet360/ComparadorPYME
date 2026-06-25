@@ -5,10 +5,10 @@
  */
 
 import { ParsedQuote } from './quoteParser';
-import { CrossReferenceResult, DiscrepancyAlert } from './crossReferenceEngine';
+import { CrossReferenceResult} from './crossReferenceEngine';
 import { formatNumber } from '../utils/formatCurrency';
 import { CoverageExistenceResult } from './clauseCoverageValidator';
-import { variableComparator } from './variableComparator';
+
 import { hybridDeductibleParser } from './hybridDeductibleParser';
 import { featureFlags } from '../config/featureFlags';
 import { getCanonicalCoverageNames } from '../config/domainConstants';
@@ -168,7 +168,7 @@ export const quoteScorer = {
         crossRefResults: CrossReferenceResult[],
         allQuotes: ParsedQuote[],
         customWeights?: Partial<ScoreWeights>,
-        clauseValidation?: CoverageExistenceResult[]
+        _clauseValidation?: CoverageExistenceResult[]
     ): Promise<ScoringResult> => {
         console.log(`📊 [quoteScorer] Calculating variable-based score for ${quote.insurerName}...`);
 
@@ -590,7 +590,7 @@ async function calculateVariableBasedScores(
                     }
                     dedCount++;
                 }
-            } catch (error) {
+            } catch (_error) {
                 console.warn(`⚠️ [quoteScorer] Failed to parse deductible: ${result.quoteData.deductible}`);
             }
         }

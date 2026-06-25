@@ -102,9 +102,8 @@ function generateValueVariations(value: string): string[] {
 /**
  * Check if a value appears to be calculated from the text
  */
-function isCalculatedValue(value: string, rawText: string, coverageName: string): boolean {
+function isCalculatedValue(value: string, rawText: string, _coverageName: string): boolean {
     const lowerText = rawText.toLowerCase();
-    const lowerCoverage = coverageName.toLowerCase();
     
     // Check if text mentions percentage for this coverage
     if (value.includes('%')) {

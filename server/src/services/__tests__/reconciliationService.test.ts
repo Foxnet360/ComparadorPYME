@@ -3,7 +3,6 @@ import {
   reconciliationService,
 } from '../reconciliationService';
 import { HybridDeductibleResult } from '../hybridDeductibleParser';
-import { DeductibleStructure, ReconciliationResult } from '../../schemas/extractionSchemas';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -47,16 +46,6 @@ function makeQuoteDeductible(structure: Partial<HybridDeductibleResult>): Hybrid
     isComposite: structure.isComposite ?? false,
     rawText: structure.rawText || '',
     normalized: structure.normalized || { minAmount: 0, maxAmount: 0, percentage: 0, isPercentageBased: false },
-  };
-}
-
-function makeClauseDeductible(components: DeductibleStructure['components']): DeductibleStructure {
-  return {
-    components,
-    isZero: components.length === 1 && components[0].type === 'na',
-    hasMinimum: components.some(c => c.type === 'minimum'),
-    hasMaximum: components.some(c => c.type === 'maximum'),
-    isComposite: components.length > 1,
   };
 }
 

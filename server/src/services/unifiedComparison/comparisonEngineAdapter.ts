@@ -240,7 +240,7 @@ export class ComparisonEngineAdapter {
   /**
    * Use legacy engine directly
    */
-  private async useLegacy(pdfPaths: string[]): Promise<MatrixRow[]> {
+  private async useLegacy(_pdfPaths: string[]): Promise<MatrixRow[]> {
     console.log(`📦 [Adapter] Legacy engine not available through adapter. Use /api/analyze endpoint.`);
     throw new Error('Legacy engine not available through unified adapter. Use /api/analyze endpoint.');
   }

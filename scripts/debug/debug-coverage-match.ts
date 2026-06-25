@@ -1,9 +1,9 @@
 import { pdfExtractor } from './src/services/pdfExtractor';
 import { geminiService } from './src/services/gemini';
-import { normalizeCoverages, mapCoverageName } from './src/services/thesaurusMapper';
+import { mapCoverageName } from './src/services/thesaurusMapper';
 import { PLANTILLA_ITEMS } from './src/utils/analysisValidator';
-import { formatPercentage, formatNumber } from './src/utils/formatCurrency';
-import path from 'path';
+import { formatPercentage} from './src/utils/formatCurrency';
+
 
 const STRUCTURED_EXTRACTION_PROMPT = `Eres un extractor experto de cotizaciones de seguros PYME colombianos.
 

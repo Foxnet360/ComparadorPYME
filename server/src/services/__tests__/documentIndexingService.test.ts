@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DocumentIndexingService, DocumentMetadata } from '../documentIndexingService';
-import { featureFlags } from '../config/featureFlags';
-import { structuredClauseExtractor } from '../structuredClauseExtractor';
+
+
 
 // ---------------------------------------------------------------------------
 // Mocks

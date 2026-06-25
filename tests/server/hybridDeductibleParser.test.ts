@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   hybridDeductibleParser,
   resetHybridParserStats,
-  HybridDeductibleResult,
 } from '../../server/src/services/hybridDeductibleParser';
 
 vi.mock('../../server/src/config/env', () => ({

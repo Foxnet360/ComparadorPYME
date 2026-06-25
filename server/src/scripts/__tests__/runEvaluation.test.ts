@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { main, createPipelineRunner, RunEvaluationCliResult } from '../runEvaluation';
+import { main, createPipelineRunner} from '../runEvaluation';
 import { GoldenQuote } from '../services/evaluationHarness';
 
 // ---------------------------------------------------------------------------

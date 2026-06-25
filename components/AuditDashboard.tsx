@@ -1,6 +1,6 @@
 import React from 'react';
 import { AlertCircle, AlertTriangle, CheckCircle, Shield, TrendingUp } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer} from 'recharts';
 import { QuoteAnalysis, CrossInsurerRisk } from '../types';
 
 interface AuditDashboardProps {

@@ -75,8 +75,6 @@ export function validateCoverageCompleteness(quote: ParsedQuote): ValidationFlag
   if ((quote as any).expectedCoverages && Array.isArray((quote as any).expectedCoverages)) {
     const expectedCoverages = (quote as any).expectedCoverages;
     const missingCount = expectedCoverages.filter((c: any) => c.status === 'missing').length;
-    const excludedCount = expectedCoverages.filter((c: any) => c.status === 'excluded').length;
-    const presentCount = expectedCoverages.filter((c: any) => c.status === 'present').length;
     
     if (missingCount > 0) {
       const missingNames = expectedCoverages

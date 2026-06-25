@@ -1,5 +1,5 @@
 import React from 'react';
-import { Target, ArrowRight, AlertCircle } from 'lucide-react';
+import { Target, ArrowRight} from 'lucide-react';
 
 interface NegotiationPoint {
   point: string;

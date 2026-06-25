@@ -8,12 +8,6 @@ const isLocal = window.location.hostname === 'localhost' || window.location.host
 const API_URL = isLocal ? 'http://localhost:8080/api' : '/api';
 
 // Mock Data for initial load (fallback only)
-const MOCK_HISTORY: HistoryEntry[] = [
-  { id: '1', userId: 'admin_001', date: '2023-10-15', clientName: 'Transportes Rápidos S.A.', insurers: ['Allianz', 'Chubb', 'Mapfre'], bestOption: 'Allianz', premiumValue: 45000000, status: 'SOLD' },
-  { id: '2', userId: 'admin_001', date: '2023-10-20', clientName: 'Inmobiliaria El Porvenir', insurers: ['Sura', 'Bolívar', 'Zurich'], bestOption: 'Sura', premiumValue: 12500000, status: 'LOST' },
-  { id: '3', userId: 'admin_001', date: '2023-11-05', clientName: 'Tecnología Global Solutions', insurers: ['AXA Colpatria', 'Chubb', 'Mapfre'], bestOption: 'Chubb', premiumValue: 28000000, status: 'SENT' },
-];
-
 const MOCK_CLIENTS: Client[] = [
   { id: 'c1', name: 'Transportes Rápidos S.A.', nit: '900.123.456-1', contactPerson: 'Juan Pérez', industry: 'Logística', email: 'gerencia@transportesrapidos.com' },
   { id: 'c2', name: 'Inmobiliaria El Porvenir', nit: '800.987.654-2', contactPerson: 'María Gómez', industry: 'Real Estate', email: 'admin@elporvenir.co' },

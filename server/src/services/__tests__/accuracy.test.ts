@@ -119,7 +119,7 @@ describe('Accuracy Tests', () => {
           if (hasExpectedCoverages && hasDeductible) {
             correct++;
           }
-        } catch (error) {
+        } catch (_error) {
           console.warn(`⚠️ Failed to extract: ${testCase.name}`);
         }
       }
@@ -168,7 +168,7 @@ describe('Accuracy Tests', () => {
           }
 
           if (isCorrect) correct++;
-        } catch (error) {
+        } catch (_error) {
           console.warn(`⚠️ Failed to parse: ${testCase.input}`);
         }
       }
@@ -209,7 +209,7 @@ describe('Accuracy Tests', () => {
           if (hasExpectedGroup || result.confidence > 0.6) {
             correct++;
           }
-        } catch (error) {
+        } catch (_error) {
           console.warn(`⚠️ Failed to map: ${testCase.input}`);
         }
       }

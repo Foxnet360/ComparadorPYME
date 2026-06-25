@@ -1,8 +1,8 @@
 import { supabase } from '../config/database';
-import { pdfExtractor, PageData, PDFMetadata } from './pdfExtractor';
+import { pdfExtractor, } from './pdfExtractor';
 import { semanticChunker, Chunk } from './semanticChunker';
 import { embeddingService } from './vector/embeddingService';
-import { pdfRenderer, RenderedPage } from './pdfRenderer';
+import { pdfRenderer} from './pdfRenderer';
 import { handleSupabaseError } from '../config/database';
 import { geminiService } from './gemini';
 import { featureFlags } from '../config/featureFlags';
@@ -384,7 +384,7 @@ export class DocumentIndexingService {
 
     try {
       // Obtener información del documento
-      const { data: document, error: docError } = await supabase
+      const { error: docError } = await supabase
         .from('documents')
         .select('insurer_id')
         .eq('id', documentId)

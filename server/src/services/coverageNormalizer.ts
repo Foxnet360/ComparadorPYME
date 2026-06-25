@@ -3,7 +3,7 @@
  * Maps raw extracted coverages to 14 canonical PYME categories
  */
 
-import { semanticMatcher, SemanticMatchResult } from './semanticMatcher';
+import { semanticMatcher} from './semanticMatcher';
 import { thesaurusService } from './normalization/thesaurusService';
 import { normalizeText } from '../utils/textUtils';
 import { levenshteinDistance } from '../utils/stringUtils';

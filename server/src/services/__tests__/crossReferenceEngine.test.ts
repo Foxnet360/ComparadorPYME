@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { crossReferenceEngine, CrossReferenceResult, DiscrepancyAlert } from '../crossReferenceEngine';
+import { crossReferenceEngine, } from '../crossReferenceEngine';
 import { ParsedCoverage, ParsedQuote } from '../quoteParser';
 import { ragRetrievalService, RetrievedClause } from '../ragRetrievalService';
 

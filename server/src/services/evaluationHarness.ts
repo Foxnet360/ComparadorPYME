@@ -6,7 +6,7 @@
  */
 
 import path from 'path';
-import { PageTextItems, TextItem } from './templateRegistryService';
+import { PageTextItems} from './templateRegistryService';
 import { LayoutTable } from '../schemas/templateRegistrySchema';
 
 // ---------------------------------------------------------------------------

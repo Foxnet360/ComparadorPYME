@@ -5,7 +5,7 @@ import { buildCanonicalCoverages } from '../coverageNormalizer';
 import { variableComparator } from '../variableComparator';
 import { quoteScorer } from '../quoteScorer';
 import { deductibleParser } from '../deductibleParser';
-import { structuredClauseExtractor } from '../structuredClauseExtractor';
+
 
 // Mock external services with realistic delays
 vi.mock('../gemini', () => ({
@@ -69,7 +69,7 @@ describe('Load Tests', () => {
 
   describe('Concurrent coverage normalization', () => {
     it('should handle 10 concurrent normalization requests', async () => {
-      const requests = Array(CONCURRENT_REQUESTS).fill(null).map((_, i) =>
+      const requests = Array(CONCURRENT_REQUESTS).fill(null).map((_, _i) =>
         Array(20).fill(null).map((_, j) => ({
           rawName: `Cobertura ${j}`,
           insuredAmount: (j + 1) * 1000000,

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useCallback} from 'react';
 import { ComparisonReport, AppStatus, Client } from '../types';
 import { CorrectionQueue } from '../services/correctionQueue';
 
@@ -152,6 +152,7 @@ function analysisReducer(state: AnalysisState, action: AnalysisAction): Analysis
         cellNotes: { ...state.cellNotes, [action.payload.cellId]: action.payload },
       };
     case 'DELETE_CELL_NOTE': {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { [action.payload]: _, ...remainingNotes } = state.cellNotes;
       return { ...state, cellNotes: remainingNotes };
     }

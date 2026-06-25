@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { variableComparator } from '../variableComparator';
-import { coverageOntology } from '../coverageOntology';
+
 
 // Mock embedding service
 vi.mock('../vector/embeddingService', () => ({

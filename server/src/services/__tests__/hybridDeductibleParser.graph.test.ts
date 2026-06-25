@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   hybridDeductibleParser,
-  HybridDeductibleResult,
 } from '../hybridDeductibleParser';
 
 // ---------------------------------------------------------------------------
@@ -43,10 +42,6 @@ vi.mock('../../config/featureFlags', () => ({
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function makeCached(structure: any) {
-  return JSON.parse(JSON.stringify(structure));
-}
 
 // ---------------------------------------------------------------------------
 // Tests

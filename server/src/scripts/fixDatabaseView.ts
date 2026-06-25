@@ -31,7 +31,7 @@ JOIN insurers i ON d.insurer_id = i.id;
 async function main() {
   console.log('🏗️  Aplicando parche SQL en Supabase...');
   try {
-    const { data, error } = await (supabase as any).rpc('exec_sql', { sql: SQL_FIX });
+    const { error } = await (supabase as any).rpc('exec_sql', { sql: SQL_FIX });
     if (error) {
       throw error;
     }

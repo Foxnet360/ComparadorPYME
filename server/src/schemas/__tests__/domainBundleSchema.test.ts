@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {
-  TaxonomyBundleSchema,
-  OntologyBundleSchema,
-  ThesaurusBundleSchema,
   BundleManifestSchema,
   validateTaxonomyBundle,
   validateOntologyBundle,

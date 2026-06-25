@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { ComparisonReport, UserProfile, DashboardStats, HistoryEntry } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
-import { formatCOPMillions, formatCOP, formatPercentage } from '../utils/formatCurrency';
+import { formatCOPMillions, formatCOP} from '../utils/formatCurrency';
 import { normalizeText } from '../utils/textUtils';
 
 // Helper for robust string matching (ignores accents, case, whitespace)
@@ -144,9 +144,9 @@ export const generatePDF = (report: ComparisonReport, options?: PDFOptions, cell
 
   const tableBody: string[][] = [];
 
-  PLANTILLA_ITEMS.forEach((standardItem, itemIndex) => {
+  PLANTILLA_ITEMS.forEach((standardItem, _itemIndex) => {
     const row: string[] = [standardItem];
-    quotes.forEach((q, quoteIndex) => {
+    quotes.forEach((q, _quoteIndex) => {
       const coverages = Array.isArray(q.coverages) ? q.coverages : [];
       // Robust matching
       const found = coverages.find(c => {

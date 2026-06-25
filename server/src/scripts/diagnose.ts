@@ -18,7 +18,7 @@ console.log('\n2. Probando conexión con Supabase...');
 const testSupabase = async () => {
   try {
     const { supabase } = await import('../config/database');
-    const { data, error } = await supabase.from('analysis_history').select('count');
+    const { error } = await supabase.from('analysis_history').select('count');
     
     if (error) {
       console.log('   ❌ Error conectando a Supabase:', error.message);
@@ -48,7 +48,7 @@ const testGemini = async () => {
     const model = genAI.getGenerativeModel({ model: 'models/gemini-2.5-flash' });
     
     // Intentar una generación simple
-    const result = await model.generateContent('Hola');
+    await model.generateContent('Hola');
     console.log('   ✅ Conexión a Gemini exitosa');
     return true;
   } catch (err: any) {

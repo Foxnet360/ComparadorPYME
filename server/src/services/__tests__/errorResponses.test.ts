@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { Request, Response } from 'express';
+
 import { errorHandler } from '../../middleware/errorHandler';
 import {
   GeminiRateLimitError,

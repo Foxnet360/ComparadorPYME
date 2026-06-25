@@ -1,4 +1,3 @@
-import { embeddingService } from './vector/embeddingService';
 import { supabase } from '../config/database';
 import { GoogleGenAI, Type } from '@google/genai';
 import { env } from '../config/env';
@@ -72,54 +71,6 @@ function loadOntology(domain: string = 'pyme'): { nodes: OntologyNode[]; composi
   ontologyCache.set(domain, nodes);
   compositePatternsCache.set(domain, compositePatterns);
   return { nodes, compositePatterns };
-}
-
-// Cache in-memory for static ontology embeddings to eliminate HTTP overhead
-const ontologyEmbeddingsCache = new Map<string, Map<string, number[]>>();
-const isInitializingCache = new Map<string, boolean>();
-
-/**
- * Ensures that ontology node and alias embeddings are pre-calculated in batch
- */
-async function ensureOntologyEmbeddingsCache(domain: string = 'pyme'): Promise<Map<string, number[]>> {
-  if (ontologyEmbeddingsCache.has(domain)) return ontologyEmbeddingsCache.get(domain)!;
-  if (isInitializingCache.get(domain)) {
-    // Wait briefly if initialization is already in progress
-    await new Promise(resolve => setTimeout(resolve, 500));
-    if (ontologyEmbeddingsCache.has(domain)) return ontologyEmbeddingsCache.get(domain)!;
-  }
-
-  isInitializingCache.set(domain, true);
-  console.log('🧠 [Ontology] Initializing static embeddings cache...');
-  const cache = new Map<string, number[]>();
-
-  const { nodes } = loadOntology(domain);
-  const textsToEmbed: string[] = [];
-  for (const node of nodes.filter(n => n.level >= 2)) {
-    textsToEmbed.push(node.name);
-    for (const alias of node.aliases) {
-      textsToEmbed.push(alias);
-    }
-  }
-  
-  const uniqueTexts = Array.from(new Set(textsToEmbed));
-  
-  try {
-    const results = await embeddingService.generateEmbeddingsBatch(uniqueTexts);
-    for (const res of results) {
-      cache.set(res.text, res.embedding);
-    }
-    console.log(`✅ [Ontology] Static embeddings cache initialized with ${cache.size} embeddings`);
-    ontologyEmbeddingsCache.set(domain, cache);
-  } catch (error: any) {
-    console.error('❌ [Ontology] Failed to pre-calculate embeddings in batch:', error.message);
-    // Fallback: populate on-demand in mapCoverage
-    ontologyEmbeddingsCache.set(domain, cache);
-  } finally {
-    isInitializingCache.set(domain, false);
-  }
-
-  return ontologyEmbeddingsCache.get(domain)!;
 }
 
 /**
@@ -305,9 +256,6 @@ async function queryGraphForMapping(
     if (best.confidence < threshold) {
       return null;
     }
-
-    const node = coverageOntology.getNodeById(best.canonicalId, domain);
-    const groupId = node ? node.id : best.canonicalId;
 
     return {
       rawName,
@@ -577,7 +525,7 @@ export const coverageOntology = {
 
     // Try DB lookup first
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('coverage_mappings')
         .select('*')
         .eq('raw_name', rawName)

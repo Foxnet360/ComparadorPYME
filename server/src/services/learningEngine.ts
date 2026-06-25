@@ -88,7 +88,7 @@ export const learningEngine = {
       let queryEmbedding: number[] | null = null;
       try {
         queryEmbedding = await embeddingService.generateEmbedding(rawName);
-      } catch (err) {
+      } catch (_err) {
         console.warn('⚠️ [LearningEngine] Could not generate query embedding, using Sørensen-Dice fallback');
       }
 

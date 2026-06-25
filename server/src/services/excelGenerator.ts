@@ -1,6 +1,6 @@
 import * as ExcelJS from 'exceljs';
-import { QuoteAnalysis, MatrixRow, MatrixCell } from '../types';
-import { transformQuotesToMatrix, parseNumericValue, isExcludedValue } from './matrixTransformer';
+import { QuoteAnalysis, } from '../types';
+import { transformQuotesToMatrix, parseNumericValue} from './matrixTransformer';
 
 export function formatRatioCell(val: any): { value: any; numFmt?: string } {
   if (typeof val === 'string') {

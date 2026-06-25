@@ -50,10 +50,10 @@ async function verify() {
             console.log("⚠️ 'models/gemini-2.5-flash' not found. Retrying with 'gemini-pro'...");
             try {
                 const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-                const result = await model.generateContent("Hello");
+                await model.generateContent("Hello");
                 console.log("✅ Main model failed, but 'gemini-pro' works!");
                 return;
-            } catch (retryError: any) {
+            } catch (_retryError: any) {
                 console.error("❌ 'gemini-pro' also failed.");
             }
         }

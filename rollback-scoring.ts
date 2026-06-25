@@ -5,7 +5,7 @@
  * Usage: npm run rollback:scoring
  */
 
-import { quoteScorer } from './server/src/services/quoteScorer';
+
 
 console.log('🔄 Rollback Script: Reverting scoring penalties...');
 console.log('');

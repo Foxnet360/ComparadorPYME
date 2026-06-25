@@ -16,11 +16,6 @@ import { formatPercentage } from '../utils/formatCurrency';
 
 const API_URL = process.env.API_URL || 'http://localhost:8080/api';
 
-const TEST_CONFIG = {
-  testQuotePdf: path.join(__dirname, '../../test_mocks/test_quote.pdf'),
-  testClausePdf: path.join(__dirname, '../../test_mocks/test_clause.pdf'),
-};
-
 interface TestResult {
   success: boolean;
   task: string;

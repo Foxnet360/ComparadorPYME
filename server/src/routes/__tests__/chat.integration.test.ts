@@ -16,11 +16,11 @@ app.use('/api/chat', chatRoutes);
 // Mock chat repository
 vi.mock('../../repositories/chatRepository', () => ({
   chatRepository: {
-    createThread: vi.fn(async (userId, reportContext) => 'thread-123'),
-    getOrCreateThread: vi.fn(async (userId, reportId, reportContext) => 'thread-123'),
-    getThreadByReport: vi.fn(async (userId, reportId) => null),
+    createThread: vi.fn(async (_userId, _reportContext) => 'thread-123'),
+    getOrCreateThread: vi.fn(async (_userId, _reportId, _reportContext) => 'thread-123'),
+    getThreadByReport: vi.fn(async (_userId, _reportId) => null),
     saveMessage: vi.fn(async () => {}),
-    getHistory: vi.fn(async (threadId, limit) => [
+    getHistory: vi.fn(async (threadId, _limit) => [
       {
         id: 'msg-1',
         thread_id: threadId,
@@ -61,7 +61,7 @@ vi.mock('../../repositories/chatRepository', () => ({
 
 // Mock chat service
 vi.mock('../../services/chatService', () => ({
-  processChatMessage: vi.fn(async (message, reportContext, userId, threadId) => ({
+  processChatMessage: vi.fn(async (_message, _reportContext, _userId, _threadId) => ({
     text: '📄 Según la cotización:\n\nAXA: Incendio - $500M (Ded: 10%)\n\n⚠️ Nota: Esta respuesta se basa en los datos de la cotización.',
     citations: [],
     tokensUsed: 600,
@@ -73,11 +73,11 @@ vi.mock('../../services/chatService', () => ({
     '¿Cuál es el deducible promedio?',
     '¿Qué riesgos debo considerar?'
   ]),
-  getConversationHistory: vi.fn(async (threadId, limit) => [
+  getConversationHistory: vi.fn(async (_threadId, _limit) => [
     { role: 'user', text: '¿Qué coberturas tiene AXA?' },
     { role: 'model', text: '📄 Según la cotización, AXA ofrece: Incendio, RCE, y Robo.' }
   ]),
-  getOrCreateThread: vi.fn(async (userId, reportId) => 'thread-123')
+  getOrCreateThread: vi.fn(async (_userId, _reportId) => 'thread-123')
 }));
 
 describe('Chat Routes v2.0', () => {

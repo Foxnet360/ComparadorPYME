@@ -17,7 +17,7 @@ async function verifyConnection() {
   try {
     // 1. Verificar conexión básica
     console.log('1️⃣  Conexión a base de datos...');
-    const { data: insurers, error: insurersError } = await supabase
+    const { error: insurersError } = await supabase
       .from('insurers')
       .select('count')
       .limit(1);
@@ -30,7 +30,7 @@ async function verifyConnection() {
 
     // 2. Verificar extensión pgvector
     console.log('\n2️⃣  Extensión pgvector...');
-    const { data: vectorData, error: vectorError } = await supabase.rpc('search_chunks_by_coverage', {
+    const { error: vectorError } = await supabase.rpc('search_chunks_by_coverage', {
       p_embedding: Array(768).fill(0),
       p_insurer_id: '00000000-0000-0000-0000-000000000000',
       p_coverage_tag: null,

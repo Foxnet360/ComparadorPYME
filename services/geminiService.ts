@@ -53,7 +53,7 @@ export const analyzeQuotesWithGemini = async (
         if (errorData.error) {
           errorMessage = errorData.error;
         }
-      } catch (e) {
+      } catch (_e) {
         // Could not parse JSON, stick to statusText
       }
       throw new Error(errorMessage);

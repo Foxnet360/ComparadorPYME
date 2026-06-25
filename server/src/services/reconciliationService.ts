@@ -8,7 +8,7 @@ import { hybridDeductibleParser, HybridDeductibleResult } from './hybridDeductib
 import { deductibleEquals } from './deductibleFormatter';
 import { structuredClauseExtractor, StructuredClause, ExtractedCoverage } from './structuredClauseExtractor';
 import { insurerNameNormalizer } from './insurerNameNormalizer';
-import { ParsedQuote, ParsedCoverage } from './quoteParser';
+import { ParsedQuote} from './quoteParser';
 import { env } from '../config/env';
 
 // ---------------------------------------------------------------------------
@@ -198,7 +198,6 @@ function compareDeductibles(
 
   // Both fixed amounts
   const minDiff = Math.abs(quote.minAmount - clause.minAmount);
-  const maxDiff = Math.abs(quote.maxAmount - clause.maxAmount);
   const avgAmount = (quote.minAmount + clause.minAmount) / 2 || 1;
   const relativeDiff = minDiff / avgAmount;
 

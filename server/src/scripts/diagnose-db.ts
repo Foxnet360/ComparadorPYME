@@ -1,5 +1,5 @@
 import { supabase } from '../config/database';
-import { insurerNameNormalizer } from '../services/insurerNameNormalizer';
+
 
 async function diagnose() {
     console.log('🔍 INICIANDO DIAGNÓSTICO DE LA BASE DE DATOS DE SUPABASE\n');

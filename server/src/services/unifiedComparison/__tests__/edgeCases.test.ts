@@ -4,10 +4,10 @@
  */
 
 import { unifiedComparisonEngine } from '../unifiedComparisonEngine';
-import { comparisonEngineAdapter } from '../comparisonEngineAdapter';
+
 import { validateAgainstExcelStructure } from '../excelStructureValidator';
 import * as fs from 'fs';
-import * as path from 'path';
+
 
 describe('Edge Cases', () => {
   

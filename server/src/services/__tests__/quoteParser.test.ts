@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { quoteParser, ParsedQuote } from '../quoteParser';
+import { quoteParser} from '../quoteParser';
 
 describe('quoteParser', () => {
     const sampleGeminiOutput = `=== INICIO EXTRACCIÓN ===

@@ -1,10 +1,10 @@
 import { GoogleGenAI, Type } from "@google/genai";
 const SchemaType = Type;
-import fs from 'fs';
+
 import { ClauseDocument } from '../types';
 import { preprocessText } from './textPreprocessor';
 import { parseJsonWithRepair } from './jsonRepair';
-import { extractAndValidatePremium, createPremiumPrompt } from './premiumExtractor';
+import { extractAndValidatePremium} from './premiumExtractor';
 import {
   validateQuoteExtractionV2,
   validateQuoteExtraction,

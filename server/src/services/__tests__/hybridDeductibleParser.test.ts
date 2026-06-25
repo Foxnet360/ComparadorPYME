@@ -308,7 +308,7 @@ describe('hybridDeductibleParser', () => {
         isComposite: false,
       });
 
-      const result = await hybridDeductibleParser.parse('algún texto raro e intrincado');
+      await hybridDeductibleParser.parse('algún texto raro e intrincado');
 
       expect(mockExtractDeductible).toHaveBeenCalledWith(
         'algún texto raro e intrincado',

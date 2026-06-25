@@ -1,4 +1,4 @@
-import { openDB, DBSchema, IDBPDatabase } from 'idb';
+import { openDB, DBSchema} from 'idb';
 import { UserProfile, Client, HistoryEntry } from '../types';
 
 interface CSADB extends DBSchema {

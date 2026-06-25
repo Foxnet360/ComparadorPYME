@@ -13,13 +13,13 @@ interface VirtualizedMatrixProps {
 const CoverageCell = memo(({ 
   cell, 
   rowLabel, 
-  colIdx,
+  _colIdx,
   onClick,
   onDoubleClick 
 }: {
   cell: MatrixCell;
   rowLabel: string;
-  colIdx: number;
+  _colIdx: number;
   onClick?: () => void;
   onDoubleClick?: () => void;
 }) => {
@@ -53,7 +53,7 @@ CoverageCell.displayName = 'CoverageCell';
 
 export const VirtualizedCoverageMatrix: React.FC<VirtualizedMatrixProps> = ({
   rows,
-  quotes,
+  _quotes,
   onCellClick,
   onCellDoubleClick,
 }) => {
@@ -161,7 +161,7 @@ export const VirtualizedCoverageMatrix: React.FC<VirtualizedMatrixProps> = ({
                   key={colIdx}
                   cell={cell}
                   rowLabel={row.label}
-                  colIdx={colIdx}
+                  _colIdx={colIdx}
                   onClick={() => onCellClick?.(row.id, colIdx)}
                   onDoubleClick={() => onCellDoubleClick?.(row.id, colIdx)}
                 />

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { VariableComparison } from '../types/analysis';
-import { BarChart3, ChevronDown, ChevronUp, AlertTriangle, Check, Info } from 'lucide-react';
+import { BarChart3, ChevronDown, ChevronUp, AlertTriangle, Check} from 'lucide-react';
 
 interface VariableComparisonMatrixProps {
   comparisons: VariableComparison[];

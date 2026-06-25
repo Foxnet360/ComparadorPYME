@@ -65,7 +65,7 @@ export const CorrectionUI: React.FC<CorrectionUIProps> = ({ quote, onCorrection 
       } else {
         addToast(`Error: ${result.error || 'No se pudo guardar'}`, 'error');
       }
-    } catch (error) {
+    } catch (_error) {
       addToast('Error de conexión. Corrección guardada localmente.', 'warning');
     } finally {
       setSavingFields(prev => {

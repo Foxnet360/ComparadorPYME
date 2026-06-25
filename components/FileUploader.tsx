@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { Upload, FileText, X, BookOpen, FileCheck, User } from 'lucide-react';
+import { Upload, FileText, X, BookOpen, } from 'lucide-react';
 
 interface FileUploaderProps {
   files: File[];

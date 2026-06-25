@@ -42,16 +42,6 @@ const EXPECTED_COVERAGE_CATEGORIES = [
 ];
 
 /**
- * Expected financial fields from reference Excel
- */
-const EXPECTED_FINANCIAL_FIELDS = [
-  'Prima Neta',
-  'Gastos de Expedición',
-  'IVA (19%)',
-  'TOTAL A PAGAR'
-];
-
-/**
  * Expected metadata fields
  */
 const EXPECTED_METADATA_FIELDS = [
@@ -128,7 +118,7 @@ export function validateAgainstExcelStructure(
     }
 
     // Validate each section has rows
-    result.coverageMatrix.forEach((section: any, idx: number) => {
+    result.coverageMatrix.forEach((section: any, _idx: number) => {
       if (!section.rows || section.rows.length === 0) {
         warnings.push(`Coverage section "${section.category}" has no rows`);
       }

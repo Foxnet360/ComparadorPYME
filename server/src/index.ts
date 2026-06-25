@@ -89,7 +89,7 @@ app.get('/health', async (req, res) => {
         const health = await checkHealth();
         const statusCode = health.status === 'healthy' ? 200 : health.status === 'degraded' ? 503 : 503;
         res.status(statusCode).json(health);
-    } catch (error) {
+    } catch (_error) {
         res.status(500).json({
             status: 'unhealthy',
             timestamp: new Date().toISOString(),

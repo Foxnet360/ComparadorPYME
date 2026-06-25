@@ -40,7 +40,6 @@ const App: React.FC = () => {
   const [chatOpen, setChatOpen] = useState(false);
 
   // Progress State
-  const [progress, setProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 

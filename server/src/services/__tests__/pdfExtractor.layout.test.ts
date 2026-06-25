@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
-import { pdfExtractor, PageTextItems } from '../pdfExtractor';
+import { pdfExtractor} from '../pdfExtractor';
 import { featureFlags } from '../../config/featureFlags';
 
 const mockPages = vi.hoisted(() => ({ pages: [] as any[] }));

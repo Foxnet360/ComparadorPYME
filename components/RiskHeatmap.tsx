@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { QuoteAnalysis, CoverageItem } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
-import { Info, ChevronDown, ChevronUp } from 'lucide-react';
+
 import { normalizeText } from '../utils/textUtils';
 
 interface RiskHeatmapProps {

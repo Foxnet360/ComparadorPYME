@@ -17,7 +17,7 @@ interface VerificationResult {
 
 async function verifyThesaurus(): Promise<VerificationResult> {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('chunks')
       .select('count')
       .limit(1);
@@ -176,7 +176,7 @@ async function verifyDocuments(): Promise<VerificationResult> {
 
 async function verifyChatTables(): Promise<VerificationResult> {
   try {
-    const { data: threads, error: threadError } = await supabase
+    const { error: threadError } = await supabase
       .from('chat_threads')
       .select('count')
       .limit(1);

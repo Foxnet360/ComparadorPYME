@@ -195,7 +195,7 @@ export const variableComparator = {
    */
   findExclusiveCoverages(
     groupCoverages: Array<{ name: string; insurerName: string }>,
-    allCoverages: Array<CoverageVariables & { insurerName: string }>
+    _allCoverages: Array<CoverageVariables & { insurerName: string }>
   ): Array<{ insurerName: string; rawName: string }> {
     const insurers = [...new Set(groupCoverages.map(c => c.insurerName))];
     
@@ -230,7 +230,7 @@ export const variableComparator = {
       deductible?: { normalized: { minAmount: number } };
       exclusions: string[];
     }>,
-    weights: ComparisonWeights
+    _weights: ComparisonWeights
   ): {
     bestInsuredAmount?: string;
     bestDeductible?: string;

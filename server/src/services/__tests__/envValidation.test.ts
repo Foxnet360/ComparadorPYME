@@ -67,7 +67,7 @@ describe('Environment Configuration Validation', () => {
       
       try {
         parsed = JSON.parse(validOrigins);
-      } catch (e) {
+      } catch (_e) {
         // Should not throw
       }
 

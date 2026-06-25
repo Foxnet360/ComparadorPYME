@@ -269,7 +269,7 @@ export const pdfExtractor = {
                 creationDate: info.CreationDate ? new Date(info.CreationDate) : undefined,
                 modificationDate: info.ModDate ? new Date(info.ModDate) : undefined,
             };
-        } catch (error) {
+        } catch (_error) {
             // Si no se puede extraer metadata, retornar solo pageCount
             return { pageCount };
         }

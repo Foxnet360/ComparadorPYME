@@ -10,7 +10,7 @@ import {
   getCacheValue,
   setCacheValue,
 } from './cache/redisCache';
-import { calculateSimilarity } from '../utils/stringUtils';
+
 import { normalizeText } from '../utils/textUtils';
 import {
   StructuredLogger,
@@ -30,7 +30,6 @@ import { embeddingService } from './vector/embeddingService';
 const LEARNED_BASE_WEIGHT = 0.7;
 const LEARNED_INCREMENT = 0.02;
 const MAX_LEARNED_WEIGHT = 0.99;
-const DEFAULT_QUERY_DEPTH = 3;
 const DEFAULT_TOP_K = 5;
 const CACHE_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
@@ -258,7 +257,7 @@ export function createCoverageGraphService(deps: {
         embeddingService.generateEmbedding(canonicalId),
       ]);
       return embeddingService.cosineSimilarity(rawEmbedding, canonicalEmbedding);
-    } catch (e) {
+    } catch (_e) {
       return undefined;
     }
   }

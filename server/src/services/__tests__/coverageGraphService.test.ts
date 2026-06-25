@@ -4,7 +4,7 @@ import { GraphEdge } from '../../types/templateGraph';
 
 vi.mock('../vector/embeddingService', () => ({
   embeddingService: {
-    generateEmbedding: vi.fn(async (text: string) => Array(3072).fill(0).map((_, i) => i / 3072)),
+    generateEmbedding: vi.fn(async (_text: string) => Array(3072).fill(0).map((_, i) => i / 3072)),
     cosineSimilarity: vi.fn(() => 1.0),
   },
 }));
@@ -24,7 +24,7 @@ function makeFakeDb(initialEdges: any[] = []) {
     }
 
     return {
-      select: vi.fn((cols = '*') => {
+      select: vi.fn((_cols = '*') => {
         const chain: any = {
           data: edges,
           error: null,

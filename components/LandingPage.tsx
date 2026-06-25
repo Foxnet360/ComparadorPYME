@@ -13,7 +13,6 @@ import {
   Lock,
   TrendingUp,
   AlertTriangle,
-  ChevronDown,
   Mail,
   Phone,
   MapPin,

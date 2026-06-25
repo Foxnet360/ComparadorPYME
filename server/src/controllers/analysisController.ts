@@ -1,24 +1,24 @@
 import { Request, Response } from 'express';
-import { geminiService } from '../services/gemini';
+
 import { pdfExtractor, PDFExtractionResult } from '../services/pdfExtractor';
-import { quoteParser, ParsedQuote } from '../services/quoteParser';
+import { ParsedQuote } from '../services/quoteParser';
 import { crossReferenceEngine, CrossReferenceResult } from '../services/crossReferenceEngine';
 import { ragRetrievalService } from '../services/ragRetrievalService';
 import { quoteScorer, ScoringResult } from '../services/quoteScorer';
 import { narrativeService, NarrativeResult } from '../services/narrativeService';
 import { validateQuote, ValidationResult } from '../services/quoteValidator';
 import { calculateConfidence, ConfidenceResult } from '../services/confidenceScorer';
-import { normalizeCoverages } from '../services/thesaurusMapper';
+
 import { clauseCoverageValidator } from '../services/clauseCoverageValidator';
 import { deductibleAnalyzer } from '../services/deductibleAnalyzer';
 import { inverseCoverageChecker } from '../services/inverseCoverageChecker';
 import { contextualRiskAnalyzer } from '../services/contextualRiskAnalyzer';
 import { warrantyComplianceAnalyzer } from '../services/warrantyComplianceAnalyzer';
 import { virtualLawyerService } from '../services/virtualLawyerService';
-import { insurerProfileService } from '../services/insurerProfileService';
+
 import { saveAnalysisHistory, getAnalysisHistoryByUser } from '../repositories/analysisRepository';
 import { formatCOP } from '../utils/formatCurrency';
-import { validateCoverageValues } from '../services/coverageValueValidator';
+
 import { validateValueSources } from '../services/valueValidationService';
 import { dualExtractionService, DualExtractionResult } from '../services/dualExtractionService';
 import {
@@ -33,7 +33,6 @@ import { comparisonEngineAdapter } from '../services/unifiedComparison/compariso
 import { featureFlags } from '../config/featureFlags';
 import {
   createExtractionMetricsEmitter,
-  ExtractionMetricsEmitter,
 } from '../services/extractionMetrics';
 import { ExtractionResult } from '../types/extractionMetrics';
 import { randomUUID } from 'crypto';
@@ -509,7 +508,7 @@ export const analysisController = {
                     } else {
                         console.log(`   ✅ ${quote.insurerName}: ${validation.verifiedCount} verified, ${validation.phantomCount} phantom`);
                     }
-                } catch (clauseError) {
+                } catch (_clauseError) {
                     console.warn(`   ⚠️ ${quote.insurerName}: Clause validation failed or timed out`);
                     clauseValidationResults.set(i, null);
                 }
@@ -518,7 +517,7 @@ export const analysisController = {
             // Wait for all validations
             try {
                 await Promise.all(validationPromises);
-            } catch (error) {
+            } catch (_error) {
                 console.warn('⚠️ Some validations failed');
             }
 
@@ -572,7 +571,6 @@ export const analysisController = {
             
             for (let i = 0; i < parsedQuotes.length; i++) {
                 const quote = parsedQuotes[i];
-                const clauseValidation = clauseValidationResults.get(i);
                 
                 try {
                     // Run advanced analyses in parallel with 5s timeout each
@@ -908,10 +906,6 @@ export function generateComparison(
  * Convert MatrixRow[] from unified engine to ComparisonReport format
  */
 function matrixRowsToComparisonReport(matrixRows: any[], quoteFiles: Express.Multer.File[]): any {
-    // Extract insurer names from header row
-    const headerRow = matrixRows.find(r => r.type === 'header' && r.id === 'client_info');
-    const numInsurers = headerRow ? headerRow.cells.length : 0;
-    
     // Get insurer names from quote files
     const insurerNames = quoteFiles.map(f => {
         const name = f.originalname.replace(/COTIZACION.*?-\s*/i, '').replace(/\.pdf$/i, '');

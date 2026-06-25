@@ -12,7 +12,7 @@ import { preprocessText } from './src/services/textPreprocessor';
 import { parseJsonWithRepair } from './src/services/jsonRepair';
 import { mapCoverageName, normalizeDeductible, loadThesaurus } from './src/services/thesaurusMapper';
 import { validateQuote, ValidationResult } from './src/services/quoteValidator';
-import { calculateConfidence, getConfidenceLabel, ConfidenceBreakdown } from './src/services/confidenceScorer';
+import { getConfidenceLabel} from './src/services/confidenceScorer';
 import { ParsedQuote } from './src/services/quoteParser';
 import { formatPercentage, formatNumber } from './src/utils/formatCurrency';
 import fs from 'fs';
@@ -21,7 +21,7 @@ import path from 'path';
 const QUOTES_DIR = path.join(process.cwd(), '..', '..', 'Ejemplos', 'laser-home');
 
 // Replicate the internal scoring functions with detailed logging
-function debugCoverageCompleteness(quote: ParsedQuote, label: string): { score: number; details: string } {
+function debugCoverageCompleteness(quote: ParsedQuote, _label: string): { score: number; details: string } {
   let details = '';
   
   if ((quote as any).expectedCoverages && Array.isArray((quote as any).expectedCoverages)) {
@@ -72,7 +72,7 @@ function debugCoverageCompleteness(quote: ParsedQuote, label: string): { score: 
   return { score, details };
 }
 
-function debugNumericParseSuccess(quote: ParsedQuote, label: string): { score: number; details: string } {
+function debugNumericParseSuccess(quote: ParsedQuote, _label: string): { score: number; details: string } {
   let details = '';
   
   if (!quote.coverages || quote.coverages.length === 0) {
@@ -119,7 +119,7 @@ function debugNumericParseSuccess(quote: ParsedQuote, label: string): { score: n
   return { score, details };
 }
 
-function debugValidationPassRate(validation: ValidationResult, label: string): { score: number; details: string } {
+function debugValidationPassRate(validation: ValidationResult, _label: string): { score: number; details: string } {
   let details = '';
   const totalChecks = 6;
   let passedChecks = 0;
@@ -165,7 +165,7 @@ function debugValidationPassRate(validation: ValidationResult, label: string): {
   return { score, details };
 }
 
-function debugSchemaCompliance(quote: ParsedQuote, label: string): { score: number; details: string } {
+function debugSchemaCompliance(quote: ParsedQuote, _label: string): { score: number; details: string } {
   let details = '';
   let score = 0;
   

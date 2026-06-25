@@ -5,7 +5,7 @@ import {
   MetricCollector,
 } from '../templateRegistryService';
 import { createStructuredLogger, createMetricCollector } from '../../utils/structuredLogger';
-import { TemplateRegistryEntry } from '../../schemas/templateRegistrySchema';
+
 
 const bbvaText = `BBVA SEGUROS
 COT-2026-001

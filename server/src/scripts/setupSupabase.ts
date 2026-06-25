@@ -58,7 +58,7 @@ async function setupDatabase() {
               console.warn(`   ⚠️  ${error.message}`);
             }
           }
-        } catch (e) {
+        } catch (_e) {
           // Ignorar errores de statements no críticos
         }
       }
@@ -71,7 +71,7 @@ async function setupDatabase() {
     const tables = ['insurers', 'documents', 'page_images', 'chunks', 'analysis_history'];
     
     for (const table of tables) {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from(table)
         .select('count')
         .limit(1);

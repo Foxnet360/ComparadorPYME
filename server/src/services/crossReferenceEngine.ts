@@ -462,7 +462,7 @@ function buildDeductibleStructureFromClause(
     return hybridDeductibleParser.parseSync(clauseDeductible.rawText);
 }
 
-function extractClauseData(clauses: RetrievedClause[], coverageName: string): {
+function extractClauseData(clauses: RetrievedClause[], _coverageName: string): {
     value?: string;
     deductible?: string;
     exclusions?: string[];

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi} from 'vitest';
 import { clauseCoverageValidator } from '../clauseCoverageValidator';
 import { mockQuote, mockQuoteWithoutClauses } from './__fixtures__/mockData';
 
@@ -32,8 +32,8 @@ vi.mock('../ragRetrievalService', () => ({
 
 vi.mock('../../config/database', () => ({
   supabase: {
-    from: vi.fn((table) => ({
-      select: vi.fn((columns) => ({
+    from: vi.fn((_table) => ({
+      select: vi.fn((_columns) => ({
         eq: vi.fn((column, value) => {
           // Return empty for 'Aseguradora Sin Clausulado'
           if (column === 'insurer_name' && value === 'Aseguradora Sin Clausulado') {

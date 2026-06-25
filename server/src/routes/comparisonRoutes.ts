@@ -9,7 +9,7 @@ import path from 'path';
 import fs from 'fs';
 import { comparisonEngineAdapter } from '../services/unifiedComparison/comparisonEngineAdapter';
 import { unifiedComparisonFlag } from '../services/unifiedComparison/featureFlagService';
-import { unifiedComparisonEngine } from '../services/unifiedComparison/unifiedComparisonEngine';
+
 
 const router = express.Router();
 
@@ -85,7 +85,7 @@ router.post('/unified',
       files.forEach(f => {
         try {
           fs.unlinkSync(f.path);
-        } catch (e) {
+        } catch (_e) {
           console.warn(`⚠️ [API] Failed to clean up temp file ${f.path}`);
         }
       });
@@ -106,7 +106,7 @@ router.post('/unified',
         (req.files as Express.Multer.File[]).forEach(f => {
           try {
             fs.unlinkSync(f.path);
-          } catch (e) {
+          } catch (_e) {
             // Ignore cleanup errors
           }
         });
@@ -130,7 +130,6 @@ router.post('/:id/deep-mode',
   async (req, res) => {
     const correlationId = `api-deep-${Date.now()}`;
     const { id } = req.params;
-    const userId = (req as any).user?.id;
 
     try {
       console.log(`🌐 [API] POST /api/comparison/${id}/deep-mode [${correlationId}]`);
@@ -156,7 +155,7 @@ router.post('/:id/deep-mode',
       files.forEach(f => {
         try {
           fs.unlinkSync(f.path);
-        } catch (e) {
+        } catch (_e) {
           console.warn(`⚠️ [API] Failed to clean up temp file ${f.path}`);
         }
       });
@@ -176,7 +175,7 @@ router.post('/:id/deep-mode',
         (req.files as Express.Multer.File[]).forEach(f => {
           try {
             fs.unlinkSync(f.path);
-          } catch (e) {
+          } catch (_e) {
             // Ignore cleanup errors
           }
         });

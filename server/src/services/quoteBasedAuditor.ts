@@ -115,7 +115,6 @@ export interface QuoteAuditResult {
  */
 const analyzeDeductible = (coverage: CoverageItem): DeductibleRisk => {
   const deductible = coverage.deductible?.toUpperCase().trim() || '';
-  const value = coverage.value?.toUpperCase().trim() || '';
 
   // No deductible - low risk
   if (!deductible || deductible === 'NO APLICA' || deductible === 'SIN DEDUCIBLE' || deductible === 'INCLUIDO') {
