@@ -18,7 +18,7 @@ export interface Alert {
   type: 'fallback_rate' | 'processing_time' | 'error_rate' | 'system_health';
   severity: 'critical' | 'warning' | 'info';
   message: string;
-  details: Record<string, any>;
+  details: Record<string, unknown>;
   timestamp: string;
   acknowledged: boolean;
 }
@@ -140,8 +140,8 @@ class AlertingService {
 
       return alerts;
 
-    } catch (error: any) {
-      console.error('❌ [Alerting] Failed to check metrics:', error.message);
+    } catch (error) {
+      console.error('❌ [Alerting] Failed to check metrics:', error instanceof Error ? error.message : String(error));
       return [];
     }
   }

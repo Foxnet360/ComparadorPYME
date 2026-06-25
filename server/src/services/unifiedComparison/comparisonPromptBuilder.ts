@@ -143,7 +143,7 @@ Responde con un JSON que contenga:
   /**
    * Get the JSON Schema for structured output
    */
-  getResponseSchema(): any {
+  getResponseSchema(): Record<string, unknown> {
     return UnifiedComparisonSchema;
   }
 }

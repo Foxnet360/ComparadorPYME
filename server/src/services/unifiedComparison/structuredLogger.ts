@@ -20,7 +20,7 @@ export interface LogEntry {
   service: string;
   operation: string;
   message: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   durationMs?: number;
   success?: boolean;
   error?: string;
@@ -294,7 +294,7 @@ class StructuredLogger {
   /**
    * Log debug message
    */
-  debug(context: LoggerContext, message: string, metadata?: Record<string, any>): void {
+  debug(context: LoggerContext, message: string, metadata?: Record<string, unknown>): void {
     this.log({
       timestamp: new Date().toISOString(),
       level: LogLevel.DEBUG,
@@ -309,7 +309,7 @@ class StructuredLogger {
   /**
    * Log info message
    */
-  info(context: LoggerContext, message: string, metadata?: Record<string, any>): void {
+  info(context: LoggerContext, message: string, metadata?: Record<string, unknown>): void {
     this.log({
       timestamp: new Date().toISOString(),
       level: LogLevel.INFO,
@@ -324,7 +324,7 @@ class StructuredLogger {
   /**
    * Log warning message
    */
-  warn(context: LoggerContext, message: string, metadata?: Record<string, any>): void {
+  warn(context: LoggerContext, message: string, metadata?: Record<string, unknown>): void {
     this.log({
       timestamp: new Date().toISOString(),
       level: LogLevel.WARN,
@@ -339,7 +339,7 @@ class StructuredLogger {
   /**
    * Log error message
    */
-  error(context: LoggerContext, message: string, error?: string, metadata?: Record<string, any>): void {
+  error(context: LoggerContext, message: string, error?: string, metadata?: Record<string, unknown>): void {
     this.log({
       timestamp: new Date().toISOString(),
       level: LogLevel.ERROR,
