@@ -48,6 +48,33 @@ interface SourceResult {
     relevance: number;
 }
 
+interface ReportContextQuoteAlert {
+    level: string;
+    title: string;
+    description?: string;
+}
+
+interface ReportContextQuoteCoverage {
+    name?: string;
+    canonicalName?: string;
+    value?: string;
+    deductible?: string;
+}
+
+interface ReportContextQuote {
+    insurerName: string;
+    priceAnnual?: number;
+    score?: number;
+    coverages?: ReportContextQuoteCoverage[];
+    alerts?: ReportContextQuoteAlert[];
+}
+
+interface ReportContext {
+    id?: string;
+    clientName?: string;
+    quotes: ReportContextQuote[];
+}
+
 /**
  * Context Window Manager - Controls prompt size and prioritizes content
  */
@@ -61,7 +88,7 @@ class ContextWindowManager {
     /**
      * Compact report context to essential information only
      */
-    compactReportContext(reportContext: any): string {
+    compactReportContext(reportContext: ReportContext | null | undefined): string {
         if (!reportContext || !reportContext.quotes) {
             return '';
         }
@@ -71,7 +98,7 @@ class ContextWindowManager {
         compact += `Cliente: ${reportContext.clientName || 'No especificado'}\n`;
         compact += `Aseguradoras: ${quotes.length}\n\n`;
         
-        quotes.forEach((quote: any, _idx: number) => {
+        quotes.forEach((quote: ReportContextQuote, _idx: number) => {
             compact += `--- ${quote.insurerName} ---\n`;
             compact += `Score: ${quote.score || 'N/A'}/100 | Prima: ${quote.priceAnnual || 'N/A'}\n`;
             
@@ -79,16 +106,16 @@ class ContextWindowManager {
             const keyCoverages = (quote.coverages || []).slice(0, 5);
             if (keyCoverages.length > 0) {
                 compact += `Coberturas principales:\n`;
-                keyCoverages.forEach((c: any) => {
+                keyCoverages.forEach((c: ReportContextQuoteCoverage) => {
                     compact += `- ${c.name}: ${c.value}${c.deductible ? ` (Ded: ${c.deductible})` : ''}\n`;
                 });
             }
             
             // Include critical alerts only
-            const criticalAlerts = (quote.alerts || []).filter((a: any) => a.level === 'CRITICAL');
+            const criticalAlerts = (quote.alerts || []).filter((a: ReportContextQuoteAlert) => a.level === 'CRITICAL');
             if (criticalAlerts.length > 0) {
                 compact += `Alertas críticas:\n`;
-                criticalAlerts.forEach((a: any) => {
+                criticalAlerts.forEach((a: ReportContextQuoteAlert) => {
                     compact += `- ${a.title}\n`;
                 });
             }
@@ -193,14 +220,14 @@ class ContextWindowManager {
  * Source Prioritizer - Gathers and ranks information sources in parallel
  */
 class SourcePrioritizer {
-    async gatherSources(message: string, reportContext: any): Promise<SourceResult[]> {
+    async gatherSources(message: string, reportContext: ReportContext | null | undefined): Promise<SourceResult[]> {
         const sources: SourceResult[] = [];
         
         if (!reportContext?.quotes) {
             return sources;
         }
         
-        const insurerNames = reportContext.quotes.map((q: any) => q.insurerName).filter(Boolean);
+        const insurerNames = reportContext.quotes.map((q: ReportContextQuote) => q.insurerName).filter(Boolean);
         
         // Execute all searches in parallel
         const [quoteResult, structuredResult, ragResult] = await Promise.all([
@@ -251,21 +278,21 @@ class SourcePrioritizer {
     
     private async searchQuoteData(
         message: string,
-        reportContext: any
+        reportContext: ReportContext | null | undefined
     ): Promise<{ data: string; insurerName?: string } | null> {
         try {
             const quotes = reportContext?.quotes || [];
             const messageLower = message.toLowerCase();
             
             // Search for insurer mentions
-            const mentionedInsurer = quotes.find((q: any) => 
+            const mentionedInsurer = quotes.find((q: ReportContextQuote) => 
                 messageLower.includes(q.insurerName?.toLowerCase())
             );
             
             if (mentionedInsurer) {
-                const coverage = mentionedInsurer.coverages?.find((c: any) => 
-                    messageLower.includes(c.name?.toLowerCase()) ||
-                    messageLower.includes(c.canonicalName?.toLowerCase())
+                const coverage = mentionedInsurer.coverages?.find((c: ReportContextQuoteCoverage) => 
+                    messageLower.includes(c.name?.toLowerCase() || '') ||
+                    messageLower.includes(c.canonicalName?.toLowerCase() || '')
                 );
                 
                 if (coverage) {
@@ -283,9 +310,9 @@ class SourcePrioritizer {
             
             // Search across all quotes
             for (const quote of quotes) {
-                const coverage = quote.coverages?.find((c: any) => 
-                    messageLower.includes(c.name?.toLowerCase()) ||
-                    messageLower.includes(c.canonicalName?.toLowerCase())
+                const coverage = quote.coverages?.find((c: ReportContextQuoteCoverage) => 
+                    messageLower.includes(c.name?.toLowerCase() || '') ||
+                    messageLower.includes(c.canonicalName?.toLowerCase() || '')
                 );
                 
                 if (coverage) {
@@ -453,7 +480,7 @@ FORMATO DE RESPUESTA:
  */
 export const processChatMessage = async (
     message: string,
-    reportContext: any,
+    reportContext: ReportContext | null | undefined,
     userId: string = 'anonymous',
     threadId?: string
 ): Promise<ChatResponse> => {
@@ -461,7 +488,7 @@ export const processChatMessage = async (
     
     try {
         // Get or create thread using repository
-        const activeThreadId = threadId || await chatRepository.getOrCreateThread(
+        const activeThreadId = threadId || await getOrCreateThread(
             userId,
             reportContext?.id,
             reportContext
@@ -607,7 +634,7 @@ export const getConversationHistory = async (
 export const getOrCreateThread = async (
     userId: string,
     reportId?: string,
-    reportContext?: any
+    reportContext?: ReportContext | null
 ): Promise<string> => {
     if (!reportId) {
         // Create a general thread without report
@@ -619,7 +646,7 @@ export const getOrCreateThread = async (
 /**
  * Generate dynamic suggested questions based on report content
  */
-export const generateSuggestedQuestions = (reportContext: any): string[] => {
+export const generateSuggestedQuestions = (reportContext: ReportContext | null | undefined): string[] => {
     if (!reportContext || !reportContext.quotes) {
         return [
             '¿Qué coberturas incluye esta póliza?',
@@ -632,16 +659,16 @@ export const generateSuggestedQuestions = (reportContext: any): string[] => {
     const quotes = reportContext.quotes;
     
     // Add questions based on alerts
-    quotes.forEach((quote: any) => {
+    quotes.forEach((quote: ReportContextQuote) => {
         if (quote.alerts && quote.alerts.length > 0) {
-            const criticalAlert = quote.alerts.find((a: any) => a.level === 'CRITICAL');
+            const criticalAlert = quote.alerts.find((a: ReportContextQuoteAlert) => a.level === 'CRITICAL');
             if (criticalAlert && questions.length < 5) {
                 questions.push(`¿Por qué ${quote.insurerName} tiene el riesgo: "${criticalAlert.title}"?`);
             }
             
-            const deductibleAlert = quote.alerts.find((a: any) => 
+            const deductibleAlert = quote.alerts.find((a: ReportContextQuoteAlert) => 
                 a.title.toLowerCase().includes('deducible') || 
-                a.description.toLowerCase().includes('deducible')
+                (a.description?.toLowerCase().includes('deducible') ?? false)
             );
             if (deductibleAlert && questions.length < 5) {
                 questions.push(`¿Qué deducible tiene ${quote.insurerName}?`);
@@ -655,14 +682,14 @@ export const generateSuggestedQuestions = (reportContext: any): string[] => {
     
     // Comparison questions
     if (quotes.length >= 2) {
-        const bestQuote = quotes.reduce((prev: any, current: any) => 
+        const bestQuote = quotes.reduce((prev: ReportContextQuote, current: ReportContextQuote) => 
             ((prev.score || 0) > (current.score || 0)) ? prev : current
         );
         questions.push(`¿Por qué ${bestQuote.insurerName} es la mejor opción?`);
         
-        const prices = quotes.filter((q: any) => q.priceAnnual);
+        const prices = quotes.filter((q: ReportContextQuote) => q.priceAnnual);
         if (prices.length >= 2) {
-            const cheapest = prices.reduce((prev: any, current: any) => 
+            const cheapest = prices.reduce((prev: ReportContextQuote, current: ReportContextQuote) => 
                 ((prev.priceAnnual || Infinity) < (current.priceAnnual || Infinity)) ? prev : current
             );
             questions.push(`¿${cheapest.insurerName} es la más económica, pero qué sacrifica?`);
@@ -671,10 +698,10 @@ export const generateSuggestedQuestions = (reportContext: any): string[] => {
     
     // Coverage gap questions
     const coverageNames = new Set<string>();
-    quotes.forEach((q: any) => {
-        q.coverages?.forEach((c: any) => {
+    quotes.forEach((q: ReportContextQuote) => {
+        q.coverages?.forEach((c: ReportContextQuoteCoverage) => {
             if (c.value && !['EXCLUIDO', 'NO CUBRE', 'NO APLICA'].includes(c.value.toUpperCase())) {
-                coverageNames.add(c.name || c.canonicalName);
+                coverageNames.add(c.name || c.canonicalName || '');
             }
         });
     });

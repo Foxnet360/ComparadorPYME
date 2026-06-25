@@ -20,7 +20,7 @@ import {
   FormatDetectionResult,
 } from './formatDetector';
 import { buildPromptForFamily, buildTemplatePrompt } from './promptBuilder';
-import { buildCanonicalCoverages } from './coverageNormalizer';
+import { buildCanonicalCoverages, RawCoverage } from './coverageNormalizer';
 import { extractPremiumBreakdown, extractPerCoveragePremiums, validatePremiumBreakdown, normalizeCurrency } from './premiumExtractor';
 import { getDeductibleFallback } from './deductibleResolver';
 import {
@@ -30,6 +30,7 @@ import {
   QuoteExtractionV2,
   QuoteExtraction,
 } from '../schemas/extractionSchemas';
+import { z } from 'zod';
 import { reconciliationService } from './reconciliationService';
 import { featureFlags } from '../config/featureFlags';
 import { templateRegistryService, PageTextItems } from './templateRegistryService';
@@ -72,10 +73,10 @@ export interface ExtractionPromptContext {
 
 export interface GraphEnrichedCoverage {
   rawName: string;
-  insuredAmount?: number;
-  deductible?: string;
-  premium?: number;
-  notes?: string;
+  insuredAmount?: number | null;
+  deductible?: string | null;
+  premium?: number | null;
+  notes?: string | null;
   rawTextSnippet?: string;
   pageNumber?: number | null;
   graphConfidence?: number;
@@ -135,8 +136,15 @@ export function selectExtractionPrompt(
   return { prompt, usedTemplate: false, templateId: null };
 }
 
+interface LegacyQuoteInput {
+  text: string;
+  filename?: string;
+  isScanned?: boolean;
+  metadata?: { pageCount?: number };
+}
+
 export async function enrichRawCoveragesWithGraph(
-  rawCoverages: Array<{ rawName: string; [key: string]: any }>,
+  rawCoverages: RawCoverage[],
   insurer?: string,
   domain: string = 'pyme'
 ): Promise<GraphEnrichedCoverage[]> {
@@ -164,8 +172,9 @@ export async function enrichRawCoveragesWithGraph(
           isComposite: graphResult.composite,
           graphComponents: graphResult.components,
         };
-      } catch (error: any) {
-        console.warn(`⚠️ [quoteProcessingService] Graph enrichment failed for "${coverage.rawName}": ${error.message}`);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.warn(`⚠️ [quoteProcessingService] Graph enrichment failed for "${coverage.rawName}": ${message}`);
         return coverage as GraphEnrichedCoverage;
       }
     })
@@ -302,7 +311,7 @@ async function withTimeout<T>(
 }
 
 interface ZodValidator<T> {
-  (data: unknown): { success: true; data: T } | { success: false; error: any };
+  (data: unknown): { success: true; data: T } | { success: false; error: z.ZodError };
 }
 
 /**
@@ -311,13 +320,13 @@ interface ZodValidator<T> {
  * to the raw (unvalidated) output so the pipeline degrades gracefully.
  */
 async function extractWithZodValidation<T>(
-  attempt: () => Promise<any>,
+  attempt: () => Promise<unknown>,
   validate: ZodValidator<T>,
   context: string,
   maxRetries = 2
 ): Promise<{ data: T; wasRawFallback: boolean }> {
-  let lastRaw: any;
-  let lastError: any;
+  let lastRaw: unknown;
+  let lastError: unknown;
 
   for (let i = 0; i <= maxRetries; i++) {
     lastRaw = await attempt();
@@ -330,8 +339,8 @@ async function extractWithZodValidation<T>(
     console.warn(`   ⚠️ ${context} Zod validation failed (attempt ${i + 1}/${maxRetries + 1}): ${issues}`);
   }
 
-  console.warn(`   ⚠️ ${context} exceeded validation retries; using raw extraction. Last issues: ${formatZodError(lastError)}`);
-  return { data: lastRaw, wasRawFallback: true };
+  console.warn(`   ⚠️ ${context} exceeded validation retries; using raw extraction. Last issues: ${formatZodError(lastError as z.ZodError)}`);
+  return { data: lastRaw as T, wasRawFallback: true };
 }
 
 /**
@@ -388,8 +397,9 @@ async function processQuoteMultimodalInternal(
         nativeText = extractionResult.text || '';
         pageTextMap = extractionResult.pageTextMap || {};
         console.log(`   ✅ Extracted ${nativeText.length} characters of native text.`);
-      } catch (err: any) {
-        console.warn(`   ⚠️ Native text extraction failed: ${err.message}.`);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.warn(`   ⚠️ Native text extraction failed: ${message}.`);
       }
     }
 
@@ -526,8 +536,9 @@ async function processQuoteMultimodalInternal(
           path: 'v2',
         });
       }
-    } catch (v2Error: any) {
-      console.warn(`   ⚠️ V2 extraction failed after retries/repair: ${v2Error.message}`);
+    } catch (v2Error: unknown) {
+      const message = v2Error instanceof Error ? v2Error.message : String(v2Error);
+      console.warn(`   ⚠️ V2 extraction failed after retries/repair: ${message}`);
     }
 
     // Validate template schema when a template was used.
@@ -553,8 +564,9 @@ async function processQuoteMultimodalInternal(
             'Multimodal'
           );
           extracted = genericResult.data;
-        } catch (genericError: any) {
-          console.warn(`   ⚠️ Generic extraction fallback failed: ${genericError.message}`);
+        } catch (genericError: unknown) {
+          const message = genericError instanceof Error ? genericError.message : String(genericError);
+          console.warn(`   ⚠️ Generic extraction fallback failed: ${message}`);
           extracted = null;
         }
       }
@@ -584,8 +596,9 @@ async function processQuoteMultimodalInternal(
           total,
           { domain, quoteId, metrics }
         );
-      } catch (legacyError: any) {
-        console.error(`   ❌ Legacy fallback also failed:`, legacyError.message);
+      } catch (legacyError: unknown) {
+        const message = legacyError instanceof Error ? legacyError.message : String(legacyError);
+        console.error(`   ❌ Legacy fallback also failed:`, message);
         return createFailedPlaceholder(quoteFile, legacyError);
       }
     }
@@ -604,15 +617,15 @@ async function processQuoteMultimodalInternal(
         extracted.rawCoverages || [],
         insurerName,
         domain
-      )) as any;
+      )) as QuoteExtractionV2['rawCoverages'];
     }
 
     // Phase 4: Normalize coverages
     console.log(`   🔄 Phase 4: Normalizing coverages... (domain: ${domain})`);
     const normalizationResult = await buildCanonicalCoverages(
-      (extracted.rawCoverages || []) as any[],
-      (extracted.insuredAssets || []) as any[],
-      (extracted.generalDeductibles || []) as any[],
+      extracted.rawCoverages || [],
+      extracted.insuredAssets || [],
+      extracted.generalDeductibles || [],
       pageTextMap,
       domain
     );
@@ -661,8 +674,9 @@ async function processQuoteMultimodalInternal(
       if (mismatchCount > 0) {
         console.log(`   ⚠️ Found ${mismatchCount} deductible discrepancies vs clause data`);
       }
-    } catch (reconError: any) {
-      console.warn(`   ⚠️ Reconciliation failed (non-blocking): ${reconError.message}`);
+    } catch (reconError: unknown) {
+      const message = reconError instanceof Error ? reconError.message : String(reconError);
+      console.warn(`   ⚠️ Reconciliation failed (non-blocking): ${message}`);
     }
 
     // Build ParsedQuote from normalized data
@@ -718,8 +732,9 @@ async function processQuoteMultimodalInternal(
     console.log(`   ✅ Multimodal extraction: ${parsed.insurerName}, ${parsed.coverages.length} coverages, premium: ${parsed.priceAnnual}`);
     return parsed;
 
-  } catch (error: any) {
-    console.error(`   ❌ Multimodal extraction failed:`, error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`   ❌ Multimodal extraction failed:`, message);
     return createFailedPlaceholder(quoteFile, error);
   }
 }
@@ -729,7 +744,7 @@ async function processQuoteMultimodalInternal(
  * Timeout: 5 minutes per quote
  */
 export async function processQuoteLegacy(
-  quote: any,
+  quote: LegacyQuoteInput,
   index: number,
   total: number,
   options?: ProcessQuoteOptions
@@ -742,7 +757,7 @@ export async function processQuoteLegacy(
 }
 
 async function processQuoteLegacyInternal(
-  quote: any,
+  quote: LegacyQuoteInput,
   index: number,
   total: number,
   options?: ProcessQuoteOptions
@@ -793,10 +808,10 @@ async function processQuoteLegacyInternal(
 
       // Normalize coverages using thesaurus
       const normalizedCoverages = normalizeCoverages(
-        (structuredResult.coverages || []).map((c: any) => ({
+        (structuredResult.coverages || []).map((c) => ({
           name: c.name,
-          value: c.value,
-          deductible: c.deductible
+          value: c.value ?? 'NO ESPECIFICADO',
+          deductible: c.deductible ?? 'NO ESPECIFICADO'
         })),
         domain
       );
@@ -821,15 +836,15 @@ async function processQuoteLegacyInternal(
         specialConditions: structuredResult.specialConditions || [],
         rawText: quote.text,
         parseConfidence: normalizedCoverages.needsReview ? 75 : 95,
-        expectedCoverages: (structuredResult.expectedCoverages || []).map((c: any) => ({
+        expectedCoverages: (structuredResult.expectedCoverages || []).map((c) => ({
           name: c.name,
           status: c.status,
-          value: c.value,
-          deductible: c.deductible,
+          value: c.value ?? null,
+          deductible: c.deductible ?? null,
         })),
       };
       
-    } catch (_jsonError: any) {
+    } catch (_jsonError: unknown) {
       // Fallback to text-based parsing
       console.log(`   📝 JSON extraction failed, falling back to text parsing...`);
       parsed = await quoteParser.parse(quote.text);
@@ -845,15 +860,17 @@ async function processQuoteLegacyInternal(
           console.log(`   ⚠️ Legacy: found ${mismatchCount} deductible discrepancies vs clause data`);
         }
       }
-    } catch (reconError: any) {
-      console.warn(`   ⚠️ Legacy reconciliation failed (non-blocking): ${reconError.message}`);
+    } catch (reconError: unknown) {
+      const message = reconError instanceof Error ? reconError.message : String(reconError);
+      console.warn(`   ⚠️ Legacy reconciliation failed (non-blocking): ${message}`);
     }
 
     console.log(`   ✅ Legacy extraction: ${parsed.insurerName}, ${parsed.coverages.length} coverages, premium: ${parsed.priceAnnual}`);
     return parsed;
     
-  } catch (error: any) {
-    console.error(`   ❌ Legacy extraction failed:`, error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`   ❌ Legacy extraction failed:`, message);
     throw error;
   }
 }
@@ -864,9 +881,9 @@ async function processQuoteLegacyInternal(
  */
 export function createFailedPlaceholder(
   quoteFile: Express.Multer.File,
-  error: any
+  error: unknown
 ): ParsedQuote {
-  const errorMessage = error?.message || 'Unknown error';
+  const errorMessage = error instanceof Error ? error.message : 'Unknown error';
   const isServiceError =
     errorMessage.includes('503') ||
     errorMessage.includes('Service Unavailable') ||
