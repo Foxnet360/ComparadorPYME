@@ -6,6 +6,7 @@
 import { supabase } from '../config/database';
 import { ragRetrievalService } from './ragRetrievalService';
 import { getCanonicalCoverageNames } from '../config/domainConstants';
+import { ParsedQuote } from './quoteParser';
 
 export interface InverseCoverageResult {
   coverageName: string;
@@ -37,13 +38,13 @@ export const inverseCoverageChecker = {
    * Check for coverages present in clause but missing in quote
    */
   checkMissingCoverages: async (
-    quote: any,
+    quote: ParsedQuote,
     insurerName: string
   ): Promise<InverseCheckSummary> => {
     console.log(`🔍 [inverseCoverageChecker] Checking missing coverages for ${insurerName}...`);
     
     // Get coverages from quote
-    const quoteCoverageNames = (quote.coverages || []).map((c: any) => 
+    const quoteCoverageNames = (quote.coverages || []).map((c) => 
       (c.canonicalName || c.name).toLowerCase()
     );
     
@@ -112,9 +113,9 @@ async function extractClauseCoverages(insurerName: string): Promise<Array<{
       .limit(50);
     
     if (cachedCoverages && cachedCoverages.length > 0) {
-      return (cachedCoverages as any[]).map(c => ({
-        name: c.coverage_name,
-        isMandatory: c.is_mandatory,
+      return (cachedCoverages as Array<Record<string, unknown>>).map(c => ({
+        name: c.coverage_name as string,
+        isMandatory: c.is_mandatory as boolean,
         reference: `Page ${c.page_number}`
       }));
     }
