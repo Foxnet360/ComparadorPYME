@@ -41,14 +41,14 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose }) => {
     const loadData = useCallback(async () => {
         try {
             setLoading(true);
-            const params: any = {};
+            const params: { isActive?: boolean } = {};
             if (filterStatus === 'ACTIVE') params.isActive = true;
             if (filterStatus === 'ARCHIVED') params.isActive = false;
             
             const docs = await clauseService.getDocuments(params);
             setDocuments(docs);
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Error desconocido');
         } finally {
             setLoading(false);
         }
@@ -88,8 +88,8 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose }) => {
             });
 
             await loadData();
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Error desconocido');
         } finally {
             setUploading(false);
         }
@@ -101,8 +101,8 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose }) => {
         try {
             await clauseService.deleteDocument(id);
             await loadData();
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Error desconocido');
         }
     };
 
@@ -111,8 +111,8 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose }) => {
             await clauseService.getDocumentVersions(insurerId);
             // Store versions in state to show in modal
             // (Functionality removed - versions not used)
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Error desconocido');
         }
     };
 
@@ -280,7 +280,7 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose }) => {
                         </select>
                         <select
                             value={filterStatus}
-                            onChange={e => setFilterStatus(e.target.value as any)}
+                            onChange={e => setFilterStatus(e.target.value as 'ALL' | 'ACTIVE' | 'ARCHIVED')}
                             className="border border-slate-300 rounded-md px-3 py-1.5 focus:ring-indigo-500 text-sm"
                         >
                             <option value="ALL">Todos los estados</option>

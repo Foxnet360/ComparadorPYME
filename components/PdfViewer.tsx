@@ -107,12 +107,13 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       const textContent = await page.getTextContent();
       const lowerSearchText = text.toLowerCase();
       
-      textContent.items.forEach((item: any) => {
-        if ('str' in item && item.str.toLowerCase().includes(lowerSearchText)) {
+      textContent.items.forEach((item) => {
+        const textItem = item as { str: string; transform: number[]; width: number };
+        if (textItem.str.toLowerCase().includes(lowerSearchText)) {
           // Calcular posición en canvas
           const tx = pdfjsLib.Util.transform(
             viewport.transform,
-            item.transform
+            textItem.transform
           );
           
           const fontHeight = Math.hypot(tx[0], tx[1]);
@@ -121,9 +122,9 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           context.save();
           context.fillStyle = 'rgba(255, 255, 0, 0.4)';
           context.fillRect(
-            item.transform[4],
-            item.transform[5] - fontHeight,
-            item.width * fontWidth,
+            textItem.transform[4],
+            textItem.transform[5] - fontHeight,
+            textItem.width * fontWidth,
             fontHeight * 1.2
           );
           context.restore();

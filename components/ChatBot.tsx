@@ -7,11 +7,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, Minimize2, Loader2, BookOpen, Lightbulb } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { ChatMessage} from '../types';
+import { ChatMessage, ComparisonReport} from '../types';
 import { API_BASE_URL } from '../services/apiConfig';
 
 interface ChatBotProps {
-  reportContext?: any;
+  reportContext?: ComparisonReport;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -66,11 +66,11 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
         
         // Load existing messages if any
         if (data.messages && data.messages.length > 0) {
-          const loadedMessages: ChatMessage[] = data.messages.map((msg: any) => ({
-            role: msg.role,
+          const loadedMessages: ChatMessage[] = data.messages.map((msg: { role: string; text: string; createdAt: string; citations?: unknown; sourcesUsed?: Array<{ type?: string }> }) => ({
+            role: msg.role as 'user' | 'model',
             text: msg.text,
             timestamp: new Date(msg.createdAt),
-            citations: msg.citations,
+            citations: msg.citations as ChatMessage['citations'],
             source: msg.sourcesUsed?.[0]?.type || 'direct'
           }));
           setMessages(loadedMessages);
