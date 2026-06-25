@@ -6,6 +6,37 @@ import { documentIndexingService, DocumentMetadata } from '../services/documentI
 import { supabase } from '../config/database';
 import { handleSupabaseError } from '../config/database';
 
+interface DocumentListItem {
+  id: string;
+  document_name: string;
+  document_type: string;
+  version: string | null;
+  product_name: string | null;
+  total_pages: number | null;
+  is_active: boolean;
+  created_at: string;
+  insurers: { id: string; name: string } | null;
+}
+
+interface ExistingDocument {
+  id: string;
+  document_name: string;
+  version: string | null;
+}
+
+interface DocumentDetail {
+  id: string;
+  document_name: string;
+  document_type: string;
+  version: string | null;
+  total_pages: number | null;
+  storage_path: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  insurers: { id: string; name: string; nit: string | null } | null;
+}
+
 // Configuración de multer para upload de archivos
 const uploadDir = '/tmp/uploads';
 if (!fs.existsSync(uploadDir)) {
@@ -37,25 +68,29 @@ const upload = multer({
 });
 
 // Validación de campos requeridos
-const validateDocumentFields = (body: any): { valid: boolean; error?: string } => {
+const validateDocumentFields = (body: Record<string, unknown>): { valid: boolean; error?: string } => {
   const required = ['insurerName', 'documentName', 'documentType'];
   
   for (const field of required) {
-    if (!body[field] || typeof body[field] !== 'string' || body[field].trim() === '') {
+    const value = body[field];
+    if (!value || typeof value !== 'string' || value.trim() === '') {
       return { valid: false, error: `Missing or invalid field: ${field}` };
     }
   }
 
+  const documentType = body.documentType as string;
   const validTypes = ['CLAUSULADO_GENERAL', 'CLAUSULADO_PARTICULAR', 'COTIZACION', 'ANEXO'];
-  if (!validTypes.includes(body.documentType)) {
+  if (!validTypes.includes(documentType)) {
     return { valid: false, error: `Invalid documentType. Must be one of: ${validTypes.join(', ')}` };
   }
 
-  if (body.insurerName.length > 200) {
+  const insurerName = body.insurerName as string;
+  if (insurerName.length > 200) {
     return { valid: false, error: 'insurerName must be <= 200 characters' };
   }
 
-  if (body.documentName.length > 500) {
+  const documentName = body.documentName as string;
+  if (documentName.length > 500) {
     return { valid: false, error: 'documentName must be <= 500 characters' };
   }
 
@@ -124,15 +159,16 @@ export const documentController = {
         existingQuery = existingQuery.is('product_name', null);
       }
       
-      const { data: existingDoc } = await existingQuery.single() as { data: any };
+      const { data: existingDocRaw } = await existingQuery.single() as unknown as { data: ExistingDocument | null };
+      const existingDoc = existingDocRaw;
 
       let archivedDoc = null;
       if (existingDoc) {
         console.log(`   📁 Archivando versión anterior: ${existingDoc.document_name} (v${existingDoc.version || 'N/A'})`);
         
-        const { error: archiveError } = await (supabase
-          .from('documents') as any)
-          .update({ is_active: false, updated_at: new Date().toISOString() })
+        const { error: archiveError } = await supabase
+          .from('documents')
+          .update({ is_active: false, updated_at: new Date().toISOString() } as never)
           .eq('id', existingDoc.id);
 
         if (archiveError) {
@@ -178,13 +214,13 @@ export const documentController = {
         } : null,
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ [documentController] Error:', error);
 
       res.status(500).json({
         success: false,
         error: 'Internal server error',
-        details: error.message,
+        details: error instanceof Error ? error.message : 'Unknown error',
       });
     } finally {
       // Garantizar limpieza del archivo temporal en TODAS las ramas
@@ -239,14 +275,18 @@ export const documentController = {
         query = query.eq('document_type', documentType);
       }
 
-      const { data, error, count } = await query as { data: any[], error: any, count: number };
+      const { data, error, count } = await query as unknown as {
+        data: DocumentListItem[] | null;
+        error: unknown;
+        count: number | null;
+      };
 
       if (error) {
         throw handleSupabaseError(error);
       }
 
       // Formatear respuesta
-      let documents = (data as any[])?.map((doc: any) => ({
+      let documents = (data || []).map((doc) => ({
         id: doc.id,
         documentName: doc.document_name,
         documentType: doc.document_type,
@@ -256,12 +296,12 @@ export const documentController = {
         isActive: doc.is_active,
         createdAt: doc.created_at,
         insurer: doc.insurers,
-      })) || [];
+      }));
 
       // Si latest=true, filtrar solo la última versión activa por insurer+product+type
       if (latest === 'true') {
         const seen = new Set<string>();
-        documents = documents.filter((doc: any) => {
+        documents = documents.filter((doc) => {
           const key = `${doc.insurer?.id}-${doc.documentType}-${doc.productName}`;
           if (seen.has(key)) return false;
           seen.add(key);
@@ -276,12 +316,12 @@ export const documentController = {
         total: count,
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ [documentController] Error:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to list documents',
-        details: error.message,
+        details: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   },
@@ -335,7 +375,7 @@ export const documentController = {
         .select('*', { count: 'exact', head: true })
         .eq('document_id', id);
 
-      const docData = data as any;
+      const docData = data as unknown as DocumentDetail;
       res.json({
         success: true,
         document: {
@@ -356,12 +396,12 @@ export const documentController = {
         },
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ [documentController] Error:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to get document',
-        details: error.message,
+        details: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   },
@@ -390,12 +430,12 @@ export const documentController = {
         message: 'Document deleted successfully',
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ [documentController] Error:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to delete document',
-        details: error.message,
+        details: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   },
@@ -440,12 +480,12 @@ export const documentController = {
         total: count,
       });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ [documentController] Error:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to get document chunks',
-        details: error.message,
+        details: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   },
