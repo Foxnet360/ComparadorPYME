@@ -703,13 +703,12 @@ export const hybridDeductibleParser = {
       telemetry.cacheHits++;
       console.log(`⚡ [HybridDeductibleParser] Cache hit for "${text.substring(0, 40)}..."`);
       // Re-hydrate into full result shape
-      const structure = cached as DeductibleStructure;
       const normalized = computeNormalized({
-        components: structure.components,
-        compoundOperator: structure.compoundOperator ?? 'none',
+        components: cached.components,
+        compoundOperator: cached.compoundOperator ?? 'none',
       });
       return {
-        ...structure,
+        ...cached,
         rawText: text,
         normalized,
         benchmark: evaluateBenchmark(resolvedCoverage, normalized),
