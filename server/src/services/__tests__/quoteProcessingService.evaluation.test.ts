@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import path from 'path';
+import { Readable } from 'stream';
 import * as fs from 'fs/promises';
 import { processQuoteMultimodal } from '../quoteProcessingService';
 import { loadGoldenSet, PipelineRunner, PipelineOutput } from '../evaluationHarness';
@@ -16,13 +17,13 @@ const mockReconcileQuote = vi.fn();
 
 vi.mock('../pdfExtractor', () => ({
   pdfExtractor: {
-    extractTextFromPdf: (...args: any[]) => mockExtractTextFromPdf(...args),
+    extractTextFromPdf: (...args: unknown[]) => mockExtractTextFromPdf(...args),
   },
 }));
 
 vi.mock('../gemini', () => ({
   geminiService: {
-    extractFromPdfWithVision: (...args: any[]) => mockExtractFromPdfWithVision(...args),
+    extractFromPdfWithVision: (...args: unknown[]) => mockExtractFromPdfWithVision(...args),
     extractDeductible: vi.fn(async () => ({
       components: [{ type: 'percentage', value: 10 }],
       isZero: false,
@@ -35,11 +36,11 @@ vi.mock('../gemini', () => ({
 
 vi.mock('../coverageGraphService', () => ({
   coverageGraphService: {
-    query: (...args: any[]) => mockGraphQuery(...args),
+    query: (...args: unknown[]) => mockGraphQuery(...args),
     queryDeductible: vi.fn(async () => []),
   },
   createCoverageGraphService: vi.fn(() => ({
-    query: (...args: any[]) => mockGraphQuery(...args),
+    query: (...args: unknown[]) => mockGraphQuery(...args),
     queryDeductible: vi.fn(async () => []),
   })),
 }));
@@ -54,7 +55,7 @@ vi.mock('../../config/featureFlags', () => ({
 
 vi.mock('../reconciliationService', () => ({
   reconciliationService: {
-    reconcileQuote: (...args: any[]) => mockReconcileQuote(...args),
+    reconcileQuote: (...args: unknown[]) => mockReconcileQuote(...args),
   },
 }));
 
@@ -106,11 +107,11 @@ function makeMulterFile(originalname: string): Express.Multer.File {
     destination: '/tmp',
     encoding: 'utf8',
     buffer: Buffer.from(''),
-    stream: null as any,
+    stream: null as unknown as Readable,
   } as Express.Multer.File;
 }
 
-function buildSyntheticExtraction(fixture: import('../evaluationHarness').GoldenQuote): any {
+function buildSyntheticExtraction(fixture: import('../evaluationHarness').GoldenQuote): Record<string, unknown> {
   return {
     insurerName: fixture.insurer,
     policyName: `${fixture.insurer} PYME Policy`,

@@ -18,7 +18,7 @@ const mockIsEnabled = vi.fn();
 
 vi.mock('../../config/database', () => ({
   supabase: {
-    rpc: (...args: any[]) => mockRpc(...args),
+    rpc: (...args: unknown[]) => mockRpc(...args),
     from: vi.fn(() => ({
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
@@ -41,7 +41,7 @@ vi.mock('../../config/database', () => ({
       }))
     }
   },
-  handleSupabaseError: (err: any) => err
+  handleSupabaseError: (err: unknown) => err
 }));
 
 vi.mock('../../config/featureFlags', () => ({
@@ -52,8 +52,8 @@ vi.mock('../../config/featureFlags', () => ({
 
 vi.mock('../structuredClauseExtractor', () => ({
   structuredClauseExtractor: {
-    extractFromText: (...args: any[]) => mockExtractFromText(...args),
-    storeStructuredClause: (...args: any[]) => mockStoreStructuredClause(...args)
+    extractFromText: (...args: unknown[]) => mockExtractFromText(...args),
+    storeStructuredClause: (...args: unknown[]) => mockStoreStructuredClause(...args)
   }
 }));
 
@@ -65,13 +65,13 @@ vi.mock('../pdfExtractor', () => ({
 
 vi.mock('../pdfRenderer', () => ({
   pdfRenderer: {
-    renderDocumentPages: (...args: any[]) => mockRenderDocumentPages(...args)
+    renderDocumentPages: (...args: unknown[]) => mockRenderDocumentPages(...args)
   }
 }));
 
 vi.mock('../semanticChunker', () => ({
   semanticChunker: {
-    createChunksFromPages: (...args: any[]) => mockCreateChunksFromPages(...args)
+    createChunksFromPages: (...args: unknown[]) => mockCreateChunksFromPages(...args)
   }
 }));
 
@@ -91,7 +91,7 @@ vi.mock('../gemini', () => ({
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeExtractionResult(overrides: any = {}) {
+function makeExtractionResult(overrides: Record<string, unknown> = {}) {
   return {
     text: 'Sample clause text for testing',
     isScanned: false,

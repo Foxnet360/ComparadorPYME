@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { performance } from 'perf_hooks';
-import { quoteParser } from '../quoteParser';
+import { quoteParser, ParsedQuote } from '../quoteParser';
 import { buildCanonicalCoverages } from '../coverageNormalizer';
 import { variableComparator } from '../variableComparator';
 import { quoteScorer } from '../quoteScorer';
@@ -170,7 +170,7 @@ describe('Performance Tests', () => {
       };
 
       const start = performance.now();
-      await quoteScorer.calculateScore(quote as any, [], [quote as any]);
+      await quoteScorer.calculateScore(quote as unknown as ParsedQuote, [], [quote as unknown as ParsedQuote]);
       const duration = performance.now() - start;
 
       expect(duration).toBeLessThan(2000);
@@ -191,7 +191,7 @@ describe('Performance Tests', () => {
         
         // Normalize
         const normalized = await buildCanonicalCoverages(
-          parsed.coverages.map((c: any) => ({
+          parsed.coverages.map((c: { name: string }) => ({
             rawName: c.name,
             insuredAmount: 1000000,
             deductible: '10%',
@@ -209,7 +209,7 @@ describe('Performance Tests', () => {
       // Compare
       await variableComparator.compareQuotes(allQuotes.map(q => ({
         insurerName: q.insurerName,
-        coverages: q.coverages.map((c: any) => ({
+        coverages: q.coverages.map((c: { name: string }) => ({
           rawName: c.name,
           displayName: c.name,
           insuredAmount: { value: 1000000, currency: 'COP', rawText: '$1M' },
@@ -225,7 +225,11 @@ describe('Performance Tests', () => {
       
       // Score
       for (const quote of allQuotes) {
-        await quoteScorer.calculateScore(quote as any, [], allQuotes as any);
+        await quoteScorer.calculateScore(
+          quote as unknown as ParsedQuote,
+          [],
+          allQuotes as unknown as ParsedQuote[]
+        );
       }
       
       const duration = performance.now() - start;

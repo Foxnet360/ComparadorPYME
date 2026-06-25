@@ -33,13 +33,13 @@ const mockSelect = vi.fn();
 
 vi.mock('../../config/database', () => ({
   supabase: {
-    from: (...args: any[]) => mockFrom(...args),
+    from: (...args: unknown[]) => mockFrom(...args),
   },
 }));
 
 mockFrom.mockReturnValue({
-  upsert: (...args: any[]) => mockUpsert(...args),
-  select: (...args: any[]) => mockSelect(...args),
+  upsert: (...args: unknown[]) => mockUpsert(...args),
+  select: (...args: unknown[]) => mockSelect(...args),
 });
 
 mockUpsert.mockReturnValue({
@@ -65,8 +65,8 @@ const mockAddEdge = vi.fn();
 
 vi.mock('../coverageGraphService', () => ({
   coverageGraphService: {
-    learnCorrection: (...args: any[]) => mockLearnCorrection(...args),
-    addEdge: (...args: any[]) => mockAddEdge(...args),
+    learnCorrection: (...args: unknown[]) => mockLearnCorrection(...args),
+    addEdge: (...args: unknown[]) => mockAddEdge(...args),
   },
 }));
 
