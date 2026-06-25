@@ -412,16 +412,16 @@ export function buildEvaluationReport(
 
 function isGoldenQuote(data: unknown): data is GoldenQuote {
   if (!data || typeof data !== 'object') return false;
-  const d = data as any;
+  const d = data as Record<string, unknown>;
   return (
     typeof d.fixtureId === 'string' &&
     typeof d.insurer === 'string' &&
     Array.isArray(d.expectedCoverages) &&
     d.expectedCoverages.every(
-      (c: any) =>
+      (c: unknown) =>
         typeof c === 'object' &&
         c !== null &&
-        typeof c.canonicalName === 'string'
+        typeof (c as Record<string, unknown>).canonicalName === 'string'
     ) &&
     typeof d.annotatedBy === 'string'
   );
@@ -444,8 +444,8 @@ export async function loadGoldenSet(
       } else {
         console.warn(`⚠️ [EvaluationHarness] Skipping invalid fixture ${file}`);
       }
-    } catch (error: any) {
-      console.warn(`⚠️ [EvaluationHarness] Failed to load fixture ${file}: ${error.message}`);
+    } catch (error: unknown) {
+      console.warn(`⚠️ [EvaluationHarness] Failed to load fixture ${file}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -476,8 +476,9 @@ export async function runEvaluation(
     try {
       const output = await runner(fixture);
       results.push(evaluateFixture(fixture, output, thresholds));
-    } catch (error: any) {
-      console.error(`❌ [EvaluationHarness] Fixture ${fixture.fixtureId} failed: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`❌ [EvaluationHarness] Fixture ${fixture.fixtureId} failed: ${message}`);
       results.push({
         fixtureId: fixture.fixtureId,
         insurer: fixture.insurer,
@@ -499,7 +500,7 @@ export async function runEvaluation(
             fixtureId: fixture.fixtureId,
             insurer: fixture.insurer,
             type: 'manual-completion',
-            message: `Pipeline error: ${error.message}`,
+            message: `Pipeline error: ${message}`,
             value: 1,
           },
         ],
