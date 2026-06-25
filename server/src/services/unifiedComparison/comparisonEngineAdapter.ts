@@ -37,12 +37,12 @@ export class ComparisonEngineAdapter {
         console.log(`✅ [Adapter] Unified engine succeeded`);
         return matrixRows;
         
-      } catch (error: any) {
+      } catch (error) {
         // Log failure and fallback to legacy
-        console.error(`❌ [Adapter] Unified engine failed:`, error.message);
+        console.error(`❌ [Adapter] Unified engine failed:`, error instanceof Error ? error.message : String(error));
         console.log(`🔄 [Adapter] Falling back to legacy engine`);
         
-        return this.fallbackToLegacy(pdfPaths, error.message);
+        return this.fallbackToLegacy(pdfPaths, error instanceof Error ? error.message : String(error));
       }
     }
 
@@ -78,8 +78,8 @@ export class ComparisonEngineAdapter {
       
       throw new Error('Deep mode not yet fully implemented');
       
-    } catch (error: any) {
-      console.error(`❌ [Adapter] Deep mode failed:`, error.message);
+    } catch (error) {
+      console.error(`❌ [Adapter] Deep mode failed:`, error instanceof Error ? error.message : String(error));
       throw error;
     }
   }
@@ -154,7 +154,7 @@ export class ComparisonEngineAdapter {
         label,
         sectionId: 999,
         cells: result.financials.premiums.map(p => {
-          const value = (p as any)[field];
+          const value = p[field as keyof typeof p] as number | null;
           return {
             value: value !== null && value !== undefined 
               ? `$${value.toLocaleString('es-CO')}` 
@@ -189,8 +189,8 @@ export class ComparisonEngineAdapter {
         label,
         sectionId: 999,
         cells: result.financials.metadata.map(m => ({
-          value: (m as any)[field] || 'No informado',
-          isExcluded: !(m as any)[field],
+          value: (m[field as keyof typeof m] as string | undefined) || 'No informado',
+          isExcluded: !m[field as keyof typeof m],
           isWinner: false
         }))
       });

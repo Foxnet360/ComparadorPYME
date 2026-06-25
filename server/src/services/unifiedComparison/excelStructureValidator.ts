@@ -91,7 +91,7 @@ export function validateAgainstExcelStructure(
   if (!result.insurers || result.insurers.length === 0) {
     errors.push('No insurers found in result');
   } else {
-    result.insurers.forEach((insurer: any, idx: number) => {
+    result.insurers.forEach((insurer, idx) => {
       if (!insurer.name) {
         errors.push(`Insurer ${idx + 1} missing name`);
       }
@@ -103,9 +103,9 @@ export function validateAgainstExcelStructure(
     errors.push('No coverage matrix found');
   } else {
     // Check for expected categories
-    const foundCategories = result.coverageMatrix.map((c: any) => c.category);
+    const foundCategories = result.coverageMatrix.map(c => c.category);
     const missingCategories = EXPECTED_COVERAGE_CATEGORIES.filter(
-      cat => !foundCategories.some((found: string) => 
+      cat => !foundCategories.some(found => 
         found.toLowerCase().includes(cat.toLowerCase()) ||
         cat.toLowerCase().includes(found.toLowerCase())
       )
@@ -118,7 +118,7 @@ export function validateAgainstExcelStructure(
     }
 
     // Validate each section has rows
-    result.coverageMatrix.forEach((section: any, _idx: number) => {
+    result.coverageMatrix.forEach((section, _idx) => {
       if (!section.rows || section.rows.length === 0) {
         warnings.push(`Coverage section "${section.category}" has no rows`);
       }
@@ -133,7 +133,7 @@ export function validateAgainstExcelStructure(
       warnings.push('No premium data found');
     } else {
       // Check each insurer has premium data
-      result.financials.premiums.forEach((premium: any, idx: number) => {
+      result.financials.premiums.forEach((premium, idx) => {
         if (!premium.total && premium.total !== 0) {
           warnings.push(`Insurer ${idx + 1} missing total premium`);
         }
@@ -173,9 +173,9 @@ export function validateAgainstExcelStructure(
     valid: errors.length === 0,
     errors,
     warnings,
-    coverageCategories: result.coverageMatrix?.map((c: any) => c.category) || [],
+    coverageCategories: result.coverageMatrix?.map(c => c.category) || [],
     insurerCount,
-    totalCoverageRows: result.coverageMatrix?.reduce((sum: number, section: any) => sum + (section.rows?.length || 0), 0) || 0
+    totalCoverageRows: result.coverageMatrix?.reduce((sum, section) => sum + (section.rows?.length || 0), 0) || 0
   };
 }
 
@@ -193,7 +193,7 @@ export function quickValidate(result: UnifiedComparisonResult): boolean {
 export function getCoverageCompleteness(result: UnifiedComparisonResult): number {
   if (!result.coverageMatrix || result.coverageMatrix.length === 0) return 0;
   
-  const foundCategories = result.coverageMatrix.map((c: any) => c.category.toLowerCase());
+  const foundCategories = result.coverageMatrix.map(c => c.category.toLowerCase());
   const matchedCategories = EXPECTED_COVERAGE_CATEGORIES.filter(expected =>
     foundCategories.some(found => 
       found.includes(expected.toLowerCase()) ||
