@@ -11,6 +11,7 @@
 import { ragRetrievalService } from './ragRetrievalService';
 import { supabase } from '../config/database';
 import { getCanonicalCoverageNames } from '../config/domainConstants';
+import { ParsedQuote } from './quoteParser';
 
 export type CoverageValidationStatus = 'VERIFIED' | 'PHANTOM' | 'MANDATORY_MISSING' | 'OPTIONAL_MISSING';
 
@@ -43,7 +44,7 @@ export const clauseCoverageValidator = {
    * Bidirectional validation: quote → clause and clause → quote
    */
   validate: async (
-    quote: any,
+    quote: ParsedQuote,
     insurerName: string
   ): Promise<ClauseValidationSummary> => {
     console.log(`🔍 [clauseCoverageValidator] Validating coverages for ${insurerName}...`);
@@ -66,13 +67,13 @@ export const clauseCoverageValidator = {
     
     // Get coverages from quote
     const quoteCoverages = quote.coverages || [];
-    const quoteCoverageNames = quoteCoverages.map((c: any) => 
+    const quoteCoverageNames = quoteCoverages.map((c) => 
       (c.canonicalName || c.name).toLowerCase()
     );
     
     // Step 1: Validate quote → clause (each coverage in quote exists in clause)
     const quoteValidationResults = await Promise.all(
-      quoteCoverages.map(async (coverage: any) => {
+      quoteCoverages.map(async (coverage) => {
         const coverageName = coverage.canonicalName || coverage.name;
         const existsInClause = await searchCoverageInClause(coverageName, insurerName);
         
@@ -194,9 +195,9 @@ async function extractCoveragesFromClause(insurerName: string): Promise<Array<{n
       .limit(50);
     
     if (cachedCoverages && cachedCoverages.length > 0) {
-      return (cachedCoverages as any[]).map(c => ({
-        name: c.coverage_name,
-        isMandatory: c.is_mandatory,
+      return (cachedCoverages as Array<Record<string, unknown>>).map(c => ({
+        name: c.coverage_name as string,
+        isMandatory: c.is_mandatory as boolean,
         reference: `Page ${c.page_number}`
       }));
     }
