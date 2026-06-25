@@ -5,6 +5,32 @@
 
 import { supabase } from '../config/database';
 
+interface ReportContextQuoteAlert {
+  level: string;
+  title?: string;
+  description?: string;
+}
+
+interface ReportContextQuoteCoverage {
+  name?: string;
+  canonicalName?: string;
+  value?: string;
+}
+
+interface ReportContextQuote {
+  insurerName?: string;
+  priceAnnual?: number;
+  score?: number;
+  coverages?: ReportContextQuoteCoverage[];
+  alerts?: ReportContextQuoteAlert[];
+}
+
+interface ReportContext {
+  id?: string;
+  clientName?: string;
+  quotes?: ReportContextQuote[];
+}
+
 export interface ChatThread {
   id: string;
   user_id: string;
@@ -23,8 +49,8 @@ export interface ChatMessageDB {
   thread_id: string;
   role: 'user' | 'model' | 'system';
   content: string;
-  sources_used?: any[];
-  citations?: any[];
+  sources_used?: unknown[];
+  citations?: unknown[];
   model_used?: string;
   tokens_input?: number;
   tokens_output?: number;
@@ -39,9 +65,9 @@ export const chatRepository = {
    */
   async createThread(
     userId: string,
-    reportContext: any
+    reportContext: ReportContext | null | undefined
   ): Promise<string> {
-    const insurerNames = reportContext?.quotes?.map((q: any) => q.insurerName).filter(Boolean) || [];
+    const insurerNames = reportContext?.quotes?.map((q: ReportContextQuote) => q.insurerName).filter(Boolean) || [];
     const clientName = reportContext?.clientName || 'Cliente Desconocido';
     const reportId = reportContext?.id;
     
@@ -49,7 +75,7 @@ export const chatRepository = {
     const contextSummary = chatRepository.generateContextSummary(reportContext);
     
     const { data, error } = await supabase
-      .from('chat_threads')
+      .from('chat_threads' as never)
       .insert({
         user_id: userId,
         report_id: reportId,
@@ -58,7 +84,7 @@ export const chatRepository = {
         title: `Análisis: ${clientName}`,
         status: 'active',
         context_summary: contextSummary
-      } as any)
+      } as never)
       .select()
       .single();
     
@@ -67,7 +93,7 @@ export const chatRepository = {
       throw error;
     }
     
-    return (data as any).id;
+    return (data as { id: string }).id;
   },
 
   /**
@@ -76,11 +102,11 @@ export const chatRepository = {
   async getOrCreateThread(
     userId: string,
     reportId: string,
-    reportContext?: any
+    reportContext?: ReportContext | null | undefined
   ): Promise<string> {
     // Try to find existing active thread
     const { data: existing, error: findError } = await supabase
-      .from('chat_threads')
+      .from('chat_threads' as never)
       .select('id')
       .eq('user_id', userId)
       .eq('report_id', reportId)
@@ -94,7 +120,7 @@ export const chatRepository = {
     }
     
     if (existing && existing.length > 0) {
-      return (existing[0] as any).id;
+      return (existing[0] as ChatThread).id;
     }
     
     // Create new thread
@@ -109,7 +135,7 @@ export const chatRepository = {
     reportId: string
   ): Promise<ChatThread | null> {
     const { data, error } = await supabase
-      .from('chat_threads')
+      .from('chat_threads' as never)
       .select('*')
       .eq('user_id', userId)
       .eq('report_id', reportId)
@@ -135,7 +161,7 @@ export const chatRepository = {
     message: Omit<ChatMessageDB, 'thread_id'>
   ): Promise<void> {
     const { error } = await supabase
-      .from('chat_messages')
+      .from('chat_messages' as never)
       .insert({
         thread_id: threadId,
         role: message.role,
@@ -149,7 +175,7 @@ export const chatRepository = {
           ? message.tokens_input + message.tokens_output 
           : undefined),
         latency_ms: message.latency_ms
-      } as any);
+      } as never);
     
     if (error) {
       console.error('❌ [chatRepository] Error saving message:', error);
@@ -165,7 +191,7 @@ export const chatRepository = {
     limit: number = 20
   ): Promise<ChatMessageDB[]> {
     const { data, error } = await supabase
-      .from('chat_messages')
+      .from('chat_messages' as never)
       .select('*')
       .eq('thread_id', threadId)
       .order('created_at', { ascending: false })
@@ -200,7 +226,7 @@ export const chatRepository = {
    */
   async listUserThreads(userId: string): Promise<ChatThread[]> {
     const { data, error } = await supabase
-      .from('chat_threads')
+      .from('chat_threads' as never)
       .select('*')
       .eq('user_id', userId)
       .eq('status', 'active')
@@ -217,22 +243,22 @@ export const chatRepository = {
   /**
    * Generate a compact context summary from report data
    */
-  generateContextSummary(reportContext: any): string {
+  generateContextSummary(reportContext: ReportContext | null | undefined): string {
     if (!reportContext || !reportContext.quotes) {
       return 'No hay datos de cotización disponibles';
     }
     
     const quotes = reportContext.quotes;
-    const insurerNames = quotes.map((q: any) => q.insurerName).filter(Boolean);
+    const insurerNames = quotes.map((q: ReportContextQuote) => q.insurerName).filter(Boolean);
     
     let summary = `Análisis de ${insurerNames.length} aseguradoras: ${insurerNames.join(', ')}. `;
     
     // Add key coverages
     const coverageNames = new Set<string>();
-    quotes.forEach((q: any) => {
-      q.coverages?.forEach((c: any) => {
+    quotes.forEach((q: ReportContextQuote) => {
+      q.coverages?.forEach((c: ReportContextQuoteCoverage) => {
         if (c.value && !['EXCLUIDO', 'NO CUBRE', 'NO APLICA'].includes(c.value.toUpperCase())) {
-          coverageNames.add(c.name || c.canonicalName);
+          coverageNames.add((c.name || c.canonicalName) as string);
         }
       });
     });
@@ -242,8 +268,8 @@ export const chatRepository = {
     }
     
     // Add critical alerts
-    const criticalAlerts = quotes.flatMap((q: any) => 
-      (q.alerts || []).filter((a: any) => a.level === 'CRITICAL')
+    const criticalAlerts = quotes.flatMap((q: ReportContextQuote) => 
+      (q.alerts || []).filter((a: ReportContextQuoteAlert) => a.level === 'CRITICAL')
     );
     
     if (criticalAlerts.length > 0) {
