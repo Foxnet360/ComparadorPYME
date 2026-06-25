@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { structuredClauseExtractor } from '../structuredClauseExtractor';
-import { deductibleParser } from '../deductibleParser';
+import { deductibleParser, DeductibleStructure } from '../deductibleParser';
 import { coverageOntology } from '../coverageOntology';
 import { queryExpander } from '../queryExpander';
 
@@ -279,7 +279,7 @@ describe('Accuracy Tests', () => {
       ];
 
       for (const structure of validStructures) {
-        const validation = deductibleParser.validate(structure as any);
+        const validation = deductibleParser.validate(structure as unknown as DeductibleStructure);
         expect(validation.isValid).toBe(true);
         expect(validation.issues).toHaveLength(0);
       }
@@ -305,7 +305,7 @@ describe('Accuracy Tests', () => {
       ];
 
       for (const structure of invalidStructures) {
-        const validation = deductibleParser.validate(structure as any);
+        const validation = deductibleParser.validate(structure as unknown as DeductibleStructure);
         expect(validation.isValid).toBe(false);
         expect(validation.issues.length).toBeGreaterThan(0);
       }
