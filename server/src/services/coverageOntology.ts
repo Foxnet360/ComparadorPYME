@@ -73,10 +73,21 @@ function loadOntology(domain: string = 'pyme'): { nodes: OntologyNode[]; composi
   return { nodes, compositePatterns };
 }
 
+interface TaxonomistResponse {
+  proposedGroupId: string;
+  justification: string;
+}
+
+interface CriticResponse {
+  approved: boolean;
+  alternativeGroupId: string | null;
+  reason: string;
+}
+
 /**
  * Safe JSON parser utility that removes markdown formatting
  */
-function parseJSONSafe(text: string): any {
+function parseJSONSafe(text: string): unknown {
   if (!text) return null;
   let cleaned = text.trim();
   if (cleaned.startsWith('```')) {
@@ -270,8 +281,8 @@ async function queryGraphForMapping(
       needsHumanReview: best.confidence < 0.85,
       justification: `Graph consensus via ${best.provenance} (confidence ${Math.round(best.confidence * 100)}%)`,
     };
-  } catch (error: any) {
-    console.warn(`⚠️ [Ontology Graph] Query failed for "${rawName}": ${error.message}`);
+  } catch (error: unknown) {
+    console.warn(`⚠️ [Ontology Graph] Query failed for "${rawName}": ${error instanceof Error ? error.message : String(error)}`);
     return null;
   }
 }
@@ -306,11 +317,11 @@ async function runConsensus(
     const { learningEngine } = await import('./learningEngine');
     
     // Fetch top 3 past human corrections as dynamic few-shots (Task 5.2 & 5.3)
-    const examples = await learningEngine.getSimilarCorrections(rawName);
+    const examples = (await learningEngine.getSimilarCorrections(rawName)) as Array<{ raw_name: string; canonical_name: string }>;
     let fewShotContext = '';
     if (examples && examples.length > 0) {
       fewShotContext = `\nAquí tienes algunos ejemplos de cómo un suscriptor experto humano ha clasificado coberturas similares anteriormente:\n` +
-        examples.map((ex: any) => `- Cobertura original: "${ex.raw_name}" -> Categoría asignada: "${ex.canonical_name}"`).join('\n') + '\n';
+        examples.map((ex) => `- Cobertura original: "${ex.raw_name}" -> Categoría asignada: "${ex.canonical_name}"`).join('\n') + '\n';
     }
 
     // 1. Taxonomist Agent (Agent A) Prompt
@@ -366,7 +377,7 @@ Tu respuesta debe ser un JSON válido, sin bloques de código markdown, solo el 
       }
     });
 
-    const parsedA = parseJSONSafe(agentAResult.text || '');
+    const parsedA = parseJSONSafe(agentAResult.text || '') as TaxonomistResponse;
     if (!parsedA || !parsedA.proposedGroupId) {
       throw new Error(`Invalid response from Taxonomist Agent: ${agentAResult.text}`);
     }
@@ -418,7 +429,7 @@ Tu respuesta debe ser un JSON válido, sin bloques de código markdown, solo el 
       }
     });
 
-    const parsedB = parseJSONSafe(agentBResult.text || '');
+    const parsedB = parseJSONSafe(agentBResult.text || '') as CriticResponse;
     if (!parsedB) {
       throw new Error(`Invalid response from Critic Agent: ${agentBResult.text}`);
     }
@@ -449,12 +460,12 @@ Tu respuesta debe ser un JSON válido, sin bloques de código markdown, solo el 
       };
     }
 
-  } catch (error: any) {
-    console.error('❌ [Consensus] Error during double-agent consensus:', error.message);
+  } catch (error: unknown) {
+    console.error('❌ [Consensus] Error during double-agent consensus:', error instanceof Error ? error.message : String(error));
     return {
       groupId: 'EXCLUSIVE',
       confidence: 0,
-      justification: `Error en el flujo de consenso de agentes: ${error.message}`,
+      justification: `Error en el flujo de consenso de agentes: ${error instanceof Error ? error.message : String(error)}`,
       needsHumanReview: true
     };
   }
@@ -533,19 +544,19 @@ export const coverageOntology = {
         .limit(1);
 
       if (data && data.length > 0) {
-        const record = data[0] as any;
+        const record = data[0] as Record<string, unknown>;
         console.log(`📦 [Ontology DB] Hit for "${rawName}" -> "${record.canonical_name}"`);
         
         const mapping: CoverageMapping = {
           rawName,
           insurerName,
-          groups: record.canonical_name ? [{ groupId: record.canonical_name, confidence: record.confidence }] : [],
-          isComposite: record.is_composite,
-          confidence: record.confidence,
-          needsHumanReview: record.needs_human_review,
-          rawTextSnippet: record.raw_text_snippet,
-          justification: record.ai_justification,
-          pageNumber: record.page_number
+          groups: record.canonical_name ? [{ groupId: record.canonical_name as string, confidence: Number(record.confidence) }] : [],
+          isComposite: Boolean(record.is_composite),
+          confidence: Number(record.confidence),
+          needsHumanReview: Boolean(record.needs_human_review),
+          rawTextSnippet: record.raw_text_snippet as string | undefined,
+          justification: record.ai_justification as string | undefined,
+          pageNumber: record.page_number as number | undefined
         };
 
         // Cache for future lookups
@@ -682,7 +693,7 @@ export const coverageOntology = {
           needs_human_review: mapping.needsHumanReview || false,
           last_used_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
-        } as any, {
+        } as unknown as never, {
           onConflict: 'raw_name,insurer_name',
           ignoreDuplicates: false
         });
@@ -702,7 +713,7 @@ export const coverageOntology = {
             components: mapping.components || null,
             last_used_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
-          } as any, {
+          } as unknown as never, {
             onConflict: 'raw_name,insurer_name',
             ignoreDuplicates: false
           });
@@ -717,9 +728,9 @@ export const coverageOntology = {
         }
       }
       console.log(`🌳 [Ontology DB] Saved mapping for "${mapping.rawName}"`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Silenciar error de duplicado - no es crítico
-      if (error?.code === '23505') {
+      if ((error as { code?: string }).code === '23505') {
         console.log(`🌳 [Ontology DB] Mapping already exists for "${mapping.rawName}"`);
         return;
       }
