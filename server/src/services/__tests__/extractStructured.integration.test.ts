@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { geminiService, QuoteExtractionSchema } from '../gemini';
+import { geminiService, QuoteExtractionSchema, QuoteExtraction } from '../gemini';
 
 /**
  * Integration tests for structured extraction
@@ -131,7 +131,7 @@ CONDICIONES ESPECIALES:
     });
 
     // Validate each coverage object
-    result.coverages.forEach((coverage: any) => {
+    result.coverages.forEach((coverage: QuoteExtraction['coverages'][number]) => {
       expect(coverage).toMatchObject({
         name: expect.any(String),
         value: expect.any(String),

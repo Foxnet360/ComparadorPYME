@@ -41,8 +41,8 @@ const mockBuildTemplatePrompt = vi.fn();
 const mockBuildPromptForFamily = vi.fn();
 
 vi.mock('../promptBuilder', () => ({
-  buildTemplatePrompt: (...args: any[]) => mockBuildTemplatePrompt(...args),
-  buildPromptForFamily: (...args: any[]) => mockBuildPromptForFamily(...args),
+  buildTemplatePrompt: (...args: unknown[]) => mockBuildTemplatePrompt(...args),
+  buildPromptForFamily: (...args: unknown[]) => mockBuildPromptForFamily(...args),
 }));
 
 function makeDetectionResult(overrides: Partial<FormatDetectionResult> = {}): FormatDetectionResult {

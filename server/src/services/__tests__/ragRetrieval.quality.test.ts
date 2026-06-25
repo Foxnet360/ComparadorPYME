@@ -4,7 +4,7 @@ import { ragRetrievalService, RetrievedClause } from '../ragRetrievalService';
 // Mock dependencies
 vi.mock('../../config/database', () => ({
   supabase: {
-    rpc: vi.fn((procedure: string, params: any) => {
+    rpc: vi.fn((procedure: string, params: Record<string, unknown>) => {
       // Mock responses for different RPC calls
       if (procedure === 'match_chunks_hybrid') {
         return Promise.resolve({

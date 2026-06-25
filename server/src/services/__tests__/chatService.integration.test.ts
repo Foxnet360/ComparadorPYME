@@ -312,7 +312,7 @@ describe('Chat Service Integration Tests', () => {
       const lastCall = vi.mocked(chatRepository.saveMessage).mock.calls.pop();
       expect(lastCall).toBeDefined();
       
-      const messageData = lastCall![1] as any;
+      const messageData = lastCall![1] as Record<string, unknown>;
       expect(messageData.sources_used).toBeDefined();
       expect(Array.isArray(messageData.sources_used)).toBe(true);
     });

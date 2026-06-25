@@ -6,7 +6,7 @@ const mockFrom = vi.fn();
 
 vi.mock('../../config/database', () => ({
   supabase: {
-    from: (...args: any[]) => mockFrom(...args),
+    from: (...args: unknown[]) => mockFrom(...args),
   },
 }));
 

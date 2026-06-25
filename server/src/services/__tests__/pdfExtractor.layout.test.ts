@@ -4,7 +4,7 @@ import path from 'path';
 import { pdfExtractor} from '../pdfExtractor';
 import { featureFlags } from '../../config/featureFlags';
 
-const mockPages = vi.hoisted(() => ({ pages: [] as any[] }));
+const mockPages = vi.hoisted(() => ({ pages: [] as unknown[][] }));
 
 vi.mock('pdfjs-dist/legacy/build/pdf.js', () => ({
   getDocument: vi.fn(() => ({
@@ -30,7 +30,7 @@ function makeTextItem(
   width = 60,
   height = 12,
   rotation = 0
-): any {
+): Record<string, unknown> {
   // Build a transform matrix for the given translation and rotation (in degrees).
   const rad = (rotation * Math.PI) / 180;
   const transform = [

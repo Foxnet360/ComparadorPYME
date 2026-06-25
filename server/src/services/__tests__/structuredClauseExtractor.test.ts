@@ -93,7 +93,7 @@ describe('structuredClauseExtractor', () => {
               text: 'invalid json'
             }))
           }
-        } as any;
+        } as unknown as GoogleGenAI;
       });
 
       await expect(

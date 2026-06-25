@@ -67,18 +67,18 @@ describe('graphSeeder', () => {
 
   describe('seedCoverageGraph', () => {
     it('upserts edges into coverage_graph_edges', async () => {
-      const upsertCalls: any[] = [];
+      const upsertCalls: { table: string; rows: unknown[]; options: unknown }[] = [];
       const fakeDb = {
         from: (table: string) => ({
           upsert: (rows: unknown[], options?: unknown) => {
-            upsertCalls.push({ table, rows, options });
+            upsertCalls.push({ table, rows: rows as unknown[], options });
             return Promise.resolve({ data: rows, error: null });
           },
         }),
       };
 
       const edges = buildGraphEdgesFromDomain('pyme').slice(0, 5);
-      await seedCoverageGraph(fakeDb as any, 'pyme', edges);
+      await seedCoverageGraph(fakeDb as unknown as Parameters<typeof seedCoverageGraph>[0], 'pyme', edges);
 
       expect(upsertCalls).toHaveLength(1);
       expect(upsertCalls[0].table).toBe('coverage_graph_edges');
