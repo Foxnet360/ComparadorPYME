@@ -49,9 +49,9 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegisterSuccess, onBa
         try {
             const result = await authService.signUp(formData.email, formData.password, formData.name);
             setSuccessMessage(result.message);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(err);
-            setError(err.message || 'Error al registrar usuario.');
+            setError(err instanceof Error ? err.message : 'Error al registrar usuario.');
         } finally {
             setIsLoading(false);
         }

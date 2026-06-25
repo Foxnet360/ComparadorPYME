@@ -49,7 +49,7 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
             if (docs.length > 0) {
                 setExpandedInsurers(new Set([docs[0].insurer?.name]));
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Error loading documents:', err);
             setError('Error al cargar cláusulas. El servicio puede no estar disponible.');
         } finally {

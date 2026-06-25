@@ -149,7 +149,7 @@ export const CuratorDashboard = ({
         ].map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => setActiveTab(tab.id as 'overview' | 'corrections' | 'consensus')}
             className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs md:text-sm font-semibold transition-all ${
               activeTab === tab.id
                 ? 'bg-white text-blue-700 shadow-sm border border-slate-200'

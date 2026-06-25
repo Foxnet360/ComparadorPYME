@@ -71,7 +71,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
                 onClose();
             }, 1500);
 
-        } catch (_err: any) {
+        } catch (_err: unknown) {
             setErrorMsg('Error al actualizar perfil.');
         } finally {
             setIsLoading(false);

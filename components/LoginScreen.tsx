@@ -22,8 +22,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
     try {
       const user = await authService.signIn(email, password);
       onLoginSuccess(user);
-    } catch (err: any) {
-      setError(err.message || 'Credenciales incorrectas');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Credenciales incorrectas');
     } finally {
       setIsLoading(false);
     }
