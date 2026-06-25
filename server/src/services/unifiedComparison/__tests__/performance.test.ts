@@ -54,14 +54,15 @@ async function runBenchmark(
       success: true
     };
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const durationMs = Date.now() - startTime;
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       engine,
       quoteCount: pdfPaths.length,
       durationMs,
       success: false,
-      error: error.message
+      error: errorMessage
     };
   }
 }

@@ -74,9 +74,9 @@ describe('Edge Cases', () => {
 
       // Check if any cells have missing data (null or 'No informado')
       let missingDataCount = 0;
-      result.coverageMatrix.forEach((section: any) => {
-        section.rows.forEach((row: any) => {
-          row.cells.forEach((cell: any) => {
+      result.coverageMatrix.forEach((section) => {
+        section.rows.forEach((row) => {
+          row.cells.forEach((cell) => {
             if (!cell.value || cell.value === 'No informado' || cell.value === 'N.C.') {
               missingDataCount++;
             }
@@ -152,8 +152,8 @@ describe('Edge Cases', () => {
       let totalCells = 0;
       let validCells = 0;
       
-      result.coverageMatrix.forEach((section: any) => {
-        section.rows.forEach((row: any) => {
+      result.coverageMatrix.forEach((section) => {
+        section.rows.forEach((row) => {
           totalCells += row.cells.length;
           if (row.cells.length === 8) {
             validCells += 8;
@@ -197,9 +197,9 @@ describe('Edge Cases', () => {
       let missingCount = 0;
       let totalCount = 0;
       
-      result.coverageMatrix.forEach((section: any) => {
-        section.rows.forEach((row: any) => {
-          row.cells.forEach((cell: any) => {
+      result.coverageMatrix.forEach((section) => {
+        section.rows.forEach((row) => {
+          row.cells.forEach((cell) => {
             totalCount++;
             if (!cell.value || cell.value === 'No informado' || cell.value === 'N.C.') {
               missingCount++;
@@ -238,9 +238,9 @@ describe('Edge Cases', () => {
       // Look for ambiguous cells
       let ambiguousCount = 0;
       
-      result.coverageMatrix.forEach((section: any) => {
-        section.rows.forEach((row: any) => {
-          row.cells.forEach((cell: any) => {
+      result.coverageMatrix.forEach((section) => {
+        section.rows.forEach((row) => {
+          row.cells.forEach((cell) => {
             if (cell.isAmbiguous) {
               ambiguousCount++;
             }
@@ -275,7 +275,7 @@ describe('Edge Cases', () => {
 
       // Check if any premiums are 0
       const zeroPremiums = result.financials.premiums.filter(
-        (p: any) => !p.total || p.total === 0
+        (p) => !p.total || p.total === 0
       );
 
       if (zeroPremiums.length > 0) {
@@ -344,7 +344,7 @@ describe('Edge Cases', () => {
           path: `${testPdfDir}/${f}`,
           size: fs.statSync(`${testPdfDir}/${f}`).size
         }))
-        .filter((f: any) => f.size > 10 * 1024 * 1024); // > 10MB
+        .filter((f) => f.size > 10 * 1024 * 1024); // > 10MB
 
       if (largePdfs.length === 0) {
         console.log('No large PDFs (>10MB) found, skipping');
@@ -352,7 +352,7 @@ describe('Edge Cases', () => {
       }
 
       const result = await unifiedComparisonEngine.compare(
-        largePdfs.slice(0, 2).map((f: any) => f.path)
+        largePdfs.slice(0, 2).map((f) => f.path)
       );
 
       expect(result).toBeDefined();

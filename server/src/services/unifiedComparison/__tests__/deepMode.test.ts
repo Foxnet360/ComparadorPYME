@@ -7,6 +7,13 @@ import { deepClauseValidator } from '../deepClauseValidator';
 import { UnifiedComparisonResult } from '../../types/unifiedComparison';
 import * as fs from 'fs';
 
+interface DeepClauseValidatorWithApply {
+  applyValidations: (
+    comparison: UnifiedComparisonResult,
+    validationResult: Record<string, unknown>
+  ) => UnifiedComparisonResult;
+}
+
 describe('Deep Mode Validation', () => {
   
   const mockComparison: UnifiedComparisonResult = {
@@ -197,7 +204,7 @@ describe('Deep Mode Validation', () => {
         discrepancies: []
       };
 
-      const result = (deepClauseValidator as any).applyValidations(
+      const result = (deepClauseValidator as unknown as DeepClauseValidatorWithApply).applyValidations(
         comparison,
         validationResult
       );
@@ -227,7 +234,7 @@ describe('Deep Mode Validation', () => {
       };
 
       expect(() =>
-        (deepClauseValidator as any).applyValidations(comparison, validationResult)
+        (deepClauseValidator as unknown as DeepClauseValidatorWithApply).applyValidations(comparison, validationResult)
       ).not.toThrow();
 
       // Comparison should remain unchanged
