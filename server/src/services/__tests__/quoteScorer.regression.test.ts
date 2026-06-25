@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { quoteScorer } from '../quoteScorer';
+import { CrossReferenceResult } from '../crossReferenceEngine';
+import { CoverageExistenceResult } from '../clauseCoverageValidator';
 
 describe('quoteScorer - Regression Tests', () => {
   const mockQuote = {
@@ -18,7 +20,7 @@ describe('quoteScorer - Regression Tests', () => {
     parseConfidence: 95
   };
 
-  const emptyCrossRefs: any[] = [];
+  const emptyCrossRefs: CrossReferenceResult[] = [];
   const allQuotes = [mockQuote];
 
   describe('Scoring with clause validation', () => {
@@ -40,7 +42,7 @@ describe('quoteScorer - Regression Tests', () => {
         emptyCrossRefs,
         allQuotes,
         undefined,
-        clauseValidation as any
+        clauseValidation as unknown as CoverageExistenceResult[],
       );
       
       const resultWithoutPenalty = quoteScorer.calculateScore(
@@ -63,7 +65,7 @@ describe('quoteScorer - Regression Tests', () => {
         emptyCrossRefs,
         allQuotes,
         undefined,
-        clauseValidation as any
+        clauseValidation as unknown as CoverageExistenceResult[],
       );
       
       expect(result.breakdown.coverage).toBeLessThan(100);
@@ -104,7 +106,7 @@ describe('quoteScorer - Regression Tests', () => {
         emptyCrossRefs,
         allQuotes,
         undefined,
-        manyPhantoms as any
+        manyPhantoms as unknown as CoverageExistenceResult[]
       );
       
       expect(result.breakdown.coverage).toBe(0); // Should clamp to 0, not negative
@@ -132,7 +134,7 @@ describe('quoteScorer - Regression Tests', () => {
         }
       ];
       
-      const result = quoteScorer.calculateScore(mockQuote, crossRefs as any, allQuotes);
+      const result = quoteScorer.calculateScore(mockQuote, crossRefs as unknown as CrossReferenceResult[], allQuotes);
       
       expect(result.breakdown.deductibles).toBeGreaterThan(30); // Should be better than default
     });

@@ -40,7 +40,7 @@ function makeCache(): RegistryCache {
 }
 
 function makeFakeDb() {
-  const rows: any[] = [];
+  const rows: Record<string, unknown>[] = [];
   return {
     from: vi.fn((table: string) => ({
       select: vi.fn(() => ({
@@ -50,11 +50,11 @@ function makeFakeDb() {
         })),
         order: vi.fn(() => Promise.resolve({ data: rows, error: null })),
       })),
-      insert: vi.fn((data: any) => {
+      insert: vi.fn((data: unknown) => {
         rows.push(...(Array.isArray(data) ? data : [data]));
         return Promise.resolve({ data, error: null });
       }),
-      update: vi.fn((data: any) => ({
+      update: vi.fn((data: unknown) => ({
         eq: vi.fn(() => Promise.resolve({ data: [data], error: null })),
       })),
       delete: vi.fn(() => ({
@@ -62,7 +62,7 @@ function makeFakeDb() {
           eq: vi.fn(() => Promise.resolve({ data: null, error: null })),
         })),
       })),
-      upsert: vi.fn((data: any) => Promise.resolve({ data, error: null })),
+      upsert: vi.fn((data: unknown) => Promise.resolve({ data, error: null })),
     })),
   };
 }
@@ -218,7 +218,7 @@ describe('templateRegistryService', () => {
 
       expect(cache.set).toHaveBeenCalled();
       const calls = (cache.set as ReturnType<typeof vi.fn>).mock.calls;
-      const keys = calls.map((call: any[]) => call[0] as string);
+      const keys = calls.map((call: unknown[]) => call[0] as string);
       expect(keys.some((k) => k.includes('templates'))).toBe(true);
     });
 

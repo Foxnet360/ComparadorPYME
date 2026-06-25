@@ -11,15 +11,15 @@ const mockGetCachedDeductibleV2 = vi.fn();
 const mockSetCachedDeductibleV2 = vi.fn();
 
 vi.mock('../cache/redisCache', () => ({
-  getCachedDeductibleV2: (...args: any[]) => mockGetCachedDeductibleV2(...args),
-  setCachedDeductibleV2: (...args: any[]) => mockSetCachedDeductibleV2(...args),
+  getCachedDeductibleV2: (...args: unknown[]) => mockGetCachedDeductibleV2(...args),
+  setCachedDeductibleV2: (...args: unknown[]) => mockSetCachedDeductibleV2(...args),
 }));
 
 const mockExtractDeductible = vi.fn();
 
 vi.mock('../gemini', () => ({
   geminiService: {
-    extractDeductible: (text: string, options?: any) => mockExtractDeductible(text, options),
+    extractDeductible: (text: string, options?: unknown) => mockExtractDeductible(text, options),
   },
 }));
 
@@ -27,7 +27,7 @@ const mockQueryDeductible = vi.fn();
 
 vi.mock('../coverageGraphService', () => ({
   coverageGraphService: {
-    queryDeductible: (...args: any[]) => mockQueryDeductible(...args),
+    queryDeductible: (...args: unknown[]) => mockQueryDeductible(...args),
   },
 }));
 

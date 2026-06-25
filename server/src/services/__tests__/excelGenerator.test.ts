@@ -107,7 +107,7 @@ describe('excelGenerator', () => {
     it('should generate a workbook with three worksheets', async () => {
       const buffer = await generateExcelBuffer(mockQuotes);
       const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(buffer as any);
+      await workbook.xlsx.load(buffer);
       
       expect(workbook.worksheets.length).toBe(3);
       expect(workbook.worksheets.map(w => w.name)).toEqual([
@@ -120,7 +120,7 @@ describe('excelGenerator', () => {
     it('should format ratio cells as percentages in Primas y Costos sheet', async () => {
       const buffer = await generateExcelBuffer(mockQuotes);
       const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(buffer as any);
+      await workbook.xlsx.load(buffer);
       
       const primasSheet = workbook.getWorksheet('Primas y Costos');
       expect(primasSheet).toBeDefined();
@@ -145,7 +145,7 @@ describe('excelGenerator', () => {
       };
       const buffer = await generateExcelBuffer(mockQuotes, undefined, notes);
       const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(buffer as any);
+      await workbook.xlsx.load(buffer);
       
       const coveragesSheet = workbook.getWorksheet('Coberturas y Deducibles');
       expect(coveragesSheet).toBeDefined();
@@ -159,7 +159,7 @@ describe('excelGenerator', () => {
     it('should handle cellNotes being empty', async () => {
       const buffer = await generateExcelBuffer(mockQuotes, undefined, {});
       const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(buffer as any);
+      await workbook.xlsx.load(buffer);
       
       const coveragesSheet = workbook.getWorksheet('Coberturas y Deducibles');
       expect(coveragesSheet).toBeDefined();
