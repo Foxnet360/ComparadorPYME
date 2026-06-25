@@ -210,7 +210,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
           } else if (rowConfig.field === 'deductible') {
             cellValue = cov.deductible || 'No aplica';
           } else {
-            cellValue = cov.description || (cov as any).details || 'Incluido bajo condiciones generales';
+            cellValue = cov.description || (cov as CoverageItem & { details?: string }).details || 'Incluido bajo condiciones generales';
           }
 
           const excluded = rowConfig.field === 'deductible' && cellValue.toLowerCase().trim() === 'no aplica'

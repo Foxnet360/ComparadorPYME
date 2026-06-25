@@ -15,7 +15,7 @@ export interface CoverageMapping {
 export interface ValidationRule {
   field: string;
   type: 'range' | 'regex' | 'enum';
-  value: any;
+  value: unknown;
   errorMessage: string;
 }
 

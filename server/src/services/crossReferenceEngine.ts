@@ -455,7 +455,7 @@ async function crossReferenceCoverageLegacy(
 // ====================
 
 function buildDeductibleStructureFromClause(
-    clauseDeductible: { components: any[]; rawText: string }
+    clauseDeductible: { components: Array<{ type: string; value: number; currency?: string }>; rawText: string }
 ): HybridDeductibleResult {
     // Re-parse the clause raw text with the canonical parser so that the
     // resulting structure carries normalised COP amounts for comparison.

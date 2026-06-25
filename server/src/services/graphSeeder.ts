@@ -1,3 +1,4 @@
+import { SupabaseClient } from '@supabase/supabase-js';
 import { loadDomainJson } from './domainBundleLoader';
 import { TaxonomyBundle, OntologyBundle } from '../schemas/domainBundleSchema';
 import { GraphEdge } from '../types/templateGraph';
@@ -104,7 +105,7 @@ export function buildGraphEdgesFromDomain(domain: string): GraphEdge[] {
 }
 
 export async function seedCoverageGraph(
-  db: any,
+  db: SupabaseClient,
   domain: string,
   edges: GraphEdge[]
 ): Promise<void> {

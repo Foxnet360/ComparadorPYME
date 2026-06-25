@@ -691,7 +691,7 @@ export async function buildCanonicalCoverages(
         confidence: best.confidence,
         graphConfidence: best.graphConfidence,
         rawNames: explicitMatches.map(m => m.coverage.rawName),
-        matchMethod: best.method as any,
+        matchMethod: best.method as CanonicalCoverage['matchMethod'],
         needsReview: best.confidence < 70,
         categoryId: category.id,
       });

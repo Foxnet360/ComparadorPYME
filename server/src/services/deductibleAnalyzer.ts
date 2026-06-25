@@ -6,6 +6,7 @@
 
 import { hybridDeductibleParser } from './hybridDeductibleParser';
 import { deductibleBenchmarks } from './deductibleBenchmarks';
+import { ParsedQuote } from './quoteParser';
 
 export interface DeductibleAnalysis {
   coverageName: string;
@@ -138,7 +139,7 @@ export const deductibleAnalyzer = {
    * Batch analyze all deductibles in a quote
    */
   analyzeQuote: async (
-    quote: any,
+    quote: ParsedQuote,
     clauseDeductibles: Map<string, string>
   ): Promise<DeductibleAnalysis[]> => {
     const results: DeductibleAnalysis[] = [];

@@ -40,6 +40,22 @@ export interface GraphQueryOptions {
   topK?: number;
 }
 
+interface GraphDbClient {
+  from(table: string): GraphTableBuilder;
+}
+
+interface GraphTableBuilder {
+  select(columns: string): GraphFilterBuilder;
+  upsert(values: unknown, options?: { onConflict?: string }): GraphFilterBuilder;
+  update(values: unknown): GraphFilterBuilder;
+  delete(): GraphFilterBuilder;
+}
+
+interface GraphFilterBuilder extends PromiseLike<{ data: unknown; error: { message: string } | null }> {
+  eq(column: string, value: unknown): GraphFilterBuilder;
+  in(column: string, values: readonly unknown[]): GraphFilterBuilder;
+}
+
 export interface CoverageGraphService {
   query(rawName: string, options?: GraphQueryOptions): Promise<GraphQueryResult>;
   queryDeductible(
@@ -173,7 +189,7 @@ function rankMappings(
 }
 
 export function createCoverageGraphService(deps: {
-  db?: any;
+  db?: GraphDbClient;
   cache?: {
     get: (key: string) => Promise<string | null>;
     setex: (key: string, ttl: number, value: string) => Promise<void>;
@@ -182,7 +198,7 @@ export function createCoverageGraphService(deps: {
   logger?: StructuredLogger;
   metrics?: MetricCollector;
 } = {}): CoverageGraphService {
-  const db = deps.db ?? supabase;
+  const db: GraphDbClient = deps.db ?? (supabase as unknown as GraphDbClient);
   const cache = deps.cache ?? {
     get: getCacheValue,
     setex: async (key: string, ttl: number, value: string) => setCacheValue(key, ttl, value),
