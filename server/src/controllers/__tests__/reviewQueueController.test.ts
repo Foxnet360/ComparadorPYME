@@ -1,8 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Request, Response } from 'express';
 
-const createMockChain = (finalValue: any = { data: [], error: null, count: 0 }) => {
-  const chain: any = vi.fn().mockReturnThis();
+interface MockChain {
+  (...args: unknown[]): unknown;
+  eq: ReturnType<typeof vi.fn>;
+  ilike: ReturnType<typeof vi.fn>;
+  gte: ReturnType<typeof vi.fn>;
+  lte: ReturnType<typeof vi.fn>;
+  order: ReturnType<typeof vi.fn>;
+  range: ReturnType<typeof vi.fn>;
+}
+
+const createMockChain = (finalValue: Record<string, unknown> = { data: [], error: null, count: 0 }) => {
+  const chain: MockChain = vi.fn().mockReturnThis() as unknown as MockChain;
   chain.eq = vi.fn().mockReturnThis();
   chain.ilike = vi.fn().mockReturnThis();
   chain.gte = vi.fn().mockReturnThis();
@@ -39,7 +49,7 @@ describe('reviewQueueController.getReviewQueueCoverages', () => {
     };
   });
 
-  function setupSupabaseReturn(value: any) {
+  function setupSupabaseReturn(value: Record<string, unknown>) {
     const chain = createMockChain(value);
     (supabase.from as ReturnType<typeof vi.fn>).mockReturnValue({
       select: vi.fn(() => chain),

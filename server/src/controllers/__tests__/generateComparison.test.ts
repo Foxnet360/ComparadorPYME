@@ -23,11 +23,12 @@ vi.mock('../../services/embeddingService', () => ({
 
 import { generateComparison } from '../analysisController';
 import { ParsedQuote } from '../../services/quoteParser';
-import { ScoringResult } from '../../services/quoteScorer';
+import { ScoringResult, ScoreWeights, ScoreBreakdown } from '../../services/quoteScorer';
 import { NarrativeResult } from '../../services/narrativeService';
 import { CrossReferenceResult } from '../../services/crossReferenceEngine';
 import { ValidationResult } from '../../services/quoteValidator';
-import { ConfidenceResult } from '../../services/confidenceScorer';
+import { ConfidenceResult, ConfidenceBreakdown } from '../../services/confidenceScorer';
+import { ClauseValidationSummary } from '../../services/clauseCoverageValidator';
 
 describe('generateComparison', () => {
     const mockQuotes: ParsedQuote[] = [
@@ -63,7 +64,7 @@ describe('generateComparison', () => {
         [0, {
             totalScore: 85,
             breakdown: { coverage: 90, deductibles: 80, exclusions: 85, priceRatio: 75, sublimits: 80, warranties: 70 },
-            weights: {} as any,
+            weights: {} as unknown as ScoreWeights,
             quotePriceRank: 1,
             marketPriceAverage: 8850000,
             coverageCount: 2,
@@ -75,7 +76,7 @@ describe('generateComparison', () => {
         [1, {
             totalScore: 78,
             breakdown: { coverage: 85, deductibles: 70, exclusions: 80, priceRatio: 65, sublimits: 75, warranties: 70 },
-            weights: {} as any,
+            weights: {} as unknown as ScoreWeights,
             quotePriceRank: 2,
             marketPriceAverage: 8850000,
             coverageCount: 2,
@@ -144,8 +145,8 @@ describe('generateComparison', () => {
     ]);
 
     const mockConfidenceResults = new Map<number, ConfidenceResult>([
-        [0, { score: 95, needsReview: false, isCritical: false, breakdown: {} as any }],
-        [1, { score: 88, needsReview: false, isCritical: false, breakdown: {} as any }]
+        [0, { score: 95, needsReview: false, isCritical: false, breakdown: {} as unknown as ConfidenceBreakdown }],
+        [1, { score: 88, needsReview: false, isCritical: false, breakdown: {} as unknown as ConfidenceBreakdown }]
     ]);
 
     it('should generate comparison with basic data', () => {
@@ -178,7 +179,7 @@ describe('generateComparison', () => {
     });
 
     it('should include clause validation data when provided', () => {
-        const clauseValidationResults = new Map<number, any>([
+        const clauseValidationResults = new Map<number, ClauseValidationSummary | null>([
             [0, {
                 hasClauseDocument: true,
                 verifiedCount: 2,
@@ -186,7 +187,7 @@ describe('generateComparison', () => {
                 mandatoryMissingCount: 0,
                 optionalMissingCount: 0,
                 scoreImpact: 0
-            }],
+            } as unknown as ClauseValidationSummary],
             [1, {
                 hasClauseDocument: true,
                 verifiedCount: 2,
@@ -194,7 +195,7 @@ describe('generateComparison', () => {
                 mandatoryMissingCount: 0,
                 optionalMissingCount: 1,
                 scoreImpact: -5
-            }]
+            } as unknown as ClauseValidationSummary]
         ]);
 
         const result = generateComparison(
@@ -214,7 +215,7 @@ describe('generateComparison', () => {
     });
 
     it('should include advanced analysis data when provided', () => {
-        const advancedAnalysisResults = new Map<number, any>([
+        const advancedAnalysisResults = new Map<number, Record<string, unknown>>([
             [0, {
                 deductibleAnalysis: [
                     { coverage: 'Incendio', level: 'MEDIUM', riskScore: 65 }
@@ -316,7 +317,7 @@ describe('generateComparison', () => {
 
     it('should add review prefix when critical extraction exists', () => {
         const criticalConfidence = new Map<number, ConfidenceResult>([
-            [0, { score: 45, needsReview: true, isCritical: true, breakdown: {} as any }]
+            [0, { score: 45, needsReview: true, isCritical: true, breakdown: {} as unknown as ConfidenceBreakdown }]
         ]);
 
         const result = generateComparison(

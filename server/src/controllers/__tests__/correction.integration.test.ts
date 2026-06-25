@@ -69,7 +69,7 @@ describe('POST /api/analysis/correction', () => {
     
     // Mock que la corrección ya existe
     const { supabase } = await import('../../config/database');
-    (supabase.from as any).mockReturnValueOnce({
+    (supabase.from as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce({
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
           single: vi.fn().mockResolvedValue({ 

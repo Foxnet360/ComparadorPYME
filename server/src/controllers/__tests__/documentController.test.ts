@@ -12,8 +12,17 @@ vi.mock('../../services/documentIndexingService', () => ({
 
 
 
-const createMockChain = (finalValue: any = { data: null, error: null }) => {
-  const chain: any = vi.fn().mockReturnThis();
+interface MockChain {
+  (...args: unknown[]): unknown;
+  eq: ReturnType<typeof vi.fn>;
+  is: ReturnType<typeof vi.fn>;
+  order: ReturnType<typeof vi.fn>;
+  limit: ReturnType<typeof vi.fn>;
+  single: ReturnType<typeof vi.fn>;
+}
+
+const createMockChain = (finalValue: Record<string, unknown> = { data: null, error: null }) => {
+  const chain: MockChain = vi.fn().mockReturnThis() as unknown as MockChain;
   chain.eq = vi.fn().mockReturnThis();
   chain.is = vi.fn().mockReturnThis();
   chain.order = vi.fn().mockReturnThis();
@@ -70,12 +79,8 @@ describe('documentController.createDocument', () => {
     };
   });
 
-  const createMockRequest = (documentType: string, file?: any): Partial<Request> => ({
-    file: file || {
-      path: '/tmp/test.pdf',
-      originalname: 'test.pdf',
-      size: 1024,
-    },
+  const createMockRequest = (documentType: string, file?: Express.Multer.File): Partial<Request> => ({
+    file: file || ({ path: '/tmp/test.pdf', originalname: 'test.pdf', size: 1024 } as Express.Multer.File),
     body: {
       insurerName: 'Test Insurer',
       documentName: 'Test Document',

@@ -23,11 +23,12 @@ vi.mock('../../services/embeddingService', () => ({
 
 import { generateComparison } from '../analysisController';
 import { ParsedQuote } from '../../services/quoteParser';
-import { ScoringResult } from '../../services/quoteScorer';
+import { ScoringResult, ScoreWeights, ScoreBreakdown } from '../../services/quoteScorer';
 import { NarrativeResult } from '../../services/narrativeService';
 import { CrossReferenceResult } from '../../services/crossReferenceEngine';
 import { ValidationResult } from '../../services/quoteValidator';
-import { ConfidenceResult } from '../../services/confidenceScorer';
+import { ConfidenceResult, ConfidenceBreakdown } from '../../services/confidenceScorer';
+import { ClauseValidationSummary } from '../../services/clauseCoverageValidator';
 
 describe('Performance Tests', () => {
   const createMockQuotes = (count: number): ParsedQuote[] => {
@@ -58,7 +59,7 @@ describe('Performance Tests', () => {
       scoringResults.set(i, {
         totalScore: 80 + i,
         breakdown: { coverage: 90, deductibles: 80, exclusions: 85, priceRatio: 75, sublimits: 80, warranties: 70 },
-        weights: {} as any,
+        weights: {} as unknown as ScoreWeights,
         quotePriceRank: i + 1,
         marketPriceAverage: 8500000,
         coverageCount: 3,
@@ -85,7 +86,7 @@ describe('Performance Tests', () => {
       ]);
 
       validationResults.set(i, { coverageCount: 3, expectedCoverageCount: 3, flags: [], isValid: true });
-      confidenceResults.set(i, { score: 95, needsReview: false, isCritical: false, breakdown: {} as any });
+      confidenceResults.set(i, { score: 95, needsReview: false, isCritical: false, breakdown: {} as unknown as ConfidenceBreakdown });
     }
 
     return { scoringResults, narrativeResults, crossRefResults, validationResults, confidenceResults };
@@ -116,8 +117,8 @@ describe('Performance Tests', () => {
     const quotes = createMockQuotes(5);
     const { scoringResults, narrativeResults, crossRefResults, validationResults, confidenceResults } = createMockMaps(5);
 
-    const clauseValidationResults = new Map<number, any>();
-    const advancedAnalysisResults = new Map<number, any>();
+    const clauseValidationResults = new Map<number, ClauseValidationSummary | null>();
+    const advancedAnalysisResults = new Map<number, Record<string, unknown>>();
 
     for (let i = 0; i < 5; i++) {
       clauseValidationResults.set(i, {
@@ -127,7 +128,7 @@ describe('Performance Tests', () => {
         mandatoryMissingCount: 0,
         optionalMissingCount: 0,
         scoreImpact: 0
-      });
+      } as unknown as ClauseValidationSummary);
 
       advancedAnalysisResults.set(i, {
         deductibleAnalysis: [{ coverage: 'Incendio', level: 'LOW', riskScore: 65 }],
