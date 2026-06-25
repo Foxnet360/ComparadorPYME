@@ -102,7 +102,7 @@ export interface ComparisonEngineConfig {
   model: string;
   thinkingLevel: 'MINIMAL' | 'LOW' | 'MEDIUM' | 'HIGH';
   responseMimeType: string;
-  responseSchema: any; // JSON Schema object
+  responseSchema: Record<string, unknown>; // JSON Schema object
   maxRetries: number;
   retryDelayMs: number;
 }

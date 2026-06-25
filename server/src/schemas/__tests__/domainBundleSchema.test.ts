@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { ZodError } from 'zod';
 import {
   BundleManifestSchema,
   validateTaxonomyBundle,
@@ -319,9 +320,10 @@ describe('domainBundleSchema', () => {
       try {
         BundleManifestSchema.parse({ version: '1.0.0' });
         expect.fail('Expected parse to throw');
-      } catch (error: any) {
-        expect(error.issues).toBeDefined();
-        const paths = error.issues.map((i: any) => i.path);
+      } catch (error) {
+        const zodError = error as ZodError;
+        expect(zodError.issues).toBeDefined();
+        const paths = zodError.issues.map((i) => i.path);
         expect(paths).toContainEqual(['domain']);
         expect(paths).toContainEqual(['files']);
       }
