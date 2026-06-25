@@ -77,6 +77,17 @@ export interface VariableComparison {
   }>;
 }
 
+type ComparisonMatrixCell = Pick<
+  VariableComparison['variables'][number],
+  'insuredAmount' | 'deductible' | 'sublimit' | 'exclusions' | 'confidence'
+>;
+
+interface ComparisonMatrixRow {
+  variable: string;
+  groupId: string;
+  [insurer: string]: ComparisonMatrixCell | null | string;
+}
+
 export interface ComparisonWeights {
   insuredAmount: number;
   deductible: number;
@@ -287,21 +298,15 @@ export const variableComparator = {
    */
   generateComparisonMatrix(
     comparisons: VariableComparison[]
-  ): Array<{
-    variable: string;
-    [insurer: string]: any;
-  }> {
+  ): ComparisonMatrixRow[] {
     const insurers = [...new Set(
       comparisons.flatMap(c => c.variables.map(v => v.insurerName))
     )];
-    
-    const matrix: Array<{
-      variable: string;
-      [insurer: string]: any;
-    }> = [];
-    
+
+    const matrix: ComparisonMatrixRow[] = [];
+
     for (const comparison of comparisons) {
-      const row: any = {
+      const row: ComparisonMatrixRow = {
         variable: comparison.groupName,
         groupId: comparison.groupId
       };
