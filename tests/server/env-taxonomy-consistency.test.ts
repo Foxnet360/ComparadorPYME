@@ -17,7 +17,7 @@ const mockLogger = {
 };
 
 vi.mock(import('../../server/src/config/env'), async (importOriginal) => {
-  const actual = await importOriginal<any>();
+  const actual = (await importOriginal()) as { env: Record<string, unknown> };
   return {
     ...actual,
     env: {
@@ -30,7 +30,7 @@ vi.mock(import('../../server/src/config/env'), async (importOriginal) => {
 });
 
 vi.mock('../../server/src/services/domainBundleLoader', () => ({
-  loadDomainJson: (...args: any[]) => mockLoadDomainJson(...args),
+  loadDomainJson: (...args: unknown[]) => mockLoadDomainJson(...args),
 }));
 
 vi.mock('../../server/src/config/logger', () => ({

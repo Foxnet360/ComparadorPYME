@@ -35,7 +35,7 @@ describe('extractionSchemas ZOD_SCHEMA_VERSION gating', () => {
     });
 
     expect(parsed.insurerName).toBe('SBS');
-    expect((parsed as any).extraUnknownField).toBeUndefined();
+    expect((parsed as unknown as Record<string, unknown>).extraUnknownField).toBeUndefined();
   });
 
   it('rejects unknown keys in v2 mode', async () => {

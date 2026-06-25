@@ -9,7 +9,7 @@ const validatePremiumBreakdown = vi.fn(() => ({ warnings: [] }));
 
 vi.mock('../../server/src/services/gemini', () => ({
   geminiService: {
-    extractFromPdfWithVision: (...args: any[]) => extractFromPdfWithVision(...args),
+    extractFromPdfWithVision: (...args: unknown[]) => extractFromPdfWithVision(...args),
     extractStructured: vi.fn(async () => ({
       insurerName: 'SBS',
       policyName: 'PYME',
@@ -22,18 +22,18 @@ vi.mock('../../server/src/services/gemini', () => ({
 
 vi.mock('../../server/src/services/pdfExtractor', () => ({
   pdfExtractor: {
-    extractTextFromPdf: (...args: any[]) => extractTextFromPdf(...args),
+    extractTextFromPdf: (...args: unknown[]) => extractTextFromPdf(...args),
   },
 }));
 
 vi.mock('../../server/src/services/coverageNormalizer', () => ({
-  buildCanonicalCoverages: (...args: any[]) => buildCanonicalCoverages(...args),
+  buildCanonicalCoverages: (...args: unknown[]) => buildCanonicalCoverages(...args),
 }));
 
 vi.mock('../../server/src/services/premiumExtractor', () => ({
-  extractPremiumBreakdown: (...args: any[]) => extractPremiumBreakdown(...args),
-  extractPerCoveragePremiums: (...args: any[]) => extractPerCoveragePremiums(...args),
-  validatePremiumBreakdown: (...args: any[]) => validatePremiumBreakdown(...args),
+  extractPremiumBreakdown: (...args: unknown[]) => extractPremiumBreakdown(...args),
+  extractPerCoveragePremiums: (...args: unknown[]) => extractPerCoveragePremiums(...args),
+  validatePremiumBreakdown: (...args: unknown[]) => validatePremiumBreakdown(...args),
   normalizeCurrency: vi.fn(() => 'COP'),
 }));
 
@@ -156,7 +156,7 @@ describe('processQuoteMultimodal metrics and formatFamily', () => {
 
   it('propagates formatFamily into metrics and parsed quote', async () => {
     const metrics = createExtractionMetricsEmitter();
-    const file = { path: '/tmp/quote.pdf', originalname: 'quote-sbs.pdf' } as any;
+    const file = { path: '/tmp/quote.pdf', originalname: 'quote-sbs.pdf' } as unknown as Express.Multer.File;
 
     const parsed = await processQuoteMultimodal(file, 0, 1, {
       domain: 'pyme',
@@ -175,7 +175,7 @@ describe('processQuoteMultimodal metrics and formatFamily', () => {
   });
 
   it('emits repair metric when JSON repair is used', async () => {
-    extractFromPdfWithVision.mockImplementation(async (_path, _prompt, _name, _text, options: any) => {
+    extractFromPdfWithVision.mockImplementation(async (_path, _prompt, _name, _text, options: { onRepairUsed?: (reason: string) => void }) => {
       if (options?.onRepairUsed) {
         options.onRepairUsed('trailing_comma');
       }
@@ -197,7 +197,7 @@ describe('processQuoteMultimodal metrics and formatFamily', () => {
     });
 
     const metrics = createExtractionMetricsEmitter();
-    const file = { path: '/tmp/quote.pdf', originalname: 'quote-sbs.pdf' } as any;
+    const file = { path: '/tmp/quote.pdf', originalname: 'quote-sbs.pdf' } as unknown as Express.Multer.File;
 
     await processQuoteMultimodal(file, 0, 1, {
       domain: 'pyme',
@@ -214,7 +214,7 @@ describe('processQuoteMultimodal metrics and formatFamily', () => {
     extractFromPdfWithVision.mockRejectedValue(new Error('Gemini service unavailable (503)'));
 
     const metrics = createExtractionMetricsEmitter();
-    const file = { path: '/tmp/quote.pdf', originalname: 'quote-sbs.pdf' } as any;
+    const file = { path: '/tmp/quote.pdf', originalname: 'quote-sbs.pdf' } as unknown as Express.Multer.File;
 
     const parsed = await processQuoteMultimodal(file, 0, 1, {
       domain: 'pyme',

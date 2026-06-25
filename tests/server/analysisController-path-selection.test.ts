@@ -12,8 +12,8 @@ const shouldUseV2 = vi.fn((_file, nativeTextResult) => {
 });
 
 vi.mock('../../server/src/services/quoteProcessingService', () => ({
-  processQuoteMultimodal: (...args: any[]) => processQuoteMultimodal(...args),
-  processQuoteLegacy: (...args: any[]) => processQuoteLegacy(...args),
+  processQuoteMultimodal: (...args: unknown[]) => processQuoteMultimodal(...args),
+  processQuoteLegacy: (...args: unknown[]) => processQuoteLegacy(...args),
   createDefaultScoringResult: vi.fn(() => ({
     totalScore: 0,
     dataQualityScore: 0,
@@ -29,7 +29,7 @@ vi.mock('../../server/src/services/quoteProcessingService', () => ({
     infoAlerts: 0,
   })),
   isMultimodalEnabled: () => isMultimodalEnabled(),
-  shouldUseV2: (_file: any, nativeTextResult: any) => shouldUseV2(_file, nativeTextResult),
+  shouldUseV2: (_file: unknown, nativeTextResult: unknown) => shouldUseV2(_file, nativeTextResult),
 }));
 
 vi.mock('../../server/src/services/pdfExtractor', () => ({
@@ -195,7 +195,7 @@ app.post(
   analysisController.uploadAndAnalyze
 );
 
-const makeParsedQuote = (overrides: any = {}): any => ({
+const makeParsedQuote = (overrides: Record<string, unknown> = {}): Record<string, unknown> => ({
   insurerName: 'SBS',
   policyName: 'PYME',
   priceAnnual: 5_000_000,
@@ -216,7 +216,7 @@ describe('analysisController path selection', () => {
   });
 
   it('uses V2 for non-scanned PDFs by default', async () => {
-    (pdfExtractor.extractTextFromPdf as any).mockResolvedValue({
+    (pdfExtractor.extractTextFromPdf as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       text: 'Texto de prueba',
       pages: [{ pageNumber: 1, text: 'Texto de prueba', wordCount: 3, hasContent: true }],
       pageTextMap: { 1: 'Texto de prueba' },
@@ -235,7 +235,7 @@ describe('analysisController path selection', () => {
   });
 
   it('uses legacy path for scanned PDFs', async () => {
-    (pdfExtractor.extractTextFromPdf as any).mockResolvedValue({
+    (pdfExtractor.extractTextFromPdf as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       text: '',
       pages: [{ pageNumber: 1, text: '', wordCount: 0, hasContent: false }],
       pageTextMap: {},
@@ -255,7 +255,7 @@ describe('analysisController path selection', () => {
 
   it('falls back to legacy when V2 is disabled via feature flag', async () => {
     isMultimodalEnabled.mockReturnValue(false);
-    (pdfExtractor.extractTextFromPdf as any).mockResolvedValue({
+    (pdfExtractor.extractTextFromPdf as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       text: 'Texto de prueba',
       pages: [{ pageNumber: 1, text: 'Texto de prueba', wordCount: 3, hasContent: true }],
       pageTextMap: { 1: 'Texto de prueba' },
