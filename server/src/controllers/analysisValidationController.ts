@@ -221,7 +221,7 @@ export const saveCorrection = async (req: Request, res: Response): Promise<void>
     if (!parseResult.success) {
       res.status(400).json({
         error: 'Validation failed',
-        details: parseResult.error.issues.map((err: any) => ({
+        details: parseResult.error.issues.map((err) => ({
           field: err.path.join('.'),
           message: err.message,
         })),
@@ -240,7 +240,7 @@ export const saveCorrection = async (req: Request, res: Response): Promise<void>
         .single();
       
       if (!lookupError && existingCorrection) {
-        res.json({ id: (existingCorrection as any).id, success: true, cached: true });
+        res.json({ id: (existingCorrection as Record<string, unknown>).id, success: true, cached: true });
         return;
       }
     }
@@ -322,8 +322,8 @@ export const exportAnalysisExcel = async (req: Request, res: Response): Promise<
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename=comparativa_seguros_${id}.xlsx`);
     res.send(buffer);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('❌ [exportAnalysisExcel] Error exporting to Excel:', err);
-    res.status(500).json({ error: 'Internal server error while exporting to Excel', details: err.message });
+    res.status(500).json({ error: 'Internal server error while exporting to Excel', details: err instanceof Error ? err.message : 'Unknown error' });
   }
 };

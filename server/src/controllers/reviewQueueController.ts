@@ -70,7 +70,7 @@ export const getReviewQueueCoverages = async (req: Request, res: Response): Prom
       return;
     }
 
-    const records = (data || []).map((record: any) => ({
+    const records = (data || []).map((record: Record<string, unknown>) => ({
       id: record.id,
       rawName: record.raw_name,
       insurerName: record.insurer_name,
@@ -88,12 +88,12 @@ export const getReviewQueueCoverages = async (req: Request, res: Response): Prom
         total: count || 0,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('❌ [ReviewQueue] Unexpected error:', err);
     res.status(500).json({
       success: false,
       error: 'Internal server error while querying review queue',
-      details: err?.message || 'Unknown error',
+      details: err instanceof Error ? err.message : 'Unknown error',
     });
   }
 };

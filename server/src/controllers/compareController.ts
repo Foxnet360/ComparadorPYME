@@ -32,8 +32,8 @@ export async function compareExtraction(req: Request, res: Response) {
       try {
         const textResult = await pdfExtractor.extractTextFromPdf(file.path);
         v1Result = await quoteParser.parse(textResult.text);
-      } catch (error: any) {
-        v1Error = error.message;
+      } catch (error: unknown) {
+        v1Error = error instanceof Error ? error.message : 'Unknown error';
       }
       const v1Time = Date.now() - v1Start;
 
@@ -95,8 +95,8 @@ export async function compareExtraction(req: Request, res: Response) {
             deductible: c.deductible,
           })),
         };
-      } catch (error: any) {
-        v2Error = error.message;
+      } catch (error: unknown) {
+        v2Error = error instanceof Error ? error.message : 'Unknown error';
       }
       const v2Time = Date.now() - v2Start;
 
@@ -156,11 +156,11 @@ export async function compareExtraction(req: Request, res: Response) {
       recommendation: summary.v2Success >= summary.v1Success ? 'V2 recommended' : 'V1 more stable',
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Compare extraction error:', error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 }
