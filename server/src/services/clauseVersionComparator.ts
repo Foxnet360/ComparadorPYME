@@ -27,6 +27,12 @@ export interface VersionComparisonResult {
   comparisonDate: string;
 }
 
+interface ClauseCoverageRow {
+  coverage_name: string;
+  deductible_text: string;
+  exclusions?: string[];
+}
+
 export const clauseVersionComparator = {
   /**
    * Compare two versions of a clause document
@@ -50,10 +56,10 @@ export const clauseVersionComparator = {
       .eq('id', newDocumentId)
       .single();
     
-    const oldDocAny = oldDoc as any;
-    const newDocAny = newDoc as any;
+    const oldDocTyped = oldDoc as Record<string, unknown> | null;
+    const newDocTyped = newDoc as Record<string, unknown> | null;
     
-    if (!oldDocAny || !newDocAny) {
+    if (!oldDocTyped || !newDocTyped) {
       throw new Error('One or both documents not found');
     }
     
@@ -71,8 +77,18 @@ export const clauseVersionComparator = {
     const diffs: ClauseVersionDiff[] = [];
     
     // Compare coverages
-    const oldCoverageMap = new Map((oldCoverages as any[])?.map(c => [c.coverage_name.toLowerCase(), c]) || []);
-    const newCoverageMap = new Map((newCoverages as any[])?.map(c => [c.coverage_name.toLowerCase(), c]) || []);
+    const oldCoverageMap = new Map(
+      ((oldCoverages ?? []) as Array<Record<string, unknown>>).map(c => [
+        (c.coverage_name as string).toLowerCase(),
+        c as unknown as ClauseCoverageRow
+      ])
+    );
+    const newCoverageMap = new Map(
+      ((newCoverages ?? []) as Array<Record<string, unknown>>).map(c => [
+        (c.coverage_name as string).toLowerCase(),
+        c as unknown as ClauseCoverageRow
+      ])
+    );
     
     // Check for new coverages
     for (const [name, newCov] of newCoverageMap) {
@@ -153,10 +169,10 @@ export const clauseVersionComparator = {
     console.log(`✅ [clauseVersionComparator] Found ${diffs.length} differences`);
     
     return {
-      oldVersion: oldDocAny.version || 'unknown',
-      newVersion: newDocAny.version || 'unknown',
-      insurerName: oldDocAny.insurer_name || 'Unknown',
-      productName: oldDocAny.product_name || 'Unknown',
+      oldVersion: (oldDocTyped.version as string | undefined) || 'unknown',
+      newVersion: (newDocTyped.version as string | undefined) || 'unknown',
+      insurerName: (oldDocTyped.insurer_name as string | undefined) || 'Unknown',
+      productName: (oldDocTyped.product_name as string | undefined) || 'Unknown',
       diffs,
       favorableCount,
       unfavorableCount,
@@ -172,22 +188,21 @@ export const clauseVersionComparator = {
     let query = supabase
       .from('documents')
       .select('*, insurers!inner(name)')
-      .eq('insurers.name', insurerName)
-      .order('created_at', { ascending: false });
-    
+      .eq('insurers.name', insurerName);
+
     if (productName) {
-      query = (query as any).eq('product_name', productName);
+      query = query.eq('product_name', productName);
     }
-    
-    const { data, error } = await query;
+
+    const { data, error } = await query.order('created_at', { ascending: false });
     
     if (error) {
       throw error;
     }
     
-    return ((data as any[]) || []).map(d => ({
+    return ((data ?? []) as Array<Record<string, unknown>>).map(d => ({
       ...d,
-      insurer_name: d.insurers?.name
+      insurer_name: (d.insurers as Record<string, unknown> | undefined)?.name
     }));
   }
 };
