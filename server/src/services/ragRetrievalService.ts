@@ -75,7 +75,7 @@ export const ragRetrievalService = {
                 coverage_filter: coverageTags || null,
                 section_filter: sectionType || null,
                 match_count: limit
-            } as any);
+            } as unknown as never);
 
         if (error) {
             console.error('❌ [ragRetrieval] Hybrid search error:', error);
@@ -104,15 +104,15 @@ export const ragRetrievalService = {
             return [];
         }
 
-        const results = (data as any[]).map(row => ({
-            id: row.id,
-            documentId: row.document_id,
-            insurerName: row.insurer_name,
-            sectionType: row.section_type,
-            coverageTags: row.coverage_tags || [],
-            content: row.content,
-            pageNumber: row.page_number,
-            similarity: row.similarity
+        const results = (data as Array<Record<string, unknown>>).map(row => ({
+            id: row.id as string,
+            documentId: row.document_id as string,
+            insurerName: row.insurer_name as string,
+            sectionType: row.section_type as string,
+            coverageTags: (row.coverage_tags as string[]) || [],
+            content: row.content as string,
+            pageNumber: row.page_number as number,
+            similarity: row.similarity as number
         }));
 
         const avgSimilarity = results.length > 0 
@@ -163,7 +163,7 @@ export const ragRetrievalService = {
                 insurer_filter: insurerName || null,
                 coverage_filter: coverageTags || null,
                 match_count: limit
-            } as any);
+            } as unknown as never);
 
         if (error) {
             console.error('❌ [ragRetrieval] Vector search error:', error);
@@ -192,15 +192,15 @@ export const ragRetrievalService = {
             return [];
         }
 
-        const results = (data as any[]).map(row => ({
-            id: row.id,
-            documentId: row.document_id,
-            insurerName: row.insurer_name,
-            sectionType: row.section_type,
-            coverageTags: row.coverage_tags || [],
-            content: row.content,
-            pageNumber: row.page_number,
-            similarity: row.similarity
+        const results = (data as Array<Record<string, unknown>>).map(row => ({
+            id: row.id as string,
+            documentId: row.document_id as string,
+            insurerName: row.insurer_name as string,
+            sectionType: row.section_type as string,
+            coverageTags: (row.coverage_tags as string[]) || [],
+            content: row.content as string,
+            pageNumber: row.page_number as number,
+            similarity: row.similarity as number
         }));
 
         const avgSimilarity = results.length > 0
@@ -249,7 +249,7 @@ export const ragRetrievalService = {
                 insurer_filter: insurerName || null,
                 section_filter: sectionType || null,
                 match_count: limit
-            } as any);
+            } as unknown as never);
 
         if (error) {
             console.error('❌ [ragRetrieval] Coverage search error:', error);
@@ -278,15 +278,15 @@ export const ragRetrievalService = {
             return [];
         }
 
-        const results = (data as any[]).map(row => ({
-            id: row.id,
-            documentId: row.document_id,
-            insurerName: row.insurer_name,
-            sectionType: row.section_type,
-            coverageTags: row.coverage_tags || [],
-            content: row.content,
-            pageNumber: row.page_number,
-            similarity: row.similarity
+        const results = (data as Array<Record<string, unknown>>).map(row => ({
+            id: row.id as string,
+            documentId: row.document_id as string,
+            insurerName: row.insurer_name as string,
+            sectionType: row.section_type as string,
+            coverageTags: (row.coverage_tags as string[]) || [],
+            content: row.content as string,
+            pageNumber: row.page_number as number,
+            similarity: row.similarity as number
         }));
 
         // Filter by minimum similarity threshold
@@ -372,7 +372,7 @@ export const ragRetrievalService = {
                         match_count: Math.ceil(limit / expansions.length) + 5,
                         vector_weight: expansion.weight,
                         text_weight: 1 - expansion.weight
-                    } as any);
+                    } as unknown as never);
 
                 if (error) {
                     console.warn(`⚠️ [ragRetrieval] Search error for "${expansion.query}":`, error);
@@ -380,15 +380,15 @@ export const ragRetrievalService = {
                 }
 
                 if (data) {
-                    const results = (data as any[]).map(row => ({
-                        id: row.id,
-                        documentId: row.document_id,
-                        insurerName: row.insurer_name,
-                        sectionType: row.section_type,
-                        coverageTags: row.coverage_tags || [],
-                        content: row.content,
-                        pageNumber: row.page_number,
-                        similarity: row.combined_score || row.similarity
+                    const results = (data as Array<Record<string, unknown>>).map(row => ({
+                        id: row.id as string,
+                        documentId: row.document_id as string,
+                        insurerName: row.insurer_name as string,
+                        sectionType: row.section_type as string,
+                        coverageTags: (row.coverage_tags as string[]) || [],
+                        content: row.content as string,
+                        pageNumber: row.page_number as number,
+                        similarity: (row.combined_score as number) || (row.similarity as number)
                     }));
                     
                     allResults.push(...results);
@@ -479,7 +479,7 @@ export const ragRetrievalService = {
             let matchedInsurerId: string | null = null;
             
             if (insurerData && insurerData.length > 0) {
-                matchedInsurerId = (insurerData[0] as any).id;
+                matchedInsurerId = (insurerData[0] as Record<string, unknown>).id as string;
             } else {
                 // Fuzzy matching ILIKE si no hay match directo
                 const { data: fuzzyData, error: fuzzyError } = await supabase
@@ -491,7 +491,7 @@ export const ragRetrievalService = {
                 if (fuzzyError || !fuzzyData || fuzzyData.length === 0) {
                     return false;
                 }
-                matchedInsurerId = (fuzzyData[0] as any).id;
+                matchedInsurerId = (fuzzyData[0] as Record<string, unknown>).id as string;
             }
 
             const insurerId = matchedInsurerId!;
@@ -513,7 +513,7 @@ export const ragRetrievalService = {
             const { count, error: chunksError } = await supabase
                 .from('chunks')
                 .select('id', { count: 'exact', head: true })
-                .eq('document_id', (docData[0] as any).id)
+                .eq('document_id', (docData[0] as Record<string, unknown>).id as string)
                 .limit(1);
 
             if (chunksError || count === null || count === 0) {
@@ -643,7 +643,7 @@ export const ragRetrievalService = {
                         document_id: docId,
                         section_filter: sectionType || null,
                         match_count: Math.ceil(parentLimit / parentDocIds.length)
-                    } as any);
+                    } as unknown as never);
                 
                 if (error) {
                     console.warn(`⚠️ [ragRetrieval] Error fetching parent chunks for doc ${docId}:`, error);
@@ -651,14 +651,14 @@ export const ragRetrievalService = {
                 }
                 
                 if (data) {
-                    const parents = (data as any[]).map(row => ({
-                        id: row.id,
-                        documentId: row.document_id,
-                        insurerName: row.insurer_name,
-                        sectionType: row.section_type,
-                        coverageTags: row.coverage_tags || [],
-                        content: row.content,
-                        pageNumber: row.page_number,
+                    const parents = (data as Array<Record<string, unknown>>).map(row => ({
+                        id: row.id as string,
+                        documentId: row.document_id as string,
+                        insurerName: row.insurer_name as string,
+                        sectionType: row.section_type as string,
+                        coverageTags: (row.coverage_tags as string[]) || [],
+                        content: row.content as string,
+                        pageNumber: row.page_number as number,
                         similarity: 0.85 // Parent chunks get high base similarity
                     }));
                     parentResults.push(...parents);
