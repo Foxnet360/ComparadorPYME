@@ -2,7 +2,13 @@ import * as ExcelJS from 'exceljs';
 import { QuoteAnalysis, } from '../types';
 import { transformQuotesToMatrix, parseNumericValue} from './matrixTransformer';
 
-export function formatRatioCell(val: any): { value: any; numFmt?: string } {
+interface ClientInfo {
+  name?: string;
+  activity?: string;
+  location?: string;
+}
+
+export function formatRatioCell(val: string | number): { value: string | number; numFmt?: string } {
   if (typeof val === 'string') {
     const pct = parseFloat(val.replace(/[^0-9,.]/g, '').replace(',', '.')) / 100;
     if (!isNaN(pct)) {
@@ -15,7 +21,7 @@ export function formatRatioCell(val: any): { value: any; numFmt?: string } {
   }
 }
 
-export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: any, cellNotes?: Record<string, string>): Promise<Buffer> {
+export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: ClientInfo, cellNotes?: Record<string, string>): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Agente Comparador CSA';
   workbook.lastModifiedBy = 'Agente Comparador CSA';
