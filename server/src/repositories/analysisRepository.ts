@@ -4,35 +4,42 @@
  */
 
 import { supabase, handleDbError} from './baseRepository';
+import { QuoteAnalysis } from '../types';
 
 export interface AnalysisHistoryRecord {
   id?: string;
-  user_id: string;
-  quotes_count: number;
-  total_coverages: number;
-  average_confidence: number;
-  best_insurer: string;
-  best_score: number;
-  price_range_min: number;
-  price_range_max: number;
-  extraction_confidence: number;
-  needs_review: boolean;
-  validation_flags_count: number;
+  user_id?: string;
+  quotes_count?: number;
+  total_coverages?: number;
+  average_confidence?: number;
+  best_insurer?: string;
+  best_score?: number;
+  price_range_min?: number;
+  price_range_max?: number;
+  extraction_confidence?: number;
+  needs_review?: boolean;
+  validation_flags_count?: number;
+  client_name?: string;
+  analysis_result?: { quotes?: QuoteAnalysis[]; [key: string]: unknown };
+  recommendation?: string | null;
+  total_score?: number | null;
+  quote_document_ids?: string[] | null;
+  clause_document_ids?: string[] | null;
   created_at?: string;
   // Unified comparison fields
   engine_type?: 'legacy' | 'unified' | 'fallback';
   processing_time_ms?: number;
   confidence_score?: number;
-  unified_result?: any;
+  unified_result?: unknown;
   fallback_reason?: string;
 }
 
 export async function saveAnalysisHistory(
-  data: Record<string, any>
+  data: Record<string, unknown>
 ): Promise<string | null> {
   const { data: result, error } = await supabase
-    .from('analysis_history' as any)
-    .insert(data as any)
+    .from('analysis_history')
+    .insert(data as never)
     .select('id')
     .single();
 
@@ -41,7 +48,7 @@ export async function saveAnalysisHistory(
     return null;
   }
 
-  return (result as any)?.id || null;
+  return (result as { id?: string })?.id || null;
 }
 
 export async function getAnalysisHistoryByUser(
@@ -62,7 +69,7 @@ export async function getAnalysisHistoryByUser(
 
 export async function getAnalysisById(
   id: string
-): Promise<any> {
+): Promise<AnalysisHistoryRecord | null> {
   const { data, error } = await supabase
     .from('analysis_history')
     .select('*')
@@ -73,7 +80,13 @@ export async function getAnalysisById(
     handleDbError(error, 'Failed to fetch analysis by id');
   }
 
-  return data;
+  return data as AnalysisHistoryRecord | null;
+}
+
+interface EngineMetricsRecord {
+  engine_type: string;
+  processing_time_ms: number | null;
+  confidence_score: number | null;
 }
 
 /**
@@ -92,12 +105,12 @@ export async function getUnifiedEngineMetrics(
   avgConfidenceScore: number;
 }> {
   const { data, error } = await supabase
-    .from('analysis_history')
+    .from('analysis_history' as never)
     .select('engine_type, processing_time_ms, confidence_score')
     .gte('created_at', since.toISOString())
     .not('engine_type', 'is', null);
 
-  if (error || !data || (data as any[]).length === 0) {
+  if (error || !data || (data as EngineMetricsRecord[]).length === 0) {
     return {
       total: 0,
       unified: 0,
@@ -110,19 +123,19 @@ export async function getUnifiedEngineMetrics(
     };
   }
 
-  const records = data as any[];
+  const records = data as EngineMetricsRecord[];
   const total = records.length;
-  const unified = records.filter((r: any) => r.engine_type === 'unified').length;
-  const legacy = records.filter((r: any) => r.engine_type === 'legacy').length;
-  const fallback = records.filter((r: any) => r.engine_type === 'fallback').length;
+  const unified = records.filter((r: EngineMetricsRecord) => r.engine_type === 'unified').length;
+  const legacy = records.filter((r: EngineMetricsRecord) => r.engine_type === 'legacy').length;
+  const fallback = records.filter((r: EngineMetricsRecord) => r.engine_type === 'fallback').length;
 
   const processingTimes = records
-    .filter((r: any) => r.processing_time_ms > 0)
-    .map((r: any) => r.processing_time_ms);
+    .filter((r: EngineMetricsRecord) => typeof r.processing_time_ms === 'number' && r.processing_time_ms > 0)
+    .map((r: EngineMetricsRecord) => r.processing_time_ms as number);
   
   const confidenceScores = records
-    .filter((r: any) => r.confidence_score > 0)
-    .map((r: any) => r.confidence_score);
+    .filter((r: EngineMetricsRecord) => typeof r.confidence_score === 'number' && r.confidence_score > 0)
+    .map((r: EngineMetricsRecord) => r.confidence_score as number);
 
   return {
     total,
