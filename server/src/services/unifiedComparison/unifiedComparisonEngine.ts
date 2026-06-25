@@ -3,7 +3,7 @@
  * Main service for comparing multiple insurance quotes in a single LLM call
  */
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { UnifiedComparisonResult, ComparisonEngineConfig } from "../../types/unifiedComparison";
 import { comparisonPromptBuilder } from "./comparisonPromptBuilder";
 import { comparisonResultValidator } from "./comparisonResultValidator";
@@ -21,6 +21,13 @@ const getGenAI = () => {
   }
   return new GoogleGenAI({ apiKey });
 };
+
+interface GeminiFile {
+  name?: string;
+  displayName?: string;
+  uri?: string;
+  state?: string;
+}
 
 // Default configuration following Gemini 3.5 best practices
 const DEFAULT_CONFIG: ComparisonEngineConfig = {
@@ -63,7 +70,7 @@ export class UnifiedComparisonEngine {
   async compare(pdfPaths: string[]): Promise<UnifiedComparisonResult> {
     const startTime = Date.now();
     const correlationId = `compare-${Date.now()}`;
-    let uploadedFiles: any[] = [];
+    let uploadedFiles: GeminiFile[] = [];
     
     console.log(`🔍 [UnifiedComparison] Starting comparison for ${pdfPaths.length} quotes [${correlationId}]`);
 
@@ -128,9 +135,9 @@ export class UnifiedComparisonEngine {
 
       return parsedResult;
 
-    } catch (error: any) {
-      console.error(`❌ [UnifiedComparison] Failed [${correlationId}]:`, error.message);
-      throw new Error(`Comparison failed: ${error.message}`);
+    } catch (error) {
+      console.error(`❌ [UnifiedComparison] Failed [${correlationId}]:`, error instanceof Error ? error.message : String(error));
+      throw new Error(`Comparison failed: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       // Clean up files in Gemini File API
       if (uploadedFiles.length > 0) {
@@ -138,10 +145,10 @@ export class UnifiedComparisonEngine {
         const ai = getGenAI();
         for (const file of uploadedFiles) {
           try {
-            await ai.files.delete({ name: file.name });
-            console.log(`   Deleted: ${file.name} (${file.displayName})`);
-          } catch (deleteError: any) {
-            console.warn(`   ⚠️ Failed to delete file ${file.name} from Gemini API:`, deleteError.message);
+            await ai.files.delete({ name: file.name ?? '' });
+            console.log(`   Deleted: ${file.name ?? 'unknown'} (${file.displayName ?? 'unnamed'})`);
+          } catch (deleteError) {
+            console.warn(`   ⚠️ Failed to delete file ${file.name ?? 'unknown'} from Gemini API:`, deleteError instanceof Error ? deleteError.message : String(deleteError));
           }
         }
       }
@@ -156,7 +163,7 @@ export class UnifiedComparisonEngine {
     clausePaths: string[]
   ): Promise<UnifiedComparisonResult> {
     const correlationId = `deep-${Date.now()}`;
-    let uploadedClauses: any[] = [];
+    let uploadedClauses: GeminiFile[] = [];
     
     console.log(`🔍 [DeepMode] Starting clause validation for ${clausePaths.length} clauses [${correlationId}]`);
 
@@ -181,9 +188,9 @@ export class UnifiedComparisonEngine {
       console.log(`✅ [DeepMode] Completed [${correlationId}]`);
       return enrichedComparison;
 
-    } catch (error: any) {
-      console.error(`❌ [DeepMode] Failed [${correlationId}]:`, error.message);
-      throw new Error(`Deep mode validation failed: ${error.message}`);
+    } catch (error) {
+      console.error(`❌ [DeepMode] Failed [${correlationId}]:`, error instanceof Error ? error.message : String(error));
+      throw new Error(`Deep mode validation failed: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       // Clean up files in Gemini File API
       if (uploadedClauses.length > 0) {
@@ -191,10 +198,10 @@ export class UnifiedComparisonEngine {
         const ai = getGenAI();
         for (const file of uploadedClauses) {
           try {
-            await ai.files.delete({ name: file.name });
-            console.log(`   Deleted: ${file.name} (${file.displayName})`);
-          } catch (deleteError: any) {
-            console.warn(`   ⚠️ Failed to delete file ${file.name} from Gemini API:`, deleteError.message);
+            await ai.files.delete({ name: file.name ?? '' });
+            console.log(`   Deleted: ${file.name ?? 'unknown'} (${file.displayName ?? 'unnamed'})`);
+          } catch (deleteError) {
+            console.warn(`   ⚠️ Failed to delete file ${file.name ?? 'unknown'} from Gemini API:`, deleteError instanceof Error ? deleteError.message : String(deleteError));
           }
         }
       }
@@ -204,7 +211,7 @@ export class UnifiedComparisonEngine {
   /**
    * Upload PDF files to Gemini File API
    */
-  private async uploadFiles(filePaths: string[]): Promise<any[]> {
+  private async uploadFiles(filePaths: string[]): Promise<GeminiFile[]> {
     const ai = getGenAI();
     const uploadedFiles = [];
 
@@ -231,8 +238,8 @@ export class UnifiedComparisonEngine {
         }
 
         uploadedFiles.push(file);
-      } catch (error: any) {
-        console.error(`❌ [UnifiedComparison] Failed to upload ${filePath}:`, error.message);
+      } catch (error) {
+        console.error(`❌ [UnifiedComparison] Failed to upload ${filePath}:`, error instanceof Error ? error.message : String(error));
         throw error;
       }
     }
@@ -244,7 +251,7 @@ export class UnifiedComparisonEngine {
    * Call Gemini API with structured output
    */
   private async callGemini(
-    files: any[],
+    files: GeminiFile[],
     prompt: string,
     correlationId: string
   ): Promise<string> {
@@ -272,7 +279,7 @@ export class UnifiedComparisonEngine {
         contents,
         config: {
           thinkingConfig: {
-            thinkingLevel: this.config.thinkingLevel as any
+            thinkingLevel: ThinkingLevel[this.config.thinkingLevel]
           },
           responseMimeType: this.config.responseMimeType,
           responseSchema: this.config.responseSchema
@@ -292,8 +299,8 @@ export class UnifiedComparisonEngine {
       console.log(`✅ [UnifiedComparison] Gemini response received [${correlationId}]`);
       return result.text;
 
-    } catch (error: any) {
-      console.error(`❌ [UnifiedComparison] Gemini call failed [${correlationId}]:`, error.message);
+    } catch (error) {
+      console.error(`❌ [UnifiedComparison] Gemini call failed [${correlationId}]:`, error instanceof Error ? error.message : String(error));
       throw error;
     }
   }
@@ -332,9 +339,9 @@ export class UnifiedComparisonEngine {
 
         return result as UnifiedComparisonResult;
 
-      } catch (error: any) {
-        lastError = error.message;
-        console.warn(`⚠️ [UnifiedComparison] Parse/validation failed (attempt ${retries + 1}):`, error.message);
+      } catch (error) {
+        lastError = error instanceof Error ? error.message : String(error);
+        console.warn(`⚠️ [UnifiedComparison] Parse/validation failed (attempt ${retries + 1}):`, error instanceof Error ? error.message : String(error));
 
         if (retries < this.config.maxRetries) {
           // Retry with correction prompt
@@ -350,7 +357,7 @@ export class UnifiedComparisonEngine {
             model: this.config.model,
             contents: [{ text: correctionPrompt }],
             config: {
-              thinkingConfig: { thinkingLevel: this.config.thinkingLevel as any },
+              thinkingConfig: { thinkingLevel: ThinkingLevel[this.config.thinkingLevel] },
               responseMimeType: this.config.responseMimeType,
               responseSchema: this.config.responseSchema
             }
@@ -375,16 +382,24 @@ export class UnifiedComparisonEngine {
    */
   private applyValidations(
     comparison: UnifiedComparisonResult,
-    validationResult: any
+    validationResult: Record<string, unknown>
   ): UnifiedComparisonResult {
     // TODO: Implement deep mode validation application
     // For now, return original with validation notes
-    if (validationResult.warnings) {
-      comparison.analysis.warnings.push(...validationResult.warnings);
+    const warnings = validationResult.warnings as string[] | undefined;
+    if (warnings) {
+      comparison.analysis.warnings.push(...warnings);
     }
     
-    if (validationResult.discrepancies) {
-      comparison.analysis.significantDifferences.push(...validationResult.discrepancies);
+    const discrepancies = validationResult.discrepancies as Array<{ type: string; insurer: string; description: string; severity: 'high' | 'medium' | 'low' }> | undefined;
+    if (discrepancies) {
+      comparison.analysis.significantDifferences.push(
+        ...discrepancies.map(d => ({
+          coverage: d.type,
+          difference: `${d.insurer}: ${d.description}`,
+          severity: d.severity
+        }))
+      );
     }
 
     return comparison;
