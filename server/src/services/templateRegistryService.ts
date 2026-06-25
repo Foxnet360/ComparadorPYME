@@ -1,3 +1,4 @@
+import { SupabaseClient } from '@supabase/supabase-js';
 import Ajv from 'ajv';
 import { loadDomainJson } from './domainBundleLoader';
 import {
@@ -55,7 +56,7 @@ export interface RegistryCache {
 }
 
 export interface TemplateRegistryServiceDependencies {
-  db?: any;
+  db?: SupabaseClient;
   cache?: RegistryCache;
   loadSeeds?: (domain: string) => TemplateRegistryEntry[];
   cacheTTLSeconds?: number;
@@ -178,20 +179,20 @@ function scoreEntry(
   return Math.round(textScore + layoutScore);
 }
 
-function rowToEntry(row: any): TemplateRegistryEntry {
+function rowToEntry(row: Record<string, unknown>): TemplateRegistryEntry {
   return assertTemplateRegistryEntry({
-    templateId: row.template_id,
-    insurer: row.insurer,
-    displayName: row.display_name,
-    version: row.version,
-    fingerprints: row.fingerprints,
-    schema: row.schema,
-    extractionHints: row.hints,
-    promptAddon: row.prompt_addon,
+    templateId: row.template_id as string,
+    insurer: row.insurer as string,
+    displayName: row.display_name as string,
+    version: row.version as number,
+    fingerprints: row.fingerprints as TemplateRegistryEntry['fingerprints'],
+    schema: row.schema as TemplateRegistryEntry['schema'],
+    extractionHints: row.hints as TemplateRegistryEntry['extractionHints'],
+    promptAddon: row.prompt_addon as string,
   });
 }
 
-function entryToRow(entry: TemplateRegistryEntry, domain: string): any {
+function entryToRow(entry: TemplateRegistryEntry, domain: string): Record<string, unknown> {
   return {
     template_id: entry.templateId,
     insurer: entry.insurer,
