@@ -28,9 +28,9 @@ export interface LearningMetrics {
   topCorrectedMappings: Array<{ rawName: string; count: number }>;
 }
 
-function parseEmbedding(val: any): number[] | null {
+function parseEmbedding(val: unknown): number[] | null {
   if (!val) return null;
-  if (Array.isArray(val)) return val;
+  if (Array.isArray(val)) return val as number[];
   if (typeof val === 'string') {
     try {
       const cleaned = val.replace(/[\][]/g, '').trim();
@@ -75,7 +75,7 @@ export const learningEngine = {
   /**
    * Realiza una búsqueda vectorial en memoria de las 3 correcciones de usuario anteriores más similares
    */
-  async getSimilarCorrections(rawName: string): Promise<any[]> {
+  async getSimilarCorrections(rawName: string): Promise<Array<Record<string, unknown>>> {
     try {
       const { data: corrections, error } = await supabase
         .from('coverage_mappings')
@@ -92,16 +92,16 @@ export const learningEngine = {
         console.warn('⚠️ [LearningEngine] Could not generate query embedding, using Sørensen-Dice fallback');
       }
 
-      const similarityList: Array<{ correction: any; similarity: number }> = [];
+      const similarityList: Array<{ correction: Record<string, unknown>; similarity: number }> = [];
 
-      for (const correction of corrections as any[]) {
+      for (const correction of corrections as Array<Record<string, unknown>>) {
         let similarity = 0;
         const correctionEmb = parseEmbedding(correction.embedding);
 
         if (queryEmbedding && correctionEmb && queryEmbedding.length === correctionEmb.length) {
           similarity = embeddingService.cosineSimilarity(queryEmbedding, correctionEmb);
         } else {
-          similarity = sorensenDiceSimilarity(rawName, correction.raw_name);
+          similarity = sorensenDiceSimilarity(rawName, String(correction.raw_name));
         }
         similarityList.push({ correction, similarity });
       }
@@ -144,7 +144,7 @@ export const learningEngine = {
           page_number: correction.pageNumber || null,
           needs_human_review: false,
           updated_at: new Date().toISOString()
-        } as any)
+        } as unknown as never)
         .select('id')
         .single();
       
@@ -164,7 +164,7 @@ export const learningEngine = {
             correction_count: 1,
             embedding: embedding || null,
             updated_at: new Date().toISOString()
-          } as any)
+          } as unknown as never)
           .select('id')
           .single();
         
@@ -179,7 +179,7 @@ export const learningEngine = {
       // Trigger async updates
       await this.applyCorrection(correction);
       
-      return (data as any)?.id || '';
+      return ((data as Record<string, unknown> | null)?.id as string) || '';
     } catch (error) {
       console.error('❌ [LearningEngine] Failed to save correction:', error);
       throw error;
@@ -359,8 +359,8 @@ export const learningEngine = {
           // value corrections and unknown types are not represented as graph edges
           break;
       }
-    } catch (error: any) {
-      console.warn(`⚠️ [LearningEngine] Graph update failed: ${error.message}`);
+    } catch (error: unknown) {
+      console.warn(`⚠️ [LearningEngine] Graph update failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   },
 
@@ -386,8 +386,8 @@ export const learningEngine = {
       if (typeError) throw typeError;
 
       const correctionsByType: Record<string, number> = {};
-      typeData?.forEach((row: any) => {
-        const type = row.canonical_name || 'unknown';
+      typeData?.forEach((row) => {
+        const type = (row as Record<string, unknown>).canonical_name as string || 'unknown';
         correctionsByType[type] = (correctionsByType[type] || 0) + 1;
       });
 
@@ -408,9 +408,9 @@ export const learningEngine = {
         totalCorrections: totalCorrections || 0,
         correctionsByType,
         accuracyTrend,
-        topCorrectedMappings: topData?.map((row: any) => ({
-          rawName: row.raw_name,
-          count: row.correction_count
+        topCorrectedMappings: topData?.map((row) => ({
+          rawName: (row as Record<string, unknown>).raw_name as string,
+          count: (row as Record<string, unknown>).correction_count as number
         })) || []
       };
     } catch (error) {
@@ -443,15 +443,15 @@ export const learningEngine = {
       // Group by week and calculate accuracy
       const weeklyData: Record<string, { corrections: number; total: number }> = {};
       
-      data.forEach((row: any) => {
-        const date = new Date(row.created_at);
+      data.forEach((row) => {
+        const date = new Date((row as Record<string, unknown>).created_at as string);
         const weekKey = `${date.getFullYear()}-W${Math.ceil(date.getDate() / 7)}`;
         
         if (!weeklyData[weekKey]) {
           weeklyData[weekKey] = { corrections: 0, total: 0 };
         }
         
-        weeklyData[weekKey].corrections += row.correction_count || 1;
+        weeklyData[weekKey].corrections += ((row as Record<string, unknown>).correction_count as number) || 1;
         weeklyData[weekKey].total += 1;
       });
 
@@ -526,13 +526,13 @@ export const learningEngine = {
       let processed = 0;
       let errors = 0;
 
-      for (const mapping of (data || []) as any[]) {
+      for (const mapping of (data || []) as Array<Record<string, unknown>>) {
         try {
           await this.updateEmbedding({
-            rawName: mapping.raw_name,
-            insurerName: mapping.insurer_name,
-            systemMapping: mapping.canonical_name,
-            userCorrection: mapping.canonical_name,
+            rawName: mapping.raw_name as string,
+            insurerName: mapping.insurer_name as string | undefined,
+            systemMapping: mapping.canonical_name as string,
+            userCorrection: mapping.canonical_name as string,
             correctionType: 'coverage_mapping'
           });
           processed++;
