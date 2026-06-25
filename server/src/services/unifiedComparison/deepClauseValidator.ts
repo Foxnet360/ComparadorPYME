@@ -5,7 +5,37 @@
  */
 
 import { UnifiedComparisonResult, DeepModeResult } from "../../types/unifiedComparison";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel } from "@google/genai";
+
+interface GeminiFile {
+  name?: string;
+  displayName?: string;
+  uri?: string;
+  state?: string;
+}
+
+interface ValidationEntry {
+  insurer: string;
+  coverage: string;
+  field: string;
+  originalValue?: string;
+  validatedValue: string;
+  source: string;
+  confidence?: number;
+}
+
+interface DiscrepancyEntry {
+  insurer: string;
+  type: 'deductible' | 'coverage' | 'exclusion';
+  description: string;
+  severity: 'high' | 'medium' | 'low';
+}
+
+interface DeepValidationResponse {
+  validations?: ValidationEntry[];
+  discrepancies?: DiscrepancyEntry[];
+  warnings?: string[];
+}
 
 const getGenAI = () => {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -49,8 +79,21 @@ export class DeepClauseValidator {
       const deepResult: DeepModeResult = {
         originalComparison: comparison,
         validatedComparison,
-        validations: validationResult.validations || [],
-        discrepancies: validationResult.discrepancies || []
+        validations: (validationResult.validations || []).map(v => ({
+          insurer: v.insurer,
+          coverage: v.coverage,
+          field: v.field,
+          originalValue: v.originalValue || '',
+          validatedValue: v.validatedValue,
+          source: v.source,
+          confidence: v.confidence ?? 0
+        })),
+        discrepancies: (validationResult.discrepancies || []).map(d => ({
+          insurer: d.insurer,
+          type: d.type,
+          description: d.description,
+          severity: d.severity
+        }))
       };
 
       console.log(`✅ [DeepClauseValidator] Validation complete [${correlationId}]`);
@@ -58,16 +101,16 @@ export class DeepClauseValidator {
 
       return deepResult;
 
-    } catch (error: any) {
-      console.error(`❌ [DeepClauseValidator] Validation failed [${correlationId}]:`, error.message);
-      throw new Error(`Clause validation failed: ${error.message}`);
+    } catch (error) {
+      console.error(`❌ [DeepClauseValidator] Validation failed [${correlationId}]:`, error instanceof Error ? error.message : String(error));
+      throw new Error(`Clause validation failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
   /**
    * Upload clause PDFs to Gemini
    */
-  private async uploadClauses(filePaths: string[]): Promise<any[]> {
+  private async uploadClauses(filePaths: string[]): Promise<GeminiFile[]> {
     const ai = getGenAI();
     const uploadedFiles = [];
 
@@ -94,8 +137,8 @@ export class DeepClauseValidator {
         }
 
         uploadedFiles.push(file);
-      } catch (error: any) {
-        console.error(`❌ [DeepClauseValidator] Failed to upload clause ${filePath}:`, error.message);
+      } catch (error) {
+        console.error(`❌ [DeepClauseValidator] Failed to upload clause ${filePath}:`, error instanceof Error ? error.message : String(error));
         throw error;
       }
     }
@@ -152,10 +195,10 @@ Responde ÚNICAMENTE con el JSON. No incluyas explicaciones.`;
    * Call Gemini for validation
    */
   private async callGeminiForValidation(
-    clauses: any[],
+    clauses: GeminiFile[],
     prompt: string,
     correlationId: string
-  ): Promise<any> {
+  ): Promise<DeepValidationResponse> {
     const ai = getGenAI();
     
     const contents = [
@@ -175,7 +218,7 @@ Responde ÚNICAMENTE con el JSON. No incluyas explicaciones.`;
       contents,
       config: {
         thinkingConfig: {
-          thinkingLevel: 'HIGH' as any // Use high for complex validation
+          thinkingLevel: ThinkingLevel.HIGH // Use high for complex validation
         },
         responseMimeType: 'application/json'
       }
@@ -188,9 +231,9 @@ Responde ÚNICAMENTE con el JSON. No incluyas explicaciones.`;
     console.log(`✅ [DeepClauseValidator] Validation response received [${correlationId}]`);
     
     try {
-      return JSON.parse(result.text);
-    } catch (error: any) {
-      console.error(`❌ [DeepClauseValidator] Failed to parse validation response [${correlationId}]:`, error.message);
+      return JSON.parse(result.text) as DeepValidationResponse;
+    } catch (error) {
+      console.error(`❌ [DeepClauseValidator] Failed to parse validation response [${correlationId}]:`, error instanceof Error ? error.message : String(error));
       throw new Error('Invalid validation response format');
     }
   }
@@ -200,20 +243,20 @@ Responde ÚNICAMENTE con el JSON. No incluyas explicaciones.`;
    */
   private applyValidations(
     comparison: UnifiedComparisonResult,
-    validationResult: any
+    validationResult: DeepValidationResponse
   ): UnifiedComparisonResult {
-    const validated = JSON.parse(JSON.stringify(comparison)); // Deep clone
+    const validated = JSON.parse(JSON.stringify(comparison)) as UnifiedComparisonResult; // Deep clone
 
     // Apply deductible validations
     if (validationResult.validations) {
-      validationResult.validations.forEach((validation: any) => {
+      validationResult.validations.forEach(validation => {
         this.applySingleValidation(validated, validation);
       });
     }
 
     // Add discrepancy warnings
     if (validationResult.discrepancies) {
-      validationResult.discrepancies.forEach((discrepancy: any) => {
+      validationResult.discrepancies.forEach(discrepancy => {
         validated.analysis.warnings.push(
           `[${discrepancy.severity.toUpperCase()}] ${discrepancy.insurer}: ${discrepancy.description}`
         );
@@ -238,7 +281,7 @@ Responde ÚNICAMENTE con el JSON. No incluyas explicaciones.`;
    */
   private applySingleValidation(
     comparison: UnifiedComparisonResult,
-    validation: any
+    validation: ValidationEntry
   ): void {
     // Find the insurer index
     const insurerIndex = comparison.insurers.findIndex(
