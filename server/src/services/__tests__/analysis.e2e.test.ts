@@ -1,11 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
-import { quoteParser } from '../quoteParser';
+import { quoteParser, ParsedQuote } from '../quoteParser';
 import { buildCanonicalCoverages } from '../coverageNormalizer';
 import { variableComparator } from '../variableComparator';
 import { quoteScorer } from '../quoteScorer';
 import { structuredClauseExtractor } from '../structuredClauseExtractor';
 import { deductibleParser } from '../deductibleParser';
 import { getDomainConstants } from '../../config/domainConstants';
+import { CrossReferenceResult } from '../crossReferenceEngine';
 
 const hasGemini = !!process.env.GEMINI_API_KEY;
 const hasSupabase = !!process.env.SUPABASE_URL && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -181,13 +182,13 @@ CONDICIONES ESPECIALES:
         priceAnnual: q.coverages.reduce((sum, c) => sum + c.premium, 0)
       }));
 
-      const crossRefs: any[] = []; // Empty for basic scoring
+      const crossRefs: CrossReferenceResult[] = []; // Empty for basic scoring
       
       for (const quote of parsedQuotes) {
         const score = await quoteScorer.calculateScore(
-          quote as any,
+          quote as unknown as ParsedQuote,
           crossRefs,
-          parsedQuotes as any
+          parsedQuotes as unknown as ParsedQuote[]
         );
         
         expect(score.totalScore).toBeGreaterThanOrEqual(0);
@@ -272,9 +273,9 @@ CONDICIONES ESPECIALES:
       };
 
       const score = await quoteScorer.calculateScore(
-        emptyQuote as any,
+        emptyQuote as unknown as ParsedQuote,
         [],
-        [emptyQuote as any]
+        [emptyQuote as unknown as ParsedQuote]
       );
 
       expect(score.totalScore).toBeGreaterThanOrEqual(0);
@@ -291,9 +292,9 @@ CONDICIONES ESPECIALES:
       };
 
       const score = await quoteScorer.calculateScore(
-        incompleteQuote as any,
+        incompleteQuote as unknown as ParsedQuote,
         [],
-        [incompleteQuote as any]
+        [incompleteQuote as unknown as ParsedQuote]
       );
 
       expect(score).toBeDefined();

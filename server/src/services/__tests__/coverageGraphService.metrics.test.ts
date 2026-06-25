@@ -14,7 +14,43 @@ vi.mock('../vector/embeddingService', () => ({
   },
 }));
 
-function makeFakeDb(initialEdges: any[] = []) {
+interface FakeEdge {
+  id?: string;
+  from_node: string;
+  to_node: string;
+  edge_type: string;
+  weight: number;
+  insurer: string;
+  correction_count: number;
+  domain: string;
+  [key: string]: unknown;
+}
+
+interface FakeFilterBuilder {
+  data: FakeEdge[];
+  error: null;
+  filters: Record<string, unknown>;
+  eq(col: string, val: unknown): FakeFilterBuilder;
+  in(col: string, vals: unknown[]): FakeFilterBuilder;
+  then<T>(resolve: (value: { data: FakeEdge[]; error: null }) => T): T;
+}
+
+interface FakeDeleteBuilder {
+  eq(col: string, val: unknown): FakeDeleteBuilder;
+  then<T>(resolve: (value: { error: null }) => T): T;
+}
+
+interface FakeTable {
+  select: () => FakeFilterBuilder;
+  upsert: (rows: unknown) => Promise<{ data: unknown; error: null }>;
+  delete: () => FakeDeleteBuilder;
+}
+
+type FakeDb = {
+  from: (table: string) => FakeTable;
+};
+
+function makeFakeDb(initialEdges: FakeEdge[] = []): FakeDb {
   const edges = [...initialEdges];
   return {
     from: vi.fn((table: string) => {
@@ -22,36 +58,47 @@ function makeFakeDb(initialEdges: any[] = []) {
         return {
           select: vi.fn(() => ({
             eq: vi.fn(() => Promise.resolve({ data: [], error: null })),
-          })),
+          } as unknown as FakeFilterBuilder)),
           upsert: vi.fn(() => Promise.resolve({ data: null, error: null })),
+          delete: vi.fn(() => {
+            const delChain: FakeDeleteBuilder = {
+              eq: vi.fn(() => delChain),
+              then: vi.fn((resolve) => resolve({ error: null })),
+            };
+            return delChain;
+          }),
         };
       }
       return {
         select: vi.fn(() => {
-          const chain: any = { data: edges, error: null };
-          const filters: Record<string, unknown> = {};
-          chain.eq = vi.fn((col: string, val: unknown) => {
-            filters[col] = val;
-            return chain;
-          });
-          chain.in = vi.fn(() => chain);
-          chain.then = (resolve: any) =>
-            resolve({
-              data: edges.filter((e) => {
-                for (const [col, val] of Object.entries(filters)) {
-                  if ((e[col] ?? '') !== val && !(val === '' && (e[col] ?? '') === '')) {
-                    return false;
+          const chain: FakeFilterBuilder = {
+            data: edges,
+            error: null,
+            filters: {},
+            eq: vi.fn((col: string, val: unknown) => {
+              chain.filters[col] = val;
+              return chain;
+            }),
+            in: vi.fn(() => chain),
+            then: vi.fn((resolve) =>
+              resolve({
+                data: edges.filter((e) => {
+                  for (const [col, val] of Object.entries(chain.filters)) {
+                    if ((e[col] ?? '') !== val && !(val === '' && (e[col] ?? '') === '')) {
+                      return false;
+                    }
                   }
-                }
-                return true;
-              }),
-              error: null,
-            });
+                  return true;
+                }),
+                error: null,
+              })
+            ),
+          };
           return chain;
         }),
-        upsert: vi.fn((rows: any | any[]) => {
+        upsert: vi.fn((rows: unknown) => {
           const rowArray = Array.isArray(rows) ? rows : [rows];
-          for (const row of rowArray) {
+          for (const row of rowArray as FakeEdge[]) {
             const existingIndex = edges.findIndex(
               (e) =>
                 e.from_node === row.from_node &&
@@ -69,10 +116,11 @@ function makeFakeDb(initialEdges: any[] = []) {
           return Promise.resolve({ data: rowArray, error: null });
         }),
         delete: vi.fn(() => {
-          const delChain: any = {};
-          delChain.eq = vi.fn(() => delChain);
-          delChain.then = (resolve: any) => {
-            resolve({ error: null });
+          const delChain: FakeDeleteBuilder = {
+            eq: vi.fn(() => delChain),
+            then: vi.fn((resolve) => {
+              resolve({ error: null });
+            }),
           };
           return delChain;
         }),
@@ -93,6 +141,9 @@ function makeFakeCache() {
     }),
   };
 }
+
+type DbArg = NonNullable<Parameters<typeof createCoverageGraphService>[0]['db']>;
+type CacheArg = NonNullable<Parameters<typeof createCoverageGraphService>[0]['cache']>;
 
 describe('coverageGraphService metrics and logging', () => {
   let entries: StructuredLogEntry[];
@@ -121,8 +172,8 @@ describe('coverageGraphService metrics and logging', () => {
     ]);
     const cache = makeFakeCache();
     const service = createCoverageGraphService({
-      db: db as any,
-      cache: cache as any,
+      db: db as unknown as DbArg,
+      cache: cache as unknown as CacheArg,
       logger,
       metrics,
     });
@@ -140,8 +191,8 @@ describe('coverageGraphService metrics and logging', () => {
     const db = makeFakeDb();
     const cache = makeFakeCache();
     const service = createCoverageGraphService({
-      db: db as any,
-      cache: cache as any,
+      db: db as unknown as DbArg,
+      cache: cache as unknown as CacheArg,
       logger,
       metrics,
     });
@@ -169,8 +220,8 @@ describe('coverageGraphService metrics and logging', () => {
     ]);
     const cache = makeFakeCache();
     const service = createCoverageGraphService({
-      db: db as any,
-      cache: cache as any,
+      db: db as unknown as DbArg,
+      cache: cache as unknown as CacheArg,
       logger,
       metrics,
     });
@@ -187,8 +238,8 @@ describe('coverageGraphService metrics and logging', () => {
     const db = makeFakeDb();
     const cache = makeFakeCache();
     const service = createCoverageGraphService({
-      db: db as any,
-      cache: cache as any,
+      db: db as unknown as DbArg,
+      cache: cache as unknown as CacheArg,
       logger,
       metrics,
     });
@@ -212,8 +263,8 @@ describe('coverageGraphService metrics and logging', () => {
     };
     const cache = makeFakeCache();
     const service = createCoverageGraphService({
-      db: failingDb as any,
-      cache: cache as any,
+      db: failingDb as unknown as DbArg,
+      cache: cache as unknown as CacheArg,
       logger,
       metrics,
     });

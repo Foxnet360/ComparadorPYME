@@ -48,7 +48,7 @@ describe('crossReferenceEngine', () => {
     });
 
     it('should cross-reference coverage and return result', async () => {
-        (ragRetrievalService.searchWithFallback as any).mockResolvedValue({
+        vi.mocked(ragRetrievalService.searchWithFallback).mockResolvedValue({
             clauses: mockClauses,
             isFallback: false
         });
@@ -69,7 +69,7 @@ describe('crossReferenceEngine', () => {
             content: 'Deducible: 20% del valor del siniestro.'
         }];
 
-        (ragRetrievalService.searchWithFallback as any).mockResolvedValue({
+        vi.mocked(ragRetrievalService.searchWithFallback).mockResolvedValue({
             clauses: clauseWithHigherDeductible,
             isFallback: false
         });
@@ -90,7 +90,7 @@ describe('crossReferenceEngine', () => {
             content: 'Deducible: 5% del valor del siniestro.'
         }];
 
-        (ragRetrievalService.searchWithFallback as any).mockResolvedValue({
+        vi.mocked(ragRetrievalService.searchWithFallback).mockResolvedValue({
             clauses: clauseWithLowerDeductible,
             isFallback: false
         });
@@ -106,7 +106,7 @@ describe('crossReferenceEngine', () => {
     });
 
     it('should detect exclusions in clauses', async () => {
-        (ragRetrievalService.searchWithFallback as any).mockResolvedValue({
+        vi.mocked(ragRetrievalService.searchWithFallback).mockResolvedValue({
             clauses: mockClauses,
             isFallback: false
         });
@@ -122,7 +122,7 @@ describe('crossReferenceEngine', () => {
     });
 
     it('should handle no clauses found', async () => {
-        (ragRetrievalService.searchWithFallback as any).mockResolvedValue({
+        vi.mocked(ragRetrievalService.searchWithFallback).mockResolvedValue({
             clauses: [],
             isFallback: false
         });
@@ -139,7 +139,7 @@ describe('crossReferenceEngine', () => {
     });
 
     it('should handle fallback clauses', async () => {
-        (ragRetrievalService.searchWithFallback as any).mockResolvedValue({
+        vi.mocked(ragRetrievalService.searchWithFallback).mockResolvedValue({
             clauses: mockClauses,
             isFallback: true
         });
@@ -156,7 +156,7 @@ describe('crossReferenceEngine', () => {
     });
 
     it('should handle errors gracefully', async () => {
-        (ragRetrievalService.searchWithFallback as any).mockRejectedValue(
+        vi.mocked(ragRetrievalService.searchWithFallback).mockRejectedValue(
             new Error('Database error')
         );
 
@@ -178,7 +178,7 @@ describe('crossReferenceEngine', () => {
             ]
         };
 
-        (ragRetrievalService.searchWithFallback as any).mockResolvedValue({
+        vi.mocked(ragRetrievalService.searchWithFallback).mockResolvedValue({
             clauses: mockClauses,
             isFallback: false
         });
@@ -193,7 +193,7 @@ describe('crossReferenceEngine', () => {
     it('should handle coverage with no deductible', async () => {
         const coverageNoDed = { ...mockCoverage, deductible: 'No aplica' };
         
-        (ragRetrievalService.searchWithFallback as any).mockResolvedValue({
+        vi.mocked(ragRetrievalService.searchWithFallback).mockResolvedValue({
             clauses: mockClauses,
             isFallback: false
         });
@@ -213,7 +213,7 @@ describe('crossReferenceEngine', () => {
     it('should handle unparseable deductible values', async () => {
         const coverageWeirdDed = { ...mockCoverage, deductible: 'Ver cláusula 5' };
         
-        (ragRetrievalService.searchWithFallback as any).mockResolvedValue({
+        vi.mocked(ragRetrievalService.searchWithFallback).mockResolvedValue({
             clauses: mockClauses,
             isFallback: false
         });
@@ -233,7 +233,7 @@ describe('crossReferenceEngine', () => {
             content: 'Deducible: 20% del valor del siniestro.'
         }];
 
-        (ragRetrievalService.searchWithFallback as any).mockResolvedValue({
+        vi.mocked(ragRetrievalService.searchWithFallback).mockResolvedValue({
             clauses: clauseWithHigherDeductible,
             isFallback: false
         });

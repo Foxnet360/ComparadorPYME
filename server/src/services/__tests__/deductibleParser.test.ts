@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { deductibleParser } from '../deductibleParser';
+import { deductibleParser, DeductibleStructure } from '../deductibleParser';
 import { getDomainConstants } from '../../config/domainConstants';
 
 // Mock gemini service for LLM parsing tests
@@ -156,39 +156,39 @@ describe('deductibleParser', () => {
   describe('validation', () => {
     it('should validate valid structure', () => {
       const structure = {
-        components: [{ type: 'percentage', value: 10 }],
+        components: [{ type: 'percentage' as const, value: 10 }],
         semantics: { isZero: false, hasMinimum: false, hasMaximum: false, isComposite: false },
         normalized: { minAmount: 0, maxAmount: 0, percentage: 10, isPercentageBased: true },
         rawText: '10%'
-      };
-      
-      const validation = deductibleParser.validate(structure as any);
+      } as unknown as DeductibleStructure;
+
+      const validation = deductibleParser.validate(structure);
       expect(validation.isValid).toBe(true);
       expect(validation.issues).toHaveLength(0);
     });
 
     it('should detect invalid percentage', () => {
       const structure = {
-        components: [{ type: 'percentage', value: 150 }],
+        components: [{ type: 'percentage' as const, value: 150 }],
         semantics: { isZero: false, hasMinimum: false, hasMaximum: false, isComposite: false },
         normalized: { minAmount: 0, maxAmount: 0, percentage: 150, isPercentageBased: true },
         rawText: '150%'
-      };
-      
-      const validation = deductibleParser.validate(structure as any);
+      } as unknown as DeductibleStructure;
+
+      const validation = deductibleParser.validate(structure);
       expect(validation.isValid).toBe(false);
       expect(validation.issues.length).toBeGreaterThan(0);
     });
 
     it('should detect negative values', () => {
       const structure = {
-        components: [{ type: 'fixed', value: -100 }],
+        components: [{ type: 'fixed' as const, value: -100 }],
         semantics: { isZero: false, hasMinimum: false, hasMaximum: false, isComposite: false },
         normalized: { minAmount: -100, maxAmount: 0, percentage: 0, isPercentageBased: false },
         rawText: '-100'
-      };
-      
-      const validation = deductibleParser.validate(structure as any);
+      } as unknown as DeductibleStructure;
+
+      const validation = deductibleParser.validate(structure);
       expect(validation.isValid).toBe(false);
       expect(validation.issues.some(i => i.includes('Negative'))).toBe(true);
     });
@@ -196,15 +196,15 @@ describe('deductibleParser', () => {
     it('should detect min > max', () => {
       const structure = {
         components: [
-          { type: 'minimum', value: 100 },
-          { type: 'maximum', value: 50 }
+          { type: 'minimum' as const, value: 100 },
+          { type: 'maximum' as const, value: 50 }
         ],
         semantics: { isZero: false, hasMinimum: true, hasMaximum: true, isComposite: true },
         normalized: { minAmount: 100, maxAmount: 50, percentage: 0, isPercentageBased: false },
         rawText: 'min 100 max 50'
-      };
-      
-      const validation = deductibleParser.validate(structure as any);
+      } as unknown as DeductibleStructure;
+
+      const validation = deductibleParser.validate(structure);
       expect(validation.isValid).toBe(false);
       expect(validation.issues.some(i => i.includes('exceeds'))).toBe(true);
     });
@@ -212,17 +212,17 @@ describe('deductibleParser', () => {
 
   describe('convertToCOP', () => {
     it('should convert SMMLV to COP', () => {
-      const result = (deductibleParser as any).convertToCOP(5, 'SMMLV');
+      const result = deductibleParser.convertToCOP(5, 'SMMLV');
       expect(result).toBe(5 * getDomainConstants().smmlv);
     });
 
     it('should convert UVT to COP', () => {
-      const result = (deductibleParser as any).convertToCOP(10, 'UVT');
+      const result = deductibleParser.convertToCOP(10, 'UVT');
       expect(result).toBe(424120);
     });
 
     it('should return value when no currency', () => {
-      const result = (deductibleParser as any).convertToCOP(500000, undefined);
+      const result = deductibleParser.convertToCOP(500000, undefined);
       expect(result).toBe(500000);
     });
   });

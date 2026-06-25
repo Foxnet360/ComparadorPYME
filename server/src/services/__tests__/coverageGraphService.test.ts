@@ -9,73 +9,118 @@ vi.mock('../vector/embeddingService', () => ({
   },
 }));
 
-function makeFakeDb(initialEdges: any[] = []) {
-  const edges = [...initialEdges];
-  const tables = new Map<string, any>();
+interface FakeEdge {
+  id?: string;
+  from_node: string;
+  to_node: string;
+  edge_type: string;
+  weight: number;
+  insurer: string;
+  correction_count: number;
+  domain: string;
+  [key: string]: unknown;
+}
 
-  function buildTable(table: string) {
+interface FakeFilterBuilder {
+  data: FakeEdge[];
+  error: null;
+  filters: Record<string, unknown>;
+  eq(col: string, val: unknown): FakeFilterBuilder;
+  ilike(col: string, val: string): FakeFilterBuilder;
+  in(col: string, vals: unknown[]): FakeFilterBuilder;
+  order(): FakeFilterBuilder;
+  limit(n: number): Promise<{ data: FakeEdge[]; error: null }>;
+  then<T>(resolve: (value: { data: FakeEdge[]; error: null }) => T): T;
+}
+
+interface FakeDeleteBuilder {
+  eq(col: string, val: unknown): FakeDeleteBuilder;
+  then<T>(resolve: (value: { error: null }) => T): T;
+}
+
+interface FakeTable {
+  select: (_cols?: string) => FakeFilterBuilder;
+  upsert: (rows: unknown) => Promise<{ data: unknown; error: null }>;
+  delete: () => FakeDeleteBuilder;
+}
+
+type FakeDb = {
+  from: (table: string) => FakeTable;
+};
+
+function makeFakeDb(initialEdges: FakeEdge[] = []): FakeDb {
+  const edges = [...initialEdges];
+  const tables = new Map<string, FakeTable>();
+
+  function buildTable(table: string): FakeTable {
     if (table !== 'coverage_graph_edges') {
       return {
         select: vi.fn(() => ({
           eq: vi.fn(() => Promise.resolve({ data: [], error: null })),
-        })),
+        } as unknown as FakeFilterBuilder)),
         upsert: vi.fn(() => Promise.resolve({ data: null, error: null })),
+        delete: vi.fn(() => {
+          const delChain: FakeDeleteBuilder = {
+            eq: vi.fn(() => delChain),
+            then: vi.fn((resolve) => resolve({ error: null })),
+          };
+          return delChain;
+        }),
       };
     }
 
     return {
       select: vi.fn((_cols = '*') => {
-        const chain: any = {
+        const chain: FakeFilterBuilder = {
           data: edges,
           error: null,
-        };
-        const filters: Record<string, unknown> = {};
-
-        chain.eq = vi.fn((col: string, val: unknown) => {
-          filters[col] = val;
-          return chain;
-        });
-        chain.ilike = vi.fn((col: string, val: string) => {
-          filters[col] = { ilike: val.toLowerCase() };
-          return chain;
-        });
-        chain.in = vi.fn((_col: string, _vals: unknown[]) => chain);
-        chain.order = vi.fn(() => chain);
-        chain.limit = vi.fn((n: number) => {
-          const filtered = edges.filter((e) => {
-            for (const [col, val] of Object.entries(filters)) {
-              if (typeof val === 'object' && val && 'ilike' in val) {
-                const text = String(e[col] ?? '').toLowerCase();
-                if (!text.includes((val as any).ilike)) return false;
-              } else if ((e[col] ?? '') !== val && !(val === '' && (e[col] ?? '') === '')) {
-                return false;
-              }
-            }
-            return true;
-          });
-          return Promise.resolve({ data: filtered.slice(0, n), error: null });
-        });
-        chain.then = (resolve: any) =>
-          resolve({
-            data: edges.filter((e) => {
-              for (const [col, val] of Object.entries(filters)) {
-                if (typeof val === 'object' && val && 'ilike' in val) {
+          eq: vi.fn((col: string, val: unknown) => {
+            chain.filters[col] = val;
+            return chain;
+          }),
+          ilike: vi.fn((col: string, val: string) => {
+            chain.filters[col] = { ilike: val.toLowerCase() };
+            return chain;
+          }),
+          in: vi.fn(() => chain),
+          order: vi.fn(() => chain),
+          limit: vi.fn((n: number) => {
+            const filtered = edges.filter((e) => {
+              for (const [col, val] of Object.entries(chain.filters)) {
+                if (typeof val === 'object' && val !== null && 'ilike' in val) {
                   const text = String(e[col] ?? '').toLowerCase();
-                  if (!text.includes((val as any).ilike)) return false;
+                  if (!text.includes(String((val as Record<string, unknown>).ilike))) return false;
                 } else if ((e[col] ?? '') !== val && !(val === '' && (e[col] ?? '') === '')) {
                   return false;
                 }
               }
               return true;
-            }),
-            error: null,
-          });
-
+            });
+            return Promise.resolve({ data: filtered.slice(0, n), error: null });
+          }),
+          then: vi.fn((resolve) =>
+            resolve({
+              data: edges.filter((e) => {
+                for (const [col, val] of Object.entries(chain.filters)) {
+                  if (typeof val === 'object' && val !== null && 'ilike' in val) {
+                    const text = String(e[col] ?? '').toLowerCase();
+                    if (!text.includes(String((val as Record<string, unknown>).ilike))) return false;
+                  } else if ((e[col] ?? '') !== val && !(val === '' && (e[col] ?? '') === '')) {
+                    return false;
+                  }
+                }
+                return true;
+              }),
+              error: null,
+            })
+          ),
+        };
+        chain.filters = {} as Record<string, unknown>;
         return chain;
       }),
-      upsert: vi.fn((rows: any | any[]) => {
+      upsert: vi.fn((rows: unknown) => {
         const rowArray = Array.isArray(rows) ? rows : [rows];
-        for (const row of rowArray) {
+        for (const row of rowArray as FakeEdge[]) {
           const existingIndex = edges.findIndex(
             (e) =>
               e.from_node === row.from_node &&
@@ -93,10 +138,11 @@ function makeFakeDb(initialEdges: any[] = []) {
         return Promise.resolve({ data: rowArray, error: null });
       }),
       delete: vi.fn(() => {
-        const delChain: any = {};
-        delChain.eq = vi.fn(() => delChain);
-        delChain.then = (resolve: any) => {
-          resolve({ error: null });
+        const delChain: FakeDeleteBuilder = {
+          eq: vi.fn(() => delChain),
+          then: vi.fn((resolve) => {
+            resolve({ error: null });
+          }),
         };
         return delChain;
       }),
@@ -108,7 +154,7 @@ function makeFakeDb(initialEdges: any[] = []) {
       if (!tables.has(table)) {
         tables.set(table, buildTable(table));
       }
-      return tables.get(table);
+      return tables.get(table)!;
     }),
   };
 }
@@ -126,6 +172,9 @@ function makeFakeCache() {
   };
 }
 
+type DbArg = NonNullable<Parameters<typeof createCoverageGraphService>[0]['db']>;
+type CacheArg = NonNullable<Parameters<typeof createCoverageGraphService>[0]['cache']>;
+
 describe('coverageGraphService', () => {
   let fakeDb: ReturnType<typeof makeFakeDb>;
   let fakeCache: ReturnType<typeof makeFakeCache>;
@@ -134,7 +183,10 @@ describe('coverageGraphService', () => {
   beforeEach(() => {
     fakeDb = makeFakeDb();
     fakeCache = makeFakeCache();
-    service = createCoverageGraphService({ db: fakeDb as any, cache: fakeCache as any });
+    service = createCoverageGraphService({
+      db: fakeDb as unknown as DbArg,
+      cache: fakeCache as unknown as CacheArg,
+    });
   });
 
   describe('query', () => {
@@ -156,7 +208,10 @@ describe('coverageGraphService', () => {
           domain: 'pyme',
         },
       ]);
-      service = createCoverageGraphService({ db: fakeDb as any, cache: fakeCache as any });
+      service = createCoverageGraphService({
+        db: fakeDb as unknown as DbArg,
+        cache: fakeCache as unknown as CacheArg,
+      });
 
       const result = await service.query('Daño Material Todo Riesgo');
       expect(result.mappings).toHaveLength(1);
@@ -177,7 +232,10 @@ describe('coverageGraphService', () => {
           domain: 'pyme',
         },
       ]);
-      service = createCoverageGraphService({ db: fakeDb as any, cache: fakeCache as any });
+      service = createCoverageGraphService({
+        db: fakeDb as unknown as DbArg,
+        cache: fakeCache as unknown as CacheArg,
+      });
 
       const result = await service.query('DMG', { insurer: 'BBVA' });
       expect(result.mappings).toHaveLength(1);
@@ -225,7 +283,10 @@ describe('coverageGraphService', () => {
           domain: 'pyme',
         },
       ]);
-      service = createCoverageGraphService({ db: fakeDb as any, cache: fakeCache as any });
+      service = createCoverageGraphService({
+        db: fakeDb as unknown as DbArg,
+        cache: fakeCache as unknown as CacheArg,
+      });
 
       const result = await service.query('Amparo Básico Todo Riesgo');
       expect(result.composite).toBe(true);
@@ -247,7 +308,10 @@ describe('coverageGraphService', () => {
           domain: 'pyme',
         },
       ]);
-      service = createCoverageGraphService({ db: fakeDb as any, cache: fakeCache as any });
+      service = createCoverageGraphService({
+        db: fakeDb as unknown as DbArg,
+        cache: fakeCache as unknown as CacheArg,
+      });
 
       await service.query('Daño Material');
       await service.query('Daño Material');
@@ -277,7 +341,10 @@ describe('coverageGraphService', () => {
           domain: 'pyme',
         },
       ]);
-      service = createCoverageGraphService({ db: fakeDb as any, cache: fakeCache as any });
+      service = createCoverageGraphService({
+        db: fakeDb as unknown as DbArg,
+        cache: fakeCache as unknown as CacheArg,
+      });
 
       const result = await service.query('Daño Material', { insurer: 'BBVA' });
       expect(result.mappings).toHaveLength(1);
@@ -296,7 +363,10 @@ describe('coverageGraphService', () => {
           domain: 'pyme',
         },
       ]);
-      service = createCoverageGraphService({ db: fakeDb as any, cache: fakeCache as any });
+      service = createCoverageGraphService({
+        db: fakeDb as unknown as DbArg,
+        cache: fakeCache as unknown as CacheArg,
+      });
 
       const result = await service.query('Daño Material Global');
       expect(result.mappings[0].confidence).toBeCloseTo(0.94, 2);
@@ -316,7 +386,10 @@ describe('coverageGraphService', () => {
           domain: 'pyme',
         },
       ]);
-      service = createCoverageGraphService({ db: fakeDb as any, cache: fakeCache as any });
+      service = createCoverageGraphService({
+        db: fakeDb as unknown as DbArg,
+        cache: fakeCache as unknown as CacheArg,
+      });
 
       const result = await service.queryDeductible('10% min 5 SMMLV');
       expect(result).toHaveLength(1);
@@ -345,7 +418,10 @@ describe('coverageGraphService', () => {
           domain: 'pyme',
         },
       ]);
-      service = createCoverageGraphService({ db: fakeDb as any, cache: fakeCache as any });
+      service = createCoverageGraphService({
+        db: fakeDb as unknown as DbArg,
+        cache: fakeCache as unknown as CacheArg,
+      });
 
       const result = await service.queryDeductible('10%', { insurer: 'BBVA' });
       expect(result).toHaveLength(1);
@@ -359,7 +435,7 @@ describe('coverageGraphService', () => {
 
       const upsertCall = fakeDb.from('coverage_graph_edges').upsert;
       expect(upsertCall).toHaveBeenCalled();
-      const row = upsertCall.mock.calls[0][0];
+      const row = upsertCall.mock.calls[0][0] as FakeEdge;
       expect(row.edge_type).toBe('learned');
       expect(row.from_node).toBe('dano material global');
       expect(row.to_node).toBe('incendio');
@@ -378,12 +454,15 @@ describe('coverageGraphService', () => {
           domain: 'pyme',
         },
       ]);
-      service = createCoverageGraphService({ db: fakeDb as any, cache: fakeCache as any });
+      service = createCoverageGraphService({
+        db: fakeDb as unknown as DbArg,
+        cache: fakeCache as unknown as CacheArg,
+      });
 
       await service.learnCorrection('Daño Material Global', 'incendio');
 
       const upsertCall = fakeDb.from('coverage_graph_edges').upsert;
-      const row = upsertCall.mock.calls[0][0];
+      const row = upsertCall.mock.calls[0][0] as FakeEdge;
       expect(row.correction_count).toBe(6);
       expect(row.weight).toBeCloseTo(0.82, 2);
     });
@@ -407,7 +486,7 @@ describe('coverageGraphService', () => {
 
       const upsertCall = fakeDb.from('coverage_graph_edges').upsert;
       expect(upsertCall).toHaveBeenCalled();
-      const row = upsertCall.mock.calls[0][0];
+      const row = upsertCall.mock.calls[0][0] as FakeEdge;
       expect(row.from_node).toBe('raw:foo');
       expect(row.to_node).toBe('cat:bar');
       expect(row.edge_type).toBe('maps_to');
@@ -447,7 +526,10 @@ describe('coverageGraphService', () => {
           domain: 'pyme',
         },
       ]);
-      service = createCoverageGraphService({ db: fakeDb as any, cache: fakeCache as any });
+      service = createCoverageGraphService({
+        db: fakeDb as unknown as DbArg,
+        cache: fakeCache as unknown as CacheArg,
+      });
 
       const result = await service.listEdges({ type: 'deductible_for' });
       expect(result).toHaveLength(1);
@@ -468,7 +550,10 @@ describe('coverageGraphService', () => {
           domain: 'pyme',
         },
       ]);
-      service = createCoverageGraphService({ db: fakeDb as any, cache: fakeCache as any });
+      service = createCoverageGraphService({
+        db: fakeDb as unknown as DbArg,
+        cache: fakeCache as unknown as CacheArg,
+      });
 
       await service.propagate();
 
@@ -476,7 +561,7 @@ describe('coverageGraphService', () => {
       expect(upsertCall).toHaveBeenCalled();
       const payload = upsertCall.mock.calls[0][0];
       const row = Array.isArray(payload) ? payload[0] : payload;
-      expect(row.weight).toBeCloseTo(0.9, 2);
+      expect((row as FakeEdge).weight).toBeCloseTo(0.9, 2);
     });
   });
 });
