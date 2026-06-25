@@ -8,8 +8,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mock dependencies
 vi.mock('../../repositories/chatRepository', () => ({
   chatRepository: {
-    createThread: vi.fn(async (userId, reportContext) => `thread-${Date.now()}`),
-    getOrCreateThread: vi.fn(async (userId, reportId, reportContext) => `thread-${reportId}`),
+    createThread: vi.fn(async (_userId, _reportContext) => `thread-${Date.now()}`),
+    getOrCreateThread: vi.fn(async (_userId, reportId, _reportContext) => `thread-${reportId}`),
     getThreadByReport: vi.fn(async (userId, reportId) => {
       // Simulate thread exists for report-1, not for report-2
       if (reportId === 'report-1') {
@@ -24,7 +24,7 @@ vi.mock('../../repositories/chatRepository', () => ({
       return null;
     }),
     saveMessage: vi.fn(async () => {}),
-    getHistory: vi.fn(async (threadId, limit) => {
+    getHistory: vi.fn(async (threadId, _limit) => {
       // Return different history for different threads
       if (threadId === 'thread-report-1') {
         return [
@@ -168,8 +168,6 @@ describe('Chat Service Integration Tests', () => {
 
   describe('6.2 Conversation isolation: two reports, messages do not mix', () => {
     it('should create separate threads for different reports', async () => {
-      const { chatRepository } = await import('../../repositories/chatRepository');
-      
       const reportContext1 = { id: 'report-1', quotes: [{ insurerName: 'AXA' }] };
       const reportContext2 = { id: 'report-2', quotes: [{ insurerName: 'MAPFRE' }] };
 

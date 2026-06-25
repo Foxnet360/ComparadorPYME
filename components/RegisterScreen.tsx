@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldCheck, UserPlus, ArrowRight, Loader2, ArrowLeft, Mail, Lock, User, Briefcase, Phone, Building } from 'lucide-react';
+import { ShieldCheck, UserPlus, Loader2, ArrowLeft, Mail, Lock, User, Briefcase, Phone, Building } from 'lucide-react';
 import { authService } from '../services/authService';
 import { UserProfile } from '../types';
 

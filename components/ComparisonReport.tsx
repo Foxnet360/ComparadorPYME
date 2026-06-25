@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { QuoteAnalysis, ComparisonReport as ReportType, AlertLevel } from '../types';
-import { Check, Award, ShieldAlert, BarChart3, AlertTriangle, AlertCircle, Info, Scale, FileDown, Layers, ListChecks, FileText, Search, User, Briefcase, Eye, ChevronDown, ChevronUp, BookOpen } from 'lucide-react';
+import { ComparisonReport as ReportType, AlertLevel } from '../types';
+import { Check, Award, ShieldAlert, BarChart3, AlertTriangle, AlertCircle, Info, Scale, FileDown, Layers, FileText, User, Briefcase, BookOpen } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend } from 'recharts';
-import { DISCLAIMER_TEXT, PLANTILLA_ITEMS } from '../constants';
+import { DISCLAIMER_TEXT} from '../constants';
 import { generatePDF } from '../services/pdfService';
-import { DeductiblesComparisonTable } from './DeductiblesComparisonTable';
-import { DeductibleSummaryTable } from './DeductibleSummaryTable';
+
+
 import { AuditSection } from './AuditSection';
 import { UnifiedCoverageMatrix } from './UnifiedCoverageMatrix';
 import { ExecutiveSummary } from './ExecutiveSummary';
@@ -21,7 +21,7 @@ import { InverseCoverageAlert } from './InverseCoverageAlert';
 import { CorrectionUI } from './CorrectionUI';
 import { formatCOP, formatCOPMillions } from '../utils/formatCurrency';
 import { isAdvancedAnalysisEnabled } from '../config/features';
-import { normalizeText } from '../utils/textUtils';
+
 import { useCellNotes } from '../contexts/AnalysisContext';
 
 interface ComparisonReportProps {

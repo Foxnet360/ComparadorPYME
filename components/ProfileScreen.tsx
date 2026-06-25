@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Building, Phone, Briefcase, Lock, Save, Loader2, X, Upload, ShieldCheck } from 'lucide-react';
+import { User, Mail, Building, Phone, Briefcase, Save, Loader2, X, ShieldCheck } from 'lucide-react';
 import { storageService } from '../services/storageService';
 import { UserProfile } from '../types';
 
@@ -71,7 +71,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
                 onClose();
             }, 1500);
 
-        } catch (err: any) {
+        } catch (_err: any) {
             setErrorMsg('Error al actualizar perfil.');
         } finally {
             setIsLoading(false);

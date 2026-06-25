@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ThumbsUp, ThumbsDown, Send, X } from 'lucide-react';
+import { ThumbsUp, Send, X } from 'lucide-react';
 
 interface FeedbackCollectorProps {
   feature: string;

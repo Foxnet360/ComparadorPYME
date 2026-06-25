@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AlertCircle, AlertTriangle, CheckCircle, Info, Shield, FileText, Sparkles, Loader2, RefreshCw, LayoutGrid, Radar, Handshake, Trophy, TrendingDown } from 'lucide-react';
-import { QuoteAnalysis, AlertItem, AlertLevel } from '../types';
+import { QuoteAnalysis, AlertLevel } from '../types';
 import { AuditDashboard } from './AuditDashboard';
 import { EvidenceCard } from './EvidenceCard';
 import { useAuditEnrichment } from '../hooks/useAuditEnrichment';

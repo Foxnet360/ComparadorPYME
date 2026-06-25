@@ -178,12 +178,10 @@ describe('Deep Mode Validation', () => {
   });
 
   describe('applyValidations', () => {
-    
+
     it('should apply deductible validations', () => {
-      // This is a private method, but we can test it indirectly
       const comparison = JSON.parse(JSON.stringify(mockComparison));
-      
-      // Simulate validation result
+
       const validationResult = {
         validations: [
           {
@@ -191,7 +189,7 @@ describe('Deep Mode Validation', () => {
             coverage: 'INCENDIO',
             field: 'deductible',
             originalValue: '10% - Ver condiciones',
-            validatedValue: '10% - Mínimo 1 SMMLV',
+            validatedValue: '10%',
             source: 'página 15',
             confidence: 0.95
           }
@@ -199,22 +197,28 @@ describe('Deep Mode Validation', () => {
         discrepancies: []
       };
 
-      // We can't directly test the private method, but we can verify
-      // the validator handles the comparison correctly
-      expect(comparison.coverageMatrix[0].rows[1].cells[0].isAmbiguous).toBe(true);
+      const result = (deepClauseValidator as any).applyValidations(
+        comparison,
+        validationResult
+      );
+
+      const deductibleCell = result.coverageMatrix[0].rows[1].cells[0];
+      expect(deductibleCell.value).toBe('10%');
+      expect(deductibleCell.isAmbiguous).toBe(false);
+      expect(deductibleCell.notes).toContain('Validado contra clausulado');
+      expect(result.metadata.confidence).toBeGreaterThan(comparison.metadata.confidence);
     });
 
     it('should handle insurer not found in validation', () => {
       const comparison = JSON.parse(JSON.stringify(mockComparison));
-      
+
       const validationResult = {
         validations: [
           {
             insurer: 'NonExistent Insurer',
             coverage: 'INCENDIO',
             field: 'deductible',
-            originalValue: '10%',
-            validatedValue: '15%',
+            validatedValue: '5%',
             source: 'página 10',
             confidence: 0.9
           }
@@ -222,14 +226,14 @@ describe('Deep Mode Validation', () => {
         discrepancies: []
       };
 
-      // Should not throw even with unknown insurer
-      expect(() => {
-        // Simulate what the validator does
-        const insurerIndex = comparison.insurers.findIndex(
-          (i: any) => i.name.toLowerCase() === 'NonExistent Insurer'.toLowerCase()
-        );
-        expect(insurerIndex).toBe(-1);
-      }).not.toThrow();
+      expect(() =>
+        (deepClauseValidator as any).applyValidations(comparison, validationResult)
+      ).not.toThrow();
+
+      // Comparison should remain unchanged
+      expect(comparison.coverageMatrix[0].rows[1].cells[0].value).toBe(
+        '10% - Ver condiciones'
+      );
     });
   });
 });

@@ -6,7 +6,6 @@
 
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { v4 as uuidv4 } from 'uuid';
 import { clauseCoverageValidator } from '../services/clauseCoverageValidator';
 import { deductibleAnalyzer } from '../services/deductibleAnalyzer';
 import { inverseCoverageChecker } from '../services/inverseCoverageChecker';

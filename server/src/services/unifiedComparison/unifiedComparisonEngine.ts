@@ -4,7 +4,7 @@
  */
 
 import { GoogleGenAI } from "@google/genai";
-import { UnifiedComparisonResult, ValidationResult, ComparisonEngineConfig } from "../../types/unifiedComparison";
+import { UnifiedComparisonResult, ComparisonEngineConfig } from "../../types/unifiedComparison";
 import { comparisonPromptBuilder } from "./comparisonPromptBuilder";
 import { comparisonResultValidator } from "./comparisonResultValidator";
 import { UnifiedComparisonSchema } from "./comparisonSchema";
@@ -50,7 +50,7 @@ export class UnifiedComparisonEngine {
         hash.update(path);
         hash.update(stats.size.toString());
         hash.update(stats.mtime.toISOString());
-      } catch (error) {
+      } catch (_error) {
         hash.update(path);
       }
     }

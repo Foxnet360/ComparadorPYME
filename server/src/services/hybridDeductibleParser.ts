@@ -1,6 +1,6 @@
 import { geminiService } from './gemini';
 import { getCachedDeductibleV2, setCachedDeductibleV2 } from './cache/redisCache';
-import { DeductibleStructure, normalizeValueToCOP, CurrencyRates } from '../schemas/extractionSchemas';
+import { DeductibleStructure, CurrencyRates } from '../schemas/extractionSchemas';
 import { deductibleBenchmarks } from './deductibleBenchmarks';
 import { coverageGraphService } from './coverageGraphService';
 import { featureFlags } from '../config/featureFlags';

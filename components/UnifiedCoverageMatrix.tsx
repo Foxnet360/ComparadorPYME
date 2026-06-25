@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, lazy, Suspense, memo } from 'react';
 import { QuoteAnalysis, MatrixRow, MatrixCell } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
-import { Info, AlertTriangle, ListChecks, Trophy, DollarSign, Calendar, ShieldCheck, Download, Award, FileText, ChevronDown, Check, AlertCircle, Eye, Loader2, Pin } from 'lucide-react';
+import { Info, AlertTriangle, ListChecks, Trophy, DollarSign, Calendar, ShieldCheck, Download, Award, ChevronDown, Check, AlertCircle, Eye, Loader2, Pin } from 'lucide-react';
 import { DeductibleBadge } from './DeductibleBadge';
 import { formatPercentage } from '../utils/formatCurrency';
 import { useOptimisticCorrection } from '../hooks/useOptimisticCorrection';

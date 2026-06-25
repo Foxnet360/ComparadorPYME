@@ -5,9 +5,9 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, Send, Bot, User, Minimize2, Loader2, BookOpen, Lightbulb } from 'lucide-react';
+import { Send, Bot, Minimize2, Loader2, BookOpen, Lightbulb } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { ChatMessage, ChatCitation } from '../types';
+import { ChatMessage} from '../types';
 import { API_BASE_URL } from '../services/apiConfig';
 
 interface ChatBotProps {

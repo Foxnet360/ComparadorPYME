@@ -3,7 +3,7 @@
  * Tests the full analysis pipeline from quote upload to report generation
  */
 
-import { describe, it, expect, beforeAll, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import { analysisController } from '../controllers/analysisController';

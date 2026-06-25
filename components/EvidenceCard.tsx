@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookOpen, ChevronDown, ChevronUp, FileText, AlertCircle, BadgeCheck } from 'lucide-react';
+import { BookOpen, ChevronDown, ChevronUp, FileText, BadgeCheck } from 'lucide-react';
 import { Evidence } from '../types';
 
 interface EvidenceCardProps {

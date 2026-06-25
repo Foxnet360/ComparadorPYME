@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, AlertCircle, Info } from 'lucide-react';
+import { AlertTriangle, Info } from 'lucide-react';
 
 interface InverseCoverageAlertProps {
   coverageName: string;
