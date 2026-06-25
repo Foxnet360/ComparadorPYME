@@ -4,12 +4,12 @@ import { pdfExtractor, PDFExtractionResult } from '../services/pdfExtractor';
 import { ParsedQuote } from '../services/quoteParser';
 import { crossReferenceEngine, CrossReferenceResult } from '../services/crossReferenceEngine';
 import { ragRetrievalService } from '../services/ragRetrievalService';
-import { quoteScorer, ScoringResult } from '../services/quoteScorer';
+import { quoteScorer, ScoringResult, ScoreBreakdown } from '../services/quoteScorer';
 import { narrativeService, NarrativeResult } from '../services/narrativeService';
 import { validateQuote, ValidationResult } from '../services/quoteValidator';
-import { calculateConfidence, ConfidenceResult } from '../services/confidenceScorer';
+import { calculateConfidence, ConfidenceResult, ConfidenceBreakdown } from '../services/confidenceScorer';
 
-import { clauseCoverageValidator } from '../services/clauseCoverageValidator';
+import { clauseCoverageValidator, ClauseValidationSummary } from '../services/clauseCoverageValidator';
 import { deductibleAnalyzer } from '../services/deductibleAnalyzer';
 import { inverseCoverageChecker } from '../services/inverseCoverageChecker';
 import { contextualRiskAnalyzer } from '../services/contextualRiskAnalyzer';
@@ -36,6 +36,102 @@ import {
 } from '../services/extractionMetrics';
 import { ExtractionResult } from '../types/extractionMetrics';
 import { randomUUID } from 'crypto';
+import { AlertItem, AlertLevel, MatrixRow, QuoteAnalysis } from '../types';
+import { AuthenticatedRequest } from '../middleware/auth';
+import quoteBasedAuditor from '../services/quoteBasedAuditor';
+import fs from 'fs';
+
+interface ComparisonResultQuote {
+  insurerName: string;
+  policyName: string;
+  priceAnnual: number;
+  currency: string;
+  deductibles: string;
+  coverages: Array<{
+    name: string;
+    value: string;
+    deductible: string;
+    canonicalName?: string;
+    categoryId?: number | null;
+    matchConfidence?: number;
+    matchMethod?: string | null;
+  }>;
+  score: number;
+  dataQualityScore: number;
+  verificationConfidence: number;
+  isRagAvailable: boolean;
+  parseConfidence: number;
+  dualExtractionValidation: DualExtractionResult[];
+  specialConditions?: string[];
+  scoringBreakdown: ScoreBreakdown;
+  clientAnalysis: string;
+  technicalAnalysis: string;
+  keyFindings: string[];
+  alerts: AlertItem[];
+  crossReferenceSummary: Record<string, number>;
+  extractionConfidence: number;
+  confidenceBreakdown: ConfidenceBreakdown | null;
+  needsReview: boolean;
+  isCritical: boolean;
+  validationFlags: unknown[];
+  validationSummary: string;
+  clauseValidation?: Record<string, unknown>;
+  deductibleAnalysis?: unknown;
+  contextualRisk?: unknown;
+  warrantyCompliance?: unknown;
+  legalOpinion?: unknown;
+  quoteAudit?: Record<string, unknown>;
+}
+
+interface ComparisonResult {
+  quotes: ComparisonResultQuote[];
+  recommendation: string;
+  marketAnalysis: string;
+  deductibleComparison: { insurer: string; deductibleText: string }[];
+  timestamp: string;
+  analysisVersion: string;
+  id?: string;
+}
+
+interface UnifiedQuote {
+  insurerName: string;
+  policyName: string;
+  priceMonthly: number;
+  priceAnnual: number;
+  currency: string;
+  deductibles: string;
+  coverages: Array<{
+    name: string;
+    value: string;
+    deductible: string;
+    isPositive: boolean;
+    valueSource: 'extracted';
+  }>;
+  alerts: Array<{
+    level: string;
+    title: string;
+    description: string;
+  }>;
+  scoringBreakdown: Record<string, number>;
+  clientAnalysis: string;
+  technicalAnalysis: string;
+  score: number;
+  extractionConfidence: number;
+  needsReview: boolean;
+  isCritical: boolean;
+  validationFlags: unknown[];
+  validationSummary: string;
+}
+
+interface UnifiedComparisonReport {
+  quotes: UnifiedQuote[];
+  recommendation: string;
+  marketAnalysis: string;
+  deductibleComparison: { insurer: string; deductibleText: string }[];
+  timestamp: string;
+  analysisVersion: string;
+  id?: string;
+}
 
 // Helper to call service with timeout
 const callWithTimeout = async <T>(promise: Promise<T>, timeoutMs: number = 5000, fallback: T): Promise<T> => {
@@ -49,8 +145,6 @@ const callWithTimeout = async <T>(promise: Promise<T>, timeoutMs: number = 5000,
     return fallback;
   }
 };
-import quoteBasedAuditor from '../services/quoteBasedAuditor';
-import fs from 'fs';
 
 export const analysisController = {
     uploadAndAnalyze: async (req: Request, res: Response): Promise<void> => {
@@ -87,11 +181,11 @@ export const analysisController = {
                     }
                     
                     // Convert MatrixRow[] to ComparisonReport format
-                    const comparisonResult = matrixRowsToComparisonReport(matrixRows, quoteFiles);
+                    const comparisonResult = matrixRowsToComparisonReport(matrixRows, quoteFiles) as unknown as ComparisonResult;
                     
                     // Debug: Log result structure
                     console.log(`📊 [Unified Debug] Quotes generated: ${comparisonResult.quotes?.length || 0}`);
-                    comparisonResult.quotes?.forEach((q: any, i: number) => {
+                    comparisonResult.quotes?.forEach((q: ComparisonResultQuote, i: number) => {
                         console.log(`📊 [Unified Debug] Quote ${i} (${q.insurerName}): ${q.coverages?.length || 0} coverages, price: ${q.priceAnnual}`);
                     });
                     
@@ -100,7 +194,7 @@ export const analysisController = {
                     const clientName = req.body.clientName || 'Cliente';
                     
                     try {
-                        const avgConfidence = comparisonResult.quotes.reduce((sum: number, q: any) => 
+                        const avgConfidence = comparisonResult.quotes.reduce((sum: number, q: ComparisonResultQuote) => 
                             sum + (q.extractionConfidence || 0), 0) / (comparisonResult.quotes.length || 1);
                         
                         const duration = Date.now() - startTime;
@@ -112,8 +206,8 @@ export const analysisController = {
                             recommendation: comparisonResult.recommendation || null,
                             total_score: comparisonResult.quotes?.[0]?.score || null,
                             extraction_confidence: Math.round(avgConfidence),
-                            needs_review: comparisonResult.quotes.some((q: any) => q.needsReview),
-                            validation_flags_count: comparisonResult.quotes.reduce((sum: number, q: any) => 
+                            needs_review: comparisonResult.quotes.some((q: ComparisonResultQuote) => q.needsReview),
+                            validation_flags_count: comparisonResult.quotes.reduce((sum: number, q: ComparisonResultQuote) => 
                                 sum + (q.validationFlags?.length || 0), 0),
                             // Unified comparison fields
                             engine_type: 'unified',
@@ -124,9 +218,9 @@ export const analysisController = {
                         
                         const savedId = await saveAnalysisHistory(insertData);
                         if (savedId) {
-                            (comparisonResult as any).id = savedId;
+                            (comparisonResult as ComparisonResult).id = savedId;
                         }
-                    } catch (saveError: any) {
+                    } catch (saveError: unknown) {
                         console.error("❌ [Supabase] Exception saving analysis:", saveError);
                     }
                     
@@ -135,8 +229,8 @@ export const analysisController = {
                     
                     res.json(comparisonResult);
                     return;
-                } catch (unifiedError: any) {
-                    console.error('❌ Unified engine failed, falling back to legacy:', unifiedError.message);
+                } catch (unifiedError: unknown) {
+                    console.error('❌ Unified engine failed, falling back to legacy:', unifiedError instanceof Error ? unifiedError.message : String(unifiedError));
                     console.log('🔄 Falling back to legacy pipeline...');
                 }
             }
@@ -152,8 +246,9 @@ export const analysisController = {
               try {
                 const result = await pdfExtractor.extractTextFromPdf(file.path);
                 nativeTextResults.push({ file, result });
-              } catch (err: any) {
-                console.warn(`⚠️ Native text extraction failed for ${file.originalname}: ${err.message}`);
+              } catch (err: unknown) {
+                const errMessage = err instanceof Error ? err.message : 'Unknown error';
+                console.warn(`⚠️ Native text extraction failed for ${file.originalname}: ${errMessage}`);
                 nativeTextResults.push({
                   file,
                   result: {
@@ -161,7 +256,7 @@ export const analysisController = {
                     pages: [],
                     pageTextMap: {},
                     metadata: { pageCount: 1 },
-                    warnings: [err.message],
+                    warnings: [errMessage],
                     isScanned: false,
                   },
                 });
@@ -241,8 +336,8 @@ export const analysisController = {
                   path: 'legacy',
                 });
                 return { index, parsed, error: null };
-              } catch (error: any) {
-                const errorMessage = error?.message || 'Unknown error';
+              } catch (error: unknown) {
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
                 const isServiceError =
                   errorMessage.includes('503') ||
                   errorMessage.includes('Service Unavailable') ||
@@ -284,7 +379,7 @@ export const analysisController = {
                   // Create error placeholder
                   const filename = quoteFiles[result.index]?.originalname || 'Unknown';
                   const insurerName = filename.replace(/COTIZACION.*?-\s*/i, '').replace(/\.pdf$/i, '') || filename;
-                  const errorMessage = result.error?.message || 'Unknown error';
+                  const errorMessage = result.error instanceof Error ? result.error.message : 'Unknown error';
                   const isServiceError =
                     errorMessage.includes('503') ||
                     errorMessage.includes('Service Unavailable') ||
@@ -422,7 +517,7 @@ export const analysisController = {
             // Phase 4: Cross-reference with RAG clause library (ASYNC - non-blocking)
             console.log('🔍 Phase 4/5: Cross-referencing with clause library (async)...');
             const crossRefResults: Map<number, CrossReferenceResult[]> = new Map();
-            const clauseValidationResults: Map<number, any> = new Map();
+            const clauseValidationResults: Map<number, ClauseValidationSummary | null> = new Map();
             
     // Pre-flight check: which insurers have clauses indexed?
     console.log('🔍 [RAG] Checking clause availability...');
@@ -567,7 +662,7 @@ export const analysisController = {
 
             // Phase 5b: Advanced analysis (parallel with timeout)
             console.log('🔬 Phase 5b/5: Running advanced analysis...');
-            const advancedAnalysisResults: Map<number, any> = new Map();
+            const advancedAnalysisResults: Map<number, Record<string, unknown> | null> = new Map();
             
             for (let i = 0; i < parsedQuotes.length; i++) {
                 const quote = parsedQuotes[i];
@@ -664,7 +759,7 @@ export const analysisController = {
 
             try {
                 // Calculate average confidence
-                const avgConfidence = comparisonResult.quotes.reduce((sum: number, q: any) => 
+                const avgConfidence = comparisonResult.quotes.reduce((sum: number, q: ComparisonResultQuote) => 
                     sum + (q.extractionConfidence || 0), 0) / (comparisonResult.quotes.length || 1);
                 
                 const duration = Date.now() - startTime;
@@ -680,8 +775,8 @@ export const analysisController = {
                     recommendation: comparisonResult.recommendation || null,
                     total_score: comparisonResult.quotes?.[0]?.score || null,
                     extraction_confidence: Math.round(avgConfidence),
-                    needs_review: comparisonResult.quotes.some((q: any) => q.needsReview),
-                    validation_flags_count: comparisonResult.quotes.reduce((sum: number, q: any) => 
+                    needs_review: comparisonResult.quotes.some((q: ComparisonResultQuote) => q.needsReview),
+                    validation_flags_count: comparisonResult.quotes.reduce((sum: number, q: ComparisonResultQuote) => 
                         sum + (q.validationFlags?.length || 0), 0),
                     // Unified comparison fields
                     engine_type: engineType,
@@ -692,9 +787,9 @@ export const analysisController = {
                 
                 const savedId = await saveAnalysisHistory(insertData);
                 if (savedId) {
-                    (comparisonResult as any).id = savedId;
+                    (comparisonResult as unknown as ComparisonResult).id = savedId;
                 }
-            } catch (saveError: any) {
+            } catch (saveError: unknown) {
                 console.error("❌ [Supabase] Exception saving analysis:", saveError);
             }
             
@@ -703,29 +798,29 @@ export const analysisController = {
 
             res.json(comparisonResult);
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Controller Error:", error);
 
-            if (error.message?.includes("No response received")) {
+            if (error instanceof Error && error.message?.includes("No response received")) {
                 res.status(502).json({ error: "Upstream Error: No response from Gemini AI." });
                 return;
             }
-            if (error.message?.includes("429") || error.status === 429) {
+            if (error instanceof Error && error.message?.includes("429")) {
                 res.status(429).json({ error: "Rate Limit Exceeded: Please try again later." });
                 return;
             }
 
             res.status(500).json({
                 error: "Internal Server Error during analysis",
-                details: error.message || String(error),
+                details: error instanceof Error ? error.message : String(error),
                 isMockData: false
             });
         }
     },
 
-    getHistory: async (req: Request, res: Response): Promise<void> => {
+    getHistory: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
         try {
-            const userId = (req.query.userId as string) || (req as any).user?.id;
+            const userId = (req.query.userId as string) || req.user?.id;
             if (!userId) {
                 res.status(401).json({ success: false, error: "Authentication required" });
                 return;
@@ -761,8 +856,8 @@ export function generateComparison(
     crossRefResults: Map<number, CrossReferenceResult[]>,
     validationResults: Map<number, ValidationResult>,
     confidenceResults: Map<number, ConfidenceResult>,
-    clauseValidationResults?: Map<number, any>,
-    advancedAnalysisResults?: Map<number, any>,
+    clauseValidationResults?: Map<number, ClauseValidationSummary | null>,
+    advancedAnalysisResults?: Map<number, Record<string, unknown> | null>,
     dualExtractionResults?: Map<number, DualExtractionResult[]>,
     insurersWithClauses?: Map<string, boolean>
 ) {
@@ -774,7 +869,7 @@ export function generateComparison(
         // Collect all alerts
         const allAlerts = crossRefs.flatMap(r => 
             r.alerts.map(a => ({
-                level: a.level as any,
+                level: a.level as AlertLevel,
                 title: a.title,
                 description: a.description
             }))
@@ -860,7 +955,7 @@ export function generateComparison(
                     score: scoring?.totalScore || 0,
                     deductibles: quote.coverages.map(c => c.deductible).join('; '),
                     rawText: quote.rawText
-                } as any, quotes as any);
+                } as unknown as QuoteAnalysis, quotes as unknown as QuoteAnalysis[]);
                 return {
                     deductibleRisks: audit.deductibleRisks,
                     missingCoverages: audit.missingCoverages,
@@ -905,7 +1000,7 @@ export function generateComparison(
 /**
  * Convert MatrixRow[] from unified engine to ComparisonReport format
  */
-function matrixRowsToComparisonReport(matrixRows: any[], quoteFiles: Express.Multer.File[]): any {
+function matrixRowsToComparisonReport(matrixRows: MatrixRow[], quoteFiles: Express.Multer.File[]): UnifiedComparisonReport {
     // Get insurer names from quote files
     const insurerNames = quoteFiles.map(f => {
         const name = f.originalname.replace(/COTIZACION.*?-\s*/i, '').replace(/\.pdf$/i, '');
@@ -913,9 +1008,9 @@ function matrixRowsToComparisonReport(matrixRows: any[], quoteFiles: Express.Mul
     });
     
     // Build quotes array
-    const quotes: any[] = insurerNames.map((insurerName, idx) => {
-        const coverages: any[] = [];
-        const alerts: any[] = [];
+    const quotes: UnifiedQuote[] = insurerNames.map((insurerName, idx) => {
+        const coverages: UnifiedQuote['coverages'] = [];
+        const alerts: UnifiedQuote['alerts'] = [];
         let priceAnnual = 0;
         
         // Extract coverages from matrix rows
