@@ -5,6 +5,31 @@
 
 import { supabase } from '../../config/database';
 
+type GenericDbResult = { data: unknown[] | null; error: unknown };
+
+interface GenericDbTable {
+  insert(values: Record<string, unknown>[]): Promise<{ error: unknown }>;
+  update(values: Record<string, unknown>): {
+    eq(column: string, value: string): Promise<{ error: unknown }>;
+  };
+  select(columns?: string): {
+    gte(column: string, value: string): {
+      lte(column: string, value: string): Promise<GenericDbResult>;
+    };
+    eq(column: string, value: string): {
+      gte(column: string, value: string): {
+        lte(column: string, value: string): {
+          order(column: string, options?: { ascending?: boolean }): Promise<GenericDbResult>;
+        };
+      };
+    };
+  };
+}
+
+function errorsTable(): GenericDbTable {
+  return supabase.from('unified_engine_errors') as unknown as GenericDbTable;
+}
+
 export enum ErrorCategory {
   GEMINI_API = 'gemini_api',
   PDF_UPLOAD = 'pdf_upload',
@@ -22,7 +47,7 @@ export interface TrackedError {
   category: ErrorCategory;
   message: string;
   stack?: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   pdfCount: number;
   pdfNames: string[];
   createdAt?: string;
@@ -78,7 +103,7 @@ class ErrorTrackingService {
     error: Error,
     correlationId: string,
     pdfPaths: string[],
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): Promise<void> {
     const category = this.categorizeError(error);
     
@@ -127,12 +152,12 @@ class ErrorTrackingService {
         created_at: new Date().toISOString()
       }));
 
-      await supabase.from('unified_engine_errors').insert(errors as any);
+      await errorsTable().insert(errors as Record<string, unknown>[]);
       
       console.log(`📝 [ErrorTracking] Flushed ${this.errorBuffer.length} errors to database`);
       this.errorBuffer = [];
-    } catch (dbError: any) {
-      console.error('❌ [ErrorTracking] Failed to flush errors:', dbError.message);
+    } catch (dbError) {
+      console.error('❌ [ErrorTracking] Failed to flush errors:', dbError instanceof Error ? dbError.message : String(dbError));
     }
   }
 
@@ -149,15 +174,14 @@ class ErrorTrackingService {
     resolutionRate: number;
   }> {
     try {
-      const { data, error } = await supabase
-        .from('unified_engine_errors')
+      const { data, error } = await errorsTable()
         .select('*')
         .gte('created_at', startDate)
         .lte('created_at', endDate);
 
       if (error) throw error;
 
-      const errors = (data || []) as any[];
+      const errors = (data || []) as Record<string, unknown>[];
       
       // Count by category
       const byCategory: Record<ErrorCategory, number> = {
@@ -171,20 +195,20 @@ class ErrorTrackingService {
         [ErrorCategory.UNKNOWN]: 0
       };
 
-      errors.forEach((err: any) => {
+      errors.forEach(err => {
         const category = err.category as ErrorCategory;
         byCategory[category] = (byCategory[category] || 0) + 1;
       });
 
       // Get top errors
       const errorCounts: Record<string, { message: string; count: number; category: ErrorCategory }> = {};
-      errors.forEach((err: any) => {
+      errors.forEach(err => {
         const key = `${err.category}:${err.message}`;
         if (!errorCounts[key]) {
           errorCounts[key] = {
-            message: err.message,
+            message: err.message as string,
             count: 0,
-            category: err.category
+            category: err.category as ErrorCategory
           };
         }
         errorCounts[key].count++;
@@ -195,7 +219,7 @@ class ErrorTrackingService {
         .slice(0, 10);
 
       // Calculate resolution rate
-      const resolved = errors.filter((err: any) => err.resolved).length;
+      const resolved = errors.filter(err => err.resolved).length;
       const resolutionRate = errors.length > 0 ? Math.round((resolved / errors.length) * 100) : 0;
 
       return {
@@ -205,8 +229,8 @@ class ErrorTrackingService {
         resolutionRate
       };
 
-    } catch (error: any) {
-      console.error('❌ [ErrorTracking] Failed to get error summary:', error.message);
+    } catch (error) {
+      console.error('❌ [ErrorTracking] Failed to get error summary:', error instanceof Error ? error.message : String(error));
       return {
         total: 0,
         byCategory: {} as Record<ErrorCategory, number>,
@@ -221,8 +245,7 @@ class ErrorTrackingService {
    */
   async resolveError(errorId: string, resolution: string): Promise<boolean> {
     try {
-      const { error } = await (supabase as any)
-        .from('unified_engine_errors')
+      const { error } = await errorsTable()
         .update({
           resolved: true,
           resolution,
@@ -235,8 +258,8 @@ class ErrorTrackingService {
       console.log(`✅ [ErrorTracking] Error ${errorId} resolved: ${resolution}`);
       return true;
 
-    } catch (error: any) {
-      console.error('❌ [ErrorTracking] Failed to resolve error:', error.message);
+    } catch (error) {
+      console.error('❌ [ErrorTracking] Failed to resolve error:', error instanceof Error ? error.message : String(error));
       return false;
     }
   }
@@ -250,8 +273,7 @@ class ErrorTrackingService {
     endDate: string
   ): Promise<TrackedError[]> {
     try {
-      const { data, error } = await supabase
-        .from('unified_engine_errors')
+      const { data, error } = await errorsTable()
         .select('*')
         .eq('category', category)
         .gte('created_at', startDate)
@@ -260,22 +282,22 @@ class ErrorTrackingService {
 
       if (error) throw error;
 
-      return (data || []).map((err: any) => ({
-        id: err.id,
-        correlationId: err.correlation_id,
-        category: err.category,
-        message: err.message,
-        stack: err.stack_trace,
-        metadata: err.metadata,
-        pdfCount: err.pdf_count,
-        pdfNames: err.pdf_names,
-        createdAt: err.created_at,
-        resolved: err.resolved,
-        resolution: err.resolution
+      return ((data || []) as Record<string, unknown>[]).map(err => ({
+        id: err.id as string | undefined,
+        correlationId: err.correlation_id as string,
+        category: err.category as ErrorCategory,
+        message: err.message as string,
+        stack: err.stack_trace as string | undefined,
+        metadata: err.metadata as Record<string, unknown>,
+        pdfCount: err.pdf_count as number,
+        pdfNames: err.pdf_names as string[],
+        createdAt: err.created_at as string | undefined,
+        resolved: err.resolved as boolean,
+        resolution: err.resolution as string | undefined
       }));
 
-    } catch (error: any) {
-      console.error('❌ [ErrorTracking] Failed to get errors by category:', error.message);
+    } catch (error) {
+      console.error('❌ [ErrorTracking] Failed to get errors by category:', error instanceof Error ? error.message : String(error));
       return [];
     }
   }
