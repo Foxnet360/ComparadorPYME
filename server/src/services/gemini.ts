@@ -1,4 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
+import { z } from "zod";
 const SchemaType = Type;
 
 import { ClauseDocument } from '../types';
@@ -20,7 +21,7 @@ import { GeminiInvalidResponseError, categorizeGeminiError, GeminiRateLimitError
  * JSON Schema V2 for flexible quote extraction
  * Captures raw document structure without forcing 14 canonical coverages
  */
-export const QuoteExtractionSchemaV2: any = {
+export const QuoteExtractionSchemaV2 = {
   description: "Extracted insurance quote data with flexible structure",
   type: SchemaType.OBJECT,
   properties: {
@@ -136,9 +137,9 @@ export const QuoteExtractionSchemaV2: any = {
     },
   },
   required: ["insurerName", "policyName", "formatFamily", "premium", "rawCoverages"],
-};
+} as const;
 
-export const DeductibleSchema: any = {
+export const DeductibleSchema = {
   description: "Estructura detallada de un deducible de seguros",
   type: SchemaType.OBJECT,
   properties: {
@@ -165,14 +166,14 @@ export const DeductibleSchema: any = {
     isComposite: { type: SchemaType.BOOLEAN, description: "Indica si es un deducible compuesto (ej: porcentaje con un mínimo)" }
   },
   required: ["components", "isZero", "hasMinimum", "hasMaximum", "isComposite"]
-};
+} as const;
 
 /**
  * JSON Schema for structured quote extraction (Legacy V1)
  * Enforces consistent output format from Gemini
  * @deprecated Use QuoteExtractionSchemaV2 for flexible extraction
  */
-export const QuoteExtractionSchema: any = {
+export const QuoteExtractionSchema = {
   description: "Extracted insurance quote data",
   type: "object",
   properties: {
@@ -267,11 +268,11 @@ export const QuoteExtractionSchema: any = {
     },
   },
   required: ["insurerName", "policyName", "priceAnnual", "currency", "coverages", "expectedCoverages"],
-};
+} as const;
 
 function validateGeminiOutput<T>(
   data: unknown,
-  validator: (d: unknown) => { success: true; data: T } | { success: false; error: any },
+  validator: (d: unknown) => { success: true; data: T } | { success: false; error: z.ZodError },
   label: string
 ): T {
   const result = validator(data);
@@ -281,6 +282,22 @@ function validateGeminiOutput<T>(
     );
   }
   return result.data;
+}
+
+function isRetryableError(error: unknown): boolean {
+  const e = error as { status?: number | string; message?: string };
+  return (
+    e.status === 429 ||
+    e.status === '429' ||
+    e.status === 503 ||
+    e.status === '503' ||
+    !!e.message?.includes("429") ||
+    !!e.message?.includes("Quota exceeded") ||
+    !!e.message?.includes("Too Many Requests") ||
+    !!e.message?.includes("503") ||
+    !!e.message?.includes("Service Unavailable") ||
+    !!e.message?.includes("high demand")
+  );
 }
 
 // Initialize Gemini lazily
@@ -334,12 +351,18 @@ const buildSectionText = (clauses: ClauseDocument[]): string => {
     return parts.join('\n');
 };
 
+interface UploadedFile {
+  name: string;
+  uri: string;
+  state?: string;
+}
+
 export const geminiService = {
 
     // Export buildSectionText for use in controller
     buildSectionText,
 
-    uploadFile: async (filePath: string, mimeType: string, displayName: string) => {
+    uploadFile: async (filePath: string, mimeType: string, displayName: string): Promise<UploadedFile> => {
         try {
             const ai = getGenAI();
             const uploadResult = await ai.files.upload({
@@ -350,14 +373,14 @@ export const geminiService = {
                 }
             });
 
-            return uploadResult;
-        } catch (error: any) {
+            return uploadResult as UploadedFile;
+        } catch (error: unknown) {
             console.error("Error uploading to Gemini:", error);
             throw error;
         }
     },
 
-    waitForFilesActive: async (files: any[]) => {
+    waitForFilesActive: async (files: UploadedFile[]) => {
         const ai = getGenAI();
         for (const name of files.map((file) => file.name)) {
             let file = await ai.files.get({ name });
@@ -376,8 +399,8 @@ export const geminiService = {
             const ai = getGenAI();
             await ai.files.delete({ name: fileName });
             console.log(`🗑️ [Gemini] Deleted file: ${fileName}`);
-        } catch (error: any) {
-            console.warn(`⚠️ [Gemini] Failed to delete file ${fileName}:`, error.message);
+        } catch (error: unknown) {
+            console.warn(`⚠️ [Gemini] Failed to delete file ${fileName}:`, error instanceof Error ? error.message : error);
         }
     },
 
@@ -391,8 +414,8 @@ export const geminiService = {
         filename: string,
         extractedText?: string,
         options?: { skipValidation?: boolean; onRepairUsed?: (category: string) => void }
-    ): Promise<any> => {
-        let uploadedFile: any = null;
+    ): Promise<QuoteExtractionV2> => {
+        let uploadedFile: UploadedFile | null = null;
         try {
             console.log(`📤 [Gemini] Uploading PDF: ${filename}`);
             
@@ -440,7 +463,7 @@ export const geminiService = {
                             temperature: 0.1,
                             maxOutputTokens: 32768,
                             responseMimeType: 'application/json',
-                            responseSchema: QuoteExtractionSchemaV2,
+                            responseSchema: QuoteExtractionSchemaV2 as unknown,
                         }
                     });
 
@@ -472,7 +495,7 @@ export const geminiService = {
                         throw new Error(`JSON parsing failed: ${parseResult.error}`);
                     }
 
-                } catch (error: any) {
+                } catch (error: unknown) {
                     const geminiError = categorizeGeminiError(error);
                     
                     const isRateLimit = geminiError instanceof GeminiRateLimitError;
@@ -530,7 +553,7 @@ export const geminiService = {
             });
 
             return result.text || '';
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("❌ [Gemini OCR] Failed to transcribe image:", error);
             throw error;
         }
@@ -566,7 +589,7 @@ Instrucciones para el análisis:
                 config: {
                     temperature: 0.1,
                     responseMimeType: 'application/json',
-                    responseSchema: DeductibleSchema,
+                    responseSchema: DeductibleSchema as unknown,
                 }
             });
 
@@ -588,7 +611,7 @@ Instrucciones para el análisis:
             } else {
                 throw new Error(`JSON parsing failed: ${parseResult.error}`);
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("❌ [Gemini Deductible] Extraction failed:", error);
             throw error;
         }
@@ -603,32 +626,21 @@ Instrucciones para el análisis:
             maxRetries?: number;
             baseDelay?: number;
             maxDelay?: number;
-            shouldRetry?: (error: any) => boolean;
+            shouldRetry?: (error: unknown) => boolean;
         } = {}
     ): Promise<T> => {
         const {
             maxRetries = 3,
             baseDelay = 2000,
             maxDelay = 120000,
-            shouldRetry = (error: any) => {
-                return error.status === 429 ||
-                    error.status === '429' ||
-                    error.status === 503 ||
-                    error.status === '503' ||
-                    error.message?.includes("429") ||
-                    error.message?.includes("Quota exceeded") ||
-                    error.message?.includes("Too Many Requests") ||
-                    error.message?.includes("503") ||
-                    error.message?.includes("Service Unavailable") ||
-                    error.message?.includes("high demand");
-            }
+            shouldRetry = isRetryableError
         } = options;
 
         let retries = 0;
         while (true) {
             try {
                 return await fn();
-            } catch (error: any) {
+            } catch (error: unknown) {
                 if (!shouldRetry(error) || retries >= maxRetries) {
                     throw error;
                 }
@@ -677,7 +689,7 @@ Instrucciones para el análisis:
                 console.log(`📄 [Gemini] Response received: ${responseText.length} chars`);
                 
                 return responseText;
-            } catch (error: any) {
+            } catch (error: unknown) {
                 const geminiError = categorizeGeminiError(error);
                 
                 const isRateLimit = geminiError instanceof GeminiRateLimitError;
@@ -707,7 +719,7 @@ Instrucciones para el análisis:
      * @param prompt - The extraction prompt with few-shot examples
      * @returns Structured quote data
      */
-    extractStructured: async (text: string, prompt: string, pageCount: number = 1): Promise<any> => {
+    extractStructured: async (text: string, prompt: string, pageCount: number = 1): Promise<QuoteExtraction> => {
         let retries = 0;
         const maxRetries = 3;
 
@@ -732,7 +744,7 @@ Instrucciones para el análisis:
                         temperature: 0.1,
                         maxOutputTokens: 32768,
                         responseMimeType: 'application/json',
-                        responseSchema: QuoteExtractionSchema,
+                        responseSchema: QuoteExtractionSchema as unknown,
                     }
                 });
 
@@ -785,8 +797,9 @@ Instrucciones para el análisis:
                 } else {
                     throw new Error(`JSON parsing failed: ${parseResult.error}`);
                 }
-            } catch (error: any) {
+            } catch (error: unknown) {
                 const geminiError = categorizeGeminiError(error);
+                const errorMessage = error instanceof Error ? error.message : String(error);
                 
                 const isRateLimit = geminiError instanceof GeminiRateLimitError;
 
@@ -802,9 +815,9 @@ Instrucciones para el análisis:
                 }
 
                 // If JSON parsing fails or schema validation fails, throw
-                if (error.message?.includes("JSON") || error.message?.includes("schema")) {
-                    console.error("❌ [Gemini] Structured extraction failed:", error.message);
-                    throw new GeminiInvalidResponseError(`Structured extraction failed: ${error.message}`);
+                if (errorMessage.includes("JSON") || errorMessage.includes("schema")) {
+                    console.error("❌ [Gemini] Structured extraction failed:", errorMessage);
+                    throw new GeminiInvalidResponseError(`Structured extraction failed: ${errorMessage}`);
                 }
 
                 console.error("Error generating structured content:", error);
@@ -817,7 +830,7 @@ Instrucciones para el análisis:
      * Generate narrative text (recommendation, analysis) using Gemini
      * This is the only place where we use Gemini for text generation
      */
-    generateNarrative: async (analysisData: any): Promise<{ recommendation: string; marketAnalysis: string }> => {
+    generateNarrative: async (analysisData: Record<string, unknown>): Promise<{ recommendation: string; marketAnalysis: string }> => {
         const prompt = `Basado en el siguiente análisis de cotizaciones de seguros PYME, genera una recomendación profesional y un análisis de mercado.
 
 DATOS DEL ANÁLISIS:

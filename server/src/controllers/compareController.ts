@@ -81,7 +81,7 @@ export async function compareExtraction(req: Request, res: Response) {
             deductible: c.deductible || 'NO ESPECIFICADO',
             confidence: c.confidence,
           })),
-          validityPeriod: extracted.validityPeriod,
+          validityPeriod: extracted.validityPeriod ?? undefined,
           specialConditions: [
             ...(extracted.specialConditions || []),
             ...(premiumValidation.warnings),

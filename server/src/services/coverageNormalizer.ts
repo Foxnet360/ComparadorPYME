@@ -33,12 +33,12 @@ export interface CanonicalCoverage {
 }
 
 export interface RawCoverage {
-  section?: string;
+  section?: string | null;
   rawName: string;
-  insuredAmount?: number;
-  deductible?: string;
-  premium?: number;
-  notes?: string;
+  insuredAmount?: number | null;
+  deductible?: string | null;
+  premium?: number | null;
+  notes?: string | null;
   rawTextSnippet?: string;
   pageNumber?: number | null;
 }
@@ -46,7 +46,7 @@ export interface RawCoverage {
 export interface InsuredAsset {
   assetType: string;
   value: number;
-  notes?: string;
+  notes?: string | null;
 }
 
 export interface GeneralDeductible {
