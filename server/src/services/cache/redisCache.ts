@@ -1,4 +1,14 @@
 import Redis from 'ioredis';
+import type { CoverageMapping } from '../coverageOntology';
+import type { DeductibleStructure } from '../../schemas/extractionSchemas';
+import type { UnifiedComparisonResult } from '../../types/unifiedComparison';
+
+/**
+ * Shape stored by the V2 deductible cache. The canonical DeductibleStructure
+ * requires rawText, but the cache stores a stripped payload and re-hydrates
+ * the full shape on read.
+ */
+type CachedDeductibleV2 = Omit<DeductibleStructure, 'rawText'>;
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
@@ -212,7 +222,7 @@ export async function setCachedEmbedding(text: string, embedding: number[]): Pro
     memoryCache.setex(key, cacheTTL.embedding, value);
 }
 
-export async function getCachedCoverageMapping(rawName: string, insurer?: string): Promise<any | null> {
+export async function getCachedCoverageMapping(rawName: string, insurer?: string): Promise<CoverageMapping | null> {
     const key = cacheKeys.coverageMapping(rawName, insurer);
     
     if (redisAvailable) {
@@ -233,7 +243,7 @@ export async function getCachedCoverageMapping(rawName: string, insurer?: string
     return null;
 }
 
-export async function setCachedCoverageMapping(rawName: string, mapping: any, insurer?: string): Promise<void> {
+export async function setCachedCoverageMapping(rawName: string, mapping: CoverageMapping, insurer?: string): Promise<void> {
     const key = cacheKeys.coverageMapping(rawName, insurer);
     const value = JSON.stringify(mapping);
     
@@ -249,14 +259,14 @@ export async function setCachedCoverageMapping(rawName: string, mapping: any, in
     memoryCache.setex(key, cacheTTL.coverageMapping, value);
 }
 
-export async function getCachedDeductible(text: string): Promise<any | null> {
+export async function getCachedDeductible<T>(text: string): Promise<T | null> {
     const key = cacheKeys.deductibleParsed(text);
     
     if (redisAvailable) {
         try {
             const cached = await redis.get(key);
             if (cached) {
-                return JSON.parse(cached);
+                return JSON.parse(cached) as T;
             }
         } catch (_error) {
             // Redis failed, try memory
@@ -265,12 +275,12 @@ export async function getCachedDeductible(text: string): Promise<any | null> {
     
     const cached = memoryCache.get(key);
     if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached) as T;
     }
     return null;
 }
 
-export async function setCachedDeductible(text: string, parsed: any): Promise<void> {
+export async function setCachedDeductible<T>(text: string, parsed: T): Promise<void> {
     const key = cacheKeys.deductibleParsed(text);
     const value = JSON.stringify(parsed);
     
@@ -286,7 +296,7 @@ export async function setCachedDeductible(text: string, parsed: any): Promise<vo
     memoryCache.setex(key, cacheTTL.deductibleParsed, value);
 }
 
-export async function getCachedDeductibleV2(text: string): Promise<any | null> {
+export async function getCachedDeductibleV2(text: string): Promise<CachedDeductibleV2 | null> {
     const key = cacheKeys.deductibleV2(text);
 
     if (redisAvailable) {
@@ -307,7 +317,7 @@ export async function getCachedDeductibleV2(text: string): Promise<any | null> {
     return null;
 }
 
-export async function setCachedDeductibleV2(text: string, parsed: any): Promise<void> {
+export async function setCachedDeductibleV2(text: string, parsed: CachedDeductibleV2): Promise<void> {
     const key = cacheKeys.deductibleV2(text);
     const value = JSON.stringify(parsed);
 
@@ -374,14 +384,14 @@ export function isRedisAvailable(): boolean {
 }
 
 // ====== Comparison Result Caching ======
-export async function getCachedComparisonResult(fileHash: string): Promise<any | null> {
+export async function getCachedComparisonResult<T>(fileHash: string): Promise<T | null> {
     const key = cacheKeys.comparisonResult(fileHash);
     
     if (redisAvailable) {
         try {
             const cached = await redis.get(key);
             if (cached) {
-                return JSON.parse(cached);
+                return JSON.parse(cached) as T;
             }
         } catch (_error) {
             // Redis failed, try memory
@@ -390,12 +400,12 @@ export async function getCachedComparisonResult(fileHash: string): Promise<any |
     
     const cached = memoryCache.get(key);
     if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached) as T;
     }
     return null;
 }
 
-export async function setCachedComparisonResult(fileHash: string, result: any): Promise<void> {
+export async function setCachedComparisonResult<T>(fileHash: string, result: T): Promise<void> {
     const key = cacheKeys.comparisonResult(fileHash);
     const value = JSON.stringify(result);
     
@@ -411,7 +421,7 @@ export async function setCachedComparisonResult(fileHash: string, result: any): 
     memoryCache.setex(key, cacheTTL.comparisonResult, value);
 }
 
-export async function getCachedUnifiedResult(fileHash: string): Promise<any | null> {
+export async function getCachedUnifiedResult(fileHash: string): Promise<UnifiedComparisonResult | null> {
     const key = cacheKeys.unifiedResult(fileHash);
     
     if (redisAvailable) {
@@ -432,7 +442,7 @@ export async function getCachedUnifiedResult(fileHash: string): Promise<any | nu
     return null;
 }
 
-export async function setCachedUnifiedResult(fileHash: string, result: any): Promise<void> {
+export async function setCachedUnifiedResult(fileHash: string, result: UnifiedComparisonResult): Promise<void> {
     const key = cacheKeys.unifiedResult(fileHash);
     const value = JSON.stringify(result);
     
