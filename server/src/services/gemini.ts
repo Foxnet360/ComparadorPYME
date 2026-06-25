@@ -458,7 +458,7 @@ export const geminiService = {
                         }
 
                         if (options?.skipValidation) {
-                            return parseResult.data;
+                            return parseResult.data as QuoteExtractionV2;
                         }
 
                         const validated = validateGeminiOutput<QuoteExtractionV2>(
@@ -749,7 +749,11 @@ Instrucciones para el análisis:
                         console.log(`🔧 [JSON Repair] Fixed using ${parseResult.repairType}`);
                     }
                     
-                    const data = parseResult.data;
+                    type MutableExtractionData = QuoteExtraction & {
+                        premiumSource?: string;
+                        premiumConfidence?: number;
+                    };
+                    const data = parseResult.data as MutableExtractionData;
                     
                     // Try premium extraction fallback if priceAnnual is 0 or missing
                     if (!data.priceAnnual || data.priceAnnual === 0) {
@@ -758,7 +762,7 @@ Instrucciones para el análisis:
                         
                         if (premiumResult.priceAnnual > 0) {
                             data.priceAnnual = premiumResult.priceAnnual;
-                            data.currency = premiumResult.currency;
+                            data.currency = premiumResult.currency as 'COP' | 'USD';
                             data.premiumSource = premiumResult.source;
                             data.premiumConfidence = premiumResult.confidence;
                             console.log(`💰 [Premium] Found via ${premiumResult.source}: ${premiumResult.priceAnnual} ${premiumResult.currency}`);

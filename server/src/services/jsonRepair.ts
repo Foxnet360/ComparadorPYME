@@ -5,7 +5,7 @@
 
 export interface JsonRepairResult {
   success: boolean;
-  data: any;
+  data: unknown;
   wasRepaired: boolean;
   repairType?: string;
   error?: string;
@@ -185,12 +185,25 @@ function repairMissingQuotes(json: string): string {
   return json.replace(/(\w+):/g, '"$1":');
 }
 
+interface PartialQuoteData {
+  insurerName?: string;
+  policyName?: string;
+  currency?: string;
+  validityPeriod?: string;
+  priceAnnual?: number;
+  coverages?: Array<{
+    name: string;
+    value: string;
+    deductible: string;
+  }>;
+}
+
 /**
  * Extract partial data from damaged JSON
  * Attempts to extract whatever valid key-value pairs are present
  */
-function extractPartialData(json: string): any {
-  const result: any = {};
+function extractPartialData(json: string): PartialQuoteData | null {
+  const result: Record<string, unknown> = {};
 
   // Try to extract string values for known keys
   const keyValuePattern = /"(insurerName|policyName|currency|validityPeriod)"\s*:\s*"([^"]*)"/g;
@@ -216,14 +229,14 @@ function extractPartialData(json: string): any {
     }
   }
 
-  return result;
+  return result as PartialQuoteData;
 }
 
 /**
  * Extract coverage objects from damaged text using regex
  */
-function extractCoveragesFromText(text: string): any[] {
-  const coverages: any[] = [];
+function extractCoveragesFromText(text: string): Array<{ name: string; value: string; deductible: string }> {
+  const coverages: Array<{ name: string; value: string; deductible: string }> = [];
 
   // Pattern to match coverage objects: { "name": "...", "value": "...", "deductible": "..." }
   const coveragePattern = /\{\s*"name"\s*:\s*"([^"]*)"\s*,\s*"value"\s*:\s*"([^"]*)"\s*,\s*"deductible"\s*:\s*"([^"]*)"\s*\}/g;

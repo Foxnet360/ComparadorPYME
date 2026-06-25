@@ -317,7 +317,7 @@ export class UnifiedComparisonEngine {
           throw new Error(`JSON parsing failed: ${parseResult.error}`);
         }
 
-        const result = parseResult.data;
+        const result = parseResult.data as UnifiedComparisonResult;
 
         // Validate against schema and business rules
         const validation = comparisonResultValidator.validate(result, expectedInsurerCount);
