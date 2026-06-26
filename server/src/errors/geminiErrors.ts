@@ -74,9 +74,16 @@ export class GeminiUnknownError extends GeminiError {
   }
 }
 
-export function categorizeGeminiError(error: any): GeminiError {
-  const message = error?.message || '';
-  const status = error?.status || error?.statusCode;
+interface GeminiErrorLike {
+  message?: string;
+  status?: number;
+  statusCode?: number;
+}
+
+export function categorizeGeminiError(error: unknown): GeminiError {
+  const err = error as GeminiErrorLike;
+  const message = err?.message || '';
+  const status = err?.status || err?.statusCode;
   
   if (status === 429 || message.includes('429') || message.includes('Quota exceeded') || message.includes('Too Many Requests')) {
     return new GeminiRateLimitError(message);
