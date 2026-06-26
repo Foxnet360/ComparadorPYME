@@ -19,8 +19,8 @@ const CoverageCell = memo(({
   lowConfidence,
   needsReview,
   isSaving,
-  onOpenPdf,
-  onOpenCorrection,
+  onOpenPdf: _onOpenPdf,
+  onOpenCorrection: _onOpenCorrection,
   onDoubleClick,
   hasNote
 }: {

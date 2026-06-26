@@ -8,7 +8,7 @@ interface RegisterScreenProps {
     onBackToLogin: () => void;
 }
 
-const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegisterSuccess, onBackToLogin }) => {
+const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegisterSuccess: _onRegisterSuccess, onBackToLogin }) => {
     const [formData, setFormData] = useState({
         name: '',
         email: '',

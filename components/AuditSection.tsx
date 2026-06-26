@@ -99,8 +99,7 @@ export const AuditSection: React.FC<AuditSectionProps> = ({ quotes, viewMode }) 
     error, 
     isEnriched,
     progress,
-    enrich,
-    reset 
+    enrich
   } = useAuditEnrichment();
 
   const clausesAvailable = hasClauses || (quotes && quotes.some(q => q.isRagAvailable));

@@ -223,9 +223,9 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
                   )}
                   <ReactMarkdown 
                     components={{
-                      ul: ({node, ...props}) => <ul className="list-disc pl-4 my-1" {...props} />,
-                      ol: ({node, ...props}) => <ol className="list-decimal pl-4 my-1" {...props} />,
-                      p: ({node, ...props}) => <p className="mb-1 last:mb-0" {...props} />
+                      ul: ({node: _node, ...props}) => <ul className="list-disc pl-4 my-1" {...props} />,
+                      ol: ({node: _node, ...props}) => <ol className="list-decimal pl-4 my-1" {...props} />,
+                      p: ({node: _node, ...props}) => <p className="mb-1 last:mb-0" {...props} />
                     }}
                   >
                     {msg.text}

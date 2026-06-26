@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { ComparisonReport as ReportType, AlertLevel } from '../types';
-import { Check, Award, ShieldAlert, BarChart3, AlertTriangle, AlertCircle, Info, Scale, FileDown, Layers, FileText, User, Briefcase, BookOpen } from 'lucide-react';
+import { ComparisonReport as ReportType } from '../types';
+import { Check, Award, ShieldAlert, BarChart3, AlertTriangle, Scale, FileDown, Layers, FileText, User, Briefcase, BookOpen } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend } from 'recharts';
 import { DISCLAIMER_TEXT} from '../constants';
 import { generatePDF } from '../services/pdfService';
@@ -84,24 +84,6 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
 
   // Colors for charts
   const CHART_COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
-
-  const getAlertIcon = (level: AlertLevel) => {
-    switch (level) {
-      case 'CRITICAL': return <AlertCircle className="text-red-600" size={20} />;
-      case 'WARNING': return <AlertTriangle className="text-amber-500" size={20} />;
-      case 'GOOD': return <Check className="text-green-600" size={20} />;
-      default: return <Info className="text-blue-500" size={20} />;
-    }
-  };
-
-  const getAlertBg = (level: AlertLevel) => {
-    switch (level) {
-      case 'CRITICAL': return 'bg-red-50 border-red-100 border-l-4 border-l-red-500';
-      case 'WARNING': return 'bg-amber-50 border-amber-100 border-l-4 border-l-amber-500';
-      case 'GOOD': return 'bg-green-50 border-green-100 border-l-4 border-l-green-500';
-      default: return 'bg-blue-50 border-blue-100 border-l-4 border-l-blue-500';
-    }
-  };
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
