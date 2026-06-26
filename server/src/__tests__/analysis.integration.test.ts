@@ -8,6 +8,7 @@ import request from 'supertest';
 import express from 'express';
 import { analysisController } from '../controllers/analysisController';
 import { errorHandler } from '../middleware/errorHandler';
+import { AuthenticatedRequest } from '../middleware/auth';
 
 // Mock external dependencies that require environment variables
 vi.mock('../config/database', () => ({
@@ -31,7 +32,7 @@ app.use(express.json());
 
 // Mock auth middleware for testing
 app.use((req, res, next) => {
-  (req as any).user = { id: 'test-user-123' };
+  (req as AuthenticatedRequest).user = { id: 'test-user-123' };
   next();
 });
 
