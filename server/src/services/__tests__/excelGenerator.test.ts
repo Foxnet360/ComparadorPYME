@@ -71,6 +71,14 @@ describe('excelGenerator', () => {
             deductible: '10% PERD - Min 1 SMMLV',
             categoryId: 1,
             matchConfidence: 0.95
+          },
+          // Exclusive coverage with raw numeric value
+          {
+            name: 'Cobertura Adicional MAPFRE',
+            value: '50000000',
+            deductible: 'No aplica',
+            categoryId: null,
+            matchConfidence: 0.30
           }
         ]
       },
@@ -168,6 +176,78 @@ describe('excelGenerator', () => {
       const headerRow = coveragesSheet!.getRow(4);
       const notesHeader = headerRow.getCell(mockQuotes.length + 2);
       expect(notesHeader.value).not.toBe('INSIGHTS DEL CONSULTOR');
+    });
+
+    it('should format raw numeric exclusive coverage values as COP', async () => {
+      const buffer = await generateExcelBuffer(mockQuotes);
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+
+      const coveragesSheet = workbook.getWorksheet('Coberturas y Deducibles');
+      expect(coveragesSheet).toBeDefined();
+
+      let exclusiveCell: ExcelJS.Cell | undefined;
+      coveragesSheet!.eachRow((row) => {
+        const cellA = row.getCell(1);
+        if (cellA.value === 'Cobertura Adicional MAPFRE') {
+          exclusiveCell = row.getCell(2); // First insurer column
+        }
+      });
+
+      expect(exclusiveCell).toBeDefined();
+      expect(exclusiveCell!.value).toBe('$50.000.000');
+    });
+
+    it('should preserve non-numeric exclusive coverage values', async () => {
+      const quotesWithTextExclusive: QuoteAnalysis[] = [
+        {
+          insurerName: 'MAPFRE',
+          policyName: 'TODO RIESGO PYME',
+          priceMonthly: 0,
+          priceAnnual: 677801,
+          currency: 'COP',
+          deductibles: '',
+          scoringBreakdown: { coverage: 8, deductibles: 7, exclusions: 8, priceRatio: 9, sublimits: 8, warranties: 8 },
+          clientAnalysis: '',
+          technicalAnalysis: '',
+          score: 82,
+          alerts: [],
+          coverages: [
+            {
+              name: 'Incendio (Edificio y Contenidos)',
+              value: '$119.600.000',
+              deductible: '10% PERD - Min 1 SMMLV',
+              categoryId: 1,
+              matchConfidence: 0.95
+            },
+            {
+              name: 'Asistencia VIP',
+              value: 'Incluido',
+              deductible: 'No aplica',
+              categoryId: null,
+              matchConfidence: 0.30
+            }
+          ]
+        }
+      ];
+
+      const buffer = await generateExcelBuffer(quotesWithTextExclusive);
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+
+      const coveragesSheet = workbook.getWorksheet('Coberturas y Deducibles');
+      expect(coveragesSheet).toBeDefined();
+
+      let exclusiveCell: ExcelJS.Cell | undefined;
+      coveragesSheet!.eachRow((row) => {
+        const cellA = row.getCell(1);
+        if (cellA.value === 'Asistencia VIP') {
+          exclusiveCell = row.getCell(2);
+        }
+      });
+
+      expect(exclusiveCell).toBeDefined();
+      expect(exclusiveCell!.value).toBe('Incluido');
     });
   });
 });

@@ -173,6 +173,20 @@ export function formatCurrency(num: number): string {
   return '$' + num.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
+export function formatMatrixValue(val: string | undefined | null): string {
+  if (!val) return 'No informado';
+  if (isExcludedValue(val)) return val;
+
+  // Only format values that are simple numeric representations.
+  // This preserves text like "Incluido", "No aplica", deductibles, etc.
+  if (!/^[\s$.,\d]+$/.test(val)) return val;
+
+  const numericVal = parseNumericValue(val);
+  if (numericVal <= 0) return val;
+
+  return formatCurrency(numericVal);
+}
+
 export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
   const matrix: MatrixRow[] = [];
   const numQuotes = quotes.length;
@@ -203,10 +217,10 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
           (c.matchConfidence === undefined || c.matchConfidence === null || c.matchConfidence >= 0.65)
         );
 
-        if (cov) {
+          if (cov) {
           let cellValue = '';
           if (rowConfig.field === 'value') {
-            cellValue = cov.value || 'No incluida';
+            cellValue = formatMatrixValue(cov.value || 'No incluida');
           } else if (rowConfig.field === 'deductible') {
             cellValue = cov.deductible || 'No aplica';
           } else {
@@ -314,7 +328,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
         const matchingItem = groupItems.find(gi => gi.quoteIdx === i);
         if (matchingItem) {
           const item = matchingItem.item;
-          let displayVal = item.value || 'Incluido';
+          let displayVal = formatMatrixValue(item.value || 'Incluido');
           if (item.deductible && item.deductible !== 'No aplica' && item.deductible !== '') {
             displayVal += ` (Ded: ${item.deductible})`;
           }

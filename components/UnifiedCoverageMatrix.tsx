@@ -405,7 +405,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
         if (matchingItems.length > 0) {
           const displayVals = matchingItems.map(mi => {
             const item = mi.item;
-            let displayVal = item.value || 'Incluido';
+            let displayVal = formatMatrixValue(item.value || 'Incluido');
             if (item.deductible && item.deductible !== 'No aplica' && item.deductible !== '') {
               displayVal += ` (Ded: ${item.deductible})`;
             }
