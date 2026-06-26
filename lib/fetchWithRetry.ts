@@ -9,7 +9,7 @@ interface FetchWithRetryOptions extends RequestInit {
 interface FetchResult {
   ok: boolean;
   status: number;
-  data?: any;
+  data?: unknown;
   error?: string;
   retriesAttempted: number;
 }
