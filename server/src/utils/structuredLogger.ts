@@ -126,7 +126,7 @@ export function createMetricCollector(): MetricCollector {
             if (typeof prop === 'string' && !(prop in target)) {
               return 0;
             }
-            return (target as any)[prop];
+            return (target as unknown as Record<string | symbol, number>)[prop];
           },
         }) as Record<string, number>,
       };

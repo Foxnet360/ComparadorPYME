@@ -5,7 +5,7 @@ import { Request, Response, NextFunction, RequestHandler } from 'express';
  * This eliminates the need for try/catch blocks in every route.
  */
 export const asyncHandler = (
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>
 ): RequestHandler => {
   return (req, res, next) => {
     Promise.resolve(fn(req, res, next)).catch(next);

@@ -80,9 +80,35 @@ const COVERAGE_VARIANTS: Record<string, string[]> = {
 // Logging de debug
 const DEBUG = process.env.LOG_LEVEL === 'debug' || process.env.NODE_ENV === 'development';
 
+interface CoverageItem {
+  name: string;
+  value: string;
+  deductible?: string;
+}
+
+interface ParsedDeductible {
+  coverage: string;
+  fullText: string;
+  percentage: string;
+  minimum: string;
+  appliesTo: string;
+  isGood: boolean;
+}
+
+interface AnalysisQuote {
+  insurerName?: string;
+  coverages?: CoverageItem[];
+  deductibles?: string;
+  deductiblesParsed?: ParsedDeductible[];
+}
+
+interface Analysis {
+  quotes: AnalysisQuote[];
+}
+
 // Validar y completar coberturas
-export const validateAndCompleteCoverages = (coverages: any[], insurerName?: string): any[] => {
-  const result: any[] = [];
+export const validateAndCompleteCoverages = (coverages: CoverageItem[], insurerName?: string): CoverageItem[] => {
+  const result: CoverageItem[] = [];
   const usedOriginalIndices = new Set<number>();
   
   if (DEBUG) {
@@ -163,8 +189,8 @@ export const validateAndCompleteCoverages = (coverages: any[], insurerName?: str
 };
 
 // Parsear deducibles estructurados
-export const parseDeductibles = (deductiblesText: string): any[] => {
-  const results: any[] = [];
+export const parseDeductibles = (deductiblesText: string): ParsedDeductible[] => {
+  const results: ParsedDeductible[] = [];
   const lines = deductiblesText.split('\n').filter(l => l.trim());
   
   for (const line of lines) {
@@ -209,7 +235,7 @@ export const parseDeductibles = (deductiblesText: string): any[] => {
 };
 
 // Validar análisis completo
-export const validateAnalysis = (analysis: any): any => {
+export const validateAnalysis = (analysis: Analysis | null | undefined): Analysis | null | undefined => {
   if (!analysis || !analysis.quotes) return analysis;
   
   for (const quote of analysis.quotes) {
