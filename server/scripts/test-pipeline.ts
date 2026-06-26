@@ -15,8 +15,16 @@ import { mapCoverageName, normalizeDeductible, loadThesaurus } from '../src/serv
 import { validateQuote } from '../src/services/quoteValidator';
 import { calculateConfidence, getConfidenceLabel } from '../src/services/confidenceScorer';
 import { formatPercentage } from '../src/utils/formatCurrency';
+import { QuoteExtraction } from '../src/schemas/extractionSchemas';
 import fs from 'fs';
 import path from 'path';
+
+interface PipelineResult {
+  insurerName: string;
+  stages: Record<string, Record<string, unknown>>;
+  validations: Record<string, Record<string, unknown>>;
+  error?: string;
+}
 
 const QUOTES_DIR = path.join(process.cwd(), '..', '..', 'Ejemplos', 'laser-home');
 
@@ -26,7 +34,7 @@ async function testPipeline(pdfPath: string, insurerName: string) {
   console.log(`📄 ${path.basename(pdfPath)}`);
   console.log(`${'='.repeat(70)}\n`);
 
-  const pipelineResults: any = {
+  const pipelineResults: PipelineResult = {
     insurerName,
     stages: {},
     validations: {},
@@ -111,7 +119,7 @@ IMPORTANTE - FORMATO DE RESPUESTA:
 - Copia los nombres exactos del PDF, no uses nombres genéricos
 - Los deducibles pueden ser: porcentajes ("10%"), montos fijos ("5 SMMLV"), o textos ("NO APLICA", "APLICA")`
 
-    let geminiResult;
+    let geminiResult: QuoteExtraction;
     try {
       // Try structured extraction first
       geminiResult = await geminiService.extractStructured(
@@ -127,9 +135,9 @@ IMPORTANTE - FORMATO DE RESPUESTA:
         
         // Try to parse as JSON
         const repaired = parseJsonWithRepair(textResult);
-        if (repaired.success && repaired.data.coverages && repaired.data.coverages.length > 0) {
-          console.log(`   ✅ Text extraction found ${repaired.data.coverages.length} coverages!`);
-          geminiResult = repaired.data;
+        if (repaired.success && repaired.data && typeof repaired.data === 'object' && 'coverages' in repaired.data && Array.isArray((repaired.data as Record<string, unknown>).coverages) && ((repaired.data as Record<string, unknown>).coverages as unknown[]).length > 0) {
+          console.log(`   ✅ Text extraction found ${((repaired.data as Record<string, unknown>).coverages as unknown[]).length} coverages!`);
+          geminiResult = repaired.data as QuoteExtraction;
         }
       }
 
@@ -148,8 +156,9 @@ IMPORTANTE - FORMATO DE RESPUESTA:
       console.log(`   Prima: ${geminiResult.priceAnnual?.toLocaleString('es-CO')} ${geminiResult.currency}`);
       console.log(`   Coberturas: ${geminiResult.coverages?.length || 0}`);
 
-    } catch (geminiError: any) {
-      console.log(`❌ Gemini extraction failed: ${geminiError.message}`);
+    } catch (geminiError: unknown) {
+      const geminiMessage = geminiError instanceof Error ? geminiError.message : String(geminiError);
+      console.log(`❌ Gemini extraction failed: ${geminiMessage}`);
       
       // Try fallback: legacy extraction
       console.log(`   🔄 Trying legacy extraction...`);
@@ -162,7 +171,7 @@ IMPORTANTE - FORMATO DE RESPUESTA:
         const repaired = parseJsonWithRepair(legacyResult);
         if (repaired.success) {
           console.log(`   ✅ Repaired JSON from legacy response!`);
-          geminiResult = repaired.data;
+          geminiResult = repaired.data as QuoteExtraction;
           pipelineResults.stages.gemini = {
             success: true,
             fallback: true,
@@ -172,16 +181,17 @@ IMPORTANTE - FORMATO DE RESPUESTA:
         } else {
           pipelineResults.stages.gemini = {
             success: false,
-            error: geminiError.message,
+            error: geminiMessage,
             fallbackFailed: true,
           };
           return pipelineResults;
         }
-      } catch (legacyError: any) {
-        console.log(`   ❌ Legacy extraction also failed: ${legacyError.message}`);
+      } catch (legacyError: unknown) {
+        const legacyMessage = legacyError instanceof Error ? legacyError.message : String(legacyError);
+        console.log(`   ❌ Legacy extraction also failed: ${legacyMessage}`);
         pipelineResults.stages.gemini = {
           success: false,
-          error: geminiError.message,
+          error: geminiMessage,
         };
         return pipelineResults;
       }
@@ -196,7 +206,7 @@ IMPORTANTE - FORMATO DE RESPUESTA:
 
     if (geminiResult.coverages && geminiResult.coverages.length > 0) {
       // Filter and normalize coverages
-      let normalizedCoverages = geminiResult.coverages.map((cov: any) => {
+      let normalizedCoverages = geminiResult.coverages.map((cov) => {
         const mapping = mapCoverageName(cov.name);
         const deductibleNorm = normalizeDeductible(cov.deductible || '');
         
@@ -211,8 +221,8 @@ IMPORTANTE - FORMATO DE RESPUESTA:
       });
 
       // Remove duplicates based on canonical name (keep highest confidence)
-      const seen = new Map();
-      normalizedCoverages.forEach((cov: any) => {
+      const seen = new Map<string, typeof normalizedCoverages[0]>();
+      normalizedCoverages.forEach((cov) => {
         const existing = seen.get(cov.canonicalName);
         if (!existing || cov.confidence > existing.confidence) {
           seen.set(cov.canonicalName, cov);
@@ -221,36 +231,36 @@ IMPORTANTE - FORMATO DE RESPUESTA:
       normalizedCoverages = Array.from(seen.values());
 
       // Filter out very low confidence mappings (< 0.3) which are likely errors
-      normalizedCoverages = normalizedCoverages.filter((cov: any) => cov.confidence >= 0.3);
+      normalizedCoverages = normalizedCoverages.filter((cov) => cov.confidence >= 0.3);
 
-      const needsReviewCount = normalizedCoverages.filter((c: any) => c.needsReview).length;
+      const needsReviewCount = normalizedCoverages.filter((c) => c.needsReview).length;
       
       pipelineResults.stages.thesaurus = {
         success: true,
         coverageCount: normalizedCoverages.length,
-        normalizedCount: normalizedCoverages.filter((c: any) => c.canonicalName !== c.originalName).length,
+        normalizedCount: normalizedCoverages.filter((c) => c.canonicalName !== c.originalName).length,
         needsReviewCount,
       };
 
       console.log(`✅ Normalized ${normalizedCoverages.length} coverages`);
-      console.log(`   Mapped to canonical: ${normalizedCoverages.filter((c: any) => c.canonicalName !== c.originalName).length}`);
+      console.log(`   Mapped to canonical: ${normalizedCoverages.filter((c) => c.canonicalName !== c.originalName).length}`);
       console.log(`   Need review: ${needsReviewCount}`);
       
       console.log(`\n   Coverage mappings:`);
-      normalizedCoverages.forEach((cov: any, i: number) => {
+      normalizedCoverages.forEach((cov, i: number) => {
         const arrow = cov.originalName !== cov.canonicalName ? '→' : '=';
         const status = cov.needsReview ? '⚠️' : '✅';
         console.log(`   ${i+1}. ${status} "${cov.originalName}" ${arrow} "${cov.canonicalName}" (${formatPercentage(cov.confidence, 0)})`);
       });
 
       // Replace with normalized
-      geminiResult.coverages = normalizedCoverages.map((c: any) => ({
+      geminiResult.coverages = normalizedCoverages.map((c) => ({
         name: c.canonicalName,
         value: c.value,
         deductible: c.deductible,
         originalName: c.originalName,
         confidence: c.confidence,
-      }));
+      })) as QuoteExtraction['coverages'];
     } else {
       console.log('⚠️  No coverages to normalize');
       pipelineResults.stages.thesaurus = { success: true, coverageCount: 0 };
@@ -260,8 +270,8 @@ IMPORTANTE - FORMATO DE RESPUESTA:
     console.log(`\n✅ STAGE 5: Validation & Confidence Scoring`);
     console.log('-'.repeat(50));
 
-    const validation = validateQuote(geminiResult);
-    const confidence = calculateConfidence(geminiResult, validation, true);
+    const validation = validateQuote(geminiResult as unknown as import('../src/services/quoteParser').ParsedQuote);
+    const confidence = calculateConfidence(geminiResult as unknown as import('../src/services/quoteParser').ParsedQuote, validation, true);
 
     pipelineResults.stages.validation = {
       isValid: validation.isValid,
@@ -276,7 +286,7 @@ IMPORTANTE - FORMATO DE RESPUESTA:
     console.log(`   Coverages: ${validation.coverageCount}/${validation.expectedCoverageCount}`);
     console.log(`   Flags: ${validation.flags.length}`);
     if (validation.flags.length > 0) {
-      validation.flags.forEach((f: any) => {
+      validation.flags.forEach((f) => {
         console.log(`     - [${f.severity}] ${f.code}: ${f.message}`);
       });
     }
@@ -308,7 +318,7 @@ IMPORTANTE - FORMATO DE RESPUESTA:
     console.log(`   ${premiumPass ? '✅' : '❌'} Premium: ${geminiResult.priceAnnual?.toLocaleString('es-CO')} ${geminiResult.currency} ${premiumPass ? '(> 0)' : '(MISSING)'}`);
 
     // 5.4: Thesaurus mapping >= 80%
-    const mappedCount = geminiResult.coverages?.filter((c: any) => c.originalName && c.name !== c.originalName).length || 0;
+    const mappedCount = geminiResult.coverages?.filter((c) => c.originalName && c.name !== c.originalName).length || 0;
     const totalCoverages = geminiResult.coverages?.length || 0;
     const mappingRate = totalCoverages > 0 ? (mappedCount / totalCoverages) : 0;
     const mappingPass = mappingRate >= 0.8;
@@ -345,9 +355,10 @@ IMPORTANTE - FORMATO DE RESPUESTA:
 
     return pipelineResults;
 
-  } catch (error: any) {
-    console.error(`\n❌ Pipeline failed:`, error.message);
-    pipelineResults.error = error.message;
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`\n❌ Pipeline failed:`, message);
+    pipelineResults.error = message;
     return pipelineResults;
   }
 }
@@ -372,7 +383,7 @@ async function main() {
     { file: 'Cotización - AXA Colpatria.pdf', name: 'AXA Colpatria' },
   ];
 
-  const results = [];
+  const results: PipelineResult[] = [];
 
   for (const quote of testQuotes) {
     const pdfPath = path.join(QUOTES_DIR, quote.file);
@@ -389,16 +400,16 @@ async function main() {
   console.log('📊 PIPELINE TEST SUMMARY');
   console.log(`${'='.repeat(70)}\n`);
 
-  const successful = results.filter((r: any) => !r.error);
-  const withGemini = results.filter((r: any) => r.stages?.gemini?.success);
-  const withThesaurus = results.filter((r: any) => r.stages?.thesaurus?.success);
+  const successful = results.filter((r) => !r.error);
+  const withGemini = results.filter((r) => r.stages?.gemini?.success);
+  const withThesaurus = results.filter((r) => r.stages?.thesaurus?.success);
 
   console.log(`Total tested: ${results.length}`);
   console.log(`Successful: ${successful.length}`);
   console.log(`With Gemini: ${withGemini.length}`);
   console.log(`With Thesaurus: ${withThesaurus.length}\n`);
 
-  results.forEach((r: any) => {
+  results.forEach((r) => {
     const geminiStatus = r.stages?.gemini?.success ? '✅' : 
                         r.stages?.gemini?.skipped ? '⏭️' : '❌';
     const thesStatus = r.stages?.thesaurus?.success ? '✅' : '❌';
