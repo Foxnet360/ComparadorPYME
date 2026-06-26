@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   createTemplateRegistryService,
-  TemplateMatchResult,
   RegistryCache,
 } from '../templateRegistryService';
 import { TemplateRegistryEntry } from '../../types/templateGraph';
@@ -27,7 +26,7 @@ function makeCache(): RegistryCache {
   const store = new Map<string, string>();
   return {
     get: vi.fn(async (key: string) => store.get(key) ?? null),
-    set: vi.fn(async (key: string, value: string, ttl: number) => {
+    set: vi.fn(async (key: string, value: string, _ttl: number) => {
       store.set(key, value);
     }),
     del: vi.fn(async (key: string) => {
@@ -42,7 +41,7 @@ function makeCache(): RegistryCache {
 function makeFakeDb() {
   const rows: Record<string, unknown>[] = [];
   return {
-    from: vi.fn((table: string) => ({
+    from: vi.fn((_table: string) => ({
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
           eq: vi.fn(() => Promise.resolve({ data: rows, error: null })),

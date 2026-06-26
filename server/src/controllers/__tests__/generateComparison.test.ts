@@ -23,7 +23,7 @@ vi.mock('../../services/embeddingService', () => ({
 
 import { generateComparison } from '../analysisController';
 import { ParsedQuote } from '../../services/quoteParser';
-import { ScoringResult, ScoreWeights, ScoreBreakdown } from '../../services/quoteScorer';
+import { ScoringResult, ScoreWeights } from '../../services/quoteScorer';
 import { NarrativeResult } from '../../services/narrativeService';
 import { CrossReferenceResult } from '../../services/crossReferenceEngine';
 import { ValidationResult } from '../../services/quoteValidator';
