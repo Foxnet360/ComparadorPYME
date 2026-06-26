@@ -123,6 +123,19 @@ export async function mapRawToCanonical(
   graphConfidence: number | null;
   method: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'ontology' | 'graph' | null;
 }> {
+  return mapRawToCanonicalWithInsurer(rawName, domain, insurer);
+}
+
+async function mapRawToCanonicalWithInsurer(
+  rawName: string,
+  domain?: string,
+  insurer?: string
+): Promise<{
+  canonicalName: string | null;
+  confidence: number;
+  graphConfidence: number | null;
+  method: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'ontology' | 'graph' | null;
+}> {
   if (!rawName || rawName.trim().length === 0) {
     return { canonicalName: null, confidence: 0, graphConfidence: null, method: null };
   }
@@ -131,7 +144,7 @@ export async function mapRawToCanonical(
 
   // Semantic ontology mode (new architecture)
   if (featureFlags.isEnabled('semanticCoverageOntology') && !featureFlags.isEnabled('useLegacyCoverageMatcher')) {
-    const ontologyResult = await mapWithOntology(rawName, d);
+    const ontologyResult = await mapWithOntology(rawName, d, insurer);
     if (ontologyResult) {
       return ontologyResult;
     }
@@ -400,10 +413,11 @@ function matchByFuzzy(rawName: string, domain: string = 'pyme'): { canonicalName
  */
 async function mapWithOntology(
   rawName: string,
-  domain: string = 'pyme'
+  domain: string = 'pyme',
+  insurer?: string
 ): Promise<{ canonicalName: string; confidence: number; graphConfidence: number | null; method: 'ontology' } | null> {
   try {
-    const mapping = await coverageOntology.mapCoverage(rawName, undefined, domain);
+    const mapping = await coverageOntology.mapCoverage(rawName, insurer, domain);
 
     if (mapping.groups.length === 0) {
       return null;
@@ -621,12 +635,13 @@ export async function buildCanonicalCoverages(
   insuredAssets: InsuredAsset[] = [],
   generalDeductibles: GeneralDeductible[] = [],
   pageTextMap?: Record<number, string>,
-  domain?: string
+  domain?: string,
+  insurerName?: string
 ): Promise<NormalizationResult> {
   const d = domain ?? 'pyme';
   // Ontology mode (fluid architecture)
   if (featureFlags.isEnabled('semanticCoverageOntology') && !featureFlags.isEnabled('useLegacyCoverageMatcher')) {
-    return buildOntologyBasedCoverages(rawCoverages, insuredAssets, generalDeductibles, pageTextMap, d);
+    return buildOntologyBasedCoverages(rawCoverages, insuredAssets, generalDeductibles, pageTextMap, d, insurerName);
   }
 
   // Legacy mode (N categories for domain)
@@ -647,7 +662,7 @@ export async function buildCanonicalCoverages(
 
   // Collect coverage names for batch processing
   const coverageNames = withAmounts.map(c => c.rawName);
-  const batchResults = await mapRawToCanonicalBatch(coverageNames, d);
+  const batchResults = await mapRawToCanonicalBatch(coverageNames, d, insurerName);
 
   for (let i = 0; i < withAmounts.length; i++) {
     const result = batchResults[i];
@@ -661,7 +676,7 @@ export async function buildCanonicalCoverages(
   }
 
   // Step 4: Detect implicit coverages (static patterns + graph decomposition)
-  const implicit = await detectImplicitCoverages(rawCoverages, d);
+  const implicit = await detectImplicitCoverages(rawCoverages, d, insurerName);
 
   // Step 5: Build canonical coverages for the active domain
   const canonicalCategories = semanticMatcher.getAllCategories(d);
@@ -796,7 +811,8 @@ async function buildOntologyBasedCoverages(
   insuredAssets: InsuredAsset[] = [],
   generalDeductibles: GeneralDeductible[] = [],
   pageTextMap?: Record<number, string>,
-  domain?: string
+  domain?: string,
+  insurerName?: string
 ): Promise<NormalizationResult> {
   const d = domain ?? 'pyme';
   // Step 1: Resolve deductibles
@@ -817,7 +833,7 @@ async function buildOntologyBasedCoverages(
   for (let i = 0; i < withAmounts.length; i++) {
     const coverage = withAmounts[i];
     const task = (async () => {
-      const mapping = await coverageOntology.mapCoverage(coverage.rawName, undefined, d);
+      const mapping = await coverageOntology.mapCoverage(coverage.rawName, insurerName, d);
 
       // Reverse String page mapping using literal rawTextSnippet evidence
       if (pageTextMap && coverage.rawTextSnippet) {

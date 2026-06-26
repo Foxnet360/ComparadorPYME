@@ -1,5 +1,6 @@
-import { describe, it, expect, vi} from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { coverageOntology, CoverageMapping } from '../coverageOntology';
+import { setCachedCoverageMapping } from '../cache/redisCache';
 
 // Mock environment variables so env.ts does not call process.exit
 vi.mock('../../config/env', () => ({
@@ -216,6 +217,67 @@ describe('coverageOntology', () => {
     it('should return undefined for unknown groups', () => {
       const ded = coverageOntology.getTypicalDeductible('unknown');
       expect(ded).toBeUndefined();
+    });
+  });
+
+  describe('insurer profile override', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it('maps SBS AMPARO BASICO to Incendio via deterministic override', async () => {
+      const mapping = await coverageOntology.mapCoverage(
+        'AMPARO BASICO - TODO RIESGO DANO MATERIAL',
+        'SBS',
+        'pyme'
+      );
+
+      expect(mapping.groups).toHaveLength(1);
+      expect(mapping.groups[0].groupId).toBe('incendio');
+      expect(mapping.confidence).toBe(1.0);
+      expect(mapping.isComposite).toBe(false);
+    });
+
+    it('bypasses stale EXCLUSIVE cache when SBS override exists', async () => {
+      const rawName = 'AMPARO BASICO - TODO RIESGO DANO MATERIAL';
+      const staleMapping: CoverageMapping = {
+        rawName,
+        insurerName: 'SBS',
+        groups: [],
+        isComposite: false,
+        confidence: 0,
+        justification: 'Stale EXCLUSIVE cache',
+      };
+
+      await setCachedCoverageMapping(rawName, staleMapping, 'SBS');
+
+      const mapping = await coverageOntology.mapCoverage(rawName, 'SBS', 'pyme');
+
+      expect(mapping.groups).toHaveLength(1);
+      expect(mapping.groups[0].groupId).toBe('incendio');
+      expect(mapping.confidence).toBe(1.0);
+    });
+
+    it('keeps HDI basic coverage mapping to Incendio through ontology fallback', async () => {
+      const mapping = await coverageOntology.mapCoverage(
+        'AMPARO BÁSICO TODO RIESGO DE PÉRDIDA O DAÑO MATERIAL',
+        'HDI',
+        'pyme'
+      );
+
+      expect(mapping.groups.length).toBeGreaterThan(0);
+      expect(mapping.groups.map(g => g.groupId)).toContain('incendio');
+    });
+
+    it('does not apply override for generic insurer', async () => {
+      const mapping = await coverageOntology.mapCoverage(
+        'AMPARO BASICO - TODO RIESGO DANO MATERIAL',
+        'DESCONOCIDA',
+        'pyme'
+      );
+
+      expect(mapping.groups.length).toBeGreaterThan(0);
+      expect(mapping.groups.map(g => g.groupId)).toContain('incendio');
     });
   });
 
