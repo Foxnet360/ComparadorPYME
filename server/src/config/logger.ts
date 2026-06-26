@@ -26,7 +26,7 @@ export const logger = pino({
 });
 
 // Helper to create child loggers with context
-export const createLogger = (context: Record<string, any>) => {
+export const createLogger = (context: Record<string, unknown>) => {
   return logger.child(context);
 };
 

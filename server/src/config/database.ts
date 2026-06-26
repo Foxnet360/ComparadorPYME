@@ -1,10 +1,11 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import type { RealtimeClientOptions, WebSocketLikeConstructor } from '@supabase/realtime-js';
 import { Database } from '../types/database';
 import WebSocket from 'ws';
 
 // Opciones para Node.js 20 (sin WebSocket nativo)
-const realtimeOptions = {
-  transport: WebSocket as any,
+const realtimeOptions: RealtimeClientOptions = {
+  transport: WebSocket as unknown as WebSocketLikeConstructor,
 };
 
 /**
@@ -61,7 +62,7 @@ function getSupabaseInstance(): SupabaseClient<Database> {
 export const supabase: SupabaseClient<Database> = new Proxy({} as SupabaseClient<Database>, {
   get(_target, prop) {
     const instance = getSupabaseInstance();
-    const value = (instance as any)[prop];
+    const value = (instance as unknown as Record<string | symbol, unknown>)[prop];
     if (typeof value === 'function') {
       return value.bind(instance);
     }
@@ -87,14 +88,14 @@ export const supabaseAnon: SupabaseClient<Database> | null = new Proxy(
       if (!instance) {
         return undefined;
       }
-      const value = (instance as any)[prop];
+      const value = (instance as unknown as Record<string | symbol, unknown>)[prop];
       if (typeof value === 'function') {
         return value.bind(instance);
       }
       return value;
     },
   }
-) as any;
+);
 
 // Verificar conexión
 export async function verifySupabaseConnection(): Promise<boolean> {
@@ -109,16 +110,22 @@ export async function verifySupabaseConnection(): Promise<boolean> {
   }
 }
 
+interface SupabaseErrorLike {
+  code?: string;
+  message?: string;
+}
+
 // Helper para manejar errores de Supabase
-export function handleSupabaseError(error: any): Error {
-  if (error.code === '23505') {
+export function handleSupabaseError(error: unknown): Error {
+  const err = error as SupabaseErrorLike;
+  if (err.code === '23505') {
     return new Error('Duplicate entry: El documento ya existe');
   }
-  if (error.code === '23503') {
+  if (err.code === '23503') {
     return new Error('Foreign key violation: Referencia inválida');
   }
-  if (error.message?.includes('bucket')) {
-    return new Error('Storage error: ' + error.message);
+  if (err.message?.includes('bucket')) {
+    return new Error('Storage error: ' + err.message);
   }
-  return new Error(error.message || 'Database error');
+  return new Error(err.message || 'Database error');
 }

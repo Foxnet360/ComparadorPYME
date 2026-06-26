@@ -15,13 +15,13 @@ describe('FeatureFlagManager', () => {
       'FEATURE_FLAGS',
       'FEATURE_STRUCTURED_CLAUSE_EXTRACTION',
     ];
-    featureVars.forEach((v) => delete (process.env as any)[v]);
+    featureVars.forEach((v) => delete process.env[v]);
   });
 
   afterEach(() => {
     Object.keys(process.env).forEach((key) => {
       if (!(key in originalEnv)) {
-        delete (process.env as any)[key];
+        delete process.env[key];
       }
     });
     Object.assign(process.env, originalEnv);

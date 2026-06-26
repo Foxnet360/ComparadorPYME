@@ -11,7 +11,7 @@ describe('database.ts lazy initialization', () => {
     // Restore env vars
     Object.keys(process.env).forEach((key) => {
       if (!(key in originalEnv)) {
-        delete (process.env as any)[key];
+        delete process.env[key];
       }
     });
     Object.assign(process.env, originalEnv);
@@ -44,7 +44,7 @@ describe('database.ts lazy initialization', () => {
     delete process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     const db = await import('../database');
-    expect(() => (db.supabase as any).rpc('test_fn')).toThrow(
+    expect(() => (db.supabase as { rpc: (name: string) => unknown }).rpc('test_fn')).toThrow(
       /SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required/
     );
   });
@@ -74,7 +74,7 @@ describe('database.ts lazy initialization', () => {
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key';
 
     const db = await import('../database');
-    const rpcResult = (db.supabase as any).rpc('test_fn');
+    const rpcResult = (db.supabase as { rpc: (name: string) => unknown }).rpc('test_fn');
     expect(rpcResult).toBeDefined();
   });
 
@@ -111,7 +111,7 @@ describe('database.ts lazy initialization', () => {
     const db = await import('../database');
     // Proxy itself is defined; accessing methods returns undefined
     expect(db.supabaseAnon).toBeDefined();
-    expect((db.supabaseAnon as any).from).toBeUndefined();
+    expect((db.supabaseAnon as { from?: (table: string) => unknown })?.from).toBeUndefined();
   });
 
   it('should create supabaseAnon client on first access when SUPABASE_ANON_KEY is present', async () => {
@@ -120,8 +120,8 @@ describe('database.ts lazy initialization', () => {
     process.env.SUPABASE_ANON_KEY = 'test-anon-key';
 
     const db = await import('../database');
-    const fromResult = (db.supabaseAnon as any)?.from('test');
+    const fromResult = (db.supabaseAnon as { from: (table: string) => unknown })?.from('test');
     expect(fromResult).toBeDefined();
-    expect(typeof fromResult.select).toBe('function');
+    expect(typeof (fromResult as { select?: unknown }).select).toBe('function');
   });
 });

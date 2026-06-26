@@ -165,7 +165,7 @@ export class FeatureFlagManager {
     for (const [envName, flagKey] of Object.entries(ENV_FLAG_MAP)) {
       const envValue = process.env[envName];
       if (envValue !== undefined) {
-        (this.flags as any)[flagKey] = envValue === 'true' || envValue === '1';
+        this.flags[flagKey] = envValue === 'true' || envValue === '1';
       }
     }
   }
@@ -179,7 +179,7 @@ export class FeatureFlagManager {
   }
   
   updateFlag(feature: keyof FeatureFlags, enabled: boolean): void {
-    (this.flags as any)[feature] = enabled;
+    this.flags[feature] = enabled;
     console.log(`🚩 [FeatureFlags] ${feature} = ${enabled}`);
   }
   

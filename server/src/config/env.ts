@@ -77,8 +77,9 @@ export function checkEnvTaxonomyConsistency(config: EnvConfig): void {
   try {
     const taxonomy = loadDomainJson<{ metadata: TaxonomyMetadata }>('pyme', 'taxonomy.json');
     metadata = taxonomy.metadata;
-  } catch (error: any) {
-    logger.warn(`⚠️ Could not load taxonomy metadata for consistency check: ${error.message}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.warn(`⚠️ Could not load taxonomy metadata for consistency check: ${message}`);
   }
 
   const envSmmlv = process.env.SMMLV_VALUE;
