@@ -123,12 +123,12 @@ const App: React.FC = () => {
       setStatus(AppStatus.COMPLETED);
       setCurrentView('REPORT');
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
       setStatusMessage(""); // Clear status
       setStatus(AppStatus.ERROR);
       // Extract clean message
-      const msg = error.message || "Hubo un problema desconocido.";
+      const msg = error instanceof Error ? error.message : "Hubo un problema desconocido.";
       setErrorMessage(msg);
     }
   };
