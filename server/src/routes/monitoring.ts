@@ -6,7 +6,7 @@
 import { Router } from 'express';
 import { monitoringService } from '../services/monitoringService';
 import { alertingService } from '../services/unifiedComparison/alertingService';
-import { errorTrackingService } from '../services/unifiedComparison/errorTrackingService';
+import { errorTrackingService, ErrorCategory } from '../services/unifiedComparison/errorTrackingService';
 import { unifiedComparisonFlag } from '../services/unifiedComparison/featureFlagService';
 import { featureFlags } from '../config/featureFlags';
 import { getUnifiedEngineMetrics } from '../repositories/analysisRepository';
@@ -238,7 +238,8 @@ router.get('/errors', asyncHandler(async (req, res) => {
     
     let errors;
     if (category) {
-        errors = await errorTrackingService.getErrorsByCategory(category as any, startDate, endDate);
+        const categoryValue = typeof category === 'string' ? (category as ErrorCategory) : ErrorCategory.UNKNOWN;
+        errors = await errorTrackingService.getErrorsByCategory(categoryValue, startDate, endDate);
     } else {
         // Get summary
         const summary = await errorTrackingService.getErrorSummary(startDate, endDate);

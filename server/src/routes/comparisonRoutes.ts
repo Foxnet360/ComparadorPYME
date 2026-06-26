@@ -4,6 +4,7 @@
  */
 
 import express from 'express';
+import { AuthenticatedRequest } from '../middleware/auth';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -37,7 +38,7 @@ router.post('/unified',
   upload.array('quotes', 10),
   async (req, res) => {
     const correlationId = `api-unified-${Date.now()}`;
-    const userId = (req as any).user?.id;
+    const userId = (req as AuthenticatedRequest).user?.id;
 
     try {
       console.log(`🌐 [API] POST /api/comparison/unified [${correlationId}]`);
@@ -98,8 +99,9 @@ router.post('/unified',
         data: result
       });
 
-    } catch (error: any) {
-      console.error(`❌ [API] POST /api/comparison/unified failed [${correlationId}]:`, error.message);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Comparison failed';
+      console.error(`❌ [API] POST /api/comparison/unified failed [${correlationId}]:`, message);
       
       // Clean up temp files on error
       if (req.files) {
@@ -114,7 +116,7 @@ router.post('/unified',
 
       res.status(500).json({
         error: 'Comparison failed',
-        message: error.message,
+        message,
         correlationId
       });
     }
@@ -167,8 +169,9 @@ router.post('/:id/deep-mode',
         data: result
       });
 
-    } catch (error: any) {
-      console.error(`❌ [API] POST /api/comparison/${id}/deep-mode failed [${correlationId}]:`, error.message);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Deep mode validation failed';
+      console.error(`❌ [API] POST /api/comparison/${id}/deep-mode failed [${correlationId}]:`, message);
       
       // Clean up temp files on error
       if (req.files) {
@@ -183,7 +186,7 @@ router.post('/:id/deep-mode',
 
       res.status(500).json({
         error: 'Deep mode validation failed',
-        message: error.message,
+        message,
         correlationId
       });
     }
@@ -195,7 +198,7 @@ router.post('/:id/deep-mode',
  * Get feature flag status and rollout configuration
  */
 router.get('/status', (req, res) => {
-  const userId = (req as any).user?.id;
+  const userId = (req as AuthenticatedRequest).user?.id;
   
   res.json({
     unifiedEngine: {

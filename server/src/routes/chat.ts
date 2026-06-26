@@ -5,7 +5,7 @@
 
 import { Router } from 'express';
 import { processChatMessage, generateSuggestedQuestions, getConversationHistory} from '../services/chatService';
-import { chatRepository } from '../repositories/chatRepository';
+import { chatRepository, ChatMessageDB } from '../repositories/chatRepository';
 import { asyncHandler } from '../utils/asyncHandler';
 
 const router = Router();
@@ -91,7 +91,7 @@ router.get('/threads/report/:reportId', asyncHandler(async (req, res) => {
     const thread = await chatRepository.getThreadByReport(userId, reportId);
     
     let threadId: string;
-    let messages: any[] = [];
+    let messages: ChatMessageDB[] = [];
     
     if (thread) {
         threadId = thread.id;

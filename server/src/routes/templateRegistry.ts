@@ -10,7 +10,7 @@ import {
   createTemplateRegistryService,
   TemplateRegistryService,
 } from '../services/templateRegistryService';
-import { validateTemplateRegistryEntry } from '../schemas/templateRegistrySchema';
+import { validateTemplateRegistryEntry, GraphEdgeType } from '../schemas/templateRegistrySchema';
 import { buildGraphEdgesFromDomain, seedCoverageGraph } from '../services/graphSeeder';
 import { coverageGraphService } from '../services/coverageGraphService';
 import { seedGraphFromThesaurus } from '../services/thesaurusMapper';
@@ -110,7 +110,7 @@ export function createTemplateRegistryRoutes(
       const edges = await coverageGraphService.listEdges({
         from: typeof from === 'string' ? from : undefined,
         to: typeof to === 'string' ? to : undefined,
-        type: typeof type === 'string' ? (type as any) : undefined,
+        type: typeof type === 'string' ? (type as GraphEdgeType) : undefined,
         insurer: typeof insurer === 'string' ? insurer : undefined,
         domain,
       });
@@ -148,7 +148,7 @@ export function createTemplateRegistryRoutes(
       await coverageGraphService.deleteEdge(
         from as string,
         to as string,
-        type as any,
+        type as unknown as GraphEdgeType,
         typeof insurer === 'string' ? insurer : undefined,
         domain
       );
