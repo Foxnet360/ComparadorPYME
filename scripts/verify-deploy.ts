@@ -30,7 +30,7 @@ async function verifyThesaurus(): Promise<VerificationResult> {
       message: '✅ Database connection working',
       details: `Chunks table accessible`
     };
-  } catch (error: any) {
+  } catch (error: Error) {
     return {
       check: 'Tesauro / Database Connection',
       status: 'fail',
@@ -68,7 +68,7 @@ async function verifyRAG(): Promise<VerificationResult> {
         details: 'Function works but no chunks found for query'
       };
     }
-  } catch (error: any) {
+  } catch (error: Error) {
     return {
       check: 'RAG Search',
       status: 'fail',
@@ -101,7 +101,7 @@ async function verifyClauseChunks(): Promise<VerificationResult> {
         details: 'Migration to unified chunks table completed'
       };
     }
-  } catch (error: any) {
+  } catch (error: Error) {
     return {
       check: 'Clause Chunks Table',
       status: 'fail',
@@ -134,7 +134,7 @@ async function verifyChunks(): Promise<VerificationResult> {
         details: 'No documents have been indexed'
       };
     }
-  } catch (error: any) {
+  } catch (error: Error) {
     return {
       check: 'Unified Chunks Table',
       status: 'fail',
@@ -162,9 +162,9 @@ async function verifyDocuments(): Promise<VerificationResult> {
       message: count > 0 
         ? `✅ ${count} clausulados active`
         : '⚠️ No active clausulados found',
-      details: data?.map((d: any) => d.document_name).join(', ') || 'None'
+      details: data?.map((d) => d.document_name).join(', ') || 'None'
     };
-  } catch (error: any) {
+  } catch (error: Error) {
     return {
       check: 'Documents (Clausulados)',
       status: 'fail',
@@ -189,7 +189,7 @@ async function verifyChatTables(): Promise<VerificationResult> {
       message: '✅ Chat tables exist and accessible',
       details: 'chat_threads and chat_messages ready'
     };
-  } catch (error: any) {
+  } catch (error: Error) {
     return {
       check: 'Chat Tables',
       status: 'fail',
