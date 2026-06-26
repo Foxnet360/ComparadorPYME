@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { QuoteAnalysis } from '../../../types';
 import { formatMatrixValue, buildExportNotes, transformQuotesToMatrix, CATEGORY_CONFIGS } from '../../../components/UnifiedCoverageMatrix';
 
 describe('UnifiedCoverageMatrix - Pure Functions', () => {
@@ -128,7 +129,7 @@ describe('UnifiedCoverageMatrix - Pure Functions', () => {
             }
           ]
         }
-      ] as any[];
+      ] as unknown as QuoteAnalysis[];
 
       const matrix = transformQuotesToMatrix(mockQuotes);
 
@@ -162,7 +163,7 @@ describe('UnifiedCoverageMatrix - Pure Functions', () => {
             }
           ]
         }
-      ] as any[];
+      ] as unknown as QuoteAnalysis[];
 
       const matrix = transformQuotesToMatrix(mockQuotes);
 
