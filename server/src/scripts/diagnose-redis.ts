@@ -71,14 +71,15 @@ async function diagnoseRedis() {
         console.log('');
         console.log('✅ Redis está funcionando correctamente');
         
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const err = error instanceof Error ? error : new Error(String(error));
         console.log('');
         console.log('❌ Error de conexión');
-        console.log(`   Tipo: ${error.name}`);
-        console.log(`   Mensaje: ${error.message}`);
+        console.log(`   Tipo: ${err.name}`);
+        console.log(`   Mensaje: ${err.message}`);
         console.log('');
         
-        if (error.message.includes('ECONNREFUSED')) {
+        if (err.message.includes('ECONNREFUSED')) {
             console.log('🔍 Posibles causas:');
             console.log('   1. Redis no está corriendo');
             console.log('   2. URL incorrecta');
@@ -86,13 +87,13 @@ async function diagnoseRedis() {
             console.log('   4. En Railway: Redis no está en el mismo proyecto');
         }
         
-        if (error.message.includes('ENOTFOUND')) {
+        if (err.message.includes('ENOTFOUND')) {
             console.log('🔍 Posibles causas:');
             console.log('   1. Host no existe');
             console.log('   2. En Railway: usar RAILWAY_PRIVATE_DOMAIN');
         }
         
-        if (error.message.includes('ERR invalid password')) {
+        if (err.message.includes('ERR invalid password')) {
             console.log('🔍 Posibles causas:');
             console.log('   1. Password incorrecto');
         }

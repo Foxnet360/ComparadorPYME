@@ -26,8 +26,8 @@ const testSupabase = async () => {
     }
     console.log('   ✅ Conexión a Supabase exitosa');
     return true;
-  } catch (err: any) {
-    console.log('   ❌ Error:', err.message || err);
+  } catch (err: unknown) {
+    console.log('   ❌ Error:', err instanceof Error ? err.message : String(err));
     return false;
   }
 };
@@ -51,8 +51,8 @@ const testGemini = async () => {
     await model.generateContent('Hola');
     console.log('   ✅ Conexión a Gemini exitosa');
     return true;
-  } catch (err: any) {
-    console.log('   ❌ Error conectando a Gemini:', err.message || err);
+  } catch (err: unknown) {
+    console.log('   ❌ Error conectando a Gemini:', err instanceof Error ? err.message : String(err));
     return false;
   }
 };

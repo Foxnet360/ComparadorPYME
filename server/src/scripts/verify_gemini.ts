@@ -45,22 +45,23 @@ async function verify() {
         }
 
 
-    } catch (error: any) {
-        if (error.message.includes("404") && error.message.includes("models/gemini-2.5-flash")) {
+    } catch (error: unknown) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        if (err.message.includes("404") && err.message.includes("models/gemini-2.5-flash")) {
             console.log("⚠️ 'models/gemini-2.5-flash' not found. Retrying with 'gemini-pro'...");
             try {
                 const model = genAI.getGenerativeModel({ model: "gemini-pro" });
                 await model.generateContent("Hello");
                 console.log("✅ Main model failed, but 'gemini-pro' works!");
                 return;
-            } catch (_retryError: any) {
+            } catch (_retryError: unknown) {
                 console.error("❌ 'gemini-pro' also failed.");
             }
         }
 
         console.error("\n❌ Gemini API Verification FAILED (Detail):");
-        if (error.status) console.error(`Status: ${error.status}`);
-        console.error(`Message: ${error.message}`);
+        if ('status' in err && typeof err.status === 'number') console.error(`Status: ${err.status}`);
+        console.error(`Message: ${err.message}`);
 
         if (error.message.includes("404")) {
             console.error("👉 Tip: Check if the model 'models/gemini-2.5-flash' is available for your API key or region.");

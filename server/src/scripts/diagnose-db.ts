@@ -1,5 +1,9 @@
 import { supabase } from '../config/database';
+import { Database } from '../types/database';
 
+type DocumentWithInsurer = Database['public']['Tables']['documents']['Row'] & {
+  insurers: { name: string } | null;
+};
 
 async function diagnose() {
     console.log('🔍 INICIANDO DIAGNÓSTICO DE LA BASE DE DATOS DE SUPABASE\n');
@@ -25,7 +29,7 @@ async function diagnose() {
     console.log('\n📋 2. Documentos en `documents`:');
     const { data: documents, error: docsError } = await supabase
         .from('documents')
-        .select('*, insurers(name)');
+        .select<string, DocumentWithInsurer>('*, insurers(name)');
 
     if (docsError) {
         console.error('❌ Error al obtener documentos:', docsError);
@@ -34,7 +38,7 @@ async function diagnose() {
 
     console.log(`   Total documentos: ${documents?.length || 0}`);
     for (const doc of documents || []) {
-        const insurerName = (doc.insurers as any)?.name || 'Sin Aseguradora';
+        const insurerName = doc.insurers?.name || 'Sin Aseguradora';
         console.log(`   - [${doc.id}] Nombre: "${doc.document_name}" | Tipo: ${doc.document_type} | Aseguradora: ${insurerName} | Activo: ${doc.is_active}`);
     }
 

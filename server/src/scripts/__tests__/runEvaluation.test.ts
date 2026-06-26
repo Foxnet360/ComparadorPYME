@@ -61,7 +61,10 @@ async function createTempFixturesDir(): Promise<string> {
   return dir;
 }
 
-async function writeFixture(dir: string, fixture: any): Promise<void> {
+async function writeFixture(
+  dir: string,
+  fixture: { fixtureId: string } & Record<string, unknown>
+): Promise<void> {
   await fs.writeFile(path.join(dir, `${fixture.fixtureId}.json`), JSON.stringify(fixture, null, 2));
 }
 

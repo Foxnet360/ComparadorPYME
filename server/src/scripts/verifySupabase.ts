@@ -31,11 +31,11 @@ async function verifyConnection() {
     // 2. Verificar extensión pgvector
     console.log('\n2️⃣  Extensión pgvector...');
     const { error: vectorError } = await supabase.rpc('search_chunks_by_coverage', {
-      p_embedding: Array(768).fill(0),
+      p_embedding: Array(768).fill(0) as unknown as string,
       p_insurer_id: '00000000-0000-0000-0000-000000000000',
       p_coverage_tag: null,
       p_match_count: 1
-    } as any);
+    });
 
     if (vectorError && !vectorError.message.includes('insurer')) {
       console.error('   ❌ Error:', vectorError.message);

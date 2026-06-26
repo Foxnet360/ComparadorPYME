@@ -242,9 +242,10 @@ async function processFile(entry: ManifestEntry, state: SeedState): Promise<bool
       return false;
     }
     
-  } catch (error: any) {
-    console.error(`   ❌ Error inesperado: ${error.message}`);
-    state.failed.push({ file: entry.filePath, error: error.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`   ❌ Error inesperado: ${message}`);
+    state.failed.push({ file: entry.filePath, error: message });
     return false;
   }
 }

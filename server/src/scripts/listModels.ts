@@ -12,22 +12,28 @@ if (!apiKey) {
     process.exit(1);
 }
 
+interface ModelEntry {
+    name: string;
+    displayName: string;
+    supportedGenerationMethods: string[];
+}
+
+interface ModelsResponse {
+    models?: ModelEntry[];
+    error?: Record<string, unknown>;
+}
+
 async function listModels() {
     try {
         console.log("Fetching models with API KEY length:", apiKey.length);
-        // Note: The SDK doesn't have a direct 'listModels' on the main class in some versions, 
-        // but let's try via the model manager or just assume standard error if it fails.
-        // Actually, the SDK exposes it via `getGenerativeModel`? No.
-        // We can't easily list models with the high-level SDK unless we use the lower level one or make a fetch.
-        // Let's use a raw fetch to be sure.
 
         const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
         const response = await fetch(url);
-        const data = await response.json();
+        const data = (await response.json()) as ModelsResponse;
 
         if (data.models) {
             console.log("Available Models:");
-            data.models.forEach((m: any) => {
+            data.models.forEach((m: ModelEntry) => {
                 if (m.name.includes("gemini")) {
                     console.log(`- ${m.name} (${m.displayName}) - Supported generation methods: ${m.supportedGenerationMethods}`);
                 }

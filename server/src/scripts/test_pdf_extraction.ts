@@ -20,11 +20,14 @@ interface TestResult {
   success: boolean;
   task: string;
   duration: number;
-  details?: any;
+  details?: Record<string, unknown>;
   error?: string;
 }
 
-async function runTest(name: string, fn: () => Promise<any>): Promise<TestResult> {
+async function runTest(
+  name: string,
+  fn: () => Promise<Record<string, unknown> | undefined>
+): Promise<TestResult> {
   console.log(`\n🧪 Testing: ${name}`);
   const start = Date.now();
   
@@ -33,18 +36,19 @@ async function runTest(name: string, fn: () => Promise<any>): Promise<TestResult
     const duration = Date.now() - start;
     console.log(`✅ PASSED (${duration}ms)`);
     return { success: true, task: name, duration, details: result };
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - start;
-    console.log(`❌ FAILED (${duration}ms): ${error.message}`);
-    return { success: false, task: name, duration, error: error.message };
+    const message = error instanceof Error ? error.message : String(error);
+    console.log(`❌ FAILED (${duration}ms): ${message}`);
+    return { success: false, task: name, duration, error: message };
   }
 }
 
 // Helper to make API requests
-async function makeRequest(formData: FormData): Promise<any> {
+async function makeRequest(formData: FormData): Promise<Record<string, unknown>> {
   const response = await fetch(`${API_URL}/analyze`, {
     method: 'POST',
-    body: formData as any,
+    body: formData as unknown,
   });
   
   if (!response.ok) {
@@ -56,7 +60,7 @@ async function makeRequest(formData: FormData): Promise<any> {
 }
 
 // Test 5.1: Probar con PDF de cotización real (texto nativo)
-async function testRealPdfExtraction(): Promise<any> {
+async function testRealPdfExtraction(): Promise<Record<string, unknown>> {
   console.log('  📄 Testing PDF text extraction...');
   
   // Create a sample text file to simulate a PDF with native text
@@ -132,7 +136,7 @@ VIGENCIA: 12 meses desde la fecha de inicio
 }
 
 // Test 5.2: Comparar tokens de entrada antes/después
-async function testTokenComparison(): Promise<any> {
+async function testTokenComparison(): Promise<Record<string, unknown>> {
   console.log('  📊 Comparing token usage...');
   
   // Simulate the old approach (File API - image-based)
@@ -185,7 +189,7 @@ Prima Total: $1.650.000
 }
 
 // Test 5.3: Validar que el output JSON mantiene la misma estructura
-async function testOutputStructure(): Promise<any> {
+async function testOutputStructure(): Promise<Record<string, unknown>> {
   console.log('  📋 Validating output JSON structure...');
   
   // Create a sample quote
@@ -223,15 +227,20 @@ TOTAL PRIMA: $1.650.000
       hasRecommendation: typeof result.recommendation === 'string',
       hasMarketAnalysis: typeof result.marketAnalysis === 'string',
       hasDeductibleComparison: Array.isArray(result.deductibleComparison),
-      quotesHaveRequiredFields: result.quotes?.every((q: any) =>
-        q.insurerName &&
-        q.policyName &&
-        typeof q.priceAnnual === 'number' &&
-        Array.isArray(q.coverages) &&
-        Array.isArray(q.alerts) &&
-        q.scoringBreakdown &&
-        typeof q.score === 'number'
-      ),
+      quotesHaveRequiredFields:
+        Array.isArray(result.quotes) &&
+        result.quotes.every((q) => {
+          const quote = q as Record<string, unknown>;
+          return (
+            Boolean(quote.insurerName) &&
+            Boolean(quote.policyName) &&
+            typeof quote.priceAnnual === 'number' &&
+            Array.isArray(quote.coverages) &&
+            Array.isArray(quote.alerts) &&
+            Boolean(quote.scoringBreakdown) &&
+            typeof quote.score === 'number'
+          );
+        }),
     };
     
     const allPassed = Object.values(checks).every(v => v === true);
@@ -240,15 +249,22 @@ TOTAL PRIMA: $1.650.000
       throw new Error(`Structure validation failed: ${JSON.stringify(checks)}`);
     }
     
+    const firstQuote =
+      Array.isArray(result.quotes) && result.quotes.length > 0
+        ? (result.quotes[0] as Record<string, unknown>)
+        : null;
+
     return {
       structureValid: true,
       checks,
-      quoteCount: result.quotes?.length || 0,
-      sampleQuote: result.quotes?.[0] ? {
-        insurerName: result.quotes[0].insurerName,
-        priceAnnual: result.quotes[0].priceAnnual,
-        score: result.quotes[0].score,
-      } : null,
+      quoteCount: Array.isArray(result.quotes) ? result.quotes.length : 0,
+      sampleQuote: firstQuote
+        ? {
+            insurerName: firstQuote.insurerName,
+            priceAnnual: firstQuote.priceAnnual,
+            score: firstQuote.score,
+          }
+        : null,
     };
   } finally {
     if (fs.existsSync(tempPath)) {

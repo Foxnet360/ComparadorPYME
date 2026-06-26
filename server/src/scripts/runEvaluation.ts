@@ -36,6 +36,7 @@ for (const [key, value] of Object.entries(REQUIRED_ENV_DEFAULTS)) {
 
 import { promises as fs } from 'fs';
 import path from 'path';
+import { Readable } from 'stream';
 import {
   runEvaluation,
   EvaluationReport,
@@ -44,6 +45,7 @@ import {
   DEFAULT_THRESHOLDS,
   GoldenQuote,
 } from '../services/evaluationHarness';
+import { QuoteExtractionV2 } from '../schemas/extractionSchemas';
 
 const DEFAULT_FIXTURES_DIR = path.resolve(__dirname, '../../../tests/fixtures/golden-set');
 
@@ -57,7 +59,7 @@ function createEchoRunner(): PipelineRunner {
   });
 }
 
-function buildSyntheticExtraction(fixture: GoldenQuote): any {
+function buildSyntheticExtraction(fixture: GoldenQuote): QuoteExtractionV2 {
   return {
     insurerName: fixture.insurer,
     policyName: `${fixture.insurer} PYME Policy`,
@@ -84,7 +86,7 @@ function buildSyntheticExtraction(fixture: GoldenQuote): any {
     specialConditions: [],
     exclusions: [],
     warranties: [],
-  };
+  } as unknown as QuoteExtractionV2;
 }
 
 function parseAmount(value?: string): number {
@@ -103,7 +105,7 @@ function makeFakeMulterFile(filename: string): Express.Multer.File {
     destination: '/tmp',
     encoding: 'utf8',
     buffer: Buffer.from(''),
-    stream: null as any,
+    stream: null as unknown as Readable,
   } as Express.Multer.File;
 }
 
