@@ -18,18 +18,20 @@ import { formatPercentage, formatNumber } from './src/utils/formatCurrency';
 import fs from 'fs';
 import path from 'path';
 
+type GeminiQuoteExtraction = Awaited<ReturnType<typeof geminiService.extractStructured>>;
+
 const QUOTES_DIR = path.join(process.cwd(), '..', '..', 'Ejemplos', 'laser-home');
 
 // Replicate the internal scoring functions with detailed logging
 function debugCoverageCompleteness(quote: ParsedQuote, _label: string): { score: number; details: string } {
   let details = '';
   
-  if ((quote as any).expectedCoverages && Array.isArray((quote as any).expectedCoverages)) {
-    const expectedCoverages = (quote as any).expectedCoverages;
+  if (quote.expectedCoverages && Array.isArray(quote.expectedCoverages)) {
+    const expectedCoverages = quote.expectedCoverages;
     const expectedCount = expectedCoverages.length;
-    const presentCount = expectedCoverages.filter((c: any) => c.status === 'present').length;
-    const missingCount = expectedCoverages.filter((c: any) => c.status === 'missing').length;
-    const excludedCount = expectedCoverages.filter((c: any) => c.status === 'excluded').length;
+    const presentCount = expectedCoverages.filter((c) => c.status === 'present').length;
+    const missingCount = expectedCoverages.filter((c) => c.status === 'missing').length;
+    const excludedCount = expectedCoverages.filter((c) => c.status === 'excluded').length;
     
     details += `  Using expectedCoverages array (${expectedCount} total)\n`;
     details += `  - present: ${presentCount}, missing: ${missingCount}, excluded: ${excludedCount}\n`;
@@ -341,7 +343,7 @@ IMPORTANTE - FORMATO DE RESPUESTA:
 - Copia los nombres exactos del PDF, no uses nombres genéricos
 - Los deducibles pueden ser: porcentajes ("10%"), montos fijos ("5 SMMLV"), o textos ("NO APLICA", "APLICA")`;
 
-    let geminiResult;
+    let geminiResult: GeminiQuoteExtraction;
     try {
       geminiResult = await geminiService.extractStructured(
         preprocessed.text,
@@ -354,9 +356,9 @@ IMPORTANTE - FORMATO DE RESPUESTA:
         const textResult = await geminiService.extractText(preprocessed.text, prompt);
         
         const repaired = parseJsonWithRepair(textResult);
-        if (repaired.success && repaired.data.coverages && repaired.data.coverages.length > 0) {
-          console.log(`   ✅ Text extraction found ${repaired.data.coverages.length} coverages!`);
-          geminiResult = repaired.data;
+        if (repaired.success && (repaired.data as GeminiQuoteExtraction).coverages && (repaired.data as GeminiQuoteExtraction).coverages.length > 0) {
+          console.log(`   ✅ Text extraction found ${(repaired.data as GeminiQuoteExtraction).coverages.length} coverages!`);
+          geminiResult = repaired.data as GeminiQuoteExtraction;
         }
       }
 
@@ -366,7 +368,7 @@ IMPORTANTE - FORMATO DE RESPUESTA:
       console.log(`   Prima: ${geminiResult.priceAnnual?.toLocaleString('es-CO')} ${geminiResult.currency}`);
       console.log(`   Coberturas: ${geminiResult.coverages?.length || 0}`);
 
-    } catch (geminiError: any) {
+    } catch (geminiError: Error) {
       console.log(`❌ Gemini extraction failed: ${geminiError.message}`);
       return;
     }
@@ -379,7 +381,7 @@ IMPORTANTE - FORMATO DE RESPUESTA:
     console.log(`✅ Thesaurus loaded: ${thesaurus.length} canonical terms`);
 
     if (geminiResult.coverages && geminiResult.coverages.length > 0) {
-      let normalizedCoverages = geminiResult.coverages.map((cov: any) => {
+      let normalizedCoverages = geminiResult.coverages.map((cov) => {
         const mapping = mapCoverageName(cov.name);
         const deductibleNorm = normalizeDeductible(cov.deductible || '');
         
@@ -395,7 +397,7 @@ IMPORTANTE - FORMATO DE RESPUESTA:
 
       // Remove duplicates
       const seen = new Map();
-      normalizedCoverages.forEach((cov: any) => {
+      normalizedCoverages.forEach((cov) => {
         const existing = seen.get(cov.canonicalName);
         if (!existing || cov.confidence > existing.confidence) {
           seen.set(cov.canonicalName, cov);
@@ -404,17 +406,17 @@ IMPORTANTE - FORMATO DE RESPUESTA:
       normalizedCoverages = Array.from(seen.values());
 
       // Filter low confidence
-      normalizedCoverages = normalizedCoverages.filter((cov: any) => cov.confidence >= 0.3);
+      normalizedCoverages = normalizedCoverages.filter((cov) => cov.confidence >= 0.3);
 
       console.log(`✅ Normalized ${normalizedCoverages.length} coverages`);
       
-      geminiResult.coverages = normalizedCoverages.map((c: any) => ({
+      geminiResult.coverages = normalizedCoverages.map((c) => ({
         name: c.canonicalName,
         value: c.value,
         deductible: c.deductible,
         originalName: c.originalName,
         confidence: c.confidence,
-      }));
+      })) as GeminiQuoteExtraction['coverages'];
     }
 
     // === STAGE 5: VALIDATION ===
@@ -427,7 +429,7 @@ IMPORTANTE - FORMATO DE RESPUESTA:
     console.log(`   Coverages: ${validation.coverageCount}/${validation.expectedCoverageCount}`);
     console.log(`   Flags: ${validation.flags.length}`);
     if (validation.flags.length > 0) {
-      validation.flags.forEach((f: any) => {
+      validation.flags.forEach((f) => {
         console.log(`     - [${f.severity}] ${f.code}: ${f.message}`);
       });
     }
@@ -455,7 +457,7 @@ IMPORTANTE - FORMATO DE RESPUESTA:
     }, null, 2));
     console.log(`\n💾 Debug results saved to: ${path.basename(outputPath)}`);
 
-  } catch (error: any) {
+  } catch (error: Error) {
     console.error(`\n❌ Debug failed:`, error.message);
   }
 }
