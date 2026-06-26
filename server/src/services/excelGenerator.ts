@@ -1,6 +1,6 @@
 import * as ExcelJS from 'exceljs';
 import { QuoteAnalysis, } from '../types';
-import { transformQuotesToMatrix, parseNumericValue} from './matrixTransformer';
+import { transformQuotesToMatrix, parseNumericValue, formatMatrixValue } from './matrixTransformer';
 
 interface ClientInfo {
   name?: string;
@@ -229,7 +229,8 @@ export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: 
           xlCell.numFmt = '$#,##0';
           xlCell.font = { name: 'Calibri', size: 10, color: { argb: 'FF333333' } };
         } else {
-          xlCell.value = val;
+          // For exclusive/advantage rows, preserve non-numeric text and format numeric-like strings
+          xlCell.value = row.sectionId === 99 ? formatMatrixValue(val) : val;
           xlCell.font = { name: 'Calibri', size: 10, color: { argb: 'FF333333' } };
         }
 

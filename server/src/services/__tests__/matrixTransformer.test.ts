@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { transformQuotesToMatrix, parseNumericValue, isExcludedValue } from '../matrixTransformer';
+import { transformQuotesToMatrix, parseNumericValue, isExcludedValue, formatMatrixValue } from '../matrixTransformer';
 import { QuoteAnalysis } from '../../types';
 
 describe('matrixTransformer', () => {
@@ -23,6 +23,21 @@ describe('matrixTransformer', () => {
       expect(parseNumericValue('No contratado')).toBe(0);
       expect(parseNumericValue('N.C.')).toBe(0);
       expect(parseNumericValue('')).toBe(0);
+    });
+
+    it('should format numeric matrix values as COP', () => {
+      expect(formatMatrixValue('119600000')).toBe('$119.600.000');
+      expect(formatMatrixValue('50000000')).toBe('$50.000.000');
+      expect(formatMatrixValue('$119.600.000')).toBe('$119.600.000');
+    });
+
+    it('should preserve non-numeric matrix values', () => {
+      expect(formatMatrixValue('Incluido')).toBe('Incluido');
+      expect(formatMatrixValue('No aplica')).toBe('No aplica');
+      expect(formatMatrixValue('NO ESPECIFICADO')).toBe('NO ESPECIFICADO');
+      expect(formatMatrixValue('No contratado')).toBe('No contratado');
+      expect(formatMatrixValue('')).toBe('No informado');
+      expect(formatMatrixValue(null)).toBe('No informado');
     });
   });
 
@@ -167,6 +182,76 @@ describe('matrixTransformer', () => {
       expect(vipRow?.cells[1].value).toBe("No incluida");
       expect(vipRow?.cells[0].isExcluded).toBe(false);
       expect(vipRow?.cells[1].isExcluded).toBe(true);
+    });
+
+    it('should format raw numeric exclusive values as COP while preserving deductible text', () => {
+      const quotesWithRawExclusive: QuoteAnalysis[] = [
+        {
+          insurerName: 'SBS',
+          policyName: 'PYME',
+          priceMonthly: 0,
+          priceAnnual: 500000,
+          currency: 'COP',
+          deductibles: '',
+          scoringBreakdown: { coverage: 7, deductibles: 7, exclusions: 7, priceRatio: 7, sublimits: 7, warranties: 7 },
+          clientAnalysis: '',
+          technicalAnalysis: '',
+          score: 70,
+          alerts: [],
+          coverages: [
+            {
+              name: 'Incendio (Edificio y Contenidos)',
+              value: '$100.000.000',
+              deductible: 'No aplica',
+              categoryId: 1,
+              matchConfidence: 0.95
+            },
+            {
+              name: 'Amparo Adicional SBS',
+              value: '119600000',
+              deductible: '10% del siniestro',
+              categoryId: null,
+              matchConfidence: 0.30
+            }
+          ]
+        }
+      ];
+
+      const matrix = transformQuotesToMatrix(quotesWithRawExclusive);
+      const exclusiveRow = matrix.find(row => row.type === 'data' && row.sectionId === 99);
+      expect(exclusiveRow).toBeDefined();
+      expect(exclusiveRow?.cells[0].value).toBe('$119.600.000 (Ded: 10% del siniestro)');
+    });
+
+    it('should format raw numeric canonical values as COP in value rows', () => {
+      const quotesWithRawValue: QuoteAnalysis[] = [
+        {
+          insurerName: 'SBS',
+          policyName: 'PYME',
+          priceMonthly: 0,
+          priceAnnual: 500000,
+          currency: 'COP',
+          deductibles: '',
+          scoringBreakdown: { coverage: 7, deductibles: 7, exclusions: 7, priceRatio: 7, sublimits: 7, warranties: 7 },
+          clientAnalysis: '',
+          technicalAnalysis: '',
+          score: 70,
+          alerts: [],
+          coverages: [
+            {
+              name: 'Incendio (Edificio y Contenidos)',
+              value: '119600000',
+              deductible: 'No aplica',
+              categoryId: 1,
+              matchConfidence: 0.95
+            }
+          ]
+        }
+      ];
+
+      const matrix = transformQuotesToMatrix(quotesWithRawValue);
+      const incendioValue = matrix.find(row => row.id === 'section_1_row_value');
+      expect(incendioValue?.cells[0].value).toBe('$119.600.000');
     });
 
     it('should inject correct financial computations in Primas y Costos section', () => {
