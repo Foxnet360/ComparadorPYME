@@ -33,3 +33,42 @@ describe('insurerProfileService registry integration', () => {
     expect(sbs?.displayName).toBe('SBS PYME');
   });
 });
+
+describe('insurerProfileService.getCanonicalMapping', () => {
+  it('returns Incendio for SBS AMPARO BASICO variant', () => {
+    const canonical = insurerProfileService.getCanonicalMapping(
+      'SBS',
+      'AMPARO BASICO - TODO RIESGO DANO MATERIAL'
+    );
+    expect(canonical).toBe('Incendio (Edificio y Contenidos)');
+  });
+
+  it('returns Incendio for SBS "Todo riesgo daños materiales" variation', () => {
+    const canonical = insurerProfileService.getCanonicalMapping(
+      'SBS',
+      'Todo riesgo daños materiales'
+    );
+    expect(canonical).toBe('Incendio (Edificio y Contenidos)');
+  });
+
+  it('returns null for a generic insurer', () => {
+    const canonical = insurerProfileService.getCanonicalMapping(
+      'DESCONOCIDA',
+      'AMPARO BASICO - TODO RIESGO DANO MATERIAL'
+    );
+    expect(canonical).toBeNull();
+  });
+
+  it('returns null when insurer has no deterministic override for the raw name', () => {
+    const canonical = insurerProfileService.getCanonicalMapping(
+      'SBS',
+      'Cobertura Exótica Desconocida'
+    );
+    expect(canonical).toBeNull();
+  });
+
+  it('returns null when raw name is empty', () => {
+    expect(insurerProfileService.getCanonicalMapping('SBS', '')).toBeNull();
+    expect(insurerProfileService.getCanonicalMapping('', 'AMPARO BASICO')).toBeNull();
+  });
+});

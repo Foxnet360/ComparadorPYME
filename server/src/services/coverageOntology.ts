@@ -5,7 +5,7 @@ import { getCachedCoverageMapping, setCachedCoverageMapping } from './cache/redi
 import { calculateSimilarity } from '../utils/stringUtils';
 import { mapCoverageName } from './thesaurusMapper';
 import { coverageGraphService } from './coverageGraphService';
-
+import { insurerProfileService } from './insurerProfileService';
 
 
 const GEMINI_API_KEY = env.GEMINI_API_KEY || '';
@@ -487,6 +487,35 @@ export const coverageOntology = {
   },
 
   /**
+   * Get node by canonical name for a domain (case and accent insensitive)
+   */
+  getNodeByName(name: string, domain?: string): OntologyNode | undefined {
+    const normalized = name.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    return loadOntology(domain ?? 'pyme').nodes.find(n => {
+      const normalizedName = n.name.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (normalizedName === normalized) return true;
+
+      return n.aliases.some(a => {
+        const normalizedAlias = a.toLowerCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        return normalizedAlias === normalized;
+      });
+    });
+  },
+
+  /**
    * Find nodes by name or alias for a domain
    */
   findNodesByName(name: string, domain?: string): OntologyNode[] {
@@ -507,6 +536,28 @@ export const coverageOntology = {
   ): Promise<CoverageMapping> {
     const d = domain ?? 'pyme';
     console.log(`🧠 [Ontology] Mapping: "${rawName}" domain: ${d}`);
+
+    // Deterministic insurer-profile override takes precedence over cache/DB/consensus.
+    // This bypasses stale EXCLUSIVE or empty-group entries when an explicit mapping exists.
+    if (insurerName) {
+      const profileCanonicalName = insurerProfileService.getCanonicalMapping(insurerName, rawName);
+      if (profileCanonicalName) {
+        const node = this.getNodeByName(profileCanonicalName, d);
+        if (node) {
+          const mapping: CoverageMapping = {
+            rawName,
+            insurerName,
+            groups: [{ groupId: node.id, confidence: 1.0 }],
+            isComposite: false,
+            confidence: 1.0,
+            needsHumanReview: false,
+            justification: `Deterministic insurer profile override for ${insurerName}: "${rawName}" -> "${node.name}"`,
+          };
+          await setCachedCoverageMapping(rawName, mapping, insurerName);
+          return mapping;
+        }
+      }
+    }
 
     // Task 3.5: Fast cache lookup using Redis/Memory Cache
     const cached = await getCachedCoverageMapping(rawName, insurerName);

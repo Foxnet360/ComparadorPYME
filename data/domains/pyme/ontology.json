@@ -40,7 +40,7 @@
       "level": 2,
       "parentId": "patrimoniales",
       "childrenIds": [],
-      "aliases": ["Incendio", "Edificio", "Contenidos", "Inmuebles", "Todo riesgo daños materiales", "Daños Materiales", "Amparo Básico", "Daños por Agua", "Anegación", "Inundación", "Huracan, vientos fuertes, granizo, impacto y humo", "Vientos Fuertes", "Granizo", "Impacto", "Humo", "Daño Físico"],
+      "aliases": ["Incendio", "Edificio", "Contenidos", "Inmuebles", "Todo riesgo daños materiales", "Daños Materiales", "Amparo Básico", "Daños por Agua", "Anegación", "Inundación", "Huracan, vientos fuertes, granizo, impacto y humo", "Vientos Fuertes", "Granizo", "Impacto", "Humo", "Daño Físico", "Amparo Basico", "AMPARO BASICO - TODO RIESGO DANO MATERIAL", "AMPARO BÁSICO TODO RIESGO DE PÉRDIDA O DAÑO MATERIAL"],
       "riskType": "property",
       "typicalDeductible": "10%"
     },

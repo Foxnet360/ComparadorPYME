@@ -88,7 +88,7 @@ const SBS_PROFILE: InsurerExtractionProfile = {
     /SEGURO\s+INTEGRAL/i
   ],
   coverageMappings: [
-    { canonicalName: C.INCENDIO(), variations: ['Todo riesgo daños materiales', 'Daños Materiales'] },
+    { canonicalName: C.INCENDIO(), variations: ['Todo riesgo daños materiales', 'Daños Materiales', 'Amparo Básico', 'Amparo Basico', 'AMPARO BASICO - TODO RIESGO DANO MATERIAL'] },
     { canonicalName: C.SUSTRACCION(), variations: ['Hurto calificado', 'Hurto'] },
     { canonicalName: C.RC(), variations: ['Responsabilidad civil extracontractual', 'RC'] },
     { canonicalName: C.MANEJO_GLOBAL(), variations: ['Manejo global comercial', 'Manejo Global'] },
@@ -231,6 +231,35 @@ export const insurerProfileService = {
     }
     
     return coverageName;
+  },
+
+  /**
+   * Deterministic insurer-aware lookup that returns a canonical coverage name
+   * when the insurer profile has an explicit mapping for the raw coverage.
+   * Returns null when no deterministic override exists, letting the generic
+   * ontology/cache path decide.
+   */
+  getCanonicalMapping(insurerName: string, rawName: string): string | null {
+    if (!insurerName || !rawName) return null;
+
+    const profile = this.getProfile(insurerName);
+    if (profile.insurerName === 'GENERIC') return null;
+
+    const normalizedRaw = rawName.toLowerCase().trim();
+
+    for (const mapping of profile.coverageMappings) {
+      for (const variation of mapping.variations) {
+        const normalizedVariation = variation.toLowerCase().trim();
+        if (
+          normalizedRaw.includes(normalizedVariation) ||
+          normalizedVariation.includes(normalizedRaw)
+        ) {
+          return mapping.canonicalName;
+        }
+      }
+    }
+
+    return null;
   },
 
   /**

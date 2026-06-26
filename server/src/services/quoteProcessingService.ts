@@ -622,12 +622,14 @@ async function processQuoteMultimodalInternal(
 
     // Phase 4: Normalize coverages
     console.log(`   🔄 Phase 4: Normalizing coverages... (domain: ${domain})`);
+    const insurerName = extracted.insurerName || detectedInsurer;
     const normalizationResult = await buildCanonicalCoverages(
       extracted.rawCoverages || [],
       extracted.insuredAssets || [],
       extracted.generalDeductibles || [],
       pageTextMap,
-      domain
+      domain,
+      insurerName
     );
 
     // Phase 5: Extract premium breakdown

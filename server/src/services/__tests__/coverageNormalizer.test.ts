@@ -31,6 +31,58 @@ vi.mock('../../config/featureFlags', () => ({
   },
 }));
 
+describe('coverageNormalizer insurer propagation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(featureFlags.isEnabled).mockImplementation((flag: string) => {
+      if (flag === 'semanticCoverageOntology') return true;
+      if (flag === 'useLegacyCoverageMatcher') return false;
+      return false;
+    });
+  });
+
+  it('propagates insurerName to coverageOntology.mapCoverage in ontology mode', async () => {
+    vi.mocked(coverageOntology.mapCoverage).mockImplementation(async (rawName) => ({
+      rawName,
+      groups: [{ groupId: 'incendio', confidence: 0.9 }],
+      isComposite: false,
+      confidence: 0.9,
+    }));
+
+    await buildCanonicalCoverages(
+      [{ rawName: 'AMPARO BASICO - TODO RIESGO DANO MATERIAL' }],
+      [],
+      [],
+      {},
+      'pyme',
+      'SBS'
+    );
+
+    expect(coverageOntology.mapCoverage).toHaveBeenCalledWith(
+      'AMPARO BASICO - TODO RIESGO DANO MATERIAL',
+      'SBS',
+      'pyme'
+    );
+  });
+
+  it('uses undefined insurerName when not provided', async () => {
+    vi.mocked(coverageOntology.mapCoverage).mockImplementation(async (rawName) => ({
+      rawName,
+      groups: [{ groupId: 'incendio', confidence: 0.9 }],
+      isComposite: false,
+      confidence: 0.9,
+    }));
+
+    await buildCanonicalCoverages([{ rawName: 'Incendio Edificio' }], [], [], {}, 'pyme');
+
+    expect(coverageOntology.mapCoverage).toHaveBeenCalledWith(
+      'Incendio Edificio',
+      undefined,
+      'pyme'
+    );
+  });
+});
+
 describe('coverageNormalizer Promise Pool Concurrency', () => {
   beforeEach(() => {
     vi.clearAllMocks();
