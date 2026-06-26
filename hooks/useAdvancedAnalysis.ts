@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { QuoteAnalysis } from '../types';
+import { QuoteAnalysis, DeductibleAnalysis, ContextualRisk, WarrantyCompliance, LegalOpinion } from '../types';
 
 interface AdvancedAnalysisState {
-  deductibleAnalysis: any[] | null;
-  inverseCheck: any | null;
-  contextualRisk: any | null;
-  warrantyCompliance: any | null;
-  legalOpinion: any[] | null;
+  deductibleAnalysis: DeductibleAnalysis[] | null;
+  inverseCheck: unknown | null;
+  contextualRisk: ContextualRisk | null;
+  warrantyCompliance: WarrantyCompliance | null;
+  legalOpinion: LegalOpinion[] | null;
   loading: boolean;
   error: string | null;
 }
@@ -17,7 +17,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
 const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
 interface CacheEntry {
-  data: any;
+  data: unknown;
   timestamp: number;
 }
 
@@ -74,7 +74,7 @@ async function fetchWithRetry(
 /**
  * Get cached data if valid, otherwise null
  */
-function getCachedData(cacheKey: string): any | null {
+function getCachedData(cacheKey: string): unknown | null {
   const entry = analysisCache.get(cacheKey);
   if (entry && Date.now() - entry.timestamp < CACHE_DURATION_MS) {
     return entry.data;
@@ -86,7 +86,7 @@ function getCachedData(cacheKey: string): any | null {
 /**
  * Set data in cache
  */
-function setCachedData(cacheKey: string, data: any): void {
+function setCachedData(cacheKey: string, data: unknown): void {
   analysisCache.set(cacheKey, {
     data,
     timestamp: Date.now()
@@ -210,7 +210,7 @@ export const useAdvancedAnalysis = (quote: QuoteAnalysis | null) => {
           return { type: item.type, data: item.cached };
         }
         const fetched = fetchedResults.find(
-          (r): r is PromiseFulfilledResult<{type: string; data: any}> => 
+          (r): r is PromiseFulfilledResult<{type: string; data: unknown}> => 
             r.status === 'fulfilled' && r.value.type === item.type
         );
         return fetched?.value || { type: item.type, data: null };

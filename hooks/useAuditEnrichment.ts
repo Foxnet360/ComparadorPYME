@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { API_BASE_URL } from '../services/apiConfig';
-import { EnrichedAlert, CrossInsurerRisk } from '../types';
+import { EnrichedAlert, CrossInsurerRisk, QuoteAnalysis } from '../types';
 
 export interface AuditEnrichmentState {
   enrichedAlerts: EnrichedAlert[];
@@ -29,7 +29,7 @@ export const useAuditEnrichment = () => {
     progress: null
   });
 
-  const enrich = useCallback(async (quotes: any[]) => {
+  const enrich = useCallback(async (quotes: QuoteAnalysis[]) => {
     // Check sessionStorage for cached results
     const cacheKey = `audit-enrichment-${quotes.map(q => q.insurerName).join('-')}`;
     const cached = sessionStorage.getItem(cacheKey);

@@ -75,7 +75,7 @@ export function usePdfDocument(pdfUrl: string) {
       const textContent = await page.getTextContent();
       
       // Buscar el texto en los items
-      const matches = textContent.items.filter((item: any) => {
+      const matches = textContent.items.filter((item) => {
         if ('str' in item) {
           return item.str.toLowerCase().includes(searchText.toLowerCase());
         }
