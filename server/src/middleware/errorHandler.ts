@@ -10,25 +10,22 @@ export const errorHandler = (
   _next: NextFunction
 ): void => {
   if (err instanceof GeminiError) {
-    const response: Record<string, any> = {
+    const response = {
       success: false,
       error: {
         code: err.errorCode,
         message: err.userMessage,
         requestId: res.locals.requestId,
+        ...(err.retryAfter ? { retryAfter: err.retryAfter } : {}),
       },
     };
-
-    if (err.retryAfter) {
-      response.error.retryAfter = err.retryAfter;
-    }
 
     res.status(err.statusCode).json(response);
     return;
   }
 
   if (err instanceof AppError) {
-    const response: Record<string, any> = {
+    const response: Record<string, unknown> = {
       success: false,
       error: sanitizeErrorMessage(err),
     };

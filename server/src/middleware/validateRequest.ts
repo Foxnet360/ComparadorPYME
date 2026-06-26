@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodSchema, ZodError } from 'zod';
+import type { ParsedQs } from 'qs';
 import { ValidationError } from '../errors';
 
 /**
@@ -30,7 +31,7 @@ export const validateBody = (schema: ZodSchema) => {
 export const validateQuery = (schema: ZodSchema) => {
   return (req: Request, _res: Response, next: NextFunction) => {
     try {
-      req.query = schema.parse(req.query) as Record<string, any>;
+      req.query = schema.parse(req.query) as unknown as ParsedQs;
       next();
     } catch (error) {
       if (error instanceof ZodError) {

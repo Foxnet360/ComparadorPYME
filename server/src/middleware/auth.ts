@@ -2,6 +2,13 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AuthenticationError } from '../errors';
 
+interface JwtUserPayload {
+  sub?: string;
+  id?: string;
+  email?: string;
+  role?: string;
+}
+
 export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
@@ -33,9 +40,9 @@ export const authMiddleware = (
     // If JWT secret is configured, verify the token
     if (SUPABASE_JWT_SECRET) {
       try {
-        const decoded = jwt.verify(token, SUPABASE_JWT_SECRET) as any;
+        const decoded = jwt.verify(token, SUPABASE_JWT_SECRET) as unknown as JwtUserPayload;
         req.user = {
-          id: decoded.sub || decoded.id,
+          id: (decoded.sub || decoded.id) as string,
           email: decoded.email,
           role: decoded.role,
         };
@@ -45,10 +52,10 @@ export const authMiddleware = (
     } else {
       // Fallback: decode without verification (for development)
       // In production, SUPABASE_JWT_SECRET must be set
-      const decoded = jwt.decode(token) as any;
+      const decoded = jwt.decode(token) as unknown as JwtUserPayload;
       if (decoded) {
         req.user = {
-          id: decoded.sub || decoded.id,
+          id: (decoded.sub || decoded.id) as string,
           email: decoded.email,
           role: decoded.role,
         };
@@ -74,9 +81,9 @@ export const optionalAuthMiddleware = (
 
       if (SUPABASE_JWT_SECRET) {
         try {
-          const decoded = jwt.verify(token, SUPABASE_JWT_SECRET) as any;
+          const decoded = jwt.verify(token, SUPABASE_JWT_SECRET) as unknown as JwtUserPayload;
           req.user = {
-            id: decoded.sub || decoded.id,
+            id: (decoded.sub || decoded.id) as string,
             email: decoded.email,
             role: decoded.role,
           };
@@ -84,10 +91,10 @@ export const optionalAuthMiddleware = (
           // Invalid token is OK for optional auth
         }
       } else {
-        const decoded = jwt.decode(token) as any;
+        const decoded = jwt.decode(token) as unknown as JwtUserPayload;
         if (decoded) {
           req.user = {
-            id: decoded.sub || decoded.id,
+            id: (decoded.sub || decoded.id) as string,
             email: decoded.email,
             role: decoded.role,
           };
