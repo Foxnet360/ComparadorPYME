@@ -180,8 +180,6 @@ function parseNumericSegment(segment: string): { value: number; currency?: strin
 }
 
 function parseCompoundJoin(text: string): ParsedDeductibleComponents | null {
-  const lower = text.toLowerCase();
-
   // Avoid double-parsing forms that already include min/max clauses.
   if (PATTERNS.minClause.test(text) || PATTERNS.maxClause.test(text)) {
     return null;
