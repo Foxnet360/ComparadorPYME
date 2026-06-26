@@ -2,6 +2,7 @@ import { pdfExtractor } from './src/services/pdfExtractor';
 import { preprocessText } from './src/services/textPreprocessor';
 import { geminiService } from './src/services/gemini';
 import { parseJsonWithRepair } from './src/services/jsonRepair';
+import { QuoteExtraction } from './src/schemas/extractionSchemas';
 
 const PDF_PATH = '/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/Ejemplos/laser-home/Cotización - BBVA.pdf';
 
@@ -74,14 +75,15 @@ async function main() {
   // Step 6: Count coverages
   console.log('6. RESULTS:');
   if (parseResult.success && parseResult.data) {
-    const coverages = parseResult.data.coverages;
-    console.log(`   - Insurer: ${parseResult.data.insurerName || 'N/A'}`);
-    console.log(`   - Policy: ${parseResult.data.policyName || 'N/A'}`);
-    console.log(`   - Price Annual: ${parseResult.data.priceAnnual || 'N/A'} ${parseResult.data.currency || ''}`);
+    const data = parseResult.data as QuoteExtraction;
+    const coverages = data.coverages;
+    console.log(`   - Insurer: ${data.insurerName || 'N/A'}`);
+    console.log(`   - Policy: ${data.policyName || 'N/A'}`);
+    console.log(`   - Price Annual: ${data.priceAnnual || 'N/A'} ${data.currency || ''}`);
     console.log(`   - Number of coverages found: ${Array.isArray(coverages) ? coverages.length : 0}`);
     if (Array.isArray(coverages) && coverages.length > 0) {
       console.log('\n   First 5 coverages:');
-      coverages.slice(0, 5).forEach((c: any, i: number) => {
+      coverages.slice(0, 5).forEach((c, i: number) => {
         console.log(`   ${i + 1}. ${c.name} | Value: ${c.value} | Deductible: ${c.deductible}`);
       });
     }

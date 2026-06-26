@@ -6,6 +6,23 @@ import { validateQuote } from './src/services/quoteValidator.js';
 import { calculateConfidence } from './src/services/confidenceScorer.js';
 import { formatPercentage } from './src/utils/formatCurrency';
 
+type PipelineResult =
+  | {
+      filename: string;
+      success: true;
+      pages: number;
+      charCount: number;
+      confidence: number;
+      coverageCount: number;
+      validationErrors: number;
+      textSample: string;
+    }
+  | {
+      filename: string;
+      success: false;
+      error: string;
+    };
+
 const PDF_FILES = [
   '/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/Ejemplos/laser-home/Cotización - MAPFRE.pdf',
   '/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/Ejemplos/laser-home/Cotización - CHUBB.pdf',
@@ -104,13 +121,14 @@ async function testPdf(filePath: string) {
       validationErrors: validation.flags.filter(f => f.severity === 'CRITICAL' || f.severity === 'WARNING').length,
       textSample: preprocessed.text.substring(0, 500),
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error(`\n❌ ERROR processing ${filename}:`);
-    console.error(`   ${error.message}`);
+    console.error(`   ${message}`);
     return {
       filename,
       success: false,
-      error: error.message,
+      error: message,
     };
   }
 }
@@ -119,7 +137,7 @@ async function main() {
   console.log('🚀 REAL QUOTE PDF PIPELINE TEST');
   console.log('Testing PDF extraction + preprocessing + parsing + thesaurus + validation + confidence\n');
 
-  const results = [];
+  const results: PipelineResult[] = [];
   for (const file of PDF_FILES) {
     const result = await testPdf(file);
     results.push(result);
@@ -129,7 +147,7 @@ async function main() {
   console.log('📋 SUMMARY');
   console.log('='.repeat(60));
 
-  results.forEach((r: any) => {
+  results.forEach((r) => {
     if (r.success) {
       console.log(`\n✅ ${r.filename}`);
       console.log(`   Pages: ${r.pages} | Chars: ${r.charCount} | Confidence: ${r.confidence}% | Coverages: ${r.coverageCount} | Issues: ${r.validationErrors}`);

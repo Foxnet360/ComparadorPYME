@@ -3,6 +3,7 @@ import { geminiService } from './src/services/gemini';
 import { mapCoverageName } from './src/services/thesaurusMapper';
 import { PLANTILLA_ITEMS } from './src/utils/analysisValidator';
 import { formatPercentage} from './src/utils/formatCurrency';
+import { QuoteExtraction } from './src/schemas/extractionSchemas';
 
 
 const STRUCTURED_EXTRACTION_PROMPT = `Eres un extractor experto de cotizaciones de seguros PYME colombianos.
@@ -142,7 +143,7 @@ async function analyzeQuote(file: QuoteFile) {
 
   // Step 2: Run Gemini structured extraction
   console.log('\n🤖 STEP 2: Running Gemini structured extraction...');
-  let structuredResult: any;
+  let structuredResult: QuoteExtraction;
   try {
     structuredResult = await geminiService.extractStructured(
       extractedText,
@@ -150,8 +151,9 @@ async function analyzeQuote(file: QuoteFile) {
       1
     );
     console.log(`   ✅ Extracted: ${structuredResult.insurerName}, ${structuredResult.coverages?.length || 0} coverages`);
-  } catch (error) {
-    console.error(`   ❌ Gemini extraction failed: ${error}`);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`   ❌ Gemini extraction failed: ${message}`);
     return;
   }
 
@@ -163,7 +165,7 @@ async function analyzeQuote(file: QuoteFile) {
   if (rawCoverages.length === 0) {
     console.log('   ⚠️  WARNING: Gemini returned ZERO coverages!');
   } else {
-    rawCoverages.forEach((coverage: any, idx: number) => {
+    rawCoverages.forEach((coverage, idx: number) => {
       console.log(`   ${idx + 1}. "${coverage.name}"`);
       console.log(`      Value: "${coverage.value}"`);
       console.log(`      Deductible: "${coverage.deductible}"`);
@@ -173,7 +175,7 @@ async function analyzeQuote(file: QuoteFile) {
   // Step 4: Apply thesaurus mapping and log results
   printSubSeparator('STEP 4: Coverage Names AFTER Thesaurus Mapping');
   
-  const mappedCoverages = rawCoverages.map((coverage: any) => {
+  const mappedCoverages = rawCoverages.map((coverage) => {
     const mapping = mapCoverageName(coverage.name);
     return {
       rawName: coverage.name,
@@ -187,7 +189,7 @@ async function analyzeQuote(file: QuoteFile) {
   });
 
   console.log(`\n   Mapped coverages: ${mappedCoverages.length}`);
-  mappedCoverages.forEach((coverage: any, idx: number) => {
+  mappedCoverages.forEach((coverage, idx: number) => {
     const status = coverage.needsReview ? '⚠️ NEEDS REVIEW' : '✅ OK';
     console.log(`   ${idx + 1}. "${coverage.rawName}"`);
     console.log(`      → Canonical: "${coverage.canonicalName}"`);
@@ -199,7 +201,7 @@ async function analyzeQuote(file: QuoteFile) {
   // Step 5: Compare against PLANTILLA_ITEMS
   printSubSeparator('STEP 5: Comparison with Frontend PLANTILLA_ITEMS');
   
-  const backendCoverageNames = mappedCoverages.map((c: any) => c.canonicalName);
+  const backendCoverageNames = mappedCoverages.map((c) => c.canonicalName);
   const missingItems: string[] = [];
   const matchedItems: Array<{ frontend: string; backend: string; matchType: string }> = [];
 
@@ -288,8 +290,8 @@ async function analyzeQuote(file: QuoteFile) {
     missingCount,
     matchPercentage: parseFloat(matchPercentage),
     missingItems,
-    rawCoverages: rawCoverages.map((c: any) => c.name),
-    mappedCoverages: mappedCoverages.map((c: any) => ({ raw: c.rawName, canonical: c.canonicalName }))
+    rawCoverages: rawCoverages.map((c) => c.name),
+    mappedCoverages: mappedCoverages.map((c) => ({ raw: c.rawName, canonical: c.canonicalName }))
   };
 }
 
