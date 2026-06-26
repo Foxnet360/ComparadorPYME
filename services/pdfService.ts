@@ -188,7 +188,7 @@ export const generatePDF = (report: ComparisonReport, options?: PDFOptions, cell
   doc.addPage();
   currentY = addHeader("Análisis de Estructura de Deducibles");
 
-  const deducRows: any[] = [];
+  const deducRows: Array<[string, string]> = [];
   if (report.deductibleComparison && report.deductibleComparison.length > 0) {
     report.deductibleComparison.forEach(d => deducRows.push([d.insurer, d.deductibleText]));
   } else {

@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import { HistoryEntry, DashboardStats, UserProfile, QuoteStatus, ComparisonReport, Client } from "../types";
+import { HistoryEntry, DashboardStats, UserProfile, QuoteStatus, ComparisonReport, Client, QuoteAnalysis } from "../types";
 import { dbService } from "./db";
 
 const USER_KEY = 'seguro_app_user';
@@ -96,14 +96,20 @@ export const storageService = {
     try {
       const response = await fetch(`${API_URL}/history?userId=${currentUser.id}`);
       if (response.ok) {
-        const cloudHistory = await response.json();
+        const cloudHistory: Array<{
+          id: string;
+          user_id?: string;
+          created_at?: string;
+          client_name?: string;
+          analysis_result?: { quotes?: QuoteAnalysis[] };
+        }> = await response.json();
         
         // Transform backend data (snake_case) to frontend format (camelCase)
-        const transformedHistory: HistoryEntry[] = cloudHistory.map((item: any) => {
+        const transformedHistory: HistoryEntry[] = cloudHistory.map((item) => {
           const analysisResult = item.analysis_result || {};
           const quotes = analysisResult.quotes || [];
           const bestQuote = quotes.length > 0 
-            ? quotes.reduce((prev: any, curr: any) => ((prev?.score || 0) > (curr?.score || 0)) ? prev : curr, quotes[0])
+            ? quotes.reduce<QuoteAnalysis>((prev, curr) => (prev.score > curr.score ? prev : curr))
             : null;
           
           return {
@@ -111,7 +117,7 @@ export const storageService = {
             userId: item.user_id,
             date: item.created_at ? item.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
             clientName: item.client_name || 'Cliente Sin Nombre',
-            insurers: quotes.map((q: any) => q.insurerName || 'Desconocido'),
+            insurers: quotes.map((q) => q.insurerName || 'Desconocido'),
             bestOption: bestQuote?.insurerName || 'N/A',
             premiumValue: bestQuote?.priceAnnual || 0,
             status: 'SENT', // Default status - could be stored in DB in future
@@ -139,8 +145,8 @@ export const storageService = {
     }
 
     // Backend already saves the analysis, we just need to update local cache
-    const bestQuote = report.quotes.reduce((prev: any, curr: any) => ((prev?.score || 0) > (curr?.score || 0)) ? prev : curr, report.quotes[0]);
-    const insurers = report.quotes.map((q: any) => q.insurerName || 'Desconocido');
+    const bestQuote = report.quotes.reduce<QuoteAnalysis>((prev, curr) => (prev.score > curr.score ? prev : curr));
+    const insurers = report.quotes.map((q) => q.insurerName || 'Desconocido');
 
     // Use backend-generated UUID if available, otherwise generate a valid UUID
     const id = report.id || crypto.randomUUID();

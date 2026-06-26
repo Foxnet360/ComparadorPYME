@@ -1,12 +1,44 @@
 import { API_BASE_URL } from "./apiConfig";
 
+export interface InsurerRef {
+    id: string;
+    name: string;
+}
+
+export interface ClauseDocument {
+    id: string;
+    documentName: string;
+    documentType: string;
+    version?: string;
+    productName?: string;
+    totalPages: number;
+    isActive: boolean;
+    createdAt: string;
+    insurer: InsurerRef;
+}
+
+export interface DocumentQueryParams {
+    insurerId?: string;
+    documentType?: string;
+    isActive?: boolean;
+    latest?: boolean;
+}
+
+export interface CreateDocumentMetadata {
+    insurerName: string;
+    documentName: string;
+    documentType: string;
+    productName?: string;
+    version?: string;
+}
+
 export const clauseService = {
     // === DOCUMENT API (v2) ===
     
     /**
      * Get documents from the persistent document library
      */
-    getDocuments: async (params?: { insurerId?: string; documentType?: string; isActive?: boolean; latest?: boolean }): Promise<any[]> => {
+    getDocuments: async (params?: DocumentQueryParams): Promise<ClauseDocument[]> => {
         const queryParams = new URLSearchParams();
         if (params?.insurerId) queryParams.append('insurerId', params.insurerId);
         if (params?.documentType) queryParams.append('documentType', params.documentType);
@@ -24,8 +56,8 @@ export const clauseService = {
      */
     createDocument: async (
         file: File,
-        metadata: { insurerName: string; documentName: string; documentType: string; productName?: string; version?: string }
-    ): Promise<any> => {
+        metadata: CreateDocumentMetadata
+    ): Promise<ClauseDocument> => {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('insurerName', metadata.insurerName);
@@ -59,7 +91,7 @@ export const clauseService = {
     /**
      * Get document versions for an insurer
      */
-    getDocumentVersions: async (insurerId: string): Promise<any[]> => {
+    getDocumentVersions: async (insurerId: string): Promise<ClauseDocument[]> => {
         const response = await fetch(`${API_BASE_URL}/documents?insurerId=${encodeURIComponent(insurerId)}`);
         if (!response.ok) throw new Error('Failed to fetch document versions');
         const data = await response.json();
