@@ -1,0 +1,10 @@
+{
+  "name": "pyme-3-quotes",
+  "description": "Fixed 3-quote regression set for extraction-quality evaluation. Place three real PYME quote PDFs at the paths listed below and set GEMINI_API_KEY before running the regression test.",
+  "pdfPaths": [
+    "server/src/evaluation/fixtures/extraction-quality/quote1.pdf",
+    "server/src/evaluation/fixtures/extraction-quality/quote2.pdf",
+    "server/src/evaluation/fixtures/extraction-quality/quote3.pdf"
+  ],
+  "baselineSnapshotPath": "server/src/evaluation/fixtures/extraction-quality/baseline-snapshot.json"
+}

@@ -1,0 +1,52 @@
+{
+  "metadata": {
+    "generatedAt": "2026-07-02T00:00:00.000Z",
+    "model": "gemini-3.5-flash",
+    "pdfCount": 3,
+    "processingTimeMs": 12345,
+    "confidence": 0.92,
+    "needsHumanReview": false,
+    "fromCache": false
+  },
+  "insurers": [
+    "Aseguradora Demo A",
+    "Aseguradora Demo B",
+    "Aseguradora Demo C"
+  ],
+  "rows": [
+    {
+      "label": "Bienes Asegurados",
+      "cells": [
+        { "insurer": "Aseguradora Demo A", "value": "Edificio y contenidos" },
+        { "insurer": "Aseguradora Demo B", "value": "Edificio y contenidos" },
+        { "insurer": "Aseguradora Demo C", "value": "Edificio, contenidos y equipos" }
+      ]
+    },
+    {
+      "label": "Deducibles",
+      "cells": [
+        { "insurer": "Aseguradora Demo A", "value": "10% sobre el siniestro" },
+        { "insurer": "Aseguradora Demo B", "value": "10% sobre el siniestro" },
+        { "insurer": "Aseguradora Demo C", "value": "15% sobre el siniestro" }
+      ]
+    },
+    {
+      "label": "Prima con IVA",
+      "cells": [
+        { "insurer": "Aseguradora Demo A", "value": "$ 1.000.000" },
+        { "insurer": "Aseguradora Demo B", "value": "$ 1.200.000" },
+        { "insurer": "Aseguradora Demo C", "value": "$ 1.150.000" }
+      ]
+    },
+    {
+      "label": "Forma de Pago",
+      "cells": [
+        { "insurer": "Aseguradora Demo A", "value": "Anual" },
+        { "insurer": "Aseguradora Demo B", "value": "Anual" },
+        { "insurer": "Aseguradora Demo C", "value": "Mensual" }
+      ]
+    }
+  ],
+  "extraRows": [],
+  "warnings": []
+}
