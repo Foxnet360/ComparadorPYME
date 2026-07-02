@@ -4,14 +4,24 @@
  */
 
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
-import { UnifiedComparisonResult, ComparisonEngineConfig } from "../../types/unifiedComparison";
+import { ComparisonEngineConfig, UnifiedComparisonResult } from "../../types/unifiedComparison";
 import { comparisonPromptBuilder } from "./comparisonPromptBuilder";
-import { comparisonResultValidator } from "./comparisonResultValidator";
-import { UnifiedComparisonSchema } from "./comparisonSchema";
-import { parseJsonWithRepair } from "../jsonRepair";
+import { FlatComparisonResult } from "./comparisonSchema";
+import { flatTableParser } from "./flatTableParser";
 import { getCachedUnifiedResult, setCachedUnifiedResult } from "../cache/redisCache";
 import crypto from "crypto";
 import fs from "fs";
+
+export class UnifiedComparisonError extends Error {
+  constructor(
+    public readonly reason: string,
+    public readonly correlationId: string,
+    public readonly attempts: number
+  ) {
+    super(`Unified comparison failed [${correlationId}] after ${attempts} attempts: ${reason}`);
+    this.name = 'UnifiedComparisonError';
+  }
+}
 
 // Initialize Gemini client
 const getGenAI = () => {
@@ -34,7 +44,7 @@ const DEFAULT_CONFIG: ComparisonEngineConfig = {
   model: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
   thinkingLevel: 'MEDIUM',
   responseMimeType: 'application/json',
-  responseSchema: UnifiedComparisonSchema,
+  responseSchema: {},
   maxRetries: 2,
   retryDelayMs: 5000
 };
@@ -67,7 +77,7 @@ export class UnifiedComparisonEngine {
   /**
    * Compare multiple insurance quotes in a single LLM call
    */
-  async compare(pdfPaths: string[]): Promise<UnifiedComparisonResult> {
+  async compare(pdfPaths: string[]): Promise<FlatComparisonResult> {
     const startTime = Date.now();
     const correlationId = `compare-${Date.now()}`;
     let uploadedFiles: GeminiFile[] = [];
@@ -77,7 +87,7 @@ export class UnifiedComparisonEngine {
     // Check cache first
     const fileHash = this.generateFileHash(pdfPaths);
     try {
-      const cached = await getCachedUnifiedResult(fileHash);
+      const cached = await getCachedUnifiedResult<FlatComparisonResult>(fileHash);
       if (cached) {
         console.log(`✅ [UnifiedComparison] Cache hit for hash ${fileHash.substring(0, 8)}... [${correlationId}]`);
         cached.metadata.processingTimeMs = Date.now() - startTime;
@@ -102,42 +112,37 @@ export class UnifiedComparisonEngine {
       // 3. Call Gemini with structured output
       const result = await this.callGemini(uploadedFiles, prompt, correlationId);
 
-      // 4. Parse and validate response
-      const parsedResult = await this.parseAndValidateResult(result, pdfPaths.length);
-      
-      // Debug: Log parsed result structure
-      console.log(`📊 [Unified Debug] Parsed result - Insurers: ${parsedResult.insurers?.length || 0}`);
-      console.log(`📊 [Unified Debug] Coverage matrix sections: ${parsedResult.coverageMatrix?.length || 0}`);
-      if (parsedResult.coverageMatrix && parsedResult.coverageMatrix.length > 0) {
-        const firstSection = parsedResult.coverageMatrix[0];
-        console.log(`📊 [Unified Debug] First section: ${firstSection.category}, rows: ${firstSection.rows?.length || 0}`);
-        if (firstSection.rows && firstSection.rows.length > 0) {
-          console.log(`📊 [Unified Debug] First row: ${JSON.stringify(firstSection.rows[0], null, 2)}`);
-        }
-      }
-      console.log(`📊 [Unified Debug] Financials premiums: ${parsedResult.financials?.premiums?.length || 0}`);
+      // 4. Parse and validate response using the flat table parser
+      const parsedResult = await this.parseAndValidateResult(result, pdfPaths.length, correlationId);
 
-      // 5. Add metadata
+      // 5. Add runtime metadata
       parsedResult.metadata.processingTimeMs = Date.now() - startTime;
       parsedResult.metadata.pdfCount = pdfPaths.length;
       parsedResult.metadata.fromCache = false;
 
       // 6. Cache the result
       try {
-        await setCachedUnifiedResult(fileHash, parsedResult);
+        await setCachedUnifiedResult<FlatComparisonResult>(fileHash, parsedResult);
         console.log(`💾 [UnifiedComparison] Cached result for hash ${fileHash.substring(0, 8)}... [${correlationId}]`);
       } catch (error) {
         console.warn(`⚠️ [UnifiedComparison] Failed to cache result [${correlationId}]:`, error);
       }
 
       console.log(`✅ [UnifiedComparison] Completed in ${parsedResult.metadata.processingTimeMs}ms [${correlationId}]`);
-      console.log(`📊 [UnifiedComparison] Confidence: ${parsedResult.metadata.confidence}, Needs review: ${parsedResult.metadata.needsHumanReview} [${correlationId}]`);
+      console.log(`📊 [UnifiedComparison] Insurers: ${parsedResult.insurers.length}, Rows: ${parsedResult.rows.length}, Warnings: ${parsedResult.warnings.length} [${correlationId}]`);
 
       return parsedResult;
 
     } catch (error) {
       console.error(`❌ [UnifiedComparison] Failed [${correlationId}]:`, error instanceof Error ? error.message : String(error));
-      throw new Error(`Comparison failed: ${error instanceof Error ? error.message : String(error)}`);
+      if (error instanceof UnifiedComparisonError) {
+        throw error;
+      }
+      throw new UnifiedComparisonError(
+        error instanceof Error ? error.message : String(error),
+        correlationId,
+        1
+      );
     } finally {
       // Clean up files in Gemini File API
       if (uploadedFiles.length > 0) {
@@ -274,16 +279,22 @@ export class UnifiedComparisonEngine {
     try {
       // Add 45-second timeout to prevent hanging
       const TIMEOUT_MS = 45000;
+
+      const config: Record<string, unknown> = {
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel[this.config.thinkingLevel]
+        },
+        responseMimeType: this.config.responseMimeType
+      };
+
+      if (Object.keys(this.config.responseSchema).length > 0) {
+        config.responseSchema = this.config.responseSchema;
+      }
+
       const geminiPromise = ai.models.generateContent({
         model: this.config.model,
         contents,
-        config: {
-          thinkingConfig: {
-            thinkingLevel: ThinkingLevel[this.config.thinkingLevel]
-          },
-          responseMimeType: this.config.responseMimeType,
-          responseSchema: this.config.responseSchema
-        }
+        config
       });
 
       const timeoutPromise = new Promise<never>((_, reject) =>
@@ -306,66 +317,54 @@ export class UnifiedComparisonEngine {
   }
 
   /**
-   * Parse and validate Gemini response
+   * Parse and validate Gemini response using the flat table parser
    */
   private async parseAndValidateResult(
     responseText: string,
-    expectedInsurerCount: number
-  ): Promise<UnifiedComparisonResult> {
+    pdfCount: number,
+    correlationId: string
+  ): Promise<FlatComparisonResult> {
     let retries = 0;
     let lastError: string | null = null;
 
     while (retries <= this.config.maxRetries) {
       try {
-        // Try to parse JSON
-        const parseResult = parseJsonWithRepair(responseText);
-        
-        if (!parseResult.success) {
-          throw new Error(`JSON parsing failed: ${parseResult.error}`);
-        }
+        const parsedResult = flatTableParser.parse(responseText, {
+          pdfCount,
+          model: this.config.model,
+          confidence: 0,
+          needsHumanReview: true,
+        });
 
-        const result = parseResult.data as UnifiedComparisonResult;
-
-        // Validate against schema and business rules
-        const validation = comparisonResultValidator.validate(result, expectedInsurerCount);
-
-        if (!validation.isValid) {
-          console.warn(`⚠️ [UnifiedComparison] Validation warnings:`, validation.businessWarnings);
-        }
-
-        // Add validation metadata
-        result.metadata.confidence = validation.confidence;
-        result.metadata.needsHumanReview = validation.needsHumanReview;
-
-        return result as UnifiedComparisonResult;
-
+        return parsedResult;
       } catch (error) {
         lastError = error instanceof Error ? error.message : String(error);
-        console.warn(`⚠️ [UnifiedComparison] Parse/validation failed (attempt ${retries + 1}):`, error instanceof Error ? error.message : String(error));
+        console.warn(
+          `⚠️ [UnifiedComparison] Flat parse failed (attempt ${retries + 1}) [${correlationId}]:`,
+          lastError
+        );
 
         if (retries < this.config.maxRetries) {
-          // Retry with correction prompt
           const correctionPrompt = comparisonPromptBuilder.buildCorrectionPrompt(
             responseText,
             lastError || 'Unknown error'
           );
-          
-          console.log(`🔄 [UnifiedComparison] Retrying with correction prompt...`);
-          
+
+          console.log(`🔄 [UnifiedComparison] Retrying with correction prompt... [${correlationId}]`);
+
           const ai = getGenAI();
           const retryResult = await ai.models.generateContent({
             model: this.config.model,
             contents: [{ text: correctionPrompt }],
             config: {
               thinkingConfig: { thinkingLevel: ThinkingLevel[this.config.thinkingLevel] },
-              responseMimeType: this.config.responseMimeType,
-              responseSchema: this.config.responseSchema
+              responseMimeType: this.config.responseMimeType
             }
           });
 
           responseText = retryResult.text || '';
           retries++;
-          
+
           // Wait before retry
           await new Promise(resolve => setTimeout(resolve, this.config.retryDelayMs));
         } else {
@@ -374,7 +373,11 @@ export class UnifiedComparisonEngine {
       }
     }
 
-    throw new Error(`Failed to parse and validate result after ${this.config.maxRetries + 1} attempts. Last error: ${lastError}`);
+    throw new UnifiedComparisonError(
+      `parse_failure: ${lastError}`,
+      correlationId,
+      retries + 1
+    );
   }
 
   /**

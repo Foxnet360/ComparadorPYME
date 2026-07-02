@@ -421,14 +421,14 @@ export async function setCachedComparisonResult<T>(fileHash: string, result: T):
     memoryCache.setex(key, cacheTTL.comparisonResult, value);
 }
 
-export async function getCachedUnifiedResult(fileHash: string): Promise<UnifiedComparisonResult | null> {
+export async function getCachedUnifiedResult<T = UnifiedComparisonResult>(fileHash: string): Promise<T | null> {
     const key = cacheKeys.unifiedResult(fileHash);
     
     if (redisAvailable) {
         try {
             const cached = await redis.get(key);
             if (cached) {
-                return JSON.parse(cached);
+                return JSON.parse(cached) as T;
             }
         } catch (_error) {
             // Redis failed, try memory
@@ -437,12 +437,12 @@ export async function getCachedUnifiedResult(fileHash: string): Promise<UnifiedC
     
     const cached = memoryCache.get(key);
     if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached) as T;
     }
     return null;
 }
 
-export async function setCachedUnifiedResult(fileHash: string, result: UnifiedComparisonResult): Promise<void> {
+export async function setCachedUnifiedResult<T = UnifiedComparisonResult>(fileHash: string, result: T): Promise<void> {
     const key = cacheKeys.unifiedResult(fileHash);
     const value = JSON.stringify(result);
     
