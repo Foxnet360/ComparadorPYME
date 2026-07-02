@@ -80,7 +80,7 @@ router.post('/unified',
       console.log(`🚩 [API] Unified engine ${isUnifiedEnabled ? 'enabled' : 'disabled'} for user ${userId || 'anonymous'} [${correlationId}]`);
 
       // Generate comparison
-      const result = await comparisonEngineAdapter.generateComparison(filePaths, userId);
+      const adapterResult = await comparisonEngineAdapter.generateComparison(filePaths, userId);
 
       // Clean up temporary files
       files.forEach(f => {
@@ -94,9 +94,10 @@ router.post('/unified',
       // Return result
       res.json({
         success: true,
-        correlationId,
-        engine: isUnifiedEnabled ? 'unified' : 'legacy',
-        data: result
+        correlationId: adapterResult.correlationId,
+        engine: adapterResult.engine,
+        fallbackReason: adapterResult.fallbackReason,
+        data: adapterResult.matrix
       });
 
     } catch (error) {

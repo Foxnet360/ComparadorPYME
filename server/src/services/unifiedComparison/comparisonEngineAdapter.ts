@@ -1,54 +1,89 @@
 /**
  * Comparison Engine Adapter
- * Provides safe coexistence between unified and legacy comparison engines
- * Routes requests based on feature flags with automatic fallback
+ * Provides safe coexistence between unified and legacy comparison engines.
+ * Routes requests based on feature flags with automatic fallback to the
+ * proven per-quote V2 pipeline when the unified engine fails.
  */
 
-import { MatrixRow } from "../../types";
-import { UnifiedComparisonResult } from "../../types/unifiedComparison";
-import { unifiedComparisonEngine } from "./unifiedComparisonEngine";
-import { unifiedComparisonFlag } from "./featureFlagService";
+import { randomUUID } from 'crypto';
+import { MatrixRow } from '../../types';
+import { unifiedComparisonEngine, UnifiedComparisonError } from './unifiedComparisonEngine';
+import { unifiedComparisonFlag } from './featureFlagService';
+import { processQuotesBatch } from '../quoteProcessingService';
+import { flatResultToMatrixRows, quotesToMatrixRows } from './matrixTransformer';
 
-// Note: Fallback to legacy is handled at the controller level
-// This adapter only handles unified engine routing
+export interface ComparisonAdapterResult {
+  matrix: MatrixRow[];
+  engine: 'unified' | 'fallback';
+  fallbackReason?: string;
+  correlationId: string;
+}
 
 export class ComparisonEngineAdapter {
-  
   /**
-   * Generate comparison using unified or legacy engine based on feature flag
+   * Generate comparison using unified engine first; fall back to the legacy
+   * per-quote batch service on failure. Returns a typed envelope with routing
+   * metadata so callers can log engine type and fallback reasons consistently.
    */
   async generateComparison(
     pdfPaths: string[],
     userId?: string
-  ): Promise<MatrixRow[]> {
+  ): Promise<ComparisonAdapterResult> {
+    const correlationId = `adapter-${Date.now()}-${randomUUID().slice(0, 8)}`;
     const flagEnabled = unifiedComparisonFlag.isEnabled(userId);
-    
-    console.log(`🚩 [Adapter] Unified engine ${flagEnabled ? 'ENABLED' : 'DISABLED'} for user ${userId || 'anonymous'}`);
 
-    if (flagEnabled) {
-      try {
-        // Try unified engine first
-        console.log(`🚀 [Adapter] Using unified comparison engine`);
-        const result = await unifiedComparisonEngine.compare(pdfPaths);
-        
-        // Transform to MatrixRow[]
-        const matrixRows = this.toMatrixRows(result);
-        
-        console.log(`✅ [Adapter] Unified engine succeeded`);
-        return matrixRows;
-        
-      } catch (error) {
-        // Log failure and fallback to legacy
-        console.error(`❌ [Adapter] Unified engine failed:`, error instanceof Error ? error.message : String(error));
-        console.log(`🔄 [Adapter] Falling back to legacy engine`);
-        
-        return this.fallbackToLegacy(pdfPaths, error instanceof Error ? error.message : String(error));
-      }
+    console.log(
+      `🚩 [Adapter] Unified engine ${flagEnabled ? 'ENABLED' : 'DISABLED'} for user ${userId || 'anonymous'} [${correlationId}]`
+    );
+
+    if (!flagEnabled) {
+      console.log(`📦 [Adapter] Routing to legacy batch service (flag disabled) [${correlationId}]`);
+      const matrix = await this.runLegacyBatch(pdfPaths, 'unified_disabled_by_flag', correlationId);
+      return {
+        matrix,
+        engine: 'fallback',
+        fallbackReason: 'unified_disabled_by_flag',
+        correlationId,
+      };
     }
 
-    // Use legacy engine
-    console.log(`📦 [Adapter] Using legacy comparison engine`);
-    return this.useLegacy(pdfPaths);
+    try {
+      console.log(`🚀 [Adapter] Using unified comparison engine [${correlationId}]`);
+      const result = await unifiedComparisonEngine.compare(pdfPaths);
+      const matrix = flatResultToMatrixRows(result);
+
+      console.log(`✅ [Adapter] Unified engine succeeded [${correlationId}]`);
+      return {
+        matrix,
+        engine: 'unified',
+        correlationId,
+      };
+    } catch (error) {
+      const reason =
+        error instanceof UnifiedComparisonError
+          ? error.reason
+          : error instanceof Error
+          ? error.message
+          : String(error);
+      const fallbackCorrelationId =
+        error instanceof UnifiedComparisonError ? error.correlationId : correlationId;
+
+      console.error(
+        `❌ [Adapter] Unified engine failed [${fallbackCorrelationId}]: ${reason}`
+      );
+      console.error(
+        `🔄 [Adapter] routing=fallback, reason=${reason}, correlationId=${fallbackCorrelationId}`
+      );
+
+      const matrix = await this.runLegacyBatch(pdfPaths, reason, fallbackCorrelationId);
+
+      return {
+        matrix,
+        engine: 'fallback',
+        fallbackReason: reason,
+        correlationId: fallbackCorrelationId,
+      };
+    }
   }
 
   /**
@@ -67,17 +102,16 @@ export class ComparisonEngineAdapter {
     try {
       // TODO: Retrieve original comparison from database
       // For now, this is a placeholder implementation
-      
+
       // Call unified engine deep mode
       // const result = await unifiedComparisonEngine.validateWithClauses(
       //   originalComparison,
       //   clausePaths
       // );
-      
+
       // return this.toMatrixRows(result);
-      
+
       throw new Error('Deep mode not yet fully implemented');
-      
     } catch (error) {
       console.error(`❌ [Adapter] Deep mode failed:`, error instanceof Error ? error.message : String(error));
       throw error;
@@ -85,164 +119,19 @@ export class ComparisonEngineAdapter {
   }
 
   /**
-   * Transform UnifiedComparisonResult to MatrixRow[]
+   * Run the legacy per-quote batch service and convert the results to the
+   * shared MatrixRow[] shape.
    */
-  toMatrixRows(result: UnifiedComparisonResult): MatrixRow[] {
-    const matrix: MatrixRow[] = [];
-    const numInsurers = result.insurers.length;
-
-    // Add header for client info
-    matrix.push({
-      type: 'header',
-      id: 'client_info',
-      label: `${result.client.name} - ${result.client.activity}`,
-      sectionId: 0,
-      cells: Array(numInsurers).fill({ value: '', isExcluded: false, isWinner: false })
-    });
-
-    // Process coverage matrix
-    result.coverageMatrix.forEach((section, sectionIndex) => {
-      // Add category header
-      matrix.push({
-        type: 'header',
-        id: `section_${sectionIndex}`,
-        label: section.category,
-        sectionId: sectionIndex + 1,
-        cells: Array(numInsurers).fill({ value: '', isExcluded: false, isWinner: false })
-      });
-
-      // Add data rows
-      section.rows.forEach((row, rowIndex) => {
-        matrix.push({
-          type: 'data',
-          id: `section_${sectionIndex}_row_${rowIndex}`,
-          label: row.label,
-          sectionId: sectionIndex + 1,
-          cells: row.cells.map(cell => ({
-            value: cell.value || 'No informado',
-            isExcluded: cell.value === 'N.C.' || cell.value === 'No incluido' || cell.value === null,
-            isWinner: false, // TODO: Implement winner logic
-            notes: cell.notes,
-            pageNumber: cell.pageNumber,
-            confidence: cell.confidence
-          }))
-        });
-      });
-    });
-
-    // Add financial section
-    matrix.push({
-      type: 'header',
-      id: 'financials',
-      label: 'PRIMAS Y COSTOS',
-      sectionId: 999,
-      cells: Array(numInsurers).fill({ value: '', isExcluded: false, isWinner: false })
-    });
-
-    // Add premium rows
-    const premiumLabels = [
-      { label: 'Prima Neta', field: 'netPremium' },
-      { label: 'Gastos de Expedición', field: 'fees' },
-      { label: 'IVA (19%)', field: 'taxes' },
-      { label: 'TOTAL A PAGAR', field: 'total' }
-    ];
-
-    premiumLabels.forEach(({ label, field }) => {
-      matrix.push({
-        type: 'data',
-        id: `premium_${field}`,
-        label,
-        sectionId: 999,
-        cells: result.financials.premiums.map(p => {
-          const value = p[field as keyof typeof p] as number | null;
-          return {
-            value: value !== null && value !== undefined 
-              ? `$${value.toLocaleString('es-CO')}` 
-              : 'No informado',
-            isExcluded: value === null || value === undefined,
-            isWinner: false
-          };
-        })
-      });
-    });
-
-    // Add metadata rows
-    matrix.push({
-      type: 'spacer',
-      id: 'spacer_metadata',
-      label: '',
-      sectionId: 999,
-      cells: Array(numInsurers).fill({ value: '', isExcluded: false, isWinner: false })
-    });
-
-    const metaFields = [
-      { label: 'Vigencia', field: 'validity' },
-      { label: 'Producto', field: 'product' },
-      { label: 'Respaldo', field: 'backing' },
-      { label: 'Comisión', field: 'commission' }
-    ];
-
-    metaFields.forEach(({ label, field }) => {
-      matrix.push({
-        type: 'data',
-        id: `meta_${field}`,
-        label,
-        sectionId: 999,
-        cells: result.financials.metadata.map(m => ({
-          value: (m[field as keyof typeof m] as string | undefined) || 'No informado',
-          isExcluded: !m[field as keyof typeof m],
-          isWinner: false
-        }))
-      });
-    });
-
-    // Add analysis warnings
-    if (result.analysis.warnings.length > 0) {
-      matrix.push({
-        type: 'spacer',
-        id: 'spacer_warnings',
-        label: '',
-        sectionId: 999,
-        cells: Array(numInsurers).fill({ value: '', isExcluded: false, isWinner: false })
-      });
-
-      matrix.push({
-        type: 'header',
-        id: 'warnings',
-        label: '⚠️ ALERTAS',
-        sectionId: 999,
-        cells: Array(numInsurers).fill({ value: '', isExcluded: false, isWinner: false })
-      });
-
-      result.analysis.warnings.forEach((warning, index) => {
-        matrix.push({
-          type: 'data',
-          id: `warning_${index}`,
-          label: warning,
-          sectionId: 999,
-          cells: Array(numInsurers).fill({ value: '', isExcluded: false, isWinner: false })
-        });
-      });
-    }
-
-    return matrix;
-  }
-
-  /**
-   * Fallback to legacy engine
-   */
-  private async fallbackToLegacy(pdfPaths: string[], errorMessage: string): Promise<MatrixRow[]> {
-    console.error(`❌ [Adapter] Unified engine failed: ${errorMessage}`);
-    console.log(`⚠️ [Adapter] Legacy fallback should be handled by controller`);
-    throw new Error(`Unified comparison engine failed: ${errorMessage}. Please use /api/analyze for legacy processing.`);
-  }
-
-  /**
-   * Use legacy engine directly
-   */
-  private async useLegacy(_pdfPaths: string[]): Promise<MatrixRow[]> {
-    console.log(`📦 [Adapter] Legacy engine not available through adapter. Use /api/analyze endpoint.`);
-    throw new Error('Legacy engine not available through unified adapter. Use /api/analyze endpoint.');
+  private async runLegacyBatch(
+    pdfPaths: string[],
+    reason: string,
+    correlationId: string
+  ): Promise<MatrixRow[]> {
+    console.log(
+      `🔄 [Adapter] Falling back to legacy batch service [${correlationId}], reason=${reason}`
+    );
+    const quotes = await processQuotesBatch(pdfPaths, { concurrencyLimit: 2 });
+    return quotesToMatrixRows(quotes);
   }
 }
 

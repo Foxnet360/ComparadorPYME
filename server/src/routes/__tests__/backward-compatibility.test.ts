@@ -4,6 +4,52 @@ import express from 'express';
 import multer from 'multer';
 import { analysisController } from '../../controllers/analysisController';
 
+vi.mock('../../services/unifiedComparison/comparisonEngineAdapter', () => ({
+  comparisonEngineAdapter: {
+    generateComparison: vi.fn(async () => ({
+      matrix: [
+        {
+          type: 'header',
+          id: 'client_info',
+          label: 'Cotizaciones PYME - Seguros Bolívar',
+          sectionId: 0,
+          cells: [{ value: '', isExcluded: false, isWinner: false }]
+        },
+        {
+          type: 'header',
+          id: 'section_0',
+          label: 'INFORMACIÓN GENERAL',
+          sectionId: 1,
+          cells: [{ value: '', isExcluded: false, isWinner: false }]
+        },
+        {
+          type: 'data',
+          id: 'section_0_row_0',
+          label: 'Responsabilidad Civil',
+          sectionId: 1,
+          cells: [{ value: '100M', isExcluded: false, isWinner: false, notes: '5 SMMLV', confidence: 95 }]
+        },
+        {
+          type: 'header',
+          id: 'financials',
+          label: 'PRIMAS Y COSTOS',
+          sectionId: 999,
+          cells: [{ value: '', isExcluded: false, isWinner: false }]
+        },
+        {
+          type: 'data',
+          id: 'premium_total',
+          label: 'TOTAL A PAGAR',
+          sectionId: 999,
+          cells: [{ value: '$8.500.000', isExcluded: false, isWinner: false }]
+        }
+      ],
+      engine: 'unified',
+      correlationId: 'test-correlation-id'
+    }))
+  }
+}));
+
 // Mock all services
 vi.mock('../../services/gemini', () => ({
   geminiService: {

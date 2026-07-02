@@ -83,13 +83,16 @@ describe('Unified Comparison Engine Integration', () => {
       }
       
       // Test adapter transformation
-      const matrixRows = await comparisonEngineAdapter.generateComparison(
+      const adapterResult = await comparisonEngineAdapter.generateComparison(
         pdfFiles.slice(0, 2),
         'test-user'
       );
+      const matrixRows = adapterResult.matrix;
       
       expect(matrixRows).toBeInstanceOf(Array);
       expect(matrixRows.length).toBeGreaterThan(0);
+      expect(adapterResult.engine).toBeDefined();
+      expect(adapterResult.correlationId).toBeDefined();
       
       // Validate MatrixRow structure
       const headerRow = matrixRows.find(r => r.type === 'header');

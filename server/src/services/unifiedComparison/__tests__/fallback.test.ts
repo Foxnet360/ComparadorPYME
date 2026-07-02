@@ -3,149 +3,141 @@
  * Tests automatic fallback when unified engine fails
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { comparisonEngineAdapter } from '../comparisonEngineAdapter';
-import { unifiedComparisonEngine } from '../unifiedComparisonEngine';
+import { unifiedComparisonEngine, UnifiedComparisonError } from '../unifiedComparisonEngine';
 import { featureFlags } from '../../../config/featureFlags';
 import { unifiedComparisonFlag } from '../featureFlagService';
+import { processQuotesBatch } from '../../quoteProcessingService';
+
+vi.mock('../../quoteProcessingService', () => ({
+  processQuotesBatch: vi.fn(),
+}));
 
 describe('Fallback Mechanism', () => {
-  
+  let compareSpy: ReturnType<typeof vi.spyOn>;
+  let batchSpy: ReturnType<typeof vi.fn>;
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
-    // Reset feature flags
     featureFlags.updateFlag('useUnifiedComparisonEngine', true);
+    unifiedComparisonFlag.updateRolloutPercentage(100);
+
+    compareSpy = vi.spyOn(unifiedComparisonEngine, 'compare');
+    batchSpy = vi.mocked(processQuotesBatch);
+    batchSpy.mockResolvedValue([
+      {
+        insurerName: 'BBVA',
+        policyName: 'PYME',
+        priceAnnual: 8_500_000,
+        currency: 'COP',
+        coverages: [{ name: 'Incendio', canonicalName: 'Incendio', value: '500M', deductible: '10%', confidence: 95 }],
+        specialConditions: [],
+        rawText: '',
+        parseConfidence: 92,
+      },
+    ]);
+
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
-  it('should fallback to legacy when unified engine throws error', async () => {
-    // Mock the unified engine to fail
-    const originalCompare = unifiedComparisonEngine.compare;
-    unifiedComparisonEngine.compare = vi.fn().mockRejectedValue(
-      new Error('Simulated unified engine failure')
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('should fallback to batch service when unified engine throws error', async () => {
+    compareSpy.mockRejectedValue(
+      new UnifiedComparisonError('Simulated unified engine failure', 'corr-fallback-1', 3)
     );
 
-    try {
-      // Attempt to generate comparison
-      await expect(
-        comparisonEngineAdapter.generateComparison(['fake1.pdf', 'fake2.pdf'])
-      ).rejects.toThrow();
+    const result = await comparisonEngineAdapter.generateComparison(['fake1.pdf', 'fake2.pdf']);
 
-      // Verify the unified engine was called
-      expect(unifiedComparisonEngine.compare).toHaveBeenCalled();
-      
-    } finally {
-      // Restore original method
-      unifiedComparisonEngine.compare = originalCompare;
-    }
+    expect(compareSpy).toHaveBeenCalledWith(['fake1.pdf', 'fake2.pdf']);
+    expect(batchSpy).toHaveBeenCalledWith(['fake1.pdf', 'fake2.pdf'], expect.any(Object));
+    expect(result.engine).toBe('fallback');
+    expect(result.fallbackReason).toBe('Simulated unified engine failure');
+    expect(result.correlationId).toBe('corr-fallback-1');
+    expect(result.matrix.length).toBeGreaterThan(0);
   });
 
-  it('should use legacy engine when feature flag is disabled', async () => {
-    // Disable unified engine
+  it('should route to batch service when feature flag is disabled', async () => {
     featureFlags.updateFlag('useUnifiedComparisonEngine', false);
 
-    // The adapter should not call unified engine
-    const compareSpy = vi.spyOn(unifiedComparisonEngine, 'compare');
+    const result = await comparisonEngineAdapter.generateComparison(['fake1.pdf']);
 
-    try {
-      await comparisonEngineAdapter.generateComparison(['fake1.pdf']);
-    } catch (_error) {
-      // Expected to fail since we don't have real legacy implementation
-    }
-
-    // Verify unified engine was NOT called
     expect(compareSpy).not.toHaveBeenCalled();
-    
-    compareSpy.mockRestore();
+    expect(batchSpy).toHaveBeenCalledWith(['fake1.pdf'], expect.any(Object));
+    expect(result.engine).toBe('fallback');
+    expect(result.fallbackReason).toBe('unified_disabled_by_flag');
   });
 
-  it('should handle network errors gracefully', async () => {
-    const originalCompare = unifiedComparisonEngine.compare;
-    unifiedComparisonEngine.compare = vi.fn().mockRejectedValue(
-      new Error('Network error: Connection refused')
+  it('should log fallback reason with correlation id', async () => {
+    compareSpy.mockRejectedValue(
+      new UnifiedComparisonError('Network error: Connection refused', 'corr-net-1', 1)
     );
 
-    try {
-      await expect(
-        comparisonEngineAdapter.generateComparison(['fake1.pdf'])
-      ).rejects.toThrow('Network error');
-    } finally {
-      unifiedComparisonEngine.compare = originalCompare;
-    }
+    await comparisonEngineAdapter.generateComparison(['fake1.pdf']);
+
+    const matchingLog = consoleErrorSpy.mock.calls.find((call) =>
+      String(call[0]).includes('routing=fallback') &&
+      String(call[0]).includes('corr-net-1')
+    );
+    expect(matchingLog).toBeDefined();
   });
 
-  it('should handle timeout errors gracefully', async () => {
-    const originalCompare = unifiedComparisonEngine.compare;
-    unifiedComparisonEngine.compare = vi.fn().mockRejectedValue(
-      new Error('Request timeout after 30000ms')
+  it('should log timeout fallback reason', async () => {
+    compareSpy.mockRejectedValue(
+      new UnifiedComparisonError('Request timeout after 30000ms', 'corr-timeout-1', 1)
     );
 
-    try {
-      await expect(
-        comparisonEngineAdapter.generateComparison(['fake1.pdf'])
-      ).rejects.toThrow('timeout');
-    } finally {
-      unifiedComparisonEngine.compare = originalCompare;
-    }
+    const result = await comparisonEngineAdapter.generateComparison(['fake1.pdf']);
+
+    expect(result.engine).toBe('fallback');
+    expect(result.fallbackReason).toContain('timeout');
   });
 });
 
 describe('Feature Flag Toggle', () => {
-  
   beforeEach(() => {
-    // Reset to known state
     featureFlags.updateFlag('useUnifiedComparisonEngine', false);
   });
 
   it('should toggle feature flag at runtime', () => {
-    // Initially disabled
     expect(featureFlags.isEnabled('useUnifiedComparisonEngine')).toBe(false);
 
-    // Enable it
     featureFlags.updateFlag('useUnifiedComparisonEngine', true);
     expect(featureFlags.isEnabled('useUnifiedComparisonEngine')).toBe(true);
 
-    // Disable it again
     featureFlags.updateFlag('useUnifiedComparisonEngine', false);
     expect(featureFlags.isEnabled('useUnifiedComparisonEngine')).toBe(false);
   });
 
   it('should respect user-specific overrides', () => {
-    // Set rollout to 0%
     unifiedComparisonFlag.updateRolloutPercentage(0);
-    
-    // Without user ID, should be disabled
+
     expect(unifiedComparisonFlag.isEnabled()).toBe(false);
-    
-    // With user ID but no override, should be disabled (0% rollout)
     expect(unifiedComparisonFlag.isEnabled('user123')).toBe(false);
   });
 
   it('should handle percentage-based rollout', () => {
-    // Enable main flag
     featureFlags.updateFlag('useUnifiedComparisonEngine', true);
-    
-    // Set 50% rollout
     unifiedComparisonFlag.updateRolloutPercentage(50);
-    
-    // Should be enabled for some users (deterministic)
+
     const testUserId = 'test-user-123';
     const result = unifiedComparisonFlag.isEnabled(testUserId);
-    
-    // Should be consistent for same user
+
     expect(unifiedComparisonFlag.isEnabled(testUserId)).toBe(result);
-    
-    // Reset
+
     unifiedComparisonFlag.updateRolloutPercentage(0);
   });
 
   it('should handle 100% rollout', () => {
     featureFlags.updateFlag('useUnifiedComparisonEngine', true);
     unifiedComparisonFlag.updateRolloutPercentage(100);
-    
-    // Should be enabled for all users
+
     expect(unifiedComparisonFlag.isEnabled('any-user')).toBe(true);
     expect(unifiedComparisonFlag.isEnabled()).toBe(true);
-    
-    // Reset
+
     unifiedComparisonFlag.updateRolloutPercentage(0);
   });
 });
