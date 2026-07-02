@@ -135,7 +135,7 @@ function splitMarkdownLine(line: string): string[] {
 
 function isMarkdownSeparator(line: string): boolean {
   const content = line.replace(/\|/g, '').trim();
-  return /^[\-\s:]+$/.test(content);
+  return /^[-\s:]+$/.test(content);
 }
 
 function parseMarkdown(raw: string): RawTable {
