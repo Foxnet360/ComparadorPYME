@@ -45,3 +45,6 @@ coverage/
 # OpenCode caches
 .atl/
 
+# Local example files (not tracked)
+Ejemplos/
+
