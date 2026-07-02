@@ -3,8 +3,59 @@
  * Used with Gemini 3.5 Flash structured output
  */
 
+import { z } from 'zod';
 import { Type } from "@google/genai";
 const SchemaType = Type;
+
+// -----------------------------------------------------------------------------
+// Flat comparison schema (direct-LLM table output)
+// -----------------------------------------------------------------------------
+
+export const FlatComparisonMetadataSchema = z.object({
+  generatedAt: z.string().datetime(),
+  model: z.string().min(1),
+  pdfCount: z.number().int().min(1),
+  processingTimeMs: z.number().int().min(0),
+  confidence: z.number().min(0).max(1),
+  needsHumanReview: z.boolean(),
+  fromCache: z.boolean().optional(),
+});
+
+export const FlatComparisonCellSchema = z.object({
+  insurer: z.string().min(1),
+  value: z.string().nullable(),
+  rawText: z.string().optional(),
+  notFound: z.boolean().optional(),
+});
+
+export const FlatComparisonRowSchema = z.object({
+  label: z.string().min(1),
+  cells: z.array(FlatComparisonCellSchema),
+});
+
+export const FlatComparisonSchema = z.object({
+  metadata: FlatComparisonMetadataSchema,
+  insurers: z.array(z.string().min(1)).min(1),
+  rows: z.array(FlatComparisonRowSchema).length(4),
+  extraRows: z.array(FlatComparisonRowSchema).default([]),
+  warnings: z.array(z.string()).default([]),
+}).refine(
+  (data) =>
+    data.rows.every(
+      (row) =>
+        row.cells.length === data.insurers.length &&
+        row.cells.every((cell) => data.insurers.includes(cell.insurer))
+    ),
+  { message: 'Each row must contain one cell per insurer' }
+);
+
+export type FlatComparisonResult = z.infer<typeof FlatComparisonSchema>;
+export type FlatComparisonRow = z.infer<typeof FlatComparisonRowSchema>;
+export type FlatComparisonCell = z.infer<typeof FlatComparisonCellSchema>;
+
+// -----------------------------------------------------------------------------
+// Legacy Gemini structured-output schema (kept for rollback)
+// -----------------------------------------------------------------------------
 
 export const UnifiedComparisonSchema = {
   description: "Structured comparison result for insurance quotes",
