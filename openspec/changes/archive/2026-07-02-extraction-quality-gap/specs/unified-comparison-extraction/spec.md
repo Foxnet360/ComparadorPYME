@@ -1,9 +1,6 @@
-# Spec: Unified Comparison Extraction
+# Delta for unified-comparison-extraction
 
-## Capability
-Motor multimodal que procesa múltiples cotizaciones de seguros simultáneamente en una sola llamada LLM, generando un JSON comparativo estructurado que replica la matriz de comparación del Excel técnico.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Single-call multimodal comparison
 
@@ -25,17 +22,6 @@ The system SHALL process N quote PDFs in a single Gemini API call and request a 
 - WHEN the flat table is parsed
 - THEN the system SHALL preserve each insurer's raw wording in its cell
 - AND it SHALL NOT force values into the 14-category ontology
-
-#### Scenario: Deductible structured extraction
-- **WHEN** a deductible text reads "10% del valor de la pérdida, mínimo 1 SMMLV"
-- **THEN** the system SHALL extract it as a structured object: `{percentage: 10, minimum: 1, currency: "SMMLV", type: "percentage_with_minimum"}`
-- **AND** it SHALL flag it as ambiguous (`isAmbiguous: true`) if the text is unclear or incomplete
-- **AND** it SHALL use "Ver condiciones" as fallback when the deductible cannot be determined from the quote
-
-#### Scenario: Exclusive coverage detection
-- **WHEN** an insurer offers a coverage not present in other quotes
-- **THEN** the system SHALL mark it as exclusive in the comparison matrix
-- **AND** it SHALL note it in the analysis section as competitive advantage/disadvantage
 
 ### Requirement: JSON schema validation
 
@@ -82,16 +68,3 @@ The system SHALL parse LLM comparison output as a flat table regardless of wheth
 - WHEN the parser runs
 - THEN it SHALL flag the missing row as `not_found`
 - AND it SHALL keep unexpected rows in an `extraRows` array
-
-### Requirement: Result caching
-The system SHALL cache comparison results for performance.
-
-#### Scenario: Identical files
-- **WHEN** the same set of PDFs is uploaded again
-- **THEN** the system SHALL return the cached result
-- **AND** processing time SHALL be < 1 second
-
-## Dependencies
-- `multimodal-pdf-extraction` for PDF upload
-- `gemini-model-configuration` for LLM settings
-- `coverage-post-normalization` for canonical mapping

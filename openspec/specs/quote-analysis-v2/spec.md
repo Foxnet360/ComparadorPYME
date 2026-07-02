@@ -11,44 +11,34 @@ Análisis de cotizaciones usando extracción multimodal de PDFs con Gemini 2.5 P
 ## MODIFIED Requirements
 
 ### Requirement: Text-based quote analysis
-The system SHALL analyze insurance quotes using **multimodal PDF extraction** followed by post-normalization, instead of text-based extraction with deterministic parsing.
 
-#### Scenario: Single quote analysis
-- **WHEN** a user uploads a quote PDF
-- **THEN** the system SHALL:
-  1. Detect format family (format-family-detection)
-  2. Upload PDF to Gemini File API (multimodal-pdf-extraction)
-  3. Extract structured data with specialized prompt (multimodal-pdf-extraction)
-  4. Normalize coverages to canonical categories (coverage-post-normalization)
-  5. Return structured quote data with 14 canonical coverages
-- **AND** processing time SHALL be < 5 minutes per quote
+The system SHALL analyze insurance quotes using multimodal PDF extraction followed by post-normalization when invoked as the fallback path by the comparison engine adapter.
 
-#### Scenario: Multiple quote comparison
-- **WHEN** a user uploads 3-5 quote PDFs
-- **THEN** the system SHALL process each quote **sequentially** (not in parallel)
-- **AND** results SHALL be combined into a comparative analysis
-- **AND** total processing time SHALL be < 5 minutes for all quotes
-- **AND** scoring SHALL be based on canonical coverages with per-coverage premiums
+(Previously: this was the default analysis path for all quote requests.)
 
-#### Scenario: Quote with clauses cross-reference
-- **WHEN** a quote is analyzed and clauses exist for that insurer
-- **THEN** the system SHALL retrieve relevant clause sections via RAG **asynchronously**
-- **AND** cross-reference deductibles and exclusions
-- **AND** include discrepancies in the analysis
-- **AND** RAG SHALL NOT block the main extraction pipeline
+#### Scenario: Single quote fallback
 
-#### Scenario: Multiple quotes with unified engine
-- **WHEN** a user uploads 3-5 quote PDFs and `USE_UNIFIED_ENGINE` is enabled
-- **THEN** the system SHALL route to the unified comparison engine
-- **AND** it SHALL process all quotes in a single Gemini call
-- **AND** it SHALL return a `UnifiedComparisonResult` instead of individual `QuoteAnalysis` objects
-- **AND** the adapter SHALL transform the result to `MatrixRow[]` for compatibility
+- GIVEN the unified engine failed for a request with one quote
+- WHEN the adapter invokes the per-quote pipeline
+- THEN the system SHALL process the quote sequentially
+- AND it SHALL normalize coverages to canonical categories
+- AND it SHALL return structured quote data with 14 canonical coverages
 
-#### Scenario: Unified engine fallback
-- **WHEN** the unified engine fails during processing
-- **THEN** the adapter SHALL automatically fallback to individual extraction
-- **AND** it SHALL process each quote sequentially as before
-- **AND** it SHALL log the fallback event
+#### Scenario: Multiple quote fallback
+
+- GIVEN the unified engine failed for a request with 3-5 quotes
+- WHEN the adapter invokes the per-quote pipeline
+- THEN the system SHALL process each quote sequentially
+- AND it SHALL combine results into a comparative analysis
+- AND total processing time SHALL be < 15 minutes
+
+#### Scenario: Timeout with cancellation
+
+- GIVEN a quote extraction exceeds its dynamic timeout
+- WHEN the adapter is running the fallback path
+- THEN the Gemini request SHALL be cancelled via AbortController
+- AND the system SHALL mark the quote as failed
+- AND it SHALL continue processing remaining quotes
 
 ### Requirement: No forced JSON output
 The system SHALL NOT force Gemini to output JSON for quote analysis **when using multimodal extraction**.
@@ -99,19 +89,25 @@ The system SHALL use specialized prompts based on detected format family.
 - **AND** the prompt SHALL ask to list all coverages included in each section
 
 ### Requirement: Unified engine integration
-The system SHALL support the unified comparison engine as an alternative processing path.
 
-#### Scenario: Feature flag routing
-- **WHEN** the comparison endpoint receives a request
-- **THEN** it SHALL check the `USE_UNIFIED_ENGINE` feature flag
-- **AND** if enabled, route to `unifiedComparisonEngine.compare()`
-- **AND** if disabled, use the existing `quoteAnalysisService.analyze()`
+The system SHALL expose the per-quote pipeline as a fallback service for the comparison engine adapter and SHALL NOT check `USE_UNIFIED_ENGINE` internally.
 
-#### Scenario: Result format compatibility
-- **WHEN** using the unified engine
-- **THEN** the final output SHALL be compatible with the existing comparison view
-- **AND** it SHALL produce the same `MatrixRow[]` structure
-- **AND** the Excel export SHALL generate identical format
+(Previously: the pipeline checked the feature flag and routed to the unified engine itself.)
+
+#### Scenario: Adapter-driven fallback
+
+- GIVEN the adapter decides to fallback from the unified engine
+- WHEN it calls the per-quote pipeline
+- THEN the pipeline SHALL process the quotes
+- AND it SHALL return individual `QuoteAnalysis` objects
+- AND the adapter SHALL transform them to `MatrixRow[]`
+
+#### Scenario: No internal flag check
+
+- GIVEN a request reaches the per-quote pipeline
+- WHEN it starts processing
+- THEN it SHALL NOT read `USE_UNIFIED_ENGINE`
+- AND it SHALL NOT route to the unified engine
 
 ## Dependencies
 - `multimodal-pdf-extraction` for PDF extraction

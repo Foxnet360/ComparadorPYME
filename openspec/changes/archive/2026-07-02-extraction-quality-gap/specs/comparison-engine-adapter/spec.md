@@ -1,9 +1,6 @@
-# Spec: Comparison Engine Adapter
+# Delta for comparison-engine-adapter
 
-## Capability
-Adaptador que permite la coexistencia segura del motor de comparación unificado con el sistema legacy mediante feature flags, fallback automático y compatibilidad total con la interfaz MatrixRow[] existente.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Feature flag control
 
@@ -54,22 +51,3 @@ The system SHALL automatically fallback to the legacy per-quote engine when the 
 - AND it SHALL log the failure reason
 - AND it SHALL route to the legacy engine
 - AND it SHALL mark the result as fallback in metrics
-
-### Requirement: MatrixRow compatibility
-The system SHALL ensure the unified engine output matches the legacy output format.
-
-#### Scenario: Unified result transformation
-- **WHEN** the unified engine returns a `UnifiedComparisonResult`
-- **THEN** the adapter SHALL transform it to `MatrixRow[]`
-- **AND** the structure SHALL match the legacy format exactly
-- **AND** the UI SHALL render it identically
-
-#### Scenario: Excel export compatibility
-- **WHEN** the comparison result is exported to Excel
-- **THEN** the unified engine result SHALL generate the same Excel format
-- **AND** all columns SHALL match the legacy output
-- **AND** formatting SHALL be identical
-
-## Dependencies
-- `unified-comparison-extraction` for unified engine processing
-- `quote-analysis-v2` for legacy fallback

@@ -43,31 +43,31 @@ Chain strategy: stacked-to-main
 
 ## Phase 3: Unified Engine Wiring (TDD)
 
-- [ ] 3.1 RED: Add tests for `unifiedComparisonEngine.compare` retrying ≤2 times on parse failure and throwing structured `UnifiedComparisonError`.
-- [ ] 3.2 GREEN: Wire new prompt builder and flat parser into `server/src/services/unifiedComparison/unifiedComparisonEngine.ts`; implement correction prompt retry.
-- [ ] 3.3 REFACTOR: Return `FlatComparisonResult` with metadata and warnings; expose failure reason for the adapter.
+- [x] 3.1 RED: Add tests for `unifiedComparisonEngine.compare` retrying ≤2 times on parse failure and throwing structured `UnifiedComparisonError`.
+- [x] 3.2 GREEN: Wire new prompt builder and flat parser into `server/src/services/unifiedComparison/unifiedComparisonEngine.ts`; implement correction prompt retry.
+- [x] 3.3 REFACTOR: Return `FlatComparisonResult` with metadata and warnings; expose failure reason for the adapter.
 
 ## Phase 4: Fallback Batch Service (TDD)
 
-- [ ] 4.1 RED: Add tests for `processQuotesBatch` handling sequential/concurrent processing, timeouts, and error placeholders.
-- [ ] 4.2 GREEN: Extract batch logic from `analysisController` into `server/src/services/quoteProcessingService.ts` as exported `processQuotesBatch(pdfPaths, options)`.
-- [ ] 4.3 REFACTOR: Remove any internal `USE_UNIFIED_ENGINE` checks from the per-quote pipeline.
+- [x] 4.1 RED: Add tests for `processQuotesBatch` handling sequential/concurrent processing, timeouts, and error placeholders.
+- [x] 4.2 GREEN: Extract batch logic from `analysisController` into `server/src/services/quoteProcessingService.ts` as exported `processQuotesBatch(pdfPaths, options)`.
+- [x] 4.3 REFACTOR: Remove any internal `USE_UNIFIED_ENGINE` checks from the per-quote pipeline.
 
 ## Phase 5: Adapter Routing & Integration (TDD)
 
-- [ ] 5.1 RED: Add adapter tests for unified-first routing, explicit disable, fallback logging with reason, and `ComparisonAdapterResult` envelope.
-- [ ] 5.2 GREEN: Implement `comparisonEngineAdapter.generateComparison` to route by flag, call unified engine, fallback to `processQuotesBatch`, and transform to `MatrixRow[]`.
-- [ ] 5.3 GREEN: Refactor `server/src/controllers/analysisController.ts` to use the adapter as the single router; remove inline flag checks and duplicate fallback.
-- [ ] 5.4 REFACTOR: Update `server/src/services/unifiedComparison/__tests__/fallback.test.ts` mocks to assert adapter-driven fallback with reason.
+- [x] 5.1 RED: Add adapter tests for unified-first routing, explicit disable, fallback logging with reason, and `ComparisonAdapterResult` envelope.
+- [x] 5.2 GREEN: Implement `comparisonEngineAdapter.generateComparison` to route by flag, call unified engine, fallback to `processQuotesBatch`, and transform to `MatrixRow[]`.
+- [x] 5.3 GREEN: Refactor `server/src/controllers/analysisController.ts` to use the adapter as the single router; remove inline flag checks and duplicate fallback.
+- [x] 5.4 REFACTOR: Update `server/src/services/unifiedComparison/__tests__/fallback.test.ts` mocks to assert adapter-driven fallback with reason.
 
 ## Phase 6: Evaluation Harness (TDD)
 
-- [ ] 6.1 RED: Write `server/src/evaluation/__tests__/extractionQuality.test.ts` asserting `matchRate >= 0.90` and `fallbackRate <= 0.10`, with skip guard when fixtures/API are missing.
-- [ ] 6.2 GREEN: Create `server/src/evaluation/extractionQualityEval.ts` harness comparing direct-chat baseline to tool path via adapter.
-- [ ] 6.3 GREEN: Add fixtures under `server/src/evaluation/fixtures/extraction-quality/` with 3-quote metadata and persisted baseline snapshot.
+- [x] 6.1 RED: Write `server/src/evaluation/__tests__/extractionQuality.test.ts` asserting `matchRate >= 0.90` and `fallbackRate <= 0.10`, with skip guard when fixtures/API are missing.
+- [x] 6.2 GREEN: Create `server/src/evaluation/extractionQualityEval.ts` harness comparing direct-chat baseline to tool path via adapter.
+- [x] 6.3 GREEN: Add fixtures under `server/src/evaluation/fixtures/extraction-quality/` with 3-quote metadata and persisted baseline snapshot.
 
 ## Phase 7: Regression & Cleanup
 
-- [ ] 7.1 Run `npm run typecheck:backend` and fix TypeScript errors across modified files.
-- [ ] 7.2 Run `npm test` and ensure the existing Vitest suite plus new tests pass.
-- [ ] 7.3 Document `USE_UNIFIED_ENGINE` usage and rollback procedure in relevant config/README comments.
+- [x] 7.1 Run `npm run typecheck:backend` and fix TypeScript errors across modified files.
+- [x] 7.2 Run `npm test` and ensure the existing Vitest suite plus new tests pass.
+- [x] 7.3 Document `USE_UNIFIED_ENGINE` usage and rollback procedure in relevant config/README comments.
