@@ -63,8 +63,8 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   // Auto-extraction pipeline (disabled by default for safe rollout)
   autoExtractStructuredClauses: false,
 
-  // Unified Comparison Engine (disabled by default for safe rollout)
-  useUnifiedComparisonEngine: false,
+  // Unified Comparison Engine (enabled by default; set USE_UNIFIED_ENGINE=false to disable)
+  useUnifiedComparisonEngine: true,
 
   // Backward compatibility flags (for gradual migration)
   useLegacyCoverageMatcher: false,
@@ -112,6 +112,7 @@ const ENV_FLAG_MAP: Record<string, keyof FeatureFlags> = {
   FEATURE_HYBRID_SEARCH_V2: 'hybridSearchV2',
   ENABLE_MULTIMODAL_EXTRACTION: 'enableMultimodalExtraction',
   FEATURE_USE_UNIFIED_COMPARISON_ENGINE: 'useUnifiedComparisonEngine',
+  USE_UNIFIED_ENGINE: 'useUnifiedComparisonEngine',
   FEATURE_AUTO_EXTRACT_STRUCTURED_CLAUSES: 'autoExtractStructuredClauses',
   USE_TEMPLATE_GRAPH_PIPELINE: 'useTemplateGraphPipeline',
   TEMPLATE_BBVA_V1: 'templateBbvaV1',
@@ -128,9 +129,6 @@ export class FeatureFlagManager {
     
     // Override from environment variables if present
     this.loadFromEnvironment();
-    
-    // Force useUnifiedComparisonEngine to false to prevent regressions in production
-    this.flags.useUnifiedComparisonEngine = false;
     
     // Log feature flags on startup
     this.logFeatureFlags();

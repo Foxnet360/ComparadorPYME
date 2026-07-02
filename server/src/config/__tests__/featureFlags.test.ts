@@ -14,6 +14,8 @@ describe('FeatureFlagManager', () => {
       'GRAPH_LEARNING_ENABLED',
       'FEATURE_FLAGS',
       'FEATURE_STRUCTURED_CLAUSE_EXTRACTION',
+      'USE_UNIFIED_ENGINE',
+      'FEATURE_USE_UNIFIED_COMPARISON_ENGINE',
     ];
     featureVars.forEach((v) => delete process.env[v]);
   });
@@ -85,5 +87,25 @@ describe('FeatureFlagManager', () => {
     const manager = new FeatureFlagManager(DEFAULT_FEATURE_FLAGS);
 
     expect(manager.isEnabled('structuredClauseExtraction')).toBe(false);
+  });
+
+  it('defaults useUnifiedComparisonEngine to true', () => {
+    const manager = new FeatureFlagManager(DEFAULT_FEATURE_FLAGS);
+
+    expect(manager.isEnabled('useUnifiedComparisonEngine')).toBe(true);
+  });
+
+  it('reads USE_UNIFIED_ENGINE env alias', () => {
+    process.env.USE_UNIFIED_ENGINE = 'false';
+    const manager = new FeatureFlagManager(DEFAULT_FEATURE_FLAGS);
+
+    expect(manager.isEnabled('useUnifiedComparisonEngine')).toBe(false);
+  });
+
+  it('does not force useUnifiedComparisonEngine to false when env enables it', () => {
+    process.env.USE_UNIFIED_ENGINE = 'true';
+    const manager = new FeatureFlagManager(DEFAULT_FEATURE_FLAGS);
+
+    expect(manager.isEnabled('useUnifiedComparisonEngine')).toBe(true);
   });
 });
