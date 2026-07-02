@@ -32,8 +32,8 @@ Chain strategy: pending
 - [x] 1.2 GREEN: Update `server/src/config/featureFlags.ts` to remove the hardcoded `false` override, add `USE_UNIFIED_ENGINE` alias, and default to `true`.
 - [x] 1.3 RED: Write test asserting `FlatComparisonSchema` accepts rows × insurers shape and rejects nested canonical schema.
 - [x] 1.4 GREEN: Add `FlatComparisonSchema` to `server/src/services/unifiedComparison/comparisonSchema.ts`; keep legacy schema export.
-- [ ] 1.5 RED: Write test asserting `comparisonPromptBuilder` output contains the four row labels and JSON schema snippet.
-- [ ] 1.6 GREEN: Rewrite `server/src/services/unifiedComparison/comparisonPromptBuilder.ts` with the flat-table prompt.
+- [x] 1.5 RED: Write test asserting `comparisonPromptBuilder` output contains the four row labels and JSON schema snippet.
+- [x] 1.6 GREEN: Rewrite `server/src/services/unifiedComparison/comparisonPromptBuilder.ts` with the flat-table prompt.
 
 ## Phase 2: Flat Table Parser (TDD)
 

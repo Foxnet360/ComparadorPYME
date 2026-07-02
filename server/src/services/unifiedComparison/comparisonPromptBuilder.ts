@@ -11,105 +11,74 @@ export interface PromptContext {
   hasClauses?: boolean;
 }
 
+const FLAT_ROW_LABELS = [
+  'Bienes Asegurados',
+  'Deducibles',
+  'Prima con IVA',
+  'Forma de Pago',
+] as const;
+
 export class ComparisonPromptBuilder {
-  
+
   /**
-   * Build the main comparison prompt
+   * Build the main flat-table comparison prompt.
+   *
+   * Asks the model for one column per insurer and exactly four rows. The
+   * response can be JSON, Markdown, CSV or key-value; a parser normalizes it
+   * afterwards.
    */
   buildComparisonPrompt(context: PromptContext): string {
-    return `Eres un analista experto en seguros comerciales con amplia experiencia en la comparación de cotizaciones de múltiples aseguradoras en Colombia.
+    const rowList = FLAT_ROW_LABELS.map((label, idx) => `${idx + 1}. ${label}`).join('\n');
 
-CONTEXTO:
-- Estás analizando ${context.insurerCount} cotizaciones de seguros PYME para el mismo tomador/riesgo
-- Cada cotización corresponde al mismo riesgo pero con términos y condiciones diferentes según la aseguradora
-- Las cotizaciones pueden usar diferentes nombres para coberturas equivalentes
+    return `Eres un analista de seguros PYME en Colombia. He subido ${context.insurerCount} cotizaciones del mismo riesgo.
 
-TAREA:
-Analiza TODAS las cotizaciones proporcionadas y genera una comparación estructurada en formato JSON.
+Genera una tabla comparativa con UNA columna por aseguradora y EXACTAMENTE estas filas:
+${rowList}
 
-INSTRUCCIONES DE EXTRACCIÓN:
+Reglas:
+- Copia los valores textualmente como aparecen en cada cotización.
+- No agrupes, no normalices a coberturas canónicas y no inventes datos.
+- Si una fila no aparece en una cotización, usa "No informado".
+- Responde únicamente con JSON válido que cumpla este schema:
+{
+  "insurers": ["Aseguradora A", ...],
+  "rows": [
+    {
+      "label": "Bienes Asegurados",
+      "cells": [
+        {"insurer": "Aseguradora A", "value": "..."},
+        ...
+      ]
+    },
+    ...
+  ]
+}
 
-1. INFORMACIÓN GENERAL (de cada cotización):
-   - Nombre de la aseguradora
-   - Nombre del tomador/asegurado
-   - Actividad económica / CIIU
-   - Dirección del riesgo
-   - Ciudad
-   - Fecha de cotización
-   - Vigencia de la cotización
-   - Producto/Ramo
-   - Valor total de los bienes asegurables
-
-2. BIENES ASEGURADOS:
-   - Edificio / Mejoras locativas
-   - Contenidos / Muebles y enseres
-   - Mercancías / Existencias
-   - Equipo eléctrico y electrónico fijo
-   - Equipo móvil y portátil
-   - Maquinaria y equipo
-   - Dinero en efectivo / Valores
-
-3. COBERTURAS PRINCIPALES (comparar TODAS las que apliquen):
-   - Amparo Básico / Todo Riesgo Daño Material
-   - Terremoto / Temblor / Erupción volcánica
-   - AMIT / HMACC (Huelga, Motín, Asonada, Conmoción Civil)
-   - Daño Interno / Equipo Eléctrico y Electrónico
-   - Equipos Móviles y Portátiles
-   - Hurto Calificado / Sustracción con Violencia
-   - Hurto Simple
-   - Lucro Cesante / Pérdidas Consecuenciales
-   - Infidelidad de Empleados
-   - Responsabilidad Civil Extracontractual (RCE)
-   - Accidentes Personales
-   - Rotura de Maquinaria
-   - Transporte de Mercancías
-   - Rotura Accidental de Vidrios
-   - Asistencias
-
-4. DEDUCIBLES:
-   - Extraer el deducible para CADA cobertura y CADA aseguradora
-   - Estructura: porcentaje, mínimo, moneda
-   - Si no está claro, usar "Ver condiciones"
-   - Si no aplica, indicar "No aplica"
-
-5. PRIMAS Y COSTOS:
-   - Prima Neta
-   - Gastos de expedición
-   - IVA (19% en Colombia)
-   - Prima Total / Total a Pagar
-
-REGLAS CRÍTICAS:
-1. Identifica coberturas EQUIVALENTES aunque tengan nombres diferentes
-2. Marca como "N.C." (No Contratado) las coberturas que una aseguradora no ofrezca
-3. Si una cobertura está "incluida" dentro de otra, indícalo claramente
-4. NO inventes datos. Si no encuentras algo, usa null o "No informado"
-5. Extrae los deducibles EXACTAMENTE como aparecen en el documento
-6. Calcula el % sobre valor asegurado cuando sea posible
-7. Identifica coberturas EXCLUSIVAS (solo una aseguradora las ofrece)
-8. Genera alertas para diferencias significativas entre aseguradoras
-
-${context.hasClauses ? '\nNOTA: También se proporcionan clausulados para validación. Usa la información de los clausulados para confirmar deducibles y coberturas ambiguas.' : ''}
-
-OUTPUT: Responde ÚNICAMENTE con el JSON estructurado siguiendo el schema proporcionado. No incluyas explicaciones ni texto adicional.`;
+${context.hasClauses ? 'También se proporcionan clausulados para validación; úsalos solo si una fila es ambigua, pero conserva el texto original de la cotización.' : ''}`;
   }
 
   /**
    * Build correction prompt for retry on malformed output
    */
   buildCorrectionPrompt(originalResponse: string, errorMessage: string): string {
-    return `Tu respuesta anterior tenía un error de formato. Por favor corrige el JSON.
+    return `Tu respuesta anterior no cumplió el schema de tabla plana requerido.
 
 ERROR: ${errorMessage}
 
 RESPUESTA ANTERIOR (parcial):
 ${originalResponse.substring(0, 1000)}
 
-Por favor genera el JSON completo y válido siguiendo exactamente el schema requerido.
+Por favor genera el JSON completo y válido con EXACTAMENTE estas filas:
+1. Bienes Asegurados
+2. Deducibles
+3. Prima con IVA
+4. Forma de Pago
+
 Asegúrate de que:
-1. Todos los campos requeridos estén presentes
-2. Los arrays tengan la estructura correcta
-3. Los valores null estén explícitamente indicados
-4. No haya campos adicionales fuera del schema
+1. El JSON tenga "insurers" como array de strings
+2. El JSON tenga "rows" como array de objetos con "label" y "cells"
+3. Cada celda tenga "insurer" y "value"
+4. Si no encuentras una fila para una aseguradora, usa "No informado" como valor
 
 Responde ÚNICAMENTE con el JSON corregido.`;
   }
