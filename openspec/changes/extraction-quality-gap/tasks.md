@@ -37,9 +37,9 @@ Chain strategy: stacked-to-main
 
 ## Phase 2: Flat Table Parser (TDD)
 
-- [ ] 2.1 RED: Add `flatTableParser.test.ts` covering Markdown, CSV, JSON, key-value, missing rows, and extra rows.
-- [ ] 2.2 GREEN: Create `server/src/services/unifiedComparison/flatTableParser.ts` with format detection, insurer/row normalization, and `extraRows`.
-- [ ] 2.3 REFACTOR: Centralize accent-tolerant row-label mapping and ensure missing rows emit `notFound: true`.
+- [x] 2.1 RED: Add `flatTableParser.test.ts` covering Markdown, CSV, JSON, key-value, missing rows, and extra rows.
+- [x] 2.2 GREEN: Create `server/src/services/unifiedComparison/flatTableParser.ts` with format detection, insurer/row normalization, and `extraRows`.
+- [x] 2.3 REFACTOR: Centralize accent-tolerant row-label mapping and ensure missing rows emit `notFound: true`.
 
 ## Phase 3: Unified Engine Wiring (TDD)
 
