@@ -63,7 +63,14 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   // Auto-extraction pipeline (disabled by default for safe rollout)
   autoExtractStructuredClauses: false,
 
-  // Unified Comparison Engine (enabled by default; set USE_UNIFIED_ENGINE=false to disable)
+  // Unified Comparison Engine (enabled by default).
+  // - USE_UNIFIED_ENGINE=true  (default) routes /api/analyze through the unified
+  //   single-call engine first and falls back to the legacy per-quote pipeline
+  //   only when the unified engine fails.
+  // - USE_UNIFIED_ENGINE=false forces the legacy per-quote pipeline for every
+  //   request.
+  // Rollback: set USE_UNIFIED_ENGINE=false in the environment (or revert the
+  // feature-flag commit) and redeploy. No database migration is required.
   useUnifiedComparisonEngine: true,
 
   // Backward compatibility flags (for gradual migration)
@@ -111,7 +118,10 @@ const ENV_FLAG_MAP: Record<string, keyof FeatureFlags> = {
   FEATURE_QUERY_EXPANSION: 'queryExpansion',
   FEATURE_HYBRID_SEARCH_V2: 'hybridSearchV2',
   ENABLE_MULTIMODAL_EXTRACTION: 'enableMultimodalExtraction',
+  // Legacy alias kept for backward compatibility; prefer USE_UNIFIED_ENGINE.
   FEATURE_USE_UNIFIED_COMPARISON_ENGINE: 'useUnifiedComparisonEngine',
+  // Canonical env name for the unified comparison engine toggle.
+  // See DEFAULT_FEATURE_FLAGS.useUnifiedComparisonEngine for usage/rollback docs.
   USE_UNIFIED_ENGINE: 'useUnifiedComparisonEngine',
   FEATURE_AUTO_EXTRACT_STRUCTURED_CLAUSES: 'autoExtractStructuredClauses',
   USE_TEMPLATE_GRAPH_PIPELINE: 'useTemplateGraphPipeline',
