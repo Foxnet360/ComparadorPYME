@@ -27,6 +27,15 @@ if (!process.env.GEMINI_API_KEY && process.env.VITE_GEMINI_API_KEY) {
     process.env.GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY;
 }
 
+// Diagnostic logging for API key source (safe prefix only)
+const activeKey = process.env.GEMINI_API_KEY || '';
+const viteKey = process.env.VITE_GEMINI_API_KEY || '';
+console.log(`🔑 [Env Diagnostic] GEMINI_API_KEY present: ${activeKey ? 'yes' : 'no'}, prefix: ${activeKey.slice(0, 8)}..., length: ${activeKey.length}`);
+console.log(`🔑 [Env Diagnostic] VITE_GEMINI_API_KEY present: ${viteKey ? 'yes' : 'no'}, prefix: ${viteKey.slice(0, 8)}..., length: ${viteKey.length}`);
+if (activeKey && viteKey && activeKey !== viteKey) {
+    console.warn('⚠️ [Env Diagnostic] GEMINI_API_KEY and VITE_GEMINI_API_KEY differ; GEMINI_API_KEY will be used');
+}
+
 // Import controllers after dotenv is loaded (they depend on env vars)
 import { analysisController } from './controllers/analysisController';
 import { compareExtraction } from './controllers/compareController';
