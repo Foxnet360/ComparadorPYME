@@ -449,4 +449,106 @@ describe('flatTableParser.parseV2', () => {
     expect(result.extraRows[0].label).toBe('Comentarios adicionales');
     expect(result.extraRows[0].cells[0].isAmbiguous).toBeUndefined();
   });
+
+  it('extracts structured deductible from percentage + minimum SMMLV', () => {
+    const input = JSON.stringify({
+      insurers: ['MAPFRE'],
+      rows: [
+        {
+          label: 'Deducible Edificio',
+          cells: [{ insurer: 'MAPFRE', value: '10% del valor de la pérdida, mínimo 1 SMMLV' }],
+        },
+      ],
+    });
+
+    const result = flatTableParser.parseV2(input, baseOptions);
+
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0].section).toBe('DEDUCIBLES');
+    expect(result.rows[0].cells[0].deductible).toEqual({
+      percentage: 10,
+      minimum: 1,
+      currency: 'SMMLV',
+      type: 'percentage_with_minimum',
+    });
+    expect(result.rows[0].cells[0].value).toBe('10% del valor de la pérdida, mínimo 1 SMMLV');
+    expect(result.rows[0].cells[0].isAmbiguous).toBeUndefined();
+  });
+
+  it('extracts percentage-only deductible', () => {
+    const input = JSON.stringify({
+      insurers: ['CHUBB'],
+      rows: [
+        {
+          label: 'Deducible Contenidos',
+          cells: [{ insurer: 'CHUBB', value: '5% sobre valor asegurado' }],
+        },
+      ],
+    });
+
+    const result = flatTableParser.parseV2(input, baseOptions);
+
+    expect(result.rows[0].cells[0].deductible).toEqual({
+      percentage: 5,
+      type: 'percentage',
+    });
+    expect(result.rows[0].cells[0].isAmbiguous).toBeUndefined();
+  });
+
+  it('extracts minimum-only deductible in SMMLV', () => {
+    const input = JSON.stringify({
+      insurers: ['BBVA'],
+      rows: [
+        {
+          label: 'Deducible Mercancías',
+          cells: [{ insurer: 'BBVA', value: 'mínimo 2 SMMLV' }],
+        },
+      ],
+    });
+
+    const result = flatTableParser.parseV2(input, baseOptions);
+
+    expect(result.rows[0].cells[0].deductible).toEqual({
+      minimum: 2,
+      currency: 'SMMLV',
+      type: 'minimum',
+    });
+    expect(result.rows[0].cells[0].isAmbiguous).toBeUndefined();
+  });
+
+  it('uses "Ver condiciones" fallback and flags ambiguous when deductible is unclear', () => {
+    const input = JSON.stringify({
+      insurers: ['AXA'],
+      rows: [
+        {
+          label: 'Deducible Equipo Eléctrico',
+          cells: [{ insurer: 'AXA', value: 'según clausulado' }],
+        },
+      ],
+    });
+
+    const result = flatTableParser.parseV2(input, baseOptions);
+
+    expect(result.rows[0].cells[0].value).toBe('Ver condiciones');
+    expect(result.rows[0].cells[0].deductible).toEqual({ type: 'see_conditions' });
+    expect(result.rows[0].cells[0].isAmbiguous).toBe(true);
+  });
+
+  it('treats No aplica as a non-ambiguous deductible', () => {
+    const input = JSON.stringify({
+      insurers: ['MAPFRE'],
+      rows: [
+        {
+          label: 'Deducible Equipo Eléctrico',
+          cells: [{ insurer: 'MAPFRE', value: 'No aplica' }],
+        },
+      ],
+    });
+
+    const result = flatTableParser.parseV2(input, baseOptions);
+
+    expect(result.rows[0].cells[0].value).toBe('No aplica');
+    expect(result.rows[0].cells[0].deductible).toEqual({ type: 'not_applicable' });
+    expect(result.rows[0].cells[0].isAmbiguous).toBeUndefined();
+  });
 });
