@@ -18,6 +18,7 @@ vi.mock('../../quoteProcessingService', () => ({
 
 function makeFlatResult(overrides: Partial<FlatComparisonResult> = {}): FlatComparisonResult {
   return {
+    schemaVersion: 1,
     metadata: {
       generatedAt: '2026-07-01T00:00:00Z',
       model: 'gemini-3.5-flash',

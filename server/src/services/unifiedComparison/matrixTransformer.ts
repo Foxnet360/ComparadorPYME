@@ -5,12 +5,57 @@
  */
 
 import { MatrixRow } from '../../types';
-import { FlatComparisonResult, FlatComparisonResultV2 } from './comparisonSchema';
+import {
+  FlatComparisonResult,
+  FlatComparisonResultV2,
+  StructuredDeductible,
+} from './comparisonSchema';
 import { ParsedQuote } from '../quoteParser';
 
 const HEADER_SECTION_ID = 0;
 const COVERAGE_SECTION_ID = 1;
-const FINANCIAL_SECTION_ID = 999;
+export const FINANCIAL_SECTION_ID = 999;
+
+const FINANCIAL_SECTION_LABEL = 'PRIMAS Y COSTOS';
+
+function isFinancialRowLabel(label: string): boolean {
+  const normalized = label
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  return [
+    'prima',
+    'prima con iva',
+    'prima neta',
+    'total a pagar',
+    'total',
+    'pago',
+    'forma de pago',
+    'gastos',
+    'gastos de expedicion',
+    'subtotal',
+    'iva',
+    'costo',
+    'neto',
+    'sobre valor asegurado',
+    '% sobre valor asegurado',
+  ].some((keyword) => normalized.includes(keyword));
+}
+
+function formatDeductible(deductible: StructuredDeductible | undefined): string | undefined {
+  if (!deductible) return undefined;
+  if (deductible.type === 'not_applicable') return 'No aplica';
+  if (deductible.type === 'see_conditions') return 'Ver condiciones';
+  const parts: string[] = [];
+  if (deductible.percentage !== undefined) parts.push(`${deductible.percentage}%`);
+  if (deductible.minimum !== undefined) {
+    const minText = deductible.currency
+      ? `${deductible.currency}${deductible.minimum}`
+      : `${deductible.minimum}`;
+    parts.push(`Mínimo ${minText}`);
+  }
+  return parts.length > 0 ? parts.join(' - ') : undefined;
+}
 
 function emptyCells(count: number) {
   return Array.from({ length: count }, () => ({
@@ -153,6 +198,7 @@ const SECTION_ORDER = [
   'COBERTURAS',
   'DEDUCIBLES',
   'CONDICIONES',
+  FINANCIAL_SECTION_LABEL,
 ];
 
 function sectionSortIndex(section: string | undefined): number {
@@ -161,13 +207,19 @@ function sectionSortIndex(section: string | undefined): number {
   return index === -1 ? Number.MAX_SAFE_INTEGER : index;
 }
 
-function cellFromFlatValueV2(value: string | null, notFound?: boolean, confidence?: number) {
+function cellFromFlatValueV2(
+  value: string | null,
+  notFound?: boolean,
+  confidence?: number,
+  notes?: string
+) {
   const isMissing = value === null || value === undefined || notFound === true;
   return {
     value: isMissing ? 'No informado' : value,
     isExcluded: isMissing,
     isWinner: false,
-    confidence: isMissing ? 0 : confidence,
+    confidence: isMissing ? 0 : (confidence ?? 0),
+    notes,
   };
 }
 
@@ -187,10 +239,13 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
     cells: emptyCells(numInsurers),
   });
 
-  // Group rows by section
+  // Group rows by section, pulling recognized financial rows into their own section
   const sectionGroups = new Map<
     string,
-    { label: string; cells: { value: string | null; notFound?: boolean; confidence?: number }[] }[]
+    {
+      label: string;
+      cells: { value: string | null; notFound?: boolean; confidence?: number; notes?: string }[];
+    }[]
   >();
   const extraRows: {
     label: string;
@@ -199,11 +254,14 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
       notFound?: boolean;
       confidence?: number;
       isAmbiguous?: boolean;
+      notes?: string;
     }[];
   }[] = [];
 
   for (const row of result.rows) {
-    const section = row.section || 'OTROS';
+    const section = isFinancialRowLabel(row.label)
+      ? FINANCIAL_SECTION_LABEL
+      : row.section || 'OTROS';
     if (!sectionGroups.has(section)) {
       sectionGroups.set(section, []);
     }
@@ -213,6 +271,7 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
         value: cell.value,
         notFound: cell.notFound,
         confidence: cell.confidence,
+        notes: cell.rawText ?? formatDeductible(cell.deductible),
       })),
     });
   }
@@ -225,6 +284,7 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
         notFound: cell.notFound,
         confidence: cell.confidence,
         isAmbiguous: cell.isAmbiguous,
+        notes: cell.rawText ?? formatDeductible(cell.deductible),
       })),
     });
   }
@@ -236,11 +296,12 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
 
   let sectionIndex = 0;
   for (const [section, rows] of sortedSections) {
+    const isFinancialSection = section === FINANCIAL_SECTION_LABEL;
     matrix.push({
       type: 'header',
       id: `section_${sectionIndex}`,
       label: section,
-      sectionId: COVERAGE_SECTION_ID,
+      sectionId: isFinancialSection ? FINANCIAL_SECTION_ID : COVERAGE_SECTION_ID,
       cells: emptyCells(numInsurers),
     });
 
@@ -249,9 +310,9 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
         type: 'data',
         id: `section_${sectionIndex}_row_${rowIndex}`,
         label: row.label,
-        sectionId: COVERAGE_SECTION_ID,
+        sectionId: section === FINANCIAL_SECTION_LABEL ? FINANCIAL_SECTION_ID : COVERAGE_SECTION_ID,
         cells: row.cells.map((cell) =>
-          cellFromFlatValueV2(cell.value, cell.notFound, cell.confidence)
+          cellFromFlatValueV2(cell.value, cell.notFound, cell.confidence, cell.notes)
         ),
       });
     });
@@ -276,7 +337,7 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
         label: row.label,
         sectionId: COVERAGE_SECTION_ID,
         cells: row.cells.map((cell) =>
-          cellFromFlatValueV2(cell.value, cell.notFound, cell.confidence)
+          cellFromFlatValueV2(cell.value, cell.notFound, cell.confidence, cell.notes)
         ),
       });
     });

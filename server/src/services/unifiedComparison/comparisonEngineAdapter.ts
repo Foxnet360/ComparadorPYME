@@ -31,7 +31,13 @@ export class ComparisonEngineAdapter {
    * per-quote batch service on failure. Returns a typed envelope with routing
    * metadata so callers can log engine type and fallback reasons consistently.
    */
-  async generateComparison(pdfPaths: string[], userId?: string): Promise<ComparisonAdapterResult> {
+  async generateComparison(
+    pdfPaths: string[],
+    options?: string | { userId?: string; granularComparisonSchema?: boolean }
+  ): Promise<ComparisonAdapterResult> {
+    const opts = typeof options === 'string' ? { userId: options } : options || {};
+    const userId = opts.userId;
+    const granularOverride = opts.granularComparisonSchema;
     const correlationId = `adapter-${Date.now()}-${randomUUID().slice(0, 8)}`;
     const flagEnabled = unifiedComparisonFlag.isEnabled(userId);
 
@@ -55,10 +61,15 @@ export class ComparisonEngineAdapter {
 
     try {
       console.log(`🚀 [Adapter] Using unified comparison engine [${correlationId}]`);
-      const result = await unifiedComparisonEngine.compare(pdfPaths);
+      const result =
+        granularOverride !== undefined
+          ? await unifiedComparisonEngine.compare(pdfPaths, {
+              granularComparisonSchema: granularOverride,
+            })
+          : await unifiedComparisonEngine.compare(pdfPaths);
       const schemaVersion = resolveComparisonSchemaVersion(
         result,
-        unifiedComparisonFlag.isGranularComparisonSchemaEnabled()
+        granularOverride ?? unifiedComparisonFlag.isGranularComparisonSchemaEnabled()
       );
       const matrix =
         schemaVersion === 2 ? flatResultToMatrixRowsV2(result) : flatResultToMatrixRows(result);

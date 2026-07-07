@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generatedAt": "2026-07-02T00:00:00.000Z",
+    "generatedAt": "2026-07-07T00:00:00.000Z",
     "model": "gemini-3.5-flash",
     "pdfCount": 3,
     "processingTimeMs": 12345,
@@ -9,37 +9,126 @@
     "fromCache": false
   },
   "insurers": ["Aseguradora Demo A", "Aseguradora Demo B", "Aseguradora Demo C"],
+  "schemaVersion": 2,
   "rows": [
     {
       "label": "Bienes Asegurados",
+      "section": "INFORMACIÓN GENERAL",
       "cells": [
-        { "insurer": "Aseguradora Demo A", "value": "Edificio y contenidos" },
-        { "insurer": "Aseguradora Demo B", "value": "Edificio y contenidos" },
-        { "insurer": "Aseguradora Demo C", "value": "Edificio, contenidos y equipos" }
-      ]
-    },
-    {
-      "label": "Deducibles",
-      "cells": [
-        { "insurer": "Aseguradora Demo A", "value": "10% sobre el siniestro" },
-        { "insurer": "Aseguradora Demo B", "value": "10% sobre el siniestro" },
-        { "insurer": "Aseguradora Demo C", "value": "15% sobre el siniestro" }
+        {
+          "insurer": "Aseguradora Demo A",
+          "value": "Edificio y contenidos",
+          "rawText": "Edificio y contenidos",
+          "confidence": 0.92
+        },
+        {
+          "insurer": "Aseguradora Demo B",
+          "value": "Edificio y contenidos",
+          "rawText": "Edificio y contenidos",
+          "confidence": 0.9
+        },
+        {
+          "insurer": "Aseguradora Demo C",
+          "value": "Edificio, contenidos y equipos",
+          "rawText": "Edificio, contenidos y equipos",
+          "confidence": 0.88
+        }
       ]
     },
     {
       "label": "Prima con IVA",
+      "section": "INFORMACIÓN GENERAL",
       "cells": [
-        { "insurer": "Aseguradora Demo A", "value": "$ 1.000.000" },
-        { "insurer": "Aseguradora Demo B", "value": "$ 1.200.000" },
-        { "insurer": "Aseguradora Demo C", "value": "$ 1.150.000" }
+        {
+          "insurer": "Aseguradora Demo A",
+          "value": "$ 1.000.000",
+          "rawText": "$ 1.000.000",
+          "confidence": 0.95
+        },
+        {
+          "insurer": "Aseguradora Demo B",
+          "value": "$ 1.200.000",
+          "rawText": "$ 1.200.000",
+          "confidence": 0.94
+        },
+        {
+          "insurer": "Aseguradora Demo C",
+          "value": "$ 1.150.000",
+          "rawText": "$ 1.150.000",
+          "confidence": 0.93
+        }
       ]
     },
     {
-      "label": "Forma de Pago",
+      "label": "Edificio",
+      "section": "BIENES ASEGURADOS",
       "cells": [
-        { "insurer": "Aseguradora Demo A", "value": "Anual" },
-        { "insurer": "Aseguradora Demo B", "value": "Anual" },
-        { "insurer": "Aseguradora Demo C", "value": "Mensual" }
+        {
+          "insurer": "Aseguradora Demo A",
+          "value": "$ 500.000.000",
+          "rawText": "$ 500.000.000",
+          "confidence": 0.91
+        },
+        {
+          "insurer": "Aseguradora Demo B",
+          "value": "$ 450.000.000",
+          "rawText": "$ 450.000.000",
+          "confidence": 0.9
+        },
+        {
+          "insurer": "Aseguradora Demo C",
+          "value": "$ 550.000.000",
+          "rawText": "$ 550.000.000",
+          "confidence": 0.89
+        }
+      ]
+    },
+    {
+      "label": "Contenidos",
+      "section": "BIENES ASEGURADOS",
+      "cells": [
+        {
+          "insurer": "Aseguradora Demo A",
+          "value": "$ 200.000.000",
+          "rawText": "$ 200.000.000",
+          "confidence": 0.91
+        },
+        {
+          "insurer": "Aseguradora Demo B",
+          "value": "$ 180.000.000",
+          "rawText": "$ 180.000.000",
+          "confidence": 0.9
+        },
+        {
+          "insurer": "Aseguradora Demo C",
+          "value": "$ 250.000.000",
+          "rawText": "$ 250.000.000",
+          "confidence": 0.89
+        }
+      ]
+    },
+    {
+      "label": "Deducibles",
+      "section": "DEDUCIBLES",
+      "cells": [
+        {
+          "insurer": "Aseguradora Demo A",
+          "value": "10% sobre el siniestro",
+          "rawText": "10% sobre el siniestro",
+          "confidence": 0.82
+        },
+        {
+          "insurer": "Aseguradora Demo B",
+          "value": "10% sobre el siniestro",
+          "rawText": "10% sobre el siniestro",
+          "confidence": 0.81
+        },
+        {
+          "insurer": "Aseguradora Demo C",
+          "value": "15% sobre el siniestro",
+          "rawText": "15% sobre el siniestro",
+          "confidence": 0.8
+        }
       ]
     }
   ],

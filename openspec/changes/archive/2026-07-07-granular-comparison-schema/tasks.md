@@ -1,5 +1,7 @@
 # Tasks: Granular Comparison Schema
 
+> **Status**: Archived — 2026-07-07. All 20/20 tasks complete.
+
 ## Review Workload Forecast
 
 | Field | Value |
@@ -52,7 +54,16 @@ Chain strategy: stacked-to-main
 
 ## Phase 4: Evaluation & Tests
 
-- [ ] 4.1 Update `extractionQualityEval.ts` to use variable row counts, label-based matching, and regenerate baseline.
-- [ ] 4.2 Create Vitest harness for 3-quote baseline match-rate >= 90%.
-- [ ] 4.3 Add fallback-rate guard (<= 10%) to CI test.
-- [ ] 4.4 Verify v1 cached objects render through legacy matrix path.
+- [x] 4.1 Update `extractionQualityEval.ts` to use variable row counts, label-based matching, and regenerate baseline.
+- [x] 4.2 Create Vitest harness for 3-quote baseline match-rate >= 90%.
+- [x] 4.3 Add fallback-rate guard (<= 10%) to CI test.
+- [x] 4.4 Verify v1 cached objects render through legacy matrix path.
+
+## Phase 5: Structured Deductible Extraction (post-verification follow-up)
+
+- [x] 5.1 Add optional `deductible` object to `FlatComparisonCellSchemaV2` in `comparisonSchema.ts`.
+- [x] 5.2 Implement `parseDeductible()` in `flatTableParser.ts` with percentage, minimum, currency, and type parsing plus fallback handling.
+- [x] 5.3 Extend `buildV2Cell()` to parse deductibles for `DEDUCIBLES` rows and apply `isAmbiguous` + `Ver condiciones` fallback.
+- [x] 5.4 Add per-coverage deductible aliases to `ALIAS_MAP` in `flatTableParser.ts`.
+- [x] 5.5 Add covering tests in `flatTableParser.test.ts` for the structured deductible scenarios.
+- [x] 5.6 Re-run verification and update `verify-report.md`.

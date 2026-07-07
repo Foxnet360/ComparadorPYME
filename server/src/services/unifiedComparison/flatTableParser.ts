@@ -6,9 +6,11 @@
 
 import {
   FlatComparisonSchema,
+  SchemaSection,
   type FlatComparisonResult,
   type FlatComparisonResultV2,
   type FlatComparisonCell,
+  type StructuredDeductible,
 } from './comparisonSchema';
 import { parseJsonWithRepair } from '../jsonRepair';
 
@@ -70,44 +72,88 @@ const ROW_LABEL_ALIASES = new Map<string, string>([
 interface AliasEntry {
   aliases: string[];
   canonical: string;
-  section: string;
+  section: SchemaSection;
 }
 
 const ALIAS_MAP: AliasEntry[] = [
   {
     aliases: ['bienes asegurados'],
     canonical: 'Bienes Asegurados',
-    section: 'INFORMACIÓN GENERAL',
+    section: SchemaSection.INFORMACION_GENERAL,
   },
-  { aliases: ['edificio', 'valor edificio'], canonical: 'Edificio', section: 'BIENES ASEGURADOS' },
-  { aliases: ['contenidos', 'contenido'], canonical: 'Contenidos', section: 'BIENES ASEGURADOS' },
-  { aliases: ['mercancias', 'mercaderias'], canonical: 'Mercancías', section: 'BIENES ASEGURADOS' },
+  {
+    aliases: ['edificio', 'valor edificio'],
+    canonical: 'Edificio',
+    section: SchemaSection.BIENES_ASEGURADOS,
+  },
+  {
+    aliases: ['contenidos', 'contenido'],
+    canonical: 'Contenidos',
+    section: SchemaSection.BIENES_ASEGURADOS,
+  },
+  {
+    aliases: ['mercancias', 'mercaderias'],
+    canonical: 'Mercancías',
+    section: SchemaSection.BIENES_ASEGURADOS,
+  },
   {
     aliases: ['equipo electrico', 'eq. electrico', 'eee'],
     canonical: 'Equipo Eléctrico',
-    section: 'COBERTURAS',
+    section: SchemaSection.COBERTURAS,
   },
   {
     aliases: ['maquinaria', 'equipo maquinaria', 'equipo de maquinaria'],
     canonical: 'Maquinaria',
-    section: 'COBERTURAS',
+    section: SchemaSection.COBERTURAS,
   },
-  { aliases: ['responsabilidad civil'], canonical: 'Responsabilidad Civil', section: 'COBERTURAS' },
-  { aliases: ['terremoto'], canonical: 'Terremoto', section: 'COBERTURAS' },
-  { aliases: ['deducible', 'deducibles'], canonical: 'Deducibles', section: 'DEDUCIBLES' },
+  {
+    aliases: ['responsabilidad civil'],
+    canonical: 'Responsabilidad Civil',
+    section: SchemaSection.COBERTURAS,
+  },
+  { aliases: ['terremoto'], canonical: 'Terremoto', section: SchemaSection.COBERTURAS },
+  {
+    aliases: ['deducible', 'deducibles'],
+    canonical: 'Deducibles',
+    section: SchemaSection.DEDUCIBLES,
+  },
+  {
+    aliases: ['deducible edificio', 'ded. edificio'],
+    canonical: 'Deducible Edificio',
+    section: SchemaSection.DEDUCIBLES,
+  },
+  {
+    aliases: ['deducible contenidos', 'ded. contenidos'],
+    canonical: 'Deducible Contenidos',
+    section: SchemaSection.DEDUCIBLES,
+  },
+  {
+    aliases: ['deducible mercancias', 'ded. mercancias', 'deducible mercaderias'],
+    canonical: 'Deducible Mercancías',
+    section: SchemaSection.DEDUCIBLES,
+  },
+  {
+    aliases: ['deducible equipo electrico', 'ded. equipo electrico', 'deducible eee'],
+    canonical: 'Deducible Equipo Eléctrico',
+    section: SchemaSection.DEDUCIBLES,
+  },
   {
     aliases: ['prima con iva', 'prima total con iva'],
     canonical: 'Prima con IVA',
-    section: 'INFORMACIÓN GENERAL',
+    section: SchemaSection.INFORMACION_GENERAL,
   },
-  { aliases: ['forma de pago'], canonical: 'Forma de Pago', section: 'INFORMACIÓN GENERAL' },
-  { aliases: ['observaciones'], canonical: 'Observaciones', section: 'CONDICIONES' },
-  { aliases: ['exclusiones'], canonical: 'Exclusiones', section: 'CONDICIONES' },
+  {
+    aliases: ['forma de pago'],
+    canonical: 'Forma de Pago',
+    section: SchemaSection.INFORMACION_GENERAL,
+  },
+  { aliases: ['observaciones'], canonical: 'Observaciones', section: SchemaSection.CONDICIONES },
+  { aliases: ['exclusiones'], canonical: 'Exclusiones', section: SchemaSection.CONDICIONES },
 ];
 
 export interface NormalizedAlias {
   canonical: string;
-  section: string;
+  section: SchemaSection;
   quality: number;
 }
 
@@ -185,6 +231,120 @@ export function computeCellConfidence(
   if (!isValidValuePattern(cell.value ?? null)) score -= 0.15;
   if (cell.isAmbiguous) score -= 0.2;
   return Math.max(0.0, Math.min(1.0, score));
+}
+
+// ---------------------------------------------------------------------------
+// Structured deductible extraction
+// ---------------------------------------------------------------------------
+
+function normalizeDeductibleText(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
+
+function parseDeductibleNumber(value: string): number {
+  const clean = value.trim().replace(/\s/g, '');
+  if (clean.includes(',')) {
+    // comma is decimal separator
+    return parseFloat(clean.replace(/\./g, '').replace(',', '.'));
+  }
+  if (clean.includes('.')) {
+    const parts = clean.split('.');
+    // If all groups after the first are exactly 3 digits, treat as thousands separator.
+    if (parts.length > 1 && parts.slice(1).every((p) => /^\d{3}$/.test(p))) {
+      return parseFloat(clean.replace(/\./g, ''));
+    }
+    // Otherwise treat as decimal.
+    return parseFloat(clean);
+  }
+  return parseFloat(clean);
+}
+
+export function parseDeductible(text: string | null | undefined): {
+  deductible: StructuredDeductible;
+  isAmbiguous: boolean;
+} {
+  const raw = text ?? '';
+  if (raw.trim() === '') {
+    return { deductible: { type: 'see_conditions' }, isAmbiguous: true };
+  }
+
+  const normalized = normalizeDeductibleText(raw);
+
+  if (/\bno aplica\b/.test(normalized) || /\bn\/a\b/.test(normalized)) {
+    return { deductible: { type: 'not_applicable' }, isAmbiguous: false };
+  }
+
+  if (
+    /\bver condiciones\b/.test(normalized) ||
+    /\bver clausulado\b/.test(normalized) ||
+    /\bsegun condiciones\b/.test(normalized) ||
+    /\bsegun clausulado\b/.test(normalized) ||
+    /\ba definir\b/.test(normalized) ||
+    /\bpor determinar\b/.test(normalized)
+  ) {
+    return { deductible: { type: 'see_conditions' }, isAmbiguous: true };
+  }
+
+  const percentageMatch = normalized.match(/([\d.,]+)\s*%/);
+  const percentage = percentageMatch ? parseDeductibleNumber(percentageMatch[1]) : undefined;
+
+  let minimum: number | undefined;
+  let currency: string | undefined;
+
+  const minSmmlvMatch = normalized.match(
+    /m[i\u00ed]n\.?\s*([\d.,]+)\s*(?:smmlv|salarios?|smlv|ums)/i
+  );
+  if (minSmmlvMatch) {
+    minimum = parseDeductibleNumber(minSmmlvMatch[1]);
+    currency = 'SMMLV';
+  }
+
+  if (minimum === undefined) {
+    const standaloneSmmlvMatch = normalized.match(/([\d.,]+)\s*(?:smmlv|salarios?|smlv|ums)/i);
+    if (standaloneSmmlvMatch) {
+      minimum = parseDeductibleNumber(standaloneSmmlvMatch[1]);
+      currency = 'SMMLV';
+    }
+  }
+
+  if (minimum === undefined) {
+    const minMoneyMatch = normalized.match(
+      /m[i\u00ed]n\.?\s*[$]?\s*([\d.,]+)\s*(?:cop|usd|uf|ums)?/i
+    );
+    if (minMoneyMatch) {
+      minimum = parseDeductibleNumber(minMoneyMatch[1]);
+      currency = (minMoneyMatch[2] || 'COP').toUpperCase();
+    }
+  }
+
+  // If no percentage and no minimum, look for a standalone money amount as fixed deductible.
+  if (percentage === undefined && minimum === undefined) {
+    const fixedMoneyMatch = normalized.match(/[$]?\s*([\d.,]+)\s*(?:cop|usd|uf|ums)?/);
+    if (fixedMoneyMatch) {
+      minimum = parseDeductibleNumber(fixedMoneyMatch[1]);
+      currency = (fixedMoneyMatch[2] || 'COP').toUpperCase();
+      return { deductible: { minimum, currency, type: 'fixed' }, isAmbiguous: false };
+    }
+  }
+
+  if (percentage !== undefined && minimum !== undefined) {
+    return {
+      deductible: { percentage, minimum, currency, type: 'percentage_with_minimum' },
+      isAmbiguous: false,
+    };
+  }
+  if (percentage !== undefined) {
+    return { deductible: { percentage, type: 'percentage' }, isAmbiguous: false };
+  }
+  if (minimum !== undefined) {
+    return { deductible: { minimum, currency, type: 'minimum' }, isAmbiguous: false };
+  }
+
+  return { deductible: { type: 'see_conditions' }, isAmbiguous: true };
 }
 
 // ---------------------------------------------------------------------------
@@ -666,16 +826,36 @@ function buildV2Cell(
   insurer: string,
   rawValue: string | null | undefined,
   aliasQuality: number,
-  isAmbiguous: boolean
+  isAmbiguous: boolean,
+  section?: string
 ) {
   const raw = rawValue ?? '';
-  const notFound = isEmptyValue(raw);
+  let notFound = isEmptyValue(raw);
+  let value = notFound ? 'No informado' : raw.trim();
+  let deductible: StructuredDeductible | undefined;
+
+  if (section === SchemaSection.DEDUCIBLES) {
+    const parsed = parseDeductible(rawValue);
+    deductible = parsed.deductible;
+
+    if (deductible.type === 'see_conditions') {
+      value = 'Ver condiciones';
+      notFound = false;
+    } else if (deductible.type === 'not_applicable') {
+      value = 'No aplica';
+      notFound = false;
+    }
+
+    isAmbiguous = isAmbiguous || parsed.isAmbiguous;
+  }
+
   const cell = {
     insurer,
-    value: notFound ? 'No informado' : raw.trim(),
+    value,
     rawText: rawValue ?? undefined,
     notFound: notFound || undefined,
     ...(isAmbiguous ? { isAmbiguous: true } : {}),
+    ...(deductible ? { deductible } : {}),
   };
   return {
     ...cell,
@@ -775,7 +955,13 @@ function buildV2Result(
         label: normalized.canonical,
         section: normalized.section,
         cells: insurers.map((insurer, index) =>
-          buildV2Cell(insurer, paddedOrNull(values, index), normalized.quality, false)
+          buildV2Cell(
+            insurer,
+            paddedOrNull(values, index),
+            normalized.quality,
+            false,
+            normalized.section
+          )
         ),
       });
     } else {

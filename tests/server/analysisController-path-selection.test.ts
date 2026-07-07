@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import multer from 'multer';
+import { AuthenticatedRequest } from '../../server/src/middleware/auth';
 
 const generateComparison = vi.fn();
 
@@ -20,6 +21,10 @@ const { analysisController } = await import('../../server/src/controllers/analys
 
 const app = express();
 app.use(express.json());
+app.use((req, _res, next) => {
+  (req as AuthenticatedRequest).user = { id: 'test-user-123' };
+  next();
+});
 const upload = multer({ storage: multer.memoryStorage() });
 app.post(
   '/api/analyze',

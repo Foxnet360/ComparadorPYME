@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import fs from 'fs';
 
 import { ParsedQuote } from '../services/quoteParser';
@@ -114,10 +114,16 @@ interface UnifiedComparisonReport {
 }
 
 export const analysisController = {
-  uploadAndAnalyze: async (req: Request, res: Response): Promise<void> => {
+  uploadAndAnalyze: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     const startTime = Date.now();
 
     try {
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+
       const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
       const quoteFiles = files?.['quotes'] || [];
 
@@ -130,10 +136,7 @@ export const analysisController = {
       console.log(`🔧 Pipeline: ${isMultimodalEnabled() ? 'Multimodal (V2)' : 'Legacy (V1)'}`);
 
       const pdfPaths = quoteFiles.map((f) => f.path);
-      const adapterResult = await comparisonEngineAdapter.generateComparison(
-        pdfPaths,
-        req.body.userId
-      );
+      const adapterResult = await comparisonEngineAdapter.generateComparison(pdfPaths, userId);
       const matrixRows = adapterResult.matrix;
 
       // Debug: Log matrix structure
@@ -161,7 +164,6 @@ export const analysisController = {
       });
 
       // Save to Supabase
-      const userId = req.body.userId || 'anonymous';
       const clientName = req.body.clientName || 'Cliente';
 
       try {
@@ -238,7 +240,7 @@ export const analysisController = {
 
   getHistory: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      const userId = (req.query.userId as string) || req.user?.id;
+      const userId = req.user?.id;
       if (!userId) {
         res.status(401).json({ success: false, error: 'Authentication required' });
         return;
@@ -439,19 +441,30 @@ export function matrixRowsToComparisonReport(
     return name || 'Desconocido';
   });
 
+  // The unified engine builds matrix cells in the order returned by the LLM
+  // (result.insurers), which may differ from the upload order. Align cells to
+  // quote files by insurer name rather than by raw index to avoid attributing
+  // values to the wrong insurer.
+  const matrixInsurers = extractMatrixInsurers(matrixRows);
+  const indexMap =
+    matrixInsurers.length > 0
+      ? alignInsurerIndices(insurerNames, matrixInsurers)
+      : insurerNames.map((_, idx) => idx);
+
   // Build quotes array
   const quotes: UnifiedQuote[] = insurerNames.map((insurerName, idx) => {
     const coverages: UnifiedQuote['coverages'] = [];
     const alerts: UnifiedQuote['alerts'] = [];
     let priceAnnual = 0;
+    const cellIdx = indexMap[idx];
 
     // Extract coverages from matrix rows
     let currentSection: string | undefined;
     matrixRows.forEach((row) => {
       if (row.type === 'header') {
         currentSection = row.label;
-      } else if (row.type === 'data' && row.cells && row.cells[idx]) {
-        const cell = row.cells[idx];
+      } else if (row.type === 'data' && row.cells && cellIdx >= 0 && row.cells[cellIdx]) {
+        const cell = row.cells[cellIdx];
         const value = cell.value || '';
 
         // Check if this is a premium row
@@ -569,4 +582,81 @@ export function matrixRowsToComparisonReport(
     timestamp: new Date().toISOString(),
     analysisVersion: '3.0-unified',
   };
+}
+
+// ---------------------------------------------------------------------------
+// Insurer alignment helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Extract the ordered insurer names encoded in the matrix header row.
+ * The unified engine emits a top header of the form:
+ *   "Cotizaciones PYME - Insurer A, Insurer B"
+ */
+function extractMatrixInsurers(matrixRows: MatrixRow[]): string[] {
+  const header = matrixRows.find((row) => row.type === 'header' && row.id === 'client_info');
+  if (!header?.label) return [];
+  const separator = ' - ';
+  const idx = header.label.indexOf(separator);
+  if (idx < 0) return [];
+  return header.label
+    .slice(idx + separator.length)
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function normalizeInsurerName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '');
+}
+
+function longestCommonSubstringLength(a: string, b: string): number {
+  if (a.length === 0 || b.length === 0) return 0;
+  const matrix: number[][] = Array.from({ length: a.length + 1 }, () =>
+    Array(b.length + 1).fill(0)
+  );
+  let max = 0;
+
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        matrix[i][j] = matrix[i - 1][j - 1] + 1;
+        max = Math.max(max, matrix[i][j]);
+      }
+    }
+  }
+
+  return max;
+}
+
+/**
+ * Map each quote-file insurer to the index of the matching matrix column.
+ * Returns -1 when no reasonable match is found.
+ */
+function alignInsurerIndices(quoteInsurers: string[], matrixInsurers: string[]): number[] {
+  const normalizedMatrix = matrixInsurers.map((name) => normalizeInsurerName(name));
+
+  return quoteInsurers.map((quoteName) => {
+    const normalizedQuote = normalizeInsurerName(quoteName);
+    let bestIndex = -1;
+    let bestScore = 0;
+
+    for (let i = 0; i < normalizedMatrix.length; i++) {
+      const matrixName = normalizedMatrix[i];
+      if (matrixName === normalizedQuote) {
+        return i;
+      }
+      const score = longestCommonSubstringLength(normalizedQuote, matrixName);
+      if (score > bestScore && score >= 3) {
+        bestScore = score;
+        bestIndex = i;
+      }
+    }
+
+    return bestIndex;
+  });
 }

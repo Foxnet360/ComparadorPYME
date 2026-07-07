@@ -3,6 +3,7 @@ import request from 'supertest';
 import express from 'express';
 import multer from 'multer';
 import { analysisController } from '../../controllers/analysisController';
+import { AuthenticatedRequest } from '../../middleware/auth';
 
 vi.mock('../../services/unifiedComparison/comparisonEngineAdapter', () => ({
   comparisonEngineAdapter: {
@@ -332,6 +333,12 @@ vi.mock('../../config/database', () => {
 // Create test app with file upload support
 const app = express();
 app.use(express.json());
+
+// Mock auth middleware for testing
+app.use((req, res, next) => {
+  (req as AuthenticatedRequest).user = { id: 'test-user-123' };
+  next();
+});
 
 const upload = multer({ storage: multer.memoryStorage() });
 app.post(

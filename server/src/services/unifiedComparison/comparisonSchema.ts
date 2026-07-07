@@ -36,6 +36,22 @@ export const FlatComparisonCellSchemaV1 = z.object({
   notFound: z.boolean().optional(),
 });
 
+export const StructuredDeductibleSchema = z.object({
+  percentage: z.number().optional(),
+  minimum: z.number().optional(),
+  currency: z.string().optional(),
+  type: z
+    .enum([
+      'percentage',
+      'minimum',
+      'percentage_with_minimum',
+      'fixed',
+      'not_applicable',
+      'see_conditions',
+    ])
+    .optional(),
+});
+
 export const FlatComparisonCellSchemaV2 = z.object({
   insurer: z.string().min(1),
   value: z.string().nullable(),
@@ -43,6 +59,7 @@ export const FlatComparisonCellSchemaV2 = z.object({
   notFound: z.boolean().optional(),
   confidence: z.number().min(0).max(1).optional(),
   isAmbiguous: z.boolean().optional(),
+  deductible: StructuredDeductibleSchema.optional(),
 });
 
 export const FlatComparisonRowSchemaV1 = z.object({
@@ -52,7 +69,7 @@ export const FlatComparisonRowSchemaV1 = z.object({
 
 export const FlatComparisonRowSchemaV2 = z.object({
   label: z.string().min(1),
-  section: z.string().optional(),
+  section: z.nativeEnum(SchemaSection).optional(),
   cells: z.array(FlatComparisonCellSchemaV2),
 });
 
@@ -101,6 +118,7 @@ export const FlatComparisonRowSchema = FlatComparisonRowSchemaV2;
 export type FlatComparisonResultV1 = z.infer<typeof FlatComparisonSchemaV1>;
 export type FlatComparisonRowV1 = z.infer<typeof FlatComparisonRowSchemaV1>;
 export type FlatComparisonCellV1 = z.infer<typeof FlatComparisonCellSchemaV1>;
+export type StructuredDeductible = z.infer<typeof StructuredDeductibleSchema>;
 export type FlatComparisonResultV2 = z.infer<typeof FlatComparisonSchemaV2>;
 export type FlatComparisonRowV2 = z.infer<typeof FlatComparisonRowSchemaV2>;
 export type FlatComparisonCellV2 = z.infer<typeof FlatComparisonCellSchemaV2>;

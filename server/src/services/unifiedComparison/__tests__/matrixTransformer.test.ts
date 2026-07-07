@@ -9,12 +9,14 @@ import {
   flatResultToMatrixRows,
   flatResultToMatrixRowsV2,
   quotesToMatrixRows,
+  FINANCIAL_SECTION_ID,
 } from '../matrixTransformer';
 import { FlatComparisonResult, FlatComparisonResultV2, SchemaSection } from '../comparisonSchema';
 import { ParsedQuote } from '../../quoteParser';
 
 function makeFlatResult(overrides: Partial<FlatComparisonResult> = {}): FlatComparisonResult {
   return {
+    schemaVersion: 1,
     metadata: {
       generatedAt: '2026-07-01T00:00:00Z',
       model: 'gemini-3.5-flash',
@@ -250,7 +252,7 @@ describe('flatResultToMatrixRowsV2', () => {
     const sectionHeaders = matrix.filter((r) => r.type === 'header' && r.id.startsWith('section_'));
     expect(sectionHeaders).toHaveLength(2);
     expect(sectionHeaders.map((r) => r.label)).toContain('BIENES ASEGURADOS');
-    expect(sectionHeaders.map((r) => r.label)).toContain('INFORMACIÓN GENERAL');
+    expect(sectionHeaders.map((r) => r.label)).toContain('PRIMAS Y COSTOS');
   });
 
   it('places data rows directly under their section header', () => {
@@ -292,6 +294,109 @@ describe('flatResultToMatrixRowsV2', () => {
     expect(extraSectionHeader).toBeDefined();
     const extraHeaderIndex = matrix.indexOf(extraSectionHeader!);
     expect(matrix[extraHeaderIndex + 1].label).toBe('Asistencia');
+  });
+
+  it('tags v2 financial rows with FINANCIAL_SECTION_ID', () => {
+    const result = makeFlatResultV2({
+      rows: [
+        {
+          label: 'Prima con IVA',
+          section: SchemaSection.INFORMACION_GENERAL,
+          cells: [
+            { insurer: 'MAPFRE', value: '$8.5M', rawText: '$8.5M', confidence: 0.95 },
+            { insurer: 'CHUBB', value: '$9.2M', rawText: '$9.2M', confidence: 0.94 },
+          ],
+        },
+        {
+          label: 'Forma de Pago',
+          section: SchemaSection.INFORMACION_GENERAL,
+          cells: [
+            { insurer: 'MAPFRE', value: 'Anual', rawText: 'Anual', confidence: 0.9 },
+            { insurer: 'CHUBB', value: 'Mensual', rawText: 'Mensual', confidence: 0.9 },
+          ],
+        },
+      ],
+    });
+    const matrix = flatResultToMatrixRowsV2(result);
+
+    const financialHeader = matrix.find(
+      (r) => r.type === 'header' && r.sectionId === FINANCIAL_SECTION_ID
+    );
+    expect(financialHeader).toBeDefined();
+    expect(financialHeader!.label).toBe('PRIMAS Y COSTOS');
+
+    const premiumRow = matrix.find((r) => r.type === 'data' && r.label === 'Prima con IVA');
+    expect(premiumRow).toBeDefined();
+    expect(premiumRow!.sectionId).toBe(FINANCIAL_SECTION_ID);
+
+    const paymentRow = matrix.find((r) => r.type === 'data' && r.label === 'Forma de Pago');
+    expect(paymentRow).toBeDefined();
+    expect(paymentRow!.sectionId).toBe(FINANCIAL_SECTION_ID);
+  });
+
+  it('carries deductible rawText as notes on v2 matrix cells', () => {
+    const result = makeFlatResultV2({
+      rows: [
+        {
+          label: 'Edificio',
+          section: SchemaSection.DEDUCIBLES,
+          cells: [
+            {
+              insurer: 'MAPFRE',
+              value: '10%',
+              rawText: '10% PERD - Min 1 SMMLV',
+              confidence: 0.92,
+            },
+            { insurer: 'CHUBB', value: '5%', rawText: '5% siniestro', confidence: 0.9 },
+          ],
+        },
+      ],
+    });
+    const matrix = flatResultToMatrixRowsV2(result);
+
+    const row = matrix.find((r) => r.label === 'Edificio')!;
+    expect(row.cells[0].notes).toBe('10% PERD - Min 1 SMMLV');
+    expect(row.cells[1].notes).toBe('5% siniestro');
+  });
+
+  it('defaults v2 cell confidence to 0 when missing', () => {
+    const result = makeFlatResultV2({
+      rows: [
+        {
+          label: 'Edificio',
+          section: SchemaSection.BIENES_ASEGURADOS,
+          cells: [
+            { insurer: 'MAPFRE', value: '$500M', rawText: '$500M' },
+            { insurer: 'CHUBB', value: '$600M', rawText: '$600M', confidence: 0.9 },
+          ],
+        },
+      ],
+    });
+    const matrix = flatResultToMatrixRowsV2(result);
+
+    const row = matrix.find((r) => r.label === 'Edificio')!;
+    expect(row.cells[0].confidence).toBe(0);
+    expect(row.cells[1].confidence).toBe(0.9);
+  });
+
+  it('preserves empty rawText as notes on v2 matrix cells', () => {
+    const result = makeFlatResultV2({
+      rows: [
+        {
+          label: 'Edificio',
+          section: SchemaSection.DEDUCIBLES,
+          cells: [
+            { insurer: 'MAPFRE', value: '10%', rawText: '', confidence: 0.92 },
+            { insurer: 'CHUBB', value: '5%', confidence: 0.9 },
+          ],
+        },
+      ],
+    });
+    const matrix = flatResultToMatrixRowsV2(result);
+
+    const row = matrix.find((r) => r.label === 'Edificio')!;
+    expect(row.cells[0].notes).toBe('');
+    expect(row.cells[1].notes).toBeUndefined();
   });
 });
 
