@@ -18,6 +18,34 @@ const FLAT_ROW_LABELS = [
   'Forma de Pago',
 ] as const;
 
+const GRANULAR_SECTIONS = [
+  {
+    section: 'INFORMACIÓN GENERAL',
+    rows: ['Bienes Asegurados', 'Prima con IVA', 'Forma de Pago'],
+  },
+  {
+    section: 'BIENES ASEGURADOS',
+    rows: ['Edificio', 'Contenidos', 'Mercancías'],
+  },
+  {
+    section: 'COBERTURAS',
+    rows: ['Equipo Eléctrico', 'Responsabilidad Civil', 'Terremoto'],
+  },
+  {
+    section: 'DEDUCIBLES',
+    rows: [
+      'Deducible Edificio',
+      'Deducible Contenidos',
+      'Deducible Mercancías',
+      'Deducible Equipo Eléctrico',
+    ],
+  },
+  {
+    section: 'CONDICIONES',
+    rows: ['Observaciones', 'Exclusiones'],
+  },
+] as const;
+
 export class ComparisonPromptBuilder {
   /**
    * Build the main flat-table comparison prompt.
@@ -57,6 +85,48 @@ ${context.hasClauses ? 'También se proporcionan clausulados para validación; �
   }
 
   /**
+   * Build the v2 granular comparison prompt.
+   *
+   * Suggests section-aware sub-rows but explicitly allows the model to omit,
+   * add, or rename rows. The response must be JSON with insurers, rows, and
+   * optional section metadata.
+   */
+  buildV2ComparisonPrompt(context: PromptContext): string {
+    const sectionList = GRANULAR_SECTIONS.map((section, sIdx) => {
+      const rows = section.rows.map((row, rIdx) => `    ${rIdx + 1}. ${row}`).join('\n');
+      return `  ${sIdx + 1}. ${section.section}:\n${rows}`;
+    }).join('\n\n');
+
+    return `Eres un analista de seguros PYME en Colombia. He subido ${context.insurerCount} cotizaciones del mismo riesgo.
+
+Genera una tabla comparativa con UNA columna por aseguradora y filas agrupadas por sección. A continuación te sugiero filas granulares, pero PUEDES omitir, agregar o renombrar filas según lo que aparezca textualmente en cada cotización:
+
+${sectionList}
+
+Reglas:
+- Copia los valores textualmente como aparecen en cada cotización.
+- No agrupes, no normalices a coberturas canónicas y no inventes datos.
+- Si una fila no aparece en una cotización, usa "No informado".
+- Responde únicamente con JSON válido que cumpla este schema:
+{
+  "insurers": ["Aseguradora A", ...],
+  "rows": [
+    {
+      "label": "Edificio",
+      "section": "BIENES ASEGURADOS",
+      "cells": [
+        {"insurer": "Aseguradora A", "value": "...", "rawText": "..."},
+        ...
+      ]
+    },
+    ...
+  ]
+}
+
+${context.hasClauses ? 'También se proporcionan clausulados para validación; úsalos solo si una fila es ambigua, pero conserva el texto original de la cotización.' : ''}`;
+  }
+
+  /**
    * Build correction prompt for retry on malformed output
    */
   buildCorrectionPrompt(originalResponse: string, errorMessage: string): string {
@@ -76,6 +146,42 @@ Por favor genera el JSON completo y válido con EXACTAMENTE estas filas:
 Asegúrate de que:
 1. El JSON tenga "insurers" como array de strings
 2. El JSON tenga "rows" como array de objetos con "label" y "cells"
+3. Cada celda tenga "insurer" y "value"
+4. Si no encuentras una fila para una aseguradora, usa "No informado" como valor
+
+Responde ÚNICAMENTE con el JSON corregido.`;
+  }
+
+  /**
+   * Build v2 correction prompt for retry on malformed granular output
+   */
+  buildV2CorrectionPrompt(originalResponse: string, errorMessage: string): string {
+    return `Tu respuesta anterior no cumplió el schema de tabla granular requerido.
+
+ERROR: ${errorMessage}
+
+RESPUESTA ANTERIOR (parcial):
+${originalResponse.substring(0, 1000)}
+
+Por favor genera el JSON completo y válido con este schema:
+{
+  "insurers": ["Aseguradora A", ...],
+  "rows": [
+    {
+      "label": "...",
+      "section": "...",
+      "cells": [
+        {"insurer": "Aseguradora A", "value": "...", "rawText": "..."},
+        ...
+      ]
+    },
+    ...
+  ]
+}
+
+Asegúrate de que:
+1. El JSON tenga "insurers" como array de strings
+2. El JSON tenga "rows" como array de objetos con "label", "section" y "cells"
 3. Cada celda tenga "insurer" y "value"
 4. Si no encuentras una fila para una aseguradora, usa "No informado" como valor
 

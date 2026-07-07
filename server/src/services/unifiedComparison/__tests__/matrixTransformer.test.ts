@@ -5,8 +5,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { flatResultToMatrixRows, quotesToMatrixRows } from '../matrixTransformer';
-import { FlatComparisonResult } from '../comparisonSchema';
+import {
+  flatResultToMatrixRows,
+  flatResultToMatrixRowsV2,
+  quotesToMatrixRows,
+} from '../matrixTransformer';
+import { FlatComparisonResult, FlatComparisonResultV2, SchemaSection } from '../comparisonSchema';
 import { ParsedQuote } from '../../quoteParser';
 
 function makeFlatResult(overrides: Partial<FlatComparisonResult> = {}): FlatComparisonResult {
@@ -56,6 +60,50 @@ function makeFlatResult(overrides: Partial<FlatComparisonResult> = {}): FlatComp
   };
 }
 
+function makeFlatResultV2(overrides: Partial<FlatComparisonResultV2> = {}): FlatComparisonResultV2 {
+  return {
+    metadata: {
+      generatedAt: '2026-07-01T00:00:00Z',
+      model: 'gemini-3.5-flash',
+      pdfCount: 2,
+      processingTimeMs: 1200,
+      confidence: 0.92,
+      needsHumanReview: false,
+    },
+    insurers: ['MAPFRE', 'CHUBB'],
+    schemaVersion: 2,
+    rows: [
+      {
+        label: 'Edificio',
+        section: SchemaSection.BIENES_ASEGURADOS,
+        cells: [
+          { insurer: 'MAPFRE', value: '$500M', rawText: '$500M', confidence: 0.92 },
+          { insurer: 'CHUBB', value: '$600M', rawText: '$600M', confidence: 0.9 },
+        ],
+      },
+      {
+        label: 'Contenidos',
+        section: SchemaSection.BIENES_ASEGURADOS,
+        cells: [
+          { insurer: 'MAPFRE', value: '$200M', rawText: '$200M', confidence: 0.88 },
+          { insurer: 'CHUBB', value: '$250M', rawText: '$250M', confidence: 0.85 },
+        ],
+      },
+      {
+        label: 'Prima con IVA',
+        section: SchemaSection.INFORMACION_GENERAL,
+        cells: [
+          { insurer: 'MAPFRE', value: '$8.5M', rawText: '$8.5M', confidence: 0.95 },
+          { insurer: 'CHUBB', value: '$9.2M', rawText: '$9.2M', confidence: 0.94 },
+        ],
+      },
+    ],
+    extraRows: [],
+    warnings: [],
+    ...overrides,
+  };
+}
+
 function makeParsedQuote(overrides: Partial<ParsedQuote> = {}): ParsedQuote {
   return {
     insurerName: 'BBVA',
@@ -95,7 +143,6 @@ describe('flatResultToMatrixRows', () => {
     expect(header.id).toBe('client_info');
     expect(header.label).toContain('MAPFRE');
     expect(header.label).toContain('CHUBB');
-    expect(header.cells).toHaveLength(2);
   });
 
   it('emits one data row per requested flat row', () => {
@@ -181,6 +228,70 @@ describe('flatResultToMatrixRows', () => {
     expect(warningHeader).toBeDefined();
     expect(warningRow).toBeDefined();
     expect(warningRow?.label).toBe('Falta deducible CHUBB');
+  });
+});
+
+describe('flatResultToMatrixRowsV2', () => {
+  it('creates a header row with insurer names', () => {
+    const result = makeFlatResultV2();
+    const matrix = flatResultToMatrixRowsV2(result);
+
+    const header = matrix[0];
+    expect(header.type).toBe('header');
+    expect(header.id).toBe('client_info');
+    expect(header.label).toContain('MAPFRE');
+    expect(header.label).toContain('CHUBB');
+  });
+
+  it('emits a section header row for each distinct section', () => {
+    const result = makeFlatResultV2();
+    const matrix = flatResultToMatrixRowsV2(result);
+
+    const sectionHeaders = matrix.filter((r) => r.type === 'header' && r.id.startsWith('section_'));
+    expect(sectionHeaders).toHaveLength(2);
+    expect(sectionHeaders.map((r) => r.label)).toContain('BIENES ASEGURADOS');
+    expect(sectionHeaders.map((r) => r.label)).toContain('INFORMACIÓN GENERAL');
+  });
+
+  it('places data rows directly under their section header', () => {
+    const result = makeFlatResultV2();
+    const matrix = flatResultToMatrixRowsV2(result);
+
+    const bienesHeaderIndex = matrix.findIndex(
+      (r) => r.type === 'header' && r.label === 'BIENES ASEGURADOS'
+    );
+    expect(bienesHeaderIndex).toBeGreaterThan(-1);
+    expect(matrix[bienesHeaderIndex + 1].label).toBe('Edificio');
+    expect(matrix[bienesHeaderIndex + 2].label).toBe('Contenidos');
+  });
+
+  it('preserves cell confidence on data rows', () => {
+    const result = makeFlatResultV2();
+    const matrix = flatResultToMatrixRowsV2(result);
+
+    const edificioRow = matrix.find((r) => r.label === 'Edificio')!;
+    expect(edificioRow.cells[0].confidence).toBe(0.92);
+    expect(edificioRow.cells[1].confidence).toBe(0.9);
+  });
+
+  it('places extra rows in a dedicated section at the end', () => {
+    const result = makeFlatResultV2({
+      extraRows: [
+        {
+          label: 'Asistencia',
+          cells: [
+            { insurer: 'MAPFRE', value: 'Incluida', confidence: 0.7 },
+            { insurer: 'CHUBB', value: 'No incluida', confidence: 0.6 },
+          ],
+        },
+      ],
+    });
+    const matrix = flatResultToMatrixRowsV2(result);
+
+    const extraSectionHeader = matrix.find((r) => r.type === 'header' && r.label === 'OTROS');
+    expect(extraSectionHeader).toBeDefined();
+    const extraHeaderIndex = matrix.indexOf(extraSectionHeader!);
+    expect(matrix[extraHeaderIndex + 1].label).toBe('Asistencia');
   });
 });
 

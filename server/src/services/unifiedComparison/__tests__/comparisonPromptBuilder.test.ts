@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { comparisonPromptBuilder } from '../comparisonPromptBuilder';
+import { comparisonPromptBuilder, PromptContext } from '../comparisonPromptBuilder';
+
+function buildV2Prompt(context: Partial<PromptContext> = {}) {
+  return comparisonPromptBuilder.buildV2ComparisonPrompt({
+    insurerCount: 2,
+    hasClauses: false,
+    ...context,
+  });
+}
 
 describe('comparisonPromptBuilder', () => {
   it('includes the four flat row labels in the comparison prompt', () => {
@@ -41,5 +49,49 @@ describe('comparisonPromptBuilder', () => {
     expect(correction).toContain('bad json');
     expect(correction).toContain('missing rows');
     expect(correction).toContain('JSON');
+  });
+});
+
+describe('comparisonPromptBuilder.buildV2ComparisonPrompt', () => {
+  it('suggests granular sub-rows such as Edificio, Contenidos, and Mercancías', () => {
+    const prompt = buildV2Prompt();
+
+    expect(prompt).toContain('Edificio');
+    expect(prompt).toContain('Contenidos');
+    expect(prompt).toContain('Mercancías');
+  });
+
+  it('requests a section-aware comparison table with insurers and rows', () => {
+    const prompt = buildV2Prompt();
+
+    expect(prompt).toContain('insurers');
+    expect(prompt).toContain('rows');
+    expect(prompt).toContain('section');
+    expect(prompt).toContain('cells');
+  });
+
+  it('explicitly allows the LLM to omit, add, or rename rows', () => {
+    const prompt = buildV2Prompt();
+
+    expect(prompt).toContain('omit');
+    expect(prompt).toContain('renombrar');
+  });
+
+  it('includes deductible sub-rows as a structured example', () => {
+    const prompt = buildV2Prompt();
+
+    expect(prompt.toLowerCase()).toContain('deducible');
+  });
+
+  it('includes the insurer count in the context', () => {
+    const prompt = buildV2Prompt({ insurerCount: 4 });
+
+    expect(prompt).toContain('4 cotizaciones');
+  });
+
+  it('does not enforce exactly four rows', () => {
+    const prompt = buildV2Prompt();
+
+    expect(prompt).not.toContain('EXACTAMENTE estas filas');
   });
 });
