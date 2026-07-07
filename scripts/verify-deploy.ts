@@ -2,7 +2,7 @@
 /**
  * Post-Deploy Verification Script
  * Verifies that critical production fixes are working correctly
- * 
+ *
  * Usage: cd server && npx ts-node --transpile-only ../scripts/verify-deploy.ts
  */
 
@@ -17,25 +17,22 @@ interface VerificationResult {
 
 async function verifyThesaurus(): Promise<VerificationResult> {
   try {
-    const { error } = await supabase
-      .from('chunks')
-      .select('count')
-      .limit(1);
-    
+    const { error } = await supabase.from('chunks').select('count').limit(1);
+
     if (error) throw error;
-    
+
     return {
       check: 'Tesauro / Database Connection',
       status: 'pass',
       message: '✅ Database connection working',
-      details: `Chunks table accessible`
+      details: `Chunks table accessible`,
     };
   } catch (error: Error) {
     return {
       check: 'Tesauro / Database Connection',
       status: 'fail',
       message: '❌ Database connection failed',
-      details: error.message
+      details: error.message,
     };
   }
 }
@@ -48,24 +45,24 @@ async function verifyRAG(): Promise<VerificationResult> {
       .select('id, content')
       .ilike('content', '%Responsabilidad%')
       .limit(1);
-    
+
     if (error) throw error;
-    
+
     const count = data?.length || 0;
-    
+
     if (count > 0) {
       return {
         check: 'RAG Search',
         status: 'pass',
         message: `✅ RAG content searchable (${count} results)`,
-        details: 'Chunks table has searchable content'
+        details: 'Chunks table has searchable content',
       };
     } else {
       return {
         check: 'RAG Search',
         status: 'warning',
         message: '⚠️ No matching content found',
-        details: 'Function works but no chunks found for query'
+        details: 'Function works but no chunks found for query',
       };
     }
   } catch (error: Error) {
@@ -73,7 +70,7 @@ async function verifyRAG(): Promise<VerificationResult> {
       check: 'RAG Search',
       status: 'fail',
       message: '❌ RAG search error',
-      details: error.message
+      details: error.message,
     };
   }
 }
@@ -83,22 +80,22 @@ async function verifyClauseChunks(): Promise<VerificationResult> {
     const { count, error } = await supabase
       .from('clause_chunks')
       .select('*', { count: 'exact', head: true });
-    
+
     if (error) throw error;
-    
+
     if (count && count > 0) {
       return {
         check: 'Clause Chunks Table',
         status: 'pass',
         message: `✅ clause_chunks has ${count} records`,
-        details: 'Legacy table has data (deprecated but functional)'
+        details: 'Legacy table has data (deprecated but functional)',
       };
     } else {
       return {
         check: 'Clause Chunks Table',
         status: 'warning',
         message: '⚠️ clause_chunks is empty (expected - using chunks table)',
-        details: 'Migration to unified chunks table completed'
+        details: 'Migration to unified chunks table completed',
       };
     }
   } catch (error: Error) {
@@ -106,7 +103,7 @@ async function verifyClauseChunks(): Promise<VerificationResult> {
       check: 'Clause Chunks Table',
       status: 'fail',
       message: '❌ Error checking clause_chunks',
-      details: error.message
+      details: error.message,
     };
   }
 }
@@ -116,22 +113,22 @@ async function verifyChunks(): Promise<VerificationResult> {
     const { count, error } = await supabase
       .from('chunks')
       .select('*', { count: 'exact', head: true });
-    
+
     if (error) throw error;
-    
+
     if (count && count > 0) {
       return {
         check: 'Unified Chunks Table',
         status: 'pass',
         message: `✅ chunks has ${count} records`,
-        details: 'Unified vector storage is populated'
+        details: 'Unified vector storage is populated',
       };
     } else {
       return {
         check: 'Unified Chunks Table',
         status: 'fail',
         message: '❌ chunks table is empty',
-        details: 'No documents have been indexed'
+        details: 'No documents have been indexed',
       };
     }
   } catch (error: Error) {
@@ -139,7 +136,7 @@ async function verifyChunks(): Promise<VerificationResult> {
       check: 'Unified Chunks Table',
       status: 'fail',
       message: '❌ Error checking chunks',
-      details: error.message
+      details: error.message,
     };
   }
 }
@@ -151,81 +148,76 @@ async function verifyDocuments(): Promise<VerificationResult> {
       .select('document_name, document_type')
       .eq('is_active', true)
       .in('document_type', ['CLAUSULADO_GENERAL', 'CLAUSULADO_PARTICULAR']);
-    
+
     if (error) throw error;
-    
+
     const count = data?.length || 0;
-    
+
     return {
       check: 'Documents (Clausulados)',
       status: count > 0 ? 'pass' : 'warning',
-      message: count > 0 
-        ? `✅ ${count} clausulados active`
-        : '⚠️ No active clausulados found',
-      details: data?.map((d) => d.document_name).join(', ') || 'None'
+      message: count > 0 ? `✅ ${count} clausulados active` : '⚠️ No active clausulados found',
+      details: data?.map((d) => d.document_name).join(', ') || 'None',
     };
   } catch (error: Error) {
     return {
       check: 'Documents (Clausulados)',
       status: 'fail',
       message: '❌ Error checking documents',
-      details: error.message
+      details: error.message,
     };
   }
 }
 
 async function verifyChatTables(): Promise<VerificationResult> {
   try {
-    const { error: threadError } = await supabase
-      .from('chat_threads')
-      .select('count')
-      .limit(1);
-    
+    const { error: threadError } = await supabase.from('chat_threads').select('count').limit(1);
+
     if (threadError) throw threadError;
-    
+
     return {
       check: 'Chat Tables',
       status: 'pass',
       message: '✅ Chat tables exist and accessible',
-      details: 'chat_threads and chat_messages ready'
+      details: 'chat_threads and chat_messages ready',
     };
   } catch (error: Error) {
     return {
       check: 'Chat Tables',
       status: 'fail',
       message: '❌ Chat tables error',
-      details: error.message
+      details: error.message,
     };
   }
 }
 
 function verifyEnvVars(): VerificationResult {
   const required = ['GEMINI_API_KEY', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
-  const missing = required.filter(v => !process.env[v]);
-  
+  const missing = required.filter((v) => !process.env[v]);
+
   if (missing.length === 0) {
     return {
       check: 'Environment Variables',
       status: 'pass',
       message: '✅ All required env vars present',
-      details: `GEMINI_MODEL=${process.env.GEMINI_MODEL || 'not set (default: gemini-2.5-flash)'}`
+      details: `GEMINI_MODEL=${process.env.GEMINI_MODEL || 'not set (default: gemini-2.5-flash)'}`,
     };
   } else {
     return {
       check: 'Environment Variables',
       status: 'fail',
       message: `❌ Missing: ${missing.join(', ')}`,
-      details: 'Required environment variables not configured'
+      details: 'Required environment variables not configured',
     };
   }
 }
 
 async function main() {
   console.log('🔍 Post-Deploy Verification\n');
-  console.log('=' .repeat(70));
-  
+  console.log('='.repeat(70));
+
   const results: VerificationResult[] = [];
-  
+
   // Run all checks
   results.push(verifyEnvVars());
   results.push(await verifyThesaurus());
@@ -234,24 +226,24 @@ async function main() {
   results.push(await verifyDocuments());
   results.push(await verifyRAG());
   results.push(await verifyChatTables());
-  
+
   // Display results
   console.log('\n');
-  results.forEach(r => {
+  results.forEach((r) => {
     console.log(`${r.status === 'pass' ? '✅' : r.status === 'warning' ? '⚠️' : '❌'} ${r.check}`);
     console.log(`   ${r.message}`);
     if (r.details) console.log(`   Details: ${r.details}`);
     console.log();
   });
-  
+
   // Summary
-  const passed = results.filter(r => r.status === 'pass').length;
-  const warnings = results.filter(r => r.status === 'warning').length;
-  const failed = results.filter(r => r.status === 'fail').length;
-  
-  console.log('=' .repeat(70));
+  const passed = results.filter((r) => r.status === 'pass').length;
+  const warnings = results.filter((r) => r.status === 'warning').length;
+  const failed = results.filter((r) => r.status === 'fail').length;
+
+  console.log('='.repeat(70));
   console.log(`\n📊 Summary: ${passed} passed, ${warnings} warnings, ${failed} failed`);
-  
+
   if (failed > 0) {
     console.log('\n❌ Deployment verification FAILED');
     process.exit(1);
@@ -264,7 +256,7 @@ async function main() {
   }
 }
 
-main().catch(error => {
+main().catch((error) => {
   console.error('❌ Verification script error:', error);
   process.exit(1);
 });

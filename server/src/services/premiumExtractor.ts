@@ -50,7 +50,7 @@ export function extractPremiumWithRegex(text: string): PremiumExtractionResult |
 
       if (!isNaN(value) && value > 0) {
         const isValidRange = value >= MIN_PREMIUM && value <= MAX_PREMIUM;
-        
+
         return {
           priceAnnual: Math.round(value),
           currency: 'COP',
@@ -174,7 +174,7 @@ export interface RawCoveragePremium {
  */
 export function extractPremiumBreakdown(data: { premium?: unknown }): PremiumBreakdown {
   const premium = (data.premium || {}) as Partial<PremiumBreakdown>;
-  
+
   return {
     netPremium: premium.netPremium || 0,
     fees: premium.fees || 0,
@@ -189,7 +189,9 @@ export function extractPremiumBreakdown(data: { premium?: unknown }): PremiumBre
 /**
  * Extract per-coverage premiums from raw coverages
  */
-export function extractPerCoveragePremiums(rawCoverages: RawCoveragePremium[]): PerCoveragePremium[] {
+export function extractPerCoveragePremiums(
+  rawCoverages: RawCoveragePremium[]
+): PerCoveragePremium[] {
   return rawCoverages
     .filter((c) => c.premium && c.premium > 0)
     .map((c) => ({
@@ -203,20 +205,20 @@ export function extractPerCoveragePremiums(rawCoverages: RawCoveragePremium[]): 
  */
 export function validatePremiumConsistency(breakdown: PremiumBreakdown): PremiumValidationResult {
   const warnings: string[] = [];
-  
+
   // Check if components sum to total
   const sum = breakdown.netPremium + breakdown.fees + breakdown.taxes + breakdown.otherCharges;
-  const isConsistent = Math.abs(sum - breakdown.totalPayable) <= (breakdown.totalPayable * 0.01); // ±1% tolerance
-  
+  const isConsistent = Math.abs(sum - breakdown.totalPayable) <= breakdown.totalPayable * 0.01; // ±1% tolerance
+
   if (!isConsistent && breakdown.totalPayable > 0) {
     warnings.push(`Desglose inconsistente: ${sum} ≠ ${breakdown.totalPayable}`);
   }
-  
+
   // Validate individual components
   if (breakdown.netPremium <= 0 && breakdown.totalPayable > 0) {
     warnings.push('Prima neta no encontrada');
   }
-  
+
   return {
     isValid: breakdown.totalPayable > 0,
     isConsistent,
@@ -233,7 +235,7 @@ export function validatePerCoverageSum(
   netPremium: number
 ): PremiumValidationResult {
   const warnings: string[] = [];
-  
+
   if (perCoveragePremiums.length === 0 || netPremium <= 0) {
     return {
       isValid: true,
@@ -242,14 +244,14 @@ export function validatePerCoverageSum(
       warnings: [],
     };
   }
-  
+
   const sum = perCoveragePremiums.reduce((total, p) => total + p.premium, 0);
-  const matches = Math.abs(sum - netPremium) <= (netPremium * 0.1); // ±10% tolerance
-  
+  const matches = Math.abs(sum - netPremium) <= netPremium * 0.1; // ±10% tolerance
+
   if (!matches) {
     warnings.push(`Primas por cobertura (${sum}) no cuadran con prima neta (${netPremium})`);
   }
-  
+
   return {
     isValid: true,
     isConsistent: true,
@@ -289,7 +291,7 @@ export function validatePremiumBreakdown(
 ): PremiumValidationResult {
   const consistencyResult = validatePremiumConsistency(breakdown);
   const sumResult = validatePerCoverageSum(perCoveragePremiums, breakdown.netPremium);
-  
+
   return {
     isValid: consistencyResult.isValid,
     isConsistent: consistencyResult.isConsistent,

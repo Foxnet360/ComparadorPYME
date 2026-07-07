@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { QuoteAnalysis } from '../../../types';
-import { formatMatrixValue, buildExportNotes, transformQuotesToMatrix, CATEGORY_CONFIGS } from '../../../components/UnifiedCoverageMatrix';
+import {
+  formatMatrixValue,
+  buildExportNotes,
+  transformQuotesToMatrix,
+  CATEGORY_CONFIGS,
+} from '../../../components/UnifiedCoverageMatrix';
 
 describe('UnifiedCoverageMatrix - Pure Functions', () => {
   describe('formatMatrixValue', () => {
@@ -62,7 +67,7 @@ describe('UnifiedCoverageMatrix - Pure Functions', () => {
       };
       const result = buildExportNotes(cellNotes);
       expect(result).toEqual({
-        'row1-1': 'Valid note'
+        'row1-1': 'Valid note',
       });
     });
 
@@ -76,7 +81,7 @@ describe('UnifiedCoverageMatrix - Pure Functions', () => {
       expect(result).toEqual({
         'row1-0': 'Note 1',
         'row1-1': 'Note 2',
-        'row2-0': 'Note 3'
+        'row2-0': 'Note 3',
       });
     });
 
@@ -85,12 +90,12 @@ describe('UnifiedCoverageMatrix - Pure Functions', () => {
         'row1-0': { content: 'Keep this' },
         'row1-1': { content: '' },
         'row2-0': { timestamp: 12345 },
-        'row2-1': { content: 'Also keep' }
+        'row2-1': { content: 'Also keep' },
       };
       const result = buildExportNotes(cellNotes);
       expect(result).toEqual({
         'row1-0': 'Keep this',
-        'row2-1': 'Also keep'
+        'row2-1': 'Also keep',
       });
     });
   });
@@ -99,8 +104,8 @@ describe('UnifiedCoverageMatrix - Pure Functions', () => {
     it('should load categories dynamically from taxonomy.json', () => {
       expect(CATEGORY_CONFIGS).toBeDefined();
       expect(CATEGORY_CONFIGS.length).toBeGreaterThan(0);
-      
-      const incendio = CATEGORY_CONFIGS.find(c => c.id === 1);
+
+      const incendio = CATEGORY_CONFIGS.find((c) => c.id === 1);
       expect(incendio).toBeDefined();
       expect(incendio?.canonicalName).toBe('Incendio (Edificio y Contenidos)');
     });
@@ -114,9 +119,9 @@ describe('UnifiedCoverageMatrix - Pure Functions', () => {
               name: 'Robo con Violencia',
               categoryId: null,
               value: '$10.000.000',
-              deductible: '10%'
-            }
-          ]
+              deductible: '10%',
+            },
+          ],
         },
         {
           insurerName: 'Insurer B',
@@ -125,16 +130,16 @@ describe('UnifiedCoverageMatrix - Pure Functions', () => {
               name: 'Robo con Biolencia',
               categoryId: null,
               value: '$8.000.000',
-              deductible: '15%'
-            }
-          ]
-        }
+              deductible: '15%',
+            },
+          ],
+        },
       ] as unknown as QuoteAnalysis[];
 
       const matrix = transformQuotesToMatrix(mockQuotes);
 
-      const exclusiveRows = matrix.filter(r => r.sectionId === 99 && r.type === 'data');
-      
+      const exclusiveRows = matrix.filter((r) => r.sectionId === 99 && r.type === 'data');
+
       expect(exclusiveRows).toHaveLength(1);
       expect(exclusiveRows[0].label).toBe('Robo con Violencia');
       expect(exclusiveRows[0].cells[0].value).toBe('$10.000.000 (Ded: 10%)');
@@ -149,9 +154,9 @@ describe('UnifiedCoverageMatrix - Pure Functions', () => {
             {
               name: 'Robo con Violencia',
               categoryId: null,
-              value: '$10.000.000'
-            }
-          ]
+              value: '$10.000.000',
+            },
+          ],
         },
         {
           insurerName: 'Insurer B',
@@ -159,19 +164,19 @@ describe('UnifiedCoverageMatrix - Pure Functions', () => {
             {
               name: 'Daños por Agua Raros',
               categoryId: null,
-              value: 'Incluido'
-            }
-          ]
-        }
+              value: 'Incluido',
+            },
+          ],
+        },
       ] as unknown as QuoteAnalysis[];
 
       const matrix = transformQuotesToMatrix(mockQuotes);
 
-      const exclusiveRows = matrix.filter(r => r.sectionId === 99 && r.type === 'data');
-      
+      const exclusiveRows = matrix.filter((r) => r.sectionId === 99 && r.type === 'data');
+
       expect(exclusiveRows).toHaveLength(2);
-      expect(exclusiveRows.map(r => r.label)).toContain('Robo con Violencia');
-      expect(exclusiveRows.map(r => r.label)).toContain('Daños por Agua Raros');
+      expect(exclusiveRows.map((r) => r.label)).toContain('Robo con Violencia');
+      expect(exclusiveRows.map((r) => r.label)).toContain('Daños por Agua Raros');
     });
   });
 });

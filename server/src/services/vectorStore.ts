@@ -1,260 +1,273 @@
 import { supabase } from '../config/database';
 
 export interface ChunkMetadata {
-    insurerName: string;
-    documentName: string;
-    documentType: string;
-    chapter?: string;
-    section?: string;
-    clauseId?: string;
-    pageStart: number;
-    pageEnd: number;
+  insurerName: string;
+  documentName: string;
+  documentType: string;
+  chapter?: string;
+  section?: string;
+  clauseId?: string;
+  pageStart: number;
+  pageEnd: number;
 }
 
 export interface RetrievedChunk {
-    id: string;
-    content: string;
-    metadata: ChunkMetadata;
-    distance: number;
+  id: string;
+  content: string;
+  metadata: ChunkMetadata;
+  distance: number;
 }
 
 // Helper function to extract coverage tags from content
 const extractCoverageTags = (content: string): string[] => {
-    const tags: string[] = [];
-    const coverageTerms = [
-        'daño', 'perdida', 'hurto', 'accidente', 'responsabilidad',
-        'gastos', 'medicos', 'civil', 'extracontractual'
-    ];
-    
-    const lowerContent = content.toLowerCase();
-    coverageTerms.forEach(term => {
-        if (lowerContent.includes(term)) {
-            tags.push(term);
-        }
-    });
-    
-    return tags;
+  const tags: string[] = [];
+  const coverageTerms = [
+    'daño',
+    'perdida',
+    'hurto',
+    'accidente',
+    'responsabilidad',
+    'gastos',
+    'medicos',
+    'civil',
+    'extracontractual',
+  ];
+
+  const lowerContent = content.toLowerCase();
+  coverageTerms.forEach((term) => {
+    if (lowerContent.includes(term)) {
+      tags.push(term);
+    }
+  });
+
+  return tags;
 };
 
 // Helper function to detect section type
 const detectSectionType = (content: string): string | null => {
-    const lowerContent = content.toLowerCase();
-    
-    if (lowerContent.includes('exclusi')) return 'EXCLUSION';
-    if (lowerContent.includes('deducible')) return 'DEDUCIBLE';
-    if (lowerContent.includes('garantia') || lowerContent.includes('cobertura')) return 'COBERTURA';
-    if (lowerContent.includes('condicion')) return 'CONDICION';
-    
-    return 'GENERAL';
+  const lowerContent = content.toLowerCase();
+
+  if (lowerContent.includes('exclusi')) return 'EXCLUSION';
+  if (lowerContent.includes('deducible')) return 'DEDUCIBLE';
+  if (lowerContent.includes('garantia') || lowerContent.includes('cobertura')) return 'COBERTURA';
+  if (lowerContent.includes('condicion')) return 'CONDICION';
+
+  return 'GENERAL';
 };
 
 // Convert embedding array to PostgreSQL vector string format
 const embeddingToString = (embedding: number[]): string => {
-    return `[${embedding.join(',')}]`;
+  return `[${embedding.join(',')}]`;
 };
 
 export const vectorStore = {
-    /**
-     * Inicializa el cliente (no-op para Supabase, ya está inicializado en database.ts)
-     */
-    initialize: async (): Promise<void> => {
-        // Supabase client is already initialized in database.ts
-        console.log('📦 [VectorStore] Using Supabase/pgvector');
-    },
+  /**
+   * Inicializa el cliente (no-op para Supabase, ya está inicializado en database.ts)
+   */
+  initialize: async (): Promise<void> => {
+    // Supabase client is already initialized in database.ts
+    console.log('📦 [VectorStore] Using Supabase/pgvector');
+  },
 
-    /**
-     * Agrega chunks a Supabase
-     */
-    addChunks: async (
-        insurerName: string,
-        chunks: { id: string; content: string; metadata: ChunkMetadata; embedding: number[] }[]
-    ): Promise<void> => {
-        // Preparar datos para Supabase
-        const records = chunks.map(chunk => ({
-            id: chunk.id,
-            document_id: chunk.metadata.clauseId || chunk.id.split('_')[0],
-            page_number: chunk.metadata.pageStart,
-            content: chunk.content,
-            content_normalized: chunk.content.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''),
-            embedding: embeddingToString(chunk.embedding),
-            metadata: chunk.metadata as unknown,
-            coverage_tags: extractCoverageTags(chunk.content),
-            section_type: detectSectionType(chunk.content),
-        }));
+  /**
+   * Agrega chunks a Supabase
+   */
+  addChunks: async (
+    insurerName: string,
+    chunks: { id: string; content: string; metadata: ChunkMetadata; embedding: number[] }[]
+  ): Promise<void> => {
+    // Preparar datos para Supabase
+    const records = chunks.map((chunk) => ({
+      id: chunk.id,
+      document_id: chunk.metadata.clauseId || chunk.id.split('_')[0],
+      page_number: chunk.metadata.pageStart,
+      content: chunk.content,
+      content_normalized: chunk.content
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, ''),
+      embedding: embeddingToString(chunk.embedding),
+      metadata: chunk.metadata as unknown,
+      coverage_tags: extractCoverageTags(chunk.content),
+      section_type: detectSectionType(chunk.content),
+    }));
 
-        // Insertar en Supabase
-        const { error } = await supabase
-            .from('chunks')
-            .upsert(records as unknown as never[], { onConflict: 'id' });
+    // Insertar en Supabase
+    const { error } = await supabase
+      .from('chunks')
+      .upsert(records as unknown as never[], { onConflict: 'id' });
 
-        if (error) {
-            console.error('❌ [VectorStore] Error saving chunks:', error);
-            throw error;
-        }
+    if (error) {
+      console.error('❌ [VectorStore] Error saving chunks:', error);
+      throw error;
+    }
 
-        console.log(`✅ [VectorStore] Added ${chunks.length} chunks to Supabase for ${insurerName}`);
-    },
+    console.log(`✅ [VectorStore] Added ${chunks.length} chunks to Supabase for ${insurerName}`);
+  },
 
-    /**
-     * Busca chunks similares usando pgvector
-     */
-    search: async (
-        insurerName: string,
-        queryEmbedding: number[],
-        filter?: { clauseId?: string; section?: string },
-        limit: number = 5
-    ): Promise<RetrievedChunk[]> => {
-        try {
-            // Intentar usar RPC para búsqueda vectorial
-            const { data, error } = await supabase
-                .rpc('match_chunks', {
-                    query_embedding: embeddingToString(queryEmbedding),
-                    match_threshold: 0.5,
-                    match_count: limit,
-                    insurer_filter: insurerName
-                } as unknown as never);
+  /**
+   * Busca chunks similares usando pgvector
+   */
+  search: async (
+    insurerName: string,
+    queryEmbedding: number[],
+    filter?: { clauseId?: string; section?: string },
+    limit: number = 5
+  ): Promise<RetrievedChunk[]> => {
+    try {
+      // Intentar usar RPC para búsqueda vectorial
+      const { data, error } = await supabase.rpc('match_chunks', {
+        query_embedding: embeddingToString(queryEmbedding),
+        match_threshold: 0.5,
+        match_count: limit,
+        insurer_filter: insurerName,
+      } as unknown as never);
 
-            if (error) {
-                console.warn('⚠️ [VectorStore] RPC match_chunks failed, falling back to text search:', error);
-                // Fallback: búsqueda de texto básica
-                return vectorStore.fallbackTextSearch(insurerName, filter, limit);
-            }
+      if (error) {
+        console.warn(
+          '⚠️ [VectorStore] RPC match_chunks failed, falling back to text search:',
+          error
+        );
+        // Fallback: búsqueda de texto básica
+        return vectorStore.fallbackTextSearch(insurerName, filter, limit);
+      }
 
-            if (!data) return [];
+      if (!data) return [];
 
-            return (data as Array<Record<string, unknown>>).map(row => ({
-                id: row.id as string,
-                content: row.content as string,
-                metadata: row.metadata as ChunkMetadata,
-                distance: 1 - ((row.similarity as number) || 0), // Convertir similitud a distancia
-            }));
-        } catch (error) {
-            console.error('❌ [VectorStore] Search error:', error);
-            return vectorStore.fallbackTextSearch(insurerName, filter, limit);
-        }
-    },
+      return (data as Array<Record<string, unknown>>).map((row) => ({
+        id: row.id as string,
+        content: row.content as string,
+        metadata: row.metadata as ChunkMetadata,
+        distance: 1 - ((row.similarity as number) || 0), // Convertir similitud a distancia
+      }));
+    } catch (error) {
+      console.error('❌ [VectorStore] Search error:', error);
+      return vectorStore.fallbackTextSearch(insurerName, filter, limit);
+    }
+  },
 
-    /**
-     * Búsqueda de fallback usando texto (sin embeddings)
-     */
-    fallbackTextSearch: async (
-        insurerName: string,
-        filter?: { clauseId?: string; section?: string },
-        limit: number = 5
-    ): Promise<RetrievedChunk[]> => {
-        console.log('🔍 [VectorStore] Using fallback text search');
-        
-        let query = supabase
-            .from('chunks')
-            .select('*')
-            .limit(limit);
+  /**
+   * Búsqueda de fallback usando texto (sin embeddings)
+   */
+  fallbackTextSearch: async (
+    insurerName: string,
+    filter?: { clauseId?: string; section?: string },
+    limit: number = 5
+  ): Promise<RetrievedChunk[]> => {
+    console.log('🔍 [VectorStore] Using fallback text search');
 
-        if (filter?.clauseId) {
-            query = query.eq('document_id', filter.clauseId);
-        }
+    let query = supabase.from('chunks').select('*').limit(limit);
 
-        const { data, error } = await query;
+    if (filter?.clauseId) {
+      query = query.eq('document_id', filter.clauseId);
+    }
 
-        if (error) {
-            console.error('❌ [VectorStore] Fallback search error:', error);
-            return [];
-        }
+    const { data, error } = await query;
 
-        return ((data || []) as Array<Record<string, unknown>>).map(row => ({
-            id: row.id as string,
-            content: row.content as string,
-            metadata: row.metadata as ChunkMetadata,
-            distance: 0, // No tenemos distancia real en búsqueda de texto
-        }));
-    },
+    if (error) {
+      console.error('❌ [VectorStore] Fallback search error:', error);
+      return [];
+    }
 
-    /**
-     * Elimina todos los chunks de un documento
-     */
-    deleteDocument: async (insurerName: string, documentName: string): Promise<void> => {
-        // Primero obtener los IDs de los documentos que coinciden
-        const { data: documents, error: docError } = await supabase
-            .from('documents')
-            .select('id')
-            .eq('document_name', documentName);
+    return ((data || []) as Array<Record<string, unknown>>).map((row) => ({
+      id: row.id as string,
+      content: row.content as string,
+      metadata: row.metadata as ChunkMetadata,
+      distance: 0, // No tenemos distancia real en búsqueda de texto
+    }));
+  },
 
-        if (docError) {
-            console.error('❌ [VectorStore] Error finding documents:', docError);
-            throw docError;
-        }
+  /**
+   * Elimina todos los chunks de un documento
+   */
+  deleteDocument: async (insurerName: string, documentName: string): Promise<void> => {
+    // Primero obtener los IDs de los documentos que coinciden
+    const { data: documents, error: docError } = await supabase
+      .from('documents')
+      .select('id')
+      .eq('document_name', documentName);
 
-        if (!documents || documents.length === 0) {
-            console.log(`⚠️ [VectorStore] No documents found with name: ${documentName}`);
-            return;
-        }
+    if (docError) {
+      console.error('❌ [VectorStore] Error finding documents:', docError);
+      throw docError;
+    }
 
-        const documentIds = (documents as Array<Record<string, unknown>>).map(d => d.id as string);
+    if (!documents || documents.length === 0) {
+      console.log(`⚠️ [VectorStore] No documents found with name: ${documentName}`);
+      return;
+    }
 
-        // Eliminar chunks asociados
-        const { error: deleteError } = await supabase
-            .from('chunks')
-            .delete()
-            .in('document_id', documentIds);
+    const documentIds = (documents as Array<Record<string, unknown>>).map((d) => d.id as string);
 
-        if (deleteError) {
-            console.error('❌ [VectorStore] Error deleting chunks:', deleteError);
-            throw deleteError;
-        }
+    // Eliminar chunks asociados
+    const { error: deleteError } = await supabase
+      .from('chunks')
+      .delete()
+      .in('document_id', documentIds);
 
-        console.log(`✅ [VectorStore] Deleted chunks for ${documentName}`);
-    },
+    if (deleteError) {
+      console.error('❌ [VectorStore] Error deleting chunks:', deleteError);
+      throw deleteError;
+    }
 
-    /**
-     * Lista todos los documentos indexados
-     */
-    listDocuments: async (insurerName?: string): Promise<{ insurerName: string; documentName: string; chunkCount: number }[]> => {
-        try {
-            // Obtener documentos con conteo de chunks en una sola query (evita N+1)
-            let query = supabase
-                .from('documents')
-                .select(`
+    console.log(`✅ [VectorStore] Deleted chunks for ${documentName}`);
+  },
+
+  /**
+   * Lista todos los documentos indexados
+   */
+  listDocuments: async (
+    insurerName?: string
+  ): Promise<{ insurerName: string; documentName: string; chunkCount: number }[]> => {
+    try {
+      // Obtener documentos con conteo de chunks en una sola query (evita N+1)
+      let query = supabase
+        .from('documents')
+        .select(
+          `
                     id,
                     document_name,
                     insurers!inner(name),
                     chunks(count)
-                `)
-                .eq('is_active', true);
+                `
+        )
+        .eq('is_active', true);
 
-            if (insurerName) {
-                query = query.eq('insurers.name', insurerName);
-            }
+      if (insurerName) {
+        query = query.eq('insurers.name', insurerName);
+      }
 
-            const { data: documents, error: docError } = await query;
+      const { data: documents, error: docError } = await query;
 
-            if (docError) {
-                console.error('❌ [VectorStore] Error listing documents:', docError);
-                return [];
-            }
+      if (docError) {
+        console.error('❌ [VectorStore] Error listing documents:', docError);
+        return [];
+      }
 
-            if (!documents) return [];
+      if (!documents) return [];
 
-            return (documents as Array<Record<string, unknown>>).map(doc => {
-                const insurers = doc.insurers as Record<string, unknown> | undefined;
-                const chunks = doc.chunks as Array<Record<string, unknown>> | undefined;
-                return {
-                    insurerName: (insurers?.name as string) || 'Unknown',
-                    documentName: doc.document_name as string,
-                    chunkCount: (chunks?.[0]?.count as number) || 0,
-                };
-            });
-        } catch (error) {
-            console.error('❌ [VectorStore] Error in listDocuments:', error);
-            return [];
-        }
-    },
+      return (documents as Array<Record<string, unknown>>).map((doc) => {
+        const insurers = doc.insurers as Record<string, unknown> | undefined;
+        const chunks = doc.chunks as Array<Record<string, unknown>> | undefined;
+        return {
+          insurerName: (insurers?.name as string) || 'Unknown',
+          documentName: doc.document_name as string,
+          chunkCount: (chunks?.[0]?.count as number) || 0,
+        };
+      });
+    } catch (error) {
+      console.error('❌ [VectorStore] Error in listDocuments:', error);
+      return [];
+    }
+  },
 
-    /**
-     * Verifica si hay documentos para una aseguradora
-     */
-    hasDocuments: async (insurerName: string): Promise<boolean> => {
-        const documents = await vectorStore.listDocuments(insurerName);
-        return documents.length > 0;
-    },
+  /**
+   * Verifica si hay documentos para una aseguradora
+   */
+  hasDocuments: async (insurerName: string): Promise<boolean> => {
+    const documents = await vectorStore.listDocuments(insurerName);
+    return documents.length > 0;
+  },
 };
 
 console.log('📦 [VectorStore] Initialized with Supabase/pgvector');

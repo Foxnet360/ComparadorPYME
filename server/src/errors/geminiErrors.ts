@@ -84,22 +84,40 @@ export function categorizeGeminiError(error: unknown): GeminiError {
   const err = error as GeminiErrorLike;
   const message = err?.message || '';
   const status = err?.status || err?.statusCode;
-  
-  if (status === 429 || message.includes('429') || message.includes('Quota exceeded') || message.includes('Too Many Requests')) {
+
+  if (
+    status === 429 ||
+    message.includes('429') ||
+    message.includes('Quota exceeded') ||
+    message.includes('Too Many Requests')
+  ) {
     return new GeminiRateLimitError(message);
   }
-  
-  if (status === 503 || message.includes('503') || message.includes('Service Unavailable') || message.includes('high demand')) {
+
+  if (
+    status === 503 ||
+    message.includes('503') ||
+    message.includes('Service Unavailable') ||
+    message.includes('high demand')
+  ) {
     return new GeminiServiceUnavailableError(message);
   }
-  
-  if (message.includes('timeout') || message.includes('ETIMEDOUT') || message.includes('ECONNABORTED')) {
+
+  if (
+    message.includes('timeout') ||
+    message.includes('ETIMEDOUT') ||
+    message.includes('ECONNABORTED')
+  ) {
     return new GeminiTimeoutError(message);
   }
-  
-  if (status === 502 || message.includes('Invalid response') || message.includes('Unexpected token')) {
+
+  if (
+    status === 502 ||
+    message.includes('Invalid response') ||
+    message.includes('Unexpected token')
+  ) {
     return new GeminiInvalidResponseError(message);
   }
-  
+
   return new GeminiUnknownError(message);
 }

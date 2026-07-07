@@ -124,7 +124,7 @@ Entrada: Tabla con "AMPARO BÁSICO" | 1.621.704.283,00 COP | 5,00 % del Siniestr
 Salida: rawName="AMPARO BÁSICO TODO RIESGO DE PÉRDIDA O DAÑO MATERIAL", insuredAmount=1621704283, deductible="5,00 % del Siniestro, Mínimo 1 SMMLV`,
   },
 
-  'SECTIONS': {
+  SECTIONS: {
     family: 'SECTIONS',
     basePrompt: `Eres un extractor experto de cotizaciones de seguros PYME colombianos.
 
@@ -166,7 +166,7 @@ Entrada: "SECCION PRIMERA - AMPARO BASICO - TODO RIESGO DANO MATERIAL" = $119,60
 Salida: section="SECCION PRIMERA", rawName="AMPARO BASICO - TODO RIESGO DANO MATERIAL", insuredAmount=119600000`,
   },
 
-  'DESCRIPTIVE': {
+  DESCRIPTIVE: {
     family: 'DESCRIPTIVE',
     basePrompt: `Eres un extractor experto de cotizaciones de seguros PYME colombianos.
 
@@ -258,7 +258,7 @@ Entrada: "Todo riesgo daños materiales | PRIMA $485,151 | IMPUESTOS $92,179"
 Salida: rawName="Todo riesgo daños materiales", premium=485151, insuredAmount=null`,
   },
 
-  'CONDITIONS': {
+  CONDITIONS: {
     family: 'CONDITIONS',
     basePrompt: `Eres un extractor experto de cotizaciones de seguros PYME colombianos.
 
@@ -318,7 +318,7 @@ Entrada: Sección 8 "Todo riesgo daño material incluyendo: ✓ Incendio, ✓ Te
 Salida: rawName="Incendio", section="Todo Riesgo Daño Material", insuredAmount=16409171035, deductible="Ver clausulado"`,
   },
 
-  'TEXT': {
+  TEXT: {
     family: 'TEXT',
     basePrompt: `Eres un extractor experto de cotizaciones de seguros PYME colombianos.
 
@@ -360,7 +360,7 @@ Entrada: "VALOR DE LA PRIMA: $1,187,511" + "ASISTENCIA: $73,000" + "EMISIÓN DIG
 Salida: premium={netPremium:1187511, fees:8000, taxes:227147, otherCharges:73000, totalPayable:1509528}`,
   },
 
-  'UNKNOWN': {
+  UNKNOWN: {
     family: 'UNKNOWN',
     basePrompt: `Eres un extractor experto de cotizaciones de seguros PYME colombianos.
 
@@ -424,13 +424,13 @@ export function buildPromptForFamily(
   }
 ): string {
   const template = PROMPT_TEMPLATES[family] || PROMPT_TEMPLATES['UNKNOWN'];
-  
+
   let prompt = `${template.basePrompt}\n\n${template.formatInstructions}`;
-  
+
   if (template.fewShotExamples) {
     prompt += `\n\n${template.fewShotExamples}`;
   }
-  
+
   // Add context-specific instructions
   if (context) {
     prompt += '\n\nCONTEXTO ADICIONAL:';
@@ -447,7 +447,7 @@ export function buildPromptForFamily(
       prompt += `\n- Format family: ${context.formatFamily}`;
     }
   }
-  
+
   prompt += `\n\n### GROUNDING RULES (REQUIRED)
 
 For every coverage row you emit:
@@ -476,7 +476,7 @@ INSTRUCCIONES FINALES:
  * Get all available format families
  */
 export function getSupportedFormatFamilies(): FormatFamily[] {
-  return Object.keys(PROMPT_TEMPLATES).filter(f => f !== 'UNKNOWN') as FormatFamily[];
+  return Object.keys(PROMPT_TEMPLATES).filter((f) => f !== 'UNKNOWN') as FormatFamily[];
 }
 
 /**

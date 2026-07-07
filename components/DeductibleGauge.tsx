@@ -16,12 +16,17 @@ const parseDeductible = (deductible: string): GaugeConfig => {
   const upperValue = deductible?.toUpperCase().trim() || '';
 
   // No deductible
-  if (!upperValue || upperValue === 'NO APLICA' || upperValue === 'SIN DEDUCIBLE' || upperValue === 'INCLUIDO') {
+  if (
+    !upperValue ||
+    upperValue === 'NO APLICA' ||
+    upperValue === 'SIN DEDUCIBLE' ||
+    upperValue === 'INCLUIDO'
+  ) {
     return {
       percentage: 0,
       color: '#10b981', // green
       label: 'Sin deducible',
-      recommendation: 'Excelente: Sin deducible adicional'
+      recommendation: 'Excelente: Sin deducible adicional',
     };
   }
 
@@ -31,7 +36,7 @@ const parseDeductible = (deductible: string): GaugeConfig => {
       percentage: 100,
       color: '#ef4444', // red
       label: 'No especificado',
-      recommendation: '⚠️ Riesgo: El deducible no está especificado. Solicitar aclaración.'
+      recommendation: '⚠️ Riesgo: El deducible no está especificado. Solicitar aclaración.',
     };
   }
 
@@ -44,14 +49,14 @@ const parseDeductible = (deductible: string): GaugeConfig => {
         percentage: Math.min(percentage, 100),
         color: '#ef4444', // red
         label: `${percentage}%`,
-        recommendation: '⚠️ Alto: Deducible superior al 10% del mercado'
+        recommendation: '⚠️ Alto: Deducible superior al 10% del mercado',
       };
     } else if (percentage > 0) {
       return {
         percentage: percentage * 5, // Scale to 0-50 range
         color: '#f59e0b', // yellow
         label: `${percentage}%`,
-        recommendation: 'Moderado: Dentro del rango estándar del mercado'
+        recommendation: 'Moderado: Dentro del rango estándar del mercado',
       };
     }
   }
@@ -65,14 +70,14 @@ const parseDeductible = (deductible: string): GaugeConfig => {
         percentage: Math.min(smmlv * 10, 100),
         color: '#ef4444',
         label: `${smmlv} SMMLV`,
-        recommendation: '⚠️ Alto: Deducible elevado en términos absolutos'
+        recommendation: '⚠️ Alto: Deducible elevado en términos absolutos',
       };
     } else {
       return {
         percentage: smmlv * 10,
         color: '#f59e0b',
         label: `${smmlv} SMMLV`,
-        recommendation: 'Moderado: Deducible estándar'
+        recommendation: 'Moderado: Deducible estándar',
       };
     }
   }
@@ -82,7 +87,7 @@ const parseDeductible = (deductible: string): GaugeConfig => {
     percentage: 50,
     color: '#f59e0b',
     label: deductible,
-    recommendation: 'Revisar: Formato de deducible no estándar'
+    recommendation: 'Revisar: Formato de deducible no estándar',
   };
 };
 
@@ -96,7 +101,7 @@ export const DeductibleGauge: React.FC<DeductibleGaugeProps> = ({ deductible, si
   const strokeDashoffset = circumference - (config.percentage / 100) * circumference;
 
   return (
-    <div 
+    <div
       className="relative inline-flex items-center justify-center"
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
@@ -125,7 +130,7 @@ export const DeductibleGauge: React.FC<DeductibleGaugeProps> = ({ deductible, si
           className="transition-all duration-500 ease-out"
         />
       </svg>
-      
+
       {/* Center text */}
       <div className="absolute inset-0 flex items-center justify-center">
         <span className="text-xs font-bold text-slate-700">{config.label}</span>

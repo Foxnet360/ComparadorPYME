@@ -59,7 +59,14 @@ describe('excelGenerator', () => {
         priceAnnual: 677801,
         currency: 'COP',
         deductibles: '',
-        scoringBreakdown: { coverage: 8, deductibles: 7, exclusions: 8, priceRatio: 9, sublimits: 8, warranties: 8 },
+        scoringBreakdown: {
+          coverage: 8,
+          deductibles: 7,
+          exclusions: 8,
+          priceRatio: 9,
+          sublimits: 8,
+          warranties: 8,
+        },
         clientAnalysis: '',
         technicalAnalysis: '',
         score: 82,
@@ -70,7 +77,7 @@ describe('excelGenerator', () => {
             value: '$119.600.000',
             deductible: '10% PERD - Min 1 SMMLV',
             categoryId: 1,
-            matchConfidence: 0.95
+            matchConfidence: 0.95,
           },
           // Exclusive coverage with raw numeric value
           {
@@ -78,9 +85,9 @@ describe('excelGenerator', () => {
             value: '50000000',
             deductible: 'No aplica',
             categoryId: null,
-            matchConfidence: 0.30
-          }
-        ]
+            matchConfidence: 0.3,
+          },
+        ],
       },
       {
         insurerName: 'CHUBB',
@@ -89,7 +96,14 @@ describe('excelGenerator', () => {
         priceAnnual: 1320000,
         currency: 'COP',
         deductibles: '',
-        scoringBreakdown: { coverage: 7, deductibles: 8, exclusions: 8, priceRatio: 6, sublimits: 7, warranties: 7 },
+        scoringBreakdown: {
+          coverage: 7,
+          deductibles: 8,
+          exclusions: 8,
+          priceRatio: 6,
+          sublimits: 7,
+          warranties: 7,
+        },
         clientAnalysis: '',
         technicalAnalysis: '',
         score: 72,
@@ -100,10 +114,10 @@ describe('excelGenerator', () => {
             value: '$45.000.000',
             deductible: '5% siniestro - Min 1 SMMLV',
             categoryId: 1,
-            matchConfidence: 0.95
-          }
-        ]
-      }
+            matchConfidence: 0.95,
+          },
+        ],
+      },
     ];
 
     it('should generate a valid Excel buffer without throwing', async () => {
@@ -116,12 +130,12 @@ describe('excelGenerator', () => {
       const buffer = await generateExcelBuffer(mockQuotes);
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer);
-      
+
       expect(workbook.worksheets.length).toBe(3);
-      expect(workbook.worksheets.map(w => w.name)).toEqual([
+      expect(workbook.worksheets.map((w) => w.name)).toEqual([
         'Portada',
         'Coberturas y Deducibles',
-        'Primas y Costos'
+        'Primas y Costos',
       ]);
     });
 
@@ -129,10 +143,10 @@ describe('excelGenerator', () => {
       const buffer = await generateExcelBuffer(mockQuotes);
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer);
-      
+
       const primasSheet = workbook.getWorksheet('Primas y Costos');
       expect(primasSheet).toBeDefined();
-      
+
       // Find the ratio row by scanning for the label in column A
       let ratioCell: ExcelJS.Cell | undefined;
       primasSheet!.eachRow((row) => {
@@ -141,7 +155,7 @@ describe('excelGenerator', () => {
           ratioCell = row.getCell(2); // First insurer column
         }
       });
-      
+
       expect(ratioCell).toBeDefined();
       expect(ratioCell!.value).toBeGreaterThan(0);
       expect(ratioCell!.numFmt).toBe('0.00%');
@@ -149,15 +163,15 @@ describe('excelGenerator', () => {
 
     it('should include notes column when cellNotes are provided', async () => {
       const notes: Record<string, string> = {
-        'coverage-section_1_row_value': 'Nota de prueba para Incendio'
+        'coverage-section_1_row_value': 'Nota de prueba para Incendio',
       };
       const buffer = await generateExcelBuffer(mockQuotes, undefined, notes);
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer);
-      
+
       const coveragesSheet = workbook.getWorksheet('Coberturas y Deducibles');
       expect(coveragesSheet).toBeDefined();
-      
+
       // With notes, there should be an extra column
       const headerRow = coveragesSheet!.getRow(4);
       const notesHeader = headerRow.getCell(mockQuotes.length + 2);
@@ -168,10 +182,10 @@ describe('excelGenerator', () => {
       const buffer = await generateExcelBuffer(mockQuotes, undefined, {});
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer);
-      
+
       const coveragesSheet = workbook.getWorksheet('Coberturas y Deducibles');
       expect(coveragesSheet).toBeDefined();
-      
+
       // Without notes, there should be no extra column
       const headerRow = coveragesSheet!.getRow(4);
       const notesHeader = headerRow.getCell(mockQuotes.length + 2);
@@ -207,7 +221,14 @@ describe('excelGenerator', () => {
           priceAnnual: 677801,
           currency: 'COP',
           deductibles: '',
-          scoringBreakdown: { coverage: 8, deductibles: 7, exclusions: 8, priceRatio: 9, sublimits: 8, warranties: 8 },
+          scoringBreakdown: {
+            coverage: 8,
+            deductibles: 7,
+            exclusions: 8,
+            priceRatio: 9,
+            sublimits: 8,
+            warranties: 8,
+          },
           clientAnalysis: '',
           technicalAnalysis: '',
           score: 82,
@@ -218,17 +239,17 @@ describe('excelGenerator', () => {
               value: '$119.600.000',
               deductible: '10% PERD - Min 1 SMMLV',
               categoryId: 1,
-              matchConfidence: 0.95
+              matchConfidence: 0.95,
             },
             {
               name: 'Asistencia VIP',
               value: 'Incluido',
               deductible: 'No aplica',
               categoryId: null,
-              matchConfidence: 0.30
-            }
-          ]
-        }
+              matchConfidence: 0.3,
+            },
+          ],
+        },
       ];
 
       const buffer = await generateExcelBuffer(quotesWithTextExclusive);

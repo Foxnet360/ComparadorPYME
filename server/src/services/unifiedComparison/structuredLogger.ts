@@ -10,7 +10,7 @@ export enum LogLevel {
   DEBUG = 'debug',
   INFO = 'info',
   WARN = 'warn',
-  ERROR = 'error'
+  ERROR = 'error',
 }
 
 export interface LogEntry {
@@ -38,12 +38,14 @@ class StructuredLogger {
   private shouldLogToConsole: boolean;
   private shouldLogToFile: boolean;
 
-  constructor(options: {
-    logDir?: string;
-    minLevel?: LogLevel;
-    logToConsole?: boolean;
-    logToFile?: boolean;
-  } = {}) {
+  constructor(
+    options: {
+      logDir?: string;
+      minLevel?: LogLevel;
+      logToConsole?: boolean;
+      logToFile?: boolean;
+    } = {}
+  ) {
     this.logDir = options.logDir || path.join(process.cwd(), 'logs');
     this.minLevel = options.minLevel || LogLevel.INFO;
     this.shouldLogToConsole = options.logToConsole !== false;
@@ -62,7 +64,7 @@ class StructuredLogger {
     return {
       correlationId: correlationId || this.generateCorrelationId(),
       service: 'unified-comparison-engine',
-      operation
+      operation,
     };
   }
 
@@ -85,7 +87,7 @@ class StructuredLogger {
     // Format log entry
     const formattedEntry = {
       ...entry,
-      timestamp: entry.timestamp || new Date().toISOString()
+      timestamp: entry.timestamp || new Date().toISOString(),
     };
 
     // Log to console
@@ -116,16 +118,14 @@ class StructuredLogger {
     const icon = this.getLevelIcon(entry.level);
     const correlationStr = `[${entry.correlationId}]`;
     const durationStr = entry.durationMs ? `(${entry.durationMs}ms)` : '';
-    
-    console.log(
-      `${icon} ${correlationStr} ${entry.service}:${entry.operation} ${durationStr}`
-    );
+
+    console.log(`${icon} ${correlationStr} ${entry.service}:${entry.operation} ${durationStr}`);
     console.log(`   ${entry.message}`);
-    
+
     if (entry.metadata && Object.keys(entry.metadata).length > 0) {
       console.log(`   Metadata:`, JSON.stringify(entry.metadata, null, 2));
     }
-    
+
     if (entry.error) {
       console.error(`   Error: ${entry.error}`);
     }
@@ -136,11 +136,16 @@ class StructuredLogger {
    */
   private getLevelIcon(level: LogLevel): string {
     switch (level) {
-      case LogLevel.DEBUG: return '🔍';
-      case LogLevel.INFO: return 'ℹ️';
-      case LogLevel.WARN: return '⚠️';
-      case LogLevel.ERROR: return '❌';
-      default: return '📝';
+      case LogLevel.DEBUG:
+        return '🔍';
+      case LogLevel.INFO:
+        return 'ℹ️';
+      case LogLevel.WARN:
+        return '⚠️';
+      case LogLevel.ERROR:
+        return '❌';
+      default:
+        return '📝';
     }
   }
 
@@ -151,7 +156,7 @@ class StructuredLogger {
     try {
       const date = new Date().toISOString().split('T')[0];
       const logFile = path.join(this.logDir, `unified-engine-${date}.log`);
-      
+
       const logLine = JSON.stringify(entry) + '\n';
       fs.appendFileSync(logFile, logLine);
     } catch (error) {
@@ -172,15 +177,21 @@ class StructuredLogger {
       message: `Starting comparison for ${pdfCount} quotes`,
       metadata: {
         pdfCount,
-        pdfPaths: pdfPaths.map(p => path.basename(p))
-      }
+        pdfPaths: pdfPaths.map((p) => path.basename(p)),
+      },
     });
   }
 
   /**
    * Log comparison completion
    */
-  logComparisonComplete(context: LoggerContext, durationMs: number, confidence: number, success: boolean, error?: string): void {
+  logComparisonComplete(
+    context: LoggerContext,
+    durationMs: number,
+    confidence: number,
+    success: boolean,
+    error?: string
+  ): void {
     this.log({
       timestamp: new Date().toISOString(),
       level: success ? LogLevel.INFO : LogLevel.ERROR,
@@ -193,15 +204,19 @@ class StructuredLogger {
       error,
       metadata: {
         confidence,
-        durationMs
-      }
+        durationMs,
+      },
     });
   }
 
   /**
    * Log engine selection
    */
-  logEngineSelection(context: LoggerContext, engine: 'unified' | 'legacy' | 'fallback', reason?: string): void {
+  logEngineSelection(
+    context: LoggerContext,
+    engine: 'unified' | 'legacy' | 'fallback',
+    reason?: string
+  ): void {
     this.log({
       timestamp: new Date().toISOString(),
       level: LogLevel.INFO,
@@ -211,8 +226,8 @@ class StructuredLogger {
       message: `Engine selected: ${engine}`,
       metadata: {
         engine,
-        reason
-      }
+        reason,
+      },
     });
   }
 
@@ -230,15 +245,21 @@ class StructuredLogger {
       error,
       metadata: {
         fallbackReason,
-        error
-      }
+        error,
+      },
     });
   }
 
   /**
    * Log PDF upload
    */
-  logPdfUpload(context: LoggerContext, fileName: string, fileSize: number, success: boolean, error?: string): void {
+  logPdfUpload(
+    context: LoggerContext,
+    fileName: string,
+    fileSize: number,
+    success: boolean,
+    error?: string
+  ): void {
     this.log({
       timestamp: new Date().toISOString(),
       level: success ? LogLevel.INFO : LogLevel.ERROR,
@@ -250,15 +271,19 @@ class StructuredLogger {
       error,
       metadata: {
         fileName,
-        fileSize
-      }
+        fileSize,
+      },
     });
   }
 
   /**
    * Log cache operation
    */
-  logCacheOperation(context: LoggerContext, operation: 'hit' | 'miss' | 'set', fileHash: string): void {
+  logCacheOperation(
+    context: LoggerContext,
+    operation: 'hit' | 'miss' | 'set',
+    fileHash: string
+  ): void {
     this.log({
       timestamp: new Date().toISOString(),
       level: LogLevel.DEBUG,
@@ -268,8 +293,8 @@ class StructuredLogger {
       message: `Cache ${operation}: ${fileHash.substring(0, 8)}...`,
       metadata: {
         cacheOperation: operation,
-        fileHash: fileHash.substring(0, 8)
-      }
+        fileHash: fileHash.substring(0, 8),
+      },
     });
   }
 
@@ -286,8 +311,8 @@ class StructuredLogger {
       message: `Validation complete: ${validations} validations, ${discrepancies} discrepancies`,
       metadata: {
         validations,
-        discrepancies
-      }
+        discrepancies,
+      },
     });
   }
 
@@ -302,7 +327,7 @@ class StructuredLogger {
       service: context.service,
       operation: context.operation,
       message,
-      metadata
+      metadata,
     });
   }
 
@@ -317,7 +342,7 @@ class StructuredLogger {
       service: context.service,
       operation: context.operation,
       message,
-      metadata
+      metadata,
     });
   }
 
@@ -332,14 +357,19 @@ class StructuredLogger {
       service: context.service,
       operation: context.operation,
       message,
-      metadata
+      metadata,
     });
   }
 
   /**
    * Log error message
    */
-  error(context: LoggerContext, message: string, error?: string, metadata?: Record<string, unknown>): void {
+  error(
+    context: LoggerContext,
+    message: string,
+    error?: string,
+    metadata?: Record<string, unknown>
+  ): void {
     this.log({
       timestamp: new Date().toISOString(),
       level: LogLevel.ERROR,
@@ -348,7 +378,7 @@ class StructuredLogger {
       operation: context.operation,
       message,
       error,
-      metadata
+      metadata,
     });
   }
 }

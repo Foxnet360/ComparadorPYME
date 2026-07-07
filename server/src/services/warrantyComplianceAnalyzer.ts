@@ -34,28 +34,56 @@ export interface WarrantyComplianceSummary {
 
 // Keywords for classification
 const TYPE_KEYWORDS: Record<WarrantyType, string[]> = {
-  'DOCUMENTAL': [
-    'certificado', 'documento', 'póliza', 'declaración', 'formulario',
-    'registro', 'licencia', 'permiso', 'constancia'
+  DOCUMENTAL: [
+    'certificado',
+    'documento',
+    'póliza',
+    'declaración',
+    'formulario',
+    'registro',
+    'licencia',
+    'permiso',
+    'constancia',
   ],
-  'OPERACIONAL': [
-    'procedimiento', 'protocolo', 'manual', 'capacitación', 'inspección',
-    'mantenimiento', 'alarma', 'vigilancia', 'control'
+  OPERACIONAL: [
+    'procedimiento',
+    'protocolo',
+    'manual',
+    'capacitación',
+    'inspección',
+    'mantenimiento',
+    'alarma',
+    'vigilancia',
+    'control',
   ],
-  'TECNICO': [
-    'sistema', 'equipo', 'instalación', 'prueba', 'medición',
-    'verificación', 'calibración', 'detector', 'extintor'
+  TECNICO: [
+    'sistema',
+    'equipo',
+    'instalación',
+    'prueba',
+    'medición',
+    'verificación',
+    'calibración',
+    'detector',
+    'extintor',
   ],
-  'FINANCIERO': [
-    'fianza', 'garantía', 'depósito', 'pago', 'prima',
-    'cobro', 'reembolso', 'deducible', 'franquicia'
-  ]
+  FINANCIERO: [
+    'fianza',
+    'garantía',
+    'depósito',
+    'pago',
+    'prima',
+    'cobro',
+    'reembolso',
+    'deducible',
+    'franquicia',
+  ],
 };
 
 const DIFFICULTY_INDICATORS: Record<DifficultyLevel, string[]> = {
-  'EASY': ['presentar', 'tener', 'contar con', 'disponer'],
-  'MEDIUM': ['mantener', 'realizar', 'efectuar', 'ejecutar'],
-  'HARD': ['constituir', 'establecer', 'implementar', 'certificar']
+  EASY: ['presentar', 'tener', 'contar con', 'disponer'],
+  MEDIUM: ['mantener', 'realizar', 'efectuar', 'ejecutar'],
+  HARD: ['constituir', 'establecer', 'implementar', 'certificar'],
 };
 
 export const warrantyComplianceAnalyzer = {
@@ -67,24 +95,24 @@ export const warrantyComplianceAnalyzer = {
     clientProfile?: ClientProfile
   ): WarrantyComplianceSummary => {
     console.log(`🔍 [warrantyComplianceAnalyzer] Analyzing ${conditions.length} conditions...`);
-    
-    const analyzedConditions = conditions.map(condition =>
+
+    const analyzedConditions = conditions.map((condition) =>
       analyzeSingleCondition(condition, clientProfile)
     );
-    
+
     // Group by type
     const byType = {
       documental: aggregateType(analyzedConditions, 'DOCUMENTAL'),
       operacional: aggregateType(analyzedConditions, 'OPERACIONAL'),
       tecnico: aggregateType(analyzedConditions, 'TECNICO'),
-      financiero: aggregateType(analyzedConditions, 'FINANCIERO')
+      financiero: aggregateType(analyzedConditions, 'FINANCIERO'),
     };
-    
+
     // Calculate overall risk
-    const highRiskCount = analyzedConditions.filter(c => c.complianceRisk === 'HIGH').length;
-    const mediumRiskCount = analyzedConditions.filter(c => c.complianceRisk === 'MEDIUM').length;
+    const highRiskCount = analyzedConditions.filter((c) => c.complianceRisk === 'HIGH').length;
+    const mediumRiskCount = analyzedConditions.filter((c) => c.complianceRisk === 'MEDIUM').length;
     const totalCount = analyzedConditions.length;
-    
+
     let overallRisk: ComplianceRiskLevel;
     if (highRiskCount / totalCount > 0.3) {
       overallRisk = 'HIGH';
@@ -93,45 +121,46 @@ export const warrantyComplianceAnalyzer = {
     } else {
       overallRisk = 'LOW';
     }
-    
+
     // Calculate compliance percentage (simulated)
-    const easyCompliant = analyzedConditions.filter(c => 
-      c.difficulty === 'EASY' && c.type !== 'FINANCIERO'
+    const easyCompliant = analyzedConditions.filter(
+      (c) => c.difficulty === 'EASY' && c.type !== 'FINANCIERO'
     ).length;
-    const compliancePercentage = totalCount > 0 
-      ? Math.round((easyCompliant / totalCount) * 100)
-      : 0;
-    
-    console.log(`✅ [warrantyComplianceAnalyzer] Overall risk: ${overallRisk}, Compliance: ${compliancePercentage}%`);
-    
+    const compliancePercentage =
+      totalCount > 0 ? Math.round((easyCompliant / totalCount) * 100) : 0;
+
+    console.log(
+      `✅ [warrantyComplianceAnalyzer] Overall risk: ${overallRisk}, Compliance: ${compliancePercentage}%`
+    );
+
     return {
       totalConditions: totalCount,
       byType,
       overallRisk,
-      highRiskConditions: analyzedConditions.filter(c => c.complianceRisk === 'HIGH'),
-      compliancePercentage
+      highRiskConditions: analyzedConditions.filter((c) => c.complianceRisk === 'HIGH'),
+      compliancePercentage,
     };
   },
-  
+
   /**
    * Classify a single condition
    */
   classifyCondition: (conditionText: string): WarrantyType => {
     const lowerText = conditionText.toLowerCase();
-    
+
     let bestMatch: WarrantyType = 'OPERACIONAL';
     let maxMatches = 0;
-    
+
     for (const [type, keywords] of Object.entries(TYPE_KEYWORDS)) {
-      const matches = keywords.filter(k => lowerText.includes(k)).length;
+      const matches = keywords.filter((k) => lowerText.includes(k)).length;
       if (matches > maxMatches) {
         maxMatches = matches;
         bestMatch = type as WarrantyType;
       }
     }
-    
+
     return bestMatch;
-  }
+  },
 };
 
 function analyzeSingleCondition(
@@ -139,32 +168,32 @@ function analyzeSingleCondition(
   clientProfile?: ClientProfile
 ): WarrantyCondition {
   const type = warrantyComplianceAnalyzer.classifyCondition(condition);
-  
+
   // Determine difficulty
   let difficulty: DifficultyLevel = 'MEDIUM';
   const lowerCondition = condition.toLowerCase();
-  
+
   for (const [level, indicators] of Object.entries(DIFFICULTY_INDICATORS)) {
-    if (indicators.some(i => lowerCondition.includes(i))) {
+    if (indicators.some((i) => lowerCondition.includes(i))) {
       difficulty = level as DifficultyLevel;
       break;
     }
   }
-  
+
   // Adjust difficulty based on client profile
   if (clientProfile) {
     if (type === 'FINANCIERO' && (clientProfile.annualRevenue || 0) < 100000000) {
       difficulty = 'HARD'; // Financial conditions are harder for small businesses
     }
-    
+
     if (type === 'TECNICO' && clientProfile.employeeCount < 10) {
       difficulty = 'HARD'; // Technical conditions harder for small teams
     }
   }
-  
+
   // Determine compliance risk
   let complianceRisk: ComplianceRiskLevel;
-  
+
   if (type === 'FINANCIERO' && difficulty === 'HARD') {
     complianceRisk = 'HIGH';
   } else if (difficulty === 'HARD') {
@@ -174,7 +203,7 @@ function analyzeSingleCondition(
   } else {
     complianceRisk = 'LOW';
   }
-  
+
   // Determine verification method
   let verificationMethod: string;
   switch (type) {
@@ -191,7 +220,7 @@ function analyzeSingleCondition(
       verificationMethod = 'Verificación bancaria';
       break;
   }
-  
+
   // Estimate cost
   let estimatedCost: number | undefined;
   if (type === 'FINANCIERO') {
@@ -199,28 +228,25 @@ function analyzeSingleCondition(
   } else if (type === 'TECNICO' && difficulty === 'HARD') {
     estimatedCost = 2000000; // $2M COP
   }
-  
+
   return {
     text: condition,
     type,
     difficulty,
     complianceRisk,
     verificationMethod,
-    estimatedCost
+    estimatedCost,
   };
 }
 
-function aggregateType(
-  conditions: WarrantyCondition[],
-  type: WarrantyType
-) {
-  const typeConditions = conditions.filter(c => c.type === type);
-  const compliant = typeConditions.filter(c => c.difficulty === 'EASY').length;
-  
+function aggregateType(conditions: WarrantyCondition[], type: WarrantyType) {
+  const typeConditions = conditions.filter((c) => c.type === type);
+  const compliant = typeConditions.filter((c) => c.difficulty === 'EASY').length;
+
   // Calculate type risk
-  const highRiskCount = typeConditions.filter(c => c.complianceRisk === 'HIGH').length;
+  const highRiskCount = typeConditions.filter((c) => c.complianceRisk === 'HIGH').length;
   let risk: ComplianceRiskLevel;
-  
+
   if (highRiskCount / (typeConditions.length || 1) > 0.5) {
     risk = 'HIGH';
   } else if (highRiskCount > 0) {
@@ -228,11 +254,11 @@ function aggregateType(
   } else {
     risk = 'LOW';
   }
-  
+
   return {
     count: typeConditions.length,
     compliant,
-    risk
+    risk,
   };
 }
 

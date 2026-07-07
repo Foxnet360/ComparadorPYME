@@ -19,17 +19,17 @@ export function usePdfDocument(pdfUrl: string) {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
-    
+
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const loadingTask = pdfjsLib.getDocument({ url });
       const pdf = await loadingTask.promise;
-      
+
       if (!abortController.signal.aborted) {
         setDocument({ pdf, numPages: pdf.numPages });
       }
@@ -48,7 +48,7 @@ export function usePdfDocument(pdfUrl: string) {
     if (pdfUrl) {
       loadDocument(pdfUrl);
     }
-    
+
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -56,38 +56,44 @@ export function usePdfDocument(pdfUrl: string) {
     };
   }, [pdfUrl, loadDocument]);
 
-  const getPage = useCallback(async (pageNumber: number) => {
-    if (!document) return null;
-    
-    try {
-      return await document.pdf.getPage(pageNumber);
-    } catch (err) {
-      console.error('Error obteniendo página:', err);
-      return null;
-    }
-  }, [document]);
+  const getPage = useCallback(
+    async (pageNumber: number) => {
+      if (!document) return null;
 
-  const searchText = useCallback(async (pageNumber: number, searchText: string) => {
-    if (!document) return null;
-    
-    try {
-      const page = await document.pdf.getPage(pageNumber);
-      const textContent = await page.getTextContent();
-      
-      // Buscar el texto en los items
-      const matches = textContent.items.filter((item) => {
-        if ('str' in item) {
-          return item.str.toLowerCase().includes(searchText.toLowerCase());
-        }
-        return false;
-      });
-      
-      return matches;
-    } catch (err) {
-      console.error('Error buscando texto:', err);
-      return null;
-    }
-  }, [document]);
+      try {
+        return await document.pdf.getPage(pageNumber);
+      } catch (err) {
+        console.error('Error obteniendo página:', err);
+        return null;
+      }
+    },
+    [document]
+  );
+
+  const searchText = useCallback(
+    async (pageNumber: number, searchText: string) => {
+      if (!document) return null;
+
+      try {
+        const page = await document.pdf.getPage(pageNumber);
+        const textContent = await page.getTextContent();
+
+        // Buscar el texto en los items
+        const matches = textContent.items.filter((item) => {
+          if ('str' in item) {
+            return item.str.toLowerCase().includes(searchText.toLowerCase());
+          }
+          return false;
+        });
+
+        return matches;
+      } catch (err) {
+        console.error('Error buscando texto:', err);
+        return null;
+      }
+    },
+    [document]
+  );
 
   return {
     document,

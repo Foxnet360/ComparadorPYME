@@ -1,9 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import {
-  assertTaxonomyBundle,
-  TaxonomyBundle,
-} from '../../schemas/domainBundleSchema';
+import { assertTaxonomyBundle, TaxonomyBundle } from '../../schemas/domainBundleSchema';
 import { loadDomainJson } from '../domainBundleLoader';
 
 function resolveLegacyThesaurusPath(): string {
@@ -358,7 +355,9 @@ export const thesaurusService = {
   /**
    * Lista todas las alertas de auditoría
    */
-  listAllAlerts: (domain?: string): {
+  listAllAlerts: (
+    domain?: string
+  ): {
     criticas: AlertaDefinicion[];
     atencion: AlertaDefinicion[];
     destacadas: AlertaDefinicion[];
@@ -370,7 +369,10 @@ export const thesaurusService = {
   /**
    * Detecta términos legales en un texto
    */
-  detectLegalTerms: (text: string, domain?: string): Array<{ term: string; type: string; description: string }> => {
+  detectLegalTerms: (
+    text: string,
+    domain?: string
+  ): Array<{ term: string; type: string; description: string }> => {
     const thesaurus = loadThesaurus(domain ?? 'pyme');
     const detected: Array<{ term: string; type: string; description: string }> = [];
     const normalizedText = thesaurusService.normalizeTerm(text);

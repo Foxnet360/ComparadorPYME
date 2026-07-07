@@ -31,7 +31,15 @@ describe('Fallback Mechanism', () => {
         policyName: 'PYME',
         priceAnnual: 8_500_000,
         currency: 'COP',
-        coverages: [{ name: 'Incendio', canonicalName: 'Incendio', value: '500M', deductible: '10%', confidence: 95 }],
+        coverages: [
+          {
+            name: 'Incendio',
+            canonicalName: 'Incendio',
+            value: '500M',
+            deductible: '10%',
+            confidence: 95,
+          },
+        ],
         specialConditions: [],
         rawText: '',
         parseConfidence: 92,
@@ -78,9 +86,9 @@ describe('Fallback Mechanism', () => {
 
     await comparisonEngineAdapter.generateComparison(['fake1.pdf']);
 
-    const matchingLog = consoleErrorSpy.mock.calls.find((call) =>
-      String(call[0]).includes('routing=fallback') &&
-      String(call[0]).includes('corr-net-1')
+    const matchingLog = consoleErrorSpy.mock.calls.find(
+      (call) =>
+        String(call[0]).includes('routing=fallback') && String(call[0]).includes('corr-net-1')
     );
     expect(matchingLog).toBeDefined();
   });

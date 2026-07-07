@@ -19,7 +19,6 @@ const FLAT_ROW_LABELS = [
 ] as const;
 
 export class ComparisonPromptBuilder {
-
   /**
    * Build the main flat-table comparison prompt.
    *

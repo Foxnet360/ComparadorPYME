@@ -48,23 +48,23 @@ describe('learningEngine embedding retrieval and fallback', () => {
     mockFrom.mockReturnValue({
       select: () => ({
         eq: () => ({
-          limit: () => Promise.resolve({ data: [], error: null })
-        })
-      })
+          limit: () => Promise.resolve({ data: [], error: null }),
+        }),
+      }),
     });
   });
 
   it('uses DB embeddings and in-memory cosine similarity when embeddings exist in DB', async () => {
     const mockDbCorrections = [
-      { id: '1', raw_name: 'Robo y Asalto', embedding: [0.1, 0.2, 0.3], user_corrected: true }
+      { id: '1', raw_name: 'Robo y Asalto', embedding: [0.1, 0.2, 0.3], user_corrected: true },
     ];
 
     mockFrom.mockReturnValue({
       select: () => ({
         eq: () => ({
-          limit: () => Promise.resolve({ data: mockDbCorrections, error: null })
-        })
-      })
+          limit: () => Promise.resolve({ data: mockDbCorrections, error: null }),
+        }),
+      }),
     });
 
     vi.mocked(embeddingService.generateEmbedding).mockResolvedValue([0.1, 0.2, 0.3]);
@@ -74,20 +74,23 @@ describe('learningEngine embedding retrieval and fallback', () => {
 
     expect(results).toHaveLength(1);
     expect(results[0].raw_name).toBe('Robo y Asalto');
-    expect(embeddingService.cosineSimilarity).toHaveBeenCalledWith([0.1, 0.2, 0.3], [0.1, 0.2, 0.3]);
+    expect(embeddingService.cosineSimilarity).toHaveBeenCalledWith(
+      [0.1, 0.2, 0.3],
+      [0.1, 0.2, 0.3]
+    );
   });
 
   it('falls back to local Sørensen-Dice similarity matching when db embeddings are missing', async () => {
     const mockDbCorrections = [
-      { id: '1', raw_name: 'Robo y Asalto', embedding: null, user_corrected: true }
+      { id: '1', raw_name: 'Robo y Asalto', embedding: null, user_corrected: true },
     ];
 
     mockFrom.mockReturnValue({
       select: () => ({
         eq: () => ({
-          limit: () => Promise.resolve({ data: mockDbCorrections, error: null })
-        })
-      })
+          limit: () => Promise.resolve({ data: mockDbCorrections, error: null }),
+        }),
+      }),
     });
 
     vi.mocked(embeddingService.generateEmbedding).mockResolvedValue([0.1, 0.2, 0.3]);

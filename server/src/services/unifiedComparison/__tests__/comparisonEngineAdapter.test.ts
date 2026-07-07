@@ -162,15 +162,12 @@ describe('ComparisonEngineAdapter', () => {
   });
 
   it('logs fallback reason with correlation id', async () => {
-    compareSpy.mockRejectedValue(
-      new UnifiedComparisonError('network error', 'corr-456', 1)
-    );
+    compareSpy.mockRejectedValue(new UnifiedComparisonError('network error', 'corr-456', 1));
 
     await comparisonEngineAdapter.generateComparison(['a.pdf']);
 
-    const matchingLog = consoleErrorSpy.mock.calls.find((call) =>
-      String(call[0]).includes('routing=fallback') &&
-      String(call[0]).includes('corr-456')
+    const matchingLog = consoleErrorSpy.mock.calls.find(
+      (call) => String(call[0]).includes('routing=fallback') && String(call[0]).includes('corr-456')
     );
     expect(matchingLog).toBeDefined();
   });
@@ -199,8 +196,8 @@ describe('ComparisonEngineAdapter', () => {
     compareSpy.mockRejectedValue(new Error('unified failed'));
     batchSpy.mockRejectedValue(new Error('batch failed'));
 
-    await expect(
-      comparisonEngineAdapter.generateComparison(['a.pdf'])
-    ).rejects.toThrow('batch failed');
+    await expect(comparisonEngineAdapter.generateComparison(['a.pdf'])).rejects.toThrow(
+      'batch failed'
+    );
   });
 });

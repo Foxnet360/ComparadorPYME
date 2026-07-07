@@ -121,9 +121,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
                 <div className="w-full border-t border-slate-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-slate-500">
-                  ¿No tienes cuenta?
-                </span>
+                <span className="px-2 bg-white text-slate-500">¿No tienes cuenta?</span>
               </div>
             </div>
 

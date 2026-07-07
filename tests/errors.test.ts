@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { 
-  AppError, 
-  ValidationError, 
-  AuthenticationError, 
+import {
+  AppError,
+  ValidationError,
+  AuthenticationError,
   AuthorizationError,
   RateLimitError,
-  NotFoundError 
+  NotFoundError,
 } from '../server/src/errors';
 
 describe('Custom Error Classes', () => {

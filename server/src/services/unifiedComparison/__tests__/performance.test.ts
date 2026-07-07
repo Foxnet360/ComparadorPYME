@@ -51,9 +51,8 @@ async function runBenchmark(
       engine,
       quoteCount: pdfPaths.length,
       durationMs,
-      success: true
+      success: true,
     };
-
   } catch (error: unknown) {
     const durationMs = Date.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -62,7 +61,7 @@ async function runBenchmark(
       quoteCount: pdfPaths.length,
       durationMs,
       success: false,
-      error: errorMessage
+      error: errorMessage,
     };
   }
 }
@@ -75,162 +74,187 @@ async function simulateLegacyProcessing(quoteCount: number): Promise<void> {
   // Legacy takes ~67s per quote (270s / 4 quotes)
   const timePerQuote = 67000;
   const totalTime = timePerQuote * quoteCount;
-  await new Promise(resolve => setTimeout(resolve, Math.min(totalTime, 5000))); // Cap at 5s for tests
+  await new Promise((resolve) => setTimeout(resolve, Math.min(totalTime, 5000))); // Cap at 5s for tests
 }
 
 // Skip performance tests in CI or when no PDFs available
 const testPdfDir = './test-quotes';
-const hasTestPdfs = fs.existsSync(testPdfDir) && fs.readdirSync(testPdfDir).some((f: string) => f.endsWith('.pdf'));
+const hasTestPdfs =
+  fs.existsSync(testPdfDir) && fs.readdirSync(testPdfDir).some((f: string) => f.endsWith('.pdf'));
 
 describe('Performance Test: Unified vs Legacy Engine', () => {
-
   (hasTestPdfs ? describe : describe.skip)('with real PDFs', () => {
+    it(
+      'should process 4 quotes in under 60 seconds with unified engine',
+      async () => {
+        const pdfFiles = fs
+          .readdirSync(testPdfDir)
+          .filter((f: string) => f.endsWith('.pdf'))
+          .slice(0, 4)
+          .map((f: string) => `${testPdfDir}/${f}`);
 
-    it('should process 4 quotes in under 60 seconds with unified engine', async () => {
-      const pdfFiles = fs.readdirSync(testPdfDir)
-        .filter((f: string) => f.endsWith('.pdf'))
-        .slice(0, 4)
-        .map((f: string) => `${testPdfDir}/${f}`);
+        if (pdfFiles.length < 4) {
+          console.log(`Only ${pdfFiles.length} PDFs available, need 4 for test`);
+          return;
+        }
 
-      if (pdfFiles.length < 4) {
-        console.log(`Only ${pdfFiles.length} PDFs available, need 4 for test`);
-        return;
-      }
+        const result = await runBenchmark(pdfFiles, 'unified');
 
-      const result = await runBenchmark(pdfFiles, 'unified');
+        expect(result.success).toBe(true);
+        expect(result.durationMs).toBeLessThan(TARGET_TIME_MS);
 
-      expect(result.success).toBe(true);
-      expect(result.durationMs).toBeLessThan(TARGET_TIME_MS);
+        console.log(`✅ Performance test passed:`);
+        console.log(
+          `   Unified engine: ${result.durationMs}ms (${(result.durationMs / 1000).toFixed(1)}s)`
+        );
+        console.log(`   Target: ${TARGET_TIME_MS}ms (${(TARGET_TIME_MS / 1000).toFixed(1)}s)`);
+        console.log(
+          `   Improvement: ${(((LEGACY_BASELINE_MS - result.durationMs) / LEGACY_BASELINE_MS) * 100).toFixed(1)}% faster than legacy`
+        );
+      },
+      TEST_TIMEOUT
+    );
 
-      console.log(`✅ Performance test passed:`);
-      console.log(`   Unified engine: ${result.durationMs}ms (${(result.durationMs / 1000).toFixed(1)}s)`);
-      console.log(`   Target: ${TARGET_TIME_MS}ms (${(TARGET_TIME_MS / 1000).toFixed(1)}s)`);
-      console.log(`   Improvement: ${((LEGACY_BASELINE_MS - result.durationMs) / LEGACY_BASELINE_MS * 100).toFixed(1)}% faster than legacy`);
+    it(
+      'should be faster than legacy engine',
+      async () => {
+        const pdfFiles = fs
+          .readdirSync(testPdfDir)
+          .filter((f: string) => f.endsWith('.pdf'))
+          .slice(0, 4)
+          .map((f: string) => `${testPdfDir}/${f}`);
 
-    }, TEST_TIMEOUT);
+        if (pdfFiles.length < 2) {
+          console.log('Need at least 2 PDFs for comparison test');
+          return;
+        }
 
-    it('should be faster than legacy engine', async () => {
-      const pdfFiles = fs.readdirSync(testPdfDir)
-        .filter((f: string) => f.endsWith('.pdf'))
-        .slice(0, 4)
-        .map((f: string) => `${testPdfDir}/${f}`);
+        // Run unified test
+        const unifiedResult = await runBenchmark(pdfFiles, 'unified');
 
-      if (pdfFiles.length < 2) {
-        console.log('Need at least 2 PDFs for comparison test');
-        return;
-      }
+        // Run legacy test (simulated)
+        const legacyResult = await runBenchmark(pdfFiles, 'legacy');
 
-      // Run unified test
-      const unifiedResult = await runBenchmark(pdfFiles, 'unified');
+        expect(unifiedResult.success).toBe(true);
+        expect(legacyResult.success).toBe(true);
+        expect(unifiedResult.durationMs).toBeLessThan(legacyResult.durationMs);
 
-      // Run legacy test (simulated)
-      const legacyResult = await runBenchmark(pdfFiles, 'legacy');
+        console.log(`✅ Comparison test passed:`);
+        console.log(`   Unified: ${unifiedResult.durationMs}ms`);
+        console.log(`   Legacy: ${legacyResult.durationMs}ms`);
+        console.log(
+          `   Speedup: ${(legacyResult.durationMs / unifiedResult.durationMs).toFixed(1)}x`
+        );
+      },
+      TEST_TIMEOUT * 2
+    );
 
-      expect(unifiedResult.success).toBe(true);
-      expect(legacyResult.success).toBe(true);
-      expect(unifiedResult.durationMs).toBeLessThan(legacyResult.durationMs);
+    it(
+      'should scale linearly with quote count',
+      async () => {
+        const pdfFiles = fs
+          .readdirSync(testPdfDir)
+          .filter((f: string) => f.endsWith('.pdf'))
+          .map((f: string) => `${testPdfDir}/${f}`);
 
-      console.log(`✅ Comparison test passed:`);
-      console.log(`   Unified: ${unifiedResult.durationMs}ms`);
-      console.log(`   Legacy: ${legacyResult.durationMs}ms`);
-      console.log(`   Speedup: ${(legacyResult.durationMs / unifiedResult.durationMs).toFixed(1)}x`);
+        if (pdfFiles.length < 2) {
+          console.log('Need at least 2 PDFs for scaling test');
+          return;
+        }
 
-    }, TEST_TIMEOUT * 2);
+        const results: PerformanceResult[] = [];
 
-    it('should scale linearly with quote count', async () => {
-      const pdfFiles = fs.readdirSync(testPdfDir)
-        .filter((f: string) => f.endsWith('.pdf'))
-        .map((f: string) => `${testPdfDir}/${f}`);
+        // Test with 1, 2, and 4 quotes
+        for (const count of [1, 2, Math.min(4, pdfFiles.length)]) {
+          const subset = pdfFiles.slice(0, count);
+          const result = await runBenchmark(subset, 'unified');
+          results.push(result);
+        }
 
-      if (pdfFiles.length < 2) {
-        console.log('Need at least 2 PDFs for scaling test');
-        return;
-      }
+        // Verify scaling is reasonable (not exponential)
+        const time1Quote = results[0].durationMs;
+        const time2Quotes = results[1].durationMs;
+        const time4Quotes = results[2]?.durationMs || time2Quotes * 2;
 
-      const results: PerformanceResult[] = [];
+        // 2 quotes should take less than 2.5x 1 quote
+        expect(time2Quotes).toBeLessThan(time1Quote * 2.5);
 
-      // Test with 1, 2, and 4 quotes
-      for (const count of [1, 2, Math.min(4, pdfFiles.length)]) {
-        const subset = pdfFiles.slice(0, count);
-        const result = await runBenchmark(subset, 'unified');
-        results.push(result);
-      }
+        // 4 quotes should take less than 3x 1 quote (sub-linear due to single LLM call)
+        if (results[2]) {
+          expect(time4Quotes).toBeLessThan(time1Quote * 3);
+        }
 
-      // Verify scaling is reasonable (not exponential)
-      const time1Quote = results[0].durationMs;
-      const time2Quotes = results[1].durationMs;
-      const time4Quotes = results[2]?.durationMs || time2Quotes * 2;
-
-      // 2 quotes should take less than 2.5x 1 quote
-      expect(time2Quotes).toBeLessThan(time1Quote * 2.5);
-
-      // 4 quotes should take less than 3x 1 quote (sub-linear due to single LLM call)
-      if (results[2]) {
-        expect(time4Quotes).toBeLessThan(time1Quote * 3);
-      }
-
-      console.log(`✅ Scaling test passed:`);
-      console.log(`   1 quote: ${time1Quote}ms`);
-      console.log(`   2 quotes: ${time2Quotes}ms (${(time2Quotes / time1Quote).toFixed(1)}x)`);
-      if (results[2]) {
-        console.log(`   4 quotes: ${time4Quotes}ms (${(time4Quotes / time1Quote).toFixed(1)}x)`);
-      }
-
-    }, TEST_TIMEOUT * 3);
+        console.log(`✅ Scaling test passed:`);
+        console.log(`   1 quote: ${time1Quote}ms`);
+        console.log(`   2 quotes: ${time2Quotes}ms (${(time2Quotes / time1Quote).toFixed(1)}x)`);
+        if (results[2]) {
+          console.log(`   4 quotes: ${time4Quotes}ms (${(time4Quotes / time1Quote).toFixed(1)}x)`);
+        }
+      },
+      TEST_TIMEOUT * 3
+    );
   });
 
   (hasTestPdfs ? describe : describe.skip)('performance metrics', () => {
+    it(
+      'should track processing time in metadata',
+      async () => {
+        const pdfFiles = fs
+          .readdirSync(testPdfDir)
+          .filter((f: string) => f.endsWith('.pdf'))
+          .slice(0, 2)
+          .map((f: string) => `${testPdfDir}/${f}`);
 
-    it('should track processing time in metadata', async () => {
-      const pdfFiles = fs.readdirSync(testPdfDir)
-        .filter((f: string) => f.endsWith('.pdf'))
-        .slice(0, 2)
-        .map((f: string) => `${testPdfDir}/${f}`);
+        if (pdfFiles.length === 0) {
+          console.log('No PDFs available, skipping');
+          return;
+        }
 
-      if (pdfFiles.length === 0) {
-        console.log('No PDFs available, skipping');
-        return;
-      }
+        const startTime = Date.now();
+        const result = await unifiedComparisonEngine.compare(pdfFiles);
+        const endTime = Date.now();
 
-      const startTime = Date.now();
-      const result = await unifiedComparisonEngine.compare(pdfFiles);
-      const endTime = Date.now();
+        expect(result.metadata.processingTimeMs).toBeDefined();
+        expect(result.metadata.processingTimeMs).toBeGreaterThan(0);
+        expect(result.metadata.processingTimeMs).toBeLessThanOrEqual(endTime - startTime + 1000); // Allow 1s margin
+      },
+      TEST_TIMEOUT
+    );
 
-      expect(result.metadata.processingTimeMs).toBeDefined();
-      expect(result.metadata.processingTimeMs).toBeGreaterThan(0);
-      expect(result.metadata.processingTimeMs).toBeLessThanOrEqual(endTime - startTime + 1000); // Allow 1s margin
+    it(
+      'should cache results for repeated queries',
+      async () => {
+        const pdfFiles = fs
+          .readdirSync(testPdfDir)
+          .filter((f: string) => f.endsWith('.pdf'))
+          .slice(0, 2)
+          .map((f: string) => `${testPdfDir}/${f}`);
 
-    }, TEST_TIMEOUT);
+        if (pdfFiles.length === 0) {
+          console.log('No PDFs available, skipping');
+          return;
+        }
 
-    it('should cache results for repeated queries', async () => {
-      const pdfFiles = fs.readdirSync(testPdfDir)
-        .filter((f: string) => f.endsWith('.pdf'))
-        .slice(0, 2)
-        .map((f: string) => `${testPdfDir}/${f}`);
+        // First call (should cache)
+        const result1 = await unifiedComparisonEngine.compare(pdfFiles);
 
-      if (pdfFiles.length === 0) {
-        console.log('No PDFs available, skipping');
-        return;
-      }
+        // Second call (should use cache)
+        const startTime = Date.now();
+        const result2 = await unifiedComparisonEngine.compare(pdfFiles);
+        const cacheTime = Date.now() - startTime;
 
-      // First call (should cache)
-      const result1 = await unifiedComparisonEngine.compare(pdfFiles);
+        expect(result2.metadata.fromCache).toBe(true);
+        expect(cacheTime).toBeLessThan(100); // Should be very fast from cache
 
-      // Second call (should use cache)
-      const startTime = Date.now();
-      const result2 = await unifiedComparisonEngine.compare(pdfFiles);
-      const cacheTime = Date.now() - startTime;
-
-      expect(result2.metadata.fromCache).toBe(true);
-      expect(cacheTime).toBeLessThan(100); // Should be very fast from cache
-
-      console.log(`✅ Cache test: First call ${result1.metadata.processingTimeMs}ms, Cached call ${cacheTime}ms`);
-
-    }, TEST_TIMEOUT);
+        console.log(
+          `✅ Cache test: First call ${result1.metadata.processingTimeMs}ms, Cached call ${cacheTime}ms`
+        );
+      },
+      TEST_TIMEOUT
+    );
   });
 
   describe('benchmark summary', () => {
-
     it('should generate performance benchmark report', () => {
       // This test runs the benchmark and generates a report
       // Run it manually to get performance numbers
@@ -241,22 +265,22 @@ describe('Performance Test: Unified vs Legacy Engine', () => {
         { engine: 'legacy', quoteCount: 4, durationMs: 270000, success: true },
         { engine: 'unified', quoteCount: 1, durationMs: 15000, success: true },
         { engine: 'unified', quoteCount: 2, durationMs: 20000, success: true },
-        { engine: 'unified', quoteCount: 4, durationMs: 45000, success: true }
+        { engine: 'unified', quoteCount: 4, durationMs: 45000, success: true },
       ];
 
       console.log('\n📊 Performance Benchmark Report');
       console.log('================================');
 
-      const legacyResults = mockResults.filter(r => r.engine === 'legacy');
-      const unifiedResults = mockResults.filter(r => r.engine === 'unified');
+      const legacyResults = mockResults.filter((r) => r.engine === 'legacy');
+      const unifiedResults = mockResults.filter((r) => r.engine === 'unified');
 
       console.log('\nLegacy Engine:');
-      legacyResults.forEach(r => {
+      legacyResults.forEach((r) => {
         console.log(`  ${r.quoteCount} quotes: ${(r.durationMs / 1000).toFixed(1)}s`);
       });
 
       console.log('\nUnified Engine:');
-      unifiedResults.forEach(r => {
+      unifiedResults.forEach((r) => {
         console.log(`  ${r.quoteCount} quotes: ${(r.durationMs / 1000).toFixed(1)}s`);
       });
 

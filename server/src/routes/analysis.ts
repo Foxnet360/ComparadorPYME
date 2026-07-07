@@ -21,7 +21,7 @@ import {
   getLearningMetrics,
   getMonthlyReport,
   batchRetrain,
-  exportAnalysisExcel
+  exportAnalysisExcel,
 } from '../controllers/analysisValidationController';
 import { getReviewQueueCoverages } from '../controllers/reviewQueueController';
 

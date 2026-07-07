@@ -7,10 +7,8 @@ vi.mock('../../services/documentIndexingService', () => ({
     indexDocument: vi.fn(),
     getOrCreateInsurer: vi.fn().mockResolvedValue('insurer-123'),
   },
-  DocumentIndexingService: vi.fn()
+  DocumentIndexingService: vi.fn(),
 }));
-
-
 
 interface MockChain {
   (...args: unknown[]): unknown;
@@ -37,29 +35,28 @@ vi.mock('../../config/database', () => ({
       select: vi.fn(() => createMockChain({ data: null, error: null })),
       insert: vi.fn(() => ({
         select: vi.fn(() => ({
-          single: vi.fn().mockResolvedValue({ data: { id: 'doc-123' }, error: null })
-        }))
+          single: vi.fn().mockResolvedValue({ data: { id: 'doc-123' }, error: null }),
+        })),
       })),
       update: vi.fn(() => ({
-        eq: vi.fn().mockResolvedValue({ error: null })
+        eq: vi.fn().mockResolvedValue({ error: null }),
       })),
       delete: vi.fn(() => ({
-        eq: vi.fn().mockResolvedValue({ error: null })
+        eq: vi.fn().mockResolvedValue({ error: null }),
       })),
     })),
     storage: {
       from: vi.fn(() => ({
-        remove: vi.fn().mockResolvedValue({ error: null })
-      }))
+        remove: vi.fn().mockResolvedValue({ error: null }),
+      })),
     },
-    rpc: vi.fn().mockResolvedValue({ data: 'doc-123', error: null })
+    rpc: vi.fn().mockResolvedValue({ data: 'doc-123', error: null }),
   },
-  handleSupabaseError: vi.fn((error) => error)
+  handleSupabaseError: vi.fn((error) => error),
 }));
 
 import { documentController } from '../documentController';
 import { documentIndexingService } from '../../services/documentIndexingService';
-
 
 describe('documentController.createDocument', () => {
   let mockReq: Partial<Request>;
@@ -69,18 +66,23 @@ describe('documentController.createDocument', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     jsonMock = vi.fn();
     statusMock = vi.fn().mockReturnValue({ json: jsonMock });
-    
+
     mockRes = {
       status: statusMock,
       json: jsonMock,
     };
   });
 
-  const createMockRequest = (documentType: string, file?: Express.Multer.File): Partial<Request> => ({
-    file: file || ({ path: '/tmp/test.pdf', originalname: 'test.pdf', size: 1024 } as Express.Multer.File),
+  const createMockRequest = (
+    documentType: string,
+    file?: Express.Multer.File
+  ): Partial<Request> => ({
+    file:
+      file ||
+      ({ path: '/tmp/test.pdf', originalname: 'test.pdf', size: 1024 } as Express.Multer.File),
     body: {
       insurerName: 'Test Insurer',
       documentName: 'Test Document',
@@ -91,7 +93,7 @@ describe('documentController.createDocument', () => {
 
   it('should create document for CLAUSULADO_GENERAL', async () => {
     mockReq = createMockRequest('CLAUSULADO_GENERAL');
-    
+
     vi.mocked(documentIndexingService.indexDocument).mockResolvedValue({
       success: true,
       documentId: 'doc-123',
@@ -113,7 +115,7 @@ describe('documentController.createDocument', () => {
 
   it('should create document for CLAUSULADO_PARTICULAR', async () => {
     mockReq = createMockRequest('CLAUSULADO_PARTICULAR');
-    
+
     vi.mocked(documentIndexingService.indexDocument).mockResolvedValue({
       success: true,
       documentId: 'doc-456',
@@ -135,7 +137,7 @@ describe('documentController.createDocument', () => {
 
   it('should create document for COTIZACION', async () => {
     mockReq = createMockRequest('COTIZACION');
-    
+
     vi.mocked(documentIndexingService.indexDocument).mockResolvedValue({
       success: true,
       documentId: 'doc-789',
@@ -157,7 +159,7 @@ describe('documentController.createDocument', () => {
 
   it('should create document for ANEXO', async () => {
     mockReq = createMockRequest('ANEXO');
-    
+
     vi.mocked(documentIndexingService.indexDocument).mockResolvedValue({
       success: true,
       documentId: 'doc-abc',
@@ -179,7 +181,7 @@ describe('documentController.createDocument', () => {
 
   it('should handle main indexing failure', async () => {
     mockReq = createMockRequest('CLAUSULADO_GENERAL');
-    
+
     vi.mocked(documentIndexingService.indexDocument).mockResolvedValue({
       success: false,
       stats: {

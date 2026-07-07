@@ -7,10 +7,10 @@ import { ParsedQuote } from './quoteParser';
 import { ValidationResult } from './quoteValidator';
 
 export interface ConfidenceBreakdown {
-  coverageCompleteness: number;  // 30%
-  numericParseSuccess: number;   // 25%
-  validationPassRate: number;    // 25%
-  schemaCompliance: number;      // 20%
+  coverageCompleteness: number; // 30%
+  numericParseSuccess: number; // 25%
+  validationPassRate: number; // 25%
+  schemaCompliance: number; // 20%
 }
 
 export interface ConfidenceResult {
@@ -27,10 +27,10 @@ export const CRITICAL_THRESHOLD = 50;
 
 // Weights (must sum to 1.0)
 const WEIGHTS = {
-  coverageCompleteness: 0.30,
+  coverageCompleteness: 0.3,
   numericParseSuccess: 0.25,
   validationPassRate: 0.25,
-  schemaCompliance: 0.20,
+  schemaCompliance: 0.2,
 };
 
 /**
@@ -44,24 +44,24 @@ function calculateCoverageCompleteness(quote: ParsedQuote): number {
     const expectedCoverages = quote.expectedCoverages;
     const expectedCount = expectedCoverages.length;
     const presentCount = expectedCoverages.filter((c) => c.status === 'present').length;
-    
+
     if (expectedCount === 0) return 0;
-    
+
     // Real quotes typically have 5-10 coverages, not all 14
     // Score based on realistic expectations: 6+ coverages = 100%
     const realisticTarget = 6;
     if (presentCount >= realisticTarget) return 100;
     return Math.min(100, (presentCount / realisticTarget) * 100);
   }
-  
+
   // Fallback to legacy calculation
   if (!quote.coverages || quote.coverages.length === 0) return 0;
-  
+
   const realisticTarget = 6; // Realistic number of coverages in a quote
-  const presentCount = quote.coverages.filter(c => 
-    c.value && c.value !== 'NO ESPECIFICADO' && c.value !== 'EXCLUIDO'
+  const presentCount = quote.coverages.filter(
+    (c) => c.value && c.value !== 'NO ESPECIFICADO' && c.value !== 'EXCLUIDO'
   ).length;
-  
+
   if (presentCount >= realisticTarget) return 100;
   return Math.min(100, (presentCount / realisticTarget) * 100);
 }
@@ -72,13 +72,13 @@ function calculateCoverageCompleteness(quote: ParsedQuote): number {
  */
 function isValidCoverageValue(value: string): boolean {
   if (!value || value === 'NO ESPECIFICADO' || value === 'EXCLUIDO') return false;
-  
+
   const trimmed = value.trim().toLowerCase();
-  
+
   // Numeric values
   const cleaned = value.replace(/[$\s.,]/g, '');
   if (!isNaN(parseFloat(cleaned)) && cleaned !== '') return true;
-  
+
   // Common descriptive values that indicate valid coverage
   const validPatterns = [
     /^incluid[oa]/i,
@@ -93,8 +93,8 @@ function isValidCoverageValue(value: string): boolean {
     /^franquicia/i,
     /^\d+%/,
   ];
-  
-  return validPatterns.some(pattern => pattern.test(trimmed));
+
+  return validPatterns.some((pattern) => pattern.test(trimmed));
 }
 
 /**
@@ -102,16 +102,16 @@ function isValidCoverageValue(value: string): boolean {
  */
 function calculateNumericParseSuccess(quote: ParsedQuote): number {
   if (!quote.coverages || quote.coverages.length === 0) return 0;
-  
+
   let totalNumericFields = 0;
   let successfulParses = 0;
-  
+
   // Check premium
   if (quote.priceAnnual > 0) {
     totalNumericFields++;
     successfulParses++;
   }
-  
+
   // Check coverage values
   for (const coverage of quote.coverages) {
     if (coverage.value && coverage.value !== 'NO ESPECIFICADO' && coverage.value !== 'EXCLUIDO') {
@@ -121,7 +121,7 @@ function calculateNumericParseSuccess(quote: ParsedQuote): number {
       }
     }
   }
-  
+
   if (totalNumericFields === 0) return 0;
   return (successfulParses / totalNumericFields) * 100;
 }
@@ -131,33 +131,33 @@ function calculateNumericParseSuccess(quote: ParsedQuote): number {
  */
 function calculateValidationPassRate(validation: ValidationResult): number {
   const totalChecks = 6; // Number of validation checks we perform
-  
+
   let passedChecks = 0;
-  
+
   // Check 1: Coverage completeness (realistic: 5+ coverages is acceptable)
   if (validation.coverageCount >= 5) passedChecks++;
-  
+
   // Check 2: No critical errors
-  const criticalCount = validation.flags.filter(f => f.severity === 'CRITICAL').length;
+  const criticalCount = validation.flags.filter((f) => f.severity === 'CRITICAL').length;
   if (criticalCount === 0) passedChecks++;
-  
+
   // Check 3: Numeric parse success
   if (validation.numericParseSuccess) passedChecks++;
-  
+
   // Check 4: Premium exists
-  const hasPremium = !validation.flags.some(f => f.code === 'PREMIUM_MISSING');
+  const hasPremium = !validation.flags.some((f) => f.code === 'PREMIUM_MISSING');
   if (hasPremium) passedChecks++;
-  
+
   // Check 5: Deductible formats valid
-  const hasDeductibleErrors = validation.flags.some(f => 
-    f.code === 'DEDUCTIBLE_UNRECOGNIZED_FORMAT'
+  const hasDeductibleErrors = validation.flags.some(
+    (f) => f.code === 'DEDUCTIBLE_UNRECOGNIZED_FORMAT'
   );
   if (!hasDeductibleErrors) passedChecks++;
-  
+
   // Check 6: Less than 3 warnings
-  const warningCount = validation.flags.filter(f => f.severity === 'WARNING').length;
+  const warningCount = validation.flags.filter((f) => f.severity === 'WARNING').length;
   if (warningCount < 3) passedChecks++;
-  
+
   return (passedChecks / totalChecks) * 100;
 }
 
@@ -167,13 +167,13 @@ function calculateValidationPassRate(validation: ValidationResult): number {
  */
 function calculateSchemaCompliance(quote: ParsedQuote): number {
   let score = 0;
-  
+
   // Required fields
   if (quote.insurerName && quote.insurerName !== 'NO ESPECIFICADO') score += 25;
   if (quote.policyName && quote.policyName !== 'NO ESPECIFICADO') score += 25;
   if (quote.priceAnnual > 0) score += 25;
   if (quote.coverages && quote.coverages.length > 0) score += 25;
-  
+
   return score;
 }
 
@@ -189,32 +189,32 @@ export function calculateConfidence(
   const coverageCompleteness = calculateCoverageCompleteness(quote);
   const numericParseSuccess = calculateNumericParseSuccess(quote);
   const validationPassRate = calculateValidationPassRate(validation);
-  
+
   // Schema compliance bonus for structured extraction
   let schemaCompliance = calculateSchemaCompliance(quote);
   if (isStructured) {
     schemaCompliance = Math.min(100, schemaCompliance * 1.2); // 20% bonus for JSON mode
   }
-  
+
   // Calculate weighted score
   let score = Math.round(
     coverageCompleteness * WEIGHTS.coverageCompleteness +
-    numericParseSuccess * WEIGHTS.numericParseSuccess +
-    validationPassRate * WEIGHTS.validationPassRate +
-    schemaCompliance * WEIGHTS.schemaCompliance
+      numericParseSuccess * WEIGHTS.numericParseSuccess +
+      validationPassRate * WEIGHTS.validationPassRate +
+      schemaCompliance * WEIGHTS.schemaCompliance
   );
-  
+
   // Reduce score by 25 points if premium is missing or suspect
-  const hasPremiumIssue = validation.flags.some(f => 
-    f.code === 'PREMIUM_MISSING' || f.code === 'PREMIUM_SUSPECT'
+  const hasPremiumIssue = validation.flags.some(
+    (f) => f.code === 'PREMIUM_MISSING' || f.code === 'PREMIUM_SUSPECT'
   );
   if (hasPremiumIssue) {
     score -= 25;
   }
-  
+
   // Clamp to 0-100
   const clampedScore = Math.max(0, Math.min(100, score));
-  
+
   return {
     score: clampedScore,
     breakdown: {

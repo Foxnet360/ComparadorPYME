@@ -1,21 +1,26 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.MOCK_IMAGES = exports.DISCLAIMER_TEXT = exports.SYSTEM_INSTRUCTION_CHAT = exports.SYSTEM_INSTRUCTION_ANALYZER = exports.PLANTILLA_ITEMS = void 0;
+'use strict';
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.MOCK_IMAGES =
+  exports.DISCLAIMER_TEXT =
+  exports.SYSTEM_INSTRUCTION_CHAT =
+  exports.SYSTEM_INSTRUCTION_ANALYZER =
+  exports.PLANTILLA_ITEMS =
+    void 0;
 exports.PLANTILLA_ITEMS = [
-    "Incendio (Edificio y Contenidos)",
-    "Lucro Cesante",
-    "Sustracción / Hurto",
-    "Equipo Eléctrico y Electrónico",
-    "Rotura de Maquinaria",
-    "Responsabilidad Civil (RCE)",
-    "Vidrios Planos",
-    "Manejo Global / Infidelidad",
-    "Transporte de Mercancías",
-    "Transporte de Valores",
-    "Asistencia PYME",
-    "Asistencia Legal",
-    "Huelga, Motín, Asonada (HMACC)",
-    "Terremoto y Eventos Catastróficos"
+  'Incendio (Edificio y Contenidos)',
+  'Lucro Cesante',
+  'Sustracción / Hurto',
+  'Equipo Eléctrico y Electrónico',
+  'Rotura de Maquinaria',
+  'Responsabilidad Civil (RCE)',
+  'Vidrios Planos',
+  'Manejo Global / Infidelidad',
+  'Transporte de Mercancías',
+  'Transporte de Valores',
+  'Asistencia PYME',
+  'Asistencia Legal',
+  'Huelga, Motín, Asonada (HMACC)',
+  'Terremoto y Eventos Catastróficos',
 ];
 exports.SYSTEM_INSTRUCTION_ANALYZER = `
 Eres el "Agente Comparador CSA" (v7.0). Tu misión es auditar cotizaciones de seguros con rigor técnico y presentar insights estratégicos.
@@ -114,5 +119,6 @@ Eres "SeguroBot", el asistente del Agente Comparador CSA.
 Tu base de conocimiento es el informe generado.
 Responde con precisión técnica o lenguaje sencillo según te lo pidan.
 `;
-exports.DISCLAIMER_TEXT = "Advertencia Metodológica: Este análisis automatizado reduce el tiempo de comparación manual, aplicando principios de prevalencia técnica. Los elementos marcados como críticos requieren validación humana especializada. Esta herramienta potencia la asesoría profesional, no la sustituye.";
+exports.DISCLAIMER_TEXT =
+  'Advertencia Metodológica: Este análisis automatizado reduce el tiempo de comparación manual, aplicando principios de prevalencia técnica. Los elementos marcados como críticos requieren validación humana especializada. Esta herramienta potencia la asesoría profesional, no la sustituye.';
 exports.MOCK_IMAGES = [];

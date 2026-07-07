@@ -1,8 +1,4 @@
-import {
-  TemplateRegistryEntry,
-  LayoutTable,
-  LayoutCell,
-} from '../schemas/templateRegistrySchema';
+import { TemplateRegistryEntry, LayoutTable, LayoutCell } from '../schemas/templateRegistrySchema';
 
 /**
  * Build a layout-aware extraction prompt for a known insurer template.
@@ -93,13 +89,7 @@ function renderTables(tables: LayoutTable[]): string {
               .join(', ')}`
           : '';
 
-      return [
-        `### Tabla ${index + 1} (página ${table.page})`,
-        headerLine,
-        separator,
-        rows,
-        merged,
-      ]
+      return [`### Tabla ${index + 1} (página ${table.page})`, headerLine, separator, rows, merged]
         .filter(Boolean)
         .join('\n');
     })

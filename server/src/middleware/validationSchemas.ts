@@ -3,8 +3,14 @@ import { z } from 'zod';
 // Common schemas
 export const uuidSchema = z.string().uuid();
 export const limitOffsetSchema = z.object({
-  limit: z.string().optional().transform((val) => val ? parseInt(val, 10) : 50),
-  offset: z.string().optional().transform((val) => val ? parseInt(val, 10) : 0),
+  limit: z
+    .string()
+    .optional()
+    .transform((val) => (val ? parseInt(val, 10) : 50)),
+  offset: z
+    .string()
+    .optional()
+    .transform((val) => (val ? parseInt(val, 10) : 0)),
 });
 
 // API Request Schemas
@@ -12,11 +18,13 @@ export const limitOffsetSchema = z.object({
 export const analyzeRequestSchema = z.object({
   clientName: z.string().min(1).max(200).optional(),
   clauseIds: z.string().optional(), // JSON string array
-  clientProfile: z.object({
-    industry: z.string().optional(),
-    location: z.string().optional(),
-    size: z.string().optional(),
-  }).optional(),
+  clientProfile: z
+    .object({
+      industry: z.string().optional(),
+      location: z.string().optional(),
+      size: z.string().optional(),
+    })
+    .optional(),
 });
 
 export const chatRequestSchema = z.object({
@@ -24,10 +32,14 @@ export const chatRequestSchema = z.object({
   reportContext: z.any().optional(),
   useRAG: z.boolean().optional(),
   threadId: z.string().optional(),
-  history: z.array(z.object({
-    role: z.enum(['user', 'model']),
-    text: z.string(),
-  })).optional(),
+  history: z
+    .array(
+      z.object({
+        role: z.enum(['user', 'model']),
+        text: z.string(),
+      })
+    )
+    .optional(),
 });
 
 export const chatSuggestionsSchema = z.object({
@@ -46,8 +58,14 @@ export const createDocumentSchema = z.object({
 export const listDocumentsSchema = z.object({
   insurerId: z.string().optional(),
   documentType: z.string().optional(),
-  isActive: z.enum(['true', 'false']).optional().transform((val) => val === 'true'),
-  latest: z.enum(['true', 'false']).optional().transform((val) => val === 'true'),
+  isActive: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((val) => val === 'true'),
+  latest: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((val) => val === 'true'),
 });
 
 export const searchRequestSchema = z.object({
@@ -55,17 +73,22 @@ export const searchRequestSchema = z.object({
   insurerId: z.string().optional(),
   coverageTag: z.string().optional(),
   sectionType: z.string().optional(),
-  limit: z.string().optional().transform((val) => val ? parseInt(val, 10) : 5),
+  limit: z
+    .string()
+    .optional()
+    .transform((val) => (val ? parseInt(val, 10) : 5)),
 });
 
 export const analysisValidationSchema = z.object({
   quote: z.object({
     insurerName: z.string(),
-    coverages: z.array(z.object({
-      name: z.string(),
-      value: z.string(),
-      deductible: z.string().optional(),
-    })),
+    coverages: z.array(
+      z.object({
+        name: z.string(),
+        value: z.string(),
+        deductible: z.string().optional(),
+      })
+    ),
   }),
   insurerName: z.string(),
 });
@@ -79,10 +102,12 @@ export const deductibleRiskSchema = z.object({
 export const inverseCheckSchema = z.object({
   quote: z.object({
     insurerName: z.string(),
-    coverages: z.array(z.object({
-      name: z.string(),
-      value: z.string(),
-    })),
+    coverages: z.array(
+      z.object({
+        name: z.string(),
+        value: z.string(),
+      })
+    ),
   }),
   insurerName: z.string(),
 });

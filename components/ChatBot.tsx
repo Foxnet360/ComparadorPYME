@@ -7,7 +7,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, Minimize2, Loader2, BookOpen, Lightbulb } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { ChatMessage, ComparisonReport} from '../types';
+import { ChatMessage, ComparisonReport } from '../types';
 import { API_BASE_URL } from '../services/apiConfig';
 
 interface ChatBotProps {
@@ -19,7 +19,7 @@ interface ChatBotProps {
 const INITIAL_MESSAGE: ChatMessage = {
   role: 'model',
   text: 'Hola, soy SeguroBot AI. Puedo responder preguntas sobre las cotizaciones analizadas y los clausulados. ¿En qué puedo ayudarte?',
-  timestamp: new Date()
+  timestamp: new Date(),
 };
 
 const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => {
@@ -57,22 +57,32 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
     try {
       const user = localStorage.getItem('seguro_app_user');
       const userId = user ? JSON.parse(user)?.id : 'anonymous';
-      
-      const response = await fetch(`${API_BASE_URL}/chat/threads/report/${reportId}?userId=${userId}`);
-      
+
+      const response = await fetch(
+        `${API_BASE_URL}/chat/threads/report/${reportId}?userId=${userId}`
+      );
+
       if (response.ok) {
         const data = await response.json();
         setThreadId(data.threadId);
-        
+
         // Load existing messages if any
         if (data.messages && data.messages.length > 0) {
-          const loadedMessages: ChatMessage[] = data.messages.map((msg: { role: string; text: string; createdAt: string; citations?: unknown; sourcesUsed?: Array<{ type?: string }> }) => ({
-            role: msg.role as 'user' | 'model',
-            text: msg.text,
-            timestamp: new Date(msg.createdAt),
-            citations: msg.citations as ChatMessage['citations'],
-            source: msg.sourcesUsed?.[0]?.type || 'direct'
-          }));
+          const loadedMessages: ChatMessage[] = data.messages.map(
+            (msg: {
+              role: string;
+              text: string;
+              createdAt: string;
+              citations?: unknown;
+              sourcesUsed?: Array<{ type?: string }>;
+            }) => ({
+              role: msg.role as 'user' | 'model',
+              text: msg.text,
+              timestamp: new Date(msg.createdAt),
+              citations: msg.citations as ChatMessage['citations'],
+              source: msg.sourcesUsed?.[0]?.type || 'direct',
+            })
+          );
           setMessages(loadedMessages);
           setShowSuggestions(false);
         }
@@ -84,14 +94,14 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
 
   const loadSuggestions = async () => {
     if (!reportContext) return;
-    
+
     try {
       const response = await fetch(`${API_BASE_URL}/chat/suggestions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reportContext })
+        body: JSON.stringify({ reportContext }),
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setSuggestions(data.suggestions || []);
@@ -106,13 +116,13 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
     const messageText = suggestedMessage || input.trim();
     if (!messageText || isLoading) return;
 
-    const userMessage: ChatMessage = { 
-      role: 'user', 
-      text: messageText, 
-      timestamp: new Date() 
+    const userMessage: ChatMessage = {
+      role: 'user',
+      text: messageText,
+      timestamp: new Date(),
     };
-    
-    setMessages(prev => [...prev, userMessage]);
+
+    setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
     setShowSuggestions(false);
@@ -120,18 +130,18 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
     try {
       const user = localStorage.getItem('seguro_app_user');
       const userId = user ? JSON.parse(user)?.id : 'anonymous';
-      
+
       const response = await fetch(`${API_BASE_URL}/chat`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           message: messageText,
           reportContext,
           threadId,
-          userId
-        })
+          userId,
+        }),
       });
 
       if (!response.ok) {
@@ -139,28 +149,31 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
       }
 
       const result = await response.json();
-      
+
       // Update threadId if returned
       if (result.threadId) {
         setThreadId(result.threadId);
       }
-      
-      const modelMessage: ChatMessage = { 
-        role: 'model', 
+
+      const modelMessage: ChatMessage = {
+        role: 'model',
         text: result.text || 'Lo siento, no pude generar una respuesta.',
         timestamp: new Date(),
         citations: result.citations,
-        source: result.source || 'direct'
+        source: result.source || 'direct',
       };
-      
-      setMessages(prev => [...prev, modelMessage]);
+
+      setMessages((prev) => [...prev, modelMessage]);
     } catch (error) {
-      console.error("Chat error:", error);
-      setMessages(prev => [...prev, { 
-        role: 'model', 
-        text: 'Lo siento, hubo un error al procesar tu pregunta. Por favor intenta de nuevo.',
-        timestamp: new Date() 
-      }]);
+      console.error('Chat error:', error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'model',
+          text: 'Lo siento, hubo un error al procesar tu pregunta. Por favor intenta de nuevo.',
+          timestamp: new Date(),
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -169,10 +182,10 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
   // Get source badge configuration
   const getSourceBadge = (source?: string) => {
     const configs: Record<string, { label: string; className: string }> = {
-      'direct': { label: '📄 Cotización', className: 'bg-green-100 text-green-700' },
-      'rag': { label: '📋 Clausulado', className: 'bg-blue-100 text-blue-700' },
-      'ontology': { label: '📋 Ontología', className: 'bg-purple-100 text-purple-700' },
-      'fallback': { label: 'ℹ️ General', className: 'bg-amber-100 text-amber-700' }
+      direct: { label: '📄 Cotización', className: 'bg-green-100 text-green-700' },
+      rag: { label: '📋 Clausulado', className: 'bg-blue-100 text-blue-700' },
+      ontology: { label: '📋 Ontología', className: 'bg-purple-100 text-purple-700' },
+      fallback: { label: 'ℹ️ General', className: 'bg-amber-100 text-amber-700' },
     };
     return configs[source || 'direct'] || configs['direct'];
   };
@@ -200,12 +213,17 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
       {/* Messages */}
       <div className="flex-grow overflow-y-auto p-4 space-y-4 scrollbar-thin bg-slate-50">
         {messages.map((msg, idx) => (
-          <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[85%] rounded-2xl p-3 text-sm ${
-              msg.role === 'user' 
-                ? 'bg-indigo-600 text-white rounded-tr-none' 
-                : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none shadow-sm'
-            }`}>
+          <div
+            key={idx}
+            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
+            <div
+              className={`max-w-[85%] rounded-2xl p-3 text-sm ${
+                msg.role === 'user'
+                  ? 'bg-indigo-600 text-white rounded-tr-none'
+                  : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none shadow-sm'
+              }`}
+            >
               {msg.isThinking ? (
                 <div className="flex items-center space-x-2 text-slate-500">
                   <Loader2 size={14} className="animate-spin" />
@@ -216,21 +234,27 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
                   {/* Source Badge for model messages */}
                   {msg.role === 'model' && msg.source && (
                     <div className="flex items-center gap-1 mb-2">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getSourceBadge(msg.source).className}`}>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${getSourceBadge(msg.source).className}`}
+                      >
                         {getSourceBadge(msg.source).label}
                       </span>
                     </div>
                   )}
-                  <ReactMarkdown 
+                  <ReactMarkdown
                     components={{
-                      ul: ({node: _node, ...props}) => <ul className="list-disc pl-4 my-1" {...props} />,
-                      ol: ({node: _node, ...props}) => <ol className="list-decimal pl-4 my-1" {...props} />,
-                      p: ({node: _node, ...props}) => <p className="mb-1 last:mb-0" {...props} />
+                      ul: ({ node: _node, ...props }) => (
+                        <ul className="list-disc pl-4 my-1" {...props} />
+                      ),
+                      ol: ({ node: _node, ...props }) => (
+                        <ol className="list-decimal pl-4 my-1" {...props} />
+                      ),
+                      p: ({ node: _node, ...props }) => <p className="mb-1 last:mb-0" {...props} />,
                     }}
                   >
                     {msg.text}
                   </ReactMarkdown>
-                  
+
                   {/* Citations */}
                   {msg.citations && msg.citations.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-slate-200">
@@ -240,12 +264,19 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
                       </div>
                       <div className="space-y-2">
                         {msg.citations.map((citation, cidx) => (
-                          <div key={cidx} className="bg-slate-50 rounded p-2 text-xs border border-slate-100">
+                          <div
+                            key={cidx}
+                            className="bg-slate-50 rounded p-2 text-xs border border-slate-100"
+                          >
                             <div className="flex items-center justify-between">
-                              <span className="font-medium text-slate-700">{citation.insurerName}</span>
+                              <span className="font-medium text-slate-700">
+                                {citation.insurerName}
+                              </span>
                               <span className="text-slate-400">Pág. {citation.pageNumber}</span>
                             </div>
-                            <p className="text-slate-600 mt-1 italic">"{citation.content.substring(0, 100)}..."</p>
+                            <p className="text-slate-600 mt-1 italic">
+                              "{citation.content.substring(0, 100)}..."
+                            </p>
                           </div>
                         ))}
                       </div>
@@ -256,7 +287,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
             </div>
           </div>
         ))}
-        
+
         {/* Suggestions */}
         {showSuggestions && suggestions.length > 0 && !isLoading && (
           <div className="mt-4">
@@ -277,13 +308,16 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
             </div>
           </div>
         )}
-        
+
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
       <div className="p-3 border-t border-slate-100 bg-white rounded-b-2xl">
-        <form onSubmit={handleSendMessage} className="flex items-center space-x-2 bg-slate-100 rounded-full px-4 py-2 border border-transparent focus-within:border-indigo-300 focus-within:bg-white transition-all">
+        <form
+          onSubmit={handleSendMessage}
+          className="flex items-center space-x-2 bg-slate-100 rounded-full px-4 py-2 border border-transparent focus-within:border-indigo-300 focus-within:bg-white transition-all"
+        >
           <input
             type="text"
             value={input}
@@ -292,8 +326,8 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
             className="flex-grow bg-transparent outline-none text-sm text-slate-800 placeholder-slate-400"
             disabled={isLoading}
           />
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={isLoading || !input.trim()}
             className="p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md"
           >

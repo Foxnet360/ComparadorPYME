@@ -8,13 +8,10 @@ const supabase = createClient(
 async function verify() {
   try {
     console.log('🔍 Verifying migration...');
-    
+
     // Check if table exists
-    const { data, error } = await supabase
-      .from('clause_chunks')
-      .select('*')
-      .limit(1);
-    
+    const { data, error } = await supabase.from('clause_chunks').select('*').limit(1);
+
     if (error) {
       if (error.message.includes('does not exist') || error.code === '42P01') {
         console.log('❌ Table clause_chunks NOT FOUND');
@@ -24,24 +21,23 @@ async function verify() {
         process.exit(1);
       }
     }
-    
+
     console.log('✅ Table clause_chunks exists!');
-    
+
     // Check function
-    const { error: funcError } = await supabase
-      .rpc('match_clauses', {
-        query_embedding: Array(768).fill(0),
-        query_text: 'test',
-        match_count: 1
-      });
-    
+    const { error: funcError } = await supabase.rpc('match_clauses', {
+      query_embedding: Array(768).fill(0),
+      query_text: 'test',
+      match_count: 1,
+    });
+
     if (funcError && funcError.message.includes('does not exist')) {
       console.log('❌ Function match_clauses NOT FOUND');
       process.exit(1);
     } else {
       console.log('✅ Function match_clauses exists');
     }
-    
+
     console.log('\n✅ Migration verified successfully!');
     process.exit(0);
   } catch (err) {

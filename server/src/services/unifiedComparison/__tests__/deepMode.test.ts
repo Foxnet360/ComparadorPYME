@@ -15,7 +15,6 @@ interface DeepClauseValidatorWithApply {
 }
 
 describe('Deep Mode Validation', () => {
-  
   const mockComparison: UnifiedComparisonResult = {
     metadata: {
       generatedAt: new Date().toISOString(),
@@ -25,18 +24,18 @@ describe('Deep Mode Validation', () => {
       totalPages: 10,
       confidence: 0.85,
       needsHumanReview: false,
-      processingTimeMs: 15000
+      processingTimeMs: 15000,
     },
     client: {
       name: 'Test Client',
       activity: 'Comercio',
       address: 'Calle 123',
       city: 'Bogotá',
-      totalInsuredValue: 1000000000
+      totalInsuredValue: 1000000000,
     },
     insurers: [
       { name: 'TestInsurer A', quoteDate: '2024-01-01', validity: '1 año', product: 'PYME' },
-      { name: 'TestInsurer B', quoteDate: '2024-01-01', validity: '1 año', product: 'PYME' }
+      { name: 'TestInsurer B', quoteDate: '2024-01-01', validity: '1 año', product: 'PYME' },
     ],
     coverageMatrix: [
       {
@@ -47,48 +46,48 @@ describe('Deep Mode Validation', () => {
             label: 'Suma Asegurada',
             cells: [
               { value: '$500.000.000', confidence: 0.9 },
-              { value: '$450.000.000', confidence: 0.85 }
-            ]
+              { value: '$450.000.000', confidence: 0.85 },
+            ],
           },
           {
             type: 'deductible' as const,
             label: 'Deducible',
             cells: [
               { value: '10% - Ver condiciones', isAmbiguous: true },
-              { value: '5% - Ver condiciones', isAmbiguous: true }
-            ]
-          }
-        ]
-      }
+              { value: '5% - Ver condiciones', isAmbiguous: true },
+            ],
+          },
+        ],
+      },
     ],
     financials: {
       premiums: [
         { netPremium: 5000000, fees: 500000, taxes: 1045000, total: 6545000 },
-        { netPremium: 4500000, fees: 450000, taxes: 940500, total: 5890500 }
+        { netPremium: 4500000, fees: 450000, taxes: 940500, total: 5890500 },
       ],
       metadata: [
         { validity: '1 año', product: 'PYME', backing: 'Reaseguro', commission: '15%' },
-        { validity: '1 año', product: 'PYME', backing: 'Reaseguro', commission: '12%' }
-      ]
+        { validity: '1 año', product: 'PYME', backing: 'Reaseguro', commission: '12%' },
+      ],
     },
     analysis: {
       warnings: [],
-      significantDifferences: []
-    }
+      significantDifferences: [],
+    },
   };
 
   describe('validateWithClauses', () => {
-    
     it('should validate comparison with clause PDFs', async () => {
       // Skip if no clause PDFs available
       const testClauseDir = './test-clauses';
-      
+
       if (!fs.existsSync(testClauseDir)) {
         console.log('No test clause PDFs available, skipping deep mode test');
         return;
       }
 
-      const clauseFiles = fs.readdirSync(testClauseDir)
+      const clauseFiles = fs
+        .readdirSync(testClauseDir)
         .filter((f: string) => f.endsWith('.pdf'))
         .map((f: string) => `${testClauseDir}/${f}`);
 
@@ -97,10 +96,7 @@ describe('Deep Mode Validation', () => {
         return;
       }
 
-      const result = await deepClauseValidator.validateWithClauses(
-        mockComparison,
-        clauseFiles
-      );
+      const result = await deepClauseValidator.validateWithClauses(mockComparison, clauseFiles);
 
       // Validate result structure
       expect(result).toBeDefined();
@@ -109,14 +105,13 @@ describe('Deep Mode Validation', () => {
       expect(result.validations).toBeInstanceOf(Array);
       expect(result.discrepancies).toBeInstanceOf(Array);
 
-      console.log(`✅ Deep mode test passed: ${result.validations.length} validations, ${result.discrepancies.length} discrepancies`);
-
+      console.log(
+        `✅ Deep mode test passed: ${result.validations.length} validations, ${result.discrepancies.length} discrepancies`
+      );
     }, 120000); // 2 minute timeout
 
     it('should handle empty clause files array', async () => {
-      await expect(
-        deepClauseValidator.validateWithClauses(mockComparison, [])
-      ).rejects.toThrow();
+      await expect(deepClauseValidator.validateWithClauses(mockComparison, [])).rejects.toThrow();
     });
 
     it('should handle non-existent clause files', async () => {
@@ -128,13 +123,14 @@ describe('Deep Mode Validation', () => {
     it('should preserve original comparison in result', async () => {
       // Skip if no clause PDFs available
       const testClauseDir = './test-clauses';
-      
+
       if (!fs.existsSync(testClauseDir)) {
         console.log('No test clause PDFs available, skipping');
         return;
       }
 
-      const clauseFiles = fs.readdirSync(testClauseDir)
+      const clauseFiles = fs
+        .readdirSync(testClauseDir)
         .filter((f: string) => f.endsWith('.pdf'))
         .map((f: string) => `${testClauseDir}/${f}`);
 
@@ -143,26 +139,23 @@ describe('Deep Mode Validation', () => {
         return;
       }
 
-      const result = await deepClauseValidator.validateWithClauses(
-        mockComparison,
-        clauseFiles
-      );
+      const result = await deepClauseValidator.validateWithClauses(mockComparison, clauseFiles);
 
       // Original should be unchanged
       expect(result.originalComparison.metadata.confidence).toBe(0.85);
       expect(result.originalComparison.insurers).toHaveLength(2);
-
     }, 120000);
 
     it('should update confidence after validation', async () => {
       const testClauseDir = './test-clauses';
-      
+
       if (!fs.existsSync(testClauseDir)) {
         console.log('No test clause PDFs available, skipping');
         return;
       }
 
-      const clauseFiles = fs.readdirSync(testClauseDir)
+      const clauseFiles = fs
+        .readdirSync(testClauseDir)
         .filter((f: string) => f.endsWith('.pdf'))
         .map((f: string) => `${testClauseDir}/${f}`);
 
@@ -171,21 +164,16 @@ describe('Deep Mode Validation', () => {
         return;
       }
 
-      const result = await deepClauseValidator.validateWithClauses(
-        mockComparison,
-        clauseFiles
-      );
+      const result = await deepClauseValidator.validateWithClauses(mockComparison, clauseFiles);
 
       // Validated comparison should have updated confidence
       expect(result.validatedComparison.metadata.confidence).toBeGreaterThanOrEqual(
         mockComparison.metadata.confidence
       );
-
     }, 120000);
   });
 
   describe('applyValidations', () => {
-
     it('should apply deductible validations', () => {
       const comparison = JSON.parse(JSON.stringify(mockComparison));
 
@@ -198,16 +186,15 @@ describe('Deep Mode Validation', () => {
             originalValue: '10% - Ver condiciones',
             validatedValue: '10%',
             source: 'página 15',
-            confidence: 0.95
-          }
+            confidence: 0.95,
+          },
         ],
-        discrepancies: []
+        discrepancies: [],
       };
 
-      const result = (deepClauseValidator as unknown as DeepClauseValidatorWithApply).applyValidations(
-        comparison,
-        validationResult
-      );
+      const result = (
+        deepClauseValidator as unknown as DeepClauseValidatorWithApply
+      ).applyValidations(comparison, validationResult);
 
       const deductibleCell = result.coverageMatrix[0].rows[1].cells[0];
       expect(deductibleCell.value).toBe('10%');
@@ -227,20 +214,21 @@ describe('Deep Mode Validation', () => {
             field: 'deductible',
             validatedValue: '5%',
             source: 'página 10',
-            confidence: 0.9
-          }
+            confidence: 0.9,
+          },
         ],
-        discrepancies: []
+        discrepancies: [],
       };
 
       expect(() =>
-        (deepClauseValidator as unknown as DeepClauseValidatorWithApply).applyValidations(comparison, validationResult)
+        (deepClauseValidator as unknown as DeepClauseValidatorWithApply).applyValidations(
+          comparison,
+          validationResult
+        )
       ).not.toThrow();
 
       // Comparison should remain unchanged
-      expect(comparison.coverageMatrix[0].rows[1].cells[0].value).toBe(
-        '10% - Ver condiciones'
-      );
+      expect(comparison.coverageMatrix[0].rows[1].cells[0].value).toBe('10% - Ver condiciones');
     });
   });
 });

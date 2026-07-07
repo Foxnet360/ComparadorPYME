@@ -38,7 +38,7 @@ vi.mock('../../config/database', () => {
     eq: vi.fn().mockReturnThis(),
     limit: vi.fn().mockResolvedValue({ data: [], error: null }),
     upsert: vi.fn().mockResolvedValue({ data: { id: 'mocked-id' }, error: null }),
-    single: vi.fn().mockResolvedValue({ data: { id: 'mocked-id' }, error: null })
+    single: vi.fn().mockResolvedValue({ data: { id: 'mocked-id' }, error: null }),
   };
   return { supabase: mockSupabase };
 });
@@ -52,9 +52,9 @@ vi.mock('@google/genai', () => {
           justification: 'Mocked justification',
           approved: true,
           alternativeGroupId: null,
-          reason: 'Mocked critic reason'
-        })
-      })
+          reason: 'Mocked critic reason',
+        }),
+      }),
     };
   }
   return {
@@ -65,7 +65,7 @@ vi.mock('@google/genai', () => {
       OBJECT: 'object',
       BOOLEAN: 'boolean',
     },
-    GoogleGenAI: MockGoogleGenAI
+    GoogleGenAI: MockGoogleGenAI,
   };
 });
 
@@ -73,7 +73,7 @@ vi.mock('../vector/embeddingService', () => ({
   embeddingService: {
     generateEmbedding: vi.fn(async () => Array(3072).fill(0)),
     generateEmbeddingsBatch: vi.fn(async (texts: string[]) =>
-      texts.map(text => ({ text, embedding: Array(3072).fill(0) }))
+      texts.map((text) => ({ text, embedding: Array(3072).fill(0) }))
     ),
     cosineSimilarity: vi.fn(() => 1.0),
   },
@@ -162,7 +162,7 @@ describe('coverageNormalizer insurer-aware regression', () => {
     );
 
     const incendio = result.canonicalCoverages.find(
-      c => c.name === 'Incendio (Edificio y Contenidos)'
+      (c) => c.name === 'Incendio (Edificio y Contenidos)'
     );
     expect(incendio).toBeDefined();
     expect(incendio?.status).toBe('present');
@@ -184,12 +184,10 @@ describe('coverageNormalizer insurer-aware regression', () => {
     );
 
     const incendio = result.canonicalCoverages.find(
-      c => c.name === 'Incendio (Edificio y Contenidos)'
+      (c) => c.name === 'Incendio (Edificio y Contenidos)'
     );
     expect(incendio).toBeDefined();
     expect(incendio?.status).toBe('present');
-    expect(incendio?.rawNames).toContain(
-      'AMPARO BÁSICO TODO RIESGO DE PÉRDIDA O DAÑO MATERIAL'
-    );
+    expect(incendio?.rawNames).toContain('AMPARO BÁSICO TODO RIESGO DE PÉRDIDA O DAÑO MATERIAL');
   });
 });

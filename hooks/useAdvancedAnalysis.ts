@@ -1,5 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { QuoteAnalysis, DeductibleAnalysis, ContextualRisk, WarrantyCompliance, LegalOpinion } from '../types';
+import {
+  QuoteAnalysis,
+  DeductibleAnalysis,
+  ContextualRisk,
+  WarrantyCompliance,
+  LegalOpinion,
+} from '../types';
 
 interface AdvancedAnalysisState {
   deductibleAnalysis: DeductibleAnalysis[] | null;
@@ -27,7 +33,7 @@ const analysisCache = new Map<string, CacheEntry>();
  * Generate a simple hash for a quote object
  */
 function getQuoteHash(quote: QuoteAnalysis): string {
-  const key = `${quote.insurerName}-${quote.coverages.map(c => c.name).join(',')}-${quote.coverages.map(c => c.deductible).join(',')}`;
+  const key = `${quote.insurerName}-${quote.coverages.map((c) => c.name).join(',')}-${quote.coverages.map((c) => c.deductible).join(',')}`;
   return key;
 }
 
@@ -45,25 +51,25 @@ async function fetchWithRetry(
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const response = await fetch(url, options);
-      
+
       // Don't retry on 4xx errors (client errors)
       if (response.status >= 400 && response.status < 500) {
         return response;
       }
-      
+
       // Retry on 5xx errors and network failures
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       return response;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       if (attempt < maxRetries) {
         // Exponential backoff: delay * 2^attempt + jitter
         const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
   }
@@ -89,7 +95,7 @@ function getCachedData(cacheKey: string): unknown | null {
 function setCachedData(cacheKey: string, data: unknown): void {
   analysisCache.set(cacheKey, {
     data,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   });
 }
 
@@ -106,7 +112,7 @@ export const useAdvancedAnalysis = (quote: QuoteAnalysis | null) => {
     warrantyCompliance: null,
     legalOpinion: null,
     loading: false,
-    error: null
+    error: null,
   });
 
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -122,19 +128,24 @@ export const useAdvancedAnalysis = (quote: QuoteAnalysis | null) => {
     const { signal } = abortControllerRef.current;
 
     // If data already exists in quote, use it
-    if (quote.deductibleAnalysis || quote.contextualRisk || quote.warrantyCompliance || quote.legalOpinion) {
-      setState(prev => ({
+    if (
+      quote.deductibleAnalysis ||
+      quote.contextualRisk ||
+      quote.warrantyCompliance ||
+      quote.legalOpinion
+    ) {
+      setState((prev) => ({
         ...prev,
         deductibleAnalysis: quote.deductibleAnalysis || null,
         contextualRisk: quote.contextualRisk || null,
         warrantyCompliance: quote.warrantyCompliance || null,
         legalOpinion: quote.legalOpinion || null,
-        loading: false
+        loading: false,
       }));
       return;
     }
 
-    setState(prev => ({ ...prev, loading: true, error: null }));
+    setState((prev) => ({ ...prev, loading: true, error: null }));
 
     try {
       const quoteHash = getQuoteHash(quote);
@@ -144,50 +155,46 @@ export const useAdvancedAnalysis = (quote: QuoteAnalysis | null) => {
         {
           type: 'deductible-risk',
           cacheKey: `${quoteHash}:deductible-risk`,
-          fetchFn: () => fetchWithRetry(
-            `${API_BASE_URL}/analysis/deductible-risk`,
-            {
+          fetchFn: () =>
+            fetchWithRetry(`${API_BASE_URL}/analysis/deductible-risk`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 coverageName: quote.coverages[0]?.name || 'General',
                 quoteDeductible: quote.coverages[0]?.deductible || '10%',
-                insuredAmount: parseFloat(quote.coverages[0]?.value?.replace(/[^\d]/g, '') || '0')
+                insuredAmount: parseFloat(quote.coverages[0]?.value?.replace(/[^\d]/g, '') || '0'),
               }),
-              signal
-            }
-          )
+              signal,
+            }),
         },
         {
           type: 'inverse-check',
           cacheKey: `${quoteHash}:inverse-check`,
-          fetchFn: () => fetchWithRetry(
-            `${API_BASE_URL}/analysis/inverse-check`,
-            {
+          fetchFn: () =>
+            fetchWithRetry(`${API_BASE_URL}/analysis/inverse-check`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 quote: {
                   insurerName: quote.insurerName,
-                  coverages: quote.coverages
+                  coverages: quote.coverages,
                 },
-                insurerName: quote.insurerName
+                insurerName: quote.insurerName,
               }),
-              signal
-            }
-          )
-        }
+              signal,
+            }),
+        },
       ];
 
       // Check cache first for each analysis type
-      const cachedResults = analysisCalls.map(call => ({
+      const cachedResults = analysisCalls.map((call) => ({
         ...call,
-        cached: getCachedData(call.cacheKey)
+        cached: getCachedData(call.cacheKey),
       }));
 
       // Only fetch what isn't cached
       const fetchPromises = cachedResults
-        .filter(item => !item.cached)
+        .filter((item) => !item.cached)
         .map(async (item) => {
           try {
             const response = await item.fetchFn();
@@ -205,19 +212,19 @@ export const useAdvancedAnalysis = (quote: QuoteAnalysis | null) => {
       const fetchedResults = await Promise.allSettled(fetchPromises);
 
       // Combine cached and fetched results
-      const results = cachedResults.map(item => {
+      const results = cachedResults.map((item) => {
         if (item.cached) {
           return { type: item.type, data: item.cached };
         }
         const fetched = fetchedResults.find(
-          (r): r is PromiseFulfilledResult<{type: string; data: unknown}> => 
+          (r): r is PromiseFulfilledResult<{ type: string; data: unknown }> =>
             r.status === 'fulfilled' && r.value.type === item.type
         );
         return fetched?.value || { type: item.type, data: null };
       });
 
-      const deductibleResult = results.find(r => r.type === 'deductible-risk');
-      const inverseResult = results.find(r => r.type === 'inverse-check');
+      const deductibleResult = results.find((r) => r.type === 'deductible-risk');
+      const inverseResult = results.find((r) => r.type === 'inverse-check');
 
       if (signal.aborted) return;
 
@@ -228,17 +235,17 @@ export const useAdvancedAnalysis = (quote: QuoteAnalysis | null) => {
         warrantyCompliance: quote.warrantyCompliance || null,
         legalOpinion: quote.legalOpinion || null,
         loading: false,
-        error: null
+        error: null,
       });
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
         return;
       }
-      
-      setState(prev => ({
+
+      setState((prev) => ({
         ...prev,
         loading: false,
-        error: err instanceof Error ? err.message : 'Error fetching advanced analysis'
+        error: err instanceof Error ? err.message : 'Error fetching advanced analysis',
       }));
     }
   }, [quote]);
@@ -247,7 +254,7 @@ export const useAdvancedAnalysis = (quote: QuoteAnalysis | null) => {
     if (quote) {
       fetchAdvancedAnalysis();
     }
-    
+
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -257,6 +264,6 @@ export const useAdvancedAnalysis = (quote: QuoteAnalysis | null) => {
 
   return {
     ...state,
-    refetch: fetchAdvancedAnalysis
+    refetch: fetchAdvancedAnalysis,
   };
 };

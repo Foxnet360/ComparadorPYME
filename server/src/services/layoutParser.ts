@@ -1,7 +1,4 @@
-import {
-  LayoutTable,
-  LayoutCell,
-} from '../schemas/templateRegistrySchema';
+import { LayoutTable, LayoutCell } from '../schemas/templateRegistrySchema';
 import {
   createStructuredLogger,
   globalMetrics,
@@ -110,10 +107,7 @@ function rowCenter(row: LayoutTextItem[]): number {
   return row.reduce((sum, item) => sum + item.y + item.height / 2, 0) / row.length;
 }
 
-export function clusterRows(
-  items: LayoutTextItem[],
-  yTolerance: number
-): LayoutTextItem[][] {
+export function clusterRows(items: LayoutTextItem[], yTolerance: number): LayoutTextItem[][] {
   if (items.length === 0) return [];
 
   const sorted = [...items].sort((a, b) => a.y - b.y);
@@ -148,10 +142,7 @@ export function clusterRows(
 // Column boundary derivation
 // ---------------------------------------------------------------------------
 
-export function deriveColumnBoundaries(
-  rows: LayoutTextItem[][],
-  xTolerance: number
-): number[] {
+export function deriveColumnBoundaries(rows: LayoutTextItem[][], xTolerance: number): number[] {
   if (rows.length === 0) return [];
 
   const leftEdges: number[] = [];
@@ -228,8 +219,7 @@ function splitIntoTableBlocks(
   let current: LayoutTextItem[][] = [];
   let lastY: number | null = null;
 
-  const gapThreshold =
-    options.xTolerance * options.tableGapFactor + options.xTolerance;
+  const gapThreshold = options.xTolerance * options.tableGapFactor + options.xTolerance;
 
   for (const row of rows) {
     const cells = assignRowToColumns(row, boundaries);
@@ -294,8 +284,8 @@ function buildTable(
 
       // Detect merged cells: same text in the same column in consecutive rows.
       if (r > 0) {
-        const prev = rows[r - 1]?.find((prevCell) =>
-          boundaries.findIndex((b) => Math.abs(prevCell.x - b) < 0.5) === c
+        const prev = rows[r - 1]?.find(
+          (prevCell) => boundaries.findIndex((b) => Math.abs(prevCell.x - b) < 0.5) === c
         );
         if (prev && prev.text === cell.text) {
           mergedCells.push(prev);
@@ -351,13 +341,10 @@ function detectRegions(
   const headerBand = { y: maxY - band, height: band };
   const footerBand = { y: minY, height: band };
 
-  const headerItems = page.items.filter(
-    (i) => i.y + i.height >= headerBand.y
-  );
+  const headerItems = page.items.filter((i) => i.y + i.height >= headerBand.y);
   const footerItems = page.items.filter((i) => i.y < footerBand.y + footerBand.height);
   const bodyItems = page.items.filter(
-    (i) =>
-      i.y + i.height < headerBand.y && i.y >= footerBand.y + footerBand.height
+    (i) => i.y + i.height < headerBand.y && i.y >= footerBand.y + footerBand.height
   );
 
   function regionOf(
@@ -383,21 +370,9 @@ function detectRegions(
     };
   }
 
-  const headerRegion = regionOf(
-    'header',
-    headerItems,
-    headerItems.map((i) => i.text).join(' ')
-  );
-  const footerRegion = regionOf(
-    'footer',
-    footerItems,
-    footerItems.map((i) => i.text).join(' ')
-  );
-  const bodyRegion = regionOf(
-    'body',
-    bodyItems,
-    bodyItems.map((i) => i.text).join(' ')
-  );
+  const headerRegion = regionOf('header', headerItems, headerItems.map((i) => i.text).join(' '));
+  const footerRegion = regionOf('footer', footerItems, footerItems.map((i) => i.text).join(' '));
+  const bodyRegion = regionOf('body', bodyItems, bodyItems.map((i) => i.text).join(' '));
 
   return [
     ...tableRegions,
@@ -448,11 +423,7 @@ export function extractTables(
   const result: LayoutParserResult = {
     tables: [],
     regions: [],
-    rotatedPages: detectRotatedPages(
-      pages,
-      opts.rotationThresholdDegrees,
-      opts.rotatedItemRatio
-    ),
+    rotatedPages: detectRotatedPages(pages, opts.rotationThresholdDegrees, opts.rotatedItemRatio),
     failed: false,
   };
 
@@ -481,10 +452,7 @@ export function extractTables(
 
     const heights = page.items.map((i) => i.height);
     const medianHeight = median(heights);
-    const yTolerance = Math.max(
-      opts.minYTolerance,
-      medianHeight * opts.yToleranceFactor
-    );
+    const yTolerance = Math.max(opts.minYTolerance, medianHeight * opts.yToleranceFactor);
 
     const rows = clusterRows(page.items, yTolerance);
     const boundaries = deriveColumnBoundaries(rows, opts.xTolerance);

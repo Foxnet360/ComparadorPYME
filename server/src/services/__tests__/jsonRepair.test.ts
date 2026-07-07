@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  parseJsonWithRepair,
-  isTruncated,
-  sanitizeJsonText,
-} from '../jsonRepair';
+import { parseJsonWithRepair, isTruncated, sanitizeJsonText } from '../jsonRepair';
 
 describe('jsonRepair', () => {
   describe('parseJsonWithRepair', () => {
@@ -70,7 +66,8 @@ describe('jsonRepair', () => {
     });
 
     it('should handle nested objects', () => {
-      const json = '{"quote": {"insurer": "Test", "coverages": [{"name": "Fire", "value": "100M"}]}}';
+      const json =
+        '{"quote": {"insurer": "Test", "coverages": [{"name": "Fire", "value": "100M"}]}}';
       const result = parseJsonWithRepair(json);
 
       expect(result.success).toBe(true);

@@ -1,29 +1,52 @@
 /// <reference types="vite/client" />
-import { HistoryEntry, DashboardStats, UserProfile, QuoteStatus, ComparisonReport, Client, QuoteAnalysis } from "../types";
-import { dbService } from "./db";
+import {
+  HistoryEntry,
+  DashboardStats,
+  UserProfile,
+  QuoteStatus,
+  ComparisonReport,
+  Client,
+  QuoteAnalysis,
+} from '../types';
+import { dbService } from './db';
 
 const USER_KEY = 'seguro_app_user';
 // Use relative URL in production (same domain), localhost only in dev
-const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const isLocal =
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const API_URL = isLocal ? 'http://localhost:8080/api' : '/api';
 
 // Mock Data for initial load (fallback only)
 const MOCK_CLIENTS: Client[] = [
-  { id: 'c1', name: 'Transportes Rápidos S.A.', nit: '900.123.456-1', contactPerson: 'Juan Pérez', industry: 'Logística', email: 'gerencia@transportesrapidos.com' },
-  { id: 'c2', name: 'Inmobiliaria El Porvenir', nit: '800.987.654-2', contactPerson: 'María Gómez', industry: 'Real Estate', email: 'admin@elporvenir.co' },
+  {
+    id: 'c1',
+    name: 'Transportes Rápidos S.A.',
+    nit: '900.123.456-1',
+    contactPerson: 'Juan Pérez',
+    industry: 'Logística',
+    email: 'gerencia@transportesrapidos.com',
+  },
+  {
+    id: 'c2',
+    name: 'Inmobiliaria El Porvenir',
+    nit: '800.987.654-2',
+    contactPerson: 'María Gómez',
+    industry: 'Real Estate',
+    email: 'admin@elporvenir.co',
+  },
 ];
 
 export const storageService = {
   // --- AUTHENTICATION ---
 
   register: async (user: UserProfile): Promise<UserProfile> => {
-    const users = await dbService.getAll("users");
-    if (users.find(u => u.email === user.email)) {
+    const users = await dbService.getAll('users');
+    if (users.find((u) => u.email === user.email)) {
       throw new Error('El correo electrónico ya está registrado.');
     }
 
     const newUser = { ...user, id: Date.now().toString() };
-    await dbService.put("users", newUser);
+    await dbService.put('users', newUser);
     localStorage.setItem(USER_KEY, JSON.stringify(newUser));
     return newUser;
   },
@@ -36,14 +59,14 @@ export const storageService = {
         email: email,
         role: 'ADMIN',
         avatarUrl: 'https://ui-avatars.com/api/?name=Admin&background=4f46e5&color=fff',
-        intermediaryName: 'Seguros Admin HQ'
+        intermediaryName: 'Seguros Admin HQ',
       };
       localStorage.setItem(USER_KEY, JSON.stringify(adminUser));
       return adminUser;
     }
 
-    const users = await dbService.getAll("users");
-    const foundUser = users.find(u => u.email === email && u.password === password);
+    const users = await dbService.getAll('users');
+    const foundUser = users.find((u) => u.email === email && u.password === password);
 
     if (foundUser) {
       localStorage.setItem(USER_KEY, JSON.stringify(foundUser));
@@ -54,7 +77,7 @@ export const storageService = {
   },
 
   updateProfile: async (updatedUser: UserProfile): Promise<UserProfile> => {
-    await dbService.put("users", updatedUser);
+    await dbService.put('users', updatedUser);
     const currentUser = storageService.getCurrentUser();
     if (currentUser && currentUser.id === updatedUser.id) {
       localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
@@ -73,10 +96,10 @@ export const storageService = {
 
   // --- CLIENTS ---
   getClients: async (): Promise<Client[]> => {
-    const clients = await dbService.getAll("clients");
+    const clients = await dbService.getAll('clients');
     if (clients.length === 0) {
       for (const client of MOCK_CLIENTS) {
-        await dbService.put("clients", client);
+        await dbService.put('clients', client);
       }
       return MOCK_CLIENTS;
     }
@@ -84,7 +107,7 @@ export const storageService = {
   },
 
   addClient: async (client: Client): Promise<Client[]> => {
-    await dbService.put("clients", client);
+    await dbService.put('clients', client);
     return await storageService.getClients();
   },
 
@@ -103,54 +126,64 @@ export const storageService = {
           client_name?: string;
           analysis_result?: { quotes?: QuoteAnalysis[] };
         }> = await response.json();
-        
+
         // Transform backend data (snake_case) to frontend format (camelCase)
         const transformedHistory: HistoryEntry[] = cloudHistory.map((item) => {
           const analysisResult = item.analysis_result || {};
           const quotes = analysisResult.quotes || [];
-          const bestQuote = quotes.length > 0 
-            ? quotes.reduce<QuoteAnalysis>((prev, curr) => (prev.score > curr.score ? prev : curr))
-            : null;
-          
+          const bestQuote =
+            quotes.length > 0
+              ? quotes.reduce<QuoteAnalysis>((prev, curr) =>
+                  prev.score > curr.score ? prev : curr
+                )
+              : null;
+
           return {
             id: item.id,
             userId: item.user_id,
-            date: item.created_at ? item.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+            date: item.created_at
+              ? item.created_at.split('T')[0]
+              : new Date().toISOString().split('T')[0],
             clientName: item.client_name || 'Cliente Sin Nombre',
             insurers: quotes.map((q) => q.insurerName || 'Desconocido'),
             bestOption: bestQuote?.insurerName || 'N/A',
             premiumValue: bestQuote?.priceAnnual || 0,
             status: 'SENT', // Default status - could be stored in DB in future
-            fullReport: analysisResult as ComparisonReport
+            fullReport: analysisResult as ComparisonReport,
           };
         });
-        
+
         return transformedHistory;
       }
     } catch (e) {
-      console.warn("Backend Unreachable, falling back to local storage", e);
+      console.warn('Backend Unreachable, falling back to local storage', e);
     }
 
     // Fallback: Local Storage (IndexedDB)
-    return await dbService.getAll("history");
+    return await dbService.getAll('history');
   },
 
-  saveAnalysis: async (clientName: string, report: ComparisonReport): Promise<string | undefined> => {
+  saveAnalysis: async (
+    clientName: string,
+    report: ComparisonReport
+  ): Promise<string | undefined> => {
     const currentUser = storageService.getCurrentUser();
     if (!currentUser) return undefined;
 
     if (!report || !report.quotes || !Array.isArray(report.quotes) || report.quotes.length === 0) {
-      console.warn("Cannot save analysis: Invalid report structure", report);
+      console.warn('Cannot save analysis: Invalid report structure', report);
       return undefined;
     }
 
     // Backend already saves the analysis, we just need to update local cache
-    const bestQuote = report.quotes.reduce<QuoteAnalysis>((prev, curr) => (prev.score > curr.score ? prev : curr));
+    const bestQuote = report.quotes.reduce<QuoteAnalysis>((prev, curr) =>
+      prev.score > curr.score ? prev : curr
+    );
     const insurers = report.quotes.map((q) => q.insurerName || 'Desconocido');
 
     // Use backend-generated UUID if available, otherwise generate a valid UUID
     const id = report.id || crypto.randomUUID();
-    
+
     const newEntry: HistoryEntry = {
       id,
       userId: currentUser.id,
@@ -160,21 +193,21 @@ export const storageService = {
       bestOption: bestQuote?.insurerName || 'N/A',
       premiumValue: bestQuote?.priceAnnual || 0,
       status: 'SENT',
-      fullReport: report
+      fullReport: report,
     };
 
-    await dbService.put("history", newEntry);
+    await dbService.put('history', newEntry);
     return newEntry.id;
   },
 
   updateStatus: async (id: string, newStatus: QuoteStatus) => {
     // Update local storage
-    const entry = await dbService.get("history", id);
+    const entry = await dbService.get('history', id);
     if (entry) {
       const updated = { ...entry, status: newStatus };
-      await dbService.put("history", updated);
+      await dbService.put('history', updated);
     }
-    
+
     // Note: Backend doesn't have an endpoint to update status yet
     // This would need to be implemented in the backend if we want persistence
   },
@@ -184,16 +217,29 @@ export const storageService = {
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
-    const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    const monthNames = [
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
+    ];
 
-    const monthHistory = history.filter(h => {
+    const monthHistory = history.filter((h) => {
       const d = new Date(h.date);
       return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
     });
 
     const totalQuotes = monthHistory.length;
-    const sold = monthHistory.filter(h => h.status === 'SOLD');
-    const active = monthHistory.filter(h => h.status === 'SENT' || h.status === 'DRAFT');
+    const sold = monthHistory.filter((h) => h.status === 'SOLD');
+    const active = monthHistory.filter((h) => h.status === 'SENT' || h.status === 'DRAFT');
 
     const conversionRate = totalQuotes > 0 ? Math.round((sold.length / totalQuotes) * 100) : 0;
     const totalPremiumSold = sold.reduce((sum, item) => sum + (item.premiumValue || 0), 0);
@@ -203,7 +249,7 @@ export const storageService = {
       conversionRate,
       totalPremiumSold,
       activeProspects: active.length,
-      monthName: `${monthNames[currentMonth]} ${currentYear}`
+      monthName: `${monthNames[currentMonth]} ${currentYear}`,
     };
-  }
+  },
 };

@@ -50,20 +50,20 @@ export const virtualLawyerService = {
     insurerName: string
   ): Promise<LegalOpinion> => {
     console.log(`⚖️ [virtualLawyer] Generating legal opinion for ${quote.coverageName}...`);
-    
+
     // Retrieve relevant clause chunks
     const clauseChunks = await retrieveRelevantClauses(quote.coverageName, insurerName);
-    
+
     // Build enriched prompt
     const prompt = buildLegalPrompt(quote, clientProfile, clauseChunks);
-    
+
     try {
       // Generate opinion with Gemini
       const response = await geminiService.extractText(prompt, '');
-      
+
       // Parse response
       const opinion = parseLegalOpinion(response, quote.coverageName, clauseChunks);
-      
+
       console.log(`✅ [virtualLawyer] Opinion generated with ${opinion.confidence}% confidence`);
       return opinion;
     } catch (error) {
@@ -71,7 +71,7 @@ export const virtualLawyerService = {
       return generateFallbackOpinion(quote, clauseChunks);
     }
   },
-  
+
   /**
    * Generate opinions for multiple coverages
    */
@@ -81,7 +81,7 @@ export const virtualLawyerService = {
     insurerName: string
   ): Promise<LegalOpinion[]> => {
     const opinions: LegalOpinion[] = [];
-    
+
     for (const quote of quotes) {
       const opinion = await virtualLawyerService.generateLegalOpinion(
         quote,
@@ -90,41 +90,37 @@ export const virtualLawyerService = {
       );
       opinions.push(opinion);
     }
-    
+
     return opinions;
   },
-  
+
   /**
    * Identify negotiation points
    */
-  identifyNegotiationPoints: (
-    opinions: LegalOpinion[]
-  ): NegotiationPoint[] => {
-    const allPoints = opinions.flatMap(o => o.negotiationPoints);
-    
+  identifyNegotiationPoints: (opinions: LegalOpinion[]): NegotiationPoint[] => {
+    const allPoints = opinions.flatMap((o) => o.negotiationPoints);
+
     // Sort by priority
     const priorityOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 };
-    return allPoints.sort((a, b) => 
-      priorityOrder[a.priority] - priorityOrder[b.priority]
-    );
-  }
+    return allPoints.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+  },
 };
 
 async function retrieveRelevantClauses(
   coverageName: string,
   insurerName: string
-): Promise<Array<{text: string; section: string; pageNumber: number}>> {
+): Promise<Array<{ text: string; section: string; pageNumber: number }>> {
   try {
     const clauses = await ragRetrievalService.search(coverageName, {
       insurerName,
       coverageTags: [coverageName.toLowerCase()],
-      limit: 3
+      limit: 3,
     });
-    
-    return clauses.map(c => ({
+
+    return clauses.map((c) => ({
       text: c.content,
       section: c.sectionType,
-      pageNumber: c.pageNumber
+      pageNumber: c.pageNumber,
     }));
   } catch (error) {
     console.warn('⚠️ Error retrieving clauses:', error);
@@ -135,11 +131,11 @@ async function retrieveRelevantClauses(
 function buildLegalPrompt(
   quote: QuoteData,
   profile: ClientProfile,
-  clauses: Array<{text: string; section: string; pageNumber: number}>
+  clauses: Array<{ text: string; section: string; pageNumber: number }>
 ): string {
-  const clauseText = clauses.map(c => 
-    `[${c.section} - Pág. ${c.pageNumber}]: ${c.text}`
-  ).join('\n\n');
+  const clauseText = clauses
+    .map((c) => `[${c.section} - Pág. ${c.pageNumber}]: ${c.text}`)
+    .join('\n\n');
 
   return `Eres un abogado especialista en seguros colombianos. Analiza la siguiente situación y genera una opinión legal estructurada.
 
@@ -187,20 +183,30 @@ FORMATO DE RESPUESTA:
 function parseLegalOpinion(
   response: string,
   coverageName: string,
-  clauses: Array<{text: string; section: string; pageNumber: number}>
+  clauses: Array<{ text: string; section: string; pageNumber: number }>
 ): LegalOpinion {
   // Extract sections
-  const riskMatch = response.match(/=== ESCENARIO DE RIESGO ===\n?([\s\S]*?)(?=\n=== INTERPRETACIÓN|$)/);
-  const interpretationMatch = response.match(/=== INTERPRETACIÓN DEL CLAUSULADO ===\n?([\s\S]*?)(?=\n=== RECOMENDACIÓN|$)/);
-  const recommendationMatch = response.match(/=== RECOMENDACIÓN ===\n?([\s\S]*?)(?=\n=== PUNTOS DE NEGOCIACIÓN|$)/);
-  const pointsMatch = response.match(/=== PUNTOS DE NEGOCIACIÓN ===\n?([\s\S]*?)(?=\n=== CONFIANZA|$)/);
+  const riskMatch = response.match(
+    /=== ESCENARIO DE RIESGO ===\n?([\s\S]*?)(?=\n=== INTERPRETACIÓN|$)/
+  );
+  const interpretationMatch = response.match(
+    /=== INTERPRETACIÓN DEL CLAUSULADO ===\n?([\s\S]*?)(?=\n=== RECOMENDACIÓN|$)/
+  );
+  const recommendationMatch = response.match(
+    /=== RECOMENDACIÓN ===\n?([\s\S]*?)(?=\n=== PUNTOS DE NEGOCIACIÓN|$)/
+  );
+  const pointsMatch = response.match(
+    /=== PUNTOS DE NEGOCIACIÓN ===\n?([\s\S]*?)(?=\n=== CONFIANZA|$)/
+  );
   const confidenceMatch = response.match(/=== CONFIANZA ===\n?(\d+)/);
-  
+
   // Parse negotiation points
   const negotiationPoints: NegotiationPoint[] = [];
   if (pointsMatch) {
-    const lines = pointsMatch[1].split('\n').filter(l => l.trim().startsWith('-') || l.trim().match(/^\d+\./));
-    
+    const lines = pointsMatch[1]
+      .split('\n')
+      .filter((l) => l.trim().startsWith('-') || l.trim().match(/^\d+\./));
+
     for (const line of lines) {
       const parts = line.replace(/^[-\d.\s]+/, '').split(' - ');
       if (parts.length >= 2) {
@@ -208,58 +214,67 @@ function parseLegalOpinion(
           point: parts[0].trim(),
           rationale: parts[1]?.trim() || '',
           expectedOutcome: parts[2]?.trim() || 'Por definir',
-          priority: (parts[3]?.trim().toUpperCase() as 'HIGH' | 'MEDIUM' | 'LOW') || 'MEDIUM'
+          priority: (parts[3]?.trim().toUpperCase() as 'HIGH' | 'MEDIUM' | 'LOW') || 'MEDIUM',
         });
       }
     }
   }
-  
+
   // Build citations
-  const citations: ClauseCitation[] = clauses.map(c => ({
+  const citations: ClauseCitation[] = clauses.map((c) => ({
     text: c.text.substring(0, 200) + (c.text.length > 200 ? '...' : ''),
     section: c.section,
     pageNumber: c.pageNumber,
-    documentName: 'Clausulado'
+    documentName: 'Clausulado',
   }));
-  
+
   return {
     coverageName,
     riskScenario: riskMatch?.[1]?.trim() || 'Riesgo no especificado',
     clauseInterpretation: interpretationMatch?.[1]?.trim() || 'Sin interpretación',
     recommendation: recommendationMatch?.[1]?.trim() || 'Sin recomendación',
-    negotiationPoints: negotiationPoints.length > 0 ? negotiationPoints : [{
-      point: 'Verificar cobertura con corredor',
-      rationale: 'Análisis preliminar',
-      expectedOutcome: 'Aclaración de términos',
-      priority: 'MEDIUM'
-    }],
+    negotiationPoints:
+      negotiationPoints.length > 0
+        ? negotiationPoints
+        : [
+            {
+              point: 'Verificar cobertura con corredor',
+              rationale: 'Análisis preliminar',
+              expectedOutcome: 'Aclaración de términos',
+              priority: 'MEDIUM',
+            },
+          ],
     citations,
-    confidence: parseInt(confidenceMatch?.[1] || '70')
+    confidence: parseInt(confidenceMatch?.[1] || '70'),
   };
 }
 
 function generateFallbackOpinion(
   quote: QuoteData,
-  clauses: Array<{text: string; section: string; pageNumber: number}>
+  clauses: Array<{ text: string; section: string; pageNumber: number }>
 ): LegalOpinion {
   return {
     coverageName: quote.coverageName,
     riskScenario: `Análisis de ${quote.coverageName} para ${quote.insurerName}`,
-    clauseInterpretation: 'Se requiere revisión manual del clausulado para una interpretación precisa.',
-    recommendation: 'Consultar con el corredor de seguros para verificar los términos específicos de esta cobertura.',
-    negotiationPoints: [{
-      point: 'Solicitar copia del clausulado completo',
-      rationale: 'Para verificación detallada',
-      expectedOutcome: 'Mayor claridad contractual',
-      priority: 'HIGH'
-    }],
-    citations: clauses.map(c => ({
+    clauseInterpretation:
+      'Se requiere revisión manual del clausulado para una interpretación precisa.',
+    recommendation:
+      'Consultar con el corredor de seguros para verificar los términos específicos de esta cobertura.',
+    negotiationPoints: [
+      {
+        point: 'Solicitar copia del clausulado completo',
+        rationale: 'Para verificación detallada',
+        expectedOutcome: 'Mayor claridad contractual',
+        priority: 'HIGH',
+      },
+    ],
+    citations: clauses.map((c) => ({
       text: c.text.substring(0, 200),
       section: c.section,
       pageNumber: c.pageNumber,
-      documentName: 'Clausulado'
+      documentName: 'Clausulado',
     })),
-    confidence: 50
+    confidence: 50,
   };
 }
 

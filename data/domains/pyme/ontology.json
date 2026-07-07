@@ -6,7 +6,15 @@
       "id": "patrimoniales",
       "name": "Patrimoniales",
       "level": 1,
-      "childrenIds": ["incendio", "lucro-cesante", "equipo-electronico", "rotura-maquinaria", "sustraccion", "vidrios", "manejo"],
+      "childrenIds": [
+        "incendio",
+        "lucro-cesante",
+        "equipo-electronico",
+        "rotura-maquinaria",
+        "sustraccion",
+        "vidrios",
+        "manejo"
+      ],
       "aliases": ["Daño Material", "Propiedad", "Bienes"],
       "riskType": "property"
     },
@@ -40,7 +48,27 @@
       "level": 2,
       "parentId": "patrimoniales",
       "childrenIds": [],
-      "aliases": ["Incendio", "Edificio", "Contenidos", "Inmuebles", "Todo riesgo daños materiales", "Daños Materiales", "Amparo Básico", "Daños por Agua", "Anegación", "Inundación", "Huracan, vientos fuertes, granizo, impacto y humo", "Vientos Fuertes", "Granizo", "Impacto", "Humo", "Daño Físico", "Amparo Basico", "AMPARO BASICO - TODO RIESGO DANO MATERIAL", "AMPARO BÁSICO TODO RIESGO DE PÉRDIDA O DAÑO MATERIAL"],
+      "aliases": [
+        "Incendio",
+        "Edificio",
+        "Contenidos",
+        "Inmuebles",
+        "Todo riesgo daños materiales",
+        "Daños Materiales",
+        "Amparo Básico",
+        "Daños por Agua",
+        "Anegación",
+        "Inundación",
+        "Huracan, vientos fuertes, granizo, impacto y humo",
+        "Vientos Fuertes",
+        "Granizo",
+        "Impacto",
+        "Humo",
+        "Daño Físico",
+        "Amparo Basico",
+        "AMPARO BASICO - TODO RIESGO DANO MATERIAL",
+        "AMPARO BÁSICO TODO RIESGO DE PÉRDIDA O DAÑO MATERIAL"
+      ],
       "riskType": "property",
       "typicalDeductible": "10%"
     },
@@ -50,7 +78,14 @@
       "level": 2,
       "parentId": "patrimoniales",
       "childrenIds": [],
-      "aliases": ["Lucro Cesante", "Pérdida de Beneficios", "Interrupción de Negocio", "Gastos por Parálisis", "Interrupción", "Lucro cesante por daños materiales"],
+      "aliases": [
+        "Lucro Cesante",
+        "Pérdida de Beneficios",
+        "Interrupción de Negocio",
+        "Gastos por Parálisis",
+        "Interrupción",
+        "Lucro cesante por daños materiales"
+      ],
       "riskType": "business",
       "typicalDeductible": "0%"
     },
@@ -60,7 +95,19 @@
       "level": 2,
       "parentId": "patrimoniales",
       "childrenIds": [],
-      "aliases": ["Sustracción", "Hurto", "Robo", "Hurto Calificado", "Hurto Simple", "Sustracción con Violencia", "Sustracción sin Violencia", "Saqueo", "Hurto calificado", "Sustracción con violencia", "Sustracción sin violencia"],
+      "aliases": [
+        "Sustracción",
+        "Hurto",
+        "Robo",
+        "Hurto Calificado",
+        "Hurto Simple",
+        "Sustracción con Violencia",
+        "Sustracción sin Violencia",
+        "Saqueo",
+        "Hurto calificado",
+        "Sustracción con violencia",
+        "Sustracción sin violencia"
+      ],
       "riskType": "theft",
       "typicalDeductible": "10% min 1 SMMLV"
     },
@@ -70,7 +117,18 @@
       "level": 2,
       "parentId": "patrimoniales",
       "childrenIds": [],
-      "aliases": ["Equipo Eléctrico", "Electrónico", "EEE", "Equipo Eléctrico y Electrónico", "Computadores", "Servidores", "Daño Interno", "Cobertura Fuera de Predios", "Vehículos propios y no propios", "Responsabilidad profesional por pérdida de datos – Cyber"],
+      "aliases": [
+        "Equipo Eléctrico",
+        "Electrónico",
+        "EEE",
+        "Equipo Eléctrico y Electrónico",
+        "Computadores",
+        "Servidores",
+        "Daño Interno",
+        "Cobertura Fuera de Predios",
+        "Vehículos propios y no propios",
+        "Responsabilidad profesional por pérdida de datos – Cyber"
+      ],
       "riskType": "equipment",
       "typicalDeductible": "10%"
     },
@@ -80,7 +138,13 @@
       "level": 2,
       "parentId": "patrimoniales",
       "childrenIds": [],
-      "aliases": ["Rotura de Maquinaria", "Rotura", "Daño Interno de Maquinaria", "Máquinas", "Rotura de maquinaria"],
+      "aliases": [
+        "Rotura de Maquinaria",
+        "Rotura",
+        "Daño Interno de Maquinaria",
+        "Máquinas",
+        "Rotura de maquinaria"
+      ],
       "riskType": "equipment",
       "typicalDeductible": "10%"
     },
@@ -90,7 +154,22 @@
       "level": 2,
       "parentId": "responsabilidad-civil",
       "childrenIds": [],
-      "aliases": ["RCE", "Responsabilidad Civil Extracontractual", "Daño a Terceros", "PLO", "Predios, labores y operaciones", "Predios, labores y operaciones (PLO)", "Responsabilidad Civil Productos", "RC Cruzada", "Parqueaderos", "Contratistas o subcontratistas", "Vehículos propios y no propios", "Amparo básico daños y perjuicios a terceros", "Responsabilidad civil patronal", "Accidentes personales"],
+      "aliases": [
+        "RCE",
+        "Responsabilidad Civil Extracontractual",
+        "Daño a Terceros",
+        "PLO",
+        "Predios, labores y operaciones",
+        "Predios, labores y operaciones (PLO)",
+        "Responsabilidad Civil Productos",
+        "RC Cruzada",
+        "Parqueaderos",
+        "Contratistas o subcontratistas",
+        "Vehículos propios y no propios",
+        "Amparo básico daños y perjuicios a terceros",
+        "Responsabilidad civil patronal",
+        "Accidentes personales"
+      ],
       "riskType": "liability",
       "typicalDeductible": "0%"
     },
@@ -110,7 +189,15 @@
       "level": 2,
       "parentId": "patrimoniales",
       "childrenIds": [],
-      "aliases": ["Manejo", "Infidelidad", "Fraude de Empleados", "Manejo Global", "Manejo Global Comercial", "Manejo global comercial", "Fraude Empleados"],
+      "aliases": [
+        "Manejo",
+        "Infidelidad",
+        "Fraude de Empleados",
+        "Manejo Global",
+        "Manejo Global Comercial",
+        "Manejo global comercial",
+        "Fraude Empleados"
+      ],
       "riskType": "theft",
       "typicalDeductible": "10% min 1 SMMLV"
     },
@@ -120,7 +207,12 @@
       "level": 2,
       "parentId": "riesgos-especiales",
       "childrenIds": [],
-      "aliases": ["Transporte de Mercancías", "Tránsito de Mercancías", "Transporte", "Transporte de mercancias"],
+      "aliases": [
+        "Transporte de Mercancías",
+        "Tránsito de Mercancías",
+        "Transporte",
+        "Transporte de mercancias"
+      ],
       "riskType": "transit",
       "typicalDeductible": "10%"
     },
@@ -130,7 +222,13 @@
       "level": 2,
       "parentId": "riesgos-especiales",
       "childrenIds": [],
-      "aliases": ["Transporte de Valores", "Dinero en Tránsito", "Valores en Tránsito", "Dinero Local", "Transporte de valores"],
+      "aliases": [
+        "Transporte de Valores",
+        "Dinero en Tránsito",
+        "Valores en Tránsito",
+        "Dinero Local",
+        "Transporte de valores"
+      ],
       "riskType": "transit",
       "typicalDeductible": "10%"
     },
@@ -160,7 +258,16 @@
       "level": 2,
       "parentId": "riesgos-especiales",
       "childrenIds": [],
-      "aliases": ["Terremoto", "Sismo", "Catastróficos", "Erupción", "Terremoto y Eventos Catastróficos", "Terremoto, maremoto o tsunami, temblor o erupción volcánica", "Terremoto y eventos catastrificos", "Terremoto y eventos catastróficos"],
+      "aliases": [
+        "Terremoto",
+        "Sismo",
+        "Catastróficos",
+        "Erupción",
+        "Terremoto y Eventos Catastróficos",
+        "Terremoto, maremoto o tsunami, temblor o erupción volcánica",
+        "Terremoto y eventos catastrificos",
+        "Terremoto y eventos catastróficos"
+      ],
       "riskType": "catastrophe",
       "typicalDeductible": "10% min 5 SMMLV"
     },
@@ -170,7 +277,15 @@
       "level": 2,
       "parentId": "riesgos-especiales",
       "childrenIds": [],
-      "aliases": ["HMACC", "Asonada", "Motín", "Huelga", "Huelga, Motín, Asonada", "Huelga, Motín, Asonada (HMACC)", "Actos mal intencionados de terceros"],
+      "aliases": [
+        "HMACC",
+        "Asonada",
+        "Motín",
+        "Huelga",
+        "Huelga, Motín, Asonada",
+        "Huelga, Motín, Asonada (HMACC)",
+        "Actos mal intencionados de terceros"
+      ],
       "riskType": "special",
       "typicalDeductible": "10%"
     }

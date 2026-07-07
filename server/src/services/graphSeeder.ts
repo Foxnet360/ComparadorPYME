@@ -40,10 +40,7 @@ function findCanonicalId(raw: string, ontology: OntologyBundle): string | null {
   return null;
 }
 
-function addEdge(
-  edges: Map<string, GraphEdge>,
-  edge: GraphEdge
-): void {
+function addEdge(edges: Map<string, GraphEdge>, edge: GraphEdge): void {
   const key = `${edge.from}|${edge.to}|${edge.type}|${edge.insurer ?? ''}|${edge.domain ?? 'pyme'}`;
   edges.set(key, edge);
 }
@@ -119,11 +116,9 @@ export async function seedCoverageGraph(
     domain,
   }));
 
-  const { error } = await db
-    .from('coverage_graph_edges')
-    .upsert(rows, {
-      onConflict: 'from_node,to_node,edge_type,insurer,domain',
-    });
+  const { error } = await db.from('coverage_graph_edges').upsert(rows, {
+    onConflict: 'from_node,to_node,edge_type,insurer,domain',
+  });
 
   if (error) {
     throw new Error(`Failed to seed coverage graph: ${error.message}`);

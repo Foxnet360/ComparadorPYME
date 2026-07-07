@@ -10,44 +10,46 @@ interface VirtualizedMatrixProps {
   onCellDoubleClick?: (rowId: string, colIdx: number) => void;
 }
 
-const CoverageCell = memo(({ 
-  cell, 
-  rowLabel, 
-  _colIdx,
-  onClick,
-  onDoubleClick 
-}: {
-  cell: MatrixCell;
-  rowLabel: string;
-  _colIdx: number;
-  onClick?: () => void;
-  onDoubleClick?: () => void;
-}) => {
-  const isWinner = cell.isWinner;
-  const excluded = cell.isExcluded;
+const CoverageCell = memo(
+  ({
+    cell,
+    rowLabel,
+    _colIdx,
+    onClick,
+    onDoubleClick,
+  }: {
+    cell: MatrixCell;
+    rowLabel: string;
+    _colIdx: number;
+    onClick?: () => void;
+    onDoubleClick?: () => void;
+  }) => {
+    const isWinner = cell.isWinner;
+    const excluded = cell.isExcluded;
 
-  return (
-    <div 
-      className={`px-6 py-3.5 text-sm text-center relative border-r border-slate-50 ${
-        isWinner ? 'bg-amber-50/60 font-semibold text-amber-900' : ''
-      } ${excluded ? 'text-red-500 italic bg-slate-50/20' : 'text-slate-800'}`}
-      onClick={onClick}
-      onDoubleClick={onDoubleClick}
-    >
-      {excluded ? (
-        <span className="text-red-400 font-medium">No incluida</span>
-      ) : (
-        <span className={isWinner ? 'text-amber-950 font-bold' : 'text-slate-800 font-medium'}>
-          {rowLabel === 'Deducible' && cell.value !== 'No aplica' ? (
-            <DeductibleBadge deductible={cell.value} />
-          ) : (
-            cell.value
-          )}
-        </span>
-      )}
-    </div>
-  );
-});
+    return (
+      <div
+        className={`px-6 py-3.5 text-sm text-center relative border-r border-slate-50 ${
+          isWinner ? 'bg-amber-50/60 font-semibold text-amber-900' : ''
+        } ${excluded ? 'text-red-500 italic bg-slate-50/20' : 'text-slate-800'}`}
+        onClick={onClick}
+        onDoubleClick={onDoubleClick}
+      >
+        {excluded ? (
+          <span className="text-red-400 font-medium">No incluida</span>
+        ) : (
+          <span className={isWinner ? 'text-amber-950 font-bold' : 'text-slate-800 font-medium'}>
+            {rowLabel === 'Deducible' && cell.value !== 'No aplica' ? (
+              <DeductibleBadge deductible={cell.value} />
+            ) : (
+              cell.value
+            )}
+          </span>
+        )}
+      </div>
+    );
+  }
+);
 
 CoverageCell.displayName = 'CoverageCell';
 
@@ -123,7 +125,7 @@ export const VirtualizedCoverageMatrix: React.FC<VirtualizedMatrixProps> = ({
                 }}
                 className="bg-[#E6F0FA]/40 font-bold"
               >
-                <div 
+                <div
                   role="gridcell"
                   className="px-6 py-3 text-xs md:text-sm text-blue-800 uppercase tracking-wide"
                 >
@@ -148,7 +150,7 @@ export const VirtualizedCoverageMatrix: React.FC<VirtualizedMatrixProps> = ({
               className="hover:bg-slate-50/70 transition-colors group flex"
             >
               {/* Concept Label */}
-              <div 
+              <div
                 role="gridcell"
                 className="px-6 py-3.5 text-xs md:text-sm font-semibold text-slate-700 bg-[#F8FAFC] border-r border-slate-100 min-w-[220px] md:min-w-[280px]"
               >

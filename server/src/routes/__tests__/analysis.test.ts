@@ -16,9 +16,9 @@ vi.mock('../../services/clauseCoverageValidator', () => ({
       phantomCount: 0,
       mandatoryMissingCount: 0,
       scoreImpact: 0,
-      hasClauseDocument: true
-    }))
-  }
+      hasClauseDocument: true,
+    })),
+  },
 }));
 
 vi.mock('../../services/deductibleAnalyzer', () => ({
@@ -26,11 +26,11 @@ vi.mock('../../services/deductibleAnalyzer', () => ({
     analyze: vi.fn(() => ({
       coverageName: 'Incendio',
       deductibleAmount: 50000000,
-      deductibleRatio: 0.10,
+      deductibleRatio: 0.1,
       riskLevel: 'LOW',
-      score: 85
-    }))
-  }
+      score: 85,
+    })),
+  },
 }));
 
 vi.mock('../../services/inverseCoverageChecker', () => ({
@@ -38,18 +38,18 @@ vi.mock('../../services/inverseCoverageChecker', () => ({
     checkMissingCoverages: vi.fn(async () => ({
       results: [],
       mandatoryMissingCount: 0,
-      optionalMissingCount: 0
-    }))
-  }
+      optionalMissingCount: 0,
+    })),
+  },
 }));
 
 vi.mock('../../services/contextualRiskAnalyzer', () => ({
   contextualRiskAnalyzer: {
     contextualizeExclusions: vi.fn(() => ({
       exclusions: [{ contextualRiskLevel: 'CRITICAL' }],
-      criticalCount: 1
-    }))
-  }
+      criticalCount: 1,
+    })),
+  },
 }));
 
 vi.mock('../../services/warrantyComplianceAnalyzer', () => ({
@@ -57,9 +57,9 @@ vi.mock('../../services/warrantyComplianceAnalyzer', () => ({
     analyzeConditions: vi.fn(() => ({
       totalConditions: 2,
       overallRisk: 'MEDIUM',
-      compliancePercentage: 60
-    }))
-  }
+      compliancePercentage: 60,
+    })),
+  },
 }));
 
 vi.mock('../../services/virtualLawyerService', () => ({
@@ -67,9 +67,9 @@ vi.mock('../../services/virtualLawyerService', () => ({
     generateLegalOpinion: vi.fn(async () => ({
       coverageName: 'RC',
       confidence: 80,
-      negotiationPoints: [{ point: 'Test', priority: 'HIGH' }]
-    }))
-  }
+      negotiationPoints: [{ point: 'Test', priority: 'HIGH' }],
+    })),
+  },
 }));
 
 describe('Analysis API Endpoints', () => {
@@ -80,21 +80,19 @@ describe('Analysis API Endpoints', () => {
         .send({
           quote: {
             insurerName: 'Test',
-            coverages: [{ name: 'Incendio', value: '500M' }]
+            coverages: [{ name: 'Incendio', value: '500M' }],
           },
-          insurerName: 'Test'
+          insurerName: 'Test',
         });
-      
+
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('results');
       expect(response.body.hasClauseDocument).toBe(true);
     });
 
     it('should return 400 for missing fields', async () => {
-      const response = await request(app)
-        .post('/api/analysis/validate-coverages')
-        .send({});
-      
+      const response = await request(app).post('/api/analysis/validate-coverages').send({});
+
       expect(response.status).toBe(400);
       expect(response.body.error).toContain('Missing required fields');
     });
@@ -102,25 +100,21 @@ describe('Analysis API Endpoints', () => {
 
   describe('POST /api/analysis/deductible-risk', () => {
     it('should analyze deductible risk', async () => {
-      const response = await request(app)
-        .post('/api/analysis/deductible-risk')
-        .send({
-          coverageName: 'Incendio',
-          quoteDeductible: '10%',
-          clauseDeductible: '10%',
-          insuredAmount: 500000000
-        });
-      
+      const response = await request(app).post('/api/analysis/deductible-risk').send({
+        coverageName: 'Incendio',
+        quoteDeductible: '10%',
+        clauseDeductible: '10%',
+        insuredAmount: 500000000,
+      });
+
       expect(response.status).toBe(200);
       expect(response.body.riskLevel).toBe('LOW');
       expect(response.body.score).toBe(85);
     });
 
     it('should return 400 for missing fields', async () => {
-      const response = await request(app)
-        .post('/api/analysis/deductible-risk')
-        .send({});
-      
+      const response = await request(app).post('/api/analysis/deductible-risk').send({});
+
       expect(response.status).toBe(400);
     });
   });
@@ -131,9 +125,9 @@ describe('Analysis API Endpoints', () => {
         .post('/api/analysis/inverse-check')
         .send({
           quote: { coverages: [] },
-          insurerName: 'Test'
+          insurerName: 'Test',
         });
-      
+
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('results');
     });
@@ -145,9 +139,9 @@ describe('Analysis API Endpoints', () => {
         .post('/api/analysis/contextualize')
         .send({
           exclusions: ['No cubre inundación'],
-          clientProfile: { industryType: 'manufactura' }
+          clientProfile: { industryType: 'manufactura' },
         });
-      
+
       expect(response.status).toBe(200);
       expect(response.body.criticalCount).toBe(1);
     });
@@ -159,9 +153,9 @@ describe('Analysis API Endpoints', () => {
         .post('/api/analysis/warranty-compliance')
         .send({
           conditions: ['Mantener alarma'],
-          clientProfile: { employeeCount: 50 }
+          clientProfile: { employeeCount: 50 },
         });
-      
+
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('overallRisk');
     });
@@ -175,12 +169,12 @@ describe('Analysis API Endpoints', () => {
           quote: {
             insurerName: 'Test',
             coverageName: 'RC',
-            value: '100M'
+            value: '100M',
           },
           clientProfile: { industryType: 'manufactura' },
-          insurerName: 'Test'
+          insurerName: 'Test',
         });
-      
+
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('confidence');
       expect(response.body.negotiationPoints).toBeDefined();

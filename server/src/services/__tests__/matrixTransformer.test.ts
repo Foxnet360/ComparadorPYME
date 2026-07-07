@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { transformQuotesToMatrix, parseNumericValue, isExcludedValue, formatMatrixValue } from '../matrixTransformer';
+import {
+  transformQuotesToMatrix,
+  parseNumericValue,
+  isExcludedValue,
+  formatMatrixValue,
+} from '../matrixTransformer';
 import { QuoteAnalysis } from '../../types';
 
 describe('matrixTransformer', () => {
@@ -12,7 +17,7 @@ describe('matrixTransformer', () => {
       expect(isExcludedValue('excluido')).toBe(true);
       expect(isExcludedValue('')).toBe(true);
       expect(isExcludedValue(null)).toBe(true);
-      
+
       expect(isExcludedValue('$10.000.000')).toBe(false);
       expect(isExcludedValue('SI')).toBe(false);
     });
@@ -44,122 +49,136 @@ describe('matrixTransformer', () => {
   describe('transformQuotesToMatrix', () => {
     const mockQuotes: QuoteAnalysis[] = [
       {
-        insurerName: "MAPFRE",
-        policyName: "TODO RIESGO PYME INTEGRAL",
+        insurerName: 'MAPFRE',
+        policyName: 'TODO RIESGO PYME INTEGRAL',
         priceMonthly: 0,
         priceAnnual: 677801,
-        currency: "COP",
-        deductibles: "",
-        scoringBreakdown: { coverage: 8, deductibles: 7, exclusions: 8, priceRatio: 9, sublimits: 8, warranties: 8 },
-        clientAnalysis: "",
-        technicalAnalysis: "Vigencia de 30 días. Modalidad ocurrencia.",
+        currency: 'COP',
+        deductibles: '',
+        scoringBreakdown: {
+          coverage: 8,
+          deductibles: 7,
+          exclusions: 8,
+          priceRatio: 9,
+          sublimits: 8,
+          warranties: 8,
+        },
+        clientAnalysis: '',
+        technicalAnalysis: 'Vigencia de 30 días. Modalidad ocurrencia.',
         score: 82,
         alerts: [],
         coverages: [
           {
-            name: "Incendio (Edificio y Contenidos)",
-            value: "$119.600.000",
-            deductible: "10% PERD - Min 1 SMMLV",
-            description: "Incendio, explosion, danos por agua, anegacion",
+            name: 'Incendio (Edificio y Contenidos)',
+            value: '$119.600.000',
+            deductible: '10% PERD - Min 1 SMMLV',
+            description: 'Incendio, explosion, danos por agua, anegacion',
             categoryId: 1,
-            matchConfidence: 0.95
+            matchConfidence: 0.95,
           },
           {
-            name: "Terremoto y Eventos Catastróficos",
-            value: "$119.600.000",
-            deductible: "10% PERD - Min 3 SMMLV",
+            name: 'Terremoto y Eventos Catastróficos',
+            value: '$119.600.000',
+            deductible: '10% PERD - Min 3 SMMLV',
             categoryId: 14,
-            matchConfidence: 0.90
+            matchConfidence: 0.9,
           },
           {
-            name: "Responsabilidad Civil (RCE)",
-            value: "$300.000.000",
-            deductible: "10% PERD - Min 2 SMMLV",
-            description: "Amparo basico RCE",
+            name: 'Responsabilidad Civil (RCE)',
+            value: '$300.000.000',
+            deductible: '10% PERD - Min 2 SMMLV',
+            description: 'Amparo basico RCE',
             categoryId: 6,
-            matchConfidence: 0.92
+            matchConfidence: 0.92,
           },
           {
-            name: "Asistencia PYME",
-            value: "Incluido",
-            deductible: "No aplica",
-            description: "SI - Asistencia Domiciliaria PYME",
+            name: 'Asistencia PYME',
+            value: 'Incluido',
+            deductible: 'No aplica',
+            description: 'SI - Asistencia Domiciliaria PYME',
             categoryId: 11,
-            matchConfidence: 0.88
+            matchConfidence: 0.88,
           },
           // Exclusive Coverage
           {
-            name: "Amparo Especial Mapfre VIP",
-            value: "$10.000.000",
-            deductible: "No aplica",
-            description: "Exclusivo de Mapfre",
+            name: 'Amparo Especial Mapfre VIP',
+            value: '$10.000.000',
+            deductible: 'No aplica',
+            description: 'Exclusivo de Mapfre',
             categoryId: null,
-            matchConfidence: 0.30
-          }
-        ]
+            matchConfidence: 0.3,
+          },
+        ],
       },
       {
-        insurerName: "CHUBB",
-        policyName: "Pymes",
+        insurerName: 'CHUBB',
+        policyName: 'Pymes',
         priceMonthly: 0,
         priceAnnual: 1320000,
-        currency: "COP",
-        deductibles: "",
-        scoringBreakdown: { coverage: 7, deductibles: 8, exclusions: 8, priceRatio: 6, sublimits: 7, warranties: 7 },
-        clientAnalysis: "",
-        technicalAnalysis: "Vigencia de 30 días.",
+        currency: 'COP',
+        deductibles: '',
+        scoringBreakdown: {
+          coverage: 7,
+          deductibles: 8,
+          exclusions: 8,
+          priceRatio: 6,
+          sublimits: 7,
+          warranties: 7,
+        },
+        clientAnalysis: '',
+        technicalAnalysis: 'Vigencia de 30 días.',
         score: 72,
         alerts: [],
         coverages: [
           {
-            name: "Incendio (Edificio y Contenidos)",
-            value: "$45.000.000",
-            deductible: "5% siniestro - Min 1 SMMLV",
-            description: "Incendio, explosion, rayo",
+            name: 'Incendio (Edificio y Contenidos)',
+            value: '$45.000.000',
+            deductible: '5% siniestro - Min 1 SMMLV',
+            description: 'Incendio, explosion, rayo',
             categoryId: 1,
-            matchConfidence: 0.95
+            matchConfidence: 0.95,
           },
           {
-            name: "Terremoto y Eventos Catastróficos",
-            value: "$45.000.000",
-            deductible: "No aplica", // Winner deductible!
+            name: 'Terremoto y Eventos Catastróficos',
+            value: '$45.000.000',
+            deductible: 'No aplica', // Winner deductible!
             categoryId: 14,
-            matchConfidence: 0.90
+            matchConfidence: 0.9,
           },
           {
-            name: "Responsabilidad Civil (RCE)",
-            value: "$250.000.000",
-            deductible: "10% perdida - Min 1 SMMLV",
+            name: 'Responsabilidad Civil (RCE)',
+            value: '$250.000.000',
+            deductible: '10% perdida - Min 1 SMMLV',
             categoryId: 6,
-            matchConfidence: 0.92
-          }
-        ]
-      }
+            matchConfidence: 0.92,
+          },
+        ],
+      },
     ];
 
     it('should generate row-grouped headers and data rows for canonical categories', () => {
       const matrix = transformQuotesToMatrix(mockQuotes);
 
       // Verify that we have header for "Incendio (Edificio y Contenidos)"
-      const incendioHeader = matrix.find(row => row.type === 'header' && row.sectionId === 1);
+      const incendioHeader = matrix.find((row) => row.type === 'header' && row.sectionId === 1);
       expect(incendioHeader).toBeDefined();
-      expect(incendioHeader?.label).toBe("AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL");
+      expect(incendioHeader?.label).toBe('AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL');
 
       // Verify "Valor Asegurado" row for Incendio
-      const incendioValue = matrix.find(row => row.id === 'section_1_row_value');
+      const incendioValue = matrix.find((row) => row.id === 'section_1_row_value');
       expect(incendioValue).toBeDefined();
-      expect(incendioValue?.cells[0].value).toBe("$119.600.000");
-      expect(incendioValue?.cells[1].value).toBe("$45.000.000");
+      expect(incendioValue?.cells[0].value).toBe('$119.600.000');
+      expect(incendioValue?.cells[1].value).toBe('$45.000.000');
 
       // MAPFRE has a higher sum insured, so it should be the winner
       expect(incendioValue?.cells[0].isWinner).toBe(true);
       expect(incendioValue?.cells[1].isWinner).toBe(false);
 
       // Verify "Deducible" row for Terremoto
-      const terremotoDeductible = matrix.find(row => row.id === 'section_14_row_deductible');
+      const terremotoDeductible = matrix.find((row) => row.id === 'section_14_row_deductible');
       expect(terremotoDeductible).toBeDefined();
-      expect(terremotoDeductible?.cells[0].value).toBe("10% PERD - Min 3 SMMLV");
-      expect(terremotoDeductible?.cells[1].value).toBe("No aplica");
+      expect(terremotoDeductible?.cells[0].value).toBe('10% PERD - Min 3 SMMLV');
+      expect(terremotoDeductible?.cells[1].value).toBe('No aplica');
 
       // CHUBB has "No aplica" deductible, so it should be marked as winner
       expect(terremotoDeductible?.cells[0].isWinner).toBe(false);
@@ -170,16 +189,16 @@ describe('matrixTransformer', () => {
       const matrix = transformQuotesToMatrix(mockQuotes);
 
       // Should have section 99 header
-      const exclusiveHeader = matrix.find(row => row.type === 'header' && row.sectionId === 99);
+      const exclusiveHeader = matrix.find((row) => row.type === 'header' && row.sectionId === 99);
       expect(exclusiveHeader).toBeDefined();
-      expect(exclusiveHeader?.label).toBe("AMPAROS EXCLUSIVOS / VENTAJAS COMPETITIVAS");
+      expect(exclusiveHeader?.label).toBe('AMPAROS EXCLUSIVOS / VENTAJAS COMPETITIVAS');
 
       // Should contain a row for "Amparo Especial Mapfre VIP"
-      const vipRow = matrix.find(row => row.type === 'data' && row.sectionId === 99);
+      const vipRow = matrix.find((row) => row.type === 'data' && row.sectionId === 99);
       expect(vipRow).toBeDefined();
-      expect(vipRow?.label).toBe("Amparo Especial Mapfre VIP");
-      expect(vipRow?.cells[0].value).toBe("$10.000.000");
-      expect(vipRow?.cells[1].value).toBe("No incluida");
+      expect(vipRow?.label).toBe('Amparo Especial Mapfre VIP');
+      expect(vipRow?.cells[0].value).toBe('$10.000.000');
+      expect(vipRow?.cells[1].value).toBe('No incluida');
       expect(vipRow?.cells[0].isExcluded).toBe(false);
       expect(vipRow?.cells[1].isExcluded).toBe(true);
     });
@@ -193,7 +212,14 @@ describe('matrixTransformer', () => {
           priceAnnual: 500000,
           currency: 'COP',
           deductibles: '',
-          scoringBreakdown: { coverage: 7, deductibles: 7, exclusions: 7, priceRatio: 7, sublimits: 7, warranties: 7 },
+          scoringBreakdown: {
+            coverage: 7,
+            deductibles: 7,
+            exclusions: 7,
+            priceRatio: 7,
+            sublimits: 7,
+            warranties: 7,
+          },
           clientAnalysis: '',
           technicalAnalysis: '',
           score: 70,
@@ -204,21 +230,21 @@ describe('matrixTransformer', () => {
               value: '$100.000.000',
               deductible: 'No aplica',
               categoryId: 1,
-              matchConfidence: 0.95
+              matchConfidence: 0.95,
             },
             {
               name: 'Amparo Adicional SBS',
               value: '119600000',
               deductible: '10% del siniestro',
               categoryId: null,
-              matchConfidence: 0.30
-            }
-          ]
-        }
+              matchConfidence: 0.3,
+            },
+          ],
+        },
       ];
 
       const matrix = transformQuotesToMatrix(quotesWithRawExclusive);
-      const exclusiveRow = matrix.find(row => row.type === 'data' && row.sectionId === 99);
+      const exclusiveRow = matrix.find((row) => row.type === 'data' && row.sectionId === 99);
       expect(exclusiveRow).toBeDefined();
       expect(exclusiveRow?.cells[0].value).toBe('$119.600.000 (Ded: 10% del siniestro)');
     });
@@ -232,7 +258,14 @@ describe('matrixTransformer', () => {
           priceAnnual: 500000,
           currency: 'COP',
           deductibles: '',
-          scoringBreakdown: { coverage: 7, deductibles: 7, exclusions: 7, priceRatio: 7, sublimits: 7, warranties: 7 },
+          scoringBreakdown: {
+            coverage: 7,
+            deductibles: 7,
+            exclusions: 7,
+            priceRatio: 7,
+            sublimits: 7,
+            warranties: 7,
+          },
           clientAnalysis: '',
           technicalAnalysis: '',
           score: 70,
@@ -243,14 +276,14 @@ describe('matrixTransformer', () => {
               value: '119600000',
               deductible: 'No aplica',
               categoryId: 1,
-              matchConfidence: 0.95
-            }
-          ]
-        }
+              matchConfidence: 0.95,
+            },
+          ],
+        },
       ];
 
       const matrix = transformQuotesToMatrix(quotesWithRawValue);
-      const incendioValue = matrix.find(row => row.id === 'section_1_row_value');
+      const incendioValue = matrix.find((row) => row.id === 'section_1_row_value');
       expect(incendioValue?.cells[0].value).toBe('$119.600.000');
     });
 
@@ -258,45 +291,45 @@ describe('matrixTransformer', () => {
       const matrix = transformQuotesToMatrix(mockQuotes);
 
       // Financial header should exist
-      const finHeader = matrix.find(row => row.id === 'section_financial_header');
+      const finHeader = matrix.find((row) => row.id === 'section_financial_header');
       expect(finHeader).toBeDefined();
 
       // Check net premium values
-      const netRow = matrix.find(row => row.id === 'financial_net_premium');
+      const netRow = matrix.find((row) => row.id === 'financial_net_premium');
       expect(netRow).toBeDefined();
-      expect(netRow?.cells[0].value).toContain("677.801");
-      expect(netRow?.cells[1].value).toContain("1.320.000");
+      expect(netRow?.cells[0].value).toContain('677.801');
+      expect(netRow?.cells[1].value).toContain('1.320.000');
 
       // Expenses mapping
-      const expRow = matrix.find(row => row.id === 'financial_expenses');
+      const expRow = matrix.find((row) => row.id === 'financial_expenses');
       expect(expRow).toBeDefined();
-      expect(expRow?.cells[0].value).toContain("10.000"); // MAPFRE default expense
-      expect(expRow?.cells[1].value).toContain("12.000"); // CHUBB default expense
+      expect(expRow?.cells[0].value).toContain('10.000'); // MAPFRE default expense
+      expect(expRow?.cells[1].value).toContain('12.000'); // CHUBB default expense
 
       // Subtotal
-      const subRow = matrix.find(row => row.id === 'financial_subtotal');
-      expect(subRow?.cells[0].value).toContain("687.801");
-      expect(subRow?.cells[1].value).toContain("1.332.000");
+      const subRow = matrix.find((row) => row.id === 'financial_subtotal');
+      expect(subRow?.cells[0].value).toContain('687.801');
+      expect(subRow?.cells[1].value).toContain('1.332.000');
 
       // VAT 19%
-      const ivaRow = matrix.find(row => row.id === 'financial_iva');
-      expect(ivaRow?.cells[0].value).toContain("130.682");
-      expect(ivaRow?.cells[1].value).toContain("253.080");
+      const ivaRow = matrix.find((row) => row.id === 'financial_iva');
+      expect(ivaRow?.cells[0].value).toContain('130.682');
+      expect(ivaRow?.cells[1].value).toContain('253.080');
 
       // Total to pay
-      const totalRow = matrix.find(row => row.id === 'financial_total');
-      expect(totalRow?.cells[0].value).toContain("818.483");
-      expect(totalRow?.cells[1].value).toContain("1.585.080");
+      const totalRow = matrix.find((row) => row.id === 'financial_total');
+      expect(totalRow?.cells[0].value).toContain('818.483');
+      expect(totalRow?.cells[1].value).toContain('1.585.080');
 
       // MAPFRE is cheaper, so it should be winner
       expect(totalRow?.cells[0].isWinner).toBe(true);
       expect(totalRow?.cells[1].isWinner).toBe(false);
 
       // Check ratio
-      const ratioRow = matrix.find(row => row.id === 'financial_ratio');
+      const ratioRow = matrix.find((row) => row.id === 'financial_ratio');
       expect(ratioRow).toBeDefined();
       // MAPFRE total: 818483 / 119600000 = 0.684% -> formatted
-      expect(ratioRow?.cells[0].value).toBe("0,68%");
+      expect(ratioRow?.cells[0].value).toBe('0,68%');
     });
   });
 });

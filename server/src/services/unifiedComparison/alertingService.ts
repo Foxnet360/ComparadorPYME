@@ -28,7 +28,7 @@ const DEFAULT_CONFIG: AlertConfig = {
   processingTimeThreshold: 120000, // 2 minutes
   errorRateThreshold: 10, // 10%
   checkIntervalMinutes: 15,
-  alertCooldownMinutes: 60
+  alertCooldownMinutes: 60,
 };
 
 class AlertingService {
@@ -55,7 +55,7 @@ class AlertingService {
       // Check fallback rate
       if (metrics.fallbackRate > this.config.fallbackRateThreshold) {
         const alertId = `fallback-${now.toISOString().split('T')[0]}`;
-        
+
         if (this.shouldSendAlert(alertId)) {
           const alert: Alert = {
             id: alertId,
@@ -68,10 +68,10 @@ class AlertingService {
               totalComparisons: metrics.total,
               fallbackCount: metrics.fallback,
               unifiedCount: metrics.unified,
-              legacyCount: metrics.legacy
+              legacyCount: metrics.legacy,
             },
             timestamp: now.toISOString(),
-            acknowledged: false
+            acknowledged: false,
           };
 
           alerts.push(alert);
@@ -83,7 +83,7 @@ class AlertingService {
       // Check processing time
       if (metrics.avgProcessingTimeMs > this.config.processingTimeThreshold) {
         const alertId = `processing-time-${now.toISOString().split('T')[0]}`;
-        
+
         if (this.shouldSendAlert(alertId)) {
           const alert: Alert = {
             id: alertId,
@@ -93,10 +93,10 @@ class AlertingService {
             details: {
               avgProcessingTimeMs: metrics.avgProcessingTimeMs,
               threshold: this.config.processingTimeThreshold,
-              totalComparisons: metrics.total
+              totalComparisons: metrics.total,
             },
             timestamp: now.toISOString(),
-            acknowledged: false
+            acknowledged: false,
           };
 
           alerts.push(alert);
@@ -106,13 +106,12 @@ class AlertingService {
       }
 
       // Check error rate (calculated from fallback + any errors)
-      const errorRate = metrics.total > 0 
-        ? Math.round((metrics.fallback / metrics.total) * 100)
-        : 0;
+      const errorRate =
+        metrics.total > 0 ? Math.round((metrics.fallback / metrics.total) * 100) : 0;
 
       if (errorRate > this.config.errorRateThreshold) {
         const alertId = `error-rate-${now.toISOString().split('T')[0]}`;
-        
+
         if (this.shouldSendAlert(alertId)) {
           const alert: Alert = {
             id: alertId,
@@ -123,10 +122,10 @@ class AlertingService {
               errorRate,
               threshold: this.config.errorRateThreshold,
               totalComparisons: metrics.total,
-              failedComparisons: metrics.fallback
+              failedComparisons: metrics.fallback,
             },
             timestamp: now.toISOString(),
-            acknowledged: false
+            acknowledged: false,
           };
 
           alerts.push(alert);
@@ -139,9 +138,11 @@ class AlertingService {
       this.activeAlerts.push(...alerts);
 
       return alerts;
-
     } catch (error) {
-      console.error('❌ [Alerting] Failed to check metrics:', error instanceof Error ? error.message : String(error));
+      console.error(
+        '❌ [Alerting] Failed to check metrics:',
+        error instanceof Error ? error.message : String(error)
+      );
       return [];
     }
   }
@@ -151,7 +152,7 @@ class AlertingService {
    */
   private shouldSendAlert(alertId: string): boolean {
     const lastAlert = this.lastAlerts.get(alertId);
-    
+
     if (!lastAlert) {
       return true;
     }
@@ -174,7 +175,7 @@ class AlertingService {
    */
   private logAlert(alert: Alert): void {
     const icon = alert.severity === 'critical' ? '🔴' : alert.severity === 'warning' ? '🟡' : '🟢';
-    
+
     console.log(`${icon} [ALERT] ${alert.type.toUpperCase()}`);
     console.log(`   Message: ${alert.message}`);
     console.log(`   Severity: ${alert.severity}`);
@@ -192,21 +193,21 @@ class AlertingService {
    * Get active (unacknowledged) alerts
    */
   getActiveAlerts(): Alert[] {
-    return this.activeAlerts.filter(a => !a.acknowledged);
+    return this.activeAlerts.filter((a) => !a.acknowledged);
   }
 
   /**
    * Acknowledge an alert
    */
   acknowledgeAlert(alertId: string): boolean {
-    const alert = this.activeAlerts.find(a => a.id === alertId);
-    
+    const alert = this.activeAlerts.find((a) => a.id === alertId);
+
     if (alert) {
       alert.acknowledged = true;
       console.log(`✅ [Alerting] Alert ${alertId} acknowledged`);
       return true;
     }
-    
+
     return false;
   }
 
@@ -215,9 +216,9 @@ class AlertingService {
    */
   clearOldAlerts(maxAgeHours: number = 24): void {
     const cutoff = new Date(Date.now() - maxAgeHours * 60 * 60 * 1000);
-    
-    this.activeAlerts = this.activeAlerts.filter(a => 
-      new Date(a.timestamp) > cutoff || !a.acknowledged
+
+    this.activeAlerts = this.activeAlerts.filter(
+      (a) => new Date(a.timestamp) > cutoff || !a.acknowledged
     );
   }
 
@@ -225,15 +226,20 @@ class AlertingService {
    * Start periodic monitoring
    */
   startMonitoring(): void {
-    console.log(`🚨 [Alerting] Starting monitoring (interval: ${this.config.checkIntervalMinutes} minutes)`);
-    
+    console.log(
+      `🚨 [Alerting] Starting monitoring (interval: ${this.config.checkIntervalMinutes} minutes)`
+    );
+
     // Initial check
     this.checkMetrics();
-    
+
     // Periodic checks
-    setInterval(() => {
-      this.checkMetrics();
-    }, this.config.checkIntervalMinutes * 60 * 1000);
+    setInterval(
+      () => {
+        this.checkMetrics();
+      },
+      this.config.checkIntervalMinutes * 60 * 1000
+    );
   }
 
   /**

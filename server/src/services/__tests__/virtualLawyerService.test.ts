@@ -5,7 +5,8 @@ import { mockClientProfile } from './__fixtures__/mockData';
 // Mock Gemini service
 vi.mock('../gemini', () => ({
   geminiService: {
-    extractText: vi.fn(async () => `
+    extractText: vi.fn(
+      async () => `
 === ESCENARIO DE RIESGO ===
 Riesgo de responsabilidad civil para manufacturero con 150 empleados
 
@@ -20,8 +21,9 @@ Aumentar límite de cobertura
 
 === CONFIANZA ===
 85
-    `)
-  }
+    `
+    ),
+  },
 }));
 
 // Mock RAG retrieval
@@ -33,10 +35,10 @@ vi.mock('../ragRetrievalService', () => ({
         content: 'Artículo 5: Responsabilidad Civil',
         sectionType: 'COBERTURA',
         pageNumber: 10,
-        similarity: 0.9
-      }
-    ])
-  }
+        similarity: 0.9,
+      },
+    ]),
+  },
 }));
 
 describe('virtualLawyerService', () => {
@@ -45,7 +47,7 @@ describe('virtualLawyerService', () => {
     coverageName: 'Responsabilidad Civil',
     value: '500M',
     deductible: '5%',
-    exclusions: []
+    exclusions: [],
   };
 
   describe('generateLegalOpinion', () => {
@@ -55,7 +57,7 @@ describe('virtualLawyerService', () => {
         mockClientProfile,
         'Seguros Bolívar'
       );
-      
+
       expect(opinion).toBeDefined();
       expect(opinion.coverageName).toBe('Responsabilidad Civil');
       expect(opinion.confidence).toBeGreaterThan(0);
@@ -67,7 +69,7 @@ describe('virtualLawyerService', () => {
         mockClientProfile,
         'Seguros Bolívar'
       );
-      
+
       expect(opinion.riskScenario).toBeDefined();
       expect(opinion.riskScenario.length).toBeGreaterThan(0);
     });
@@ -78,7 +80,7 @@ describe('virtualLawyerService', () => {
         mockClientProfile,
         'Seguros Bolívar'
       );
-      
+
       expect(opinion.recommendation).toBeDefined();
       expect(opinion.recommendation.length).toBeGreaterThan(0);
     });
@@ -89,7 +91,7 @@ describe('virtualLawyerService', () => {
         mockClientProfile,
         'Seguros Bolívar'
       );
-      
+
       expect(opinion.negotiationPoints).toBeDefined();
       expect(opinion.negotiationPoints.length).toBeGreaterThan(0);
     });
@@ -100,7 +102,7 @@ describe('virtualLawyerService', () => {
         mockClientProfile,
         'Seguros Bolívar'
       );
-      
+
       expect(opinion.citations).toBeDefined();
       expect(opinion.citations.length).toBeGreaterThan(0);
     });
@@ -112,7 +114,7 @@ describe('virtualLawyerService', () => {
         mockClientProfile,
         'Seguros Bolívar'
       );
-      
+
       expect(opinion).toBeDefined();
       expect(opinion.confidence).toBeLessThan(100);
     });
@@ -120,17 +122,14 @@ describe('virtualLawyerService', () => {
 
   describe('generateOpinions', () => {
     it('should generate opinions for multiple coverages', async () => {
-      const quotes = [
-        mockQuote,
-        { ...mockQuote, coverageName: 'Incendio' }
-      ];
-      
+      const quotes = [mockQuote, { ...mockQuote, coverageName: 'Incendio' }];
+
       const opinions = await virtualLawyerService.generateOpinions(
         quotes,
         mockClientProfile,
         'Seguros Bolívar'
       );
-      
+
       expect(opinions).toHaveLength(2);
       expect(opinions[0].coverageName).toBe('Responsabilidad Civil');
       expect(opinions[1].coverageName).toBe('Incendio');
@@ -150,13 +149,13 @@ describe('virtualLawyerService', () => {
           negotiationPoints: [
             { point: 'Point 2', rationale: '', expectedOutcome: '', priority: 'MEDIUM' as const },
             { point: 'Point 1', rationale: '', expectedOutcome: '', priority: 'HIGH' as const },
-            { point: 'Point 3', rationale: '', expectedOutcome: '', priority: 'LOW' as const }
-          ]
-        }
+            { point: 'Point 3', rationale: '', expectedOutcome: '', priority: 'LOW' as const },
+          ],
+        },
       ];
-      
+
       const points = virtualLawyerService.identifyNegotiationPoints(opinions);
-      
+
       expect(points[0].priority).toBe('HIGH');
       expect(points[1].priority).toBe('MEDIUM');
       expect(points[2].priority).toBe('LOW');

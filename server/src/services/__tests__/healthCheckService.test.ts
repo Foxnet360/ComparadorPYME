@@ -5,9 +5,9 @@ import { checkHealth, invalidateHealthCache } from '../healthCheckService';
 vi.mock('@google/genai', () => ({
   GoogleGenAI: vi.fn().mockImplementation(() => ({
     models: {
-      list: vi.fn().mockResolvedValue([{ name: 'gemini-1.5-flash' }])
-    }
-  }))
+      list: vi.fn().mockResolvedValue([{ name: 'gemini-1.5-flash' }]),
+    },
+  })),
 }));
 
 vi.mock('@supabase/supabase-js', () => ({
@@ -16,17 +16,17 @@ vi.mock('@supabase/supabase-js', () => ({
     from: vi.fn().mockReturnValue({
       select: vi.fn().mockReturnValue({
         count: vi.fn().mockReturnValue({ count: 'exact', head: true }),
-        then: vi.fn().mockResolvedValue({ error: null })
-      })
-    })
-  }))
+        then: vi.fn().mockResolvedValue({ error: null }),
+      }),
+    }),
+  })),
 }));
 
 vi.mock('ioredis', () => ({
   Redis: vi.fn().mockImplementation(() => ({
     ping: vi.fn().mockResolvedValue('PONG'),
-    quit: vi.fn().mockResolvedValue(undefined)
-  }))
+    quit: vi.fn().mockResolvedValue(undefined),
+  })),
 }));
 
 describe('Health Check Service', () => {
@@ -102,7 +102,7 @@ describe('Health Check Service', () => {
 
       const health1 = await checkHealth();
       invalidateHealthCache();
-      await new Promise(resolve => setTimeout(resolve, 10)); // Small delay to ensure different timestamp
+      await new Promise((resolve) => setTimeout(resolve, 10)); // Small delay to ensure different timestamp
       const health2 = await checkHealth();
 
       expect(health1.timestamp).not.toBe(health2.timestamp);

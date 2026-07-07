@@ -6,7 +6,6 @@ import {
 } from '../templateRegistryService';
 import { createStructuredLogger, createMetricCollector } from '../../utils/structuredLogger';
 
-
 const bbvaText = `BBVA SEGUROS
 COT-2026-001
 COBERTURAS / DEDUCIBLE
@@ -38,7 +37,9 @@ describe('templateRegistryService metrics and logging', () => {
     expect(matchLog).toBeDefined();
     expect(matchLog?.templateId).toBe('bbva-pyme-v1');
     expect(matchLog?.confidence).toBeGreaterThanOrEqual(90);
-    expect(metrics.snapshot().counters['templateRegistry.match|domain=pyme|templateId=bbva-pyme-v1']).toBe(1);
+    expect(
+      metrics.snapshot().counters['templateRegistry.match|domain=pyme|templateId=bbva-pyme-v1']
+    ).toBe(1);
   });
 
   it('logs template_miss and increments the miss counter when nothing matches', async () => {
@@ -62,7 +63,11 @@ describe('templateRegistryService metrics and logging', () => {
     expect(failLog).toBeDefined();
     expect(failLog?.templateId).toBe('bbva-pyme-v1');
     expect(failLog?.level).toBe('warn');
-    expect(metrics.snapshot().counters['templateRegistry.schema_validation_failed|domain=pyme|templateId=bbva-pyme-v1']).toBe(1);
+    expect(
+      metrics.snapshot().counters[
+        'templateRegistry.schema_validation_failed|domain=pyme|templateId=bbva-pyme-v1'
+      ]
+    ).toBe(1);
   });
 
   it('logs cache_refresh when the cache is refreshed', async () => {

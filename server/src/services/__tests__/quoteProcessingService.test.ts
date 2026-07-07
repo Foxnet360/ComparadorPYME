@@ -71,7 +71,9 @@ vi.mock('../../config/env', () => ({
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeDetectionResult(overrides: Partial<FormatDetectionResult> = {}): FormatDetectionResult {
+function makeDetectionResult(
+  overrides: Partial<FormatDetectionResult> = {}
+): FormatDetectionResult {
   return {
     family: 'TABLE-INTEGRATED',
     confidence: 85,
@@ -140,9 +142,14 @@ describe('selectExtractionPrompt', () => {
       templateConfidence: 95,
     });
     const template = makeTemplate();
-    const layout = makeLayoutResult({ failed: false, tables: [{ page: 1, bounds: { x: 0, y: 0, width: 100, height: 100 }, headers: [], rows: [] }] });
+    const layout = makeLayoutResult({
+      failed: false,
+      tables: [{ page: 1, bounds: { x: 0, y: 0, width: 100, height: 100 }, headers: [], rows: [] }],
+    });
 
-    const { prompt, usedTemplate } = selectExtractionPrompt(detection, template, layout, { pageCount: 1 });
+    const { prompt, usedTemplate } = selectExtractionPrompt(detection, template, layout, {
+      pageCount: 1,
+    });
 
     expect(usedTemplate).toBe(true);
     expect(prompt).toBe('TEMPLATE_PROMPT');
@@ -158,7 +165,9 @@ describe('selectExtractionPrompt', () => {
     const template = makeTemplate();
     const layout = makeLayoutResult({ failed: true, failureReason: 'rotated pages detected: 1' });
 
-    const { prompt, usedTemplate } = selectExtractionPrompt(detection, template, layout, { pageCount: 1 });
+    const { prompt, usedTemplate } = selectExtractionPrompt(detection, template, layout, {
+      pageCount: 1,
+    });
 
     expect(usedTemplate).toBe(false);
     expect(prompt).toBe('GENERIC_PROMPT');
@@ -169,7 +178,9 @@ describe('selectExtractionPrompt', () => {
     const detection = makeDetectionResult({ templateId: null, templateConfidence: null });
     const layout = makeLayoutResult();
 
-    const { prompt, usedTemplate } = selectExtractionPrompt(detection, undefined, layout, { pageCount: 1 });
+    const { prompt, usedTemplate } = selectExtractionPrompt(detection, undefined, layout, {
+      pageCount: 1,
+    });
 
     expect(usedTemplate).toBe(false);
     expect(prompt).toBe('GENERIC_PROMPT');
@@ -201,7 +212,9 @@ describe('enrichRawCoveragesWithGraph', () => {
 
   it('attaches graph confidence and composite flags when graph returns mappings', async () => {
     mockCoverageGraphQuery.mockResolvedValue({
-      mappings: [{ canonicalId: 'incendio-edificio-contenidos', confidence: 0.92, provenance: 'learned' }],
+      mappings: [
+        { canonicalId: 'incendio-edificio-contenidos', confidence: 0.92, provenance: 'learned' },
+      ],
       composite: false,
     });
 
@@ -216,8 +229,12 @@ describe('enrichRawCoveragesWithGraph', () => {
   it('marks composite coverages with component list from graph', async () => {
     mockCoverageGraphQuery.mockResolvedValue({
       mappings: [
-        { canonicalId: 'incendio-edificio-contenidos', confidence: 0.85, provenance: 'decomposes_to' },
-        { canonicalId: 'terremoto-catastrofico', confidence: 0.80, provenance: 'decomposes_to' },
+        {
+          canonicalId: 'incendio-edificio-contenidos',
+          confidence: 0.85,
+          provenance: 'decomposes_to',
+        },
+        { canonicalId: 'terremoto-catastrofico', confidence: 0.8, provenance: 'decomposes_to' },
       ],
       composite: true,
       components: ['incendio-edificio-contenidos', 'terremoto-catastrofico'],
@@ -227,7 +244,10 @@ describe('enrichRawCoveragesWithGraph', () => {
     const result = await enrichRawCoveragesWithGraph(rawCoverages, 'BBVA', 'pyme');
 
     expect(result[0].isComposite).toBe(true);
-    expect(result[0].graphComponents).toEqual(['incendio-edificio-contenidos', 'terremoto-catastrofico']);
+    expect(result[0].graphComponents).toEqual([
+      'incendio-edificio-contenidos',
+      'terremoto-catastrofico',
+    ]);
   });
 
   it('returns coverages unchanged when graph query fails', async () => {

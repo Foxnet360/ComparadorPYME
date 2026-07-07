@@ -5,22 +5,24 @@ const { createClient } = require('@supabase/supabase-js');
 const WebSocket = require('ws');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://nubiecwypgfekhvaffxm.supabase.co';
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51YmllY3d5cGdmZWtodmFmZnhtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDQwODEyNCwiZXhwIjoyMDg5OTg0MTI0fQ.yJVMLIPSs2llvTh2UHMyIHmT9NJkC80yEfhgIetgwo4';
+const SUPABASE_SERVICE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51YmllY3d5cGdmZWtodmFmZnhtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDQwODEyNCwiZXhwIjoyMDg5OTg0MTI0fQ.yJVMLIPSs2llvTh2UHMyIHmT9NJkC80yEfhgIetgwo4';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyD3LOshQxEY4swacCat1VnlVuGj8WviWAU';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
   auth: {
     autoRefreshToken: false,
-    persistSession: false
+    persistSession: false,
   },
   realtime: {
-    transport: WebSocket
-  }
+    transport: WebSocket,
+  },
 });
 
 async function verifySetup() {
   console.log('🔍 Verificando configuración de Supabase...\n');
-  
+
   let allOk = true;
 
   // 1. Verificar tablas
@@ -46,8 +48,8 @@ async function verifySetup() {
   try {
     const { data: buckets, error } = await supabase.storage.listBuckets();
     if (error) throw error;
-    
-    const clauseBucket = buckets.find(b => b.name === 'clause-pages');
+
+    const clauseBucket = buckets.find((b) => b.name === 'clause-pages');
     if (clauseBucket) {
       console.log('   ✅ Bucket "clause-pages" existe');
     } else {
@@ -68,15 +70,17 @@ async function verifySetup() {
       model: 'gemini-embedding-2',
       contents: 'test de conexión',
       config: {
-        outputDimensionality: 3072
-      }
+        outputDimensionality: 3072,
+      },
     });
-    
+
     const embedding = result.embeddings?.[0]?.values;
     if (embedding && embedding.length > 0) {
       console.log(`   ✅ Gemini API funcionando (${embedding.length} dimensiones)`);
       if (embedding.length !== 3072) {
-        console.log(`   ❌ Error: Se esperaban 3072 dimensiones pero se recibieron ${embedding.length}`);
+        console.log(
+          `   ❌ Error: Se esperaban 3072 dimensiones pero se recibieron ${embedding.length}`
+        );
         allOk = false;
       }
     } else {
@@ -95,7 +99,7 @@ async function verifySetup() {
     const path = require('path');
     const thesaurusPath = path.join(__dirname, '../data/thesaurus.json');
     const thesaurus = JSON.parse(fs.readFileSync(thesaurusPath, 'utf-8'));
-    
+
     const coberturas = Object.keys(thesaurus.coberturas_plantilla);
     console.log(`   ✅ Tesauro cargado: ${coberturas.length} coberturas`);
     console.log(`   📚 Version: ${thesaurus.version}`);
@@ -113,12 +117,12 @@ async function verifySetup() {
       .from('insurers')
       .insert({ name: 'Aseguradora Test', nit: '123456789' })
       .select();
-    
+
     if (error) {
       console.log(`   ⚠️  ${error.message}`);
     } else {
       console.log(`   ✅ Inserción exitosa (ID: ${data[0].id})`);
-      
+
       // Limpiar
       await supabase.from('insurers').delete().eq('id', data[0].id);
       console.log('   🗑️  Datos de prueba eliminados');
@@ -143,8 +147,8 @@ async function verifySetup() {
     console.log('\nRevisa los errores arriba.');
   }
   console.log('='.repeat(50));
-  
+
   return allOk;
 }
 
-verifySetup().then(ok => process.exit(ok ? 0 : 1));
+verifySetup().then((ok) => process.exit(ok ? 0 : 1));

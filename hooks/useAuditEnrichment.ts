@@ -26,14 +26,14 @@ export const useAuditEnrichment = () => {
     isLoading: false,
     error: null,
     isEnriched: false,
-    progress: null
+    progress: null,
   });
 
   const enrich = useCallback(async (quotes: QuoteAnalysis[]) => {
     // Check sessionStorage for cached results
-    const cacheKey = `audit-enrichment-${quotes.map(q => q.insurerName).join('-')}`;
+    const cacheKey = `audit-enrichment-${quotes.map((q) => q.insurerName).join('-')}`;
     const cached = sessionStorage.getItem(cacheKey);
-    
+
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
@@ -42,7 +42,7 @@ export const useAuditEnrichment = () => {
           isLoading: false,
           error: null,
           isEnriched: true,
-          progress: null
+          progress: null,
         });
         return;
       } catch (e) {
@@ -50,20 +50,27 @@ export const useAuditEnrichment = () => {
       }
     }
 
-    setState(prev => ({ ...prev, isLoading: true, error: null, progress: { current: 0, total: 0, percentage: 0 } }));
+    setState((prev) => ({
+      ...prev,
+      isLoading: true,
+      error: null,
+      progress: { current: 0, total: 0, percentage: 0 },
+    }));
 
     try {
       const response = await fetch(`${API_BASE_URL}/audit/enrich`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ quotes })
+        body: JSON.stringify({ quotes }),
       });
 
       if (!response.ok) {
         if (response.status === 413) {
-          throw new Error('El reporte es demasiado grande para enriquecer. Intenta con menos cotizaciones o recarga la página.');
+          throw new Error(
+            'El reporte es demasiado grande para enriquecer. Intenta con menos cotizaciones o recarga la página.'
+          );
         }
         if (response.status === 429) {
           throw new Error('Demasiadas solicitudes. Espera un momento e intenta de nuevo.');
@@ -72,7 +79,7 @@ export const useAuditEnrichment = () => {
       }
 
       const result = await response.json();
-      
+
       const newState: AuditEnrichmentState = {
         enrichedAlerts: result.enrichedAlerts || [],
         crossInsurerRisks: result.crossInsurerRisks || [],
@@ -81,26 +88,29 @@ export const useAuditEnrichment = () => {
         isLoading: false,
         error: null,
         isEnriched: true,
-        progress: result.progress || null
+        progress: result.progress || null,
       };
 
       // Cache results
-      sessionStorage.setItem(cacheKey, JSON.stringify({
-        enrichedAlerts: newState.enrichedAlerts,
-        crossInsurerRisks: newState.crossInsurerRisks,
-        businessContextAnalysis: newState.businessContextAnalysis,
-        hasClauses: newState.hasClauses
-      }));
+      sessionStorage.setItem(
+        cacheKey,
+        JSON.stringify({
+          enrichedAlerts: newState.enrichedAlerts,
+          crossInsurerRisks: newState.crossInsurerRisks,
+          businessContextAnalysis: newState.businessContextAnalysis,
+          hasClauses: newState.hasClauses,
+        })
+      );
 
       setState(newState);
     } catch (error) {
       console.error('Audit enrichment error:', error);
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         isLoading: false,
         error: error instanceof Error ? error.message : 'Failed to enrich audit',
         isEnriched: false,
-        progress: null
+        progress: null,
       }));
     }
   }, []);
@@ -114,14 +124,14 @@ export const useAuditEnrichment = () => {
       isLoading: false,
       error: null,
       isEnriched: false,
-      progress: null
+      progress: null,
     });
   }, []);
 
   return {
     ...state,
     enrich,
-    reset
+    reset,
   };
 };
 

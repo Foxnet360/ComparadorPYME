@@ -33,7 +33,10 @@ function getRepairCategory(repairType: string | undefined): string {
 /**
  * Attempt to parse JSON, with automatic repair on failure
  */
-export function parseJsonWithRepair(jsonText: string, options?: JsonRepairOptions): JsonRepairResult {
+export function parseJsonWithRepair(
+  jsonText: string,
+  options?: JsonRepairOptions
+): JsonRepairResult {
   // First, try standard parsing
   try {
     const data = JSON.parse(jsonText);
@@ -136,10 +139,12 @@ function repairUnterminatedStrings(json: string): string {
  */
 function repairTrailingCommas(json: string): string {
   // Remove trailing commas before closing brackets
-  return json
-    .replace(/,(\s*[}\]])/g, '$1')
-    // Also handle multiple trailing commas
-    .replace(/,+(\s*[}\]])/g, '$1');
+  return (
+    json
+      .replace(/,(\s*[}\]])/g, '$1')
+      // Also handle multiple trailing commas
+      .replace(/,+(\s*[}\]])/g, '$1')
+  );
 }
 
 /**
@@ -171,10 +176,8 @@ function repairTruncatedJson(json: string): string {
 function repairInvalidEscapes(json: string): string {
   // Replace invalid escapes with their literal equivalents
   return json
-    .replace(/\\([^"\\/bfnrtu])/g, '$1')  // Remove invalid single char escapes
-    .replace(/\\x([0-9a-fA-F]{2})/g, (_, hex) => 
-      String.fromCharCode(parseInt(hex, 16))
-    );
+    .replace(/\\([^"\\/bfnrtu])/g, '$1') // Remove invalid single char escapes
+    .replace(/\\x([0-9a-fA-F]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
 }
 
 /**
@@ -235,11 +238,14 @@ function extractPartialData(json: string): PartialQuoteData | null {
 /**
  * Extract coverage objects from damaged text using regex
  */
-function extractCoveragesFromText(text: string): Array<{ name: string; value: string; deductible: string }> {
+function extractCoveragesFromText(
+  text: string
+): Array<{ name: string; value: string; deductible: string }> {
   const coverages: Array<{ name: string; value: string; deductible: string }> = [];
 
   // Pattern to match coverage objects: { "name": "...", "value": "...", "deductible": "..." }
-  const coveragePattern = /\{\s*"name"\s*:\s*"([^"]*)"\s*,\s*"value"\s*:\s*"([^"]*)"\s*,\s*"deductible"\s*:\s*"([^"]*)"\s*\}/g;
+  const coveragePattern =
+    /\{\s*"name"\s*:\s*"([^"]*)"\s*,\s*"value"\s*:\s*"([^"]*)"\s*,\s*"deductible"\s*:\s*"([^"]*)"\s*\}/g;
 
   let match;
   while ((match = coveragePattern.exec(text)) !== null) {
@@ -275,13 +281,15 @@ export function isTruncated(json: string): boolean {
  * Sanitize JSON text by removing problematic characters
  */
 export function sanitizeJsonText(text: string): string {
-  return text
-    // Remove control characters except tab, newline, carriage return
-    // eslint-disable-next-line no-control-regex
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
-    // Fix common Unicode issues
-    .replace(/\uFFFD/g, '')
-    // Normalize line endings
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n');
+  return (
+    text
+      // Remove control characters except tab, newline, carriage return
+      // eslint-disable-next-line no-control-regex
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+      // Fix common Unicode issues
+      .replace(/\uFFFD/g, '')
+      // Normalize line endings
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+  );
 }

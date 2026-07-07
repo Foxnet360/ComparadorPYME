@@ -8,11 +8,7 @@
     "needsHumanReview": false,
     "fromCache": false
   },
-  "insurers": [
-    "Aseguradora Demo A",
-    "Aseguradora Demo B",
-    "Aseguradora Demo C"
-  ],
+  "insurers": ["Aseguradora Demo A", "Aseguradora Demo B", "Aseguradora Demo C"],
   "rows": [
     {
       "label": "Bienes Asegurados",

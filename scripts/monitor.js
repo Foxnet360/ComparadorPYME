@@ -2,7 +2,7 @@
 /**
  * Script de monitoreo para Railway logs
  * Rastrea métricas clave de extracción multimodal
- * 
+ *
  * Usage: node scripts/monitor.js [--interval=60] [--duration=3600]
  */
 
@@ -35,28 +35,28 @@ const metrics = {
  */
 function parseLogLine(line) {
   const metrics_update = {};
-  
+
   // Detectar extracciones V2
   if (line.includes('🔍 Phase 3: Extracting with multimodal vision')) {
     metrics.totalExtractions++;
     metrics.v2Extractions++;
   }
-  
+
   // Detectar fallback a V1
   if (line.includes('Falling back to legacy extraction')) {
     metrics.v1Fallbacks++;
   }
-  
+
   // Detectar errores
   if (line.includes('❌') || line.includes('Error')) {
     metrics.errors++;
   }
-  
+
   // Detectar timeouts
   if (line.includes('timeout')) {
     metrics.timeouts++;
   }
-  
+
   // Detectar tiempo de extracción
   const timeMatch = line.match(/(\d+)ms/);
   if (timeMatch && line.includes('extraction')) {
@@ -64,14 +64,14 @@ function parseLogLine(line) {
     metrics.totalTime += time;
     metrics.avgTime = metrics.totalTime / metrics.totalExtractions;
   }
-  
+
   // Detectar aseguradora
   const insurerMatch = line.match(/insurer: (\w+)/);
   if (insurerMatch) {
     const insurer = insurerMatch[1];
     metrics.insurers[insurer] = (metrics.insurers[insurer] || 0) + 1;
   }
-  
+
   // Detectar familia de formato
   const familyMatch = line.match(/Format detected: (\w+)/);
   if (familyMatch) {
@@ -87,7 +87,7 @@ function showMetrics() {
   const elapsed = (Date.now() - metrics.startTime) / 1000;
   const hours = Math.floor(elapsed / 3600);
   const minutes = Math.floor((elapsed % 3600) / 60);
-  
+
   console.clear();
   console.log('╔════════════════════════════════════════════════════════════╗');
   console.log('║         MONITOREO EXTRACCIÓN MULTIMODAL V2                ║');
@@ -101,7 +101,9 @@ function showMetrics() {
   console.log(`║ Timeouts:           ${metrics.timeouts}`.padEnd(59) + '║');
   console.log('╠════════════════════════════════════════════════════════════╣');
   console.log(`║ Tiempo promedio: ${Math.round(metrics.avgTime / 1000)}s`.padEnd(59) + '║');
-  console.log(`║ SLA < 5 min: ${metrics.avgTime < 300000 ? '✅ Cumple' : '❌ No cumple'}`.padEnd(59) + '║');
+  console.log(
+    `║ SLA < 5 min: ${metrics.avgTime < 300000 ? '✅ Cumple' : '❌ No cumple'}`.padEnd(59) + '║'
+  );
   console.log('╠════════════════════════════════════════════════════════════╣');
   console.log('║ ASEGURADORAS PROCESADAS:'.padEnd(59) + '║');
   Object.entries(metrics.insurers)
@@ -135,17 +137,19 @@ function saveMetrics() {
       avgTimeMs: metrics.avgTime,
       avgTimeSeconds: Math.round(metrics.avgTime / 1000),
       slaCompliant: metrics.avgTime < 300000,
-      v2Adoption: metrics.totalExtractions > 0 
-        ? ((metrics.v2Extractions / metrics.totalExtractions) * 100).toFixed(1) + '%'
-        : '0%',
-      errorRate: metrics.totalExtractions > 0
-        ? ((metrics.errors / metrics.totalExtractions) * 100).toFixed(1) + '%'
-        : '0%',
+      v2Adoption:
+        metrics.totalExtractions > 0
+          ? ((metrics.v2Extractions / metrics.totalExtractions) * 100).toFixed(1) + '%'
+          : '0%',
+      errorRate:
+        metrics.totalExtractions > 0
+          ? ((metrics.errors / metrics.totalExtractions) * 100).toFixed(1) + '%'
+          : '0%',
     },
     insurers: metrics.insurers,
     formatFamilies: metrics.formatFamilies,
   };
-  
+
   const filename = `metrics-${new Date().toISOString().split('T')[0]}.json`;
   fs.writeFileSync(filename, JSON.stringify(report, null, 2));
   console.log(`\n📊 Métricas guardadas en: ${filename}`);
@@ -163,7 +167,7 @@ function simulateLogs() {
     '   insurer: HDI',
     'Completed in 45000ms',
   ];
-  
+
   const randomLog = sampleLogs[Math.floor(Math.random() * sampleLogs.length)];
   parseLogLine(randomLog);
 }
@@ -176,12 +180,12 @@ function main() {
   console.log(`   Intervalo: ${LOG_INTERVAL / 1000}s`);
   console.log(`   Duración: ${MONITOR_DURATION / 1000 / 60} minutos`);
   console.log('   Presiona Ctrl+C para detener\n');
-  
+
   const interval = setInterval(() => {
     simulateLogs(); // En prod: leer logs reales
     showMetrics();
   }, LOG_INTERVAL);
-  
+
   // Detener después de la duración configurada
   setTimeout(() => {
     clearInterval(interval);
@@ -189,7 +193,7 @@ function main() {
     saveMetrics();
     process.exit(0);
   }, MONITOR_DURATION);
-  
+
   // Guardar al recibir SIGINT
   process.on('SIGINT', () => {
     clearInterval(interval);

@@ -22,7 +22,7 @@ vi.mock('../coverageOntology', () => ({
     mapCoverage: vi.fn(),
     saveMapping: vi.fn(async () => {}),
     getNodeById: vi.fn(() => ({ id: '1', name: 'Incendio (Edificio y Contenidos)' })),
-  }
+  },
 }));
 
 vi.mock('../../config/featureFlags', () => ({
@@ -101,7 +101,7 @@ describe('coverageNormalizer Promise Pool Concurrency', () => {
       activeCalls++;
       maxActiveCalls = Math.max(maxActiveCalls, activeCalls);
       // Wait for 20ms to allow concurrent execution
-      await new Promise(resolve => setTimeout(resolve, 20));
+      await new Promise((resolve) => setTimeout(resolve, 20));
       activeCalls--;
       return {
         rawName,

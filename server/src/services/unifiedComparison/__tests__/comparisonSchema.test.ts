@@ -88,9 +88,7 @@ describe('FlatComparisonSchema', () => {
         city: 'Bogotá',
         totalInsuredValue: 1000000000,
       },
-      insurers: [
-        { name: 'MAPFRE', quoteDate: '2026-01-01', validity: '1 año', product: 'PYME' },
-      ],
+      insurers: [{ name: 'MAPFRE', quoteDate: '2026-01-01', validity: '1 año', product: 'PYME' }],
       coverageMatrix: [
         {
           category: 'Daño Material',

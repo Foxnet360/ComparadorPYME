@@ -1,8 +1,8 @@
 import { supabase } from '../config/database';
-import { pdfExtractor, } from './pdfExtractor';
+import { pdfExtractor } from './pdfExtractor';
 import { semanticChunker, Chunk } from './semanticChunker';
 import { embeddingService } from './vector/embeddingService';
-import { pdfRenderer} from './pdfRenderer';
+import { pdfRenderer } from './pdfRenderer';
 import { handleSupabaseError } from '../config/database';
 import { geminiService } from './gemini';
 import { featureFlags } from '../config/featureFlags';
@@ -56,10 +56,7 @@ export class DocumentIndexingService {
   /**
    * Indexa un documento PDF completo en Supabase usando una transacción atómica
    */
-  async indexDocument(
-    pdfPath: string,
-    metadata: DocumentMetadata
-  ): Promise<IndexingResult> {
+  async indexDocument(pdfPath: string, metadata: DocumentMetadata): Promise<IndexingResult> {
     const startTime = Date.now();
     const errors: string[] = [];
     const warnings: string[] = [];
@@ -78,14 +75,16 @@ export class DocumentIndexingService {
       });
 
       const extractionResult = await pdfExtractor.extractTextFromPdf(pdfPath);
-      
+
       if (extractionResult.isScanned) {
         warnings.push('PDF parece ser escaneado, extracción de texto limitada');
       }
-      
+
       warnings.push(...extractionResult.warnings);
-      
-      console.log(`✅ Texto extraído: ${extractionResult.text.length} caracteres, ${extractionResult.pages.length} páginas`);
+
+      console.log(
+        `✅ Texto extraído: ${extractionResult.text.length} caracteres, ${extractionResult.pages.length} páginas`
+      );
 
       // 2. Obtener o crear aseguradora
       this.reportProgress({
@@ -119,9 +118,11 @@ export class DocumentIndexingService {
         const trimmedText = page.text.trim();
         // If the page has very little text and we have rendered images
         if (trimmedText.length < 150) {
-          const renderedPage = renderedPages.find(rp => rp.pageNumber === page.pageNumber);
+          const renderedPage = renderedPages.find((rp) => rp.pageNumber === page.pageNumber);
           if (renderedPage && renderedPage.buffer) {
-            console.log(`📸 [OCR Fallback] Page ${page.pageNumber} text is empty or too short (${trimmedText.length} chars). Transcribing with Gemini...`);
+            console.log(
+              `📸 [OCR Fallback] Page ${page.pageNumber} text is empty or too short (${trimmedText.length} chars). Transcribing with Gemini...`
+            );
             try {
               const transcribedText = await geminiService.performOcrOnImage(renderedPage.buffer);
               if (transcribedText.trim().length > 0) {
@@ -129,12 +130,19 @@ export class DocumentIndexingService {
                 page.wordCount = transcribedText.split(/\s+/).length;
                 page.hasContent = true;
                 ocrRan = true;
-                console.log(`   ✅ Transcribed ${page.text.length} characters for page ${page.pageNumber}`);
+                console.log(
+                  `   ✅ Transcribed ${page.text.length} characters for page ${page.pageNumber}`
+                );
               }
             } catch (ocrError: unknown) {
               const ocrMessage = ocrError instanceof Error ? ocrError.message : String(ocrError);
-              console.warn(`   ⚠️ Failed to transcribe page ${page.pageNumber} via Gemini OCR:`, ocrMessage);
-              warnings.push(`Fallo al transcribir página ${page.pageNumber} vía OCR: ${ocrMessage}`);
+              console.warn(
+                `   ⚠️ Failed to transcribe page ${page.pageNumber} via Gemini OCR:`,
+                ocrMessage
+              );
+              warnings.push(
+                `Fallo al transcribir página ${page.pageNumber} vía OCR: ${ocrMessage}`
+              );
             }
           }
         }
@@ -142,8 +150,10 @@ export class DocumentIndexingService {
 
       if (ocrRan) {
         // Re-construct the full text if any page got OCRed
-        extractionResult.text = extractionResult.pages.map(p => p.text).join('\n\n');
-        console.log(`✅ Text reconstructed after OCR fallback: ${extractionResult.text.length} characters`);
+        extractionResult.text = extractionResult.pages.map((p) => p.text).join('\n\n');
+        console.log(
+          `✅ Text reconstructed after OCR fallback: ${extractionResult.text.length} characters`
+        );
       }
 
       // 4. Crear chunks semánticos
@@ -153,13 +163,10 @@ export class DocumentIndexingService {
         percent: 50,
       });
 
-      const chunks = semanticChunker.createChunksFromPages(
-        extractionResult.pages,
-        {
-          documentName: metadata.documentName,
-          insurerName: metadata.insurerName,
-        }
-      );
+      const chunks = semanticChunker.createChunksFromPages(extractionResult.pages, {
+        documentName: metadata.documentName,
+        insurerName: metadata.insurerName,
+      });
 
       console.log(`✅ Chunks creados: ${chunks.length}`);
 
@@ -171,7 +178,7 @@ export class DocumentIndexingService {
       });
 
       const chunksWithEmbeddings = await this.generateEmbeddingsForChunks(chunks);
-      
+
       if (chunksWithEmbeddings.length === 0) {
         throw new Error('No se pudieron generar embeddings para ningún chunk');
       }
@@ -185,7 +192,7 @@ export class DocumentIndexingService {
         percent: 85,
       });
 
-      const imagesPayload = renderedPages.map(page => ({
+      const imagesPayload = renderedPages.map((page) => ({
         page_number: page.pageNumber,
         storage_url: page.storageUrl,
         storage_path: page.storagePath,
@@ -193,7 +200,7 @@ export class DocumentIndexingService {
         height: page.height,
       }));
 
-      const chunksPayload = chunksWithEmbeddings.map(chunk => ({
+      const chunksPayload = chunksWithEmbeddings.map((chunk) => ({
         page_number: chunk.metadata.pageStart,
         content: chunk.content,
         content_normalized: chunk.contentNormalized,
@@ -210,8 +217,9 @@ export class DocumentIndexingService {
         percent: 90,
       });
 
-      const { data: documentId, error: rpcError } = await supabase
-        .rpc('index_document_transaction', {
+      const { data: documentId, error: rpcError } = await supabase.rpc(
+        'index_document_transaction',
+        {
           p_insurer_id: insurerId,
           p_document_name: metadata.documentName,
           p_document_type: metadata.documentType,
@@ -222,7 +230,8 @@ export class DocumentIndexingService {
           p_images: imagesPayload,
           p_chunks: chunksPayload,
           p_product_name: metadata.productName || metadata.documentName,
-        } as unknown as never);
+        } as unknown as never
+      );
 
       if (rpcError) {
         throw new Error(`Transacción atómica fallida: ${rpcError.message}`);
@@ -247,16 +256,25 @@ export class DocumentIndexingService {
           );
 
           const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('Structured clause extraction timed out after 30s')), 30000)
+            setTimeout(
+              () => reject(new Error('Structured clause extraction timed out after 30s')),
+              30000
+            )
           );
 
           const structured = await Promise.race([extractionPromise, timeoutPromise]);
 
           await structuredClauseExtractor.storeStructuredClause(structured, documentId, 'pyme');
-          console.log(`✅ [DocumentIndexingService] Structured clause extracted and stored for document ${documentId}`);
+          console.log(
+            `✅ [DocumentIndexingService] Structured clause extracted and stored for document ${documentId}`
+          );
         } catch (extractError: unknown) {
-          const errorMsg = extractError instanceof Error ? extractError.message : String(extractError);
-          console.warn(`⚠️ [DocumentIndexingService] Structured clause extraction failed for ${documentId}:`, errorMsg);
+          const errorMsg =
+            extractError instanceof Error ? extractError.message : String(extractError);
+          console.warn(
+            `⚠️ [DocumentIndexingService] Structured clause extraction failed for ${documentId}:`,
+            errorMsg
+          );
           warnings.push(`Extracción estructurada fallida: ${errorMsg}`);
         }
       }
@@ -285,7 +303,6 @@ export class DocumentIndexingService {
         errors,
         warnings,
       };
-
     } catch (error: unknown) {
       console.error('❌ [DocumentIndexingService] Error:', error);
       errors.push(error instanceof Error ? error.message : String(error));
@@ -358,7 +375,7 @@ export class DocumentIndexingService {
       try {
         const chunk = chunks[i];
         const embedding = await embeddingService.generateEmbedding(chunk.content);
-        
+
         results.push({
           ...chunk,
           embedding,
@@ -371,7 +388,6 @@ export class DocumentIndexingService {
           message: `Generando embedding ${i + 1}/${chunks.length}`,
           percent,
         });
-
       } catch (error) {
         console.warn(`⚠️ Error generating embedding for chunk ${i}:`, error);
         // Continuar con el siguiente chunk
@@ -407,15 +423,12 @@ export class DocumentIndexingService {
         .eq('document_id', documentId);
 
       if (images && images.length > 0) {
-        const paths = (images as Array<{ storage_path: string }>).map(img => img.storage_path);
+        const paths = (images as Array<{ storage_path: string }>).map((img) => img.storage_path);
         await supabase.storage.from('clause-pages').remove(paths);
       }
 
       // Eliminar documento (cascada eliminará chunks y page_images)
-      const { error: deleteError } = await supabase
-        .from('documents')
-        .delete()
-        .eq('id', documentId);
+      const { error: deleteError } = await supabase.from('documents').delete().eq('id', documentId);
 
       if (deleteError) {
         throw handleSupabaseError(deleteError);
@@ -423,7 +436,6 @@ export class DocumentIndexingService {
 
       console.log(`✅ Document ${documentId} deleted successfully`);
       return true;
-
     } catch (error) {
       console.error('❌ Error deleting document:', error);
       return false;

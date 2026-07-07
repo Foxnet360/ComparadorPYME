@@ -16,16 +16,16 @@ export interface RenderedPage {
 }
 
 export interface PdfRenderOptions {
-  density?: number;      // DPI (calidad)
-  width?: number;        // Ancho en px
-  height?: number;       // Alto en px
+  density?: number; // DPI (calidad)
+  width?: number; // Ancho en px
+  height?: number; // Alto en px
   format?: 'png' | 'jpg';
-  quality?: number;      // Para JPG (0-100)
+  quality?: number; // Para JPG (0-100)
 }
 
 const defaultOptions: PdfRenderOptions = {
-  density: 150,          // Buena calidad para lectura
-  width: 1200,           // Ancho razonable
+  density: 150, // Buena calidad para lectura
+  width: 1200, // Ancho razonable
   format: 'png',
 };
 
@@ -49,7 +49,7 @@ export const pdfRenderer = {
   ): Promise<RenderedPage[]> => {
     const opts = { ...defaultOptions, ...options };
     const pages: RenderedPage[] = [];
-    
+
     try {
       // Verificar que el archivo existe
       if (!fs.existsSync(pdfPath)) {
@@ -64,7 +64,7 @@ export const pdfRenderer = {
       for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
         try {
           const tempFilePath = path.join(TEMP_DIR, `page-${pageNum}.png`);
-          
+
           // Configurar pdf2pic para guardar archivo
           const convert = fromPath(pdfPath, {
             density: opts.density,
@@ -77,7 +77,7 @@ export const pdfRenderer = {
           });
 
           const result = await convert(pageNum);
-          
+
           if (!result || !result.name) {
             console.warn(`⚠️ [PDF Renderer] Failed to render page ${pageNum}`);
             continue;
@@ -100,8 +100,7 @@ export const pdfRenderer = {
           const storagePath = `${insurerId}/${documentId}/page-${pageNum}.png`;
 
           // Subir a Supabase Storage
-          const { error: uploadError } = await supabase
-            .storage
+          const { error: uploadError } = await supabase.storage
             .from(BUCKET_NAME)
             .upload(storagePath, optimizedBuffer, {
               contentType: 'image/png',
@@ -114,10 +113,7 @@ export const pdfRenderer = {
           }
 
           // Obtener URL pública
-          const { data: publicUrl } = supabase
-            .storage
-            .from(BUCKET_NAME)
-            .getPublicUrl(storagePath);
+          const { data: publicUrl } = supabase.storage.from(BUCKET_NAME).getPublicUrl(storagePath);
 
           // Obtener dimensiones
           const metadata = await sharp(optimizedBuffer).metadata();
@@ -139,7 +135,6 @@ export const pdfRenderer = {
           }
 
           console.log(`✅ [PDF Renderer] Page ${pageNum} rendered and uploaded`);
-
         } catch (pageError) {
           console.error(`❌ [PDF Renderer] Error rendering page ${pageNum}:`, pageError);
         }
@@ -147,7 +142,6 @@ export const pdfRenderer = {
 
       console.log(`✅ [PDF Renderer] Completed: ${pages.length}/${pageCount} pages rendered`);
       return pages;
-
     } catch (error) {
       console.error('❌ [PDF Renderer] Fatal error:', error);
       throw error;
@@ -165,7 +159,7 @@ export const pdfRenderer = {
     try {
       const opts = { ...defaultOptions, ...options };
       const tempFilePath = path.join(TEMP_DIR, `single-page-${pageNumber}.png`);
-      
+
       const convert = fromPath(pdfPath, {
         density: opts.density,
         width: opts.width,
@@ -177,7 +171,7 @@ export const pdfRenderer = {
       });
 
       const result = await convert(pageNumber);
-      
+
       if (!result || !result.name) {
         return null;
       }
@@ -189,9 +183,7 @@ export const pdfRenderer = {
       const imageBuffer = fs.readFileSync(tempFilePath);
 
       // Optimizar
-      const optimizedBuffer = await sharp(imageBuffer)
-        .png({ quality: 90 })
-        .toBuffer();
+      const optimizedBuffer = await sharp(imageBuffer).png({ quality: 90 }).toBuffer();
 
       // Limpiar temporal
       try {
@@ -201,7 +193,6 @@ export const pdfRenderer = {
       }
 
       return optimizedBuffer;
-
     } catch (error) {
       console.error(`❌ [PDF Renderer] Error rendering page ${pageNumber}:`, error);
       return null;
@@ -230,10 +221,9 @@ export const pdfRenderer = {
   deleteDocumentImages: async (insurerId: string, documentId: string): Promise<void> => {
     try {
       const folderPath = `${insurerId}/${documentId}`;
-      
+
       // Listar archivos en el folder
-      const { data: files, error: listError } = await supabase
-        .storage
+      const { data: files, error: listError } = await supabase.storage
         .from(BUCKET_NAME)
         .list(folderPath);
 
@@ -248,17 +238,15 @@ export const pdfRenderer = {
 
       // Eliminar todos los archivos
       const filePaths = files.map((f: { name: string }) => `${folderPath}/${f.name}`);
-      const { error: deleteError } = await supabase
-        .storage
-        .from(BUCKET_NAME)
-        .remove(filePaths);
+      const { error: deleteError } = await supabase.storage.from(BUCKET_NAME).remove(filePaths);
 
       if (deleteError) {
         console.error('❌ [PDF Renderer] Error deleting files:', deleteError);
       } else {
-        console.log(`✅ [PDF Renderer] Deleted ${filePaths.length} images for document ${documentId}`);
+        console.log(
+          `✅ [PDF Renderer] Deleted ${filePaths.length} images for document ${documentId}`
+        );
       }
-
     } catch (error) {
       console.error('❌ [PDF Renderer] Error deleting document images:', error);
     }
@@ -269,10 +257,7 @@ export const pdfRenderer = {
    */
   getPageImageUrl: (insurerId: string, documentId: string, pageNumber: number): string => {
     const storagePath = `${insurerId}/${documentId}/page-${pageNumber}.png`;
-    const { data } = supabase
-      .storage
-      .from(BUCKET_NAME)
-      .getPublicUrl(storagePath);
+    const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(storagePath);
     return data.publicUrl;
   },
 };

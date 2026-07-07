@@ -112,16 +112,23 @@ function makeFakeMulterFile(filename: string): Express.Multer.File {
 export async function createPipelineRunner(): Promise<PipelineRunner> {
   // Dynamic imports are used so the environment defaults above are set before
   // any module that transitively imports env.ts is loaded.
-  const [{ processQuoteMultimodal }, { pdfExtractor }, { geminiService }, { featureFlags }, { embeddingService }, { coverageGraphService }, { reconciliationService }] =
-    await Promise.all([
-      import('../services/quoteProcessingService'),
-      import('../services/pdfExtractor'),
-      import('../services/gemini'),
-      import('../config/featureFlags'),
-      import('../services/vector/embeddingService'),
-      import('../services/coverageGraphService'),
-      import('../services/reconciliationService'),
-    ]);
+  const [
+    { processQuoteMultimodal },
+    { pdfExtractor },
+    { geminiService },
+    { featureFlags },
+    { embeddingService },
+    { coverageGraphService },
+    { reconciliationService },
+  ] = await Promise.all([
+    import('../services/quoteProcessingService'),
+    import('../services/pdfExtractor'),
+    import('../services/gemini'),
+    import('../config/featureFlags'),
+    import('../services/vector/embeddingService'),
+    import('../services/coverageGraphService'),
+    import('../services/reconciliationService'),
+  ]);
 
   const originals = {
     extractTextFromPdf: pdfExtractor.extractTextFromPdf,
@@ -178,12 +185,9 @@ export async function createPipelineRunner(): Promise<PipelineRunner> {
     reconciliationService.reconcileQuote = async () => [];
 
     try {
-      const parsed = await processQuoteMultimodal(
-        makeFakeMulterFile(fixture.fileName),
-        0,
-        1,
-        { domain: 'pyme' }
-      );
+      const parsed = await processQuoteMultimodal(makeFakeMulterFile(fixture.fileName), 0, 1, {
+        domain: 'pyme',
+      });
 
       return {
         insurerName: parsed.insurerName,
@@ -202,8 +206,7 @@ export async function createPipelineRunner(): Promise<PipelineRunner> {
           deductible: c.deductible,
           premium: c.premium ?? 0,
         })),
-        rawCoverageCount:
-          parsed.coverages.length + (parsed.uncategorizedCoverages?.length || 0),
+        rawCoverageCount: parsed.coverages.length + (parsed.uncategorizedCoverages?.length || 0),
       };
     } finally {
       pdfExtractor.extractTextFromPdf = originals.extractTextFromPdf;
@@ -247,10 +250,17 @@ function parseCliArgs(args: string[]): { fixturesDir: string; runner: 'echo' | '
   };
 }
 
-export async function main(args: string[] = process.argv.slice(2)): Promise<RunEvaluationCliResult> {
+export async function main(
+  args: string[] = process.argv.slice(2)
+): Promise<RunEvaluationCliResult> {
   const { fixturesDir, runner } = parseCliArgs(args);
 
-  if (!(await fs.access(fixturesDir).then(() => true).catch(() => false))) {
+  if (
+    !(await fs
+      .access(fixturesDir)
+      .then(() => true)
+      .catch(() => false))
+  ) {
     throw new Error(`Fixtures directory not found: ${fixturesDir}`);
   }
 
@@ -269,7 +279,9 @@ export async function main(args: string[] = process.argv.slice(2)): Promise<RunE
   console.log(`   Coverage accuracy: ${(report.aggregate.coverageAccuracy * 100).toFixed(1)}%`);
   console.log(`   Deductible accuracy: ${(report.aggregate.deductibleAccuracy * 100).toFixed(1)}%`);
   console.log(`   Uncategorized rate: ${(report.aggregate.uncategorizedRate * 100).toFixed(1)}%`);
-  console.log(`   Manual completion rate: ${(report.aggregate.manualCompletionRate * 100).toFixed(1)}%`);
+  console.log(
+    `   Manual completion rate: ${(report.aggregate.manualCompletionRate * 100).toFixed(1)}%`
+  );
   console.log(`   Correction rate: ${(report.aggregate.correctionRate * 100).toFixed(1)}%`);
   console.log(`   Regressions: ${report.regressions.length}`);
 

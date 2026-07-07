@@ -1,6 +1,5 @@
-import { ComparisonReport } from "../types";
-import { API_BASE_URL } from "./apiConfig";
-
+import { ComparisonReport } from '../types';
+import { API_BASE_URL } from './apiConfig';
 
 export const analyzeQuotesWithGemini = async (
   quoteFiles: File[],
@@ -9,7 +8,6 @@ export const analyzeQuotesWithGemini = async (
   onStatusUpdate?: (status: string) => void,
   clauseIds?: string[] // NEW: Support for clause IDs from library
 ): Promise<ComparisonReport> => {
-
   const formData = new FormData();
   formData.append('clientName', clientName);
 
@@ -21,24 +19,23 @@ export const analyzeQuotesWithGemini = async (
       if (parsed.id) formData.append('userId', parsed.id);
       if (parsed.email) formData.append('userEmail', parsed.email);
     } catch (e) {
-      console.warn("Failed to parse user from storage", e);
+      console.warn('Failed to parse user from storage', e);
     }
   }
 
-  if (onStatusUpdate) onStatusUpdate("Preparando archivos para envío...");
+  if (onStatusUpdate) onStatusUpdate('Preparando archivos para envío...');
 
-  quoteFiles.forEach(file => formData.append('quotes', file));
+  quoteFiles.forEach((file) => formData.append('quotes', file));
 
   // NEW: Use clauseIds from library if provided, otherwise use uploaded files
   if (clauseIds && clauseIds.length > 0) {
     formData.append('clauseIds', JSON.stringify(clauseIds));
-    if (onStatusUpdate) onStatusUpdate("Usando clausulados de biblioteca (optimizado)...");
+    if (onStatusUpdate) onStatusUpdate('Usando clausulados de biblioteca (optimizado)...');
   } else {
-    clauseFiles.forEach(file => formData.append('clauses', file));
+    clauseFiles.forEach((file) => formData.append('clauses', file));
   }
 
-
-  if (onStatusUpdate) onStatusUpdate("Subiendo archivos al servidor seguro (Cloud Run)...");
+  if (onStatusUpdate) onStatusUpdate('Subiendo archivos al servidor seguro (Cloud Run)...');
 
   try {
     const response = await fetch(`${API_BASE_URL}/analyze`, {
@@ -59,13 +56,12 @@ export const analyzeQuotesWithGemini = async (
       throw new Error(errorMessage);
     }
 
-    if (onStatusUpdate) onStatusUpdate("Procesando con Gemini Advanced (RAG)...");
+    if (onStatusUpdate) onStatusUpdate('Procesando con Gemini Advanced (RAG)...');
 
     const result = await response.json();
     return result as ComparisonReport;
-
   } catch (error) {
-    console.error("API Error:", error);
+    console.error('API Error:', error);
     throw error;
   }
 };

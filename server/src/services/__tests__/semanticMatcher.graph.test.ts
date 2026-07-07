@@ -87,13 +87,17 @@ vi.mock('@google/genai', () => ({
 }));
 
 describe('semanticMatcher graph integration', () => {
-  const mockEmbedding = Array(768).fill(0).map((_, i) => i / 768);
+  const mockEmbedding = Array(768)
+    .fill(0)
+    .map((_, i) => i / 768);
 
   beforeEach(() => {
     vi.clearAllMocks();
     semanticMatcher.clearCache();
     vi.mocked(coverageGraphService.query).mockResolvedValue({ mappings: [], composite: false });
-    vi.mocked(featureFlags.isEnabled).mockImplementation((flag: string) => flag === 'useTemplateGraphPipeline');
+    vi.mocked(featureFlags.isEnabled).mockImplementation(
+      (flag: string) => flag === 'useTemplateGraphPipeline'
+    );
     vi.mocked(embeddingService.generateEmbedding).mockResolvedValue(mockEmbedding);
     vi.mocked(embeddingService.generateEmbeddingsBatch).mockResolvedValue(
       semanticMatcher.getAllCategories().map((cat) => ({
@@ -113,7 +117,10 @@ describe('semanticMatcher graph integration', () => {
         composite: false,
       });
 
-      const result = await semanticMatcher.matchCoverage('Daño Material Global Desconocido', 'pyme');
+      const result = await semanticMatcher.matchCoverage(
+        'Daño Material Global Desconocido',
+        'pyme'
+      );
 
       expect(result.method).toBe('graph');
       expect(result.categoryId).toBe(1);
@@ -123,7 +130,13 @@ describe('semanticMatcher graph integration', () => {
 
     it('resolves string canonicalId to category name', async () => {
       vi.mocked(coverageGraphService.query).mockResolvedValue({
-        mappings: [{ canonicalId: 'Incendio (Edificio y Contenidos)', confidence: 0.82, provenance: 'maps_to' }],
+        mappings: [
+          {
+            canonicalId: 'Incendio (Edificio y Contenidos)',
+            confidence: 0.82,
+            provenance: 'maps_to',
+          },
+        ],
         composite: false,
       });
 
@@ -156,7 +169,10 @@ describe('semanticMatcher graph integration', () => {
         composite: false,
       });
 
-      const result = await semanticMatcher.matchCoverage('Nombre Que Falla En Thesaurus Fuzzy', 'pyme');
+      const result = await semanticMatcher.matchCoverage(
+        'Nombre Que Falla En Thesaurus Fuzzy',
+        'pyme'
+      );
 
       expect(result.method).toBe('embedding');
       expect(coverageGraphService.query).not.toHaveBeenCalled();

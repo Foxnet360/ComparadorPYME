@@ -29,9 +29,9 @@ export const embeddingService = {
    */
   generateEmbedding: async (text: string, retries = 3): Promise<number[]> => {
     const truncatedText = text.slice(0, 8000);
-    
+
     let lastError: Error | null = null;
-    
+
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         const ai = getGenAI();
@@ -39,30 +39,34 @@ export const embeddingService = {
           model: EMBEDDING_MODEL_NAME,
           contents: [{ parts: [{ text: truncatedText }] }],
           config: {
-            outputDimensionality: EMBEDDING_DIMENSIONS
-          }
+            outputDimensionality: EMBEDDING_DIMENSIONS,
+          },
         });
-        
+
         let embedding = result.embeddings?.[0]?.values;
-        
+
         if (!embedding || embedding.length === 0) {
           throw new Error('No embedding returned from Gemini');
         }
-        
+
         return embedding;
       } catch (error) {
         lastError = error as Error;
-        console.warn(`⚠️ [Embedding Service] Attempt ${attempt}/${retries} failed: ${lastError.message}`);
-        
+        console.warn(
+          `⚠️ [Embedding Service] Attempt ${attempt}/${retries} failed: ${lastError.message}`
+        );
+
         if (attempt < retries) {
           const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
     }
-    
+
     console.error('❌ [Embedding Service] All retry attempts failed:', lastError);
-    throw new Error(`Failed to generate embedding after ${retries} attempts: ${lastError?.message}`);
+    throw new Error(
+      `Failed to generate embedding after ${retries} attempts: ${lastError?.message}`
+    );
   },
 
   /**
@@ -81,8 +85,8 @@ export const embeddingService = {
       for (let attempt = 1; attempt <= retries; attempt++) {
         try {
           // Preparar contenidos para batch
-          const contents = batch.map(text => ({
-            parts: [{ text: text.slice(0, 8000) }]
+          const contents = batch.map((text) => ({
+            parts: [{ text: text.slice(0, 8000) }],
           }));
 
           const ai = getGenAI();
@@ -90,8 +94,8 @@ export const embeddingService = {
             model: EMBEDDING_MODEL_NAME,
             contents,
             config: {
-              outputDimensionality: EMBEDDING_DIMENSIONS
-            }
+              outputDimensionality: EMBEDDING_DIMENSIONS,
+            },
           });
 
           // Procesar resultados
@@ -117,17 +121,22 @@ export const embeddingService = {
           }
         } catch (error) {
           lastError = error as Error;
-          console.warn(`⚠️ [Embedding Service] Batch attempt ${attempt}/${retries} failed: ${lastError.message}`);
+          console.warn(
+            `⚠️ [Embedding Service] Batch attempt ${attempt}/${retries} failed: ${lastError.message}`
+          );
 
           if (attempt < retries) {
             const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-            await new Promise(resolve => setTimeout(resolve, delay));
+            await new Promise((resolve) => setTimeout(resolve, delay));
           }
         }
       }
 
       if (!success) {
-        console.error(`❌ [Embedding Service] All batch attempts failed for batch ${i}:`, lastError);
+        console.error(
+          `❌ [Embedding Service] All batch attempts failed for batch ${i}:`,
+          lastError
+        );
         // Retry individual items as fallback
         for (let j = 0; j < batch.length; j++) {
           try {
@@ -138,14 +147,17 @@ export const embeddingService = {
               model: EMBEDDING_MODEL_NAME,
             });
           } catch (error) {
-            console.error(`❌ [Embedding Service] Individual fallback failed for text ${i + j}:`, error);
+            console.error(
+              `❌ [Embedding Service] Individual fallback failed for text ${i + j}:`,
+              error
+            );
           }
         }
       }
 
       // Pequeña pausa entre batches para no sobrecargar la API
       if (i + BATCH_SIZE < texts.length) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
     }
 
@@ -166,19 +178,19 @@ export const embeddingService = {
     if (vecA.length !== vecB.length) {
       throw new Error('Vectors must have same dimension');
     }
-    
+
     let dotProduct = 0;
     let normA = 0;
     let normB = 0;
-    
+
     for (let i = 0; i < vecA.length; i++) {
       dotProduct += vecA[i] * vecB[i];
       normA += vecA[i] * vecA[i];
       normB += vecB[i] * vecB[i];
     }
-    
+
     if (normA === 0 || normB === 0) return 0;
-    
+
     return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
   },
 
@@ -196,4 +208,6 @@ export const embeddingService = {
   },
 };
 
-console.log(`🔢 [Embedding Service] Initialized with model: ${EMBEDDING_MODEL_NAME} (${EMBEDDING_DIMENSIONS} dims)`);
+console.log(
+  `🔢 [Embedding Service] Initialized with model: ${EMBEDDING_MODEL_NAME} (${EMBEDDING_DIMENSIONS} dims)`
+);

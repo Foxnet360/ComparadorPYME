@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  buildGraphEdgesFromDomain,
-  seedCoverageGraph,
-} from '../graphSeeder';
+import { buildGraphEdgesFromDomain, seedCoverageGraph } from '../graphSeeder';
 import { validateGraphEdge } from '../../schemas/templateRegistrySchema';
 
 describe('graphSeeder', () => {
@@ -15,9 +12,7 @@ describe('graphSeeder', () => {
     it('creates maps_to edges from taxonomy aliases to canonical categories', () => {
       const edges = buildGraphEdgesFromDomain('pyme');
 
-      const incendioEdges = edges.filter(
-        (e) => e.to === 'incendio' && e.type === 'maps_to'
-      );
+      const incendioEdges = edges.filter((e) => e.to === 'incendio' && e.type === 'maps_to');
       expect(incendioEdges.length).toBeGreaterThan(0);
       expect(incendioEdges.some((e) => e.from === 'Incendio')).toBe(true);
       expect(incendioEdges.some((e) => e.from === 'Daños Materiales')).toBe(true);
@@ -26,9 +21,7 @@ describe('graphSeeder', () => {
     it('creates maps_to edges from ontology aliases', () => {
       const edges = buildGraphEdgesFromDomain('pyme');
 
-      const lucroEdges = edges.filter(
-        (e) => e.to === 'lucro-cesante' && e.type === 'maps_to'
-      );
+      const lucroEdges = edges.filter((e) => e.to === 'lucro-cesante' && e.type === 'maps_to');
       expect(lucroEdges.length).toBeGreaterThan(0);
       expect(lucroEdges.some((e) => e.from === 'Lucro Cesante')).toBe(true);
     });
@@ -36,13 +29,10 @@ describe('graphSeeder', () => {
     it('creates decomposes_to edges for composite patterns', () => {
       const edges = buildGraphEdgesFromDomain('pyme');
 
-      const compositeEdges = edges.filter((e) => e.type === 'decomposes_to'
-      );
+      const compositeEdges = edges.filter((e) => e.type === 'decomposes_to');
       expect(compositeEdges.length).toBeGreaterThan(0);
 
-      const todoRiesgo = compositeEdges.filter((e) =>
-        e.from === 'composite:todo-riesgo'
-      );
+      const todoRiesgo = compositeEdges.filter((e) => e.from === 'composite:todo-riesgo');
       expect(todoRiesgo.some((e) => e.to === 'incendio')).toBe(true);
       expect(todoRiesgo.some((e) => e.to === 'terremoto')).toBe(true);
       expect(todoRiesgo.some((e) => e.to === 'hmacc')).toBe(true);
@@ -78,7 +68,11 @@ describe('graphSeeder', () => {
       };
 
       const edges = buildGraphEdgesFromDomain('pyme').slice(0, 5);
-      await seedCoverageGraph(fakeDb as unknown as Parameters<typeof seedCoverageGraph>[0], 'pyme', edges);
+      await seedCoverageGraph(
+        fakeDb as unknown as Parameters<typeof seedCoverageGraph>[0],
+        'pyme',
+        edges
+      );
 
       expect(upsertCalls).toHaveLength(1);
       expect(upsertCalls[0].table).toBe('coverage_graph_edges');

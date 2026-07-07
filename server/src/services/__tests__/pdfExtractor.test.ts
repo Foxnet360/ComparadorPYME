@@ -30,8 +30,20 @@ describe('pdfExtractor', () => {
 
   describe('combineExtractedTexts', () => {
     it('should combine multiple texts properly', () => {
-      const doc1 = { text: 'Doc1 Text', filename: '', type: 'COTIZACIÓN' as const, metadata: { pageCount: 1 }, pages: [] };
-      const doc2 = { text: 'Doc2 Text', filename: '', type: 'COTIZACIÓN' as const, metadata: { pageCount: 1 }, pages: [] };
+      const doc1 = {
+        text: 'Doc1 Text',
+        filename: '',
+        type: 'COTIZACIÓN' as const,
+        metadata: { pageCount: 1 },
+        pages: [],
+      };
+      const doc2 = {
+        text: 'Doc2 Text',
+        filename: '',
+        type: 'COTIZACIÓN' as const,
+        metadata: { pageCount: 1 },
+        pages: [],
+      };
       expect(pdfExtractor.combineExtractedTexts([doc1, doc2])).toBe('Doc1 Text\n\nDoc2 Text');
     });
   });

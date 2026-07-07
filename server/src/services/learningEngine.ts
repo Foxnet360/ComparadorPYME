@@ -46,10 +46,10 @@ function parseEmbedding(val: unknown): number[] | null {
 function sorensenDiceSimilarity(str1: string, str2: string): number {
   const s1 = str1.toLowerCase().replace(/\s+/g, '');
   const s2 = str2.toLowerCase().replace(/\s+/g, '');
-  
+
   if (s1 === s2) return 1.0;
   if (s1.length < 2 || s2.length < 2) return 0.0;
-  
+
   const getBigrams = (str: string): Set<string> => {
     const bigrams = new Set<string>();
     for (let i = 0; i < str.length - 1; i++) {
@@ -57,17 +57,17 @@ function sorensenDiceSimilarity(str1: string, str2: string): number {
     }
     return bigrams;
   };
-  
+
   const bigrams1 = getBigrams(s1);
   const bigrams2 = getBigrams(s2);
-  
+
   let intersection = 0;
   for (const val of bigrams1) {
     if (bigrams2.has(val)) {
       intersection++;
     }
   }
-  
+
   return (2 * intersection) / (bigrams1.size + bigrams2.size);
 }
 
@@ -89,7 +89,9 @@ export const learningEngine = {
       try {
         queryEmbedding = await embeddingService.generateEmbedding(rawName);
       } catch (_err) {
-        console.warn('⚠️ [LearningEngine] Could not generate query embedding, using Sørensen-Dice fallback');
+        console.warn(
+          '⚠️ [LearningEngine] Could not generate query embedding, using Sørensen-Dice fallback'
+        );
       }
 
       const similarityList: Array<{ correction: Record<string, unknown>; similarity: number }> = [];
@@ -108,9 +110,12 @@ export const learningEngine = {
 
       // Sort by similarity descending and take top 3
       similarityList.sort((a, b) => b.similarity - a.similarity);
-      return similarityList.slice(0, 3).map(item => item.correction);
+      return similarityList.slice(0, 3).map((item) => item.correction);
     } catch (err) {
-      console.error('⚠️ [LearningEngine] Error recuperando ejemplos de aprendizaje pocos disparos:', err);
+      console.error(
+        '⚠️ [LearningEngine] Error recuperando ejemplos de aprendizaje pocos disparos:',
+        err
+      );
       return [];
     }
   },
@@ -121,14 +126,17 @@ export const learningEngine = {
   async saveCorrection(correction: UserCorrection): Promise<string> {
     try {
       let data, error;
-      
+
       let embedding: number[] | null = null;
       try {
         embedding = await embeddingService.generateEmbedding(correction.rawName);
       } catch (embErr) {
-        console.warn('⚠️ [LearningEngine] Could not generate embedding for new correction:', embErr);
+        console.warn(
+          '⚠️ [LearningEngine] Could not generate embedding for new correction:',
+          embErr
+        );
       }
-      
+
       // Intento 1: Guardar con las nuevas columnas de alta certeza
       const res = await supabase
         .from('coverage_mappings')
@@ -143,17 +151,20 @@ export const learningEngine = {
           ai_justification: correction.aiJustification || null,
           page_number: correction.pageNumber || null,
           needs_human_review: false,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         } as unknown as never)
         .select('id')
         .single();
-      
+
       data = res.data;
       error = res.error;
 
       if (error) {
         // Fallback: guardar solo columnas estándar en caso de que falten en el esquema
-        console.warn('⚠️ [LearningEngine DB] Faltan columnas en Supabase, usando columnas estándar:', error.message);
+        console.warn(
+          '⚠️ [LearningEngine DB] Faltan columnas en Supabase, usando columnas estándar:',
+          error.message
+        );
         const fallbackRes = await supabase
           .from('coverage_mappings')
           .upsert({
@@ -163,22 +174,24 @@ export const learningEngine = {
             user_corrected: true,
             correction_count: 1,
             embedding: embedding || null,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           } as unknown as never)
           .select('id')
           .single();
-        
+
         data = fallbackRes.data;
         error = fallbackRes.error;
       }
 
       if (error) throw error;
 
-      console.log(`✅ [LearningEngine] Saved correction: "${correction.rawName}" → "${correction.userCorrection}"`);
-      
+      console.log(
+        `✅ [LearningEngine] Saved correction: "${correction.rawName}" → "${correction.userCorrection}"`
+      );
+
       // Trigger async updates
       await this.applyCorrection(correction);
-      
+
       return ((data as Record<string, unknown> | null)?.id as string) || '';
     } catch (error) {
       console.error('❌ [LearningEngine] Failed to save correction:', error);
@@ -193,21 +206,20 @@ export const learningEngine = {
     try {
       // 1. Update thesaurus
       await this.updateThesaurus(correction);
-      
+
       // 2. Update embeddings if significant
       if (correction.correctionType === 'coverage_mapping') {
         await this.updateEmbedding(correction);
       }
-      
+
       // 3. Invalidate cache
       await this.invalidateCache(correction);
-      
+
       // 4. Update ontology if needed
       await this.updateOntology(correction);
 
       // 5. Write graph edge if graph learning is enabled
       await this.updateGraph(correction);
-      
     } catch (error) {
       console.error('❌ [LearningEngine] Failed to apply correction:', error);
     }
@@ -220,8 +232,10 @@ export const learningEngine = {
     try {
       // Add raw name as synonym for corrected category
       // This would typically update a thesaurus file or database
-      console.log(`📚 [LearningEngine] Adding synonym: "${correction.rawName}" → "${correction.userCorrection}"`);
-      
+      console.log(
+        `📚 [LearningEngine] Adding synonym: "${correction.rawName}" → "${correction.userCorrection}"`
+      );
+
       // Store in cache for immediate effect
       await setCacheValue(
         `thesaurus:${correction.userCorrection}`,
@@ -229,7 +243,7 @@ export const learningEngine = {
         JSON.stringify({
           synonym: correction.rawName,
           insurer: correction.insurerName,
-          correctedAt: new Date().toISOString()
+          correctedAt: new Date().toISOString(),
         })
       );
     } catch (error) {
@@ -244,8 +258,10 @@ export const learningEngine = {
     try {
       // Generate new embedding for the corrected pair
       const rawEmbedding = await embeddingService.generateEmbedding(correction.rawName);
-      const correctedEmbedding = await embeddingService.generateEmbedding(correction.userCorrection);
-      
+      const correctedEmbedding = await embeddingService.generateEmbedding(
+        correction.userCorrection
+      );
+
       // Store in cache with higher weight
       await setCacheValue(
         `emb_correction:${Buffer.from(correction.rawName).toString('base64').substring(0, 32)}`,
@@ -254,10 +270,10 @@ export const learningEngine = {
           rawEmbedding,
           correctedEmbedding,
           correction: correction.userCorrection,
-          weight: 1.5 // Higher weight for corrected mappings
+          weight: 1.5, // Higher weight for corrected mappings
         })
       );
-      
+
       console.log(`🔢 [LearningEngine] Updated embeddings for "${correction.rawName}"`);
     } catch (error) {
       console.error('❌ [LearningEngine] Embedding update failed:', error);
@@ -270,14 +286,17 @@ export const learningEngine = {
   async invalidateCache(correction: UserCorrection): Promise<void> {
     try {
       // Delete cached mappings for this raw name
-      await deleteCacheValue(`map:${correction.insurerName || 'global'}:${Buffer.from(correction.rawName).toString('base64').substring(0, 32)}`);
-      
+      await deleteCacheValue(
+        `map:${correction.insurerName || 'global'}:${Buffer.from(correction.rawName).toString('base64').substring(0, 32)}`
+      );
+
       // Delete cached search results that might include this mapping
       const searchKeys = await getCacheKeys('search:*');
-      for (const key of searchKeys.slice(0, 100)) { // Limit to avoid blocking
+      for (const key of searchKeys.slice(0, 100)) {
+        // Limit to avoid blocking
         await deleteCacheValue(key);
       }
-      
+
       console.log(`🗑️ [LearningEngine] Invalidated cache for "${correction.rawName}"`);
     } catch (error) {
       console.error('❌ [LearningEngine] Cache invalidation failed:', error);
@@ -294,14 +313,16 @@ export const learningEngine = {
       await coverageOntology.saveMapping({
         rawName: correction.rawName,
         insurerName: correction.insurerName,
-        groups: [{
-          groupId: correction.userCorrection,
-          confidence: 0.95 // High confidence for user-corrected mappings
-        }],
+        groups: [
+          {
+            groupId: correction.userCorrection,
+            confidence: 0.95, // High confidence for user-corrected mappings
+          },
+        ],
         isComposite: false,
-        confidence: 0.95
+        confidence: 0.95,
       });
-      
+
       console.log(`🌳 [LearningEngine] Updated ontology for "${correction.rawName}"`);
     } catch (error) {
       console.error('❌ [LearningEngine] Ontology update failed:', error);
@@ -360,7 +381,9 @@ export const learningEngine = {
           break;
       }
     } catch (error: unknown) {
-      console.warn(`⚠️ [LearningEngine] Graph update failed: ${error instanceof Error ? error.message : String(error)}`);
+      console.warn(
+        `⚠️ [LearningEngine] Graph update failed: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   },
 
@@ -387,7 +410,7 @@ export const learningEngine = {
 
       const correctionsByType: Record<string, number> = {};
       typeData?.forEach((row) => {
-        const type = (row as Record<string, unknown>).canonical_name as string || 'unknown';
+        const type = ((row as Record<string, unknown>).canonical_name as string) || 'unknown';
         correctionsByType[type] = (correctionsByType[type] || 0) + 1;
       });
 
@@ -408,10 +431,11 @@ export const learningEngine = {
         totalCorrections: totalCorrections || 0,
         correctionsByType,
         accuracyTrend,
-        topCorrectedMappings: topData?.map((row) => ({
-          rawName: (row as Record<string, unknown>).raw_name as string,
-          count: (row as Record<string, unknown>).correction_count as number
-        })) || []
+        topCorrectedMappings:
+          topData?.map((row) => ({
+            rawName: (row as Record<string, unknown>).raw_name as string,
+            count: (row as Record<string, unknown>).correction_count as number,
+          })) || [],
       };
     } catch (error) {
       console.error('❌ [LearningEngine] Failed to get metrics:', error);
@@ -419,7 +443,7 @@ export const learningEngine = {
         totalCorrections: 0,
         correctionsByType: {},
         accuracyTrend: [],
-        topCorrectedMappings: []
+        topCorrectedMappings: [],
       };
     }
   },
@@ -442,22 +466,23 @@ export const learningEngine = {
 
       // Group by week and calculate accuracy
       const weeklyData: Record<string, { corrections: number; total: number }> = {};
-      
+
       data.forEach((row) => {
         const date = new Date((row as Record<string, unknown>).created_at as string);
         const weekKey = `${date.getFullYear()}-W${Math.ceil(date.getDate() / 7)}`;
-        
+
         if (!weeklyData[weekKey]) {
           weeklyData[weekKey] = { corrections: 0, total: 0 };
         }
-        
-        weeklyData[weekKey].corrections += ((row as Record<string, unknown>).correction_count as number) || 1;
+
+        weeklyData[weekKey].corrections +=
+          ((row as Record<string, unknown>).correction_count as number) || 1;
         weeklyData[weekKey].total += 1;
       });
 
       return Object.entries(weeklyData).map(([date, stats]) => ({
         date,
-        accuracy: Math.max(0, 100 - (stats.corrections / stats.total) * 10)
+        accuracy: Math.max(0, 100 - (stats.corrections / stats.total) * 10),
       }));
     } catch (error) {
       console.error('❌ [LearningEngine] Failed to calculate accuracy trend:', error);
@@ -475,33 +500,35 @@ export const learningEngine = {
   }> {
     const now = new Date();
     const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    
+
     const metrics = await this.getMetrics();
-    
+
     const improvements: string[] = [];
-    
+
     if (metrics.totalCorrections > 0) {
       improvements.push(`Processed ${metrics.totalCorrections} user corrections`);
     }
-    
+
     if (metrics.topCorrectedMappings.length > 0) {
-      improvements.push(`Top corrected mapping: "${metrics.topCorrectedMappings[0].rawName}" (${metrics.topCorrectedMappings[0].count} times)`);
+      improvements.push(
+        `Top corrected mapping: "${metrics.topCorrectedMappings[0].rawName}" (${metrics.topCorrectedMappings[0].count} times)`
+      );
     }
-    
+
     if (metrics.accuracyTrend.length > 1) {
       const latest = metrics.accuracyTrend[metrics.accuracyTrend.length - 1];
       const previous = metrics.accuracyTrend[metrics.accuracyTrend.length - 2];
       const change = latest.accuracy - previous.accuracy;
-      
+
       if (change > 0) {
         improvements.push(`Accuracy improved by ${change.toFixed(2)}%`);
       }
     }
-    
+
     return {
       month,
       metrics,
-      improvements
+      improvements,
     };
   },
 
@@ -533,23 +560,28 @@ export const learningEngine = {
             insurerName: mapping.insurer_name as string | undefined,
             systemMapping: mapping.canonical_name as string,
             userCorrection: mapping.canonical_name as string,
-            correctionType: 'coverage_mapping'
+            correctionType: 'coverage_mapping',
           });
           processed++;
         } catch (error) {
           errors++;
-          console.error(`❌ [LearningEngine] Failed to retrain embedding for "${mapping.raw_name}":`, error);
+          console.error(
+            `❌ [LearningEngine] Failed to retrain embedding for "${mapping.raw_name}":`,
+            error
+          );
         }
       }
 
-      console.log(`✅ [LearningEngine] Batch retraining complete: ${processed} processed, ${errors} errors`);
-      
+      console.log(
+        `✅ [LearningEngine] Batch retraining complete: ${processed} processed, ${errors} errors`
+      );
+
       return { processed, errors };
     } catch (error) {
       console.error('❌ [LearningEngine] Batch retraining failed:', error);
       return { processed: 0, errors: 0 };
     }
-  }
+  },
 };
 
 export default learningEngine;

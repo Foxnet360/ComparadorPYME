@@ -127,8 +127,10 @@ const PATTERNS = {
   smmlv: /(\d+)\s*(?:SMMLV|SM)\b/i,
   uvt: /(\d+)\s*(?:UVT)\b/i,
   fixed: /(?:\$?\s*)([\d.,]+)\s*(COP|USD)?/i,
-  minClause: /(?:m[ií]n(?:imo|o|\.|\b)?)(?:\s+de)?\s*(?:\$?\s*)(\d+(?:[.,]\d+)*)\s*(smmlv|sm|cop|pesos|uvt)?/i,
-  maxClause: /(?:m[aá]x(?:imo|o|\.|\b)?|tope|l[ií]mite)(?:\s+de)?\s*(?:\$?\s*)(\d+(?:[.,]\d+)*)\s*(smmlv|sm|cop|pesos|uvt)?/i,
+  minClause:
+    /(?:m[ií]n(?:imo|o|\.|\b)?)(?:\s+de)?\s*(?:\$?\s*)(\d+(?:[.,]\d+)*)\s*(smmlv|sm|cop|pesos|uvt)?/i,
+  maxClause:
+    /(?:m[aá]x(?:imo|o|\.|\b)?|tope|l[ií]mite)(?:\s+de)?\s*(?:\$?\s*)(\d+(?:[.,]\d+)*)\s*(smmlv|sm|cop|pesos|uvt)?/i,
 };
 
 function inferCompoundOperator(
@@ -191,9 +193,7 @@ function parseCompoundJoin(text: string): ParsedDeductibleComponents | null {
     /^\s*(mayor\s+entre|mayor\s+de|menor\s+entre|menor\s+de)\s+/i
   );
   const qualifier = explicitQualifierMatch ? explicitQualifierMatch[1].toLowerCase() : null;
-  const textAfterQualifier = qualifier
-    ? text.substring(explicitQualifierMatch![0].length)
-    : text;
+  const textAfterQualifier = qualifier ? text.substring(explicitQualifierMatch![0].length) : text;
 
   const pctMatch = textAfterQualifier.match(/^\s*(\d+(?:[.,]\d+)?)\s*%/);
   if (!pctMatch) return null;
@@ -202,9 +202,7 @@ function parseCompoundJoin(text: string): ParsedDeductibleComponents | null {
   const afterPct = textAfterQualifier.substring(pctMatch[0].length);
 
   // Detect operator between percentage and second component.
-  const operatorMatch = afterPct.match(
-    /^\s*(?:\s+y\s+|\s*\+\s+|\s*\/\s+)/i
-  );
+  const operatorMatch = afterPct.match(/^\s*(?:\s+y\s+|\s*\+\s+|\s*\/\s+)/i);
   if (!operatorMatch) return null;
 
   const rest = afterPct.substring(operatorMatch[0].length).trim();
@@ -316,7 +314,12 @@ function parseSimple(text: string): ParsedDeductibleComponents | null {
   // Require a currency symbol/suffix OR a value large enough that it is
   // unlikely to be a percentage plain number (e.g. "$500", "500000", "$500 COP").
   const simpleFixed = t.match(/^\$?\s*([\d.,]+)\s*(COP|USD)?$/i);
-  if (simpleFixed && !PATTERNS.percentage.test(t) && !PATTERNS.smmlv.test(t) && !PATTERNS.uvt.test(t)) {
+  if (
+    simpleFixed &&
+    !PATTERNS.percentage.test(t) &&
+    !PATTERNS.smmlv.test(t) &&
+    !PATTERNS.uvt.test(t)
+  ) {
     const val = parseFloat(simpleFixed[1].replace(/[.,]/g, ''));
     const hasCurrency = !!simpleFixed[2] || /^\$/.test(t);
     if (!isNaN(val) && val > 0 && (hasCurrency || val >= 10000)) {
@@ -525,11 +528,13 @@ function evaluateBenchmark(
 async function parseWithLLM(text: string): Promise<DeductibleStructure> {
   try {
     const parsed = await geminiService.extractDeductible(text);
-    const components: ComponentInput[] = (parsed.components || []).map((c: Record<string, unknown>) => ({
-      type: c.type as DeductibleComponentType,
-      value: Number(c.value) || 0,
-      currency: c.currency ? String(c.currency) : undefined,
-    }));
+    const components: ComponentInput[] = (parsed.components || []).map(
+      (c: Record<string, unknown>) => ({
+        type: c.type as DeductibleComponentType,
+        value: Number(c.value) || 0,
+        currency: c.currency ? String(c.currency) : undefined,
+      })
+    );
     return {
       components: components as DeductibleStructure['components'],
       compoundOperator: (parsed.compoundOperator as CompoundOperator) || 'none',
@@ -540,7 +545,10 @@ async function parseWithLLM(text: string): Promise<DeductibleStructure> {
       rawText: text,
     };
   } catch (error: unknown) {
-    console.error('❌ [HybridDeductibleParser] LLM fallback failed:', error instanceof Error ? error.message : String(error));
+    console.error(
+      '❌ [HybridDeductibleParser] LLM fallback failed:',
+      error instanceof Error ? error.message : String(error)
+    );
     // Return a safe "unknown" structure so callers don't crash
     return {
       components: [{ type: 'unknown', value: 0 }],
@@ -674,7 +682,11 @@ export const hybridDeductibleParser = {
     let resolvedCoverage = explicitCoverageName;
     let appliesTo: HybridDeductibleResult['appliesTo'] = undefined;
 
-    if (!resolvedCoverage && options?.useGraph !== false && featureFlags.isEnabled('useTemplateGraphPipeline')) {
+    if (
+      !resolvedCoverage &&
+      options?.useGraph !== false &&
+      featureFlags.isEnabled('useTemplateGraphPipeline')
+    ) {
       try {
         const links = await coverageGraphService.queryDeductible(text, {
           insurer: options?.insurer,
@@ -687,7 +699,9 @@ export const hybridDeductibleParser = {
           appliesTo = { coverageName: best.appliesTo, confidence: best.confidence };
         }
       } catch (error: unknown) {
-        console.warn(`⚠️ [HybridDeductibleParser] Graph deductible lookup failed: ${error instanceof Error ? error.message : String(error)}`);
+        console.warn(
+          `⚠️ [HybridDeductibleParser] Graph deductible lookup failed: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
     }
 

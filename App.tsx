@@ -1,5 +1,14 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { Sparkles, MessageSquare, ShieldCheck, LogOut, LayoutDashboard, BookOpen, Activity, Library } from 'lucide-react';
+import {
+  Sparkles,
+  MessageSquare,
+  ShieldCheck,
+  LogOut,
+  LayoutDashboard,
+  BookOpen,
+  Activity,
+  Library,
+} from 'lucide-react';
 import FileUploader from './components/FileUploader';
 import { AnalysisProvider } from './contexts/AnalysisContext';
 import LoginScreen from './components/LoginScreen';
@@ -40,8 +49,8 @@ const App: React.FC = () => {
   const [chatOpen, setChatOpen] = useState(false);
 
   // Progress State
-  const [statusMessage, setStatusMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
+  const [statusMessage, setStatusMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     // Check for existing session
@@ -75,19 +84,19 @@ const App: React.FC = () => {
   };
 
   const handleQuotesSelected = (newFiles: File[]) => {
-    setQuoteFiles(prev => [...prev, ...newFiles]);
+    setQuoteFiles((prev) => [...prev, ...newFiles]);
   };
 
   const handleClausesSelected = (newFiles: File[]) => {
-    setClauseFiles(prev => [...prev, ...newFiles]);
+    setClauseFiles((prev) => [...prev, ...newFiles]);
   };
 
   const handleRemoveQuote = (index: number) => {
-    setQuoteFiles(prev => prev.filter((_, i) => i !== index));
+    setQuoteFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleRemoveClause = (index: number) => {
-    setClauseFiles(prev => prev.filter((_, i) => i !== index));
+    setClauseFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleAnalyze = async () => {
@@ -95,7 +104,7 @@ const App: React.FC = () => {
     setStatus(AppStatus.ANALYZING);
 
     try {
-      const clientName = selectedClient?.name || "Cliente Desconocido";
+      const clientName = selectedClient?.name || 'Cliente Desconocido';
       // Pass clauseIds when using library mode
       const clauseIdsToUse = clauseMode === 'library' ? selectedClauseIds : undefined;
       const result = await analyzeQuotesWithGemini(
@@ -110,7 +119,7 @@ const App: React.FC = () => {
       if (currentUser && selectedClient) {
         savedId = await storageService.saveAnalysis(selectedClient.name, result);
       } else if (currentUser) {
-        savedId = await storageService.saveAnalysis("Cliente Desconocido", result);
+        savedId = await storageService.saveAnalysis('Cliente Desconocido', result);
       }
 
       if (savedId) {
@@ -122,13 +131,12 @@ const App: React.FC = () => {
 
       setStatus(AppStatus.COMPLETED);
       setCurrentView('REPORT');
-
     } catch (error: unknown) {
       console.error(error);
-      setStatusMessage(""); // Clear status
+      setStatusMessage(''); // Clear status
       setStatus(AppStatus.ERROR);
       // Extract clean message
-      const msg = error instanceof Error ? error.message : "Hubo un problema desconocido.";
+      const msg = error instanceof Error ? error.message : 'Hubo un problema desconocido.';
       setErrorMessage(msg);
     }
   };
@@ -142,8 +150,8 @@ const App: React.FC = () => {
     setSelectedClient(null);
     setStatus(AppStatus.IDLE);
     setChatOpen(false);
-    setStatusMessage("");
-    setErrorMessage("");
+    setStatusMessage('');
+    setErrorMessage('');
     // Don't change view here if we are just resetting for a new analysis within the tool
     if (currentView === 'REPORT') setCurrentView('ANALYZER');
   };
@@ -171,16 +179,25 @@ const App: React.FC = () => {
   }
 
   if (currentView === 'LOGIN') {
-    return <LoginScreen onLoginSuccess={handleLogin} onRegisterClick={() => setCurrentView('REGISTER')} />;
+    return (
+      <LoginScreen
+        onLoginSuccess={handleLogin}
+        onRegisterClick={() => setCurrentView('REGISTER')}
+      />
+    );
   }
 
   if (currentView === 'REGISTER') {
-    return <RegisterScreen onRegisterSuccess={handleLogin} onBackToLogin={() => setCurrentView('LOGIN')} />;
+    return (
+      <RegisterScreen
+        onRegisterSuccess={handleLogin}
+        onBackToLogin={() => setCurrentView('LOGIN')}
+      />
+    );
   }
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans selection:bg-indigo-100 selection:text-indigo-900">
-
       {/* App Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -201,7 +218,11 @@ const App: React.FC = () => {
                 onClick={() => setShowProfile(true)}
                 className="hidden md:flex items-center px-3 py-1 bg-slate-100 rounded-full cursor-pointer hover:bg-slate-200 transition-colors"
               >
-                <img src={currentUser.avatarUrl} alt="Avatar" className="w-6 h-6 rounded-full mr-2" />
+                <img
+                  src={currentUser.avatarUrl}
+                  alt="Avatar"
+                  className="w-6 h-6 rounded-full mr-2"
+                />
                 <span className="text-sm font-medium text-slate-700">{currentUser.name}</span>
               </div>
             )}
@@ -229,7 +250,9 @@ const App: React.FC = () => {
               <button
                 onClick={() => setChatOpen(!chatOpen)}
                 className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors font-medium text-sm ${
-                  chatOpen ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                  chatOpen
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
                 }`}
               >
                 <MessageSquare size={18} />
@@ -249,10 +272,15 @@ const App: React.FC = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
         {/* VIEW: DASHBOARD */}
         {currentView === 'DASHBOARD' && (
-          <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div></div>}>
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+              </div>
+            }
+          >
             <TechnicalDashboard
               onNewAnalysis={() => setCurrentView('ANALYZER')}
               onViewReport={handleViewExistingReport}
@@ -266,15 +294,18 @@ const App: React.FC = () => {
             {/* Intro */}
             {status === AppStatus.IDLE && (
               <div className="text-center mb-8 max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h2 className="text-3xl font-bold text-slate-900 mb-3 tracking-tight">Nueva Auditoría</h2>
-                <p className="text-slate-600">Selecciona el cliente y sube las cotizaciones para iniciar.</p>
+                <h2 className="text-3xl font-bold text-slate-900 mb-3 tracking-tight">
+                  Nueva Auditoría
+                </h2>
+                <p className="text-slate-600">
+                  Selecciona el cliente y sube las cotizaciones para iniciar.
+                </p>
               </div>
             )}
 
             {/* Config & Upload Section */}
             {status === AppStatus.IDLE && (
               <div className="max-w-5xl mx-auto animate-in zoom-in-95 duration-500 space-y-6">
-
                 {/* 1. Client Selection (Top Bar) */}
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                   <ClientSelector
@@ -284,7 +315,9 @@ const App: React.FC = () => {
                 </div>
 
                 {/* 2. File Uploaders */}
-                <div className={`bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden transition-all duration-300 ${!selectedClient ? 'opacity-50 grayscale pointer-events-none' : 'opacity-100'}`}>
+                <div
+                  className={`bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden transition-all duration-300 ${!selectedClient ? 'opacity-50 grayscale pointer-events-none' : 'opacity-100'}`}
+                >
                   <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
                     {/* Left: Quotes */}
                     <div className="p-8">
@@ -352,15 +385,20 @@ const App: React.FC = () => {
                 <div className="relative w-24 h-24 mx-auto mb-8">
                   <div className="absolute inset-0 border-4 border-indigo-100 rounded-full"></div>
                   <div className="absolute inset-0 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
-                  <Activity className="absolute inset-0 m-auto text-indigo-600 animate-pulse" size={32} />
+                  <Activity
+                    className="absolute inset-0 m-auto text-indigo-600 animate-pulse"
+                    size={32}
+                  />
                 </div>
 
                 <h3 className="text-2xl font-bold text-slate-800 mb-2">Auditando Clausulados...</h3>
-                <p className="text-slate-500 mb-6">Procesando información de <strong>{selectedClient?.name || 'Cliente'}</strong>.</p>
+                <p className="text-slate-500 mb-6">
+                  Procesando información de <strong>{selectedClient?.name || 'Cliente'}</strong>.
+                </p>
 
                 {/* Status Message */}
                 <div className="mb-4 text-indigo-700 font-medium animate-pulse">
-                  {statusMessage || "Iniciando..."}
+                  {statusMessage || 'Iniciando...'}
                 </div>
 
                 {/* Progress Bar (Indeterminate) */}
@@ -385,8 +423,15 @@ const App: React.FC = () => {
                   <Activity size={32} />
                 </div>
                 <h3 className="text-xl font-bold text-slate-800 mb-2">Error en el análisis</h3>
-                <p className="text-slate-500 mb-6">{errorMessage || "Hubo un problema al procesar los archivos."}</p>
-                <button onClick={handleReset} className="text-indigo-600 font-semibold hover:underline">Intentar de nuevo</button>
+                <p className="text-slate-500 mb-6">
+                  {errorMessage || 'Hubo un problema al procesar los archivos.'}
+                </p>
+                <button
+                  onClick={handleReset}
+                  className="text-indigo-600 font-semibold hover:underline"
+                >
+                  Intentar de nuevo
+                </button>
               </div>
             )}
           </>
@@ -397,21 +442,32 @@ const App: React.FC = () => {
           <AnalysisProvider>
             <div>
               <div className="flex justify-between items-center mb-6">
-                <button onClick={() => setCurrentView('DASHBOARD')} className="text-sm text-slate-500 hover:text-indigo-600 font-medium px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors flex items-center">
+                <button
+                  onClick={() => setCurrentView('DASHBOARD')}
+                  className="text-sm text-slate-500 hover:text-indigo-600 font-medium px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors flex items-center"
+                >
                   <LayoutDashboard size={16} className="mr-2" />
                   Volver al Dashboard
                 </button>
-                <button onClick={handleReset} className="text-sm text-white bg-indigo-600 px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm">
+                <button
+                  onClick={handleReset}
+                  className="text-sm text-white bg-indigo-600 px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+                >
                   Nueva Auditoría
                 </button>
               </div>
-              <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div></div>}>
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                  </div>
+                }
+              >
                 <ComparisonReport report={report} />
               </Suspense>
             </div>
           </AnalysisProvider>
         )}
-
       </main>
 
       {/* Profile Modal */}
@@ -440,7 +496,6 @@ const App: React.FC = () => {
           onClose={() => setChatOpen(false)}
         />
       </Suspense>
-
     </div>
   );
 };

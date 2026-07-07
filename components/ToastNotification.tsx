@@ -78,7 +78,7 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, onClose 
   if (toasts.length === 0) return null;
 
   return (
-    <div 
+    <div
       className="fixed bottom-4 left-4 z-50 flex flex-col gap-2"
       role="region"
       aria-label="Notificaciones"

@@ -48,7 +48,7 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   },
 });
@@ -68,9 +68,11 @@ const upload = multer({
 });
 
 // Validación de campos requeridos
-const validateDocumentFields = (body: Record<string, unknown>): { valid: boolean; error?: string } => {
+const validateDocumentFields = (
+  body: Record<string, unknown>
+): { valid: boolean; error?: string } => {
   const required = ['insurerName', 'documentName', 'documentType'];
-  
+
   for (const field of required) {
     const value = body[field];
     if (!value || typeof value !== 'string' || value.trim() === '') {
@@ -81,7 +83,10 @@ const validateDocumentFields = (body: Record<string, unknown>): { valid: boolean
   const documentType = body.documentType as string;
   const validTypes = ['CLAUSULADO_GENERAL', 'CLAUSULADO_PARTICULAR', 'COTIZACION', 'ANEXO'];
   if (!validTypes.includes(documentType)) {
-    return { valid: false, error: `Invalid documentType. Must be one of: ${validTypes.join(', ')}` };
+    return {
+      valid: false,
+      error: `Invalid documentType. Must be one of: ${validTypes.join(', ')}`,
+    };
   }
 
   const insurerName = body.insurerName as string;
@@ -151,21 +156,25 @@ export const documentController = {
         .eq('insurer_id', insurerId)
         .eq('document_type', documentType)
         .eq('is_active', true);
-      
+
       // Si hay product_name, filtrar por él también
       if (productName) {
         existingQuery = existingQuery.eq('product_name', productName.trim());
       } else {
         existingQuery = existingQuery.is('product_name', null);
       }
-      
-      const { data: existingDocRaw } = await existingQuery.single() as unknown as { data: ExistingDocument | null };
+
+      const { data: existingDocRaw } = (await existingQuery.single()) as unknown as {
+        data: ExistingDocument | null;
+      };
       const existingDoc = existingDocRaw;
 
       let archivedDoc = null;
       if (existingDoc) {
-        console.log(`   📁 Archivando versión anterior: ${existingDoc.document_name} (v${existingDoc.version || 'N/A'})`);
-        
+        console.log(
+          `   📁 Archivando versión anterior: ${existingDoc.document_name} (v${existingDoc.version || 'N/A'})`
+        );
+
         const { error: archiveError } = await supabase
           .from('documents')
           .update({ is_active: false, updated_at: new Date().toISOString() } as never)
@@ -207,13 +216,14 @@ export const documentController = {
         insurerId: result.insurerId,
         stats: result.stats,
         warnings: result.warnings,
-        archivedDocument: archivedDoc ? {
-          id: archivedDoc.id,
-          documentName: archivedDoc.document_name,
-          version: archivedDoc.version,
-        } : null,
+        archivedDocument: archivedDoc
+          ? {
+              id: archivedDoc.id,
+              documentName: archivedDoc.document_name,
+              version: archivedDoc.version,
+            }
+          : null,
       });
-
     } catch (error: unknown) {
       console.error('❌ [documentController] Error:', error);
 
@@ -239,13 +249,14 @@ export const documentController = {
    */
   listDocuments: async (req: Request, res: Response): Promise<void> => {
     console.log('📋 [documentController.listDocuments] Request received');
-    
+
     try {
       const { insurerId, documentType, isActive, latest, limit = '50', offset = '0' } = req.query;
 
       let query = supabase
         .from('documents')
-        .select(`
+        .select(
+          `
           id,
           document_name,
           document_type,
@@ -255,10 +266,14 @@ export const documentController = {
           is_active,
           created_at,
           insurers:insurer_id (id, name)
-        `)
+        `
+        )
         .order('created_at', { ascending: false })
         .limit(parseInt(limit as string))
-        .range(parseInt(offset as string), parseInt(offset as string) + parseInt(limit as string) - 1);
+        .range(
+          parseInt(offset as string),
+          parseInt(offset as string) + parseInt(limit as string) - 1
+        );
 
       // Filtrar por estado activo
       if (isActive === 'true') {
@@ -275,7 +290,7 @@ export const documentController = {
         query = query.eq('document_type', documentType);
       }
 
-      const { data, error, count } = await query as unknown as {
+      const { data, error, count } = (await query) as unknown as {
         data: DocumentListItem[] | null;
         error: unknown;
         count: number | null;
@@ -315,7 +330,6 @@ export const documentController = {
         count: documents.length,
         total: count,
       });
-
     } catch (error: unknown) {
       console.error('❌ [documentController] Error:', error);
       res.status(500).json({
@@ -331,13 +345,14 @@ export const documentController = {
    */
   getDocument: async (req: Request, res: Response): Promise<void> => {
     console.log(`📄 [documentController.getDocument] ID: ${req.params.id}`);
-    
+
     try {
       const { id } = req.params;
 
       const { data, error } = await supabase
         .from('documents')
-        .select(`
+        .select(
+          `
           id,
           document_name,
           document_type,
@@ -348,7 +363,8 @@ export const documentController = {
           created_at,
           updated_at,
           insurers:insurer_id (id, name, nit)
-        `)
+        `
+        )
         .eq('id', id)
         .single();
 
@@ -395,7 +411,6 @@ export const documentController = {
           },
         },
       });
-
     } catch (error: unknown) {
       console.error('❌ [documentController] Error:', error);
       res.status(500).json({
@@ -411,7 +426,7 @@ export const documentController = {
    */
   deleteDocument: async (req: Request, res: Response): Promise<void> => {
     console.log(`🗑️ [documentController.deleteDocument] ID: ${req.params.id}`);
-    
+
     try {
       const id = req.params.id as string;
 
@@ -429,7 +444,6 @@ export const documentController = {
         success: true,
         message: 'Document deleted successfully',
       });
-
     } catch (error: unknown) {
       console.error('❌ [documentController] Error:', error);
       res.status(500).json({
@@ -445,7 +459,7 @@ export const documentController = {
    */
   getDocumentChunks: async (req: Request, res: Response): Promise<void> => {
     console.log(`📦 [documentController.getDocumentChunks] ID: ${req.params.id}`);
-    
+
     try {
       const { id } = req.params;
       const { limit = '50', offset = '0', sectionType, coverageTag } = req.query;
@@ -456,7 +470,10 @@ export const documentController = {
         .eq('document_id', id)
         .order('page_number', { ascending: true })
         .limit(parseInt(limit as string))
-        .range(parseInt(offset as string), parseInt(offset as string) + parseInt(limit as string) - 1);
+        .range(
+          parseInt(offset as string),
+          parseInt(offset as string) + parseInt(limit as string) - 1
+        );
 
       if (sectionType) {
         query = query.eq('section_type', sectionType);
@@ -479,7 +496,6 @@ export const documentController = {
         count: data?.length || 0,
         total: count,
       });
-
     } catch (error: unknown) {
       console.error('❌ [documentController] Error:', error);
       res.status(500).json({

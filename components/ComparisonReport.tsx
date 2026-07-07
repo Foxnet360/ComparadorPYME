@@ -1,10 +1,37 @@
 import React, { useState } from 'react';
 import { ComparisonReport as ReportType } from '../types';
-import { Check, Award, ShieldAlert, BarChart3, AlertTriangle, Scale, FileDown, Layers, FileText, User, Briefcase, BookOpen } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend } from 'recharts';
-import { DISCLAIMER_TEXT} from '../constants';
+import {
+  Check,
+  Award,
+  ShieldAlert,
+  BarChart3,
+  AlertTriangle,
+  Scale,
+  FileDown,
+  Layers,
+  FileText,
+  User,
+  Briefcase,
+  BookOpen,
+} from 'lucide-react';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Legend,
+} from 'recharts';
+import { DISCLAIMER_TEXT } from '../constants';
 import { generatePDF } from '../services/pdfService';
-
 
 import { AuditSection } from './AuditSection';
 import { UnifiedCoverageMatrix } from './UnifiedCoverageMatrix';
@@ -29,34 +56,54 @@ interface ComparisonReportProps {
 }
 
 const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
-  const [activeTab, setActiveTab] = useState<'resumen' | 'coberturas' | 'deducibles' | 'auditoria' | 'analisis-avanzado'>('resumen');
-  
+  const [activeTab, setActiveTab] = useState<
+    'resumen' | 'coberturas' | 'deducibles' | 'auditoria' | 'analisis-avanzado'
+  >('resumen');
+
   // Get cell notes from context
   const { cellNotes } = useCellNotes();
-  
+
   // Check if advanced analysis is enabled via feature flag and any quote has data
-  const hasAdvancedAnalysis = isAdvancedAnalysisEnabled() && report.quotes.some(q => 
-    q.clauseValidation || q.deductibleAnalysis || q.contextualRisk || q.warrantyCompliance || q.legalOpinion
-  );
+  const hasAdvancedAnalysis =
+    isAdvancedAnalysisEnabled() &&
+    report.quotes.some(
+      (q) =>
+        q.clauseValidation ||
+        q.deductibleAnalysis ||
+        q.contextualRisk ||
+        q.warrantyCompliance ||
+        q.legalOpinion
+    );
   const [viewMode, setViewMode] = useState<'client' | 'technical'>('client');
   const [showExportModal, setShowExportModal] = useState(false);
-  const [pdfOptions, setPdfOptions] = useState<{ title: string, logo?: string, color: [number, number, number] }>({
-    title: "Reporte Ejecutivo de Seguros",
-    color: [79, 70, 229]
+  const [pdfOptions, setPdfOptions] = useState<{
+    title: string;
+    logo?: string;
+    color: [number, number, number];
+  }>({
+    title: 'Reporte Ejecutivo de Seguros',
+    color: [79, 70, 229],
   });
 
   if (!report.quotes || report.quotes.length === 0) {
-    return <div className="text-center p-8 text-slate-500">No se encontraron detalles de cotizaciones en el análisis.</div>;
+    return (
+      <div className="text-center p-8 text-slate-500">
+        No se encontraron detalles de cotizaciones en el análisis.
+      </div>
+    );
   }
 
-  const bestQuote = report.quotes.reduce((prev, current) => ((prev.score || 0) > (current.score || 0)) ? prev : current, report.quotes[0]);
+  const bestQuote = report.quotes.reduce(
+    (prev, current) => ((prev.score || 0) > (current.score || 0) ? prev : current),
+    report.quotes[0]
+  );
 
   // IVA toggle state
   const [showIva, setShowIva] = useState(false);
   const IVA_RATE = 0.19;
 
   // Data for Bar Chart (Price)
-  const priceData = report.quotes.map(q => {
+  const priceData = report.quotes.map((q) => {
     const basePrice = q.priceAnnual || (q.priceMonthly ? q.priceMonthly * 12 : 0);
     return {
       name: (q.insurerName || 'Desconocido').substring(0, 15),
@@ -74,9 +121,23 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
     { subject: 'Garantías', fullMark: 10 },
   ].map((dim, i) => {
     const dataPoint: Record<string, string | number> = { subject: dim.subject, fullMark: 10 };
-    report.quotes.forEach(q => {
-      const bd = q.scoringBreakdown || { coverage: 5, deductibles: 5, exclusions: 5, priceRatio: 5, sublimits: 5, warranties: 5 };
-      const values = [bd.coverage, bd.deductibles, bd.exclusions, bd.priceRatio, bd.sublimits, bd.warranties];
+    report.quotes.forEach((q) => {
+      const bd = q.scoringBreakdown || {
+        coverage: 5,
+        deductibles: 5,
+        exclusions: 5,
+        priceRatio: 5,
+        sublimits: 5,
+        warranties: 5,
+      };
+      const values = [
+        bd.coverage,
+        bd.deductibles,
+        bd.exclusions,
+        bd.priceRatio,
+        bd.sublimits,
+        bd.warranties,
+      ];
       dataPoint[q.insurerName] = values[i] || 5;
     });
     return dataPoint;
@@ -87,39 +148,47 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-
       {/* Confidence Banner */}
-      {report.quotes.some(q => q.needsReview) && (
+      {report.quotes.some((q) => q.needsReview) && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
           <AlertTriangle className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
           <div>
             <h3 className="font-semibold text-amber-800">Extracción Requiere Revisión</h3>
             <p className="text-sm text-amber-700 mt-1">
-              Algunas cotizaciones tienen baja confianza de extracción. Se recomienda verificar los datos manualmente.
+              Algunas cotizaciones tienen baja confianza de extracción. Se recomienda verificar los
+              datos manualmente.
             </p>
           </div>
         </div>
       )}
 
       {/* Dual Extraction Discrepancy Alerts */}
-      {report.quotes.some(q => q.dualExtractionValidation?.some(v => v.isDiscrepancy)) && (
+      {report.quotes.some((q) => q.dualExtractionValidation?.some((v) => v.isDiscrepancy)) && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
           <AlertTriangle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
           <div>
-            <h3 className="font-semibold text-red-800">Discrepancias Detectadas en Extracción Dual</h3>
+            <h3 className="font-semibold text-red-800">
+              Discrepancias Detectadas en Extracción Dual
+            </h3>
             <p className="text-sm text-red-700 mt-1">
-              Se detectaron diferencias significativas (&gt;20%) entre las extracciones de coberturas críticas (Incendio y RC). 
-              Por favor verifique los valores manualmente.
+              Se detectaron diferencias significativas (&gt;20%) entre las extracciones de
+              coberturas críticas (Incendio y RC). Por favor verifique los valores manualmente.
             </p>
             <div className="mt-2 space-y-1">
-              {report.quotes.map((q, idx) => 
-                q.dualExtractionValidation?.filter(v => v.isDiscrepancy).map((v, vIdx) => (
-                  <div key={`${idx}-${vIdx}`} className="text-sm text-red-600">
-                    <strong>{q.insurerName}</strong> - {v.coverageName}: {v.discrepancy.toFixed(1)}% de diferencia
-                    <br/>
-                    <span className="text-red-500">Extracción 1: {v.firstExtraction.value} | Extracción 2: {v.secondExtraction.value}</span>
-                  </div>
-                ))
+              {report.quotes.map((q, idx) =>
+                q.dualExtractionValidation
+                  ?.filter((v) => v.isDiscrepancy)
+                  .map((v, vIdx) => (
+                    <div key={`${idx}-${vIdx}`} className="text-sm text-red-600">
+                      <strong>{q.insurerName}</strong> - {v.coverageName}:{' '}
+                      {v.discrepancy.toFixed(1)}% de diferencia
+                      <br />
+                      <span className="text-red-500">
+                        Extracción 1: {v.firstExtraction.value} | Extracción 2:{' '}
+                        {v.secondExtraction.value}
+                      </span>
+                    </div>
+                  ))
               )}
             </div>
           </div>
@@ -131,7 +200,9 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
         <div>
           <h2 className="text-2xl font-bold text-slate-800">Dashboard de Análisis</h2>
           <p className="text-sm text-slate-500">
-            {viewMode === 'client' ? 'Vista simplificada para toma de decisiones.' : 'Vista técnica detallada para auditores.'}
+            {viewMode === 'client'
+              ? 'Vista simplificada para toma de decisiones.'
+              : 'Vista técnica detallada para auditores.'}
           </p>
         </div>
 
@@ -170,12 +241,19 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
           <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-50 p-4 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-slate-800">Personalizar Reporte</h3>
-              <button onClick={() => setShowExportModal(false)} className="text-slate-400 hover:text-slate-600">×</button>
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                ×
+              </button>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Título Personalizado</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">
+                  Título Personalizado
+                </label>
                 <input
                   type="text"
                   className="w-full text-sm border-slate-200 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
@@ -186,7 +264,9 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Logo del Aliado (Opcional)</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">
+                  Logo del Aliado (Opcional)
+                </label>
                 <input
                   type="file"
                   accept="image/*"
@@ -206,13 +286,15 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
 
               {/* Color Picker Simple */}
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Color Principal</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">
+                  Color Principal
+                </label>
                 <div className="flex gap-2">
                   {[
                     { c: '#4f46e5', v: [79, 70, 229] },
                     { c: '#059669', v: [5, 150, 105] },
                     { c: '#dc2626', v: [220, 38, 38] },
-                    { c: '#2563eb', v: [37, 99, 235] }
+                    { c: '#2563eb', v: [37, 99, 235] },
                   ].map((color: { c: string; v: [number, number, number] }, i) => (
                     <button
                       key={i}
@@ -227,11 +309,15 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
               <div className="pt-2">
                 <button
                   onClick={() => {
-                    generatePDF(report, {
-                      customTitle: pdfOptions.title,
-                      logoBase64: pdfOptions.logo,
-                      primaryColor: pdfOptions.color
-                    }, cellNotes);
+                    generatePDF(
+                      report,
+                      {
+                        customTitle: pdfOptions.title,
+                        logoBase64: pdfOptions.logo,
+                        primaryColor: pdfOptions.color,
+                      },
+                      cellNotes
+                    );
                     setShowExportModal(false);
                   }}
                   className="w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors"
@@ -246,21 +332,41 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
 
       {/* Tabs Navigation */}
       <div className="flex overflow-x-auto pb-2 border-b border-slate-200 gap-6">
-        <button onClick={() => setActiveTab('resumen')} className={`flex items-center space-x-2 pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'resumen' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
-          <BarChart3 size={18} /><span>Dashboard Resumen</span>
+        <button
+          onClick={() => setActiveTab('resumen')}
+          className={`flex items-center space-x-2 pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'resumen' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+        >
+          <BarChart3 size={18} />
+          <span>Dashboard Resumen</span>
         </button>
-        <button onClick={() => setActiveTab('coberturas')} className={`flex items-center space-x-2 pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'coberturas' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
-          <Layers size={18} /><span>Matriz de Coberturas</span>
+        <button
+          onClick={() => setActiveTab('coberturas')}
+          className={`flex items-center space-x-2 pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'coberturas' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+        >
+          <Layers size={18} />
+          <span>Matriz de Coberturas</span>
         </button>
-        <button onClick={() => setActiveTab('deducibles')} className={`flex items-center space-x-2 pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'deducibles' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
-          <Scale size={18} /><span>Deducibles</span>
+        <button
+          onClick={() => setActiveTab('deducibles')}
+          className={`flex items-center space-x-2 pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'deducibles' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+        >
+          <Scale size={18} />
+          <span>Deducibles</span>
         </button>
-        <button onClick={() => setActiveTab('auditoria')} className={`flex items-center space-x-2 pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'auditoria' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
-          <ShieldAlert size={18} /><span>Auditoría de Riesgos</span>
+        <button
+          onClick={() => setActiveTab('auditoria')}
+          className={`flex items-center space-x-2 pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'auditoria' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+        >
+          <ShieldAlert size={18} />
+          <span>Auditoría de Riesgos</span>
         </button>
         {hasAdvancedAnalysis && (
-          <button onClick={() => setActiveTab('analisis-avanzado')} className={`flex items-center space-x-2 pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'analisis-avanzado' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
-            <BookOpen size={18} /><span>Análisis Avanzado</span>
+          <button
+            onClick={() => setActiveTab('analisis-avanzado')}
+            className={`flex items-center space-x-2 pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'analisis-avanzado' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+          >
+            <BookOpen size={18} />
+            <span>Análisis Avanzado</span>
           </button>
         )}
       </div>
@@ -268,10 +374,9 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
       {/* --- TAB CONTENT: RESUMEN (DASHBOARD) --- */}
       {activeTab === 'resumen' && (
         <div className="space-y-6 animate-in fade-in duration-300">
-          
           {/* Executive Summary */}
-          <ExecutiveSummary 
-            quotes={report.quotes} 
+          <ExecutiveSummary
+            quotes={report.quotes}
             recommendation={report.recommendation}
             onNavigate={setActiveTab}
           />
@@ -281,91 +386,128 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
             {report.quotes.map((q, idx) => {
               const isBest = q.insurerName === bestQuote.insurerName;
               return (
-                <div key={idx} className={`relative rounded-xl p-6 border transition-all hover:shadow-lg ${isBest ? 'bg-gradient-to-br from-indigo-50 to-white border-indigo-200 shadow-md' : 'bg-white border-slate-200'}`}>
-                  {isBest && <div className="absolute top-0 right-0 bg-indigo-600 text-white text-xs px-2 py-1 rounded-bl-lg rounded-tr-lg font-bold">MEJOR OPCIÓN</div>}
+                <div
+                  key={idx}
+                  className={`relative rounded-xl p-6 border transition-all hover:shadow-lg ${isBest ? 'bg-gradient-to-br from-indigo-50 to-white border-indigo-200 shadow-md' : 'bg-white border-slate-200'}`}
+                >
+                  {isBest && (
+                    <div className="absolute top-0 right-0 bg-indigo-600 text-white text-xs px-2 py-1 rounded-bl-lg rounded-tr-lg font-bold">
+                      MEJOR OPCIÓN
+                    </div>
+                  )}
                   <h3 className="text-lg font-bold text-slate-800 mb-2">{q.insurerName}</h3>
                   <div className="flex items-end gap-2 mb-4">
-                    <span className={`text-4xl font-bold ${isBest ? 'text-indigo-600' : 'text-slate-700'}`}>{q.dataQualityScore || q.score}</span>
+                    <span
+                      className={`text-4xl font-bold ${isBest ? 'text-indigo-600' : 'text-slate-700'}`}
+                    >
+                      {q.dataQualityScore || q.score}
+                    </span>
                     <span className="text-sm text-slate-400 mb-1">/ 100</span>
                   </div>
-                  
+
                   {/* Verification Confidence Badge */}
                   {q.verificationConfidence !== undefined && q.verificationConfidence > 0 && (
                     <div className="mb-3 flex items-center gap-2">
                       <span className="text-xs text-slate-500">Verificación:</span>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                        q.verificationConfidence >= 80 ? 'bg-green-100 text-green-700' : 
-                        q.verificationConfidence >= 50 ? 'bg-yellow-100 text-yellow-700' : 
-                        'bg-red-100 text-red-700'
-                      }`}>
+                      <span
+                        className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                          q.verificationConfidence >= 80
+                            ? 'bg-green-100 text-green-700'
+                            : q.verificationConfidence >= 50
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-red-100 text-red-700'
+                        }`}
+                      >
                         {q.verificationConfidence}/100
                       </span>
                     </div>
                   )}
-                  
+
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-500">Prima Anual</span>
                       <span className="font-bold text-slate-800">{formatCOP(q.priceAnnual)}</span>
                     </div>
                     <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full ${(q.dataQualityScore || q.score) >= 80 ? 'bg-green-500' : (q.dataQualityScore || q.score) >= 60 ? 'bg-yellow-400' : 'bg-red-400'}`} style={{ width: `${q.dataQualityScore || q.score}%` }}></div>
+                      <div
+                        className={`h-full rounded-full ${(q.dataQualityScore || q.score) >= 80 ? 'bg-green-500' : (q.dataQualityScore || q.score) >= 60 ? 'bg-yellow-400' : 'bg-red-400'}`}
+                        style={{ width: `${q.dataQualityScore || q.score}%` }}
+                      ></div>
                     </div>
-                    
+
                     {/* Confidence Indicator */}
                     {q.extractionConfidence !== undefined && (
                       <div className="mt-3 pt-3 border-t border-slate-100">
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs text-slate-500">Confianza de Extracción</span>
-                          <span className={`text-xs font-bold ${
-                            q.extractionConfidence >= 90 ? 'text-green-600' : 
-                            q.extractionConfidence >= 75 ? 'text-yellow-600' : 
-                            q.extractionConfidence >= 50 ? 'text-orange-600' : 'text-red-600'
-                          }`}>
+                          <span
+                            className={`text-xs font-bold ${
+                              q.extractionConfidence >= 90
+                                ? 'text-green-600'
+                                : q.extractionConfidence >= 75
+                                  ? 'text-yellow-600'
+                                  : q.extractionConfidence >= 50
+                                    ? 'text-orange-600'
+                                    : 'text-red-600'
+                            }`}
+                          >
                             {q.extractionConfidence}/100
                             {q.needsReview && <span className="ml-1">⚠️</span>}
                           </span>
                         </div>
                         <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
-                          <div 
+                          <div
                             className={`h-full rounded-full ${
-                              q.extractionConfidence >= 90 ? 'bg-green-500' : 
-                              q.extractionConfidence >= 75 ? 'bg-yellow-400' : 
-                              q.extractionConfidence >= 50 ? 'bg-orange-400' : 'bg-red-400'
-                            }`} 
+                              q.extractionConfidence >= 90
+                                ? 'bg-green-500'
+                                : q.extractionConfidence >= 75
+                                  ? 'bg-yellow-400'
+                                  : q.extractionConfidence >= 50
+                                    ? 'bg-orange-400'
+                                    : 'bg-red-400'
+                            }`}
                             style={{ width: `${q.extractionConfidence}%` }}
                           ></div>
                         </div>
-                        
+
                         {/* Validation Flags */}
-                        {q.validationFlags && q.validationFlags.length > 0 && viewMode === 'technical' && (
-                          <div className="mt-2 space-y-1">
-                            {q.validationFlags.slice(0, 3).map((flag, fidx) => (
-                              <div key={fidx} className={`text-xs px-2 py-1 rounded ${
-                                flag.severity === 'CRITICAL' ? 'bg-red-50 text-red-700' :
-                                flag.severity === 'WARNING' ? 'bg-amber-50 text-amber-700' :
-                                'bg-blue-50 text-blue-700'
-                              }`}>
-                                {flag.message}
-                              </div>
-                            ))}
-                            {q.validationFlags.length > 3 && (
-                              <div className="text-xs text-slate-500">+{q.validationFlags.length - 3} más...</div>
-                            )}
-                          </div>
-                        )}
+                        {q.validationFlags &&
+                          q.validationFlags.length > 0 &&
+                          viewMode === 'technical' && (
+                            <div className="mt-2 space-y-1">
+                              {q.validationFlags.slice(0, 3).map((flag, fidx) => (
+                                <div
+                                  key={fidx}
+                                  className={`text-xs px-2 py-1 rounded ${
+                                    flag.severity === 'CRITICAL'
+                                      ? 'bg-red-50 text-red-700'
+                                      : flag.severity === 'WARNING'
+                                        ? 'bg-amber-50 text-amber-700'
+                                        : 'bg-blue-50 text-blue-700'
+                                  }`}
+                                >
+                                  {flag.message}
+                                </div>
+                              ))}
+                              {q.validationFlags.length > 3 && (
+                                <div className="text-xs text-slate-500">
+                                  +{q.validationFlags.length - 3} más...
+                                </div>
+                              )}
+                            </div>
+                          )}
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Correction UI */}
                   {viewMode === 'technical' && (
-                    <CorrectionUI 
-                      quote={q} 
+                    <CorrectionUI
+                      quote={q}
                       onCorrection={(correction) => {
                         console.log('Correction submitted:', {
                           insurer: q.insurerName,
-                          ...correction
+                          ...correction,
                         });
                         // TODO: Send to learning engine API
                         alert(`Corrección guardada para ${q.insurerName}: ${correction.field}`);
@@ -385,7 +527,9 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
                 Análisis Cualitativo (Radar)
               </h3>
               <div className="h-[300px] w-full min-h-[300px]" style={{ minWidth: '300px' }}>
-                {activeTab === 'resumen' && report.quotes.length > 0 && radarData.some(d => Object.keys(d).length > 2) ? (
+                {activeTab === 'resumen' &&
+                report.quotes.length > 0 &&
+                radarData.some((d) => Object.keys(d).length > 2) ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                       <PolarGrid stroke="#e2e8f0" />
@@ -403,7 +547,11 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
                       ))}
                       <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
                       <Tooltip
-                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        contentStyle={{
+                          borderRadius: '8px',
+                          border: 'none',
+                          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                        }}
                       />
                     </RadarChart>
                   </ResponsiveContainer>
@@ -425,22 +573,31 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
                 <button
                   onClick={() => setShowIva(!showIva)}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    showIva 
-                      ? 'bg-indigo-100 text-indigo-700 border border-indigo-300' 
+                    showIva
+                      ? 'bg-indigo-100 text-indigo-700 border border-indigo-300'
                       : 'bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200'
                   }`}
                   title={showIva ? 'Mostrar sin IVA' : 'Mostrar con IVA (19%)'}
                 >
                   <span>{showIva ? 'Con IVA (19%)' : 'Sin IVA'}</span>
-                  <span className={`w-2 h-2 rounded-full ${showIva ? 'bg-indigo-500' : 'bg-slate-400'}`} />
+                  <span
+                    className={`w-2 h-2 rounded-full ${showIva ? 'bg-indigo-500' : 'bg-slate-400'}`}
+                  />
                 </button>
               </div>
               <div className="h-[300px] w-full mt-4 min-h-[300px]" style={{ minWidth: '300px' }}>
-                {activeTab === 'resumen' && priceData.length > 0 && priceData.some(d => d.fullPrice > 0) ? (
+                {activeTab === 'resumen' &&
+                priceData.length > 0 &&
+                priceData.some((d) => d.fullPrice > 0) ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={priceData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fill: '#64748b', fontSize: 12 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
                       <YAxis
                         tick={{ fill: '#64748b', fontSize: 12 }}
                         axisLine={false}
@@ -449,12 +606,24 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
                       />
                       <Tooltip
                         cursor={{ fill: '#f8fafc' }}
-                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                        contentStyle={{
+                          borderRadius: '8px',
+                          border: 'none',
+                          boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                        }}
                         formatter={(value: number) => [formatCOP(value), 'Prima Anual']}
                       />
-                      <Bar dataKey="fullPrice" name="Precio Anual" radius={[4, 4, 0, 0]} barSize={40}>
+                      <Bar
+                        dataKey="fullPrice"
+                        name="Precio Anual"
+                        radius={[4, 4, 0, 0]}
+                        barSize={40}
+                      >
                         {priceData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={CHART_COLORS[index % CHART_COLORS.length]}
+                          />
                         ))}
                       </Bar>
                     </BarChart>
@@ -481,8 +650,8 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
       {/* --- TAB CONTENT: COBERTURAS --- */}
       {activeTab === 'coberturas' && (
         <div className="animate-in fade-in duration-300">
-          <UnifiedCoverageMatrix 
-            quotes={report.quotes} 
+          <UnifiedCoverageMatrix
+            quotes={report.quotes}
             viewMode={viewMode}
             analysisId={report.id}
           />
@@ -494,7 +663,7 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
         <div className="animate-in fade-in duration-300 space-y-6">
           {/* Deductible Matrix - Structured Comparison */}
           <DeductibleMatrix quotes={report.quotes} />
-          
+
           {/* Texto Completo de Deducibles - Colapsable */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
             <div className="flex items-center mb-4 pb-3 border-b border-slate-100">
@@ -505,7 +674,7 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
               {report.quotes.map((quote, idx) => (
                 <CollapsibleText key={idx} title={`${quote.insurerName} - Texto Original`}>
                   <div className="prose prose-sm text-slate-600 whitespace-pre-line leading-7 bg-slate-50 p-4 rounded-lg">
-                    {quote.deductibles || "No detallado."}
+                    {quote.deductibles || 'No detallado.'}
                   </div>
                 </CollapsibleText>
               ))}
@@ -515,81 +684,95 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
       )}
 
       {/* --- TAB CONTENT: AUDITORIA (ALERTS) --- */}
-      {activeTab === 'auditoria' && (
-        <AuditSection quotes={report.quotes} viewMode={viewMode} />
-      )}
+      {activeTab === 'auditoria' && <AuditSection quotes={report.quotes} viewMode={viewMode} />}
 
       {/* --- TAB CONTENT: ANÁLISIS AVANZADO --- */}
       {activeTab === 'analisis-avanzado' && hasAdvancedAnalysis && (
         <div className="space-y-6 animate-in fade-in duration-300">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Coverage Validation */}
-            {report.quotes.some(q => q.clauseValidation) && (
+            {report.quotes.some((q) => q.clauseValidation) && (
               <div className="bg-white rounded-xl border border-slate-200 p-6">
                 <h3 className="text-lg font-bold text-slate-800 mb-4">Validación de Coberturas</h3>
-                {report.quotes.filter(q => q.clauseValidation).map((quote, idx) => (
-                  <CoverageValidationMatrix key={idx} quote={quote} />
-                ))}
+                {report.quotes
+                  .filter((q) => q.clauseValidation)
+                  .map((quote, idx) => (
+                    <CoverageValidationMatrix key={idx} quote={quote} />
+                  ))}
               </div>
             )}
-            
+
             {/* Deductible Risk */}
-            {report.quotes.some(q => q.deductibleAnalysis) && (
+            {report.quotes.some((q) => q.deductibleAnalysis) && (
               <div className="bg-white rounded-xl border border-slate-200 p-6">
                 <h3 className="text-lg font-bold text-slate-800 mb-4">Riesgo de Deducibles</h3>
-                {report.quotes.filter(q => q.deductibleAnalysis).map((quote, idx) => (
-                  <DeductibleRiskGauge key={idx} quote={quote} />
-                ))}
+                {report.quotes
+                  .filter((q) => q.deductibleAnalysis)
+                  .map((quote, idx) => (
+                    <DeductibleRiskGauge key={idx} quote={quote} />
+                  ))}
               </div>
             )}
-            
+
             {/* Contextual Risk */}
-            {report.quotes.some(q => q.contextualRisk) && (
+            {report.quotes.some((q) => q.contextualRisk) && (
               <div className="bg-white rounded-xl border border-slate-200 p-6">
                 <h3 className="text-lg font-bold text-slate-800 mb-4">Riesgo Contextualizado</h3>
-                {report.quotes.filter(q => q.contextualRisk).map((quote, idx) => (
-                  <ContextualExclusionCard key={idx} quote={quote} />
-                ))}
+                {report.quotes
+                  .filter((q) => q.contextualRisk)
+                  .map((quote, idx) => (
+                    <ContextualExclusionCard key={idx} quote={quote} />
+                  ))}
               </div>
             )}
-            
+
             {/* Warranty Compliance */}
-            {report.quotes.some(q => q.warrantyCompliance) && (
+            {report.quotes.some((q) => q.warrantyCompliance) && (
               <div className="bg-white rounded-xl border border-slate-200 p-6">
                 <h3 className="text-lg font-bold text-slate-800 mb-4">Cumplimiento de Garantías</h3>
-                {report.quotes.filter(q => q.warrantyCompliance).map((quote, idx) => (
-                  <WarrantyComplianceDashboard key={idx} quote={quote} />
-                ))}
+                {report.quotes
+                  .filter((q) => q.warrantyCompliance)
+                  .map((quote, idx) => (
+                    <WarrantyComplianceDashboard key={idx} quote={quote} />
+                  ))}
               </div>
             )}
-            
+
             {/* Legal Opinion */}
-            {report.quotes.some(q => q.legalOpinion) && (
+            {report.quotes.some((q) => q.legalOpinion) && (
               <div className="bg-white rounded-xl border border-slate-200 p-6">
                 <h3 className="text-lg font-bold text-slate-800 mb-4">Asesoría Legal</h3>
-                {report.quotes.filter(q => q.legalOpinion).map((quote, idx) => (
-                  <LegalOpinionCard key={idx} quote={quote} />
-                ))}
+                {report.quotes
+                  .filter((q) => q.legalOpinion)
+                  .map((quote, idx) => (
+                    <LegalOpinionCard key={idx} quote={quote} />
+                  ))}
               </div>
             )}
-            
+
             {/* Inverse Coverage */}
-            {report.quotes.some(q => q.clauseValidation?.mandatoryMissingCount > 0) && (
+            {report.quotes.some((q) => q.clauseValidation?.mandatoryMissingCount > 0) && (
               <div className="bg-white rounded-xl border border-slate-200 p-6">
                 <h3 className="text-lg font-bold text-slate-800 mb-4">Coberturas Omitidas</h3>
-                {report.quotes.filter(q => q.clauseValidation?.mandatoryMissingCount > 0).map((quote, idx) => (
-                  <InverseCoverageAlert key={idx} quote={quote} />
-                ))}
+                {report.quotes
+                  .filter((q) => q.clauseValidation?.mandatoryMissingCount > 0)
+                  .map((quote, idx) => (
+                    <InverseCoverageAlert key={idx} quote={quote} />
+                  ))}
               </div>
             )}
-            
+
             {/* Negotiation Points */}
-            {report.quotes.some(q => q.legalOpinion?.some(lo => lo.negotiationPoints.length > 0)) && (
+            {report.quotes.some((q) =>
+              q.legalOpinion?.some((lo) => lo.negotiationPoints.length > 0)
+            ) && (
               <div className="bg-white rounded-xl border border-slate-200 p-6">
                 <h3 className="text-lg font-bold text-slate-800 mb-4">Puntos de Negociación</h3>
-                {report.quotes.filter(q => q.legalOpinion?.some(lo => lo.negotiationPoints.length > 0)).map((quote, idx) => (
-                  <NegotiationPointsList key={idx} quote={quote} />
-                ))}
+                {report.quotes
+                  .filter((q) => q.legalOpinion?.some((lo) => lo.negotiationPoints.length > 0))
+                  .map((quote, idx) => (
+                    <NegotiationPointsList key={idx} quote={quote} />
+                  ))}
               </div>
             )}
           </div>
@@ -602,7 +785,6 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
           {DISCLAIMER_TEXT}
         </p>
       </div>
-
     </div>
   );
 };

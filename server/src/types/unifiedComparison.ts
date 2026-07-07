@@ -86,7 +86,14 @@ export interface DeductibleStructure {
   maximum?: number;
   fixedAmount?: number;
   currency: string; // 'COP', 'SMMLV', 'UVT'
-  type: 'percentage' | 'fixed' | 'percentage_with_minimum' | 'percentage_with_maximum' | 'compound' | 'na' | 'unknown';
+  type:
+    | 'percentage'
+    | 'fixed'
+    | 'percentage_with_minimum'
+    | 'percentage_with_maximum'
+    | 'compound'
+    | 'na'
+    | 'unknown';
   rawText: string;
 }
 

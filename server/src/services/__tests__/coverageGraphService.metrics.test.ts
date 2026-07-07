@@ -9,7 +9,11 @@ import {
 
 vi.mock('../vector/embeddingService', () => ({
   embeddingService: {
-    generateEmbedding: vi.fn(async (_text: string) => Array(3072).fill(0).map((_, i) => i / 3072)),
+    generateEmbedding: vi.fn(async (_text: string) =>
+      Array(3072)
+        .fill(0)
+        .map((_, i) => i / 3072)
+    ),
     cosineSimilarity: vi.fn(() => 1.0),
   },
 }));
@@ -56,9 +60,12 @@ function makeFakeDb(initialEdges: FakeEdge[] = []): FakeDb {
     from: vi.fn((table: string) => {
       if (table !== 'coverage_graph_edges') {
         return {
-          select: vi.fn(() => ({
-            eq: vi.fn(() => Promise.resolve({ data: [], error: null })),
-          } as unknown as FakeFilterBuilder)),
+          select: vi.fn(
+            () =>
+              ({
+                eq: vi.fn(() => Promise.resolve({ data: [], error: null })),
+              }) as unknown as FakeFilterBuilder
+          ),
           upsert: vi.fn(() => Promise.resolve({ data: null, error: null })),
           delete: vi.fn(() => {
             const delChain: FakeDeleteBuilder = {

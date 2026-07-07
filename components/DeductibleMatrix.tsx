@@ -9,35 +9,39 @@ interface DeductibleMatrixProps {
 }
 
 // Helper to parse deductible value for display
-const parseDeductible = (deductible: string): { 
-  percentage: number | null; 
-  minimum: number | null; 
-  appliesTo: 'perdida' | 'valor' | null; 
-  rawText: string; 
-  isHigh: boolean; 
-  isUnspecified: boolean; 
+const parseDeductible = (
+  deductible: string
+): {
+  percentage: number | null;
+  minimum: number | null;
+  appliesTo: 'perdida' | 'valor' | null;
+  rawText: string;
+  isHigh: boolean;
+  isUnspecified: boolean;
 } => {
   if (!deductible || deductible === 'No aplica' || deductible === 'NO ESPECIFICADO') {
-    return { 
-      percentage: null, 
-      minimum: null, 
-      appliesTo: null, 
-      rawText: deductible || 'N/A', 
-      isHigh: false, 
-      isUnspecified: !deductible || deductible === 'NO ESPECIFICADO' 
+    return {
+      percentage: null,
+      minimum: null,
+      appliesTo: null,
+      rawText: deductible || 'N/A',
+      isHigh: false,
+      isUnspecified: !deductible || deductible === 'NO ESPECIFICADO',
     };
   }
-  
+
   const lower = deductible.toLowerCase();
-  
+
   // Extract percentage (handle both dot and comma as decimal separator)
   const percentMatch = deductible.match(/(\d+(?:[.,]\d+)?)\s*%/);
   const percentage = percentMatch ? parseFloat(percentMatch[1].replace(',', '.')) : null;
-  
+
   // Extract minimum (SMMLV or values)
-  const minMatch = deductible.match(/(?:m[ií]n\.?|mínimo)\s*:?\s*(\d+(?:\.\d+)?)\s*(?:SMMLV|salarios?)/i);
+  const minMatch = deductible.match(
+    /(?:m[ií]n\.?|mínimo)\s*:?\s*(\d+(?:\.\d+)?)\s*(?:SMMLV|salarios?)/i
+  );
   const minimum = minMatch ? parseFloat(minMatch[1]) : null;
-  
+
   // Base of application
   let appliesTo: 'perdida' | 'valor' | null = null;
   if (lower.includes('valor') || lower.includes('suma')) {
@@ -45,14 +49,14 @@ const parseDeductible = (deductible: string): {
   } else if (lower.includes('perdida') || lower.includes('siniestro')) {
     appliesTo = 'perdida';
   }
-  
+
   return {
     percentage,
     minimum,
     appliesTo,
     rawText: deductible,
     isHigh: percentage ? percentage > 10 : false,
-    isUnspecified: false
+    isUnspecified: false,
   };
 };
 
@@ -67,15 +71,15 @@ export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes }) =>
   // Calculate best/worst deductible per coverage
   const getDeductibleRanking = (categoryName: string) => {
     const deductibleScores = quotes.map((quote, idx) => {
-      const coverage = quote.coverages?.find(c => 
-        c.canonicalName === categoryName || c.name === categoryName
+      const coverage = quote.coverages?.find(
+        (c) => c.canonicalName === categoryName || c.name === categoryName
       );
-      
+
       if (!coverage || !coverage.deductible) return { idx, score: -1, deductible: 'N/A' };
-      
+
       const parsed = parseDeductible(coverage.deductible);
       let score = 50; // Default
-      
+
       if (parsed.isUnspecified) score = 0;
       else if (parsed.percentage !== null) {
         // Base score depends on percentage: lower percentage is better
@@ -89,16 +93,16 @@ export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes }) =>
       } else {
         score = parsed.isHigh ? 30 : 60;
       }
-      
+
       return { idx, score, deductible: coverage.deductible };
     });
-    
-    const validScores = deductibleScores.filter(d => d.score >= 0);
+
+    const validScores = deductibleScores.filter((d) => d.score >= 0);
     if (validScores.length === 0) return { best: null, worst: null };
-    
-    const best = validScores.reduce((prev, curr) => curr.score > prev.score ? curr : prev);
-    const worst = validScores.reduce((prev, curr) => curr.score < prev.score ? curr : prev);
-    
+
+    const best = validScores.reduce((prev, curr) => (curr.score > prev.score ? curr : prev));
+    const worst = validScores.reduce((prev, curr) => (curr.score < prev.score ? curr : prev));
+
     return { best, worst };
   };
 
@@ -117,21 +121,34 @@ export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes }) =>
               <span className="font-semibold text-green-700">Mejor Opción</span>
             </div>
             <p className="text-sm text-slate-600 font-medium">
-              {quotes.length > 0 ? quotes.reduce((prev, curr) => {
-                const prevScore = prev.coverages?.filter(c => c.deductible && c.deductible !== 'NO ESPECIFICADO').length || 0;
-                const currScore = curr.coverages?.filter(c => c.deductible && c.deductible !== 'NO ESPECIFICADO').length || 0;
-                return currScore > prevScore ? curr : prev;
-              }).insurerName : 'N/A'}
+              {quotes.length > 0
+                ? quotes.reduce((prev, curr) => {
+                    const prevScore =
+                      prev.coverages?.filter(
+                        (c) => c.deductible && c.deductible !== 'NO ESPECIFICADO'
+                      ).length || 0;
+                    const currScore =
+                      curr.coverages?.filter(
+                        (c) => c.deductible && c.deductible !== 'NO ESPECIFICADO'
+                      ).length || 0;
+                    return currScore > prevScore ? curr : prev;
+                  }).insurerName
+                : 'N/A'}
             </p>
           </div>
-          
+
           <div className="bg-white rounded-lg p-4 border border-red-200">
             <div className="flex items-center gap-2 mb-2">
               <AlertTriangle className="text-red-600" size={16} />
               <span className="font-semibold text-red-700">Requiere Atención</span>
             </div>
             <p className="text-sm text-slate-600 font-medium">
-              {quotes.filter(q => q.coverages?.some(c => !c.deductible || c.deductible === 'NO ESPECIFICADO')).length} aseguradoras con deducibles no especificados
+              {
+                quotes.filter((q) =>
+                  q.coverages?.some((c) => !c.deductible || c.deductible === 'NO ESPECIFICADO')
+                ).length
+              }{' '}
+              aseguradoras con deducibles no especificados
             </p>
           </div>
         </div>
@@ -160,29 +177,36 @@ export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes }) =>
             <tbody className="divide-y divide-slate-100">
               {PLANTILLA_ITEMS.map((categoryName, idx) => {
                 const ranking = getDeductibleRanking(categoryName);
-                
+
                 return (
                   <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
                     <td className="px-4 py-3 font-semibold text-slate-700 sticky left-0 bg-white border-r border-slate-100 z-10">
                       {categoryName}
                     </td>
-                    
+
                     {quotes.map((quote, qIdx) => {
-                      const coverage = quote.coverages?.find(c => 
-                        c.canonicalName === categoryName || c.name === categoryName
+                      const coverage = quote.coverages?.find(
+                        (c) => c.canonicalName === categoryName || c.name === categoryName
                       );
-                      
-                      const parsed = coverage?.deductible ? parseDeductible(coverage.deductible) : null;
+
+                      const parsed = coverage?.deductible
+                        ? parseDeductible(coverage.deductible)
+                        : null;
                       const isBest = ranking.best?.idx === qIdx;
-                      
+
                       return (
-                        <td key={qIdx} className={`px-4 py-4 text-center transition-colors ${isBest ? 'bg-green-50/40' : ''} border-r border-slate-100`}>
+                        <td
+                          key={qIdx}
+                          className={`px-4 py-4 text-center transition-colors ${isBest ? 'bg-green-50/40' : ''} border-r border-slate-100`}
+                        >
                           {coverage ? (
                             <div className="flex flex-col items-center justify-center space-y-2">
                               {/* Percentage and Minimum */}
                               {parsed && parsed.percentage !== null ? (
                                 <div className="flex flex-col items-center">
-                                  <span className={`text-base font-extrabold ${parsed.isHigh ? 'text-amber-600' : 'text-slate-800'}`}>
+                                  <span
+                                    className={`text-base font-extrabold ${parsed.isHigh ? 'text-amber-600' : 'text-slate-800'}`}
+                                  >
                                     {parsed.percentage}%
                                   </span>
                                   {parsed.minimum !== null && (
@@ -192,21 +216,29 @@ export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes }) =>
                                   )}
                                 </div>
                               ) : (
-                                <div className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
-                                  parsed ? getDeductibleColor(parsed.isHigh, parsed.isUnspecified) : 'bg-gray-100 text-slate-600 border-gray-200'
-                                }`}>
+                                <div
+                                  className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
+                                    parsed
+                                      ? getDeductibleColor(parsed.isHigh, parsed.isUnspecified)
+                                      : 'bg-gray-100 text-slate-600 border-gray-200'
+                                  }`}
+                                >
                                   {parsed?.rawText || 'N/A'}
                                 </div>
                               )}
 
                               {/* Base of Application Badge */}
                               {parsed && parsed.appliesTo && (
-                                <div className={`text-[10px] px-1.5 py-0.5 rounded font-semibold border ${
-                                  parsed.appliesTo === 'perdida'
-                                    ? 'bg-green-50 text-green-700 border-green-200'
-                                    : 'bg-rose-50 text-rose-700 border-rose-200'
-                                }`}>
-                                  {parsed.appliesTo === 'perdida' ? 'Sobre Pérdida' : 'Sobre Valor As.'}
+                                <div
+                                  className={`text-[10px] px-1.5 py-0.5 rounded font-semibold border ${
+                                    parsed.appliesTo === 'perdida'
+                                      ? 'bg-green-50 text-green-700 border-green-200'
+                                      : 'bg-rose-50 text-rose-700 border-rose-200'
+                                  }`}
+                                >
+                                  {parsed.appliesTo === 'perdida'
+                                    ? 'Sobre Pérdida'
+                                    : 'Sobre Valor As.'}
                                 </div>
                               )}
 
@@ -219,13 +251,17 @@ export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes }) =>
                               )}
 
                               {/* Sum Insured detail */}
-                              {coverage.value && coverage.value !== 'NO ESPECIFICADO' && coverage.value !== 'No aplica' && (
-                                <div className="text-[10px] text-slate-400 font-medium">
-                                  SA: {typeof coverage.value === 'string' && /^\d+$/.test(coverage.value) 
-                                    ? formatCOP(parseFloat(coverage.value)) 
-                                    : coverage.value}
-                                </div>
-                              )}
+                              {coverage.value &&
+                                coverage.value !== 'NO ESPECIFICADO' &&
+                                coverage.value !== 'No aplica' && (
+                                  <div className="text-[10px] text-slate-400 font-medium">
+                                    SA:{' '}
+                                    {typeof coverage.value === 'string' &&
+                                    /^\d+$/.test(coverage.value)
+                                      ? formatCOP(parseFloat(coverage.value))
+                                      : coverage.value}
+                                  </div>
+                                )}
 
                               {/* Sublimit detail */}
                               {coverage.sublimit && coverage.sublimit !== 'NO ESPECIFICADO' && (
@@ -240,7 +276,7 @@ export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes }) =>
                         </td>
                       );
                     })}
-                    
+
                     <td className="px-4 py-3 text-center bg-amber-50/30">
                       {ranking.best ? (
                         <div className="text-xs font-semibold text-green-700">

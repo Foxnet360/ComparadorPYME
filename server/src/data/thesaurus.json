@@ -29,12 +29,7 @@
         "pérdida por fuego",
         "explosión gas"
       ],
-      "exclusiones_comunes": [
-        "guerra",
-        "terrorismo",
-        "deterioro gradual",
-        "oxidación"
-      ],
+      "exclusiones_comunes": ["guerra", "terrorismo", "deterioro gradual", "oxidación"],
       "deducibles_tipicos": {
         "porcentaje": [5, 10, 15],
         "minimo_smmlv": [1, 2, 3]
@@ -56,10 +51,7 @@
         "interrupción negocio",
         "cobertura lucro"
       ],
-      "alertas_criticas": [
-        "no incluye lucro cesante",
-        "excluido lucro cesante"
-      ]
+      "alertas_criticas": ["no incluye lucro cesante", "excluido lucro cesante"]
     },
     "Sustracción / Hurto": {
       "id": "sustraccion_hurto",
@@ -86,7 +78,12 @@
       ],
       "tipos": {
         "hurto_simple": ["hurto simple", "robo simple", "sustracción"],
-        "hurto_calificado": ["hurto calificado", "robo con violencia", "robo a mano armada", "atraco"],
+        "hurto_calificado": [
+          "hurto calificado",
+          "robo con violencia",
+          "robo a mano armada",
+          "atraco"
+        ],
         "amit": ["amit", "all risk", "daños materiales integrales"]
       }
     },
@@ -109,11 +106,7 @@
         "equipos de cómputo",
         "servidores"
       ],
-      "alertas_criticas": [
-        "sublímite equipos",
-        "tope electrónica",
-        "límite equipos de cómputo"
-      ]
+      "alertas_criticas": ["sublímite equipos", "tope electrónica", "límite equipos de cómputo"]
     },
     "Rotura de Maquinaria": {
       "id": "rotura_maquinaria",
@@ -149,10 +142,7 @@
         "cobertura RC",
         "responsabilidad patronal"
       ],
-      "alertas_destacadas": [
-        "sin deducible RC",
-        "deducible 0% RC"
-      ]
+      "alertas_destacadas": ["sin deducible RC", "deducible 0% RC"]
     },
     "Vidrios Planos": {
       "id": "vidrios_planos",
@@ -164,12 +154,7 @@
         "escaparates",
         "vitrinas"
       ],
-      "terminos_busqueda": [
-        "vidrios planos",
-        "cristales rotos",
-        "rotura vidrios",
-        "daño cristales"
-      ]
+      "terminos_busqueda": ["vidrios planos", "cristales rotos", "rotura vidrios", "daño cristales"]
     },
     "Manejo Global / Infidelidad": {
       "id": "manejo_global_infidelidad",
@@ -217,11 +202,7 @@
         "cash in transit",
         "fondos en movimiento"
       ],
-      "terminos_busqueda": [
-        "transporte valores",
-        "dinero tránsito",
-        "valores en movimiento"
-      ]
+      "terminos_busqueda": ["transporte valores", "dinero tránsito", "valores en movimiento"]
     },
     "Asistencia PYME": {
       "id": "asistencia_pyme",
@@ -233,11 +214,7 @@
         "servicios de asistencia",
         "emergencias"
       ],
-      "terminos_busqueda": [
-        "asistencia PYME",
-        "servicios asistencia",
-        "asistencia emergencias"
-      ]
+      "terminos_busqueda": ["asistencia PYME", "servicios asistencia", "asistencia emergencias"]
     },
     "Asistencia Legal": {
       "id": "asistencia_legal",
@@ -249,12 +226,7 @@
         "consultoría legal",
         "legal assistance"
       ],
-      "terminos_busqueda": [
-        "asistencia legal",
-        "defensa judicial",
-        "servicios legales",
-        "abogado"
-      ]
+      "terminos_busqueda": ["asistencia legal", "defensa judicial", "servicios legales", "abogado"]
     },
     "Huelga, Motín, Asonada (HMACC)": {
       "id": "huelga_motin_asonada",
@@ -275,11 +247,7 @@
         "daños tumulto",
         "vandalismo"
       ],
-      "alertas_criticas": [
-        "excluye HMACC",
-        "no cubre huelga",
-        "excluye motín"
-      ]
+      "alertas_criticas": ["excluye HMACC", "no cubre huelga", "excluye motín"]
     },
     "Terremoto y Eventos Catastróficos": {
       "id": "terremoto_catastrofico",
@@ -338,9 +306,7 @@
         }
       },
       "uvt": {
-        "patrones": [
-          "([0-9]+(?:\\.[0-9]+)?)\\s*UVT"
-        ],
+        "patrones": ["([0-9]+(?:\\.[0-9]+)?)\\s*UVT"],
         "valor_2024": 42412,
         "ejemplo": "100 UVT",
         "rango_tipico": {
@@ -349,10 +315,7 @@
         }
       },
       "pesos": {
-        "patrones": [
-          "\\$?([0-9.,]+)\\s*(?:COP|pesos)?",
-          "([0-9.,]+)\\s*(?:millones|millon)"
-        ],
+        "patrones": ["\\$?([0-9.,]+)\\s*(?:COP|pesos)?", "([0-9.,]+)\\s*(?:millones|millon)"],
         "ejemplo": "$2.000.000"
       }
     },
@@ -381,13 +344,7 @@
         "descripcion": "El deducible se aplica solo sobre la pérdida real. Es más favorable al asegurado."
       },
       "minimo": {
-        "terminos": [
-          "mínimo",
-          "mínimo de",
-          "no menor a",
-          "mínimo aplicable",
-          "con un mínimo"
-        ],
+        "terminos": ["mínimo", "mínimo de", "no menor a", "mínimo aplicable", "con un mínimo"],
         "descripcion": "Indica que hay un monto mínimo de deducible independientemente del porcentaje."
       }
     }

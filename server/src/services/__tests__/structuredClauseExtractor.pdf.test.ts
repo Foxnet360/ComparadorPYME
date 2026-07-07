@@ -15,13 +15,11 @@ const PDF_PATHS = {
     path.join(EJEMPLOS_DIR, 'laser-home/Clausulados/Clausulado - MAPFRE.pdf'),
     path.join(EJEMPLOS_DIR, 'Pachito-el-chef/CLAUSULADOS/CLAUSULADO MAPFRE.pdf'),
   ],
-  BBVA: [
-    path.join(EJEMPLOS_DIR, 'laser-home/Clausulados/Clausulado - BBVA.pdf'),
-  ],
+  BBVA: [path.join(EJEMPLOS_DIR, 'laser-home/Clausulados/Clausulado - BBVA.pdf')],
   AXA: [
     path.join(EJEMPLOS_DIR, 'laser-home/Clausulados/Clausulado - AXA Colpatria.pdf'),
     path.join(EJEMPLOS_DIR, 'Alico/CLAUSULADOS/CLAUSULADO PYME AXA COLPATRIA.pdf'),
-  ]
+  ],
 };
 
 // Helper to check if file exists
@@ -45,39 +43,41 @@ vi.mock('@google/genai', () => ({
   GoogleGenAI: vi.fn(function () {
     return {
       models: {
-        generateContent: vi.fn(() => Promise.resolve({
-          text: JSON.stringify({
-            coverages: [
-              {
-                name: 'AMPARO BASICO',
-                description: 'Cobertura todo riesgo de daño material',
-                insuredAmount: '$500,000,000',
-                deductible: {
-                  components: [
-                    { type: 'percentage', value: 10 },
-                    { type: 'minimum', value: 5, currency: 'SMMLV' }
-                  ],
-                  rawText: '10% con mínimo de 5 SMMLV'
+        generateContent: vi.fn(() =>
+          Promise.resolve({
+            text: JSON.stringify({
+              coverages: [
+                {
+                  name: 'AMPARO BASICO',
+                  description: 'Cobertura todo riesgo de daño material',
+                  insuredAmount: '$500,000,000',
+                  deductible: {
+                    components: [
+                      { type: 'percentage', value: 10 },
+                      { type: 'minimum', value: 5, currency: 'SMMLV' },
+                    ],
+                    rawText: '10% con mínimo de 5 SMMLV',
+                  },
+                  exclusions: ['Guerra', 'Terrorismo'],
+                  conditions: ['Mantenimiento preventivo'],
+                  sourcePage: 1,
                 },
-                exclusions: ['Guerra', 'Terrorismo'],
-                conditions: ['Mantenimiento preventivo'],
-                sourcePage: 1
-              }
-            ],
-            generalExclusions: ['Actos dolosos'],
-            generalConditions: ['Pago de prima'],
-            definitions: { SMMLV: 'Salario Mínimo Mensual Legal Vigente' }
+              ],
+              generalExclusions: ['Actos dolosos'],
+              generalConditions: ['Pago de prima'],
+              definitions: { SMMLV: 'Salario Mínimo Mensual Legal Vigente' },
+            }),
           })
-        }))
-      }
+        ),
+      },
     };
-  })
+  }),
 }));
 
 describe('Structured Clause Extraction - Real PDFs', () => {
   describe('CHUBB', () => {
     const chubbPdf = PDF_PATHS.CHUBB.find(fileExists);
-    
+
     it('should find CHUBB clause PDF', () => {
       expect(chubbPdf).toBeDefined();
       if (chubbPdf) {
@@ -124,7 +124,7 @@ describe('Structured Clause Extraction - Real PDFs', () => {
 
   describe('MAPFRE', () => {
     const mapfrePdf = PDF_PATHS.MAPFRE.find(fileExists);
-    
+
     it('should find MAPFRE clause PDF', () => {
       expect(mapfrePdf).toBeDefined();
       if (mapfrePdf) {
@@ -167,7 +167,7 @@ describe('Structured Clause Extraction - Real PDFs', () => {
 
   describe('BBVA', () => {
     const bbvaPdf = PDF_PATHS.BBVA.find(fileExists);
-    
+
     it('should find BBVA clause PDF', () => {
       expect(bbvaPdf).toBeDefined();
       if (bbvaPdf) {
@@ -196,11 +196,7 @@ describe('Structured Clause Extraction - Real PDFs', () => {
         Sin deducible.
       `;
 
-      const extracted = await structuredClauseExtractor.extractFromText(
-        sampleText,
-        'BBVA',
-        'PYME'
-      );
+      const extracted = await structuredClauseExtractor.extractFromText(sampleText, 'BBVA', 'PYME');
 
       expect(extracted).toBeDefined();
       expect(extracted.insurer).toBe('BBVA');
@@ -210,7 +206,7 @@ describe('Structured Clause Extraction - Real PDFs', () => {
 
   describe('AXA', () => {
     const axaPdf = PDF_PATHS.AXA.find(fileExists);
-    
+
     it('should find AXA clause PDF', () => {
       expect(axaPdf).toBeDefined();
       if (axaPdf) {
@@ -243,11 +239,7 @@ describe('Structured Clause Extraction - Real PDFs', () => {
         Sin deducible.
       `;
 
-      const extracted = await structuredClauseExtractor.extractFromText(
-        sampleText,
-        'AXA',
-        'PYME'
-      );
+      const extracted = await structuredClauseExtractor.extractFromText(sampleText, 'AXA', 'PYME');
 
       expect(extracted).toBeDefined();
       expect(extracted.insurer).toBe('AXA');
@@ -267,12 +259,12 @@ describe('Structured Clause Extraction - Real PDFs', () => {
             description: 'Cobertura de incendio',
             exclusions: [],
             conditions: [],
-            sourcePage: 1
-          }
+            sourcePage: 1,
+          },
         ],
         generalExclusions: [],
         generalConditions: [],
-        definitions: {}
+        definitions: {},
       };
 
       const rawText = 'Este documento cubre Incendio y otros riesgos';
@@ -293,12 +285,12 @@ describe('Structured Clause Extraction - Real PDFs', () => {
             description: 'No existe',
             exclusions: [],
             conditions: [],
-            sourcePage: 1
-          }
+            sourcePage: 1,
+          },
         ],
         generalExclusions: [],
         generalConditions: [],
-        definitions: {}
+        definitions: {},
       };
 
       const rawText = 'Este documento solo cubre Incendio';

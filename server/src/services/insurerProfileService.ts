@@ -50,20 +50,24 @@ const C = {
 const BBVA_PROFILE: InsurerExtractionProfile = {
   insurerName: 'BBVA',
   displayName: 'BBVA Seguros',
-  formatPatterns: [
-    /BBVA\s+Seguros/i,
-    /COT-\d{4}-\d+/i,
-    /TODO\s+RIESGO\s+DAÑO\s+MATERIAL/i
-  ],
+  formatPatterns: [/BBVA\s+Seguros/i, /COT-\d{4}-\d+/i, /TODO\s+RIESGO\s+DAÑO\s+MATERIAL/i],
   coverageMappings: [
-    { canonicalName: C.INCENDIO(), variations: ['Todo Riesgo Daños Materiales', 'Incendio', 'Daño Material'] },
+    {
+      canonicalName: C.INCENDIO(),
+      variations: ['Todo Riesgo Daños Materiales', 'Incendio', 'Daño Material'],
+    },
     { canonicalName: C.RC(), variations: ['Responsabilidad Civil', 'RC'] },
     { canonicalName: C.SUSTRACCION(), variations: ['Hurto', 'Sustracción'] },
     { canonicalName: C.LUCRO_CESANTE(), variations: ['Lucro Cesante'] },
-    { canonicalName: C.EQUIPO_ELECTRICO(), variations: ['Equipo Eléctrico', 'Equipo Electrónico'] }
+    { canonicalName: C.EQUIPO_ELECTRICO(), variations: ['Equipo Eléctrico', 'Equipo Electrónico'] },
   ],
   validationRules: [
-    { field: 'priceAnnual', type: 'range', value: { min: 100000, max: 500000000 }, errorMessage: 'Prima fuera de rango esperado' }
+    {
+      field: 'priceAnnual',
+      type: 'range',
+      value: { min: 100000, max: 500000000 },
+      errorMessage: 'Prima fuera de rango esperado',
+    },
   ],
   fewShotExamples: [
     `Ejemplo BBVA:
@@ -71,31 +75,44 @@ const BBVA_PROFILE: InsurerExtractionProfile = {
     PRIMA: $5.200.000
     COBERTURAS:
     - Todo Riesgo Daños Materiales: $100.000.000 (Ded: 10%)
-    - Responsabilidad Civil: $500.000.000 (Ded: 5 SMMLV)`
+    - Responsabilidad Civil: $500.000.000 (Ded: 5 SMMLV)`,
   ],
   promptTemplate: `Extrae datos de cotización BBVA. Formato: tabla con coberturas en filas, prima al final.
     Aseguradora siempre es "BBVA Seguros".
     Usa nombres canónicos para coberturas.
-    Extrae deducibles exactos como aparecen.`
+    Extrae deducibles exactos como aparecen.`,
 };
 
 const SBS_PROFILE: InsurerExtractionProfile = {
   insurerName: 'SBS',
   displayName: 'SBS Seguros',
-  formatPatterns: [
-    /SBS\s+SEGUROS/i,
-    /COT\d+/i,
-    /SEGURO\s+INTEGRAL/i
-  ],
+  formatPatterns: [/SBS\s+SEGUROS/i, /COT\d+/i, /SEGURO\s+INTEGRAL/i],
   coverageMappings: [
-    { canonicalName: C.INCENDIO(), variations: ['Todo riesgo daños materiales', 'Daños Materiales', 'Amparo Básico', 'Amparo Basico', 'AMPARO BASICO - TODO RIESGO DANO MATERIAL'] },
+    {
+      canonicalName: C.INCENDIO(),
+      variations: [
+        'Todo riesgo daños materiales',
+        'Daños Materiales',
+        'Amparo Básico',
+        'Amparo Basico',
+        'AMPARO BASICO - TODO RIESGO DANO MATERIAL',
+      ],
+    },
     { canonicalName: C.SUSTRACCION(), variations: ['Hurto calificado', 'Hurto'] },
     { canonicalName: C.RC(), variations: ['Responsabilidad civil extracontractual', 'RC'] },
     { canonicalName: C.MANEJO_GLOBAL(), variations: ['Manejo global comercial', 'Manejo Global'] },
-    { canonicalName: C.LUCRO_CESANTE(), variations: ['Lucro cesante por daños materiales', 'Lucro Cesante'] }
+    {
+      canonicalName: C.LUCRO_CESANTE(),
+      variations: ['Lucro cesante por daños materiales', 'Lucro Cesante'],
+    },
   ],
   validationRules: [
-    { field: 'priceAnnual', type: 'range', value: { min: 100000, max: 500000000 }, errorMessage: 'Prima fuera de rango esperado' }
+    {
+      field: 'priceAnnual',
+      type: 'range',
+      value: { min: 100000, max: 500000000 },
+      errorMessage: 'Prima fuera de rango esperado',
+    },
   ],
   fewShotExamples: [
     `Ejemplo SBS:
@@ -104,28 +121,30 @@ const SBS_PROFILE: InsurerExtractionProfile = {
     COBERTURAS:
     - Todo riesgo daños materiales: $119.600.000 (Ded: 10%)
     - Hurto calificado: $257.770.000 (Ded: 10% + 1 SMMLV)
-    - Responsabilidad civil extracontractual: $1.000.000.000 (Ded: 5 SMMLV)`
+    - Responsabilidad civil extracontractual: $1.000.000.000 (Ded: 5 SMMLV)`,
   ],
   promptTemplate: `Extrae datos de cotización SBS. Formato: tabla "Resumen de coberturas y primas" con coberturas en filas.
     Nota: SBS usa "Hurto calificado" en vez de "Sustracción".
     Aseguradora siempre es "SBS SEGUROS COLOMBIA S.A.".
-    Extrae prima total de la fila "Totales".`
+    Extrae prima total de la fila "Totales".`,
 };
 
 const MAPFRE_PROFILE: InsurerExtractionProfile = {
   insurerName: 'MAPFRE',
   displayName: 'MAPFRE Seguros',
-  formatPatterns: [
-    /MAPFRE/i,
-    /PÓLIZA\s+PYME/i
-  ],
+  formatPatterns: [/MAPFRE/i, /PÓLIZA\s+PYME/i],
   coverageMappings: [
     { canonicalName: C.INCENDIO(), variations: ['Incendio y/o Líneas Aliadas', 'Incendio'] },
     { canonicalName: C.SUSTRACCION(), variations: ['Robo y/o Hurto', 'Sustracción'] },
-    { canonicalName: C.RC(), variations: ['Responsabilidad Civil', 'RC'] }
+    { canonicalName: C.RC(), variations: ['Responsabilidad Civil', 'RC'] },
   ],
   validationRules: [
-    { field: 'priceAnnual', type: 'range', value: { min: 100000, max: 500000000 }, errorMessage: 'Prima fuera de rango esperado' }
+    {
+      field: 'priceAnnual',
+      type: 'range',
+      value: { min: 100000, max: 500000000 },
+      errorMessage: 'Prima fuera de rango esperado',
+    },
   ],
   fewShotExamples: [
     `Ejemplo MAPFRE:
@@ -133,30 +152,35 @@ const MAPFRE_PROFILE: InsurerExtractionProfile = {
     PRIMA: $3.850.000
     COBERTURAS:
     - Incendio y/o Líneas Aliadas: $150.000.000 (Ded: 10%)
-    - Robo y/o Hurto: $50.000.000 (Ded: 10% + 1 SMMLV)`
+    - Robo y/o Hurto: $50.000.000 (Ded: 10% + 1 SMMLV)`,
   ],
   promptTemplate: `Extrae datos de cotización MAPFRE. Formato: tabla estándar con coberturas en columnas.
     MAPFRE usa "Robo y/o Hurto" para sustracción.
-    Aseguradora siempre es "MAPFRE".`
+    Aseguradora siempre es "MAPFRE".`,
 };
 
 const GENERIC_PROFILE: InsurerExtractionProfile = {
   insurerName: 'GENERIC',
   displayName: 'Genérico',
   formatPatterns: [],
-  coverageMappings: getCanonicalCoverageNames().map(name => ({
+  coverageMappings: getCanonicalCoverageNames().map((name) => ({
     canonicalName: name,
-    variations: [name]
+    variations: [name],
   })),
   validationRules: [
-    { field: 'priceAnnual', type: 'range', value: { min: 100000, max: 500000000 }, errorMessage: 'Prima fuera de rango esperado' }
+    {
+      field: 'priceAnnual',
+      type: 'range',
+      value: { min: 100000, max: 500000000 },
+      errorMessage: 'Prima fuera de rango esperado',
+    },
   ],
   fewShotExamples: [],
   promptTemplate: `Extrae datos de cotización de seguros PYME colombiano.
     Identifica la aseguradora del encabezado.
     Extrae todas las coberturas con sus valores y deducibles.
     Usa nombres canónicos estándar para las coberturas.
-    La prima anual debe ser un número sin símbolos de moneda.`
+    La prima anual debe ser un número sin símbolos de moneda.`,
 };
 
 // Profile registry
@@ -164,7 +188,7 @@ const PROFILES: Map<string, InsurerExtractionProfile> = new Map([
   ['BBVA', BBVA_PROFILE],
   ['SBS', SBS_PROFILE],
   ['MAPFRE', MAPFRE_PROFILE],
-  ['GENERIC', GENERIC_PROFILE]
+  ['GENERIC', GENERIC_PROFILE],
 ]);
 
 export const insurerProfileService = {
@@ -177,17 +201,17 @@ export const insurerProfileService = {
       return 'GENERIC';
     }
     const upperText = text.toUpperCase();
-    
+
     for (const [name, profile] of PROFILES) {
       if (name === 'GENERIC') continue;
-      
+
       for (const pattern of profile.formatPatterns) {
         if (pattern.test(text) || pattern.test(upperText)) {
           return name;
         }
       }
     }
-    
+
     // Check for insurer names in text
     if (upperText.includes('BBVA')) return 'BBVA';
     if (upperText.includes('SBS')) return 'SBS';
@@ -196,7 +220,7 @@ export const insurerProfileService = {
     if (upperText.includes('CHUBB')) return 'CHUBB';
     if (upperText.includes('BOLIVAR')) return 'BOLIVAR';
     if (upperText.includes('HDI')) return 'HDI';
-    
+
     return 'GENERIC';
   },
 
@@ -205,13 +229,13 @@ export const insurerProfileService = {
    */
   getProfile(insurerName: string): InsurerExtractionProfile {
     const upperName = insurerName.toUpperCase();
-    
+
     for (const [name, profile] of PROFILES) {
       if (upperName.includes(name.toUpperCase())) {
         return profile;
       }
     }
-    
+
     return GENERIC_PROFILE;
   },
 
@@ -220,16 +244,18 @@ export const insurerProfileService = {
    */
   mapCoverage(coverageName: string, profile: InsurerExtractionProfile): string {
     const normalized = coverageName.toLowerCase().trim();
-    
+
     for (const mapping of profile.coverageMappings) {
       for (const variation of mapping.variations) {
-        if (normalized.includes(variation.toLowerCase()) || 
-            variation.toLowerCase().includes(normalized)) {
+        if (
+          normalized.includes(variation.toLowerCase()) ||
+          variation.toLowerCase().includes(normalized)
+        ) {
           return mapping.canonicalName;
         }
       }
     }
-    
+
     return coverageName;
   },
 
@@ -266,7 +292,7 @@ export const insurerProfileService = {
    * Get all supported insurers
    */
   getSupportedInsurers(): string[] {
-    return Array.from(PROFILES.keys()).filter(k => k !== 'GENERIC');
+    return Array.from(PROFILES.keys()).filter((k) => k !== 'GENERIC');
   },
 
   /**
@@ -291,7 +317,7 @@ export const insurerProfileService = {
    */
   registerProfile(profile: InsurerExtractionProfile): void {
     PROFILES.set(profile.insurerName, profile);
-  }
+  },
 };
 
 export default insurerProfileService;

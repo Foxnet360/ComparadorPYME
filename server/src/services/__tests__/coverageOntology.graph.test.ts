@@ -100,7 +100,10 @@ describe('coverageOntology graph delegation', () => {
 
     const mapping = await coverageOntology.mapCoverage('XyzzyGraphTest123', 'TEST', 'pyme');
 
-    expect(coverageGraphService.query).toHaveBeenCalledWith('XyzzyGraphTest123', { insurer: 'TEST', domain: 'pyme' });
+    expect(coverageGraphService.query).toHaveBeenCalledWith('XyzzyGraphTest123', {
+      insurer: 'TEST',
+      domain: 'pyme',
+    });
     expect(mapping.groups).toHaveLength(1);
     expect(mapping.groups[0].groupId).toBe('incendio');
     expect(mapping.groups[0].confidence).toBe(0.85);
@@ -110,7 +113,7 @@ describe('coverageOntology graph delegation', () => {
   it('uses graph composite components when graph marks coverage as composite', async () => {
     vi.mocked(coverageGraphService.query).mockResolvedValue({
       mappings: [
-        { canonicalId: 'incendio', confidence: 0.80, provenance: 'decomposes_to' },
+        { canonicalId: 'incendio', confidence: 0.8, provenance: 'decomposes_to' },
         { canonicalId: 'terremoto', confidence: 0.75, provenance: 'decomposes_to' },
       ],
       composite: true,
@@ -150,6 +153,9 @@ describe('coverageOntology graph delegation', () => {
 
     await coverageOntology.mapCoverage('InsurerGraphTest', 'SBS', 'pyme');
 
-    expect(coverageGraphService.query).toHaveBeenCalledWith('InsurerGraphTest', { insurer: 'SBS', domain: 'pyme' });
+    expect(coverageGraphService.query).toHaveBeenCalledWith('InsurerGraphTest', {
+      insurer: 'SBS',
+      domain: 'pyme',
+    });
   });
 });

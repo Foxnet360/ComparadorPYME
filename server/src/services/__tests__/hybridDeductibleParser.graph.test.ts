@@ -1,7 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  hybridDeductibleParser,
-} from '../hybridDeductibleParser';
+import { hybridDeductibleParser } from '../hybridDeductibleParser';
 
 // ---------------------------------------------------------------------------
 // Mocks

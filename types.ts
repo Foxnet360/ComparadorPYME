@@ -120,20 +120,17 @@ export interface QuoteAnalysis {
       description: string;
       priority: 'HIGH' | 'MEDIUM' | 'LOW';
       potentialSavings?: string;
-    }
-    >;
+    }>;
     competitiveAdvantages: Array<{
       type: 'exclusive_coverage' | 'better_price' | 'better_deductible' | 'more_coverages';
       description: string;
-    }
-    >;
+    }>;
     profileRecommendations: Array<{
       profile: string;
       priorityCoverages: string[];
       recommendation: string;
       riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
-    }
-    >;
+    }>;
     overallRiskScore: number;
     summary: string;
   };
@@ -282,7 +279,7 @@ export enum AppStatus {
   IDLE = 'IDLE',
   ANALYZING = 'ANALYZING',
   COMPLETED = 'COMPLETED',
-  ERROR = 'ERROR'
+  ERROR = 'ERROR',
 }
 
 // --- NEW TYPES FOR AUTH & DASHBOARD ---

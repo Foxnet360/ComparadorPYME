@@ -1,7 +1,7 @@
 /**
  * Excel Structure Validator
  * Validates UnifiedComparisonResult against the reference Excel structure
- * 
+ *
  * The reference Excel has 3 sheets:
  * 1. Portada (Cover) - Client info, insured assets
  * 2. Coberturas (Coverages) - Coverage comparison matrix
@@ -38,7 +38,7 @@ const EXPECTED_COVERAGE_CATEGORIES = [
   'ROTURA DE MAQUINARIA',
   'TRANSPORTE DE BIENES',
   'DINERO Y VALORES',
-  'VIDRIOS PLANOS'
+  'VIDRIOS PLANOS',
 ];
 
 /**
@@ -50,15 +50,13 @@ const EXPECTED_METADATA_FIELDS = [
   'thinkingLevel',
   'pdfCount',
   'confidence',
-  'needsHumanReview'
+  'needsHumanReview',
 ];
 
 /**
  * Validate UnifiedComparisonResult structure
  */
-export function validateAgainstExcelStructure(
-  result: UnifiedComparisonResult
-): ValidationResult {
+export function validateAgainstExcelStructure(result: UnifiedComparisonResult): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -67,7 +65,7 @@ export function validateAgainstExcelStructure(
     errors.push('Missing metadata section');
   } else {
     const missingMetaFields = EXPECTED_METADATA_FIELDS.filter(
-      field => !(field in result.metadata)
+      (field) => !(field in result.metadata)
     );
     if (missingMetaFields.length > 0) {
       warnings.push(`Missing metadata fields: ${missingMetaFields.join(', ')}`);
@@ -79,9 +77,7 @@ export function validateAgainstExcelStructure(
     errors.push('Missing client section');
   } else {
     const requiredClientFields = ['name', 'activity', 'address', 'city'];
-    const missingClientFields = requiredClientFields.filter(
-      field => !(field in result.client)
-    );
+    const missingClientFields = requiredClientFields.filter((field) => !(field in result.client));
     if (missingClientFields.length > 0) {
       warnings.push(`Missing client fields: ${missingClientFields.join(', ')}`);
     }
@@ -103,14 +99,16 @@ export function validateAgainstExcelStructure(
     errors.push('No coverage matrix found');
   } else {
     // Check for expected categories
-    const foundCategories = result.coverageMatrix.map(c => c.category);
+    const foundCategories = result.coverageMatrix.map((c) => c.category);
     const missingCategories = EXPECTED_COVERAGE_CATEGORIES.filter(
-      cat => !foundCategories.some(found => 
-        found.toLowerCase().includes(cat.toLowerCase()) ||
-        cat.toLowerCase().includes(found.toLowerCase())
-      )
+      (cat) =>
+        !foundCategories.some(
+          (found) =>
+            found.toLowerCase().includes(cat.toLowerCase()) ||
+            cat.toLowerCase().includes(found.toLowerCase())
+        )
     );
-    
+
     if (missingCategories.length > 0) {
       warnings.push(
         `Missing expected coverage categories (${missingCategories.length}/${EXPECTED_COVERAGE_CATEGORIES.length}): ${missingCategories.slice(0, 3).join(', ')}...`
@@ -173,9 +171,10 @@ export function validateAgainstExcelStructure(
     valid: errors.length === 0,
     errors,
     warnings,
-    coverageCategories: result.coverageMatrix?.map(c => c.category) || [],
+    coverageCategories: result.coverageMatrix?.map((c) => c.category) || [],
     insurerCount,
-    totalCoverageRows: result.coverageMatrix?.reduce((sum, section) => sum + (section.rows?.length || 0), 0) || 0
+    totalCoverageRows:
+      result.coverageMatrix?.reduce((sum, section) => sum + (section.rows?.length || 0), 0) || 0,
   };
 }
 
@@ -192,14 +191,13 @@ export function quickValidate(result: UnifiedComparisonResult): boolean {
  */
 export function getCoverageCompleteness(result: UnifiedComparisonResult): number {
   if (!result.coverageMatrix || result.coverageMatrix.length === 0) return 0;
-  
-  const foundCategories = result.coverageMatrix.map(c => c.category.toLowerCase());
-  const matchedCategories = EXPECTED_COVERAGE_CATEGORIES.filter(expected =>
-    foundCategories.some(found => 
-      found.includes(expected.toLowerCase()) ||
-      expected.toLowerCase().includes(found)
+
+  const foundCategories = result.coverageMatrix.map((c) => c.category.toLowerCase());
+  const matchedCategories = EXPECTED_COVERAGE_CATEGORIES.filter((expected) =>
+    foundCategories.some(
+      (found) => found.includes(expected.toLowerCase()) || expected.toLowerCase().includes(found)
     )
   );
-  
+
   return Math.round((matchedCategories.length / EXPECTED_COVERAGE_CATEGORIES.length) * 100);
 }

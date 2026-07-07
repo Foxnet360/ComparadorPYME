@@ -104,7 +104,9 @@ describe('deductibleFormatter', () => {
     });
 
     it('returns undefined when no deductible snippet is found', () => {
-      expect(extractDeductibleFromClauseText('Cobertura total sin deducible explícito.')).toBeUndefined();
+      expect(
+        extractDeductibleFromClauseText('Cobertura total sin deducible explícito.')
+      ).toBeUndefined();
     });
   });
 
@@ -147,7 +149,11 @@ describe('deductibleFormatter', () => {
     });
 
     it('treats zero and non-zero deductibles as not equal', () => {
-      const a = makeStructure({ isZero: true, components: [{ type: 'na', value: 0 }], rawText: 'No aplica' });
+      const a = makeStructure({
+        isZero: true,
+        components: [{ type: 'na', value: 0 }],
+        rawText: 'No aplica',
+      });
       const b = makeStructure({ components: [{ type: 'percentage', value: 10 }], rawText: '10%' });
 
       expect(deductibleEquals(a, b)).toBe(false);

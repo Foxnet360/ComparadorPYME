@@ -16,26 +16,64 @@ export interface CoverageGroup {
 
 // Semantic keywords for grouping
 const GROUP_KEYWORDS: Record<string, string[]> = {
-  'asistencias': [
-    'asistencia', 'servicio', 'grua', 'grúa', 'auxilio', 'ayuda',
-    'domiciliaria', 'domicilio', 'hogar', 'casa',
-    'informatica', 'informática', 'tecnica', 'técnica',
-    'legal', 'juridica', 'jurídica', 'abogado',
-    'tributaria', 'contable', 'contador',
-    'medica', 'médica', 'salud', 'ambulancia',
+  asistencias: [
+    'asistencia',
+    'servicio',
+    'grua',
+    'grúa',
+    'auxilio',
+    'ayuda',
+    'domiciliaria',
+    'domicilio',
+    'hogar',
+    'casa',
+    'informatica',
+    'informática',
+    'tecnica',
+    'técnica',
+    'legal',
+    'juridica',
+    'jurídica',
+    'abogado',
+    'tributaria',
+    'contable',
+    'contador',
+    'medica',
+    'médica',
+    'salud',
+    'ambulancia',
   ],
   'amparos-adicionales': [
-    'amparo', 'adicional', 'complementario', 'extra',
-    'hotelero', 'hospedaje', 'alojamiento',
-    'evento', 'especial', 'temporal',
-    'equipo especial', 'maquinaria especial',
-    'transporte', 'envio', 'envío',
+    'amparo',
+    'adicional',
+    'complementario',
+    'extra',
+    'hotelero',
+    'hospedaje',
+    'alojamiento',
+    'evento',
+    'especial',
+    'temporal',
+    'equipo especial',
+    'maquinaria especial',
+    'transporte',
+    'envio',
+    'envío',
   ],
   'servicios-profesionales': [
-    'asesoria', 'asesoría', 'consultoria', 'consultoría',
-    'profesional', 'especialista', 'experto',
-    'capacitacion', 'capacitación', 'entrenamiento',
-    'audit', 'auditoria', 'auditoría',
+    'asesoria',
+    'asesoría',
+    'consultoria',
+    'consultoría',
+    'profesional',
+    'especialista',
+    'experto',
+    'capacitacion',
+    'capacitación',
+    'entrenamiento',
+    'audit',
+    'auditoria',
+    'auditoría',
   ],
 };
 
@@ -51,10 +89,18 @@ export function groupUncategorizedCoverages(
   }>
 ): CoverageGroup[] {
   const groups: Record<string, CoverageGroup> = {
-    'asistencias': { id: 'asistencias', name: 'Asistencias y Servicios', coverages: [] },
-    'amparos-adicionales': { id: 'amparos-adicionales', name: 'Amparos Adicionales', coverages: [] },
-    'servicios-profesionales': { id: 'servicios-profesionales', name: 'Servicios Profesionales', coverages: [] },
-    'otros': { id: 'otros', name: 'Otros Servicios', coverages: [] },
+    asistencias: { id: 'asistencias', name: 'Asistencias y Servicios', coverages: [] },
+    'amparos-adicionales': {
+      id: 'amparos-adicionales',
+      name: 'Amparos Adicionales',
+      coverages: [],
+    },
+    'servicios-profesionales': {
+      id: 'servicios-profesionales',
+      name: 'Servicios Profesionales',
+      coverages: [],
+    },
+    otros: { id: 'otros', name: 'Otros Servicios', coverages: [] },
   };
 
   for (const coverage of coverages) {
@@ -63,7 +109,7 @@ export function groupUncategorizedCoverages(
 
     // Try to match against group keywords
     for (const [groupId, keywords] of Object.entries(GROUP_KEYWORDS)) {
-      if (keywords.some(keyword => nameLower.includes(keyword))) {
+      if (keywords.some((keyword) => nameLower.includes(keyword))) {
         groups[groupId].coverages.push({
           rawName: coverage.rawName,
           insuredAmount: coverage.insuredAmount || null,
@@ -87,5 +133,5 @@ export function groupUncategorizedCoverages(
   }
 
   // Return only non-empty groups
-  return Object.values(groups).filter(g => g.coverages.length > 0);
+  return Object.values(groups).filter((g) => g.coverages.length > 0);
 }

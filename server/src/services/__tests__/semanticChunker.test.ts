@@ -29,7 +29,7 @@ SECCIÓN I OBJETO
       `;
       const metadata = { documentName: 'doc.pdf', insurerName: 'Insur' };
       const boundaries = [{ pageNumber: 1, charIndex: 0 }];
-      
+
       const chunks = semanticChunker.createChunks(text, metadata, boundaries);
       expect(chunks.length).toBe(2);
       expect(chunks[0].metadata.chapter).toContain('CAPÍTULO I');

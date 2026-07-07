@@ -13,92 +13,96 @@ vi.mock('../../services/unifiedComparison/comparisonEngineAdapter', () => ({
           id: 'client_info',
           label: 'Cotizaciones PYME - Seguros Bolívar',
           sectionId: 0,
-          cells: [{ value: '', isExcluded: false, isWinner: false }]
+          cells: [{ value: '', isExcluded: false, isWinner: false }],
         },
         {
           type: 'header',
           id: 'section_0',
           label: 'INFORMACIÓN GENERAL',
           sectionId: 1,
-          cells: [{ value: '', isExcluded: false, isWinner: false }]
+          cells: [{ value: '', isExcluded: false, isWinner: false }],
         },
         {
           type: 'data',
           id: 'section_0_row_0',
           label: 'Responsabilidad Civil',
           sectionId: 1,
-          cells: [{ value: '100M', isExcluded: false, isWinner: false, notes: '5 SMMLV', confidence: 95 }]
+          cells: [
+            { value: '100M', isExcluded: false, isWinner: false, notes: '5 SMMLV', confidence: 95 },
+          ],
         },
         {
           type: 'header',
           id: 'financials',
           label: 'PRIMAS Y COSTOS',
           sectionId: 999,
-          cells: [{ value: '', isExcluded: false, isWinner: false }]
+          cells: [{ value: '', isExcluded: false, isWinner: false }],
         },
         {
           type: 'data',
           id: 'premium_total',
           label: 'TOTAL A PAGAR',
           sectionId: 999,
-          cells: [{ value: '$8.500.000', isExcluded: false, isWinner: false }]
-        }
+          cells: [{ value: '$8.500.000', isExcluded: false, isWinner: false }],
+        },
       ],
       engine: 'unified',
-      correlationId: 'test-correlation-id'
-    }))
-  }
+      correlationId: 'test-correlation-id',
+    })),
+  },
 }));
 
 // Mock all services
 vi.mock('../../services/gemini', () => ({
   geminiService: {
-    extractText: vi.fn(async () => JSON.stringify({
-      quotes: [{
-        insurerName: 'Seguros Bolívar',
-        policyName: 'Empresarial Plus',
-        priceAnnual: 8500000,
-        currency: 'COP',
-        coverages: [
-          { name: 'Responsabilidad Civil', value: '100M', deductible: '5 SMMLV' }
+    extractText: vi.fn(async () =>
+      JSON.stringify({
+        quotes: [
+          {
+            insurerName: 'Seguros Bolívar',
+            policyName: 'Empresarial Plus',
+            priceAnnual: 8500000,
+            currency: 'COP',
+            coverages: [{ name: 'Responsabilidad Civil', value: '100M', deductible: '5 SMMLV' }],
+            specialConditions: [],
+            parseConfidence: 95,
+          },
         ],
-        specialConditions: [],
-        parseConfidence: 95
-      }]
-    })),
+      })
+    ),
     extractStructured: vi.fn(async () => ({
-      quotes: [{
-        insurerName: 'Seguros Bolívar',
-        policyName: 'Empresarial Plus',
-        priceAnnual: 8500000,
-        currency: 'COP',
-        coverages: [
-          { name: 'Responsabilidad Civil', value: '100M', deductible: '5 SMMLV' }
-        ],
-        specialConditions: [],
-        parseConfidence: 95
-      }]
+      quotes: [
+        {
+          insurerName: 'Seguros Bolívar',
+          policyName: 'Empresarial Plus',
+          priceAnnual: 8500000,
+          currency: 'COP',
+          coverages: [{ name: 'Responsabilidad Civil', value: '100M', deductible: '5 SMMLV' }],
+          specialConditions: [],
+          parseConfidence: 95,
+        },
+      ],
     })),
     extractFromPdfWithVision: vi.fn(async () => ({
-      quotes: [{
-        insurerName: 'Seguros Bolívar',
-        policyName: 'Empresarial Plus',
-        priceAnnual: 8500000,
-        currency: 'COP',
-        coverages: [
-          { name: 'Responsabilidad Civil', value: '100M', deductible: '5 SMMLV' }
-        ],
-        specialConditions: [],
-        parseConfidence: 95
-      }]
+      quotes: [
+        {
+          insurerName: 'Seguros Bolívar',
+          policyName: 'Empresarial Plus',
+          priceAnnual: 8500000,
+          currency: 'COP',
+          coverages: [{ name: 'Responsabilidad Civil', value: '100M', deductible: '5 SMMLV' }],
+          specialConditions: [],
+          parseConfidence: 95,
+        },
+      ],
     })),
     analyzeWithGemini: vi.fn(async () => 'Análisis de prueba'),
     generateNarrative: vi.fn(async () => ({
       clientAnalysis: 'Test analysis',
       technicalAnalysis: 'Test technical',
-      keyFindings: ['Finding 1']
-    }))
-  }
+      keyFindings: ['Finding 1'],
+    })),
+  },
 }));
 
 vi.mock('../../services/pdfExtractor', () => ({
@@ -110,9 +114,9 @@ vi.mock('../../services/pdfExtractor', () => ({
       pages: [{ number: 1, text: 'Texto de prueba' }],
       metadata: {},
       warnings: [],
-      isScanned: false
-    }))
-  }
+      isScanned: false,
+    })),
+  },
 }));
 
 vi.mock('../../services/clauseCoverageValidator', () => ({
@@ -124,17 +128,15 @@ vi.mock('../../services/clauseCoverageValidator', () => ({
       scoreImpact: 0,
       hasClauseDocument: true,
       verifiedCount: 2,
-      optionalMissingCount: 0
-    }))
-  }
+      optionalMissingCount: 0,
+    })),
+  },
 }));
 
 vi.mock('../../services/deductibleAnalyzer', () => ({
   deductibleAnalyzer: {
-    analyzeQuote: vi.fn(async () => [
-      { coverage: 'Incendio', level: 'LOW', riskScore: 65 }
-    ])
-  }
+    analyzeQuote: vi.fn(async () => [{ coverage: 'Incendio', level: 'LOW', riskScore: 65 }]),
+  },
 }));
 
 vi.mock('../../services/inverseCoverageChecker', () => ({
@@ -142,18 +144,18 @@ vi.mock('../../services/inverseCoverageChecker', () => ({
     checkMissingCoverages: vi.fn(async () => ({
       results: [],
       mandatoryMissingCount: 0,
-      optionalMissingCount: 0
-    }))
-  }
+      optionalMissingCount: 0,
+    })),
+  },
 }));
 
 vi.mock('../../services/contextualRiskAnalyzer', () => ({
   contextualRiskAnalyzer: {
     contextualizeExclusions: vi.fn(() => ({
       exclusions: [{ contextualRiskLevel: 'CRITICAL' }],
-      criticalCount: 1
-    }))
-  }
+      criticalCount: 1,
+    })),
+  },
 }));
 
 vi.mock('../../services/warrantyComplianceAnalyzer', () => ({
@@ -161,9 +163,9 @@ vi.mock('../../services/warrantyComplianceAnalyzer', () => ({
     analyzeConditions: vi.fn(() => ({
       totalConditions: 2,
       overallRisk: 'MEDIUM',
-      compliancePercentage: 60
-    }))
-  }
+      compliancePercentage: 60,
+    })),
+  },
 }));
 
 vi.mock('../../services/virtualLawyerService', () => ({
@@ -171,9 +173,9 @@ vi.mock('../../services/virtualLawyerService', () => ({
     generateLegalOpinion: vi.fn(async () => ({
       coverageName: 'RC',
       confidence: 80,
-      negotiationPoints: [{ point: 'Test', priority: 'HIGH' }]
-    }))
-  }
+      negotiationPoints: [{ point: 'Test', priority: 'HIGH' }],
+    })),
+  },
 }));
 
 vi.mock('../../services/narrativeService', () => ({
@@ -181,10 +183,10 @@ vi.mock('../../services/narrativeService', () => ({
     generateNarrative: vi.fn(async () => ({
       clientAnalysis: 'Test client analysis',
       technicalAnalysis: 'Test technical',
-      keyFindings: ['Finding 1']
+      keyFindings: ['Finding 1'],
     })),
-    generateComparisonNarrative: vi.fn(async () => 'Test comparison narrative')
-  }
+    generateComparisonNarrative: vi.fn(async () => 'Test comparison narrative'),
+  },
 }));
 
 vi.mock('../../services/quoteValidator', () => ({
@@ -192,8 +194,8 @@ vi.mock('../../services/quoteValidator', () => ({
     coverageCount: 1,
     expectedCoverageCount: 1,
     flags: [],
-    isValid: true
-  }))
+    isValid: true,
+  })),
 }));
 
 vi.mock('../../services/confidenceScorer', () => ({
@@ -201,15 +203,22 @@ vi.mock('../../services/confidenceScorer', () => ({
     score: 95,
     needsReview: false,
     isCritical: false,
-    breakdown: {}
-  }))
+    breakdown: {},
+  })),
 }));
 
 vi.mock('../../services/quoteScorer', () => ({
   quoteScorer: {
     calculateScore: vi.fn(() => ({
       totalScore: 85,
-      breakdown: { coverage: 90, deductibles: 80, exclusions: 85, priceRatio: 75, sublimits: 80, warranties: 70 },
+      breakdown: {
+        coverage: 90,
+        deductibles: 80,
+        exclusions: 85,
+        priceRatio: 75,
+        sublimits: 80,
+        warranties: 70,
+      },
       weights: {},
       quotePriceRank: 1,
       marketPriceAverage: 8500000,
@@ -217,33 +226,37 @@ vi.mock('../../services/quoteScorer', () => ({
       expectedCoverageCount: 1,
       criticalAlerts: 0,
       warningAlerts: 0,
-      infoAlerts: 0
+      infoAlerts: 0,
     })),
-    getDefaultWeights: vi.fn(() => ({}))
-  }
+    getDefaultWeights: vi.fn(() => ({})),
+  },
 }));
 
 vi.mock('../../services/crossReferenceEngine', () => ({
   crossReferenceEngine: {
-    crossReferenceQuote: vi.fn(async () => [{
-      coverageName: 'Responsabilidad Civil',
-      quoteData: { value: '100M', deductible: '5 SMMLV' },
-      clauseData: { deductible: '5 SMMLV', exclusions: [] },
-      alerts: [],
-      isVerified: true
-    }]),
-    crossReferenceQuotesBatch: vi.fn(async () => {
-      const results = new Map();
-      results.set(0, [{
+    crossReferenceQuote: vi.fn(async () => [
+      {
         coverageName: 'Responsabilidad Civil',
         quoteData: { value: '100M', deductible: '5 SMMLV' },
         clauseData: { deductible: '5 SMMLV', exclusions: [] },
         alerts: [],
-        isVerified: true
-      }]);
+        isVerified: true,
+      },
+    ]),
+    crossReferenceQuotesBatch: vi.fn(async () => {
+      const results = new Map();
+      results.set(0, [
+        {
+          coverageName: 'Responsabilidad Civil',
+          quoteData: { value: '100M', deductible: '5 SMMLV' },
+          clauseData: { deductible: '5 SMMLV', exclusions: [] },
+          alerts: [],
+          isVerified: true,
+        },
+      ]);
       return results;
-    })
-  }
+    }),
+  },
 }));
 
 vi.mock('../../services/quoteParser', () => ({
@@ -254,24 +267,32 @@ vi.mock('../../services/quoteParser', () => ({
       priceAnnual: 8500000,
       currency: 'COP',
       coverages: [
-        { name: 'Responsabilidad Civil', value: '100M', deductible: '5 SMMLV', confidence: 90, categoryId: 6, matchConfidence: 1.0, matchMethod: 'thesaurus' }
+        {
+          name: 'Responsabilidad Civil',
+          value: '100M',
+          deductible: '5 SMMLV',
+          confidence: 90,
+          categoryId: 6,
+          matchConfidence: 1.0,
+          matchMethod: 'thesaurus',
+        },
       ],
       specialConditions: [],
       rawText: '',
-      parseConfidence: 95
-    }))
-  }
+      parseConfidence: 95,
+    })),
+  },
 }));
 
 vi.mock('../../services/thesaurusMapper', () => ({
-  normalizeCoverages: vi.fn((coverages) => coverages)
+  normalizeCoverages: vi.fn((coverages) => coverages),
 }));
 
 vi.mock('../../services/ragRetrievalService', () => ({
   ragRetrievalService: {
     checkInsurerHasClauses: vi.fn(async () => true),
-    search: vi.fn(async () => [])
-  }
+    search: vi.fn(async () => []),
+  },
 }));
 
 vi.mock('../../config/database', () => {
@@ -293,18 +314,18 @@ vi.mock('../../config/database', () => {
       limit: vi.fn(() => chain),
       single: vi.fn(() => Promise.resolve({ data: val, error: null })),
       then: vi.fn((resolve) => resolve({ data: Array.isArray(val) ? val : [val], error: null })),
-      catch: vi.fn()
+      catch: vi.fn(),
     };
     return chain;
   };
-  
+
   const mockSupabase = {
     from: vi.fn(() => makeChain([])),
-    rpc: vi.fn(() => Promise.resolve({ data: [], error: null }))
+    rpc: vi.fn(() => Promise.resolve({ data: [], error: null })),
   };
-  
+
   return {
-    supabase: mockSupabase
+    supabase: mockSupabase,
   };
 });
 
@@ -313,8 +334,12 @@ const app = express();
 app.use(express.json());
 
 const upload = multer({ storage: multer.memoryStorage() });
-app.post('/api/analyze',
-  upload.fields([{ name: 'quotes', maxCount: 10 }, { name: 'clauses', maxCount: 10 }]),
+app.post(
+  '/api/analyze',
+  upload.fields([
+    { name: 'quotes', maxCount: 10 },
+    { name: 'clauses', maxCount: 10 },
+  ]),
   analysisController.uploadAndAnalyze
 );
 
@@ -326,14 +351,14 @@ describe('Backward Compatibility', () => {
       .attach('quotes', Buffer.from('test pdf content'), 'quote1.pdf');
 
     expect(response.status).toBe(200);
-    
+
     // Core fields that old clients expect
     expect(response.body).toHaveProperty('quotes');
     expect(response.body).toHaveProperty('recommendation');
     expect(response.body).toHaveProperty('marketAnalysis');
     expect(response.body).toHaveProperty('timestamp');
     expect(response.body).toHaveProperty('analysisVersion');
-    
+
     // Each quote should have basic fields
     const firstQuote = response.body.quotes[0];
     expect(firstQuote).toHaveProperty('insurerName');
@@ -350,16 +375,16 @@ describe('Backward Compatibility', () => {
       .attach('quotes', Buffer.from('test pdf content'), 'quote1.pdf');
 
     expect(response.status).toBe(200);
-    
+
     const firstQuote = response.body.quotes[0];
-    
+
     // New fields should be present (optional)
     expect(firstQuote).toHaveProperty('clauseValidation');
     expect(firstQuote).toHaveProperty('deductibleAnalysis');
     expect(firstQuote).toHaveProperty('contextualRisk');
     expect(firstQuote).toHaveProperty('warrantyCompliance');
     expect(firstQuote).toHaveProperty('legalOpinion');
-    
+
     // Old clients can safely ignore these fields
     // They won't cause parsing errors since they're optional
   });
@@ -372,10 +397,16 @@ describe('Backward Compatibility', () => {
       .attach('quotes', Buffer.from('test pdf content'), 'quote1.pdf');
 
     expect(response.status).toBe(200);
-    
+
     // Response should always have these top-level fields
-    const requiredFields = ['quotes', 'recommendation', 'marketAnalysis', 'timestamp', 'analysisVersion'];
-    requiredFields.forEach(field => {
+    const requiredFields = [
+      'quotes',
+      'recommendation',
+      'marketAnalysis',
+      'timestamp',
+      'analysisVersion',
+    ];
+    requiredFields.forEach((field) => {
       expect(response.body).toHaveProperty(field);
     });
   });
@@ -389,7 +420,7 @@ describe('Backward Compatibility', () => {
     expect(response.status).toBe(200);
     expect(Array.isArray(response.body.quotes)).toBe(true);
     expect(response.body.quotes.length).toBeGreaterThan(0);
-    
+
     // Each quote should have consistent structure
     response.body.quotes.forEach((quote: Record<string, unknown>) => {
       expect(quote).toHaveProperty('insurerName');

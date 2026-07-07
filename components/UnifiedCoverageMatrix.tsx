@@ -1,7 +1,23 @@
 import React, { useState, useRef, useEffect, lazy, Suspense, memo } from 'react';
 import { QuoteAnalysis, MatrixRow, MatrixCell, CoverageItem } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
-import { Info, AlertTriangle, ListChecks, Trophy, DollarSign, Calendar, ShieldCheck, Download, Award, ChevronDown, Check, AlertCircle, Eye, Loader2, Pin } from 'lucide-react';
+import {
+  Info,
+  AlertTriangle,
+  ListChecks,
+  Trophy,
+  DollarSign,
+  Calendar,
+  ShieldCheck,
+  Download,
+  Award,
+  ChevronDown,
+  Check,
+  AlertCircle,
+  Eye,
+  Loader2,
+  Pin,
+} from 'lucide-react';
 import { DeductibleBadge } from './DeductibleBadge';
 import { formatPercentage } from '../utils/formatCurrency';
 import { useOptimisticCorrection } from '../hooks/useOptimisticCorrection';
@@ -11,78 +27,78 @@ import { InlineNoteEditor } from './InlineNoteEditor';
 const PdfViewer = lazy(() => import('./PdfViewer'));
 
 // CoverageCell memoizado para optimizar re-renders
-const CoverageCell = memo(({ 
-  cell, 
-  rowLabel,
-  isWinner,
-  excluded,
-  lowConfidence,
-  needsReview,
-  isSaving,
-  onOpenPdf: _onOpenPdf,
-  onOpenCorrection: _onOpenCorrection,
-  onDoubleClick,
-  hasNote
-}: {
-  cell: MatrixCell;
-  rowLabel: string;
-  isWinner: boolean;
-  excluded: boolean;
-  lowConfidence: boolean;
-  needsReview: boolean;
-  isSaving: boolean;
-  onOpenPdf?: () => void;
-  onOpenCorrection?: () => void;
-  onDoubleClick?: () => void;
-  hasNote?: boolean;
-}) => {
-  return (
-    <div 
-      className={`relative ${
-        isWinner ? 'bg-amber-50/60 font-semibold text-amber-900 border border-amber-200/50' : ''
-      } ${
-        excluded ? 'text-red-500 italic bg-slate-50/20' : 'text-slate-800'
-      } ${
-        lowConfidence ? 'bg-yellow-50/40 border-2 border-yellow-400/60 shadow-sm' : ''
-      } ${
-        needsReview ? 'ring-2 ring-red-300/50 ring-inset' : ''
-      } ${
-        isSaving ? 'opacity-70' : ''
-      }`}
-      onDoubleClick={onDoubleClick}
-    >
-      {/* Note indicator */}
-      {hasNote && (
-        <span className="absolute top-1 right-1 text-blue-500" title="Tiene nota consultiva">
-          <Pin size={12} />
-        </span>
-      )}
-      
-      {/* Winner trophy */}
-      {isWinner && !lowConfidence && (
-        <span className="absolute top-1 left-1 text-amber-500" title="Condición favorable">
-          <Trophy size={12} />
-        </span>
-      )}
-      
-      <div className="flex flex-col items-center justify-center gap-1.5">
-        {excluded ? (
-          <span className="text-red-400 font-medium">No incluida</span>
-        ) : (
-          <span className={`${isWinner ? 'text-amber-950 font-bold' : 'text-slate-800 font-medium'}`}>
-            {rowLabel === 'Deducible' && cell.value !== 'No aplica' ? (
-              <DeductibleBadge deductible={cell.value} />
-            ) : rowLabel === 'Valor Asegurado' ? (
-              formatMatrixValue(cell.value)
-            ) : (
-              cell.value
-            )}
+const CoverageCell = memo(
+  ({
+    cell,
+    rowLabel,
+    isWinner,
+    excluded,
+    lowConfidence,
+    needsReview,
+    isSaving,
+    onOpenPdf: _onOpenPdf,
+    onOpenCorrection: _onOpenCorrection,
+    onDoubleClick,
+    hasNote,
+  }: {
+    cell: MatrixCell;
+    rowLabel: string;
+    isWinner: boolean;
+    excluded: boolean;
+    lowConfidence: boolean;
+    needsReview: boolean;
+    isSaving: boolean;
+    onOpenPdf?: () => void;
+    onOpenCorrection?: () => void;
+    onDoubleClick?: () => void;
+    hasNote?: boolean;
+  }) => {
+    return (
+      <div
+        className={`relative ${
+          isWinner ? 'bg-amber-50/60 font-semibold text-amber-900 border border-amber-200/50' : ''
+        } ${excluded ? 'text-red-500 italic bg-slate-50/20' : 'text-slate-800'} ${
+          lowConfidence ? 'bg-yellow-50/40 border-2 border-yellow-400/60 shadow-sm' : ''
+        } ${needsReview ? 'ring-2 ring-red-300/50 ring-inset' : ''} ${
+          isSaving ? 'opacity-70' : ''
+        }`}
+        onDoubleClick={onDoubleClick}
+      >
+        {/* Note indicator */}
+        {hasNote && (
+          <span className="absolute top-1 right-1 text-blue-500" title="Tiene nota consultiva">
+            <Pin size={12} />
           </span>
         )}
+
+        {/* Winner trophy */}
+        {isWinner && !lowConfidence && (
+          <span className="absolute top-1 left-1 text-amber-500" title="Condición favorable">
+            <Trophy size={12} />
+          </span>
+        )}
+
+        <div className="flex flex-col items-center justify-center gap-1.5">
+          {excluded ? (
+            <span className="text-red-400 font-medium">No incluida</span>
+          ) : (
+            <span
+              className={`${isWinner ? 'text-amber-950 font-bold' : 'text-slate-800 font-medium'}`}
+            >
+              {rowLabel === 'Deducible' && cell.value !== 'No aplica' ? (
+                <DeductibleBadge deductible={cell.value} />
+              ) : rowLabel === 'Valor Asegurado' ? (
+                formatMatrixValue(cell.value)
+              ) : (
+                cell.value
+              )}
+            </span>
+          )}
+        </div>
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
 
 CoverageCell.displayName = 'CoverageCell';
 
@@ -99,62 +115,61 @@ interface CategoryConfig {
 import taxonomyData from '../data/domains/pyme/taxonomy.json';
 
 const HEADER_LABEL_MAPPING: Record<number, string> = {
-  1: "AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL",
-  14: "TERREMOTO / TEMBLOR / ERUPCIÓN VOLCÁNICA",
-  13: "AMIT / HMACC (HUELGA, MOTÍN, ASONADA, CONMOCIÓN CIVIL)",
-  4: "DAÑO INTERNO - EQUIPO ELÉCTRICO Y ELECTRÓNICO",
-  3: "HURTO CALIFICADO / SUSTRACCIÓN CON VIOLENCIA",
-  2: "LUCRO CESANTE / PÉRDIDAS CONSECUENCIALES",
-  8: "INFIDELIDAD DE EMPLEADOS",
-  6: "RESPONSABILIDAD CIVIL EXTRACONTRACTUAL (RCE)",
-  5: "ROTURA DE MAQUINARIA",
-  7: "ROTURA ACCIDENTAL DE VIDRIOS",
-  9: "TRANSPORTE DE MERCANCÍAS",
-  10: "TRANSPORTE DE VALORES",
-  11: "ASISTENCIAS",
-  12: "ASISTENCIA LEGAL"
+  1: 'AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL',
+  14: 'TERREMOTO / TEMBLOR / ERUPCIÓN VOLCÁNICA',
+  13: 'AMIT / HMACC (HUELGA, MOTÍN, ASONADA, CONMOCIÓN CIVIL)',
+  4: 'DAÑO INTERNO - EQUIPO ELÉCTRICO Y ELECTRÓNICO',
+  3: 'HURTO CALIFICADO / SUSTRACCIÓN CON VIOLENCIA',
+  2: 'LUCRO CESANTE / PÉRDIDAS CONSECUENCIALES',
+  8: 'INFIDELIDAD DE EMPLEADOS',
+  6: 'RESPONSABILIDAD CIVIL EXTRACONTRACTUAL (RCE)',
+  5: 'ROTURA DE MAQUINARIA',
+  7: 'ROTURA ACCIDENTAL DE VIDRIOS',
+  9: 'TRANSPORTE DE MERCANCÍAS',
+  10: 'TRANSPORTE DE VALORES',
+  11: 'ASISTENCIAS',
+  12: 'ASISTENCIA LEGAL',
 };
 
-const ROWS_MAPPING: Record<number, Array<{ label: string; field: 'value' | 'deductible' | 'details' }>> = {
+const ROWS_MAPPING: Record<
+  number,
+  Array<{ label: string; field: 'value' | 'deductible' | 'details' }>
+> = {
   1: [
-    { label: "Valor Asegurado", field: "value" },
-    { label: "Deducible", field: "deductible" },
-    { label: "Incluye", field: "details" }
+    { label: 'Valor Asegurado', field: 'value' },
+    { label: 'Deducible', field: 'deductible' },
+    { label: 'Incluye', field: 'details' },
   ],
   6: [
-    { label: "Valor Asegurado", field: "value" },
-    { label: "Deducible", field: "deductible" },
-    { label: "Incluye", field: "details" }
+    { label: 'Valor Asegurado', field: 'value' },
+    { label: 'Deducible', field: 'deductible' },
+    { label: 'Incluye', field: 'details' },
   ],
   5: [
-    { label: "Cobertura", field: "value" },
-    { label: "Deducible", field: "deductible" }
+    { label: 'Cobertura', field: 'value' },
+    { label: 'Deducible', field: 'deductible' },
   ],
   7: [
-    { label: "Sublímite", field: "value" },
-    { label: "Deducible", field: "deductible" }
+    { label: 'Sublímite', field: 'value' },
+    { label: 'Deducible', field: 'deductible' },
   ],
-  11: [
-    { label: "Incluida", field: "details" }
-  ],
-  12: [
-    { label: "Incluida", field: "details" }
-  ]
+  11: [{ label: 'Incluida', field: 'details' }],
+  12: [{ label: 'Incluida', field: 'details' }],
 };
 
-export const CATEGORY_CONFIGS: CategoryConfig[] = (taxonomyData.categories || []).map(cat => {
+export const CATEGORY_CONFIGS: CategoryConfig[] = (taxonomyData.categories || []).map((cat) => {
   const id = cat.id;
   const canonicalName = cat.name;
   const headerLabel = HEADER_LABEL_MAPPING[id] || canonicalName.toUpperCase();
   const rows = ROWS_MAPPING[id] || [
-    { label: "Valor Asegurado", field: "value" },
-    { label: "Deducible", field: "deductible" }
+    { label: 'Valor Asegurado', field: 'value' },
+    { label: 'Deducible', field: 'deductible' },
   ];
   return {
     id,
     canonicalName,
     headerLabel,
-    rows
+    rows,
   };
 });
 
@@ -187,7 +202,9 @@ export function formatCurrency(num: number): string {
   return '$' + num.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
-export function buildExportNotes(cellNotes: Record<string, { content?: string }>): Record<string, string> {
+export function buildExportNotes(
+  cellNotes: Record<string, { content?: string }>
+): Record<string, string> {
   const exportNotes: Record<string, string> = {};
   Object.entries(cellNotes).forEach(([key, note]) => {
     if (note.content) {
@@ -199,23 +216,28 @@ export function buildExportNotes(cellNotes: Record<string, { content?: string }>
 
 export function formatMatrixValue(val: string | undefined | null): string {
   if (!val) return 'No informado';
-  if (val === 'No incluida' || val === 'NO ESPECIFICADO' || val === 'No contratado' || isExcludedValue(val)) {
+  if (
+    val === 'No incluida' ||
+    val === 'NO ESPECIFICADO' ||
+    val === 'No contratado' ||
+    isExcludedValue(val)
+  ) {
     return val;
   }
-  
+
   // Try parsing to see if it represents a number
   const cleanVal = val.replace(/[^0-9]/g, '');
   if (!cleanVal) return val; // No digits (e.g. "Incluido", "No aplica")
-  
+
   const num = parseFloat(cleanVal);
   if (isNaN(num) || num === 0) return val;
-  
+
   // Check if it's a simple number representation (only digits, spaces, dots, commas, currency symbol)
   const isSimpleNumber = /^[$\s\d.,]+$/.test(val);
   if (isSimpleNumber) {
     return formatCurrency(num);
   }
-  
+
   return val;
 }
 
@@ -264,7 +286,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
       id: `section_${config.id}`,
       label: config.headerLabel,
       sectionId: config.id,
-      cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false }))
+      cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false })),
     });
 
     for (const rowConfig of config.rows) {
@@ -272,11 +294,14 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
 
       for (let i = 0; i < numQuotes; i++) {
         const quote = quotes[i];
-        const cov = quote.coverages.find(c => 
-          (c.categoryId === config.id || 
-           c.canonicalName === config.canonicalName || 
-           c.name === config.canonicalName) &&
-          (c.matchConfidence === undefined || c.matchConfidence === null || c.matchConfidence >= 0.65)
+        const cov = quote.coverages.find(
+          (c) =>
+            (c.categoryId === config.id ||
+              c.canonicalName === config.canonicalName ||
+              c.name === config.canonicalName) &&
+            (c.matchConfidence === undefined ||
+              c.matchConfidence === null ||
+              c.matchConfidence >= 0.65)
         );
 
         if (cov) {
@@ -286,13 +311,17 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
           } else if (rowConfig.field === 'deductible') {
             cellValue = cov.deductible || 'No aplica';
           } else {
-            cellValue = cov.description || (cov as CoverageItem & { details?: string }).details || 'Incluido bajo condiciones generales';
+            cellValue =
+              cov.description ||
+              (cov as CoverageItem & { details?: string }).details ||
+              'Incluido bajo condiciones generales';
           }
 
           // In a deductible row, "No aplica" is not an exclusion
-          const excluded = rowConfig.field === 'deductible' && cellValue.toLowerCase().trim() === 'no aplica'
-            ? false
-            : isExcludedValue(cellValue);
+          const excluded =
+            rowConfig.field === 'deductible' && cellValue.toLowerCase().trim() === 'no aplica'
+              ? false
+              : isExcludedValue(cellValue);
           const firstCitation = cov.citations?.[0];
 
           cells.push({
@@ -305,20 +334,20 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
             rawTextSnippet: cov.rawTextSnippet,
             needsHumanReview: cov.needsHumanReview,
             calculatedPage: cov.calculatedPage,
-            justification: cov.justification
+            justification: cov.justification,
           });
         } else {
           cells.push({
             value: 'No incluida',
             isExcluded: true,
-            isWinner: false
+            isWinner: false,
           });
         }
       }
 
       // Winner Detection
       if (rowConfig.field === 'value') {
-        const numericValues = cells.map(c => parseNumericValue(c.value));
+        const numericValues = cells.map((c) => parseNumericValue(c.value));
         const maxVal = Math.max(...numericValues);
         if (maxVal > 0) {
           cells.forEach((cell, idx) => {
@@ -328,9 +357,9 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
           });
         }
       } else if (rowConfig.field === 'deductible') {
-        const hasNoAplica = cells.some(c => c.value.toLowerCase().trim() === 'no aplica');
+        const hasNoAplica = cells.some((c) => c.value.toLowerCase().trim() === 'no aplica');
         if (hasNoAplica) {
-          cells.forEach(cell => {
+          cells.forEach((cell) => {
             if (cell.value.toLowerCase().trim() === 'no aplica' && !cell.isExcluded) {
               cell.isWinner = true;
             }
@@ -343,7 +372,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
         id: `section_${config.id}_row_${rowConfig.field}`,
         label: rowConfig.label,
         sectionId: config.id,
-        cells
+        cells,
       });
     }
 
@@ -352,7 +381,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
       id: `spacer_${config.id}`,
       label: '',
       sectionId: config.id,
-      cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false }))
+      cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false })),
     });
   }
 
@@ -363,24 +392,25 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
   }> = [];
 
   quotes.forEach((quote, quoteIdx) => {
-    quote.coverages.forEach(c => {
+    quote.coverages.forEach((c) => {
       const isUnmapped = c.categoryId === undefined || c.categoryId === null;
-      const isLowConfidence = c.matchConfidence !== undefined && c.matchConfidence !== null && c.matchConfidence < 0.65;
-      
+      const isLowConfidence =
+        c.matchConfidence !== undefined && c.matchConfidence !== null && c.matchConfidence < 0.65;
+
       if (isUnmapped || isLowConfidence) {
         const coverageName = (c.canonicalName || c.name).trim();
-        
+
         // Find if there is an existing group that is semantically similar (similarity >= 0.70)
-        let foundGroup = exclusiveGroups.find(g => 
-          calculateSimilarity(g.representativeName, coverageName) >= 0.70
+        let foundGroup = exclusiveGroups.find(
+          (g) => calculateSimilarity(g.representativeName, coverageName) >= 0.7
         );
-        
+
         if (foundGroup) {
           foundGroup.items.push({ quoteIdx, item: c });
         } else {
           exclusiveGroups.push({
             representativeName: coverageName,
-            items: [{ quoteIdx, item: c }]
+            items: [{ quoteIdx, item: c }],
           });
         }
       }
@@ -393,7 +423,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
       id: 'section_exclusive_header',
       label: 'AMPAROS EXCLUSIVOS / VENTAJAS COMPETITIVAS',
       sectionId: 99,
-      cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false }))
+      cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false })),
     });
 
     exclusiveGroups.forEach((group) => {
@@ -401,9 +431,9 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
       const repName = group.representativeName;
 
       for (let i = 0; i < numQuotes; i++) {
-        const matchingItems = group.items.filter(gi => gi.quoteIdx === i);
+        const matchingItems = group.items.filter((gi) => gi.quoteIdx === i);
         if (matchingItems.length > 0) {
-          const displayVals = matchingItems.map(mi => {
+          const displayVals = matchingItems.map((mi) => {
             const item = mi.item;
             let displayVal = formatMatrixValue(item.value || 'Incluido');
             if (item.deductible && item.deductible !== 'No aplica' && item.deductible !== '') {
@@ -411,12 +441,12 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
             }
             return displayVal;
           });
-          
+
           const bestItem = matchingItems[0].item;
-          
+
           cells.push({
             value: displayVals.join(' / '),
-            isExcluded: matchingItems.every(mi => isExcludedValue(mi.item.value)),
+            isExcluded: matchingItems.every((mi) => isExcludedValue(mi.item.value)),
             isWinner: true,
             notes: bestItem.description,
             pageNumber: bestItem.citations?.[0]?.page,
@@ -424,13 +454,13 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
             rawTextSnippet: bestItem.rawTextSnippet,
             needsHumanReview: bestItem.needsHumanReview,
             calculatedPage: bestItem.calculatedPage,
-            justification: bestItem.justification
+            justification: bestItem.justification,
           });
         } else {
           cells.push({
             value: 'No incluida',
             isExcluded: true,
-            isWinner: false
+            isWinner: false,
           });
         }
       }
@@ -440,7 +470,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
         id: `exclusive_${repName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
         label: repName,
         sectionId: 99,
-        cells
+        cells,
       });
     });
 
@@ -449,7 +479,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
       id: 'spacer_exclusive',
       label: '',
       sectionId: 99,
-      cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false }))
+      cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false })),
     });
   }
 
@@ -459,20 +489,20 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     id: 'section_financial_header',
     label: 'COMPARATIVA DE PRIMAS Y COSTOS',
     sectionId: 100,
-    cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false }))
+    cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false })),
   });
 
-  const netPremiums = quotes.map(q => q.priceAnnual || 0);
-  const expenses = quotes.map(q => {
+  const netPremiums = quotes.map((q) => q.priceAnnual || 0);
+  const expenses = quotes.map((q) => {
     if (q.priceAnnual === 0) return 0;
     if (q.insurerName.toLowerCase().includes('mapfre')) return 10000;
     if (q.insurerName.toLowerCase().includes('chubb')) return 12000;
     return 0;
   });
   const subtotals = netPremiums.map((net, idx) => net + expenses[idx]);
-  const ivas = subtotals.map(sub => Math.round(sub * 0.19));
+  const ivas = subtotals.map((sub) => Math.round(sub * 0.19));
   const totals = subtotals.map((sub, idx) => sub + ivas[idx]);
-  const positiveTotals = totals.filter(t => t > 0);
+  const positiveTotals = totals.filter((t) => t > 0);
   const minTotal = positiveTotals.length > 0 ? Math.min(...positiveTotals) : 0;
 
   matrix.push({
@@ -483,8 +513,9 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     cells: quotes.map((q, idx) => ({
       value: netPremiums[idx] > 0 ? formatCurrency(netPremiums[idx]) : 'No informada',
       isExcluded: netPremiums[idx] === 0,
-      isWinner: netPremiums[idx] > 0 && netPremiums[idx] === Math.min(...netPremiums.filter(n => n > 0))
-    }))
+      isWinner:
+        netPremiums[idx] > 0 && netPremiums[idx] === Math.min(...netPremiums.filter((n) => n > 0)),
+    })),
   });
 
   matrix.push({
@@ -495,8 +526,8 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     cells: quotes.map((q, idx) => ({
       value: netPremiums[idx] > 0 ? formatCurrency(expenses[idx]) : 'No informado',
       isExcluded: netPremiums[idx] === 0,
-      isWinner: false
-    }))
+      isWinner: false,
+    })),
   });
 
   matrix.push({
@@ -507,8 +538,8 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     cells: quotes.map((q, idx) => ({
       value: netPremiums[idx] > 0 ? formatCurrency(subtotals[idx]) : 'No informado',
       isExcluded: netPremiums[idx] === 0,
-      isWinner: false
-    }))
+      isWinner: false,
+    })),
   });
 
   matrix.push({
@@ -519,8 +550,8 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     cells: quotes.map((q, idx) => ({
       value: netPremiums[idx] > 0 ? formatCurrency(ivas[idx]) : 'No informado',
       isExcluded: netPremiums[idx] === 0,
-      isWinner: false
-    }))
+      isWinner: false,
+    })),
   });
 
   matrix.push({
@@ -531,12 +562,16 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     cells: quotes.map((q, idx) => ({
       value: netPremiums[idx] > 0 ? formatCurrency(totals[idx]) : 'No informado',
       isExcluded: netPremiums[idx] === 0,
-      isWinner: netPremiums[idx] > 0 && totals[idx] === minTotal
-    }))
+      isWinner: netPremiums[idx] > 0 && totals[idx] === minTotal,
+    })),
   });
 
-  const assetValues = quotes.map(q => {
-    const incendio = q.coverages.find(c => c.name.toLowerCase().includes('incendio') || c.canonicalName?.toLowerCase().includes('incendio'));
+  const assetValues = quotes.map((q) => {
+    const incendio = q.coverages.find(
+      (c) =>
+        c.name.toLowerCase().includes('incendio') ||
+        c.canonicalName?.toLowerCase().includes('incendio')
+    );
     return parseNumericValue(incendio?.value);
   });
   const maxAsset = Math.max(...assetValues);
@@ -552,11 +587,15 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
       }
       const ratio = totals[idx] / maxAsset;
       return {
-        value: ratio.toLocaleString('es-CO', { style: 'percent', minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        value: ratio.toLocaleString('es-CO', {
+          style: 'percent',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }),
         isExcluded: false,
-        isWinner: false
+        isWinner: false,
       };
-    })
+    }),
   });
 
   matrix.push({
@@ -564,7 +603,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     id: 'spacer_financial',
     label: '',
     sectionId: 100,
-    cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false }))
+    cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false })),
   });
 
   // 4. Additional Info
@@ -573,7 +612,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     id: 'section_additional_header',
     label: 'INFORMACIÓN ADICIONAL',
     sectionId: 101,
-    cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false }))
+    cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false })),
   });
 
   matrix.push({
@@ -581,13 +620,16 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     id: 'additional_validity',
     label: 'Vigencia de cotización:',
     sectionId: 101,
-    cells: quotes.map(q => {
+    cells: quotes.map((q) => {
       let validity = '30 días';
-      if (q.technicalAnalysis?.toLowerCase().includes('60 días') || q.clientAnalysis?.toLowerCase().includes('60 días')) {
+      if (
+        q.technicalAnalysis?.toLowerCase().includes('60 días') ||
+        q.clientAnalysis?.toLowerCase().includes('60 días')
+      ) {
         validity = '60 días';
       }
       return { value: validity, isExcluded: false, isWinner: false };
-    })
+    }),
   });
 
   matrix.push({
@@ -595,11 +637,11 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     id: 'additional_product',
     label: 'Producto:',
     sectionId: 101,
-    cells: quotes.map(q => ({
+    cells: quotes.map((q) => ({
       value: q.policyName || 'Multirriesgo PYME',
       isExcluded: false,
-      isWinner: false
-    }))
+      isWinner: false,
+    })),
   });
 
   matrix.push({
@@ -607,11 +649,11 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     id: 'additional_backing',
     label: 'Respaldo:',
     sectionId: 101,
-    cells: quotes.map(q => ({
+    cells: quotes.map((q) => ({
       value: `${q.insurerName} 100%`,
       isExcluded: false,
-      isWinner: false
-    }))
+      isWinner: false,
+    })),
   });
 
   matrix.push({
@@ -619,10 +661,10 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     id: 'additional_commission',
     label: 'Comisión intermediario:',
     sectionId: 101,
-    cells: quotes.map(q => {
+    cells: quotes.map((q) => {
       const comm = q.insurerName.toLowerCase().includes('bbva') ? '15%' : 'No informada';
       return { value: comm, isExcluded: comm === 'No informada', isWinner: false };
-    })
+    }),
   });
 
   matrix.push({
@@ -630,13 +672,15 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     id: 'additional_assistance',
     label: 'Asistencia incluida:',
     sectionId: 101,
-    cells: quotes.map(q => {
-      const hasAssistance = q.coverages.some(c => 
-        (c.name.toLowerCase().includes('asistencia') || c.canonicalName?.toLowerCase().includes('asistencia')) &&
-        !isExcludedValue(c.value)
+    cells: quotes.map((q) => {
+      const hasAssistance = q.coverages.some(
+        (c) =>
+          (c.name.toLowerCase().includes('asistencia') ||
+            c.canonicalName?.toLowerCase().includes('asistencia')) &&
+          !isExcludedValue(c.value)
       );
       return { value: hasAssistance ? 'SI' : 'NO', isExcluded: !hasAssistance, isWinner: false };
-    })
+    }),
   });
 
   matrix.push({
@@ -644,10 +688,16 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     id: 'additional_rce_type',
     label: 'Modalidad RCE:',
     sectionId: 101,
-    cells: quotes.map(q => {
-      const occurrences = q.technicalAnalysis?.toLowerCase().includes('ocurrencia') || q.clientAnalysis?.toLowerCase().includes('ocurrencia');
-      return { value: occurrences ? 'Ocurrencia' : 'No informada', isExcluded: !occurrences, isWinner: false };
-    })
+    cells: quotes.map((q) => {
+      const occurrences =
+        q.technicalAnalysis?.toLowerCase().includes('ocurrencia') ||
+        q.clientAnalysis?.toLowerCase().includes('ocurrencia');
+      return {
+        value: occurrences ? 'Ocurrencia' : 'No informada',
+        isExcluded: !occurrences,
+        isWinner: false,
+      };
+    }),
   });
 
   matrix.push({
@@ -655,13 +705,13 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     id: 'additional_date',
     label: 'Fecha cotización:',
     sectionId: 101,
-    cells: quotes.map(q => {
+    cells: quotes.map((q) => {
       let dateStr = '05-feb-2026';
       if (q.insurerName.toLowerCase().includes('chubb')) dateStr = '27-ene-2026';
       else if (q.insurerName.toLowerCase().includes('bbva')) dateStr = '14-ene-2026';
       else if (q.insurerName.toLowerCase().includes('axa')) dateStr = '28-ene-2026';
       return { value: dateStr, isExcluded: false, isWinner: false };
-    })
+    }),
   });
 
   return matrix;
@@ -673,8 +723,14 @@ interface UnifiedCoverageMatrixProps {
   analysisId?: string; // Optional ID for direct exports
 }
 
-export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ quotes, viewMode = 'technical', analysisId }) => {
-  const [activeTab, setActiveTab] = useState<'coverages' | 'financials' | 'additional'>('coverages');
+export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
+  quotes,
+  viewMode = 'technical',
+  analysisId,
+}) => {
+  const [activeTab, setActiveTab] = useState<'coverages' | 'financials' | 'additional'>(
+    'coverages'
+  );
   const [hoveredCell, setHoveredCell] = useState<{ rowId: string; colIdx: number } | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<{ rowId: string; colIdx: number } | null>(null);
@@ -695,17 +751,21 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
   const { openPdfViewer } = usePdfViewer();
   const { cellNotes, setCellNote, getCellNote } = useCellNotes();
   const [savingCorrections, setSavingCorrections] = useState<Set<string>>(new Set());
-  const [editingNote, setEditingNote] = useState<{rowId: string, colIdx: number} | null>(null);
+  const [editingNote, setEditingNote] = useState<{ rowId: string; colIdx: number } | null>(null);
 
-  const handleDiscrepancyResolution = async (rowId: string, colIdx: number, selectedCategory: string) => {
+  const handleDiscrepancyResolution = async (
+    rowId: string,
+    colIdx: number,
+    selectedCategory: string
+  ) => {
     const quote = quotes[colIdx];
-    const cell = fullMatrix.find(r => r.id === rowId)?.cells[colIdx];
-    
+    const cell = fullMatrix.find((r) => r.id === rowId)?.cells[colIdx];
+
     if (!quote || !cell) return;
 
     const correctionId = `${rowId}-${colIdx}`;
-    setSavingCorrections(prev => new Set(prev).add(correctionId));
-    
+    setSavingCorrections((prev) => new Set(prev).add(correctionId));
+
     try {
       const result = await submitCorrection({
         rawName: cell.rawName || rowId,
@@ -721,7 +781,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
         setOpenDropdown(null);
       }
     } finally {
-      setSavingCorrections(prev => {
+      setSavingCorrections((prev) => {
         const next = new Set(prev);
         next.delete(correctionId);
         return next;
@@ -761,14 +821,15 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
   const fullMatrix = transformQuotesToMatrix(quotes);
 
   // Partition matrix rows according to active tabs
-  const filteredRows = fullMatrix.filter(row => {
+  const filteredRows = fullMatrix.filter((row) => {
     if (activeTab === 'coverages') return row.sectionId < 100;
     if (activeTab === 'financials') return row.sectionId === 100;
     return row.sectionId === 101;
   });
 
   const getConfidenceBadgeColor = (confidence: number | undefined) => {
-    if (confidence === undefined || confidence === null) return 'bg-slate-100 text-slate-500 border-slate-200';
+    if (confidence === undefined || confidence === null)
+      return 'bg-slate-100 text-slate-500 border-slate-200';
     if (confidence >= 0.9) return 'bg-green-50 text-green-700 border-green-200';
     if (confidence >= 0.7) return 'bg-yellow-50 text-yellow-700 border-yellow-200';
     return 'bg-red-50 text-red-700 border-red-200';
@@ -882,7 +943,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
       </div>
 
       {/* Grid Matrix Container */}
-      <div 
+      <div
         className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
         role="grid"
         aria-label="Matriz de coberturas de seguros"
@@ -891,15 +952,15 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
           <table className="w-full text-sm border-collapse text-left">
             <thead className="bg-[#E6F0FA] text-[#0066CC] font-bold text-xs uppercase border-b border-blue-200 sticky top-0 z-20">
               <tr role="row">
-                <th 
+                <th
                   role="columnheader"
                   className="px-6 py-4 sticky left-0 bg-[#E6F0FA] border-r border-blue-100 min-w-[220px] md:min-w-[280px] shadow-[4px_0_10px_-5px_rgba(0,0,0,0.08)] z-30"
                 >
                   Concepto / Variable
                 </th>
                 {quotes.map((q, i) => (
-                  <th 
-                    key={i} 
+                  <th
+                    key={i}
                     role="columnheader"
                     className="px-6 py-4 min-w-[200px] md:min-w-[240px] whitespace-nowrap text-center text-[#0066CC] border-b border-blue-100"
                   >
@@ -913,7 +974,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                 if (row.type === 'header') {
                   return (
                     <tr key={row.id} className="bg-[#E6F0FA]/40 font-bold" role="row">
-                      <td 
+                      <td
                         role="gridcell"
                         colSpan={quotes.length + 1}
                         className="px-6 py-3 text-xs md:text-sm text-blue-800 uppercase tracking-wide border-y border-blue-50/50"
@@ -934,9 +995,13 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
 
                 // Standard Data Row
                 return (
-                  <tr key={row.id} className="hover:bg-slate-50/70 transition-colors group" role="row">
+                  <tr
+                    key={row.id}
+                    className="hover:bg-slate-50/70 transition-colors group"
+                    role="row"
+                  >
                     {/* Concept Label (Column A) */}
-                    <td 
+                    <td
                       role="gridcell"
                       className="px-6 py-3.5 text-xs md:text-sm font-semibold text-slate-700 bg-[#F8FAFC] sticky left-0 border-r border-slate-100 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)] z-10 group-hover:bg-[#F1F5F9]/80"
                     >
@@ -947,30 +1012,34 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                     {row.cells.map((cell, colIdx) => {
                       const isWinner = cell.isWinner;
                       const excluded = cell.isExcluded;
-                      const hasDetails = cell.confidence !== undefined || cell.pageNumber !== undefined || cell.notes;
+                      const hasDetails =
+                        cell.confidence !== undefined ||
+                        cell.pageNumber !== undefined ||
+                        cell.notes;
                       const lowConfidence = isLowConfidence(cell.confidence);
                       const needsReview = cell.needsHumanReview;
                       const isSaving = savingCorrections.has(`${row.id}-${colIdx}`);
                       const cellId = `${row.id}-${colIdx}`;
                       const cellNote = getCellNote(cellId);
-                      const isEditingNote = editingNote?.rowId === row.id && editingNote?.colIdx === colIdx;
-                      
+                      const isEditingNote =
+                        editingNote?.rowId === row.id && editingNote?.colIdx === colIdx;
+
                       const cellClass = `px-6 py-3.5 text-sm align-middle text-center relative border-r border-slate-50 transition-all ${
-                        isWinner ? 'bg-amber-50/60 font-semibold text-amber-900 border border-amber-200/50' : ''
-                      } ${
-                        excluded ? 'text-red-500 italic bg-slate-50/20' : 'text-slate-800'
-                      } ${
-                        lowConfidence ? 'bg-yellow-50/40 border-2 border-yellow-400/60 shadow-sm' : ''
-                      } ${
-                        needsReview ? 'ring-2 ring-red-300/50 ring-inset' : ''
-                      } ${
+                        isWinner
+                          ? 'bg-amber-50/60 font-semibold text-amber-900 border border-amber-200/50'
+                          : ''
+                      } ${excluded ? 'text-red-500 italic bg-slate-50/20' : 'text-slate-800'} ${
+                        lowConfidence
+                          ? 'bg-yellow-50/40 border-2 border-yellow-400/60 shadow-sm'
+                          : ''
+                      } ${needsReview ? 'ring-2 ring-red-300/50 ring-inset' : ''} ${
                         isSaving ? 'opacity-70' : ''
                       }`;
 
                       if (isEditingNote) {
                         return (
-                          <td 
-                            key={colIdx} 
+                          <td
+                            key={colIdx}
                             role="gridcell"
                             tabIndex={0}
                             className="relative p-0"
@@ -987,8 +1056,8 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                       }
 
                       return (
-                        <td 
-                          key={colIdx} 
+                        <td
+                          key={colIdx}
                           role="gridcell"
                           tabIndex={0}
                           className={cellClass}
@@ -998,7 +1067,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                         >
                           {/* Note indicator */}
                           {cellNote && (
-                            <span 
+                            <span
                               className="absolute top-1 right-2 text-blue-500 hover:scale-110 transition-transform cursor-help"
                               title={`Nota: ${cellNote.content.substring(0, 50)}...`}
                             >
@@ -1008,7 +1077,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
 
                           {/* Winner trophy */}
                           {isWinner && !lowConfidence && (
-                            <span 
+                            <span
                               className="absolute top-1 right-2 text-amber-500 hover:scale-110 transition-transform cursor-help"
                               title="Condición / Valor favorable"
                             >
@@ -1018,9 +1087,13 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
 
                           {/* Low Confidence / Needs Review Alert */}
                           {(lowConfidence || needsReview) && (
-                            <span 
+                            <span
                               className="absolute top-1 right-2 text-yellow-600 hover:scale-110 transition-transform cursor-help z-10"
-                              title={needsReview ? 'Requiere validación humana - Doble agente en discrepancia' : 'Confianza baja en mapeo ontológico'}
+                              title={
+                                needsReview
+                                  ? 'Requiere validación humana - Doble agente en discrepancia'
+                                  : 'Confianza baja en mapeo ontológico'
+                              }
                             >
                               <AlertCircle size={14} />
                             </span>
@@ -1031,7 +1104,9 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                             {excluded ? (
                               <span className="text-red-400 font-medium">No incluida</span>
                             ) : (
-                              <span className={`${isWinner ? 'text-amber-950 font-bold' : 'text-slate-800 font-medium'}`}>
+                              <span
+                                className={`${isWinner ? 'text-amber-950 font-bold' : 'text-slate-800 font-medium'}`}
+                              >
                                 {row.label === 'Deducible' && cell.value !== 'No aplica' ? (
                                   <DeductibleBadge deductible={cell.value} />
                                 ) : row.label === 'Valor Asegurado' ? (
@@ -1045,7 +1120,8 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                             {/* Technical Details Popover Trigger (Only in Technical ViewMode) */}
                             {viewMode === 'technical' && hasDetails && (
                               <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-400">
-                                {(cell.calculatedPage !== undefined || cell.pageNumber !== undefined) && (
+                                {(cell.calculatedPage !== undefined ||
+                                  cell.pageNumber !== undefined) && (
                                   <button
                                     onClick={() => handleOpenPdfEvidence(cell, quotes[colIdx])}
                                     className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-1.5 py-0.5 rounded border border-blue-200 flex items-center gap-0.5 transition-colors cursor-pointer"
@@ -1056,7 +1132,9 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                                   </button>
                                 )}
                                 {cell.confidence !== undefined && (
-                                  <span className={`px-1.5 py-0.5 rounded border ${getConfidenceBadgeColor(cell.confidence)}`}>
+                                  <span
+                                    className={`px-1.5 py-0.5 rounded border ${getConfidenceBadgeColor(cell.confidence)}`}
+                                  >
                                     {getConfidenceText(cell.confidence)}
                                   </span>
                                 )}
@@ -1071,43 +1149,61 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                           </div>
 
                           {/* Inline Discrepancy Resolution Dropdown */}
-                          {viewMode === 'technical' && needsReview && openDropdown?.rowId === row.id && openDropdown?.colIdx === colIdx && (
-                            <div 
-                              ref={dropdownRef}
-                              className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-80 bg-white rounded-xl shadow-2xl z-50 border border-slate-200 overflow-hidden"
-                            >
-                              <div className="bg-amber-50 px-4 py-2.5 border-b border-amber-200 flex items-center gap-2">
-                                <AlertTriangle size={14} className="text-amber-600" />
-                                <span className="text-xs font-bold text-amber-800">Resolver Discrepancia Ontológica</span>
-                              </div>
-                              <div className="p-3 max-h-64 overflow-y-auto">
-                                <p className="text-[11px] text-slate-500 mb-2">Seleccione la categoría canónica correcta:</p>
-                                {PLANTILLA_ITEMS.map((item, idx) => (
+                          {viewMode === 'technical' &&
+                            needsReview &&
+                            openDropdown?.rowId === row.id &&
+                            openDropdown?.colIdx === colIdx && (
+                              <div
+                                ref={dropdownRef}
+                                className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-80 bg-white rounded-xl shadow-2xl z-50 border border-slate-200 overflow-hidden"
+                              >
+                                <div className="bg-amber-50 px-4 py-2.5 border-b border-amber-200 flex items-center gap-2">
+                                  <AlertTriangle size={14} className="text-amber-600" />
+                                  <span className="text-xs font-bold text-amber-800">
+                                    Resolver Discrepancia Ontológica
+                                  </span>
+                                </div>
+                                <div className="p-3 max-h-64 overflow-y-auto">
+                                  <p className="text-[11px] text-slate-500 mb-2">
+                                    Seleccione la categoría canónica correcta:
+                                  </p>
+                                  {PLANTILLA_ITEMS.map((item, idx) => (
+                                    <button
+                                      key={idx}
+                                      onClick={() =>
+                                        handleDiscrepancyResolution(row.id, colIdx, item)
+                                      }
+                                      className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 rounded-lg transition-colors flex items-center justify-between group"
+                                    >
+                                      <span>{item}</span>
+                                      <Check
+                                        size={12}
+                                        className="text-green-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      />
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="px-3 py-2 bg-slate-50 border-t border-slate-100">
                                   <button
-                                    key={idx}
-                                    onClick={() => handleDiscrepancyResolution(row.id, colIdx, item)}
-                                    className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 rounded-lg transition-colors flex items-center justify-between group"
+                                    onClick={() => setOpenDropdown(null)}
+                                    className="w-full text-center text-[11px] text-slate-500 hover:text-slate-700 py-1"
                                   >
-                                    <span>{item}</span>
-                                    <Check size={12} className="text-green-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    Cancelar
                                   </button>
-                                ))}
+                                </div>
                               </div>
-                              <div className="px-3 py-2 bg-slate-50 border-t border-slate-100">
-                                <button 
-                                  onClick={() => setOpenDropdown(null)}
-                                  className="w-full text-center text-[11px] text-slate-500 hover:text-slate-700 py-1"
-                                >
-                                  Cancelar
-                                </button>
-                              </div>
-                            </div>
-                          )}
+                            )}
 
                           {/* Trigger button for dropdown */}
                           {viewMode === 'technical' && needsReview && (
                             <button
-                              onClick={() => setOpenDropdown(openDropdown?.rowId === row.id && openDropdown?.colIdx === colIdx ? null : { rowId: row.id, colIdx })}
+                              onClick={() =>
+                                setOpenDropdown(
+                                  openDropdown?.rowId === row.id && openDropdown?.colIdx === colIdx
+                                    ? null
+                                    : { rowId: row.id, colIdx }
+                                )
+                              }
                               disabled={isSaving}
                               className="absolute bottom-1 right-1 text-[10px] text-yellow-700 bg-yellow-100 hover:bg-yellow-200 disabled:opacity-50 px-1.5 py-0.5 rounded border border-yellow-300 transition-colors flex items-center gap-0.5 z-10"
                             >
@@ -1121,68 +1217,86 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
                           )}
 
                           {/* Premium Technical Hover Card Popover */}
-                          {viewMode === 'technical' && hoveredCell?.rowId === row.id && hoveredCell?.colIdx === colIdx && hasDetails && (
-                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-80 p-4 bg-slate-900 text-slate-100 text-xs rounded-xl shadow-xl z-50 border border-slate-700 pointer-events-none transition-all duration-200">
-                              <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-slate-800">
-                                <Award className="text-blue-400" size={14} />
-                                <span className="font-bold text-white text-[11px] tracking-wide uppercase">Auditoría de Extracción</span>
-                              </div>
-                              
-                              {/* Confidence Section */}
-                              {cell.confidence !== undefined && (
-                                <div className="flex justify-between py-0.5">
-                                  <span className="text-slate-400">Confianza:</span>
-                                  <span className={`font-semibold ${lowConfidence ? 'text-yellow-400' : 'text-white'}`}>
-                                    {formatPercentage(cell.confidence, 0)} ({getConfidenceText(cell.confidence)})
+                          {viewMode === 'technical' &&
+                            hoveredCell?.rowId === row.id &&
+                            hoveredCell?.colIdx === colIdx &&
+                            hasDetails && (
+                              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-80 p-4 bg-slate-900 text-slate-100 text-xs rounded-xl shadow-xl z-50 border border-slate-700 pointer-events-none transition-all duration-200">
+                                <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-slate-800">
+                                  <Award className="text-blue-400" size={14} />
+                                  <span className="font-bold text-white text-[11px] tracking-wide uppercase">
+                                    Auditoría de Extracción
                                   </span>
                                 </div>
-                              )}
-                              
-                              {/* Page Evidence */}
-                              {(cell.calculatedPage !== undefined || cell.pageNumber !== undefined) && (
-                                <div className="flex justify-between py-0.5">
-                                  <span className="text-slate-400">Página:</span>
-                                  <span className="font-semibold text-white">
-                                    {cell.calculatedPage !== undefined ? `Pág. ${cell.calculatedPage} (calculada)` : `Pág. ${cell.pageNumber}`}
-                                  </span>
-                                </div>
-                              )}
-                              
-                              {/* Raw Text Snippet */}
-                              {cell.rawTextSnippet && (
-                                <div className="mt-2 pt-2 border-t border-slate-800">
-                                  <span className="font-semibold text-slate-400 block mb-1">Evidencia textual (verbatim):</span>
-                                  <div className="bg-slate-800/50 rounded-lg p-2 text-[11px] text-slate-300 leading-relaxed italic border border-slate-700/50">
-                                    "{cell.rawTextSnippet}"
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {/* Justification */}
-                              {cell.justification && (
-                                <div className="mt-2 pt-2 border-t border-slate-800">
-                                  <span className="font-semibold text-slate-400 block mb-1">Justificación IA:</span>
-                                  <div className="text-[11px] text-slate-300 leading-relaxed">
-                                    {cell.justification}
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {/* Human Review Flag */}
-                              {needsReview && (
-                                <div className="mt-2 pt-2 border-t border-slate-800">
-                                  <div className="bg-red-900/30 border border-red-700/50 rounded-lg p-2 flex items-center gap-2">
-                                    <AlertTriangle size={12} className="text-red-400 flex-shrink-0" />
-                                    <span className="text-[11px] text-red-300">
-                                      Doble agente en discrepancia. Se requiere validación humana.
+
+                                {/* Confidence Section */}
+                                {cell.confidence !== undefined && (
+                                  <div className="flex justify-between py-0.5">
+                                    <span className="text-slate-400">Confianza:</span>
+                                    <span
+                                      className={`font-semibold ${lowConfidence ? 'text-yellow-400' : 'text-white'}`}
+                                    >
+                                      {formatPercentage(cell.confidence, 0)} (
+                                      {getConfidenceText(cell.confidence)})
                                     </span>
                                   </div>
-                                </div>
-                              )}
-                              
-                              <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-slate-900"></div>
-                            </div>
-                          )}
+                                )}
+
+                                {/* Page Evidence */}
+                                {(cell.calculatedPage !== undefined ||
+                                  cell.pageNumber !== undefined) && (
+                                  <div className="flex justify-between py-0.5">
+                                    <span className="text-slate-400">Página:</span>
+                                    <span className="font-semibold text-white">
+                                      {cell.calculatedPage !== undefined
+                                        ? `Pág. ${cell.calculatedPage} (calculada)`
+                                        : `Pág. ${cell.pageNumber}`}
+                                    </span>
+                                  </div>
+                                )}
+
+                                {/* Raw Text Snippet */}
+                                {cell.rawTextSnippet && (
+                                  <div className="mt-2 pt-2 border-t border-slate-800">
+                                    <span className="font-semibold text-slate-400 block mb-1">
+                                      Evidencia textual (verbatim):
+                                    </span>
+                                    <div className="bg-slate-800/50 rounded-lg p-2 text-[11px] text-slate-300 leading-relaxed italic border border-slate-700/50">
+                                      "{cell.rawTextSnippet}"
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Justification */}
+                                {cell.justification && (
+                                  <div className="mt-2 pt-2 border-t border-slate-800">
+                                    <span className="font-semibold text-slate-400 block mb-1">
+                                      Justificación IA:
+                                    </span>
+                                    <div className="text-[11px] text-slate-300 leading-relaxed">
+                                      {cell.justification}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Human Review Flag */}
+                                {needsReview && (
+                                  <div className="mt-2 pt-2 border-t border-slate-800">
+                                    <div className="bg-red-900/30 border border-red-700/50 rounded-lg p-2 flex items-center gap-2">
+                                      <AlertTriangle
+                                        size={12}
+                                        className="text-red-400 flex-shrink-0"
+                                      />
+                                      <span className="text-[11px] text-red-300">
+                                        Doble agente en discrepancia. Se requiere validación humana.
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-slate-900"></div>
+                              </div>
+                            )}
                         </td>
                       );
                     })}
@@ -1198,9 +1312,10 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({ qu
       <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-start gap-3 shadow-inner">
         <Info className="text-slate-500 mt-0.5 flex-shrink-0" size={16} />
         <div className="text-xs text-slate-500 leading-relaxed">
-          <span className="font-semibold text-slate-700">Nota técnica:</span> La correspondencia en esta matriz horizontal
-          ha sido alineada determinísticamente por nuestro transformador. El contenido coincide de manera exacta y
-          paritaria con el reporte Excel monocromático de 3 pestañas.
+          <span className="font-semibold text-slate-700">Nota técnica:</span> La correspondencia en
+          esta matriz horizontal ha sido alineada determinísticamente por nuestro transformador. El
+          contenido coincide de manera exacta y paritaria con el reporte Excel monocromático de 3
+          pestañas.
         </div>
       </div>
 

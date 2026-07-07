@@ -4,8 +4,8 @@
  * Resolves ambiguous deductibles and detects discrepancies
  */
 
-import { UnifiedComparisonResult, DeepModeResult } from "../../types/unifiedComparison";
-import { GoogleGenAI, ThinkingLevel } from "@google/genai";
+import { UnifiedComparisonResult, DeepModeResult } from '../../types/unifiedComparison';
+import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 
 interface GeminiFile {
   name?: string;
@@ -40,13 +40,12 @@ interface DeepValidationResponse {
 const getGenAI = () => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY is not set in environment");
+    throw new Error('GEMINI_API_KEY is not set in environment');
   }
   return new GoogleGenAI({ apiKey });
 };
 
 export class DeepClauseValidator {
-  
   /**
    * Validate comparison results against clause PDFs
    */
@@ -55,55 +54,63 @@ export class DeepClauseValidator {
     clausePaths: string[]
   ): Promise<DeepModeResult> {
     const correlationId = `deep-validation-${Date.now()}`;
-    
-    console.log(`🔍 [DeepClauseValidator] Starting validation with ${clausePaths.length} clauses [${correlationId}]`);
+
+    console.log(
+      `🔍 [DeepClauseValidator] Starting validation with ${clausePaths.length} clauses [${correlationId}]`
+    );
 
     try {
       // Upload clause PDFs
       const uploadedClauses = await this.uploadClauses(clausePaths);
-      
+
       // Build validation prompt
       const prompt = this.buildValidationPrompt(comparison);
-      
+
       // Call Gemini for validation
       const validationResult = await this.callGeminiForValidation(
-        uploadedClauses, 
-        prompt, 
+        uploadedClauses,
+        prompt,
         correlationId
       );
 
       // Parse and apply validations
       const validatedComparison = this.applyValidations(comparison, validationResult);
-      
+
       // Build deep mode result
       const deepResult: DeepModeResult = {
         originalComparison: comparison,
         validatedComparison,
-        validations: (validationResult.validations || []).map(v => ({
+        validations: (validationResult.validations || []).map((v) => ({
           insurer: v.insurer,
           coverage: v.coverage,
           field: v.field,
           originalValue: v.originalValue || '',
           validatedValue: v.validatedValue,
           source: v.source,
-          confidence: v.confidence ?? 0
+          confidence: v.confidence ?? 0,
         })),
-        discrepancies: (validationResult.discrepancies || []).map(d => ({
+        discrepancies: (validationResult.discrepancies || []).map((d) => ({
           insurer: d.insurer,
           type: d.type,
           description: d.description,
-          severity: d.severity
-        }))
+          severity: d.severity,
+        })),
       };
 
       console.log(`✅ [DeepClauseValidator] Validation complete [${correlationId}]`);
-      console.log(`📊 [DeepClauseValidator] Found ${deepResult.validations.length} validations, ${deepResult.discrepancies.length} discrepancies [${correlationId}]`);
+      console.log(
+        `📊 [DeepClauseValidator] Found ${deepResult.validations.length} validations, ${deepResult.discrepancies.length} discrepancies [${correlationId}]`
+      );
 
       return deepResult;
-
     } catch (error) {
-      console.error(`❌ [DeepClauseValidator] Validation failed [${correlationId}]:`, error instanceof Error ? error.message : String(error));
-      throw new Error(`Clause validation failed: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(
+        `❌ [DeepClauseValidator] Validation failed [${correlationId}]:`,
+        error instanceof Error ? error.message : String(error)
+      );
+      throw new Error(
+        `Clause validation failed: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -120,15 +127,15 @@ export class DeepClauseValidator {
           file: filePath,
           config: {
             mimeType: 'application/pdf',
-            displayName: `clause-${filePath.split('/').pop()}`
-          }
+            displayName: `clause-${filePath.split('/').pop()}`,
+          },
         });
 
         // Wait for processing
         const fileName = uploadedFile.name || '';
         let file = await ai.files.get({ name: fileName });
         while (file.state === 'PROCESSING') {
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise((resolve) => setTimeout(resolve, 2000));
           file = await ai.files.get({ name: fileName });
         }
 
@@ -138,7 +145,10 @@ export class DeepClauseValidator {
 
         uploadedFiles.push(file);
       } catch (error) {
-        console.error(`❌ [DeepClauseValidator] Failed to upload clause ${filePath}:`, error instanceof Error ? error.message : String(error));
+        console.error(
+          `❌ [DeepClauseValidator] Failed to upload clause ${filePath}:`,
+          error instanceof Error ? error.message : String(error)
+        );
         throw error;
       }
     }
@@ -200,15 +210,15 @@ Responde ÚNICAMENTE con el JSON. No incluyas explicaciones.`;
     correlationId: string
   ): Promise<DeepValidationResponse> {
     const ai = getGenAI();
-    
+
     const contents = [
-      ...clauses.map(clause => ({
+      ...clauses.map((clause) => ({
         fileData: {
           fileUri: clause.uri,
-          mimeType: 'application/pdf'
-        }
+          mimeType: 'application/pdf',
+        },
       })),
-      { text: prompt }
+      { text: prompt },
     ];
 
     console.log(`🤖 [DeepClauseValidator] Calling Gemini for validation [${correlationId}]`);
@@ -218,10 +228,10 @@ Responde ÚNICAMENTE con el JSON. No incluyas explicaciones.`;
       contents,
       config: {
         thinkingConfig: {
-          thinkingLevel: ThinkingLevel.HIGH // Use high for complex validation
+          thinkingLevel: ThinkingLevel.HIGH, // Use high for complex validation
         },
-        responseMimeType: 'application/json'
-      }
+        responseMimeType: 'application/json',
+      },
     });
 
     if (!result.text) {
@@ -229,11 +239,14 @@ Responde ÚNICAMENTE con el JSON. No incluyas explicaciones.`;
     }
 
     console.log(`✅ [DeepClauseValidator] Validation response received [${correlationId}]`);
-    
+
     try {
       return JSON.parse(result.text) as DeepValidationResponse;
     } catch (error) {
-      console.error(`❌ [DeepClauseValidator] Failed to parse validation response [${correlationId}]:`, error instanceof Error ? error.message : String(error));
+      console.error(
+        `❌ [DeepClauseValidator] Failed to parse validation response [${correlationId}]:`,
+        error instanceof Error ? error.message : String(error)
+      );
       throw new Error('Invalid validation response format');
     }
   }
@@ -249,22 +262,22 @@ Responde ÚNICAMENTE con el JSON. No incluyas explicaciones.`;
 
     // Apply deductible validations
     if (validationResult.validations) {
-      validationResult.validations.forEach(validation => {
+      validationResult.validations.forEach((validation) => {
         this.applySingleValidation(validated, validation);
       });
     }
 
     // Add discrepancy warnings
     if (validationResult.discrepancies) {
-      validationResult.discrepancies.forEach(discrepancy => {
+      validationResult.discrepancies.forEach((discrepancy) => {
         validated.analysis.warnings.push(
           `[${discrepancy.severity.toUpperCase()}] ${discrepancy.insurer}: ${discrepancy.description}`
         );
-        
+
         validated.analysis.significantDifferences.push({
           coverage: discrepancy.type,
           difference: discrepancy.description,
-          severity: discrepancy.severity
+          severity: discrepancy.severity,
         });
       });
     }
@@ -285,7 +298,7 @@ Responde ÚNICAMENTE con el JSON. No incluyas explicaciones.`;
   ): void {
     // Find the insurer index
     const insurerIndex = comparison.insurers.findIndex(
-      i => i.name.toLowerCase() === validation.insurer.toLowerCase()
+      (i) => i.name.toLowerCase() === validation.insurer.toLowerCase()
     );
 
     if (insurerIndex === -1) {
@@ -295,8 +308,9 @@ Responde ÚNICAMENTE con el JSON. No incluyas explicaciones.`;
 
     // Find the coverage section
     const section = comparison.coverageMatrix.find(
-      s => s.category.toLowerCase().includes(validation.coverage.toLowerCase()) ||
-           s.category.toLowerCase().includes(validation.coverage.toLowerCase().replace(/\s+/g, ''))
+      (s) =>
+        s.category.toLowerCase().includes(validation.coverage.toLowerCase()) ||
+        s.category.toLowerCase().includes(validation.coverage.toLowerCase().replace(/\s+/g, ''))
     );
 
     if (!section) {
@@ -305,9 +319,11 @@ Responde ÚNICAMENTE con el JSON. No incluyas explicaciones.`;
     }
 
     // Find the specific row and update
-    section.rows.forEach(row => {
-      if (row.type === validation.field || 
-          (validation.field === 'deductible' && row.type === 'deductible')) {
+    section.rows.forEach((row) => {
+      if (
+        row.type === validation.field ||
+        (validation.field === 'deductible' && row.type === 'deductible')
+      ) {
         if (row.cells[insurerIndex]) {
           row.cells[insurerIndex].value = validation.validatedValue;
           row.cells[insurerIndex].notes = `Validado contra clausulado (pág. ${validation.source})`;

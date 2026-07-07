@@ -6,7 +6,7 @@ describe('warrantyComplianceAnalyzer', () => {
   describe('analyzeConditions', () => {
     it('should analyze all conditions', () => {
       const result = warrantyComplianceAnalyzer.analyzeConditions(mockConditions);
-      
+
       expect(result.totalConditions).toBe(mockConditions.length);
       expect(result.byType).toBeDefined();
       expect(result.overallRisk).toBeDefined();
@@ -14,25 +14,26 @@ describe('warrantyComplianceAnalyzer', () => {
 
     it('should classify conditions by type', () => {
       const result = warrantyComplianceAnalyzer.analyzeConditions(mockConditions);
-      
+
       // Should have at least one of each type or categorize correctly
-      const totalByType = result.byType.documental.count +
+      const totalByType =
+        result.byType.documental.count +
         result.byType.operacional.count +
         result.byType.tecnico.count +
         result.byType.financiero.count;
-      
+
       expect(totalByType).toBe(mockConditions.length);
     });
 
     it('should calculate overall risk', () => {
       const result = warrantyComplianceAnalyzer.analyzeConditions(mockConditions);
-      
+
       expect(['LOW', 'MEDIUM', 'HIGH']).toContain(result.overallRisk);
     });
 
     it('should identify high risk conditions', () => {
       const result = warrantyComplianceAnalyzer.analyzeConditions(mockConditions);
-      
+
       // Financial conditions with high difficulty should be high risk
       const financialConditions = result.byType.financiero;
       if (financialConditions.count > 0) {
@@ -42,26 +43,30 @@ describe('warrantyComplianceAnalyzer', () => {
 
     it('should calculate compliance percentage', () => {
       const result = warrantyComplianceAnalyzer.analyzeConditions(mockConditions);
-      
+
       expect(result.compliancePercentage).toBeGreaterThanOrEqual(0);
       expect(result.compliancePercentage).toBeLessThanOrEqual(100);
     });
 
     it('should handle empty conditions', () => {
       const result = warrantyComplianceAnalyzer.analyzeConditions([]);
-      
+
       expect(result.totalConditions).toBe(0);
       expect(result.compliancePercentage).toBe(0);
     });
 
     it('should adjust difficulty based on client profile', () => {
-      const smallBusinessProfile = { ...mockClientProfile, employeeCount: 5, annualRevenue: 50000000 };
-      
+      const smallBusinessProfile = {
+        ...mockClientProfile,
+        employeeCount: 5,
+        annualRevenue: 50000000,
+      };
+
       const result = warrantyComplianceAnalyzer.analyzeConditions(
         mockConditions,
         smallBusinessProfile
       );
-      
+
       // Financial conditions should be harder for small businesses
       const financial = result.byType.financiero;
       expect(financial.count).toBeGreaterThanOrEqual(0);

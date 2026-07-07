@@ -7,8 +7,8 @@ import type { QuoteAnalysis } from '../types';
 
 describe('Winner Detection', () => {
   const createMockQuote = (
-    insurerName: string, 
-    priceAnnual: number, 
+    insurerName: string,
+    priceAnnual: number,
     coverages: Array<{ name: string; value: string; deductible?: string }>
   ): QuoteAnalysis => ({
     insurerName,
@@ -17,7 +17,7 @@ describe('Winner Detection', () => {
     priceAnnual,
     currency: 'COP',
     deductibles: '',
-    coverages: coverages.map(c => ({
+    coverages: coverages.map((c) => ({
       name: c.name,
       value: c.value,
       deductible: c.deductible || '',
@@ -50,9 +50,7 @@ describe('Winner Detection', () => {
   });
 
   it('should return null for single quote', () => {
-    const quotes = [
-      createMockQuote('Insurer A', 1000000, [{ name: 'Incendio', value: '500M' }]),
-    ];
+    const quotes = [createMockQuote('Insurer A', 1000000, [{ name: 'Incendio', value: '500M' }])];
 
     const winner = findWinnerByCategory(quotes, 1, 'Incendio');
     expect(winner).toBeNull();

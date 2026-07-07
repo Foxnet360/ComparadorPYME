@@ -17,10 +17,7 @@ async function verifyConnection() {
   try {
     // 1. Verificar conexión básica
     console.log('1️⃣  Conexión a base de datos...');
-    const { error: insurersError } = await supabase
-      .from('insurers')
-      .select('count')
-      .limit(1);
+    const { error: insurersError } = await supabase.from('insurers').select('count').limit(1);
 
     if (insurersError) {
       console.error('   ❌ Error:', insurersError.message);
@@ -34,7 +31,7 @@ async function verifyConnection() {
       p_embedding: Array(768).fill(0) as unknown as string,
       p_insurer_id: '00000000-0000-0000-0000-000000000000',
       p_coverage_tag: null,
-      p_match_count: 1
+      p_match_count: 1,
     });
 
     if (vectorError && !vectorError.message.includes('insurer')) {
@@ -46,13 +43,13 @@ async function verifyConnection() {
     // 3. Verificar Storage
     console.log('\n3️⃣  Storage (clause-pages)...');
     const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
-    
+
     if (bucketError) {
       console.error('   ❌ Error:', bucketError.message);
       return false;
     }
 
-    const clauseBucket = buckets?.find(b => b.name === 'clause-pages');
+    const clauseBucket = buckets?.find((b) => b.name === 'clause-pages');
     if (!clauseBucket) {
       console.warn('   ⚠️  Bucket no encontrado');
       console.log('   ℹ️  Ejecuta: npx ts-node src/scripts/setupSupabase.ts');
@@ -89,13 +86,12 @@ async function verifyConnection() {
     console.log('\n✅ Todas las verificaciones pasaron!');
     console.log('\nEl sistema está listo para usar.');
     return true;
-
   } catch (error) {
     console.error('\n❌ Error durante verificación:', error);
     return false;
   }
 }
 
-verifyConnection().then(success => {
+verifyConnection().then((success) => {
   process.exit(success ? 0 : 1);
 });

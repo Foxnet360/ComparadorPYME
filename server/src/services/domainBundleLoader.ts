@@ -7,10 +7,7 @@ import { assertBundleManifest, BundleManifest } from '../schemas/domainBundleSch
  * Busca en múltiples candidatos para soportar ejecución desde distintas rutas
  * (desarrollo con ts-node, tests, build en dist, etc.).
  */
-export function resolveDomainBundlePath(
-  domain: string,
-  filename: string
-): string | null {
+export function resolveDomainBundlePath(domain: string, filename: string): string | null {
   const candidates = [
     path.resolve(process.cwd(), 'data', 'domains', domain, filename),
     path.resolve(process.cwd(), '..', 'data', 'domains', domain, filename),
@@ -40,9 +37,7 @@ export function loadDomainJson<T>(domain: string, filename: string): T {
       const raw = fs.readFileSync(bundlePath, 'utf-8');
       return JSON.parse(raw) as T;
     } catch (error) {
-      throw new Error(
-        `Failed to parse domain bundle ${filename} for domain "${domain}": ${error}`
-      );
+      throw new Error(`Failed to parse domain bundle ${filename} for domain "${domain}": ${error}`);
     }
   }
 
@@ -53,9 +48,7 @@ export function loadDomainJson<T>(domain: string, filename: string): T {
     return loadDomainJson<T>('pyme', filename);
   }
 
-  throw new Error(
-    `Domain bundle file not found: ${filename} for domain "${domain}"`
-  );
+  throw new Error(`Domain bundle file not found: ${filename} for domain "${domain}"`);
 }
 
 /**

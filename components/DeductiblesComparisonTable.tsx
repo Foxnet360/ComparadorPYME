@@ -9,7 +9,9 @@ interface DeductiblesComparisonTableProps {
   quotes: QuoteAnalysis[];
 }
 
-export const DeductiblesComparisonTable: React.FC<DeductiblesComparisonTableProps> = ({ quotes }) => {
+export const DeductiblesComparisonTable: React.FC<DeductiblesComparisonTableProps> = ({
+  quotes,
+}) => {
   // Use canonical categories (14 fixed) instead of dynamic coverage names
   const categories = PLANTILLA_ITEMS.map((name, index) => ({
     id: index + 1,
@@ -17,7 +19,11 @@ export const DeductiblesComparisonTable: React.FC<DeductiblesComparisonTableProp
   }));
 
   // Helper to find coverage by category for a quote
-  const findCoverageByCategory = (quote: QuoteAnalysis, categoryId: number, categoryName: string) => {
+  const findCoverageByCategory = (
+    quote: QuoteAnalysis,
+    categoryId: number,
+    categoryName: string
+  ) => {
     return quote.coverages?.find((c: CoverageItem) => {
       // Match by categoryId (preferred)
       if (c.categoryId === categoryId) return true;
@@ -27,59 +33,80 @@ export const DeductiblesComparisonTable: React.FC<DeductiblesComparisonTableProp
       return false;
     });
   };
-  
+
   // Función para parsear deducible
   const parseDeductible = (deductibleText: string | undefined | null) => {
-    if (!deductibleText || typeof deductibleText !== 'string' || deductibleText === 'No aplica' || deductibleText === '') {
+    if (
+      !deductibleText ||
+      typeof deductibleText !== 'string' ||
+      deductibleText === 'No aplica' ||
+      deductibleText === ''
+    ) {
       return { percentage: null, minimum: null, appliesTo: null };
     }
-    
+
     const lower = deductibleText.toLowerCase();
-    
+
     // Extraer porcentaje (maneja tanto punto como coma como separador decimal)
     const percentMatch = deductibleText.match(/(\d+(?:[.,]\d+)?)\s*%/);
     const percentage = percentMatch ? parseFloat(percentMatch[1].replace(',', '.')) : null;
-    
+
     // Extraer mínimo
-    const minMatch = deductibleText.match(/(?:m[ií]n\.?|mínimo)\s*:?\s*(\d+(?:\.\d+)?)\s*(?:SMMLV|salarios?)/i);
+    const minMatch = deductibleText.match(
+      /(?:m[ií]n\.?|mínimo)\s*:?\s*(\d+(?:\.\d+)?)\s*(?:SMMLV|salarios?)/i
+    );
     const minimum = minMatch ? parseFloat(minMatch[1]) : null;
-    
+
     // Determinar sobre qué aplica
     let appliesTo: 'perdida' | 'valor' | null = null;
-    if (lower.includes('valor asegurado') || lower.includes('suma asegurada') || lower.includes('sobre el valor') || lower.includes('aplica sobre valor')) {
+    if (
+      lower.includes('valor asegurado') ||
+      lower.includes('suma asegurada') ||
+      lower.includes('sobre el valor') ||
+      lower.includes('aplica sobre valor')
+    ) {
       appliesTo = 'valor';
-    } else if (lower.includes('perdida') || lower.includes('siniestro') || lower.includes('sobre la pérdida') || lower.includes('aplica sobre pérdida')) {
+    } else if (
+      lower.includes('perdida') ||
+      lower.includes('siniestro') ||
+      lower.includes('sobre la pérdida') ||
+      lower.includes('aplica sobre pérdida')
+    ) {
       appliesTo = 'perdida';
     }
-    
+
     return { percentage, minimum, appliesTo };
   };
-  
+
   // Función para determinar severidad
   const getSeverity = (percentage: number | null, appliesTo: 'perdida' | 'valor' | null) => {
     if (!percentage) return 'neutral';
-    
+
     if (appliesTo === 'valor') return 'critical';
     if (percentage > 15) return 'warning';
     if (percentage <= 5) return 'good';
     return 'neutral';
   };
-  
+
   // Check if any quote has deductibles
-  const hasAnyDeductibles = quotes.some(q => 
-    q.coverages?.some((c: CoverageItem) => c.deductible && c.deductible !== 'No aplica' && c.deductible !== '')
+  const hasAnyDeductibles = quotes.some((q) =>
+    q.coverages?.some(
+      (c: CoverageItem) => c.deductible && c.deductible !== 'No aplica' && c.deductible !== ''
+    )
   );
-  
+
   if (!hasAnyDeductibles) {
     return (
       <div className="bg-slate-50 p-8 rounded-xl text-center">
         <Info className="mx-auto mb-4 text-slate-400" size={48} />
         <p className="text-slate-600">No se encontraron deducibles específicos por cobertura.</p>
-        <p className="text-sm text-slate-500 mt-2">Revisa el texto completo de deducibles a continuación.</p>
+        <p className="text-sm text-slate-500 mt-2">
+          Revisa el texto completo de deducibles a continuación.
+        </p>
       </div>
     );
   }
-  
+
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="p-6 bg-gradient-to-r from-indigo-50 to-white border-b border-slate-200">
@@ -102,7 +129,7 @@ export const DeductiblesComparisonTable: React.FC<DeductiblesComparisonTableProp
           </div>
         </div>
       </div>
-      
+
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-slate-100 text-slate-700 font-bold text-xs uppercase">
@@ -131,20 +158,24 @@ export const DeductiblesComparisonTable: React.FC<DeductiblesComparisonTableProp
                   const deductible = coverage?.deductible || '';
                   const { percentage, minimum, appliesTo } = parseDeductible(deductible);
                   const severity = getSeverity(percentage, appliesTo);
-                  
+
                   const severityClasses = {
                     good: 'bg-green-50 border-green-200 text-green-800',
                     warning: 'bg-amber-50 border-amber-200 text-amber-800',
                     critical: 'bg-red-50 border-red-200 text-red-800',
-                    neutral: 'bg-slate-50 border-slate-200 text-slate-600'
+                    neutral: 'bg-slate-50 border-slate-200 text-slate-600',
                   };
-                  
+
                   return (
                     <td key={qIdx} className="px-4 py-4 text-center">
                       {deductible && deductible !== 'No aplica' ? (
-                        <div className={`inline-flex flex-col items-center p-3 rounded-lg border ${severityClasses[severity]}`}>
+                        <div
+                          className={`inline-flex flex-col items-center p-3 rounded-lg border ${severityClasses[severity]}`}
+                        >
                           {percentage && (
-                            <span className="text-lg font-bold">{formatPercentage(percentage, 0)}</span>
+                            <span className="text-lg font-bold">
+                              {formatPercentage(percentage, 0)}
+                            </span>
                           )}
                           {minimum && (
                             <span className="text-xs mt-1">Mín. {formatNumber(minimum)} SMMLV</span>

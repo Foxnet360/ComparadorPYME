@@ -7,7 +7,14 @@ import {
   MetricCollector,
 } from '../../utils/structuredLogger';
 
-function item(text: string, x: number, y: number, width = 60, height = 12, rotation = 0): LayoutTextItem {
+function item(
+  text: string,
+  x: number,
+  y: number,
+  width = 60,
+  height = 12,
+  rotation = 0
+): LayoutTextItem {
   return { text, x, y, width, height, rotation };
 }
 
@@ -59,10 +66,7 @@ describe('layoutParser metrics and logging', () => {
   });
 
   it('logs layout_parse_failed when rotated pages are detected', () => {
-    const items = [
-      item('Rotado A', 100, 700, 60, 12, 90),
-      item('Rotado B', 100, 680, 60, 12, 90),
-    ];
+    const items = [item('Rotado A', 100, 700, 60, 12, 90), item('Rotado B', 100, 680, 60, 12, 90)];
 
     const result = extractTables([page(1, items)], { logger, metrics });
 
@@ -74,10 +78,7 @@ describe('layoutParser metrics and logging', () => {
   });
 
   it('logs layout_parse_failed when too few columns are detected', () => {
-    const items = [
-      item('Seccion', 100, 700),
-      item('Valor', 100, 680),
-    ];
+    const items = [item('Seccion', 100, 700), item('Valor', 100, 680)];
 
     const result = extractTables([page(1, items)], { logger, metrics });
 

@@ -16,13 +16,15 @@ interface HeatmapCell {
   coverage?: CoverageItem;
 }
 
-const getRiskScore = (coverage: CoverageItem | undefined): { score: 'low' | 'medium' | 'high' | 'not-included'; reason: string } => {
+const getRiskScore = (
+  coverage: CoverageItem | undefined
+): { score: 'low' | 'medium' | 'high' | 'not-included'; reason: string } => {
   if (!coverage) {
     return { score: 'not-included', reason: 'Cobertura no incluida' };
   }
 
   const value = coverage.value?.toUpperCase().trim() || '';
-  
+
   // Check if excluded
   if (['EXCLUIDO', 'NO CUBRE', 'NO APLICA'].includes(value)) {
     return { score: 'high', reason: 'Cobertura excluida' };
@@ -56,19 +58,27 @@ const getRiskScore = (coverage: CoverageItem | undefined): { score: 'low' | 'med
 
 const getCellColor = (score: 'low' | 'medium' | 'high' | 'not-included'): string => {
   switch (score) {
-    case 'low': return 'bg-green-100 border-green-200 hover:bg-green-200';
-    case 'medium': return 'bg-yellow-100 border-yellow-200 hover:bg-yellow-200';
-    case 'high': return 'bg-red-100 border-red-200 hover:bg-red-200';
-    case 'not-included': return 'bg-gray-100 border-gray-200 hover:bg-gray-200';
+    case 'low':
+      return 'bg-green-100 border-green-200 hover:bg-green-200';
+    case 'medium':
+      return 'bg-yellow-100 border-yellow-200 hover:bg-yellow-200';
+    case 'high':
+      return 'bg-red-100 border-red-200 hover:bg-red-200';
+    case 'not-included':
+      return 'bg-gray-100 border-gray-200 hover:bg-gray-200';
   }
 };
 
 const getCellTextColor = (score: 'low' | 'medium' | 'high' | 'not-included'): string => {
   switch (score) {
-    case 'low': return 'text-green-800';
-    case 'medium': return 'text-yellow-800';
-    case 'high': return 'text-red-800';
-    case 'not-included': return 'text-gray-500';
+    case 'low':
+      return 'text-green-800';
+    case 'medium':
+      return 'text-yellow-800';
+    case 'high':
+      return 'text-red-800';
+    case 'not-included':
+      return 'text-gray-500';
   }
 };
 
@@ -85,11 +95,16 @@ export const RiskHeatmap: React.FC<RiskHeatmapProps> = ({ quotes }) => {
     name,
   }));
 
-  const getCellData = (quote: QuoteAnalysis, categoryId: number, categoryName: string): HeatmapCell => {
-    const coverage = quote.coverages?.find(c => 
-      c.categoryId === categoryId || 
-      normalizeText(c.canonicalName) === normalizeText(categoryName) ||
-      normalizeText(c.name) === normalizeText(categoryName)
+  const getCellData = (
+    quote: QuoteAnalysis,
+    categoryId: number,
+    categoryName: string
+  ): HeatmapCell => {
+    const coverage = quote.coverages?.find(
+      (c) =>
+        c.categoryId === categoryId ||
+        normalizeText(c.canonicalName) === normalizeText(categoryName) ||
+        normalizeText(c.name) === normalizeText(categoryName)
     );
 
     const risk = getRiskScore(coverage);
@@ -99,7 +114,7 @@ export const RiskHeatmap: React.FC<RiskHeatmapProps> = ({ quotes }) => {
       deductible: coverage?.deductible || 'N/A',
       riskScore: risk.score,
       reason: risk.reason,
-      coverage
+      coverage,
     };
   };
 
@@ -108,7 +123,7 @@ export const RiskHeatmap: React.FC<RiskHeatmapProps> = ({ quotes }) => {
       visible: true,
       x: e.clientX,
       y: e.clientY,
-      cell
+      cell,
     });
   };
 
@@ -148,7 +163,10 @@ export const RiskHeatmap: React.FC<RiskHeatmapProps> = ({ quotes }) => {
                   Categoría
                 </th>
                 {quotes.map((q, i) => (
-                  <th key={i} className="p-3 text-center font-semibold text-slate-700 bg-slate-50 border border-slate-200 min-w-[140px]">
+                  <th
+                    key={i}
+                    className="p-3 text-center font-semibold text-slate-700 bg-slate-50 border border-slate-200 min-w-[140px]"
+                  >
                     {q.insurerName}
                   </th>
                 ))}
@@ -172,7 +190,9 @@ export const RiskHeatmap: React.FC<RiskHeatmapProps> = ({ quotes }) => {
                         onMouseEnter={(e) => handleMouseEnter(e, cell)}
                         onMouseLeave={handleMouseLeave}
                       >
-                        <div className={`text-center font-medium ${getCellTextColor(cell.riskScore)}`}>
+                        <div
+                          className={`text-center font-medium ${getCellTextColor(cell.riskScore)}`}
+                        >
                           {cell.riskScore === 'not-included' ? '—' : cell.value.substring(0, 20)}
                           {cell.value.length > 20 && '...'}
                         </div>
@@ -200,13 +220,15 @@ export const RiskHeatmap: React.FC<RiskHeatmapProps> = ({ quotes }) => {
             <span className="font-medium">Deducible:</span> {tooltip.cell.deductible}
           </div>
           <div className="text-slate-600 mb-1">
-            <span className="font-medium">Riesgo:</span> {' '}
-            <span className={`
+            <span className="font-medium">Riesgo:</span>{' '}
+            <span
+              className={`
               ${tooltip.cell.riskScore === 'low' ? 'text-green-600' : ''}
               ${tooltip.cell.riskScore === 'medium' ? 'text-yellow-600' : ''}
               ${tooltip.cell.riskScore === 'high' ? 'text-red-600' : ''}
               ${tooltip.cell.riskScore === 'not-included' ? 'text-gray-500' : ''}
-            `}>
+            `}
+            >
               {tooltip.cell.riskScore === 'low' && 'Bajo'}
               {tooltip.cell.riskScore === 'medium' && 'Medio'}
               {tooltip.cell.riskScore === 'high' && 'Alto'}

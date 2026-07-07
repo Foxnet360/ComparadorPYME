@@ -22,8 +22,8 @@ export const FeedbackCollector: React.FC<FeedbackCollectorProps> = ({ feature, o
         body: JSON.stringify({
           feature,
           rating,
-          comment: comment || undefined
-        })
+          comment: comment || undefined,
+        }),
       });
 
       setIsSubmitted(true);

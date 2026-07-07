@@ -1,5 +1,13 @@
 import React from 'react';
-import { Award, AlertTriangle, TrendingDown, ArrowRight, BarChart3, Scale, ShieldAlert } from 'lucide-react';
+import {
+  Award,
+  AlertTriangle,
+  TrendingDown,
+  ArrowRight,
+  BarChart3,
+  Scale,
+  ShieldAlert,
+} from 'lucide-react';
 import { QuoteAnalysis } from '../types';
 import { formatCOP } from '../utils/formatCurrency';
 
@@ -9,39 +17,51 @@ interface ExecutiveSummaryProps {
   onNavigate: (tab: 'resumen' | 'coberturas' | 'deducibles' | 'auditoria') => void;
 }
 
-export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({ quotes, recommendation, onNavigate }) => {
+export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
+  quotes,
+  recommendation,
+  onNavigate,
+}) => {
   if (!quotes || quotes.length === 0) return null;
-  
+
   // Find best option
-  const bestQuote = quotes.reduce((prev, current) => 
-    ((prev.score || 0) > (current.score || 0)) ? prev : current
+  const bestQuote = quotes.reduce((prev, current) =>
+    (prev.score || 0) > (current.score || 0) ? prev : current
   );
-  
+
   // Find cheapest
   const cheapestQuote = quotes
-    .filter(q => q.priceAnnual && q.priceAnnual > 0)
-    .reduce((prev, current) => 
-      ((prev.priceAnnual || Infinity) < (current.priceAnnual || Infinity)) ? prev : current
-    , quotes[0]);
-  
+    .filter((q) => q.priceAnnual && q.priceAnnual > 0)
+    .reduce(
+      (prev, current) =>
+        (prev.priceAnnual || Infinity) < (current.priceAnnual || Infinity) ? prev : current,
+      quotes[0]
+    );
+
   // Find highest risk (most critical alerts)
   const highestRiskQuote = quotes.reduce((prev, current) => {
-    const prevCriticals = (prev.alerts || []).filter(a => a.level === 'CRITICAL').length;
-    const currCriticals = (current.alerts || []).filter(a => a.level === 'CRITICAL').length;
+    const prevCriticals = (prev.alerts || []).filter((a) => a.level === 'CRITICAL').length;
+    const currCriticals = (current.alerts || []).filter((a) => a.level === 'CRITICAL').length;
     return currCriticals > prevCriticals ? current : prev;
   });
-  
+
   // Calculate potential savings
-  const prices = quotes.map(q => q.priceAnnual).filter(Boolean);
+  const prices = quotes.map((q) => q.priceAnnual).filter(Boolean);
   const maxPrice = Math.max(...prices);
   const minPrice = Math.min(...prices);
   const savings = maxPrice - minPrice;
   const savingsPercent = maxPrice > 0 ? Math.round((savings / maxPrice) * 100) : 0;
-  
+
   // Count total alerts
-  const totalCriticals = quotes.reduce((sum, q) => sum + (q.alerts || []).filter(a => a.level === 'CRITICAL').length, 0);
-  const totalWarnings = quotes.reduce((sum, q) => sum + (q.alerts || []).filter(a => a.level === 'WARNING').length, 0);
-  
+  const totalCriticals = quotes.reduce(
+    (sum, q) => sum + (q.alerts || []).filter((a) => a.level === 'CRITICAL').length,
+    0
+  );
+  const totalWarnings = quotes.reduce(
+    (sum, q) => sum + (q.alerts || []).filter((a) => a.level === 'WARNING').length,
+    0
+  );
+
   return (
     <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-xl shadow-lg overflow-hidden text-white">
       <div className="p-6 md:p-8">
@@ -54,7 +74,7 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({ quotes, reco
             <span className="text-sm font-medium">{quotes.length} cotizaciones analizadas</span>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {/* Best Option Card */}
           <div className="bg-white/10 backdrop-blur rounded-lg p-4 border border-white/20">
@@ -71,11 +91,9 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({ quotes, reco
               <span className="text-3xl font-bold">{bestQuote.score}</span>
               <span className="text-indigo-200">/100</span>
             </div>
-            <p className="text-sm text-indigo-200 mt-2">
-              Score más alto en el análisis integral
-            </p>
+            <p className="text-sm text-indigo-200 mt-2">Score más alto en el análisis integral</p>
           </div>
-          
+
           {/* Highest Risk Card */}
           <div className="bg-white/10 backdrop-blur rounded-lg p-4 border border-white/20">
             <div className="flex items-center gap-3 mb-3">
@@ -95,7 +113,7 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({ quotes, reco
               {totalWarnings} advertencias adicionales detectadas
             </p>
           </div>
-          
+
           {/* Savings Card */}
           <div className="bg-white/10 backdrop-blur rounded-lg p-4 border border-white/20">
             <div className="flex items-center gap-3 mb-3">
@@ -116,7 +134,7 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({ quotes, reco
             </p>
           </div>
         </div>
-        
+
         {/* Quick Actions */}
         <div className="flex flex-wrap gap-3">
           <button
@@ -127,7 +145,7 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({ quotes, reco
             Ver Matriz
             <ArrowRight size={14} />
           </button>
-          
+
           <button
             onClick={() => onNavigate('deducibles')}
             className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm font-medium"
@@ -136,7 +154,7 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({ quotes, reco
             Ver Deducibles
             <ArrowRight size={14} />
           </button>
-          
+
           <button
             onClick={() => onNavigate('auditoria')}
             className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm font-medium"
@@ -146,7 +164,7 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({ quotes, reco
             <ArrowRight size={14} />
           </button>
         </div>
-        
+
         {/* Recommendation */}
         {recommendation && (
           <div className="mt-6 pt-6 border-t border-white/20">

@@ -65,9 +65,27 @@ Forma de Pago,Anual,Trimestral`;
             { insurer: 'CHUBB', value: 'Mercancía' },
           ],
         },
-        { label: 'Deducibles', cells: [{ insurer: 'MAPFRE', value: '10%' }, { insurer: 'CHUBB', value: '5%' }] },
-        { label: 'Prima con IVA', cells: [{ insurer: 'MAPFRE', value: '$1M' }, { insurer: 'CHUBB', value: '$1.2M' }] },
-        { label: 'Forma de Pago', cells: [{ insurer: 'MAPFRE', value: 'Anual' }, { insurer: 'CHUBB', value: 'Mensual' }] },
+        {
+          label: 'Deducibles',
+          cells: [
+            { insurer: 'MAPFRE', value: '10%' },
+            { insurer: 'CHUBB', value: '5%' },
+          ],
+        },
+        {
+          label: 'Prima con IVA',
+          cells: [
+            { insurer: 'MAPFRE', value: '$1M' },
+            { insurer: 'CHUBB', value: '$1.2M' },
+          ],
+        },
+        {
+          label: 'Forma de Pago',
+          cells: [
+            { insurer: 'MAPFRE', value: 'Anual' },
+            { insurer: 'CHUBB', value: 'Mensual' },
+          ],
+        },
       ],
     });
 
@@ -122,7 +140,10 @@ CHUBB: Trimestral
     const result = flatTableParser.parse(input, baseOptions);
 
     expect(FlatComparisonSchema.safeParse(result).success).toBe(true);
-    expect(result.rows[0].cells.map((cell) => cell.value)).toEqual(['Edificio y contenidos', 'Mercancías y muebles']);
+    expect(result.rows[0].cells.map((cell) => cell.value)).toEqual([
+      'Edificio y contenidos',
+      'Mercancías y muebles',
+    ]);
   });
 
   it('creates missing rows with notFound:true', () => {
@@ -156,7 +177,10 @@ CHUBB: Trimestral
 
     expect(result.extraRows).toHaveLength(1);
     expect(result.extraRows[0].label).toBe('Observaciones');
-    expect(result.extraRows[0].cells.map((cell) => cell.value)).toEqual(['Revisar clausulado', 'Ninguna']);
+    expect(result.extraRows[0].cells.map((cell) => cell.value)).toEqual([
+      'Revisar clausulado',
+      'Ninguna',
+    ]);
   });
 
   it('flags empty cells as notFound', () => {
@@ -190,11 +214,15 @@ CHUBB: Trimestral
   });
 
   it('throws FlatTableParseError for unparseable input', () => {
-    expect(() => flatTableParser.parse('esto no es una tabla', baseOptions)).toThrow(FlatTableParseError);
+    expect(() => flatTableParser.parse('esto no es una tabla', baseOptions)).toThrow(
+      FlatTableParseError
+    );
   });
 
   it('throws FlatTableParseError for malformed JSON', () => {
-    expect(() => flatTableParser.parse('{ insurers: [MAPFRE] }', baseOptions)).toThrow(FlatTableParseError);
+    expect(() => flatTableParser.parse('{ insurers: [MAPFRE] }', baseOptions)).toThrow(
+      FlatTableParseError
+    );
   });
 
   it('keeps unknown rows from JSON in extraRows', () => {

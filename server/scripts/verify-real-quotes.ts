@@ -49,7 +49,7 @@ async function verifyQuote(pdfPath: string, insurerName: string) {
     console.log(`   ✓ Cleaned length: ${preprocessed.metadata.cleanedLength}`);
     console.log(`   ✓ Complexity: ${preprocessed.metadata.complexity}`);
     console.log(`   ✓ Changes made:`);
-    preprocessed.metadata.changes.forEach(change => {
+    preprocessed.metadata.changes.forEach((change) => {
       console.log(`     - ${change}`);
     });
 
@@ -63,9 +63,15 @@ async function verifyQuote(pdfPath: string, insurerName: string) {
     const hasColombianNumbers = /\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?/.test(preprocessed.text);
     const hasNormalizedNumbers = /\d{4,}/.test(preprocessed.text);
 
-    console.log(`   ${hasEncodingIssues ? '❌' : '✅'} Encoding issues ${hasEncodingIssues ? 'still present' : 'fixed'}`);
-    console.log(`   ${hasColombianNumbers ? '⚠️' : '✅'} Colombian number format ${hasColombianNumbers ? 'still present (may need review)' : 'normalized'}`);
-    console.log(`   ${hasNormalizedNumbers ? '✅' : '⚠️'} Large numbers present ${hasNormalizedNumbers ? '(normalization working)' : '(check number format)'}`);
+    console.log(
+      `   ${hasEncodingIssues ? '❌' : '✅'} Encoding issues ${hasEncodingIssues ? 'still present' : 'fixed'}`
+    );
+    console.log(
+      `   ${hasColombianNumbers ? '⚠️' : '✅'} Colombian number format ${hasColombianNumbers ? 'still present (may need review)' : 'normalized'}`
+    );
+    console.log(
+      `   ${hasNormalizedNumbers ? '✅' : '⚠️'} Large numbers present ${hasNormalizedNumbers ? '(normalization working)' : '(check number format)'}`
+    );
 
     // Save preprocessed text for manual inspection
     const outputPath = pdfPath.replace('.pdf', '_preprocessed.txt');
@@ -80,7 +86,6 @@ async function verifyQuote(pdfPath: string, insurerName: string) {
       complexity: preprocessed.metadata.complexity,
       encodingFixed: !hasEncodingIssues,
     };
-
   } catch (error) {
     console.error(`\n   ❌ Error processing ${insurerName}:`, error);
     return {
@@ -96,7 +101,7 @@ async function main() {
   console.log('   Testing pre-processing pipeline on real insurance quotes\n');
 
   const quotesDir = path.join(process.cwd(), '..', '..', 'Ejemplos', 'laser-home');
-  
+
   const quotes = [
     { file: 'Cotización - MAPFRE.pdf', name: 'MAPFRE' },
     { file: 'Cotización - CHUBB.pdf', name: 'CHUBB' },
@@ -124,13 +129,13 @@ async function main() {
   console.log('📊 SUMMARY');
   console.log(`${'='.repeat(60)}\n`);
 
-  const successful = results.filter(r => r.success);
-  const failed = results.filter(r => !r.success);
+  const successful = results.filter((r) => r.success);
+  const failed = results.filter((r) => !r.success);
 
   console.log(`✅ Successful: ${successful.length}/${results.length}`);
   console.log(`❌ Failed: ${failed.length}/${results.length}\n`);
 
-  successful.forEach(r => {
+  successful.forEach((r) => {
     console.log(`   ${r.insurerName}:`);
     console.log(`     - Original: ${r.originalLength?.toLocaleString()} chars`);
     console.log(`     - Cleaned: ${r.cleanedLength?.toLocaleString()} chars`);
@@ -140,7 +145,7 @@ async function main() {
   });
 
   if (failed.length > 0) {
-    failed.forEach(r => {
+    failed.forEach((r) => {
       console.log(`   ${r.insurerName}: ❌ ${r.error}`);
     });
   }

@@ -17,13 +17,19 @@ export const parseDeductibleForBadge = (deductible: string): BadgeConfig => {
   const upperValue = deductible?.toUpperCase().trim() || '';
 
   // No deductible
-  if (!upperValue || upperValue === 'NO APLICA' || upperValue === 'SIN DEDUCIBLE' || upperValue === 'INCLUIDO' || upperValue === 'N/A') {
+  if (
+    !upperValue ||
+    upperValue === 'NO APLICA' ||
+    upperValue === 'SIN DEDUCIBLE' ||
+    upperValue === 'INCLUIDO' ||
+    upperValue === 'N/A'
+  ) {
     return {
       color: 'text-green-700',
       bgColor: 'bg-green-100',
       label: 'Sin deducible',
       recommendation: 'Sin deducible adicional',
-      riskLevel: 'none'
+      riskLevel: 'none',
     };
   }
 
@@ -34,7 +40,7 @@ export const parseDeductibleForBadge = (deductible: string): BadgeConfig => {
       bgColor: 'bg-red-100',
       label: 'No especificado',
       recommendation: '⚠️ Riesgo: El deducible no está especificado. Solicitar aclaración.',
-      riskLevel: 'high'
+      riskLevel: 'high',
     };
   }
 
@@ -48,7 +54,7 @@ export const parseDeductibleForBadge = (deductible: string): BadgeConfig => {
         bgColor: 'bg-red-100',
         label: `${percentage}%`,
         recommendation: '⚠️ Alto: Deducible superior al 10% del mercado',
-        riskLevel: 'high'
+        riskLevel: 'high',
       };
     } else if (percentage > 0) {
       return {
@@ -56,7 +62,7 @@ export const parseDeductibleForBadge = (deductible: string): BadgeConfig => {
         bgColor: 'bg-yellow-100',
         label: `${percentage}%`,
         recommendation: 'Moderado: Dentro del rango estándar del mercado',
-        riskLevel: 'medium'
+        riskLevel: 'medium',
       };
     }
   }
@@ -71,7 +77,7 @@ export const parseDeductibleForBadge = (deductible: string): BadgeConfig => {
         bgColor: 'bg-red-100',
         label: `${smmlv} SMMLV`,
         recommendation: '⚠️ Alto: Deducible elevado en términos absolutos',
-        riskLevel: 'high'
+        riskLevel: 'high',
       };
     } else {
       return {
@@ -79,7 +85,7 @@ export const parseDeductibleForBadge = (deductible: string): BadgeConfig => {
         bgColor: 'bg-yellow-100',
         label: `${smmlv} SMMLV`,
         recommendation: 'Moderado: Deducible estándar',
-        riskLevel: 'medium'
+        riskLevel: 'medium',
       };
     }
   }
@@ -90,7 +96,7 @@ export const parseDeductibleForBadge = (deductible: string): BadgeConfig => {
     bgColor: 'bg-yellow-100',
     label: deductible,
     recommendation: 'Revisar: Formato de deducible no estándar',
-    riskLevel: 'medium'
+    riskLevel: 'medium',
   };
 };
 
@@ -99,21 +105,24 @@ export const DeductibleBadge: React.FC<DeductibleBadgeProps> = ({ deductible, cl
   const config = parseDeductibleForBadge(deductible);
 
   return (
-    <span 
+    <span
       className={`relative inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium ${config.bgColor} ${config.color} ${className}`}
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
-      <span 
+      <span
         className={`w-2 h-2 rounded-full ${
-          config.riskLevel === 'none' ? 'bg-green-500' :
-          config.riskLevel === 'low' ? 'bg-green-500' :
-          config.riskLevel === 'medium' ? 'bg-yellow-500' :
-          'bg-red-500'
+          config.riskLevel === 'none'
+            ? 'bg-green-500'
+            : config.riskLevel === 'low'
+              ? 'bg-green-500'
+              : config.riskLevel === 'medium'
+                ? 'bg-yellow-500'
+                : 'bg-red-500'
         }`}
       />
       <span>{config.label}</span>
-      
+
       {showTooltip && (
         <div className="absolute z-50 bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-slate-800 text-white text-xs rounded-lg py-1.5 px-2.5 shadow-lg whitespace-nowrap pointer-events-none">
           <div className="font-semibold">{deductible || 'No especificado'}</div>

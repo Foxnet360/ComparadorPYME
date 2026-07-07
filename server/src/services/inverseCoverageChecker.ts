@@ -42,28 +42,29 @@ export const inverseCoverageChecker = {
     insurerName: string
   ): Promise<InverseCheckSummary> => {
     console.log(`🔍 [inverseCoverageChecker] Checking missing coverages for ${insurerName}...`);
-    
+
     // Get coverages from quote
-    const quoteCoverageNames = (quote.coverages || []).map((c) => 
+    const quoteCoverageNames = (quote.coverages || []).map((c) =>
       (c.canonicalName || c.name).toLowerCase()
     );
-    
+
     // Extract coverages from clause document
     const clauseCoverages = await extractClauseCoverages(insurerName);
-    
+
     const results: InverseCoverageResult[] = [];
     let mandatoryMissingCount = 0;
     let optionalMissingCount = 0;
-    
+
     for (const clauseCoverage of clauseCoverages) {
-      const existsInQuote = quoteCoverageNames.some((name: string) => 
+      const existsInQuote = quoteCoverageNames.some((name: string) =>
         isSameCoverage(name, clauseCoverage.name)
       );
-      
+
       if (!existsInQuote) {
-        const isMandatory = clauseCoverage.isMandatory ||
-          getMandatoryCoverageNames().some(mc => isSameCoverage(mc, clauseCoverage.name));
-        
+        const isMandatory =
+          clauseCoverage.isMandatory ||
+          getMandatoryCoverageNames().some((mc) => isSameCoverage(mc, clauseCoverage.name));
+
         const result: InverseCoverageResult = {
           coverageName: clauseCoverage.name,
           isMandatory,
@@ -71,11 +72,11 @@ export const inverseCoverageChecker = {
           existsInQuote: false,
           status: isMandatory ? 'MANDATORY_MISSING' : 'OPTIONAL_MISSING',
           alertLevel: isMandatory ? 'CRITICAL' : 'INFO',
-          clauseReference: clauseCoverage.reference
+          clauseReference: clauseCoverage.reference,
         };
-        
+
         results.push(result);
-        
+
         if (isMandatory) {
           mandatoryMissingCount++;
         } else {
@@ -83,26 +84,30 @@ export const inverseCoverageChecker = {
         }
       }
     }
-    
-    console.log(`✅ [inverseCoverageChecker] Found ${mandatoryMissingCount} mandatory missing, ${optionalMissingCount} optional missing`);
-    
+
+    console.log(
+      `✅ [inverseCoverageChecker] Found ${mandatoryMissingCount} mandatory missing, ${optionalMissingCount} optional missing`
+    );
+
     return {
       results,
       mandatoryMissingCount,
       optionalMissingCount,
-      totalClauseCoverages: clauseCoverages.length
+      totalClauseCoverages: clauseCoverages.length,
     };
-  }
+  },
 };
 
 /**
  * Extract coverages from clause document
  */
-async function extractClauseCoverages(insurerName: string): Promise<Array<{
-  name: string;
-  isMandatory: boolean;
-  reference?: string;
-}>> {
+async function extractClauseCoverages(insurerName: string): Promise<
+  Array<{
+    name: string;
+    isMandatory: boolean;
+    reference?: string;
+  }>
+> {
   try {
     // First try to get from clause_coverages table via documents and insurers
     const { data: cachedCoverages } = await supabase
@@ -111,35 +116,33 @@ async function extractClauseCoverages(insurerName: string): Promise<Array<{
       .eq('documents.insurers.name', insurerName)
       .order('extracted_at', { ascending: false })
       .limit(50);
-    
+
     if (cachedCoverages && cachedCoverages.length > 0) {
-      return (cachedCoverages as Array<Record<string, unknown>>).map(c => ({
+      return (cachedCoverages as Array<Record<string, unknown>>).map((c) => ({
         name: c.coverage_name as string,
         isMandatory: c.is_mandatory as boolean,
-        reference: `Page ${c.page_number}`
+        reference: `Page ${c.page_number}`,
       }));
     }
-    
+
     // Fallback: Search for coverage sections in clause document
-    const searchTerms = [
-      'coberturas',
-      'amparos',
-      'garantías'
-    ];
-    
-    const allCoverages: Array<{name: string; isMandatory: boolean; reference?: string}> = [];
-    
+    const searchTerms = ['coberturas', 'amparos', 'garantías'];
+
+    const allCoverages: Array<{ name: string; isMandatory: boolean; reference?: string }> = [];
+
     for (const term of searchTerms) {
       try {
         const clauses = await ragRetrievalService.search(term, {
           insurerName,
           sectionType: 'COBERTURA',
-          limit: 5
+          limit: 5,
         });
-        
+
         for (const clause of clauses) {
           // Extract coverage names from chunk
-          const coverageMatches = clause.content.match(/(?:cobertura|amparo|garantía)[\s:]+([^\n.]+)/gi);
+          const coverageMatches = clause.content.match(
+            /(?:cobertura|amparo|garantía)[\s:]+([^\n.]+)/gi
+          );
           if (coverageMatches) {
             for (const match of coverageMatches) {
               const name = match.replace(/(?:cobertura|amparo|garantía)[\s:]+/i, '').trim();
@@ -147,7 +150,7 @@ async function extractClauseCoverages(insurerName: string): Promise<Array<{
                 allCoverages.push({
                   name,
                   isMandatory: false,
-                  reference: `Page ${clause.pageNumber}`
+                  reference: `Page ${clause.pageNumber}`,
                 });
               }
             }
@@ -157,17 +160,17 @@ async function extractClauseCoverages(insurerName: string): Promise<Array<{
         console.warn(`⚠️ Error searching for ${term}:`, error);
       }
     }
-    
+
     // If still no coverages, return expected list as fallback
     if (allCoverages.length === 0) {
       return getExpectedCoverages();
     }
-    
+
     // Remove duplicates
-    const unique = allCoverages.filter((c, i, arr) => 
-      arr.findIndex(t => isSameCoverage(t.name, c.name)) === i
+    const unique = allCoverages.filter(
+      (c, i, arr) => arr.findIndex((t) => isSameCoverage(t.name, c.name)) === i
     );
-    
+
     return unique;
   } catch (error) {
     console.error('❌ [inverseCoverageChecker] Error extracting clause coverages:', error);
@@ -178,7 +181,7 @@ async function extractClauseCoverages(insurerName: string): Promise<Array<{
 /**
  * Get expected coverages as fallback
  */
-function getExpectedCoverages(): Array<{name: string; isMandatory: boolean; reference?: string}> {
+function getExpectedCoverages(): Array<{ name: string; isMandatory: boolean; reference?: string }> {
   const canonical = getCanonicalCoverageNames();
   const mandatory = new Set(getMandatoryCoverageNames());
   return canonical.slice(0, 9).map((name) => ({
@@ -191,15 +194,16 @@ function getExpectedCoverages(): Array<{name: string; isMandatory: boolean; refe
  * Check if two coverage names are the same
  */
 function isSameCoverage(name1: string, name2: string): boolean {
-  const normalize = (s: string) => 
-    s.toLowerCase()
+  const normalize = (s: string) =>
+    s
+      .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]/g, '');
-  
+
   const n1 = normalize(name1);
   const n2 = normalize(name2);
-  
+
   return n1 === n2 || n1.includes(n2) || n2.includes(n1);
 }
 

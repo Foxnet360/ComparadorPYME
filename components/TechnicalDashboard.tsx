@@ -36,14 +36,14 @@ const TechnicalDashboard: React.FC<TechnicalDashboardProps> = ({ onNewAnalysis, 
     setHistory(updatedHistory);
   };
 
-  const filteredHistory = history.filter(item =>
-    (item.clientName?.toLowerCase() || '').includes(filter.toLowerCase()) ||
-    (item.bestOption?.toLowerCase() || '').includes(filter.toLowerCase())
+  const filteredHistory = history.filter(
+    (item) =>
+      (item.clientName?.toLowerCase() || '').includes(filter.toLowerCase()) ||
+      (item.bestOption?.toLowerCase() || '').includes(filter.toLowerCase())
   );
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      
       {/* Header with New Analysis Button */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h2 className="text-2xl font-bold text-slate-800">Panel de Control</h2>
@@ -71,7 +71,7 @@ const TechnicalDashboard: React.FC<TechnicalDashboardProps> = ({ onNewAnalysis, 
             />
           </div>
         </div>
-        
+
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-50 text-slate-500 font-semibold">
@@ -106,14 +106,20 @@ const TechnicalDashboard: React.FC<TechnicalDashboardProps> = ({ onNewAnalysis, 
                     <td className="px-6 py-4 text-slate-500">
                       <div className="flex gap-1">
                         {(item.insurers || []).slice(0, 2).map((ins, i) => (
-                          <span key={i} className="px-2 py-0.5 bg-slate-100 rounded text-xs">{ins}</span>
+                          <span key={i} className="px-2 py-0.5 bg-slate-100 rounded text-xs">
+                            {ins}
+                          </span>
                         ))}
                         {(item.insurers || []).length > 2 && (
-                          <span className="text-xs text-slate-400">+{(item.insurers || []).length - 2}</span>
+                          <span className="text-xs text-slate-400">
+                            +{(item.insurers || []).length - 2}
+                          </span>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-indigo-600 font-medium">{item.bestOption || '-'}</td>
+                    <td className="px-6 py-4 text-indigo-600 font-medium">
+                      {item.bestOption || '-'}
+                    </td>
                     <td className="px-6 py-4 text-slate-600">
                       {formatCOPMillions(item.premiumValue)}
                     </td>
@@ -122,10 +128,13 @@ const TechnicalDashboard: React.FC<TechnicalDashboardProps> = ({ onNewAnalysis, 
                         value={item.status}
                         onChange={(e) => handleStatusChange(item.id, e.target.value as QuoteStatus)}
                         className={`px-3 py-1 rounded-full text-xs font-bold border-none outline-none cursor-pointer ${
-                          item.status === 'SOLD' ? 'bg-green-100 text-green-700' :
-                          item.status === 'LOST' ? 'bg-red-100 text-red-700' :
-                          item.status === 'SENT' ? 'bg-blue-100 text-blue-700' :
-                          'bg-slate-100 text-slate-600'
+                          item.status === 'SOLD'
+                            ? 'bg-green-100 text-green-700'
+                            : item.status === 'LOST'
+                              ? 'bg-red-100 text-red-700'
+                              : item.status === 'SENT'
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-slate-100 text-slate-600'
                         }`}
                       >
                         <option value="DRAFT">Borrador</option>

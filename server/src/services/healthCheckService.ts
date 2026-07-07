@@ -1,6 +1,5 @@
-import { createClient} from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import { GoogleGenAI } from '@google/genai';
-
 
 interface ServiceHealth {
   status: 'ok' | 'error';
@@ -24,9 +23,9 @@ const CACHE_DURATION = 30000; // 30 seconds
 
 export async function checkHealth(): Promise<HealthStatus> {
   const now = Date.now();
-  
+
   // Return cached result if within cache duration
-  if (lastHealthCheck && (now - lastCheckTime) < CACHE_DURATION) {
+  if (lastHealthCheck && now - lastCheckTime < CACHE_DURATION) {
     return lastHealthCheck;
   }
 
@@ -41,13 +40,13 @@ export async function checkHealth(): Promise<HealthStatus> {
   }
 
   // Determine overall status
-  const hasErrors = Object.values(services).some(s => s.status === 'error');
-  const allErrors = Object.values(services).every(s => s.status === 'error');
-  
-  const status: HealthStatus['status'] = allErrors 
-    ? 'unhealthy' 
-    : hasErrors 
-      ? 'degraded' 
+  const hasErrors = Object.values(services).some((s) => s.status === 'error');
+  const allErrors = Object.values(services).every((s) => s.status === 'error');
+
+  const status: HealthStatus['status'] = allErrors
+    ? 'unhealthy'
+    : hasErrors
+      ? 'degraded'
       : 'healthy';
 
   const healthStatus: HealthStatus = {
@@ -74,13 +73,13 @@ async function checkGemini(): Promise<ServiceHealth> {
     const genAI = new GoogleGenAI({ apiKey });
     // Try to list models as a lightweight check
     await genAI.models.list({});
-    
+
     return { status: 'ok', latency: Date.now() - start };
   } catch (error: unknown) {
-    return { 
-      status: 'error', 
+    return {
+      status: 'error',
       latency: Date.now() - start,
-      message: error instanceof Error ? error.message : 'Failed to connect to Gemini API'
+      message: error instanceof Error ? error.message : 'Failed to connect to Gemini API',
     };
   }
 }
@@ -90,28 +89,30 @@ async function checkSupabase(): Promise<ServiceHealth> {
   try {
     const url = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
-    
+
     if (!url || !key) {
       return { status: 'error', latency: 0, message: 'Supabase credentials not configured' };
     }
 
     const supabase = createClient(url, key);
     const { error } = await supabase.rpc('select 1');
-    
+
     if (error) {
       // Try alternative health check
-      const { error: pingError } = await supabase.from('documents').select('count', { count: 'exact', head: true });
+      const { error: pingError } = await supabase
+        .from('documents')
+        .select('count', { count: 'exact', head: true });
       if (pingError) {
         throw pingError;
       }
     }
-    
+
     return { status: 'ok', latency: Date.now() - start };
   } catch (error: unknown) {
-    return { 
-      status: 'error', 
+    return {
+      status: 'error',
       latency: Date.now() - start,
-      message: error instanceof Error ? error.message : 'Failed to connect to Supabase'
+      message: error instanceof Error ? error.message : 'Failed to connect to Supabase',
     };
   }
 }
@@ -127,16 +128,16 @@ async function checkRedis(): Promise<ServiceHealth> {
     // Dynamic import to avoid requiring Redis if not used
     const { Redis } = await import('ioredis');
     const redis = new Redis(redisUrl, { connectTimeout: 5000 });
-    
+
     await redis.ping();
     await redis.quit();
-    
+
     return { status: 'ok', latency: Date.now() - start };
   } catch (error: unknown) {
-    return { 
-      status: 'error', 
+    return {
+      status: 'error',
       latency: Date.now() - start,
-      message: error instanceof Error ? error.message : 'Failed to connect to Redis'
+      message: error instanceof Error ? error.message : 'Failed to connect to Redis',
     };
   }
 }

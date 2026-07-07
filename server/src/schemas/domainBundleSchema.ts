@@ -61,9 +61,7 @@ export const ThesaurusEntrySchema = z.object({
   canonicalName: z.string().min(1),
   variants: z.array(z.string().min(1)),
   category: z.string().optional(),
-  type: z
-    .enum(['main', 'sub-limit', 'rider', 'gastos', 'extension'])
-    .optional(),
+  type: z.enum(['main', 'sub-limit', 'rider', 'gastos', 'extension']).optional(),
   parentCoverage: z.string().optional(),
 });
 

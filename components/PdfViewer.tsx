@@ -14,13 +14,13 @@ interface PdfViewerProps {
   onClose: () => void;
 }
 
-const PdfViewer: React.FC<PdfViewerProps> = ({ 
-  pdfUrl, 
-  targetPage, 
-  searchText, 
-  title, 
-  isOpen, 
-  onClose 
+const PdfViewer: React.FC<PdfViewerProps> = ({
+  pdfUrl,
+  targetPage,
+  searchText,
+  title,
+  isOpen,
+  onClose,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
@@ -30,24 +30,24 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { isMobile, isTablet } = useBreakpoint();
-  
+
   // Determinar modo basado en breakpoint
   const getMode = () => {
     if (isMobile) return 'fullscreen';
     if (isTablet) return 'modal';
     return 'drawer';
   };
-  
+
   const mode = getMode();
 
   // Cargar PDF
   useEffect(() => {
     if (!isOpen || !pdfUrl) return;
-    
+
     const loadPdf = async () => {
       setLoading(true);
       setError(null);
-      
+
       try {
         const loadingTask = pdfjsLib.getDocument({ url: pdfUrl });
         const pdf = await loadingTask.promise;
@@ -60,34 +60,37 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         setLoading(false);
       }
     };
-    
+
     loadPdf();
   }, [pdfUrl, isOpen, targetPage]);
 
   // Renderizar página
-  const renderPage = useCallback(async (pageNum: number) => {
-    if (!pdfDoc || !canvasRef.current) return;
-    
-    try {
-      const page = await pdfDoc.getPage(pageNum);
-      const viewport = page.getViewport({ scale });
-      
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d')!;
-      
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      
-      await page.render({ canvasContext: context, viewport }).promise;
-      
-      // Resaltar texto si existe
-      if (searchText) {
-        await highlightText(page, searchText, viewport, context);
+  const renderPage = useCallback(
+    async (pageNum: number) => {
+      if (!pdfDoc || !canvasRef.current) return;
+
+      try {
+        const page = await pdfDoc.getPage(pageNum);
+        const viewport = page.getViewport({ scale });
+
+        const canvas = canvasRef.current;
+        const context = canvas.getContext('2d')!;
+
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        await page.render({ canvasContext: context, viewport }).promise;
+
+        // Resaltar texto si existe
+        if (searchText) {
+          await highlightText(page, searchText, viewport, context);
+        }
+      } catch (err) {
+        console.error('Error renderizando página:', err);
       }
-    } catch (err) {
-      console.error('Error renderizando página:', err);
-    }
-  }, [pdfDoc, scale, searchText]);
+    },
+    [pdfDoc, scale, searchText]
+  );
 
   // Efecto para renderizar cuando cambia página o escala
   useEffect(() => {
@@ -98,27 +101,24 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
 
   // Resaltar texto
   const highlightText = async (
-    page: pdfjsLib.PDFPageProxy, 
-    text: string, 
+    page: pdfjsLib.PDFPageProxy,
+    text: string,
     viewport: pdfjsLib.PageViewport,
     context: CanvasRenderingContext2D
   ) => {
     try {
       const textContent = await page.getTextContent();
       const lowerSearchText = text.toLowerCase();
-      
+
       textContent.items.forEach((item) => {
         const textItem = item as { str: string; transform: number[]; width: number };
         if (textItem.str.toLowerCase().includes(lowerSearchText)) {
           // Calcular posición en canvas
-          const tx = pdfjsLib.Util.transform(
-            viewport.transform,
-            textItem.transform
-          );
-          
+          const tx = pdfjsLib.Util.transform(viewport.transform, textItem.transform);
+
           const fontHeight = Math.hypot(tx[0], tx[1]);
           const fontWidth = Math.hypot(tx[2], tx[3]);
-          
+
           context.save();
           context.fillStyle = 'rgba(255, 255, 0, 0.4)';
           context.fillRect(
@@ -141,8 +141,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     }
   };
 
-  const zoomIn = () => setScale(prev => Math.min(prev + 0.25, 3));
-  const zoomOut = () => setScale(prev => Math.max(prev - 0.25, 0.5));
+  const zoomIn = () => setScale((prev) => Math.min(prev + 0.25, 3));
+  const zoomOut = () => setScale((prev) => Math.max(prev - 0.25, 0.5));
 
   if (!isOpen) return null;
 
@@ -164,9 +164,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b bg-slate-50">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-slate-700 truncate max-w-[200px]">
-              {title}
-            </span>
+            <span className="font-medium text-slate-700 truncate max-w-[200px]">{title}</span>
             <span className="text-sm text-slate-500">
               Página {currentPage} de {numPages}
             </span>
@@ -190,7 +188,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
             >
               <ZoomIn size={18} />
             </button>
-            
+
             {/* Close button */}
             <button
               onClick={onClose}
@@ -212,7 +210,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           >
             <ChevronLeft size={18} />
           </button>
-          
+
           <div className="flex items-center gap-2">
             <input
               type="number"
@@ -223,11 +221,9 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
               className="w-16 px-2 py-1 text-center border rounded-md text-sm"
               aria-label="Número de página"
             />
-            <span className="text-sm text-slate-500">
-              / {numPages}
-            </span>
+            <span className="text-sm text-slate-500">/ {numPages}</span>
           </div>
-          
+
           <button
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage >= numPages}
@@ -240,17 +236,15 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
 
         {/* PDF Canvas */}
         <div className="flex-1 overflow-auto flex items-center justify-center bg-slate-100 p-4">
-          {loading && (
-            <div className="text-slate-500">Cargando PDF...</div>
-          )}
-          
+          {loading && <div className="text-slate-500">Cargando PDF...</div>}
+
           {error && (
             <div className="text-red-500 p-4 text-center">
               <p className="font-medium">Error cargando PDF</p>
               <p className="text-sm mt-1">{error}</p>
             </div>
           )}
-          
+
           {!loading && !error && (
             <canvas
               ref={canvasRef}
@@ -267,14 +261,9 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           </div>
         )}
       </div>
-      
+
       {/* Overlay para modal */}
-      {mode === 'modal' && (
-        <div 
-          className="fixed inset-0 bg-black/50 -z-10" 
-          onClick={onClose}
-        />
-      )}
+      {mode === 'modal' && <div className="fixed inset-0 bg-black/50 -z-10" onClick={onClose} />}
     </div>
   );
 };

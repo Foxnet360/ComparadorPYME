@@ -16,14 +16,14 @@ vi.mock('../config/database', () => ({
     from: vi.fn(() => ({
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
-          order: vi.fn(() => Promise.resolve({ data: [], error: null }))
-        }))
+          order: vi.fn(() => Promise.resolve({ data: [], error: null })),
+        })),
       })),
       insert: vi.fn(() => Promise.resolve({ data: { id: 'test-id' }, error: null })),
       upsert: vi.fn(() => Promise.resolve({ data: null, error: null })),
-      rpc: vi.fn(() => Promise.resolve({ data: [], error: null }))
-    }))
-  }
+      rpc: vi.fn(() => Promise.resolve({ data: [], error: null })),
+    })),
+  },
 }));
 
 // Create test app
@@ -44,13 +44,10 @@ app.get('/api/history', analysisController.getHistory);
 app.use(errorHandler);
 
 describe('Complete Analysis Flow Integration', () => {
-  
   describe('POST /api/analyze', () => {
     it('should return 400 when no files are uploaded', async () => {
-      const response = await request(app)
-        .post('/api/analyze')
-        .field('clientName', 'Test Client');
-      
+      const response = await request(app).post('/api/analyze').field('clientName', 'Test Client');
+
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
     });
@@ -61,12 +58,15 @@ describe('Complete Analysis Flow Integration', () => {
       const response = await request(app)
         .post('/api/analyze')
         .field('clientName', 'Test Client')
-        .field('clientProfile', JSON.stringify({
-          industry: 'Technology',
-          location: 'Bogota',
-          size: 'Small'
-        }));
-      
+        .field(
+          'clientProfile',
+          JSON.stringify({
+            industry: 'Technology',
+            location: 'Bogota',
+            size: 'Small',
+          })
+        );
+
       // Should fail gracefully without files
       expect(response.status).toBe(400);
     });
@@ -74,10 +74,8 @@ describe('Complete Analysis Flow Integration', () => {
 
   describe('GET /api/history', () => {
     it('should return analysis history for authenticated user', async () => {
-      const response = await request(app)
-        .get('/api/history')
-        .query({ limit: '10', offset: '0' });
-      
+      const response = await request(app).get('/api/history').query({ limit: '10', offset: '0' });
+
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('success');
     });
@@ -86,17 +84,15 @@ describe('Complete Analysis Flow Integration', () => {
       const response = await request(app)
         .get('/api/history')
         .query({ limit: 'invalid', offset: '0' });
-      
+
       expect(response.status).toBe(400);
     });
   });
 
   describe('Analysis Pipeline Validation', () => {
     it('should validate required fields', async () => {
-      const response = await request(app)
-        .post('/api/analyze')
-        .send({});
-      
+      const response = await request(app).post('/api/analyze').send({});
+
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
     });
@@ -104,13 +100,11 @@ describe('Complete Analysis Flow Integration', () => {
     it('should handle large request payloads', async () => {
       const largePayload = {
         clientName: 'A'.repeat(1000),
-        coverages: Array(100).fill({ name: 'Test', value: '100M' })
+        coverages: Array(100).fill({ name: 'Test', value: '100M' }),
       };
 
-      const response = await request(app)
-        .post('/api/analyze')
-        .send(largePayload);
-      
+      const response = await request(app).post('/api/analyze').send(largePayload);
+
       // Should not crash, should return validation error
       expect([400, 413, 422]).toContain(response.status);
     });
@@ -118,10 +112,8 @@ describe('Complete Analysis Flow Integration', () => {
 
   describe('Error Handling', () => {
     it('should return proper error format for invalid requests', async () => {
-      const response = await request(app)
-        .post('/api/analyze')
-        .send({ invalidField: true });
-      
+      const response = await request(app).post('/api/analyze').send({ invalidField: true });
+
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('success', false);
       expect(response.body).toHaveProperty('error');
@@ -134,9 +126,8 @@ describe('Complete Analysis Flow Integration', () => {
       appNoAuth.get('/api/history', analysisController.getHistory);
       appNoAuth.use(errorHandler);
 
-      const response = await request(appNoAuth)
-        .get('/api/history');
-      
+      const response = await request(appNoAuth).get('/api/history');
+
       expect(response.status).toBe(401);
     });
   });

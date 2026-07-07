@@ -18,7 +18,9 @@ interface Discrepancy {
 }
 
 export const AuditWizard: React.FC<AuditWizardProps> = ({ quotes, onNavigateToRow }) => {
-  const [expandedSections, setExpandedSections] = React.useState<Set<string>>(new Set(['critical']));
+  const [expandedSections, setExpandedSections] = React.useState<Set<string>>(
+    new Set(['critical'])
+  );
 
   // Detectar discrepancias
   const discrepancies: Discrepancy[] = React.useMemo(() => {
@@ -55,16 +57,17 @@ export const AuditWizard: React.FC<AuditWizardProps> = ({ quotes, onNavigateToRo
     });
 
     // Alertas de cobertura inversa (simulado - en realidad vendría del backend)
-    const inverseAlerts = quotes.flatMap(q => 
-      q.quoteAudit?.missingCoverages?.map((mc, idx) => ({
-        id: `inverse-${q.insurerName}-${idx}`,
-        type: 'inverse' as const,
-        severity: 'CRITICAL' as const,
-        title: `Cobertura inversa: ${mc.categoryName}`,
-        description: mc.reason,
-        rowId: `section_${mc.categoryId}_row_value`,
-        insurerName: q.insurerName,
-      })) || []
+    const inverseAlerts = quotes.flatMap(
+      (q) =>
+        q.quoteAudit?.missingCoverages?.map((mc, idx) => ({
+          id: `inverse-${q.insurerName}-${idx}`,
+          type: 'inverse' as const,
+          severity: 'CRITICAL' as const,
+          title: `Cobertura inversa: ${mc.categoryName}`,
+          description: mc.reason,
+          rowId: `section_${mc.categoryId}_row_value`,
+          insurerName: q.insurerName,
+        })) || []
     );
 
     return [...items, ...inverseAlerts];
@@ -72,9 +75,9 @@ export const AuditWizard: React.FC<AuditWizardProps> = ({ quotes, onNavigateToRo
 
   const groupedDiscrepancies = React.useMemo(() => {
     return {
-      CRITICAL: discrepancies.filter(d => d.severity === 'CRITICAL'),
-      WARNING: discrepancies.filter(d => d.severity === 'WARNING'),
-      INFO: discrepancies.filter(d => d.severity === 'INFO'),
+      CRITICAL: discrepancies.filter((d) => d.severity === 'CRITICAL'),
+      WARNING: discrepancies.filter((d) => d.severity === 'WARNING'),
+      INFO: discrepancies.filter((d) => d.severity === 'INFO'),
     };
   }, [discrepancies]);
 
@@ -83,7 +86,7 @@ export const AuditWizard: React.FC<AuditWizardProps> = ({ quotes, onNavigateToRo
   const progressPercentage = totalCount > 0 ? Math.round((resolvedCount / totalCount) * 100) : 100;
 
   const toggleSection = (section: string) => {
-    setExpandedSections(prev => {
+    setExpandedSections((prev) => {
       const next = new Set(prev);
       if (next.has(section)) {
         next.delete(section);
@@ -134,7 +137,7 @@ export const AuditWizard: React.FC<AuditWizardProps> = ({ quotes, onNavigateToRo
       <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
         <div className="flex items-center justify-between mb-2">
           <h3 className="font-semibold text-slate-800">Asistente de Auditoría</h3>
-          <div 
+          <div
             className="flex items-center gap-2"
             role="progressbar"
             aria-valuenow={progressPercentage}
@@ -143,7 +146,7 @@ export const AuditWizard: React.FC<AuditWizardProps> = ({ quotes, onNavigateToRo
             aria-label={`Progreso de auditoría: ${resolvedCount} de ${totalCount} alertas resueltas`}
           >
             <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-blue-500 transition-all duration-500"
                 style={{ width: `${progressPercentage}%` }}
               />
@@ -154,9 +157,9 @@ export const AuditWizard: React.FC<AuditWizardProps> = ({ quotes, onNavigateToRo
           </div>
         </div>
         <p className="text-sm text-slate-600">
-          Hemos detectado {groupedDiscrepancies.CRITICAL.length} discrepancias críticas, {' '}
-          {groupedDiscrepancies.WARNING.length} advertencias y {' '}
-          {groupedDiscrepancies.INFO.length} items informativos.
+          Hemos detectado {groupedDiscrepancies.CRITICAL.length} discrepancias críticas,{' '}
+          {groupedDiscrepancies.WARNING.length} advertencias y {groupedDiscrepancies.INFO.length}{' '}
+          items informativos.
         </p>
       </div>
 
@@ -198,12 +201,8 @@ export const AuditWizard: React.FC<AuditWizardProps> = ({ quotes, onNavigateToRo
                     >
                       <div className="mt-0.5">{getSeverityIcon(item.severity)}</div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm text-slate-800 truncate">
-                          {item.title}
-                        </p>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          {item.description}
-                        </p>
+                        <p className="font-medium text-sm text-slate-800 truncate">{item.title}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{item.description}</p>
                         {item.insurerName && (
                           <span className="text-xs text-slate-400 mt-1 inline-block">
                             {item.insurerName}

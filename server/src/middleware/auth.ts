@@ -107,5 +107,3 @@ export const optionalAuthMiddleware = (
     next(error);
   }
 };
-
-

@@ -33,9 +33,7 @@ describe('POST /api/analysis/correction', () => {
   });
 
   it('should validate required fields', async () => {
-    const response = await request(app)
-      .post('/api/analysis/correction')
-      .send({ rawName: 'Test' });
+    const response = await request(app).post('/api/analysis/correction').send({ rawName: 'Test' });
 
     expect(response.status).toBe(400);
     expect(response.body.error).toBe('Validation failed');
@@ -55,9 +53,7 @@ describe('POST /api/analysis/correction', () => {
       pageNumber: 3,
     };
 
-    const response = await request(app)
-      .post('/api/analysis/correction')
-      .send(correction);
+    const response = await request(app).post('/api/analysis/correction').send(correction);
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
@@ -66,44 +62,40 @@ describe('POST /api/analysis/correction', () => {
 
   it('should handle idempotency with correctionId', async () => {
     const correctionId = 'unique-correction-id';
-    
+
     // Mock que la corrección ya existe
     const { supabase } = await import('../../config/database');
     (supabase.from as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce({
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({ 
-            data: { id: correctionId }, 
-            error: null 
+          single: vi.fn().mockResolvedValue({
+            data: { id: correctionId },
+            error: null,
           }),
         }),
       }),
     });
 
-    const response = await request(app)
-      .post('/api/analysis/correction')
-      .send({
-        correctionId,
-        rawName: 'Test',
-        insurerName: 'Test Insurer',
-        systemMapping: 'Test Mapping',
-        userCorrection: 'Corrected',
-      });
+    const response = await request(app).post('/api/analysis/correction').send({
+      correctionId,
+      rawName: 'Test',
+      insurerName: 'Test Insurer',
+      systemMapping: 'Test Mapping',
+      userCorrection: 'Corrected',
+    });
 
     expect(response.status).toBe(200);
     expect(response.body.cached).toBe(true);
   });
 
   it('should reject invalid correction types', async () => {
-    const response = await request(app)
-      .post('/api/analysis/correction')
-      .send({
-        rawName: 'Test',
-        insurerName: 'Test',
-        systemMapping: 'Test',
-        userCorrection: 'Corrected',
-        correctionType: 'invalid_type',
-      });
+    const response = await request(app).post('/api/analysis/correction').send({
+      rawName: 'Test',
+      insurerName: 'Test',
+      systemMapping: 'Test',
+      userCorrection: 'Corrected',
+      correctionType: 'invalid_type',
+    });
 
     expect(response.status).toBe(400);
     expect(response.body.error).toBe('Validation failed');
@@ -111,16 +103,14 @@ describe('POST /api/analysis/correction', () => {
 
   it('should reject oversized snippets', async () => {
     const longSnippet = 'a'.repeat(2001);
-    
-    const response = await request(app)
-      .post('/api/analysis/correction')
-      .send({
-        rawName: 'Test',
-        insurerName: 'Test',
-        systemMapping: 'Test',
-        userCorrection: 'Corrected',
-        rawTextSnippet: longSnippet,
-      });
+
+    const response = await request(app).post('/api/analysis/correction').send({
+      rawName: 'Test',
+      insurerName: 'Test',
+      systemMapping: 'Test',
+      userCorrection: 'Corrected',
+      rawTextSnippet: longSnippet,
+    });
 
     expect(response.status).toBe(400);
     expect(response.body.error).toBe('Validation failed');

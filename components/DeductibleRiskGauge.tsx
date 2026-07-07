@@ -16,42 +16,54 @@ export const DeductibleRiskGauge: React.FC<DeductibleRiskGaugeProps> = ({
   insuredAmount,
   riskLevel,
   hasCap,
-  capAmount
+  capAmount,
 }) => {
   const percentage = deductibleRatio * 100;
-  
+
   const getColor = () => {
     switch (riskLevel) {
-      case 'LOW': return 'text-green-600';
-      case 'MEDIUM': return 'text-amber-600';
-      case 'HIGH': return 'text-red-600';
+      case 'LOW':
+        return 'text-green-600';
+      case 'MEDIUM':
+        return 'text-amber-600';
+      case 'HIGH':
+        return 'text-red-600';
     }
   };
-  
+
   const getBgColor = () => {
     switch (riskLevel) {
-      case 'LOW': return 'bg-green-500';
-      case 'MEDIUM': return 'bg-amber-500';
-      case 'HIGH': return 'bg-red-500';
+      case 'LOW':
+        return 'bg-green-500';
+      case 'MEDIUM':
+        return 'bg-amber-500';
+      case 'HIGH':
+        return 'bg-red-500';
     }
   };
-  
+
   const getIcon = () => {
     switch (riskLevel) {
-      case 'LOW': return <CheckCircle className="text-green-600" size={20} />;
-      case 'MEDIUM': return <AlertTriangle className="text-amber-600" size={20} />;
-      case 'HIGH': return <AlertCircle className="text-red-600" size={20} />;
+      case 'LOW':
+        return <CheckCircle className="text-green-600" size={20} />;
+      case 'MEDIUM':
+        return <AlertTriangle className="text-amber-600" size={20} />;
+      case 'HIGH':
+        return <AlertCircle className="text-red-600" size={20} />;
     }
   };
-  
+
   const getLabel = () => {
     switch (riskLevel) {
-      case 'LOW': return 'Riesgo Bajo';
-      case 'MEDIUM': return 'Riesgo Medio';
-      case 'HIGH': return 'Riesgo Alto';
+      case 'LOW':
+        return 'Riesgo Bajo';
+      case 'MEDIUM':
+        return 'Riesgo Medio';
+      case 'HIGH':
+        return 'Riesgo Alto';
     }
   };
-  
+
   return (
     <div className="bg-white rounded-lg border border-slate-200 p-4">
       <div className="flex items-center justify-between mb-3">
@@ -59,14 +71,12 @@ export const DeductibleRiskGauge: React.FC<DeductibleRiskGaugeProps> = ({
           {getIcon()}
           <span className={`font-semibold ${getColor()}`}>{getLabel()}</span>
         </div>
-        <span className="text-sm text-slate-500">
-          {percentage.toFixed(1)}% del valor asegurado
-        </span>
+        <span className="text-sm text-slate-500">{percentage.toFixed(1)}% del valor asegurado</span>
       </div>
-      
+
       {/* Gauge */}
       <div className="relative h-3 bg-slate-100 rounded-full overflow-hidden mb-3">
-        <div 
+        <div
           className={`absolute h-full ${getBgColor()} transition-all duration-500`}
           style={{ width: `${Math.min(percentage, 100)}%` }}
         />
@@ -74,14 +84,14 @@ export const DeductibleRiskGauge: React.FC<DeductibleRiskGaugeProps> = ({
         <div className="absolute top-0 bottom-0 w-0.5 bg-slate-300" style={{ left: '10%' }} />
         <div className="absolute top-0 bottom-0 w-0.5 bg-slate-300" style={{ left: '15%' }} />
       </div>
-      
+
       <div className="flex justify-between text-xs text-slate-400 mb-3">
         <span>0%</span>
         <span>10%</span>
         <span>15%</span>
         <span>20%+</span>
       </div>
-      
+
       {/* Details */}
       <div className="space-y-1 text-sm">
         <div className="flex justify-between">
@@ -113,7 +123,7 @@ function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('es-CO', {
     style: 'currency',
     currency: 'COP',
-    minimumFractionDigits: 0
+    minimumFractionDigits: 0,
   }).format(amount);
 }
 

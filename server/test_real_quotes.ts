@@ -41,11 +41,11 @@ async function testPdf(filePath: string) {
     const extraction = await pdfExtractor.extractTextFromPdf(filePath);
     console.log(`\n📊 EXTRACTION METRICS:`);
     console.log(`   Pages: ${extraction.metadata.pageCount}`);
-    console.log(`   Pages with content: ${extraction.pages.filter(p => p.hasContent).length}`);
+    console.log(`   Pages with content: ${extraction.pages.filter((p) => p.hasContent).length}`);
     console.log(`   Is scanned: ${extraction.isScanned}`);
     console.log(`   Warnings: ${extraction.warnings.length}`);
     if (extraction.warnings.length > 0) {
-      extraction.warnings.forEach(w => console.log(`   ⚠️  ${w}`));
+      extraction.warnings.forEach((w) => console.log(`   ⚠️  ${w}`));
     }
 
     // 2. Preprocess text
@@ -66,17 +66,21 @@ async function testPdf(filePath: string) {
     console.log(`   Parse confidence: ${parsed.parseConfidence}%`);
 
     // 4. Map coverages through thesaurus
-    const mapped = normalizeCoverages(parsed.coverages.map(c => ({
-      name: c.name,
-      value: c.value,
-      deductible: c.deductible,
-    })));
+    const mapped = normalizeCoverages(
+      parsed.coverages.map((c) => ({
+        name: c.name,
+        value: c.value,
+        deductible: c.deductible,
+      }))
+    );
     console.log(`\n📚 THESAURUS MAPPING:`);
     console.log(`   Mapped coverages: ${mapped.normalized.length}`);
     console.log(`   Needs review: ${mapped.needsReview}`);
     if (mapped.normalized.length > 0) {
-      mapped.normalized.slice(0, 5).forEach(c => {
-        console.log(`   • ${c.name} (confidence: ${formatPercentage(c.confidence, 1)})${c.type ? ` [${c.type}]` : ''}`);
+      mapped.normalized.slice(0, 5).forEach((c) => {
+        console.log(
+          `   • ${c.name} (confidence: ${formatPercentage(c.confidence, 1)})${c.type ? ` [${c.type}]` : ''}`
+        );
       });
       if (mapped.normalized.length > 5) {
         console.log(`   ... and ${mapped.normalized.length - 5} more`);
@@ -87,11 +91,13 @@ async function testPdf(filePath: string) {
     const validation = validateQuote(parsed);
     console.log(`\n✅ VALIDATION:`);
     console.log(`   Valid: ${validation.isValid}`);
-    console.log(`   Coverage count: ${validation.coverageCount}/${validation.expectedCoverageCount}`);
+    console.log(
+      `   Coverage count: ${validation.coverageCount}/${validation.expectedCoverageCount}`
+    );
     console.log(`   Numeric parse success: ${validation.numericParseSuccess}`);
     if (validation.flags.length > 0) {
       console.log(`   Flags (${validation.flags.length}):`);
-      validation.flags.forEach(f => {
+      validation.flags.forEach((f) => {
         console.log(`   [${f.severity}] ${f.code}: ${f.message}`);
       });
     }
@@ -118,7 +124,9 @@ async function testPdf(filePath: string) {
       charCount: preprocessed.metadata.cleanedLength,
       confidence: confidence.score,
       coverageCount: parsed.coverages.length,
-      validationErrors: validation.flags.filter(f => f.severity === 'CRITICAL' || f.severity === 'WARNING').length,
+      validationErrors: validation.flags.filter(
+        (f) => f.severity === 'CRITICAL' || f.severity === 'WARNING'
+      ).length,
       textSample: preprocessed.text.substring(0, 500),
     };
   } catch (error: unknown) {
@@ -135,7 +143,9 @@ async function testPdf(filePath: string) {
 
 async function main() {
   console.log('🚀 REAL QUOTE PDF PIPELINE TEST');
-  console.log('Testing PDF extraction + preprocessing + parsing + thesaurus + validation + confidence\n');
+  console.log(
+    'Testing PDF extraction + preprocessing + parsing + thesaurus + validation + confidence\n'
+  );
 
   const results: PipelineResult[] = [];
   for (const file of PDF_FILES) {
@@ -150,7 +160,9 @@ async function main() {
   results.forEach((r) => {
     if (r.success) {
       console.log(`\n✅ ${r.filename}`);
-      console.log(`   Pages: ${r.pages} | Chars: ${r.charCount} | Confidence: ${r.confidence}% | Coverages: ${r.coverageCount} | Issues: ${r.validationErrors}`);
+      console.log(
+        `   Pages: ${r.pages} | Chars: ${r.charCount} | Confidence: ${r.confidence}% | Coverages: ${r.coverageCount} | Issues: ${r.validationErrors}`
+      );
     } else {
       console.log(`\n❌ ${r.filename}`);
       console.log(`   ERROR: ${r.error}`);

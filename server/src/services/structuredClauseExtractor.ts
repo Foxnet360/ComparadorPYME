@@ -33,42 +33,42 @@ const StructuredClauseSchema = {
                   properties: {
                     type: { type: SchemaType.STRING },
                     value: { type: SchemaType.NUMBER },
-                    currency: { type: SchemaType.STRING, nullable: true }
-                  }
-                }
+                    currency: { type: SchemaType.STRING, nullable: true },
+                  },
+                },
               },
-              rawText: { type: SchemaType.STRING }
-            }
+              rawText: { type: SchemaType.STRING },
+            },
           },
           sublimit: { type: SchemaType.STRING, nullable: true },
           exclusions: {
             type: SchemaType.ARRAY,
-            items: { type: SchemaType.STRING }
+            items: { type: SchemaType.STRING },
           },
           conditions: {
             type: SchemaType.ARRAY,
-            items: { type: SchemaType.STRING }
+            items: { type: SchemaType.STRING },
           },
-          sourcePage: { type: SchemaType.NUMBER }
-        }
-      }
+          sourcePage: { type: SchemaType.NUMBER },
+        },
+      },
     },
     generalExclusions: {
       type: SchemaType.ARRAY,
-      items: { type: SchemaType.STRING }
+      items: { type: SchemaType.STRING },
     },
     generalConditions: {
       type: SchemaType.ARRAY,
       items: { type: SchemaType.STRING },
-      description: "Lista de condiciones generales del documento"
+      description: 'Lista de condiciones generales del documento',
     },
     definitions: {
       type: SchemaType.OBJECT,
-      description: "Definiciones de términos clave encontradas en el clausulado",
-      additionalProperties: { type: SchemaType.STRING }
-    }
+      description: 'Definiciones de términos clave encontradas en el clausulado',
+      additionalProperties: { type: SchemaType.STRING },
+    },
   },
-  required: ["coverages", "generalExclusions", "generalConditions", "definitions"]
+  required: ['coverages', 'generalExclusions', 'generalConditions', 'definitions'],
 };
 
 export interface ExtractedCoverage {
@@ -155,8 +155,10 @@ export const structuredClauseExtractor = {
     }
 
     const modelName = env.GEMINI_CLAUSE_MODEL || 'gemini-2.5-flash';
-    console.log(`📄 [StructuredExtractor] Extracting clauses for ${insurerName} using model ${modelName}...`);
-    
+    console.log(
+      `📄 [StructuredExtractor] Extracting clauses for ${insurerName} using model ${modelName}...`
+    );
+
     const prompt = `${CLAUSE_EXTRACTION_PROMPT}\n\n${clauseText}`;
     const maxRetries = 2;
     let lastResponseText = '{}';
@@ -171,8 +173,8 @@ export const structuredClauseExtractor = {
             temperature: 0.1,
             maxOutputTokens: 32768,
             responseMimeType: 'application/json',
-            responseSchema: StructuredClauseSchema
-          }
+            responseSchema: StructuredClauseSchema,
+          },
         });
 
         lastResponseText = result.text || '{}';
@@ -185,13 +187,13 @@ export const structuredClauseExtractor = {
             insurer: insurerName,
             product: productName,
             documentType,
-            coverages: (validated.coverages || []).map(c => ({
+            coverages: (validated.coverages || []).map((c) => ({
               name: c.name,
               description: c.description,
               insuredAmount: c.insuredAmount ?? undefined,
               deductible: c.deductible
                 ? {
-                    components: c.deductible.components.map(comp => ({
+                    components: c.deductible.components.map((comp) => ({
                       type: comp.type,
                       value: comp.value,
                       currency: comp.currency ?? undefined,
@@ -206,10 +208,12 @@ export const structuredClauseExtractor = {
             })),
             generalExclusions: validated.generalExclusions || [],
             generalConditions: validated.generalConditions || [],
-            definitions: validated.definitions || {}
+            definitions: validated.definitions || {},
           };
 
-          console.log(`✅ [StructuredExtractor] Extracted ${structured.coverages.length} coverages`);
+          console.log(
+            `✅ [StructuredExtractor] Extracted ${structured.coverages.length} coverages`
+          );
           return structured;
         }
 
@@ -234,7 +238,7 @@ export const structuredClauseExtractor = {
       coverages: fallback.coverages || [],
       generalExclusions: fallback.generalExclusions || [],
       generalConditions: fallback.generalConditions || [],
-      definitions: fallback.definitions || {}
+      definitions: fallback.definitions || {},
     };
   },
 
@@ -265,17 +269,16 @@ export const structuredClauseExtractor = {
           document_type: structured.documentType,
           extracted_data: structured,
           document_id: documentId,
-          domain: domain || 'pyme'
+          domain: domain || 'pyme',
         } as unknown as never[])
         .select('id')
         .single();
-      
+
       if (error) throw error;
-      
+
       const resultId = (data as { id: string } | null)?.id;
       console.log(`✅ [StructuredExtractor] Stored clause with ID: ${resultId}`);
       return resultId ?? '';
-      
     } catch (error) {
       console.error('❌ [StructuredExtractor] Storage failed:', error);
       throw error;
@@ -285,24 +288,19 @@ export const structuredClauseExtractor = {
   /**
    * Search for structured clause by insurer and coverage
    */
-  async searchClause(
-    insurerName: string,
-    coverageName?: string
-  ): Promise<StructuredClause | null> {
+  async searchClause(insurerName: string, coverageName?: string): Promise<StructuredClause | null> {
     try {
-      const { data, error } = await supabase
-        .rpc('search_structured_clauses', {
-          p_insurer_name: insurerName,
-          p_coverage_name: coverageName,
-          match_count: 1
-        } as unknown as never);
-      
+      const { data, error } = await supabase.rpc('search_structured_clauses', {
+        p_insurer_name: insurerName,
+        p_coverage_name: coverageName,
+        match_count: 1,
+      } as unknown as never);
+
       if (error) throw error;
       const dataList = (data || []) as Array<{ extracted_data: StructuredClause }>;
       if (dataList.length === 0) return null;
-      
+
       return dataList[0].extracted_data as StructuredClause;
-      
     } catch (_error) {
       console.info('ℹ️ [StructuredExtractor] Search unavailable, falling back to legacy RAG');
       return null;
@@ -317,18 +315,16 @@ export const structuredClauseExtractor = {
     coverageName: string
   ): Promise<Record<string, unknown> | null> {
     try {
-      const { data, error } = await supabase
-        .rpc('get_clause_deductible', {
-          p_insurer_name: insurerName,
-          p_coverage_name: coverageName
-        } as unknown as never);
-      
+      const { data, error } = await supabase.rpc('get_clause_deductible', {
+        p_insurer_name: insurerName,
+        p_coverage_name: coverageName,
+      } as unknown as never);
+
       if (error) throw error;
       const dataList = (data || []) as Record<string, unknown>[];
       if (dataList.length === 0) return null;
-      
+
       return dataList[0];
-      
     } catch (error) {
       console.error('❌ [StructuredExtractor] Get deductible failed:', error);
       return null;
@@ -338,34 +334,37 @@ export const structuredClauseExtractor = {
   /**
    * Validate extracted data against raw text
    */
-  validateExtraction(structured: StructuredClause, rawText: string): {
+  validateExtraction(
+    structured: StructuredClause,
+    rawText: string
+  ): {
     isValid: boolean;
     issues: string[];
   } {
     const issues: string[] = [];
-    
+
     // Check if coverage names appear in raw text
     for (const coverage of structured.coverages) {
       if (!rawText.toLowerCase().includes(coverage.name.toLowerCase())) {
         issues.push(`Coverage "${coverage.name}" not found in raw text`);
       }
     }
-    
+
     // Check if deductibles are reasonable
     for (const coverage of structured.coverages) {
       if (coverage.deductible) {
-        const hasPercentage = coverage.deductible.components.some(c => c.type === 'percentage');
+        const hasPercentage = coverage.deductible.components.some((c) => c.type === 'percentage');
         if (!hasPercentage && coverage.deductible.components.length > 0) {
           issues.push(`Coverage "${coverage.name}" has unusual deductible structure`);
         }
       }
     }
-    
+
     return {
       isValid: issues.length === 0,
-      issues
+      issues,
     };
-  }
+  },
 };
 
 export default structuredClauseExtractor;

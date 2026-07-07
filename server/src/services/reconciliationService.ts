@@ -6,9 +6,13 @@ import {
 } from '../schemas/extractionSchemas';
 import { hybridDeductibleParser, HybridDeductibleResult } from './hybridDeductibleParser';
 import { deductibleEquals } from './deductibleFormatter';
-import { structuredClauseExtractor, StructuredClause, ExtractedCoverage } from './structuredClauseExtractor';
+import {
+  structuredClauseExtractor,
+  StructuredClause,
+  ExtractedCoverage,
+} from './structuredClauseExtractor';
 import { insurerNameNormalizer } from './insurerNameNormalizer';
-import { ParsedQuote} from './quoteParser';
+import { ParsedQuote } from './quoteParser';
 import { env } from '../config/env';
 
 // ---------------------------------------------------------------------------
@@ -35,7 +39,9 @@ function loadThresholdRegistry(): ThresholdRegistry {
       insurers: parsed.insurers || {},
     };
   } catch {
-    console.warn('⚠️ [ReconciliationService] Invalid RECONCILIATION_THRESHOLDS JSON; using defaults');
+    console.warn(
+      '⚠️ [ReconciliationService] Invalid RECONCILIATION_THRESHOLDS JSON; using defaults'
+    );
     return {
       default: { default: 0.05 },
       insurers: {},
@@ -47,7 +53,7 @@ const thresholdRegistry = loadThresholdRegistry();
 
 export function getThreshold(insurerName: string, coverageName: string): number {
   const insurerKey = Object.keys(thresholdRegistry.insurers).find(
-    k => k.toLowerCase() === insurerName.toLowerCase()
+    (k) => k.toLowerCase() === insurerName.toLowerCase()
   );
   const config = insurerKey ? thresholdRegistry.insurers[insurerKey] : thresholdRegistry.default;
   const override = config.coverageOverrides?.[coverageName];
@@ -66,14 +72,14 @@ function buildDeductibleStructureFromClause(
     return null;
   }
 
-  const components = ded.components.map(c => ({
+  const components = ded.components.map((c) => ({
     type: c.type as DeductibleStructure['components'][number]['type'],
     value: c.value,
     currency: c.currency ?? undefined,
   }));
 
-  const hasMinimum = components.some(c => c.type === 'minimum');
-  const hasMaximum = components.some(c => c.type === 'maximum');
+  const hasMinimum = components.some((c) => c.type === 'minimum');
+  const hasMaximum = components.some((c) => c.type === 'maximum');
   const isZero = components.length === 1 && components[0].type === 'na';
   const isComposite = components.length > 1;
 
@@ -108,7 +114,7 @@ function normalizeDeductible(structure: DeductibleStructure): NormalizedDeductib
     maxAmount: 0,
     isPercentageBased: false,
     isZero: structure.isZero,
-    isUnknown: structure.components.some(c => c.type === 'unknown'),
+    isUnknown: structure.components.some((c) => c.type === 'unknown'),
   };
 
   if (structure.isZero) {
@@ -183,10 +189,12 @@ function compareDeductibles(
   if (quote.isPercentageBased && clause.isPercentageBased) {
     const diff = Math.abs(quote.percentage - clause.percentage);
     if (diff <= threshold * 100) {
-      const confidence = 0.90 + (0.10 * (1 - diff / (threshold * 100 || 1)));
+      const confidence = 0.9 + 0.1 * (1 - diff / (threshold * 100 || 1));
       return { status: 'MATCH', confidence: Math.min(confidence, 0.99), details };
     }
-    details.push(`Diferencia porcentual: ${diff.toFixed(1)}% (umbral: ${(threshold * 100).toFixed(1)}%)`);
+    details.push(
+      `Diferencia porcentual: ${diff.toFixed(1)}% (umbral: ${(threshold * 100).toFixed(1)}%)`
+    );
     return { status: 'MISMATCH', confidence: 0.82, details };
   }
 
@@ -202,12 +210,14 @@ function compareDeductibles(
   const relativeDiff = minDiff / avgAmount;
 
   if (relativeDiff <= threshold) {
-    const confidence = 0.90 + (0.10 * (1 - relativeDiff / threshold));
+    const confidence = 0.9 + 0.1 * (1 - relativeDiff / threshold);
     return { status: 'MATCH', confidence: Math.min(confidence, 0.99), details };
   }
 
-  details.push(`Diferencia en monto: ${minDiff.toLocaleString('es-CO')} COP (relativa: ${(relativeDiff * 100).toFixed(1)}%, umbral: ${(threshold * 100).toFixed(1)}%)`);
-  return { status: 'MISMATCH', confidence: 0.80, details };
+  details.push(
+    `Diferencia en monto: ${minDiff.toLocaleString('es-CO')} COP (relativa: ${(relativeDiff * 100).toFixed(1)}%, umbral: ${(threshold * 100).toFixed(1)}%)`
+  );
+  return { status: 'MISMATCH', confidence: 0.8, details };
 }
 
 // ---------------------------------------------------------------------------
@@ -223,14 +233,12 @@ function findClauseCoverage(
   }
 
   // Exact match first
-  const exact = clause.coverages.find(
-    c => c.name.toLowerCase() === coverageName.toLowerCase()
-  );
+  const exact = clause.coverages.find((c) => c.name.toLowerCase() === coverageName.toLowerCase());
   if (exact) return exact;
 
   // Substring match
   const lowerCoverage = coverageName.toLowerCase();
-  const substring = clause.coverages.find(c => {
+  const substring = clause.coverages.find((c) => {
     const lower = c.name.toLowerCase();
     return lower.includes(lowerCoverage) || lowerCoverage.includes(lower);
   });
@@ -276,10 +284,12 @@ export const reconciliationService = {
     // Telemetry: log unmapped insurer names (only when no mapping exists and it's not already a known canonical name)
     const knownCanonicalNames = insurerNameNormalizer.getKnownInsurers();
     const isAlreadyCanonical = knownCanonicalNames.some(
-      known => known.toUpperCase() === rawInsurerName.toUpperCase()
+      (known) => known.toUpperCase() === rawInsurerName.toUpperCase()
     );
     if (normalizedInsurerName === rawInsurerName && !isAlreadyCanonical) {
-      console.warn(`⚠️ [ReconciliationService] Unmapped insurer name encountered: "${rawInsurerName}"`);
+      console.warn(
+        `⚠️ [ReconciliationService] Unmapped insurer name encountered: "${rawInsurerName}"`
+      );
     }
 
     const results: ReconciliationResult[] = [];
@@ -289,7 +299,10 @@ export const reconciliationService = {
     try {
       clause = await structuredClauseExtractor.searchClause(insurerName);
     } catch (err: unknown) {
-      console.warn(`⚠️ [ReconciliationService] Clause search failed for ${insurerName}:`, err instanceof Error ? err.message : String(err));
+      console.warn(
+        `⚠️ [ReconciliationService] Clause search failed for ${insurerName}:`,
+        err instanceof Error ? err.message : String(err)
+      );
     }
 
     const coveragesToReconcile = quote.coverages || [];
@@ -306,7 +319,10 @@ export const reconciliationService = {
           coverageName
         );
       } catch (err: unknown) {
-        console.warn(`⚠️ [ReconciliationService] Failed to parse quote deductible for ${coverageName}:`, err instanceof Error ? err.message : String(err));
+        console.warn(
+          `⚠️ [ReconciliationService] Failed to parse quote deductible for ${coverageName}:`,
+          err instanceof Error ? err.message : String(err)
+        );
         quoteDedResult = {
           components: [{ type: 'unknown', value: 0 }],
           compoundOperator: 'none',
@@ -341,7 +357,7 @@ export const reconciliationService = {
 
       if (!clause) {
         status = 'MISSING_CLAUSE';
-        confidence = 0.40;
+        confidence = 0.4;
         details.push(`No se encontró clausulado para aseguradora: ${insurerName}`);
       } else if (!clauseCoverage) {
         status = 'MISSING_CLAUSE';
@@ -349,9 +365,13 @@ export const reconciliationService = {
         details.push(`Cobertura "${coverageName}" no encontrada en clausulado`);
       } else if (!clauseDedStructure) {
         status = 'PENDING';
-        confidence = 0.60;
+        confidence = 0.6;
         details.push(`Clausulado no especifica deducible para "${coverageName}"`);
-      } else if (!coverage.deductible || coverage.deductible.trim() === '' || coverage.deductible === 'NO ESPECIFICADO') {
+      } else if (
+        !coverage.deductible ||
+        coverage.deductible.trim() === '' ||
+        coverage.deductible === 'NO ESPECIFICADO'
+      ) {
         status = 'PENDING';
         confidence = 0.55;
         details.push(`Cotización no especifica deducible para "${coverageName}"`);
@@ -388,14 +408,14 @@ export const reconciliationService = {
       });
     }
 
-    const mismatchCount = results.filter(r => r.status === 'MISMATCH').length;
-    const missingCount = results.filter(r => r.status === 'MISSING_CLAUSE').length;
-    const pendingCount = results.filter(r => r.status === 'PENDING').length;
+    const mismatchCount = results.filter((r) => r.status === 'MISMATCH').length;
+    const missingCount = results.filter((r) => r.status === 'MISSING_CLAUSE').length;
+    const pendingCount = results.filter((r) => r.status === 'PENDING').length;
 
     console.log(
       `🔍 [ReconciliationService] Reconciled ${results.length} coverages for ${insurerName}: ` +
-      `${results.filter(r => r.status === 'MATCH').length} MATCH, ` +
-      `${mismatchCount} MISMATCH, ${missingCount} MISSING_CLAUSE, ${pendingCount} PENDING`
+        `${results.filter((r) => r.status === 'MATCH').length} MATCH, ` +
+        `${mismatchCount} MISMATCH, ${missingCount} MISSING_CLAUSE, ${pendingCount} PENDING`
     );
 
     return results;

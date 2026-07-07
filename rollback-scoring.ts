@@ -1,11 +1,9 @@
 /**
  * Rollback Script
  * Reverts scoring changes to neutral (50/100) when no clause document is available
- * 
+ *
  * Usage: npm run rollback:scoring
  */
-
-
 
 console.log('🔄 Rollback Script: Reverting scoring penalties...');
 console.log('');
@@ -25,15 +23,15 @@ console.log('⚠️  Note: This is a manual rollback. Review changes before depl
 export const ROLLBACK_CONFIG = {
   // Set to true to disable all clause-related penalties
   disableClausePenalties: false,
-  
+
   // Neutral score when no clause document (default: 50)
   neutralScore: 50,
-  
+
   // Phantom coverage penalty (default: 0 to disable)
   phantomPenalty: 15,
-  
+
   // Mandatory missing penalty (default: 0 to disable)
-  mandatoryMissingPenalty: 10
+  mandatoryMissingPenalty: 10,
 };
 
 // Instructions for manual rollback

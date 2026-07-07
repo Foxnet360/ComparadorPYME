@@ -1,7 +1,7 @@
 #!/usr/bin/env ts-node
 /**
  * Direct Clause Processing Script
- * 
+ *
  * Processes local clause PDFs directly using DocumentIndexingService
  * This bypasses the HTTP upload and stores directly in the unified chunks table
  * Usage: npx tsx scripts/process-clauses-direct.ts
@@ -58,26 +58,26 @@ const clauseFiles = [
 
 async function processClauses() {
   console.log('🚀 [process-clauses-direct] Starting direct clause processing\n');
-  
+
   const indexer = new DocumentIndexingService((progress) => {
     console.log(`   [${progress.stage}] ${progress.message} (${progress.percent}%)`);
   });
-  
+
   let successCount = 0;
   let failCount = 0;
-  
+
   for (const clause of clauseFiles) {
     const fullPath = path.resolve(clause.filePath);
-    
+
     if (!fs.existsSync(fullPath)) {
       console.error(`❌ File not found: ${fullPath}`);
       failCount++;
       continue;
     }
-    
+
     console.log(`🔍 Processing: ${clause.documentName} (${clause.insurerName})`);
     console.log(`   File: ${fullPath}`);
-    
+
     try {
       const result = await indexer.indexDocument(fullPath, {
         insurerName: clause.insurerName,
@@ -85,10 +85,12 @@ async function processClauses() {
         documentType: clause.documentType,
         uploadedBy: 'system-reindex',
       });
-      
+
       if (result.success) {
         console.log(`   ✅ Success! Document ID: ${result.documentId}`);
-        console.log(`   📊 Stats: ${result.stats.chunksCreated} chunks, ${result.stats.totalPages} pages`);
+        console.log(
+          `   📊 Stats: ${result.stats.chunksCreated} chunks, ${result.stats.totalPages} pages`
+        );
         successCount++;
       } else {
         console.error(`   ❌ Failed: ${result.errors.join(', ')}`);
@@ -98,10 +100,10 @@ async function processClauses() {
       console.error(`   ❌ Error: ${error}`);
       failCount++;
     }
-    
+
     console.log('');
   }
-  
+
   console.log('📊 Processing Summary:');
   console.log(`   Total documents: ${clauseFiles.length}`);
   console.log(`   ✅ Success: ${successCount}`);

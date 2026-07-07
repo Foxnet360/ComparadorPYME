@@ -33,7 +33,7 @@ export class CorrectionQueue {
   static add(correction: CorrectionInput): string {
     const queue = this.getQueue();
     const id = `${correction.insurerName}::${correction.rawName}::${Date.now()}`;
-    
+
     queue.push({
       id,
       correction,
@@ -41,13 +41,13 @@ export class CorrectionQueue {
       lastAttempt: Date.now(),
       status: 'pending',
     });
-    
+
     this.saveQueue(queue);
     return id;
   }
 
   static getPending(): QueuedCorrection[] {
-    return this.getQueue().filter(item => item.status === 'pending' || item.status === 'error');
+    return this.getQueue().filter((item) => item.status === 'pending' || item.status === 'error');
   }
 
   static getAll(): QueuedCorrection[] {
@@ -55,12 +55,12 @@ export class CorrectionQueue {
   }
 
   static remove(id: string): void {
-    const queue = this.getQueue().filter(item => item.id !== id);
+    const queue = this.getQueue().filter((item) => item.id !== id);
     this.saveQueue(queue);
   }
 
   static updateStatus(id: string, status: QueuedCorrection['status'], error?: string): void {
-    const queue = this.getQueue().map(item => {
+    const queue = this.getQueue().map((item) => {
       if (item.id === id) {
         return { ...item, status, error, lastAttempt: Date.now() };
       }
@@ -70,7 +70,7 @@ export class CorrectionQueue {
   }
 
   static incrementAttempt(id: string): void {
-    const queue = this.getQueue().map(item => {
+    const queue = this.getQueue().map((item) => {
       if (item.id === id) {
         return { ...item, attempts: item.attempts + 1, lastAttempt: Date.now() };
       }
@@ -80,7 +80,7 @@ export class CorrectionQueue {
   }
 
   static isMaxAttemptsReached(id: string): boolean {
-    const item = this.getQueue().find(q => q.id === id);
+    const item = this.getQueue().find((q) => q.id === id);
     return item ? item.attempts >= MAX_ATTEMPTS : false;
   }
 
@@ -122,7 +122,9 @@ export class CorrectionQueue {
           this.remove(item.id);
           success.push(item.id);
         } else {
-          const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+          const errorData = await response
+            .json()
+            .catch(() => ({ error: `HTTP ${response.status}` }));
           this.updateStatus(item.id, 'error', errorData.error);
           failed.push(item.id);
         }

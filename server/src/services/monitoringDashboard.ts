@@ -46,7 +46,7 @@ export const monitoringDashboard = {
   async getMetrics(): Promise<MonitoringMetrics> {
     const now = new Date();
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-    
+
     try {
       // Get analysis metrics from database
       const { data: analysesRaw, error: analysisError } = await supabase
@@ -63,18 +63,17 @@ export const monitoringDashboard = {
 
       // Calculate metrics
       const totalAnalyses = analyses?.length || 0;
-      const successfulAnalyses = analyses?.filter(a => a.status === 'success').length || 0;
+      const successfulAnalyses = analyses?.filter((a) => a.status === 'success').length || 0;
       const successRate = totalAnalyses > 0 ? (successfulAnalyses / totalAnalyses) * 100 : 100;
-      
-      const durations = analyses?.map(a => a.duration_ms).filter(Boolean) || [];
-      const averageAnalysisTime = durations.length > 0 
-        ? durations.reduce((a, b) => a + b, 0) / durations.length 
-        : 0;
+
+      const durations = analyses?.map((a) => a.duration_ms).filter(Boolean) || [];
+      const averageAnalysisTime =
+        durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : 0;
 
       // Get error breakdown
-      const errors = analyses?.filter(a => a.status === 'error') || [];
+      const errors = analyses?.filter((a) => a.status === 'error') || [];
       const errorByType: Record<string, number> = {};
-      errors.forEach(e => {
+      errors.forEach((e) => {
         const type = e.error_type || 'unknown';
         errorByType[type] = (errorByType[type] || 0) + 1;
       });
@@ -83,7 +82,7 @@ export const monitoringDashboard = {
       let ragMetrics = {
         averageChunksRetrieved: 0,
         averageSimilarity: 0,
-        fallbackRate: 0
+        fallbackRate: 0,
       };
 
       try {
@@ -107,14 +106,14 @@ export const monitoringDashboard = {
         apiLatency: {
           p50: this.calculatePercentile(durations, 50),
           p95: this.calculatePercentile(durations, 95),
-          p99: this.calculatePercentile(durations, 99)
+          p99: this.calculatePercentile(durations, 99),
         },
         errors: {
           total: errors.length,
-          byType: errorByType
+          byType: errorByType,
         },
         ragMetrics,
-        extractionAccuracy
+        extractionAccuracy,
       };
     } catch (error) {
       console.error('❌ [Monitoring] Error getting metrics:', error);
@@ -130,16 +129,16 @@ export const monitoringDashboard = {
       database: await this.checkDatabase(),
       redis: await this.checkRedis(),
       gemini: await this.checkGemini(),
-      embeddings: await this.checkEmbeddings()
+      embeddings: await this.checkEmbeddings(),
     };
 
-    const allHealthy = Object.values(checks).every(c => c);
-    const anyCritical = Object.values(checks).filter(c => !c).length >= 2;
+    const allHealthy = Object.values(checks).every((c) => c);
+    const anyCritical = Object.values(checks).filter((c) => !c).length >= 2;
 
     return {
-      status: anyCritical ? 'critical' : (allHealthy ? 'healthy' : 'degraded'),
+      status: anyCritical ? 'critical' : allHealthy ? 'healthy' : 'degraded',
       services: checks,
-      lastCheck: new Date().toISOString()
+      lastCheck: new Date().toISOString(),
     };
   },
 
@@ -158,7 +157,7 @@ export const monitoringDashboard = {
         duration_ms: durationMs,
         status,
         error_type: errorType,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       } as unknown as never[]);
     } catch (error) {
       console.error('❌ [Monitoring] Error logging analysis:', error);
@@ -176,12 +175,14 @@ export const monitoringDashboard = {
     try {
       const key = 'rag:stats:last_hour';
       const existing = await getCacheValue(key);
-      const stats = existing ? JSON.parse(existing) : {
-        count: 0,
-        totalChunks: 0,
-        totalSimilarity: 0,
-        fallbackCount: 0
-      };
+      const stats = existing
+        ? JSON.parse(existing)
+        : {
+            count: 0,
+            totalChunks: 0,
+            totalSimilarity: 0,
+            fallbackCount: 0,
+          };
 
       stats.count++;
       stats.totalChunks += chunksRetrieved;
@@ -215,18 +216,18 @@ export const monitoringDashboard = {
         user_corrected: boolean;
       }>;
       const total = mappings.length;
-      
+
       if (total === 0) {
         return { structuredClause: 0, deductible: 0, coverageMapping: 0 };
       }
 
-      const corrected = mappings.filter(m => m.user_corrected).length;
+      const corrected = mappings.filter((m) => m.user_corrected).length;
       const accuracy = ((total - corrected) / total) * 100;
 
       return {
         structuredClause: accuracy,
         deductible: accuracy, // Would need separate tracking
-        coverageMapping: accuracy
+        coverageMapping: accuracy,
       };
     } catch (error) {
       console.error('❌ [Monitoring] Error getting extraction accuracy:', error);
@@ -254,7 +255,7 @@ export const monitoringDashboard = {
         totalSearches: parsed.count,
         averageChunks: parsed.count > 0 ? parsed.totalChunks / parsed.count : 0,
         averageSimilarity: parsed.count > 0 ? parsed.totalSimilarity / parsed.count : 0,
-        fallbackRate: parsed.count > 0 ? (parsed.fallbackCount / parsed.count) * 100 : 0
+        fallbackRate: parsed.count > 0 ? (parsed.fallbackCount / parsed.count) * 100 : 0,
       };
     } catch (error) {
       console.error('❌ [Monitoring] Error getting RAG summary:', error);
@@ -324,15 +325,15 @@ export const monitoringDashboard = {
       ragMetrics: {
         averageChunksRetrieved: 0,
         averageSimilarity: 0,
-        fallbackRate: 0
+        fallbackRate: 0,
       },
       extractionAccuracy: {
         structuredClause: 0,
         deductible: 0,
-        coverageMapping: 0
-      }
+        coverageMapping: 0,
+      },
     };
-  }
+  },
 };
 
 export default monitoringDashboard;

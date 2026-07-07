@@ -255,7 +255,8 @@ describe('hybridDeductibleParser', () => {
         }
 
         const telemetryLog = logSpy.mock.calls.find(
-          (call) => typeof call[0] === 'string' && call[0].includes('[HybridDeductibleParser] Telemetry')
+          (call) =>
+            typeof call[0] === 'string' && call[0].includes('[HybridDeductibleParser] Telemetry')
         );
         expect(telemetryLog).toBeDefined();
       } finally {
@@ -401,7 +402,13 @@ describe('hybridDeductibleParser', () => {
   describe('telemetry', () => {
     it('should accumulate stats across multiple calls', async () => {
       mockGetCachedDeductibleV2
-        .mockResolvedValueOnce({ components: [{ type: 'na', value: 0 }], isZero: true, hasMinimum: false, hasMaximum: false, isComposite: false })
+        .mockResolvedValueOnce({
+          components: [{ type: 'na', value: 0 }],
+          isZero: true,
+          hasMinimum: false,
+          hasMaximum: false,
+          isComposite: false,
+        })
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(null);
 
@@ -413,9 +420,9 @@ describe('hybridDeductibleParser', () => {
         isComposite: false,
       });
 
-      await hybridDeductibleParser.parse('No aplica');          // cache hit
-      await hybridDeductibleParser.parse('10%');                 // regex hit
-      await hybridDeductibleParser.parse('texto muy raro');      // LLM fallback
+      await hybridDeductibleParser.parse('No aplica'); // cache hit
+      await hybridDeductibleParser.parse('10%'); // regex hit
+      await hybridDeductibleParser.parse('texto muy raro'); // LLM fallback
 
       const stats = getHybridParserStats();
       expect(stats.cacheHits).toBe(1);

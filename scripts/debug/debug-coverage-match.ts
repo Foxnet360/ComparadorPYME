@@ -2,10 +2,9 @@ import { pdfExtractor } from './src/services/pdfExtractor';
 import { geminiService } from './src/services/gemini';
 import { mapCoverageName } from './src/services/thesaurusMapper';
 import { PLANTILLA_ITEMS } from './src/utils/analysisValidator';
-import { formatPercentage} from './src/utils/formatCurrency';
+import { formatPercentage } from './src/utils/formatCurrency';
 
 type GeminiQuoteExtraction = Awaited<ReturnType<typeof geminiService.extractStructured>>;
-
 
 const STRUCTURED_EXTRACTION_PROMPT = `Eres un extractor experto de cotizaciones de seguros PYME colombianos.
 
@@ -102,10 +101,22 @@ interface QuoteFile {
 }
 
 const quoteFiles: QuoteFile[] = [
-  { path: '/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/Ejemplos/laser-home/Cotización - CHUBB.pdf', filename: 'CHUBB' },
-  { path: '/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/Ejemplos/laser-home/Cotización - MAPFRE.pdf', filename: 'MAPFRE' },
-  { path: '/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/Ejemplos/laser-home/Cotización - BBVA.pdf', filename: 'BBVA' },
-  { path: '/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/Ejemplos/laser-home/Cotización - AXA Colpatria.pdf', filename: 'AXA Colpatria' },
+  {
+    path: '/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/Ejemplos/laser-home/Cotización - CHUBB.pdf',
+    filename: 'CHUBB',
+  },
+  {
+    path: '/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/Ejemplos/laser-home/Cotización - MAPFRE.pdf',
+    filename: 'MAPFRE',
+  },
+  {
+    path: '/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/Ejemplos/laser-home/Cotización - BBVA.pdf',
+    filename: 'BBVA',
+  },
+  {
+    path: '/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/Ejemplos/laser-home/Cotización - AXA Colpatria.pdf',
+    filename: 'AXA Colpatria',
+  },
 ];
 
 function printSeparator(title: string) {
@@ -122,7 +133,7 @@ function printSubSeparator(title: string) {
 
 async function analyzeQuote(file: QuoteFile) {
   printSeparator(`ANALIZANDO: ${file.filename}`);
-  
+
   // Step 1: Extract text from PDF
   console.log('\n📄 STEP 1: Extracting text from PDF...');
   let extractedText: string;
@@ -131,7 +142,7 @@ async function analyzeQuote(file: QuoteFile) {
     extractedText = extraction.text;
     console.log(`   ✅ Extracted ${extractedText.length} characters`);
     console.log(`   📊 Pages: ${extraction.metadata.pageCount}, Scanned: ${extraction.isScanned}`);
-    
+
     // Show first 500 chars
     console.log('\n   📝 First 500 chars of extracted text:');
     console.log('   ' + '-'.repeat(50));
@@ -151,7 +162,9 @@ async function analyzeQuote(file: QuoteFile) {
       STRUCTURED_EXTRACTION_PROMPT,
       1
     );
-    console.log(`   ✅ Extracted: ${structuredResult.insurerName}, ${structuredResult.coverages?.length || 0} coverages`);
+    console.log(
+      `   ✅ Extracted: ${structuredResult.insurerName}, ${structuredResult.coverages?.length || 0} coverages`
+    );
   } catch (error) {
     console.error(`   ❌ Gemini extraction failed: ${error}`);
     return;
@@ -161,7 +174,7 @@ async function analyzeQuote(file: QuoteFile) {
   printSubSeparator('STEP 3: RAW Coverage Names from Gemini (Before Thesaurus Mapping)');
   const rawCoverages = structuredResult.coverages || [];
   console.log(`\n   Total raw coverages returned: ${rawCoverages.length}`);
-  
+
   if (rawCoverages.length === 0) {
     console.log('   ⚠️  WARNING: Gemini returned ZERO coverages!');
   } else {
@@ -174,7 +187,7 @@ async function analyzeQuote(file: QuoteFile) {
 
   // Step 4: Apply thesaurus mapping and log results
   printSubSeparator('STEP 4: Coverage Names AFTER Thesaurus Mapping');
-  
+
   const mappedCoverages = rawCoverages.map((coverage) => {
     const mapping = mapCoverageName(coverage.name);
     return {
@@ -184,7 +197,7 @@ async function analyzeQuote(file: QuoteFile) {
       matchedVariant: mapping.matchedVariant,
       needsReview: mapping.needsReview,
       value: coverage.value,
-      deductible: coverage.deductible
+      deductible: coverage.deductible,
     };
   });
 
@@ -200,7 +213,7 @@ async function analyzeQuote(file: QuoteFile) {
 
   // Step 5: Compare against PLANTILLA_ITEMS
   printSubSeparator('STEP 5: Comparison with Frontend PLANTILLA_ITEMS');
-  
+
   const backendCoverageNames = mappedCoverages.map((c) => c.canonicalName);
   const missingItems: string[] = [];
   const matchedItems: Array<{ frontend: string; backend: string; matchType: string }> = [];
@@ -211,14 +224,22 @@ async function analyzeQuote(file: QuoteFile) {
   for (const frontendItem of PLANTILLA_ITEMS) {
     // Check exact match
     const exactMatch = backendCoverageNames.find((name: string) => name === frontendItem);
-    
+
     // Check fuzzy match
     const fuzzyMatch = backendCoverageNames.find((name: string) => {
-      const normalizedFrontend = frontendItem.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      const normalizedBackend = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      return normalizedFrontend === normalizedBackend || 
-             normalizedFrontend.includes(normalizedBackend) || 
-             normalizedBackend.includes(normalizedFrontend);
+      const normalizedFrontend = frontendItem
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+      const normalizedBackend = name
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+      return (
+        normalizedFrontend === normalizedBackend ||
+        normalizedFrontend.includes(normalizedBackend) ||
+        normalizedBackend.includes(normalizedFrontend)
+      );
     });
 
     if (exactMatch) {
@@ -238,7 +259,7 @@ async function analyzeQuote(file: QuoteFile) {
 
   // Step 6: Show which frontend items don't match
   printSubSeparator('STEP 6: Frontend Items WITHOUT Backend Match (Will Show "No Especificado")');
-  
+
   if (missingItems.length === 0) {
     console.log('\n   ✅ All frontend items have a backend match!');
   } else {
@@ -250,7 +271,7 @@ async function analyzeQuote(file: QuoteFile) {
 
   // Step 7: Summary table
   printSubSeparator('STEP 7: Summary Table');
-  
+
   const totalItems = PLANTILLA_ITEMS.length;
   const matchedCount = matchedItems.length;
   const missingCount = missingItems.length;
@@ -259,21 +280,29 @@ async function analyzeQuote(file: QuoteFile) {
   console.log('\n   ┌─────────────────────────────────────────────────────────────────────┐');
   console.log('   │ Frontend Item                          │ Backend Coverage         │ Match │');
   console.log('   ├─────────────────────────────────────────────────────────────────────┤');
-  
+
   for (const item of PLANTILLA_ITEMS) {
-    const match = matchedItems.find(m => m.frontend === item);
+    const match = matchedItems.find((m) => m.frontend === item);
     const frontendShort = item.length > 38 ? item.substring(0, 35) + '...' : item;
-    const backendShort = match ? (match.backend.length > 24 ? match.backend.substring(0, 21) + '...' : match.backend) : 'No Especificado';
+    const backendShort = match
+      ? match.backend.length > 24
+        ? match.backend.substring(0, 21) + '...'
+        : match.backend
+      : 'No Especificado';
     const matchType = match ? match.matchType : 'MISSING';
-    
-    console.log(`   │ ${frontendShort.padEnd(38)} │ ${backendShort.padEnd(24)} │ ${matchType.padEnd(5)} │`);
+
+    console.log(
+      `   │ ${frontendShort.padEnd(38)} │ ${backendShort.padEnd(24)} │ ${matchType.padEnd(5)} │`
+    );
   }
-  
+
   console.log('   └─────────────────────────────────────────────────────────────────────┘');
   console.log(`\n   📊 MATCH STATISTICS:`);
   console.log(`      Total frontend items: ${totalItems}`);
   console.log(`      Matched: ${matchedCount} (${matchPercentage})`);
-  console.log(`      Missing (No Especificado): ${missingCount} (${formatPercentage(missingCount / totalItems, 1)})`);
+  console.log(
+    `      Missing (No Especificado): ${missingCount} (${formatPercentage(missingCount / totalItems, 1)})`
+  );
 
   // Show all unique backend coverage names found
   const uniqueBackendNames = [...new Set(backendCoverageNames)];
@@ -291,7 +320,7 @@ async function analyzeQuote(file: QuoteFile) {
     matchPercentage: parseFloat(matchPercentage),
     missingItems,
     rawCoverages: rawCoverages.map((c) => c.name),
-    mappedCoverages: mappedCoverages.map((c) => ({ raw: c.rawName, canonical: c.canonicalName }))
+    mappedCoverages: mappedCoverages.map((c) => ({ raw: c.rawName, canonical: c.canonicalName })),
   };
 }
 
@@ -302,7 +331,7 @@ async function main() {
   console.log('='.repeat(80));
 
   const results = [];
-  
+
   for (const file of quoteFiles) {
     try {
       const result = await analyzeQuote(file);
@@ -316,15 +345,17 @@ async function main() {
 
   // Final summary across all quotes
   printSeparator('FINAL SUMMARY ACROSS ALL QUOTES');
-  
+
   console.log('\n   ┌──────────────────────┬────────────┬────────────┬────────────┬──────────┐');
   console.log('   │ Quote                │ Raw Covgs  │ Mapped     │ Matched    │ Match %  │');
   console.log('   ├──────────────────────┼────────────┼────────────┼────────────┼──────────┤');
-  
+
   for (const result of results) {
-    console.log(`   │ ${result.filename.padEnd(20)} │ ${result.rawCoverageCount.toString().padEnd(10)} │ ${result.mappedCoverageCount.toString().padEnd(10)} │ ${result.matchedCount.toString().padEnd(10)} │ ${formatPercentage(result.matchPercentage / 100, 1).padEnd(8)} │`);
+    console.log(
+      `   │ ${result.filename.padEnd(20)} │ ${result.rawCoverageCount.toString().padEnd(10)} │ ${result.mappedCoverageCount.toString().padEnd(10)} │ ${result.matchedCount.toString().padEnd(10)} │ ${formatPercentage(result.matchPercentage / 100, 1).padEnd(8)} │`
+    );
   }
-  
+
   console.log('   └──────────────────────┴────────────┴────────────┴────────────┴──────────┘');
 
   // Show most common missing items

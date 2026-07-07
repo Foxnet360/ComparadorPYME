@@ -12,51 +12,53 @@ const renderWithProvider = (ui: React.ReactElement) => {
 
 // Mock child components that might crash or have complex dependencies
 vi.mock('../../../components/ExecutiveSummary', () => ({
-  ExecutiveSummary: () => <div data-testid="executive-summary">Executive Summary</div>
+  ExecutiveSummary: () => <div data-testid="executive-summary">Executive Summary</div>,
 }));
 
 vi.mock('../../../components/DeductiblesComparisonTable', () => ({
-  DeductiblesComparisonTable: () => <div>Deductibles Table</div>
+  DeductiblesComparisonTable: () => <div>Deductibles Table</div>,
 }));
 
 vi.mock('../../../components/DeductibleSummaryTable', () => ({
-  DeductibleSummaryTable: () => <div>Deductible Summary</div>
+  DeductibleSummaryTable: () => <div>Deductible Summary</div>,
 }));
 
 vi.mock('../../../components/AuditSection', () => ({
-  AuditSection: () => <div>Audit Section</div>
+  AuditSection: () => <div>Audit Section</div>,
 }));
 
 vi.mock('../../../components/UnifiedCoverageMatrix', () => ({
-  UnifiedCoverageMatrix: () => <div>Coverage Matrix</div>
+  UnifiedCoverageMatrix: () => <div>Coverage Matrix</div>,
 }));
 
 vi.mock('../../../components/CoverageValidationMatrix', () => ({
-  CoverageValidationMatrix: () => <div data-testid="coverage-validation">Coverage Validation</div>
+  CoverageValidationMatrix: () => <div data-testid="coverage-validation">Coverage Validation</div>,
 }));
 
 vi.mock('../../../components/DeductibleRiskGauge', () => ({
-  DeductibleRiskGauge: () => <div data-testid="deductible-risk">Deductible Risk</div>
+  DeductibleRiskGauge: () => <div data-testid="deductible-risk">Deductible Risk</div>,
 }));
 
 vi.mock('../../../components/ContextualExclusionCard', () => ({
-  ContextualExclusionCard: () => <div data-testid="contextual-risk">Contextual Risk</div>
+  ContextualExclusionCard: () => <div data-testid="contextual-risk">Contextual Risk</div>,
 }));
 
 vi.mock('../../../components/WarrantyComplianceDashboard', () => ({
-  WarrantyComplianceDashboard: () => <div data-testid="warranty-compliance">Warranty Compliance</div>
+  WarrantyComplianceDashboard: () => (
+    <div data-testid="warranty-compliance">Warranty Compliance</div>
+  ),
 }));
 
 vi.mock('../../../components/LegalOpinionCard', () => ({
-  LegalOpinionCard: () => <div data-testid="legal-opinion">Legal Opinion</div>
+  LegalOpinionCard: () => <div data-testid="legal-opinion">Legal Opinion</div>,
 }));
 
 vi.mock('../../../components/NegotiationPointsList', () => ({
-  NegotiationPointsList: () => <div data-testid="negotiation-points">Negotiation Points</div>
+  NegotiationPointsList: () => <div data-testid="negotiation-points">Negotiation Points</div>,
 }));
 
 vi.mock('../../../components/InverseCoverageAlert', () => ({
-  InverseCoverageAlert: () => <div data-testid="inverse-coverage">Inverse Coverage</div>
+  InverseCoverageAlert: () => <div data-testid="inverse-coverage">Inverse Coverage</div>,
 }));
 
 describe('ComparisonReport - Advanced Tab Visibility', () => {
@@ -67,30 +69,40 @@ describe('ComparisonReport - Advanced Tab Visibility', () => {
         policyName: 'Empresarial Plus',
         priceAnnual: 8500000,
         currency: 'COP',
-        coverages: [
-          { name: 'Responsabilidad Civil', value: '100M', deductible: '5 SMMLV' }
-        ],
+        coverages: [{ name: 'Responsabilidad Civil', value: '100M', deductible: '5 SMMLV' }],
         score: 85,
         parseConfidence: 95,
         specialConditions: [],
-        scoringBreakdown: { coverage: 90, deductibles: 80, exclusions: 85, priceRatio: 75, sublimits: 80, warranties: 70 },
+        scoringBreakdown: {
+          coverage: 90,
+          deductibles: 80,
+          exclusions: 85,
+          priceRatio: 75,
+          sublimits: 80,
+          warranties: 70,
+        },
         clientAnalysis: '',
         technicalAnalysis: '',
         keyFindings: [],
         alerts: [],
-        crossReferenceSummary: { verifiedCoverages: 2, totalCoverages: 2, criticalAlerts: 0, warningAlerts: 0 },
+        crossReferenceSummary: {
+          verifiedCoverages: 2,
+          totalCoverages: 2,
+          criticalAlerts: 0,
+          warningAlerts: 0,
+        },
         extractionConfidence: 95,
         needsReview: false,
         isCritical: false,
         validationFlags: [],
-        validationSummary: '2/2 coberturas'
-      }
+        validationSummary: '2/2 coberturas',
+      },
     ],
     recommendation: 'Test recommendation',
     marketAnalysis: 'Test market analysis',
     deductibleComparison: [],
     timestamp: new Date().toISOString(),
-    analysisVersion: '2.0-rag'
+    analysisVersion: '2.0-rag',
   };
 
   beforeEach(() => {
@@ -100,17 +112,19 @@ describe('ComparisonReport - Advanced Tab Visibility', () => {
   it('shows advanced tab when data exists (feature flag enabled by default)', () => {
     const reportWithAdvancedData: ReportType = {
       ...baseReport,
-      quotes: [{
-        ...baseReport.quotes[0],
-        clauseValidation: {
-          hasClauseDocument: true,
-          verifiedCount: 2,
-          phantomCount: 0,
-          mandatoryMissingCount: 0,
-          optionalMissingCount: 0,
-          scoreImpact: 0
-        }
-      }]
+      quotes: [
+        {
+          ...baseReport.quotes[0],
+          clauseValidation: {
+            hasClauseDocument: true,
+            verifiedCount: 2,
+            phantomCount: 0,
+            mandatoryMissingCount: 0,
+            optionalMissingCount: 0,
+            scoreImpact: 0,
+          },
+        },
+      ],
     };
 
     renderWithProvider(<ComparisonReport report={reportWithAdvancedData} />);
@@ -127,31 +141,29 @@ describe('ComparisonReport - Advanced Tab Visibility', () => {
   it('renders advanced analysis components when tab is active', () => {
     const reportWithAllAdvanced: ReportType = {
       ...baseReport,
-      quotes: [{
-        ...baseReport.quotes[0],
-        clauseValidation: {
-          hasClauseDocument: true,
-          verifiedCount: 2,
-          phantomCount: 0,
-          mandatoryMissingCount: 0,
-          optionalMissingCount: 0,
-          scoreImpact: 0
+      quotes: [
+        {
+          ...baseReport.quotes[0],
+          clauseValidation: {
+            hasClauseDocument: true,
+            verifiedCount: 2,
+            phantomCount: 0,
+            mandatoryMissingCount: 0,
+            optionalMissingCount: 0,
+            scoreImpact: 0,
+          },
+          deductibleAnalysis: [{ coverage: 'Incendio', level: 'LOW', riskScore: 65 }],
+          contextualRisk: {
+            businessType: 'Retail',
+            risks: ['Robo'],
+          },
+          warrantyCompliance: {
+            compliant: true,
+            violations: [],
+          },
+          legalOpinion: [{ title: 'Opinión', text: 'Texto', negotiationPoints: [] }],
         },
-        deductibleAnalysis: [
-          { coverage: 'Incendio', level: 'LOW', riskScore: 65 }
-        ],
-        contextualRisk: {
-          businessType: 'Retail',
-          risks: ['Robo']
-        },
-        warrantyCompliance: {
-          compliant: true,
-          violations: []
-        },
-        legalOpinion: [
-          { title: 'Opinión', text: 'Texto', negotiationPoints: [] }
-        ]
-      }]
+      ],
     };
 
     renderWithProvider(<ComparisonReport report={reportWithAllAdvanced} />);
@@ -180,12 +192,14 @@ describe('ComparisonReport - Advanced Tab Visibility', () => {
   it('renders without errors when report has empty quotes', () => {
     const emptyReport: ReportType = {
       ...baseReport,
-      quotes: []
+      quotes: [],
     };
 
     renderWithProvider(<ComparisonReport report={emptyReport} />);
 
-    expect(screen.getByText('No se encontraron detalles de cotizaciones en el análisis.')).toBeTruthy();
+    expect(
+      screen.getByText('No se encontraron detalles de cotizaciones en el análisis.')
+    ).toBeTruthy();
   });
 });
 
@@ -197,18 +211,28 @@ describe('ComparisonReport - Feature Flag Integration', () => {
         policyName: 'Empresarial Plus',
         priceAnnual: 8500000,
         currency: 'COP',
-        coverages: [
-          { name: 'Responsabilidad Civil', value: '100M', deductible: '5 SMMLV' }
-        ],
+        coverages: [{ name: 'Responsabilidad Civil', value: '100M', deductible: '5 SMMLV' }],
         score: 85,
         parseConfidence: 95,
         specialConditions: [],
-        scoringBreakdown: { coverage: 90, deductibles: 80, exclusions: 85, priceRatio: 75, sublimits: 80, warranties: 70 },
+        scoringBreakdown: {
+          coverage: 90,
+          deductibles: 80,
+          exclusions: 85,
+          priceRatio: 75,
+          sublimits: 80,
+          warranties: 70,
+        },
         clientAnalysis: '',
         technicalAnalysis: '',
         keyFindings: [],
         alerts: [],
-        crossReferenceSummary: { verifiedCoverages: 2, totalCoverages: 2, criticalAlerts: 0, warningAlerts: 0 },
+        crossReferenceSummary: {
+          verifiedCoverages: 2,
+          totalCoverages: 2,
+          criticalAlerts: 0,
+          warningAlerts: 0,
+        },
         extractionConfidence: 95,
         needsReview: false,
         isCritical: false,
@@ -220,15 +244,15 @@ describe('ComparisonReport - Feature Flag Integration', () => {
           phantomCount: 0,
           mandatoryMissingCount: 0,
           optionalMissingCount: 0,
-          scoreImpact: 0
-        }
-      }
+          scoreImpact: 0,
+        },
+      },
     ],
     recommendation: 'Test recommendation',
     marketAnalysis: 'Test market analysis',
     deductibleComparison: [],
     timestamp: new Date().toISOString(),
-    analysisVersion: '2.0-rag'
+    analysisVersion: '2.0-rag',
   };
 
   it('component checks for feature flag and data presence', () => {
@@ -243,22 +267,22 @@ describe('ComparisonReport - Feature Flag Integration', () => {
   it('maintains backward compatibility with old report format', () => {
     const oldFormatReport: ReportType = {
       ...reportWithAdvancedData,
-      quotes: reportWithAdvancedData.quotes.map(q => ({
+      quotes: reportWithAdvancedData.quotes.map((q) => ({
         ...q,
         // Remove all advanced fields
         clauseValidation: undefined,
         deductibleAnalysis: undefined,
         contextualRisk: undefined,
         warrantyCompliance: undefined,
-        legalOpinion: undefined
-      }))
+        legalOpinion: undefined,
+      })),
     };
 
     renderWithProvider(<ComparisonReport report={oldFormatReport} />);
 
     // Should not show advanced tab
     expect(screen.queryByText('Análisis Avanzado')).toBeNull();
-    
+
     // But should show basic tabs
     expect(screen.getByText('Dashboard Resumen')).toBeTruthy();
   });

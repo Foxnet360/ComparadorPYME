@@ -29,22 +29,24 @@ JOIN insurers i ON d.insurer_id = i.id;
 `;
 
 type SupabaseWithExecSql = typeof supabase & {
-  rpc(
-    name: 'exec_sql',
-    args: { sql: string }
-  ): Promise<{ error: { message: string } | null }>;
+  rpc(name: 'exec_sql', args: { sql: string }): Promise<{ error: { message: string } | null }>;
 };
 
 async function main() {
   console.log('🏗️  Aplicando parche SQL en Supabase...');
   try {
-    const { error } = await (supabase as unknown as SupabaseWithExecSql).rpc('exec_sql', { sql: SQL_FIX });
+    const { error } = await (supabase as unknown as SupabaseWithExecSql).rpc('exec_sql', {
+      sql: SQL_FIX,
+    });
     if (error) {
       throw error;
     }
     console.log('✅ Vista document_insurer_view recompilada correctamente.');
   } catch (err: unknown) {
-    console.error('❌ Error ejecutando parche SQL:', err instanceof Error ? err.message : String(err));
+    console.error(
+      '❌ Error ejecutando parche SQL:',
+      err instanceof Error ? err.message : String(err)
+    );
     process.exit(1);
   }
 }

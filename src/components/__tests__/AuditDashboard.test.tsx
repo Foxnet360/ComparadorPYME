@@ -11,27 +11,37 @@ describe('AuditDashboard', () => {
       policyName: 'Empresarial Plus',
       priceAnnual: 8500000,
       currency: 'COP',
-      coverages: [
-        { name: 'Responsabilidad Civil', value: '100M', deductible: '5 SMMLV' }
-      ],
+      coverages: [{ name: 'Responsabilidad Civil', value: '100M', deductible: '5 SMMLV' }],
       score: 85,
       parseConfidence: 95,
       specialConditions: [],
-      scoringBreakdown: { coverage: 90, deductibles: 80, exclusions: 85, priceRatio: 75, sublimits: 80, warranties: 70 },
+      scoringBreakdown: {
+        coverage: 90,
+        deductibles: 80,
+        exclusions: 85,
+        priceRatio: 75,
+        sublimits: 80,
+        warranties: 70,
+      },
       clientAnalysis: '',
       technicalAnalysis: '',
       keyFindings: [],
       alerts: [
         { level: 'CRITICAL', title: 'Test', description: 'Test critical' },
-        { level: 'WARNING', title: 'Test', description: 'Test warning' }
+        { level: 'WARNING', title: 'Test', description: 'Test warning' },
       ],
-      crossReferenceSummary: { verifiedCoverages: 2, totalCoverages: 2, criticalAlerts: 1, warningAlerts: 1 },
+      crossReferenceSummary: {
+        verifiedCoverages: 2,
+        totalCoverages: 2,
+        criticalAlerts: 1,
+        warningAlerts: 1,
+      },
       extractionConfidence: 95,
       needsReview: false,
       isCritical: false,
       validationFlags: [],
-      validationSummary: '2/2 coberturas'
-    }
+      validationSummary: '2/2 coberturas',
+    },
   ];
 
   it('renders basic metrics without advanced data', () => {
@@ -48,23 +58,25 @@ describe('AuditDashboard', () => {
     expect(screen.getByText('Críticos')).toBeTruthy();
     expect(screen.getByText('Advertencias')).toBeTruthy();
     expect(screen.getByText('Destacados')).toBeTruthy();
-    
+
     // Should not show validation section without clauseValidation
     expect(screen.queryByText('Validación de Coberturas')).toBeNull();
   });
 
   it('renders clause validation metrics when data is available', () => {
-    const quotesWithValidation = [{
-      ...mockQuotes[0],
-      clauseValidation: {
-        hasClauseDocument: true,
-        verifiedCount: 2,
-        phantomCount: 1,
-        mandatoryMissingCount: 0,
-        optionalMissingCount: 0,
-        scoreImpact: 0
-      }
-    }];
+    const quotesWithValidation = [
+      {
+        ...mockQuotes[0],
+        clauseValidation: {
+          hasClauseDocument: true,
+          verifiedCount: 2,
+          phantomCount: 1,
+          mandatoryMissingCount: 0,
+          optionalMissingCount: 0,
+          scoreImpact: 0,
+        },
+      },
+    ];
 
     render(
       <AuditDashboard
@@ -81,13 +93,15 @@ describe('AuditDashboard', () => {
   });
 
   it('renders deductible risk metrics when data is available', () => {
-    const quotesWithDeductibles = [{
-      ...mockQuotes[0],
-      deductibleAnalysis: [
-        { coverage: 'Incendio', level: 'LOW', riskScore: 65 },
-        { coverage: 'Robo', level: 'HIGH', riskScore: 85 }
-      ]
-    }];
+    const quotesWithDeductibles = [
+      {
+        ...mockQuotes[0],
+        deductibleAnalysis: [
+          { coverage: 'Incendio', level: 'LOW', riskScore: 65 },
+          { coverage: 'Robo', level: 'HIGH', riskScore: 85 },
+        ],
+      },
+    ];
 
     render(
       <AuditDashboard
@@ -118,12 +132,14 @@ describe('AuditDashboard', () => {
   });
 
   it('shows cross-insurer risk matrix when risks exist', () => {
-    const risks = [{
-      riskTitle: 'Riesgo Común',
-      severity: 'CRITICAL' as const,
-      affectedInsurers: ['Seguros Bolívar', 'Seguros del Estado'],
-      description: 'Descripción'
-    }];
+    const risks = [
+      {
+        riskTitle: 'Riesgo Común',
+        severity: 'CRITICAL' as const,
+        affectedInsurers: ['Seguros Bolívar', 'Seguros del Estado'],
+        description: 'Descripción',
+      },
+    ];
 
     render(
       <AuditDashboard
@@ -141,17 +157,19 @@ describe('AuditDashboard', () => {
   });
 
   it('hides technical sections in client view mode', () => {
-    const quotesWithValidation = [{
-      ...mockQuotes[0],
-      clauseValidation: {
-        hasClauseDocument: true,
-        verifiedCount: 2,
-        phantomCount: 0,
-        mandatoryMissingCount: 0,
-        optionalMissingCount: 0,
-        scoreImpact: 0
-      }
-    }];
+    const quotesWithValidation = [
+      {
+        ...mockQuotes[0],
+        clauseValidation: {
+          hasClauseDocument: true,
+          verifiedCount: 2,
+          phantomCount: 0,
+          mandatoryMissingCount: 0,
+          optionalMissingCount: 0,
+          scoreImpact: 0,
+        },
+      },
+    ];
 
     render(
       <AuditDashboard
@@ -165,7 +183,7 @@ describe('AuditDashboard', () => {
     // Should not show technical sections in client mode
     expect(screen.queryByText('Validación de Coberturas')).toBeNull();
     expect(screen.queryByText('Análisis Contextual del Negocio')).toBeNull();
-    
+
     // But should still show basic counters
     expect(screen.getByText('Críticos')).toBeTruthy();
   });

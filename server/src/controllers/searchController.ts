@@ -36,7 +36,7 @@ export const searchController = {
    */
   search: async (req: Request, res: Response): Promise<void> => {
     console.log('🔍 [searchController.search] Request received');
-    
+
     try {
       const { query, insurerId, coverageTag, sectionType, limit = '5' } = req.body;
 
@@ -120,7 +120,6 @@ export const searchController = {
         results,
         count: results.length,
       });
-
     } catch (error: unknown) {
       console.error('❌ [searchController] Error:', error);
       res.status(500).json({
@@ -136,7 +135,7 @@ export const searchController = {
    */
   searchByCoverage: async (req: Request, res: Response): Promise<void> => {
     console.log('🔍 [searchController.searchByCoverage] Request received');
-    
+
     try {
       const { coverageTag, insurerId, documentType, limit = '10' } = req.body;
 
@@ -153,7 +152,8 @@ export const searchController = {
 
       let query = supabase
         .from('chunks')
-        .select(`
+        .select(
+          `
           id,
           content,
           page_number,
@@ -166,7 +166,8 @@ export const searchController = {
             document_type,
             insurers:insurer_id (id, name)
           )
-        `)
+        `
+        )
         .contains('coverage_tags', [coverageTag])
         .limit(parseInt(limit));
 
@@ -185,14 +186,15 @@ export const searchController = {
       }
 
       const rows = (data || []) as CoverageChunkResult[];
-      const results = rows.map((chunk) => ({
-        chunkId: chunk.id,
-        content: chunk.content,
-        pageNumber: chunk.page_number,
-        sectionType: chunk.section_type,
-        coverageTags: chunk.coverage_tags,
-        document: chunk.documents,
-      })) || [];
+      const results =
+        rows.map((chunk) => ({
+          chunkId: chunk.id,
+          content: chunk.content,
+          pageNumber: chunk.page_number,
+          sectionType: chunk.section_type,
+          coverageTags: chunk.coverage_tags,
+          document: chunk.documents,
+        })) || [];
 
       res.json({
         success: true,
@@ -200,7 +202,6 @@ export const searchController = {
         results,
         count: results.length,
       });
-
     } catch (error: unknown) {
       console.error('❌ [searchController] Error:', error);
       res.status(500).json({
@@ -216,7 +217,7 @@ export const searchController = {
    */
   compareDocuments: async (req: Request, res: Response): Promise<void> => {
     console.log('⚖️  [searchController.compareDocuments] Request received');
-    
+
     try {
       const { quoteDocumentId, clauseDocumentId, coverageTag } = req.body;
 
@@ -271,7 +272,6 @@ export const searchController = {
         coverageTag: coverageTag || 'general',
         matches: comparison || [],
       });
-
     } catch (error: unknown) {
       console.error('❌ [searchController] Error:', error);
       res.status(500).json({
