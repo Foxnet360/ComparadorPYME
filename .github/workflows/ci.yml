@@ -126,6 +126,8 @@ jobs:
   supabase-diff:
     name: Supabase Schema Diff
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -149,8 +151,6 @@ jobs:
 
       - name: Start Supabase locally and run diff
         if: env.SUPABASE_ACCESS_TOKEN != ''
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
           supabase start
           supabase db diff || true
