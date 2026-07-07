@@ -272,6 +272,25 @@ describe('UnifiedComparisonEngine (flat table)', () => {
       'EXACTAMENTE estas filas'
     );
   });
+
+  it('should not share cache between v1 and v2 for the same files', async () => {
+    mockGemini = buildMockGemini([validGranularJson, validFlatJson]);
+
+    const engine = new UnifiedComparisonEngine({ retryDelayMs: 0 });
+    const v2 = await engine.compare(['cache-v1v2-fake1.pdf', 'cache-v1v2-fake2.pdf'], {
+      granularComparisonSchema: true,
+    });
+    expect(v2.schemaVersion).toBe(2);
+
+    const v1 = await engine.compare(['cache-v1v2-fake1.pdf', 'cache-v1v2-fake2.pdf'], {
+      granularComparisonSchema: false,
+    });
+    expect(v1.schemaVersion).toBe(1);
+
+    // If the cache key did not include the schema version, the second call would
+    // hit the v2 cache and skip the Gemini call.
+    expect(mockGemini.models.generateContent).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe('UnifiedComparisonError', () => {

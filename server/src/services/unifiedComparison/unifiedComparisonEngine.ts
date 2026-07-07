@@ -62,10 +62,13 @@ export class UnifiedComparisonEngine {
   }
 
   /**
-   * Generate a hash from file paths and their contents for caching
+   * Generate a hash from file paths and their contents for caching.
+   * The schema namespace is included so that v1 and v2 results do not share
+   * the same cache entry when the granular schema flag is toggled.
    */
-  private generateFileHash(pdfPaths: string[]): string {
+  private generateFileHash(pdfPaths: string[], schemaNamespace: string): string {
     const hash = crypto.createHash('md5');
+    hash.update(schemaNamespace);
     for (const path of pdfPaths.sort()) {
       try {
         const stats = fs.statSync(path);
@@ -98,7 +101,7 @@ export class UnifiedComparisonEngine {
     );
 
     // Check cache first
-    const fileHash = this.generateFileHash(pdfPaths);
+    const fileHash = this.generateFileHash(pdfPaths, granularEnabled ? 'v2' : 'v1');
     try {
       const cached = await getCachedUnifiedResult<FlatComparisonResult>(fileHash);
       if (cached) {
