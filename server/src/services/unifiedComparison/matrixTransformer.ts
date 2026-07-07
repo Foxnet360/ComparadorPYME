@@ -5,7 +5,11 @@
  */
 
 import { MatrixRow } from '../../types';
-import { FlatComparisonResult, FlatComparisonResultV2, StructuredDeductible } from './comparisonSchema';
+import {
+  FlatComparisonResult,
+  FlatComparisonResultV2,
+  StructuredDeductible,
+} from './comparisonSchema';
 import { ParsedQuote } from '../quoteParser';
 
 const HEADER_SECTION_ID = 0;
@@ -45,7 +49,9 @@ function formatDeductible(deductible: StructuredDeductible | undefined): string 
   const parts: string[] = [];
   if (deductible.percentage !== undefined) parts.push(`${deductible.percentage}%`);
   if (deductible.minimum !== undefined) {
-    const minText = deductible.currency ? `${deductible.currency}${deductible.minimum}` : `${deductible.minimum}`;
+    const minText = deductible.currency
+      ? `${deductible.currency}${deductible.minimum}`
+      : `${deductible.minimum}`;
     parts.push(`Mínimo ${minText}`);
   }
   return parts.length > 0 ? parts.join(' - ') : undefined;
@@ -130,9 +136,7 @@ export function flatResultToMatrixRows(result: FlatComparisonResult): MatrixRow[
     cells: emptyCells(numInsurers),
   });
 
-  const primaRow = result.rows.find((r) =>
-    r.label.toLowerCase().includes('prima')
-  );
+  const primaRow = result.rows.find((r) => r.label.toLowerCase().includes('prima'));
   if (primaRow) {
     matrix.push({
       type: 'data',
@@ -143,9 +147,7 @@ export function flatResultToMatrixRows(result: FlatComparisonResult): MatrixRow[
     });
   }
 
-  const paymentRow = result.rows.find((r) =>
-    r.label.toLowerCase().includes('pago')
-  );
+  const paymentRow = result.rows.find((r) => r.label.toLowerCase().includes('pago'));
   if (paymentRow) {
     matrix.push({
       type: 'data',
@@ -205,7 +207,12 @@ function sectionSortIndex(section: string | undefined): number {
   return index === -1 ? Number.MAX_SAFE_INTEGER : index;
 }
 
-function cellFromFlatValueV2(value: string | null, notFound?: boolean, confidence?: number, notes?: string) {
+function cellFromFlatValueV2(
+  value: string | null,
+  notFound?: boolean,
+  confidence?: number,
+  notes?: string
+) {
   const isMissing = value === null || value === undefined || notFound === true;
   return {
     value: isMissing ? 'No informado' : value,
@@ -233,11 +240,28 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
   });
 
   // Group rows by section, pulling recognized financial rows into their own section
-  const sectionGroups = new Map<string, { label: string; cells: { value: string | null; notFound?: boolean; confidence?: number; notes?: string }[] }[]>();
-  const extraRows: { label: string; cells: { value: string | null; notFound?: boolean; confidence?: number; isAmbiguous?: boolean; notes?: string }[] }[] = [];
+  const sectionGroups = new Map<
+    string,
+    {
+      label: string;
+      cells: { value: string | null; notFound?: boolean; confidence?: number; notes?: string }[];
+    }[]
+  >();
+  const extraRows: {
+    label: string;
+    cells: {
+      value: string | null;
+      notFound?: boolean;
+      confidence?: number;
+      isAmbiguous?: boolean;
+      notes?: string;
+    }[];
+  }[] = [];
 
   for (const row of result.rows) {
-    const section = isFinancialRowLabel(row.label) ? FINANCIAL_SECTION_LABEL : (row.section || 'OTROS');
+    const section = isFinancialRowLabel(row.label)
+      ? FINANCIAL_SECTION_LABEL
+      : row.section || 'OTROS';
     if (!sectionGroups.has(section)) {
       sectionGroups.set(section, []);
     }
@@ -266,7 +290,9 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
   }
 
   // Sort sections canonically
-  const sortedSections = Array.from(sectionGroups.entries()).sort((a, b) => sectionSortIndex(a[0]) - sectionSortIndex(b[0]));
+  const sortedSections = Array.from(sectionGroups.entries()).sort(
+    (a, b) => sectionSortIndex(a[0]) - sectionSortIndex(b[0])
+  );
 
   let sectionIndex = 0;
   for (const [section, rows] of sortedSections) {
@@ -285,7 +311,9 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
         id: `section_${sectionIndex}_row_${rowIndex}`,
         label: row.label,
         sectionId: section === FINANCIAL_SECTION_LABEL ? FINANCIAL_SECTION_ID : COVERAGE_SECTION_ID,
-        cells: row.cells.map((cell) => cellFromFlatValueV2(cell.value, cell.notFound, cell.confidence, cell.notes)),
+        cells: row.cells.map((cell) =>
+          cellFromFlatValueV2(cell.value, cell.notFound, cell.confidence, cell.notes)
+        ),
       });
     });
 
@@ -308,7 +336,9 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
         id: `section_${sectionIndex}_extra_${rowIndex}`,
         label: row.label,
         sectionId: COVERAGE_SECTION_ID,
-        cells: row.cells.map((cell) => cellFromFlatValueV2(cell.value, cell.notFound, cell.confidence, cell.notes)),
+        cells: row.cells.map((cell) =>
+          cellFromFlatValueV2(cell.value, cell.notFound, cell.confidence, cell.notes)
+        ),
       });
     });
   }
@@ -352,10 +382,7 @@ function cellFromQuoteCoverage(coverage: ParsedQuote['coverages'][number] | unde
     return { value: 'No informado', isExcluded: true, isWinner: false };
   }
   const value = coverage.value ?? 'No informado';
-  const isExcluded =
-    value === 'No informado' ||
-    value === 'NO ESPECIFICADO' ||
-    value === '';
+  const isExcluded = value === 'No informado' || value === 'NO ESPECIFICADO' || value === '';
   return {
     value,
     isExcluded,
@@ -389,9 +416,7 @@ export function quotesToMatrixRows(quotes: ParsedQuote[]): MatrixRow[] {
   });
 
   const coverageNames = new Set<string>();
-  quotes.forEach((q) =>
-    q.coverages.forEach((c) => coverageNames.add(c.canonicalName || c.name))
-  );
+  quotes.forEach((q) => q.coverages.forEach((c) => coverageNames.add(c.canonicalName || c.name)));
 
   Array.from(coverageNames).forEach((name, index) => {
     matrix.push({
@@ -400,9 +425,7 @@ export function quotesToMatrixRows(quotes: ParsedQuote[]): MatrixRow[] {
       label: name,
       sectionId: COVERAGE_SECTION_ID,
       cells: quotes.map((q) => {
-        const coverage = q.coverages.find(
-          (c) => (c.canonicalName || c.name) === name
-        );
+        const coverage = q.coverages.find((c) => (c.canonicalName || c.name) === name);
         return cellFromQuoteCoverage(coverage);
       }),
     });

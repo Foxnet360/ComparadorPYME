@@ -95,8 +95,8 @@ describe('analysisController - matrixRowsToComparisonReport', () => {
 
     const report = matrixRowsToComparisonReport(matrixRows, quoteFiles);
 
-    const mapfre = report.quotes.find(q => q.insurerName === 'MAPFRE');
-    const chubb = report.quotes.find(q => q.insurerName === 'CHUBB');
+    const mapfre = report.quotes.find((q) => q.insurerName === 'MAPFRE');
+    const chubb = report.quotes.find((q) => q.insurerName === 'CHUBB');
 
     expect(mapfre).toBeDefined();
     expect(chubb).toBeDefined();
@@ -111,9 +111,7 @@ describe('analysisController - matrixRowsToComparisonReport', () => {
         id: 'section_0',
         label: 'DEDUCIBLES',
         sectionId: 1,
-        cells: [
-          { value: '', isExcluded: false, isWinner: false },
-        ],
+        cells: [{ value: '', isExcluded: false, isWinner: false }],
       },
       {
         type: 'data',
@@ -121,7 +119,13 @@ describe('analysisController - matrixRowsToComparisonReport', () => {
         label: 'Incendio Edificio',
         sectionId: 1,
         cells: [
-          { value: '10%', isExcluded: false, isWinner: false, notes: '10% PERD - Min 1 SMMLV', confidence: 0.92 },
+          {
+            value: '10%',
+            isExcluded: false,
+            isWinner: false,
+            notes: '10% PERD - Min 1 SMMLV',
+            confidence: 0.92,
+          },
         ],
       },
     ];
@@ -130,7 +134,7 @@ describe('analysisController - matrixRowsToComparisonReport', () => {
 
     const report = matrixRowsToComparisonReport(matrixRows, quoteFiles);
 
-    const coverage = report.quotes[0].coverages.find(c => c.name === 'Incendio Edificio');
+    const coverage = report.quotes[0].coverages.find((c) => c.name === 'Incendio Edificio');
     expect(coverage).toBeDefined();
     expect(coverage!.deductible).toBe('10% PERD - Min 1 SMMLV');
   });

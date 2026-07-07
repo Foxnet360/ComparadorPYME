@@ -171,39 +171,76 @@
 - **Review finding (WARNING, resolved)**: `runExtractionQualityEval` previously mutated the global `featureFlags` singleton and restored it in a `finally` block. This was fixed by passing the schema override locally through the adapter.
 - **Review finding (WARNING, resolved)**: `runExtractionQualityEval` previously defaulted `granularComparisonSchema` to `true`, diverging from the production default of `false`. The default is now `false`; callers must opt in to v2 explicitly.
 
+## Phase 7: Fresh Review Fixes (this batch)
+
+- [x] 7.1 Fix `UnifiedComparisonEngine.generateFileHash` to include the effective schema version (`v1`/`v2`) so cached v1 results are not returned after enabling the v2 flag.
+- [x] 7.2 Tag v2 financial rows in `flatResultToMatrixRowsV2` with `FINANCIAL_SECTION_ID` (`PRIMAS Y COSTOS`) so they are exported to the Excel `Primas y Costos` sheet.
+- [x] 7.3 Populate `MatrixCell.notes` in `flatResultToMatrixRowsV2` from `cell.rawText` or the structured `deductible` field so v2 reports show deductible text instead of `No especificado`.
+- [x] 7.4 Correct TypeScript errors in new test helpers: fix `analysisController.test.ts` import path, and add required `schemaVersion` to `FlatComparisonResult` helpers in `comparisonEngineAdapter.test.ts` and `matrixTransformer.test.ts`.
+- [x] 7.5 Add/update tests for cache-key separation, Excel financial-sheet placement, and deductible-note propagation.
+- [x] 7.6 Run backend type-check (`npm run typecheck:backend`) and root type-check (`npm run typecheck:frontend`) to confirm no new TypeScript errors are introduced on touched files.
+- [x] 7.7 Run affected tests (`unifiedComparisonEngine`, `matrixTransformer`, `analysisController`, `excelGenerator`) and full backend unit suite.
+
+## Files Changed (this batch)
+
+| File | Action | What Was Done |
+|------|--------|---------------|
+| `server/src/services/unifiedComparison/unifiedComparisonEngine.ts` | Modified | `generateFileHash` now accepts a `schemaNamespace` (`v1`/`v2`) and mixes it into the cache key digest before file paths/size/mtime. |
+| `server/src/services/unifiedComparison/matrixTransformer.ts` | Modified | Added `isFinancialRowLabel()` and `formatDeductible()` helpers; recognized financial rows are moved to a `PRIMAS Y COSTOS` section with `FINANCIAL_SECTION_ID`; `cellFromFlatValueV2` now carries `notes` from `rawText` or structured deductible. |
+| `server/src/services/unifiedComparison/__tests__/unifiedComparisonEngine.test.ts` | Modified | Added test that v1 and v2 do not share the same cache entry for identical files. |
+| `server/src/services/unifiedComparison/__tests__/matrixTransformer.test.ts` | Modified | Added `FINANCIAL_SECTION_ID` import; added tests for financial-row section tagging and deductible-note propagation. |
+| `server/src/services/__tests__/excelGenerator.test.ts` | Modified | Added test that verifies rows with `sectionId >= 100` are placed in the `Primas y Costos` sheet. |
+| `server/src/controllers/__tests__/analysisController.test.ts` | Modified | Fixed `MatrixRow` import path (`../../../types` → `../../types`); added test that `cell.notes` maps to `coverage.deductible`. |
+| `server/src/services/unifiedComparison/__tests__/comparisonEngineAdapter.test.ts` | Modified | Added `schemaVersion: 1` to `makeFlatResult` helper to satisfy root type-check. |
+
+## TDD Cycle Evidence (Phase 7)
+
+| Task | Test File | Layer | Safety Net | RED | GREEN | TRIANGULATE | REFACTOR |
+|------|-----------|-------|------------|-----|-------|-------------|----------|
+| 7.1 Cache key | `unifiedComparisonEngine.test.ts` | Unit | 1 new test | Written | Passed | 1 case (v1/v2 with same files produce two Gemini calls) | Clean |
+| 7.2 Financial rows | `matrixTransformer.test.ts`, `excelGenerator.test.ts` | Unit | 2 new tests | Written | Passed | 1 case (Prima/Forma de Pago rows get `FINANCIAL_SECTION_ID`), 1 case (Excel `Primas y Costos` sheet contains `TOTAL A PAGAR`) | Clean |
+| 7.3 Deductible notes | `matrixTransformer.test.ts`, `analysisController.test.ts` | Unit | 2 new tests | Written | Passed | 1 case (rawText carried as `notes`), 1 case (`cell.notes` → `coverage.deductible`) | Clean |
+| 7.4 TypeScript fixes | `analysisController.test.ts`, `comparisonEngineAdapter.test.ts`, `matrixTransformer.test.ts` | Unit | existing + new tests | Written | Passed | root `tsc` reports no errors on touched files; backend `tsc` passes | Clean |
+
+## Deviations from Design
+
+None — implementation matches the review-fix requirements.
+
+## Issues Found
+
+- Root `tsc` still reports pre-existing TypeScript errors in files not touched by this batch. The touched files no longer contribute errors.
+- Redis and Gemini warnings in test output are expected in the local sandbox (no real API keys, no Redis running). Tests are written to mock or skip these dependencies.
+
 ## Remaining Tasks
 
-No remaining tasks. All original Phase 1–4 tasks, the Phase 5 structured-deductible follow-up, and the Phase 6 review fixes are complete.
+No remaining tasks. Phase 7 review fixes are complete and the change is ready for re-verification.
 
 ## Workload / PR Boundary
 
 - **Mode**: stacked-to-main
-- **Current work unit**: PR 4 + post-verification review fixes — Evaluation harness alignment, flag non-mutation, and default behavior
-- **Boundary**: Starts from PR 3 Frontend + Export. Ends with review fixes committed and tests passing.
-- **Estimated review budget impact**: ~263 changed lines across 5 files for the review-fix work unit. The original PR 4 diff was larger due to fixture/test data; this follow-up is focused and well under the 400-line budget.
+- **Current work unit**: PR 4 fresh review fixes — cache-key schema separation, v2 financial-row tagging, deductible-note propagation, and root type-check cleanup.
+- **Boundary**: Starts from the already-merged Phase 6 review fixes. Ends with the four fixes committed and tests passing.
+- **Estimated review budget impact**: ~255 changed lines across 7 files; well under the 400-line budget.
 
 ## Status
 
-20/20 original Phase 1–4 tasks complete; Phase 5 structured-deductible follow-up complete; Phase 6 review fixes complete. The change is ready for re-verification.
+20/20 original Phase 1–4 tasks complete; Phase 5 structured-deductible follow-up complete; Phase 6 review fixes complete; Phase 7 fresh review fixes complete. The change is ready for re-verification.
 
 ## Verification
 
 - `npm run typecheck:backend`: PASS
-- `npx vitest run --project unit-backend server/src/controllers/__tests__/analysisController.test.ts server/src/evaluation/__tests__/extractionQuality.test.ts server/src/services/unifiedComparison/__tests__/comparisonEngineAdapter.test.ts`: PASS (35 tests)
-- `server/src/evaluation/__tests__/extractionQuality.test.ts`: PASS (21 tests, including 3 new Phase 6 tests)
-- `server/src/controllers/__tests__/analysisController.test.ts`: PASS (3 tests, including 1 new Phase 6 test)
-- `server/src/services/unifiedComparison/__tests__/comparisonEngineAdapter.test.ts`: PASS (11 tests)
-- `openspec/changes/archive/2026-07-07-granular-comparison-schema/verify-report.md`: Updated with Phase 6 review-fix notes
-- `openspec/changes/granular-comparison-schema/apply-progress.md`: Updated with merged Phase 6 progress
+- `npm run typecheck:frontend`: Errors remain only in pre-existing files not touched by this batch; no new errors from touched files.
+- `npx vitest run --project unit-backend server/src/services/unifiedComparison/__tests__/unifiedComparisonEngine.test.ts server/src/services/unifiedComparison/__tests__/matrixTransformer.test.ts server/src/controllers/__tests__/analysisController.test.ts server/src/services/__tests__/excelGenerator.test.ts`: PASS (49 tests)
+- `npx vitest run --project unit-backend`: PASS (1083 tests, 8 skipped)
 
 ## Chain Context
 
 ```
 PR 1 Foundation ──► PR 2 Core backend ──► PR 3 Frontend + export ──► PR 4 Evaluation harness + review fixes
-                                                                                              📍
+                                                                                               📍
 ```
 
 - **PR 1**: Already merged to main (Foundation: schema v2, feature flag, adapter routing).
 - **PR 2**: Core backend — v2 prompt, parser, transformer, engine wiring.
 - **PR 3**: Frontend + export — section headers, confidence badges, virtualized matrix, export preservation.
-- **PR 4** (📍 current): Evaluation harness + review fixes — baseline, match-rate >= 90%, fallback-rate guard, insurer alignment, non-mutating flag override, v1 default.
+- **PR 4** (📍 current): Evaluation harness + review fixes — baseline, match-rate >= 90%, fallback-rate guard, insurer alignment, non-mutating flag override, v1 default, cache-key schema separation, v2 financial-row tagging, deductible-note propagation, and root type-check cleanup.

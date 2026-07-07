@@ -341,7 +341,12 @@ describe('flatResultToMatrixRowsV2', () => {
           label: 'Edificio',
           section: SchemaSection.DEDUCIBLES,
           cells: [
-            { insurer: 'MAPFRE', value: '10%', rawText: '10% PERD - Min 1 SMMLV', confidence: 0.92 },
+            {
+              insurer: 'MAPFRE',
+              value: '10%',
+              rawText: '10% PERD - Min 1 SMMLV',
+              confidence: 0.92,
+            },
             { insurer: 'CHUBB', value: '5%', rawText: '5% siniestro', confidence: 0.9 },
           ],
         },

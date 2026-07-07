@@ -40,14 +40,16 @@ export const StructuredDeductibleSchema = z.object({
   percentage: z.number().optional(),
   minimum: z.number().optional(),
   currency: z.string().optional(),
-  type: z.enum([
-    'percentage',
-    'minimum',
-    'percentage_with_minimum',
-    'fixed',
-    'not_applicable',
-    'see_conditions',
-  ]).optional(),
+  type: z
+    .enum([
+      'percentage',
+      'minimum',
+      'percentage_with_minimum',
+      'fixed',
+      'not_applicable',
+      'see_conditions',
+    ])
+    .optional(),
 });
 
 export const FlatComparisonCellSchemaV2 = z.object({
