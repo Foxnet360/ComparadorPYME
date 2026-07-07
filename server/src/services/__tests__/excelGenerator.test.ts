@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import * as ExcelJS from 'exceljs';
 import { generateExcelBuffer, formatRatioCell } from '../excelGenerator';
+import * as matrixTransformer from '../matrixTransformer';
 import { QuoteAnalysis } from '../../types';
 
 describe('excelGenerator', () => {
@@ -345,6 +346,85 @@ describe('excelGenerator', () => {
       expect(typeof confidenceCell!.note).toBe('string');
       expect(confidenceCell!.note).toContain('Confianza');
       expect(confidenceCell!.note).toContain('95');
+    });
+  });
+
+  describe('financial rows from granular matrix', () => {
+    const mockQuotes: QuoteAnalysis[] = [
+      {
+        insurerName: 'MAPFRE',
+        policyName: 'TODO RIESGO PYME',
+        priceMonthly: 0,
+        priceAnnual: 5000000,
+        currency: 'COP',
+        deductibles: '',
+        scoringBreakdown: { coverage: 8, deductibles: 7, exclusions: 8, priceRatio: 9, sublimits: 8, warranties: 8 },
+        clientAnalysis: '',
+        technicalAnalysis: '',
+        score: 82,
+        alerts: [],
+        coverages: [],
+      },
+      {
+        insurerName: 'CHUBB',
+        policyName: 'Pymes',
+        priceMonthly: 0,
+        priceAnnual: 6000000,
+        currency: 'COP',
+        deductibles: '',
+        scoringBreakdown: { coverage: 7, deductibles: 8, exclusions: 8, priceRatio: 6, sublimits: 7, warranties: 7 },
+        clientAnalysis: '',
+        technicalAnalysis: '',
+        score: 72,
+        alerts: [],
+        coverages: [],
+      },
+    ];
+
+    it('should place financial rows with sectionId >= 100 into Primas y Costos sheet', async () => {
+      const spy = vi.spyOn(matrixTransformer, 'transformQuotesToMatrix').mockReturnValue([
+        {
+          type: 'header',
+          id: 'financials',
+          label: 'PRIMAS Y COSTOS',
+          sectionId: 999,
+          cells: [
+            { value: '', isExcluded: false, isWinner: false },
+            { value: '', isExcluded: false, isWinner: false },
+          ],
+        },
+        {
+          type: 'data',
+          id: 'premium_total',
+          label: 'TOTAL A PAGAR',
+          sectionId: 999,
+          cells: [
+            { value: '$ 5.000.000', isExcluded: false, isWinner: false },
+            { value: '$ 6.000.000', isExcluded: false, isWinner: false },
+          ],
+        },
+      ]);
+
+      try {
+        const buffer = await generateExcelBuffer(mockQuotes);
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(buffer);
+
+        const primasSheet = workbook.getWorksheet('Primas y Costos');
+        expect(primasSheet).toBeDefined();
+
+        let foundPremiumRow = false;
+        primasSheet!.eachRow((row) => {
+          const cellA = row.getCell(1);
+          if (cellA.value === 'TOTAL A PAGAR') {
+            foundPremiumRow = true;
+          }
+        });
+
+        expect(foundPremiumRow).toBe(true);
+      } finally {
+        spy.mockRestore();
+      }
     });
   });
 });
