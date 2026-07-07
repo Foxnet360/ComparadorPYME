@@ -29,6 +29,7 @@ export interface FeatureFlags {
 
   // Unified Comparison Engine
   useUnifiedComparisonEngine: boolean;
+  granularComparisonSchema: boolean;
 
   // Backward compatibility
   useLegacyCoverageMatcher: boolean;
@@ -72,17 +73,25 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   // Rollback: set USE_UNIFIED_ENGINE=false in the environment (or revert the
   // feature-flag commit) and redeploy. No database migration is required.
   useUnifiedComparisonEngine: true,
+  // Granular comparison schema (disabled by default).
+  // - GRANULAR_COMPARISON_SCHEMA=true enables the section-aware v2 schema with
+  //   sub-rows and derived per-cell confidence.
+  // - GRANULAR_COMPARISON_SCHEMA=false keeps the legacy four-row v1 schema.
+  // Rollback: set GRANULAR_COMPARISON_SCHEMA=false. Cached v1 results without
+  // schemaVersion continue to render through the legacy path.
+  granularComparisonSchema: false,
 
   // Backward compatibility flags (for gradual migration)
   useLegacyCoverageMatcher: false,
   useLegacyDeductibleParser: false,
-  useLegacyChatOnlyRAG: false,
+  useLegacyChatOnlyRAG: false
 };
 
 // Development configuration - for testing
 export const DEVELOPMENT_FLAGS: FeatureFlags = {
   ...DEFAULT_FEATURE_FLAGS,
   learningEngine: false, // Disable in dev to avoid side effects
+  granularComparisonSchema: false, // Keep disabled by default until verified
 };
 
 // Production rollout configuration - gradual activation
@@ -104,6 +113,7 @@ export const PRODUCTION_ROLLOUT_FLAGS: FeatureFlags = {
   useLegacyCoverageMatcher: false,
   useLegacyDeductibleParser: false,
   useLegacyChatOnlyRAG: false,
+  granularComparisonSchema: false
 };
 
 // Maps recognized env var names to FeatureFlags keys. Fixes the old key
@@ -123,6 +133,7 @@ const ENV_FLAG_MAP: Record<string, keyof FeatureFlags> = {
   // Canonical env name for the unified comparison engine toggle.
   // See DEFAULT_FEATURE_FLAGS.useUnifiedComparisonEngine for usage/rollback docs.
   USE_UNIFIED_ENGINE: 'useUnifiedComparisonEngine',
+  GRANULAR_COMPARISON_SCHEMA: 'granularComparisonSchema',
   FEATURE_AUTO_EXTRACT_STRUCTURED_CLAUSES: 'autoExtractStructuredClauses',
   USE_TEMPLATE_GRAPH_PIPELINE: 'useTemplateGraphPipeline',
   TEMPLATE_BBVA_V1: 'templateBbvaV1',
@@ -133,17 +144,17 @@ const ENV_FLAG_MAP: Record<string, keyof FeatureFlags> = {
 
 export class FeatureFlagManager {
   private flags: FeatureFlags;
-
+  
   constructor(flags: FeatureFlags = DEFAULT_FEATURE_FLAGS) {
     this.flags = { ...flags };
-
+    
     // Override from environment variables if present
     this.loadFromEnvironment();
-
+    
     // Log feature flags on startup
     this.logFeatureFlags();
   }
-
+  
   private logFeatureFlags(): void {
     console.log('🚩 [FeatureFlags] Configuration:');
     const flags = this.getFlags();
@@ -151,15 +162,13 @@ export class FeatureFlagManager {
       const status = value ? '✅' : '❌';
       console.log(`   ${status} ${key}: ${value}`);
     });
-
+    
     // Log any auto-disabled features
     if (!redisAvailable && flags.learningEngine) {
-      console.warn(
-        '⚠️ [FeatureFlags] learningEngine was disabled because REDIS_URL is not configured'
-      );
+      console.warn('⚠️ [FeatureFlags] learningEngine was disabled because REDIS_URL is not configured');
     }
   }
-
+  
   private loadFromEnvironment(): void {
     const envFlags = process.env.FEATURE_FLAGS;
     if (envFlags) {
@@ -179,27 +188,25 @@ export class FeatureFlagManager {
       }
     }
   }
-
+  
   isEnabled(feature: keyof FeatureFlags): boolean {
     return this.flags[feature];
   }
-
+  
   getFlags(): FeatureFlags {
     return { ...this.flags };
   }
-
+  
   updateFlag(feature: keyof FeatureFlags, enabled: boolean): void {
     this.flags[feature] = enabled;
     console.log(`🚩 [FeatureFlags] ${feature} = ${enabled}`);
   }
-
+  
   // Check if any legacy mode is active
   isLegacyMode(): boolean {
-    return (
-      this.flags.useLegacyCoverageMatcher ||
-      this.flags.useLegacyDeductibleParser ||
-      this.flags.useLegacyChatOnlyRAG
-    );
+    return this.flags.useLegacyCoverageMatcher || 
+           this.flags.useLegacyDeductibleParser || 
+           this.flags.useLegacyChatOnlyRAG;
   }
 }
 
