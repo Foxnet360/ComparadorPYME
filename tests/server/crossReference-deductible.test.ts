@@ -87,7 +87,10 @@ describe('crossReference deductible structured comparison', () => {
       isFallback: false,
     });
 
-    const result = await crossReferenceEngine.crossReferenceCoverage(mockCoverage, 'Seguros Bolívar');
+    const result = await crossReferenceEngine.crossReferenceCoverage(
+      mockCoverage,
+      'Seguros Bolívar'
+    );
 
     const criticalAlert = result.alerts.find((a) => a.level === 'CRITICAL');
     expect(criticalAlert).toBeDefined();
@@ -111,7 +114,10 @@ describe('crossReference deductible structured comparison', () => {
       isFallback: false,
     });
 
-    const result = await crossReferenceEngine.crossReferenceCoverage(mockCoverage, 'Seguros Bolívar');
+    const result = await crossReferenceEngine.crossReferenceCoverage(
+      mockCoverage,
+      'Seguros Bolívar'
+    );
 
     const goodAlert = result.alerts.find((a) => a.level === 'GOOD');
     expect(goodAlert).toBeDefined();
@@ -135,7 +141,10 @@ describe('crossReference deductible structured comparison', () => {
       isFallback: false,
     });
 
-    const result = await crossReferenceEngine.crossReferenceCoverage(mockCoverage, 'Seguros Bolívar');
+    const result = await crossReferenceEngine.crossReferenceCoverage(
+      mockCoverage,
+      'Seguros Bolívar'
+    );
 
     const dedAlert = result.alerts.find(
       (a) => a.title.includes('Discrepancia') || a.title.includes('favorable')

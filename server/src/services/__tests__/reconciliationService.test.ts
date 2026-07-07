@@ -1,7 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-  reconciliationService,
-} from '../reconciliationService';
+import { reconciliationService } from '../reconciliationService';
 import { HybridDeductibleResult } from '../hybridDeductibleParser';
 
 // ---------------------------------------------------------------------------
@@ -29,7 +27,8 @@ vi.mock('../insurerNameNormalizer', () => ({
   insurerNameNormalizer: {
     normalize: (name: string) => mockNormalize(name),
     getKnownInsurers: () => mockGetKnownInsurers(),
-    verifyMatch: (extracted: string, db: string) => mockNormalize(extracted).toUpperCase() === db.toUpperCase(),
+    verifyMatch: (extracted: string, db: string) =>
+      mockNormalize(extracted).toUpperCase() === db.toUpperCase(),
   },
 }));
 
@@ -45,7 +44,12 @@ function makeQuoteDeductible(structure: Partial<HybridDeductibleResult>): Hybrid
     hasMaximum: structure.hasMaximum ?? false,
     isComposite: structure.isComposite ?? false,
     rawText: structure.rawText || '',
-    normalized: structure.normalized || { minAmount: 0, maxAmount: 0, percentage: 0, isPercentageBased: false },
+    normalized: structure.normalized || {
+      minAmount: 0,
+      maxAmount: 0,
+      percentage: 0,
+      isPercentageBased: false,
+    },
   };
 }
 
@@ -58,7 +62,7 @@ function makeParsedQuote(
     policyName: 'Test Policy',
     priceAnnual: 1000000,
     currency: 'COP',
-    coverages: coverages.map(c => ({
+    coverages: coverages.map((c) => ({
       name: c.name,
       canonicalName: c.name,
       value: '100M',
@@ -85,7 +89,14 @@ describe('reconciliationService', () => {
 
     // Default normalization behavior: pass-through for unknown names, normalize for known ones
     mockNormalize.mockImplementation((name: string) => name);
-    mockGetKnownInsurers.mockReturnValue(['SBS', 'AXA Colpatria', 'BBVA', 'CHUBB', 'HDI', 'MAPFRE']);
+    mockGetKnownInsurers.mockReturnValue([
+      'SBS',
+      'AXA Colpatria',
+      'BBVA',
+      'CHUBB',
+      'HDI',
+      'MAPFRE',
+    ]);
   });
 
   // ========================================================================
@@ -354,7 +365,12 @@ describe('reconciliationService', () => {
           hasMaximum: false,
           isComposite: false,
           rawText: '$5.000.000 COP',
-          normalized: { minAmount: 5000000, maxAmount: 5000000, percentage: 0, isPercentageBased: false },
+          normalized: {
+            minAmount: 5000000,
+            maxAmount: 5000000,
+            percentage: 0,
+            isPercentageBased: false,
+          },
         })
       );
 
@@ -544,7 +560,7 @@ describe('reconciliationService', () => {
     it('should load and use per-insurer thresholds from env', async () => {
       const originalEnv = process.env.RECONCILIATION_THRESHOLDS;
       process.env.RECONCILIATION_THRESHOLDS = JSON.stringify({
-        default: { default: 0.10 },
+        default: { default: 0.1 },
         insurers: {
           'Strict Insurer': { default: 0.01, coverageOverrides: {} },
           'Test Insurer': {
@@ -564,7 +580,7 @@ describe('reconciliationService', () => {
       expect(getThreshold('Strict Insurer', 'Any Coverage')).toBe(0.01);
       expect(getThreshold('Test Insurer', 'Incendio (Edificio y Contenidos)')).toBe(0.02);
       expect(getThreshold('Test Insurer', 'Other Coverage')).toBe(0.05);
-      expect(getThreshold('Unknown Insurer', 'Any Coverage')).toBe(0.10);
+      expect(getThreshold('Unknown Insurer', 'Any Coverage')).toBe(0.1);
 
       // Restore
       process.env.RECONCILIATION_THRESHOLDS = originalEnv;
@@ -578,8 +594,22 @@ describe('reconciliationService', () => {
   describe('compareDeductibles helper', () => {
     it('should detect MATCH for identical fixed amounts', () => {
       const { compareDeductibles } = reconciliationService.__testHelpers;
-      const quote = { percentage: 0, minAmount: 5_000_000, maxAmount: 5_000_000, isPercentageBased: false, isZero: false, isUnknown: false };
-      const clause = { percentage: 0, minAmount: 5_000_000, maxAmount: 5_000_000, isPercentageBased: false, isZero: false, isUnknown: false };
+      const quote = {
+        percentage: 0,
+        minAmount: 5_000_000,
+        maxAmount: 5_000_000,
+        isPercentageBased: false,
+        isZero: false,
+        isUnknown: false,
+      };
+      const clause = {
+        percentage: 0,
+        minAmount: 5_000_000,
+        maxAmount: 5_000_000,
+        isPercentageBased: false,
+        isZero: false,
+        isUnknown: false,
+      };
 
       const result = compareDeductibles(quote, clause, 0.05);
 
@@ -588,8 +618,22 @@ describe('reconciliationService', () => {
 
     it('should detect MISMATCH for different fixed amounts beyond threshold', () => {
       const { compareDeductibles } = reconciliationService.__testHelpers;
-      const quote = { percentage: 0, minAmount: 5_000_000, maxAmount: 5_000_000, isPercentageBased: false, isZero: false, isUnknown: false };
-      const clause = { percentage: 0, minAmount: 10_000_000, maxAmount: 10_000_000, isPercentageBased: false, isZero: false, isUnknown: false };
+      const quote = {
+        percentage: 0,
+        minAmount: 5_000_000,
+        maxAmount: 5_000_000,
+        isPercentageBased: false,
+        isZero: false,
+        isUnknown: false,
+      };
+      const clause = {
+        percentage: 0,
+        minAmount: 10_000_000,
+        maxAmount: 10_000_000,
+        isPercentageBased: false,
+        isZero: false,
+        isUnknown: false,
+      };
 
       const result = compareDeductibles(quote, clause, 0.05);
 
@@ -598,8 +642,22 @@ describe('reconciliationService', () => {
 
     it('should detect PENDING for unknown components', () => {
       const { compareDeductibles } = reconciliationService.__testHelpers;
-      const quote = { percentage: 0, minAmount: 0, maxAmount: 0, isPercentageBased: false, isZero: false, isUnknown: true };
-      const clause = { percentage: 10, minAmount: 0, maxAmount: 0, isPercentageBased: true, isZero: false, isUnknown: false };
+      const quote = {
+        percentage: 0,
+        minAmount: 0,
+        maxAmount: 0,
+        isPercentageBased: false,
+        isZero: false,
+        isUnknown: true,
+      };
+      const clause = {
+        percentage: 10,
+        minAmount: 0,
+        maxAmount: 0,
+        isPercentageBased: true,
+        isZero: false,
+        isUnknown: false,
+      };
 
       const result = compareDeductibles(quote, clause, 0.05);
 
@@ -722,7 +780,12 @@ describe('reconciliationService', () => {
           hasMaximum: false,
           isComposite: true,
           rawText: '10% con mínimo de 5 SMMLV',
-          normalized: { minAmount: 5 * 1_423_500, maxAmount: 0, percentage: 10, isPercentageBased: true },
+          normalized: {
+            minAmount: 5 * 1_423_500,
+            maxAmount: 0,
+            percentage: 10,
+            isPercentageBased: true,
+          },
         })
       );
 
@@ -888,7 +951,7 @@ describe('reconciliationService', () => {
       await reconciliationService.reconcileQuote(quote);
 
       const unmappedWarnings = consoleSpy.mock.calls.filter(
-        call => typeof call[0] === 'string' && call[0].includes('Unmapped insurer name')
+        (call) => typeof call[0] === 'string' && call[0].includes('Unmapped insurer name')
       );
       expect(unmappedWarnings).toHaveLength(0);
 

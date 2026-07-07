@@ -3,7 +3,7 @@
  * Maps raw extracted coverages to 14 canonical PYME categories
  */
 
-import { semanticMatcher} from './semanticMatcher';
+import { semanticMatcher } from './semanticMatcher';
 import { thesaurusService } from './normalization/thesaurusService';
 import { normalizeText } from '../utils/textUtils';
 import { levenshteinDistance } from '../utils/stringUtils';
@@ -24,7 +24,18 @@ export interface CanonicalCoverage {
   confidence: number;
   graphConfidence: number | null;
   rawNames: string[];
-  matchMethod: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'implicit' | 'derived' | 'semantic-group' | 'ontology' | 'ontology-composite' | 'graph' | null;
+  matchMethod:
+    | 'exact'
+    | 'fuzzy'
+    | 'embedding'
+    | 'llm'
+    | 'implicit'
+    | 'derived'
+    | 'semantic-group'
+    | 'ontology'
+    | 'ontology-composite'
+    | 'graph'
+    | null;
   needsReview: boolean;
   notes?: string;
   categoryId?: number | string | null;
@@ -65,21 +76,21 @@ export interface NormalizationResult {
 
 // Asset type mapping to canonical coverage
 const ASSET_TO_COVERAGE: Record<string, string> = {
-  'EDIFICIOS': 'Incendio (Edificio y Contenidos)',
-  'INMUEBLES': 'Incendio (Edificio y Contenidos)',
-  'CONTENIDOS': 'Incendio (Edificio y Contenidos)',
-  'MUEBLES': 'Incendio (Edificio y Contenidos)',
-  'MERCANCIAS': 'Incendio (Edificio y Contenidos)',
-  'EXISTENCIAS': 'Incendio (Edificio y Contenidos)',
+  EDIFICIOS: 'Incendio (Edificio y Contenidos)',
+  INMUEBLES: 'Incendio (Edificio y Contenidos)',
+  CONTENIDOS: 'Incendio (Edificio y Contenidos)',
+  MUEBLES: 'Incendio (Edificio y Contenidos)',
+  MERCANCIAS: 'Incendio (Edificio y Contenidos)',
+  EXISTENCIAS: 'Incendio (Edificio y Contenidos)',
   'EQUIPO ELECTRICO': 'Equipo Eléctrico y Electrónico',
   'EQUIPO ELECTRÓNICO': 'Equipo Eléctrico y Electrónico',
-  'EEE': 'Equipo Eléctrico y Electrónico',
-  'MAQUINARIA': 'Rotura de Maquinaria',
+  EEE: 'Equipo Eléctrico y Electrónico',
+  MAQUINARIA: 'Rotura de Maquinaria',
   'MAQUINARIA Y EQUIPO': 'Rotura de Maquinaria',
-  'DINERO': 'Sustracción / Hurto',
-  'VALORES': 'Sustracción / Hurto',
+  DINERO: 'Sustracción / Hurto',
+  VALORES: 'Sustracción / Hurto',
   'LUCRO CESANTE': 'Lucro Cesante',
-  'LUCRO': 'Lucro Cesante',
+  LUCRO: 'Lucro Cesante',
 };
 
 // Implicit coverage detection
@@ -143,7 +154,10 @@ async function mapRawToCanonicalWithInsurer(
   const d = domain ?? 'pyme';
 
   // Semantic ontology mode (new architecture)
-  if (featureFlags.isEnabled('semanticCoverageOntology') && !featureFlags.isEnabled('useLegacyCoverageMatcher')) {
+  if (
+    featureFlags.isEnabled('semanticCoverageOntology') &&
+    !featureFlags.isEnabled('useLegacyCoverageMatcher')
+  ) {
     const ontologyResult = await mapWithOntology(rawName, d, insurer);
     if (ontologyResult) {
       return ontologyResult;
@@ -153,7 +167,12 @@ async function mapRawToCanonicalWithInsurer(
   // Layer 1: Thesaurus exact match
   const thesaurusResult = await matchByThesaurusExact(rawName, d);
   if (thesaurusResult) {
-    return { canonicalName: thesaurusResult, confidence: 100, graphConfidence: null, method: 'exact' };
+    return {
+      canonicalName: thesaurusResult,
+      confidence: 100,
+      graphConfidence: null,
+      method: 'exact',
+    };
   }
 
   // Layer 2: Fuzzy match
@@ -228,28 +247,44 @@ export async function mapRawToCanonicalBatch(
   rawNames: string[],
   domain?: string,
   insurer?: string
-): Promise<Array<{
+): Promise<
+  Array<{
     canonicalName: string | null;
     confidence: number;
     graphConfidence: number | null;
     method: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'ontology' | 'thesaurus' | 'graph' | null;
-  }>> {
+  }>
+> {
   const startTime = Date.now();
   const d = domain ?? 'pyme';
 
   // Filter out empty names
-  const validIndices = rawNames.map((name, index) => ({ name, index }))
-    .filter(item => item.name && item.name.trim().length > 0);
+  const validIndices = rawNames
+    .map((name, index) => ({ name, index }))
+    .filter((item) => item.name && item.name.trim().length > 0);
 
   if (validIndices.length === 0) {
-    return rawNames.map(() => ({ canonicalName: null, confidence: 0, graphConfidence: null, method: null }));
+    return rawNames.map(() => ({
+      canonicalName: null,
+      confidence: 0,
+      graphConfidence: null,
+      method: null,
+    }));
   }
 
   const results = new Array(rawNames.length).fill(null).map(() => ({
     canonicalName: null as string | null,
     confidence: 0,
     graphConfidence: null as number | null,
-    method: null as 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'ontology' | 'thesaurus' | 'graph' | null,
+    method: null as
+      | 'exact'
+      | 'fuzzy'
+      | 'embedding'
+      | 'llm'
+      | 'ontology'
+      | 'thesaurus'
+      | 'graph'
+      | null,
   }));
 
   // Separate names that can be resolved without embeddings (thesaurus/fuzzy)
@@ -260,7 +295,12 @@ export async function mapRawToCanonicalBatch(
     // Check thesaurus exact match first
     const thesaurusResult = await matchByThesaurusExact(name, d);
     if (thesaurusResult) {
-      results[index] = { canonicalName: thesaurusResult, confidence: 100, graphConfidence: null, method: 'exact' };
+      results[index] = {
+        canonicalName: thesaurusResult,
+        confidence: 100,
+        graphConfidence: null,
+        method: 'exact',
+      };
       continue;
     }
 
@@ -281,7 +321,9 @@ export async function mapRawToCanonicalBatch(
     embeddingIndices.push(index);
   }
 
-  console.log(`🧠 [CoverageNormalizer] Batch: ${validIndices.length - namesNeedingEmbeddings.length}/${validIndices.length} resolved by thesaurus/fuzzy`);
+  console.log(
+    `🧠 [CoverageNormalizer] Batch: ${validIndices.length - namesNeedingEmbeddings.length}/${validIndices.length} resolved by thesaurus/fuzzy`
+  );
 
   // Process embeddings in batch using semanticMatcher
   if (namesNeedingEmbeddings.length > 0) {
@@ -361,7 +403,10 @@ export async function mapRawToCanonicalBatch(
 /**
  * Match by thesaurus exact match
  */
-async function matchByThesaurusExact(rawName: string, domain: string = 'pyme'): Promise<string | null> {
+async function matchByThesaurusExact(
+  rawName: string,
+  domain: string = 'pyme'
+): Promise<string | null> {
   const normalized = normalizeText(rawName);
   const categories = semanticMatcher.getAllCategories(domain);
 
@@ -389,7 +434,10 @@ async function matchByThesaurusExact(rawName: string, domain: string = 'pyme'): 
 /**
  * Match by fuzzy similarity
  */
-function matchByFuzzy(rawName: string, domain: string = 'pyme'): { canonicalName: string; confidence: number } | null {
+function matchByFuzzy(
+  rawName: string,
+  domain: string = 'pyme'
+): { canonicalName: string; confidence: number } | null {
   const normalized = normalizeText(rawName);
   let bestMatch: { canonicalName: string; confidence: number } | null = null;
   const categories = semanticMatcher.getAllCategories(domain);
@@ -415,30 +463,35 @@ async function mapWithOntology(
   rawName: string,
   domain: string = 'pyme',
   insurer?: string
-): Promise<{ canonicalName: string; confidence: number; graphConfidence: number | null; method: 'ontology' } | null> {
+): Promise<{
+  canonicalName: string;
+  confidence: number;
+  graphConfidence: number | null;
+  method: 'ontology';
+} | null> {
   try {
     const mapping = await coverageOntology.mapCoverage(rawName, insurer, domain);
 
     if (mapping.groups.length === 0) {
       return null;
     }
-    
+
     // Get best match
     const best = mapping.groups[0];
     const node = coverageOntology.getNodeById(best.groupId);
-    
+
     if (!node) {
       return null;
     }
-    
+
     // Save mapping for learning
     await coverageOntology.saveMapping(mapping);
-    
+
     return {
       canonicalName: node.name,
       confidence: Math.round(best.confidence * 100),
       graphConfidence: null,
-      method: 'ontology'
+      method: 'ontology',
     };
   } catch (error) {
     console.warn('⚠️ [CoverageNormalizer] Ontology mapping failed:', error);
@@ -453,27 +506,29 @@ export function resolveDeductibles(
   rawCoverages: RawCoverage[],
   generalDeductibles: GeneralDeductible[]
 ): RawCoverage[] {
-  return rawCoverages.map(coverage => {
+  return rawCoverages.map((coverage) => {
     if (coverage.deductible && coverage.deductible.trim().length > 0) {
       return coverage;
     }
-    
+
     // Search for general deductible that applies
-    const general = generalDeductibles.find(gd => {
+    const general = generalDeductibles.find((gd) => {
       const appliesToUpper = gd.appliesTo.toUpperCase();
       const sectionUpper = (coverage.section || '').toUpperCase();
       const nameUpper = coverage.rawName.toUpperCase();
-      
-      return sectionUpper.includes(appliesToUpper) ||
-             nameUpper.includes(appliesToUpper) ||
-             appliesToUpper.includes(sectionUpper) ||
-             appliesToUpper.includes(nameUpper);
+
+      return (
+        sectionUpper.includes(appliesToUpper) ||
+        nameUpper.includes(appliesToUpper) ||
+        appliesToUpper.includes(sectionUpper) ||
+        appliesToUpper.includes(nameUpper)
+      );
     });
-    
+
     if (general) {
       return { ...coverage, deductible: general.deductibleText };
     }
-    
+
     return coverage;
   });
 }
@@ -485,22 +540,25 @@ export function deriveInsuredAmounts(
   rawCoverages: RawCoverage[],
   insuredAssets: InsuredAsset[]
 ): RawCoverage[] {
-  return rawCoverages.map(coverage => {
+  return rawCoverages.map((coverage) => {
     if (coverage.insuredAmount && coverage.insuredAmount > 0) {
       return coverage;
     }
-    
+
     // Try to derive from assets
     const canonicalName = coverage.rawName.toUpperCase();
     let derivedAmount: number | undefined;
-    
+
     // Check asset mapping
     for (const [assetType, coverageName] of Object.entries(ASSET_TO_COVERAGE)) {
-      if (canonicalName.includes(coverageName.toUpperCase()) ||
-          coverageName.toUpperCase().includes(canonicalName)) {
-        const matchingAssets = insuredAssets.filter(a => 
-          a.assetType.toUpperCase().includes(assetType) ||
-          assetType.includes(a.assetType.toUpperCase())
+      if (
+        canonicalName.includes(coverageName.toUpperCase()) ||
+        coverageName.toUpperCase().includes(canonicalName)
+      ) {
+        const matchingAssets = insuredAssets.filter(
+          (a) =>
+            a.assetType.toUpperCase().includes(assetType) ||
+            assetType.includes(a.assetType.toUpperCase())
         );
         if (matchingAssets.length > 0) {
           derivedAmount = matchingAssets.reduce((sum, a) => sum + a.value, 0);
@@ -508,12 +566,12 @@ export function deriveInsuredAmounts(
         }
       }
     }
-    
+
     // Special cases
     if (!derivedAmount) {
       if (canonicalName.includes('INCENDIO') || canonicalName.includes('DAÑO MATERIAL')) {
-        const buildingAssets = insuredAssets.filter(a =>
-          ['EDIFICIOS', 'INMUEBLES', 'CONTENIDOS', 'MUEBLES'].some(t =>
+        const buildingAssets = insuredAssets.filter((a) =>
+          ['EDIFICIOS', 'INMUEBLES', 'CONTENIDOS', 'MUEBLES'].some((t) =>
             a.assetType.toUpperCase().includes(t)
           )
         );
@@ -522,11 +580,15 @@ export function deriveInsuredAmounts(
         }
       }
     }
-    
+
     if (derivedAmount) {
-      return { ...coverage, insuredAmount: derivedAmount, notes: `${coverage.notes || ''} [Derivado de bienes asegurables]`.trim() };
+      return {
+        ...coverage,
+        insuredAmount: derivedAmount,
+        notes: `${coverage.notes || ''} [Derivado de bienes asegurables]`.trim(),
+      };
     }
-    
+
     return coverage;
   });
 }
@@ -549,7 +611,7 @@ export async function detectImplicitCoverages(
       if (pattern.pattern.test(nameUpper)) {
         for (const coverageName of pattern.coverages) {
           // Check if not already explicitly present
-          const alreadyPresent = rawCoverages.some(r => {
+          const alreadyPresent = rawCoverages.some((r) => {
             const mapped = mapRawToCanonicalSync(r.rawName, domain ?? 'pyme');
             return mapped === coverageName;
           });
@@ -574,17 +636,19 @@ export async function detectImplicitCoverages(
         });
         if (graphResult.composite && graphResult.components) {
           for (const componentId of graphResult.components) {
-            const componentName = semanticMatcher.getCategoryName(
-              parseInt(componentId, 10),
-              domain ?? 'pyme'
-            ) ?? componentId;
+            const componentName =
+              semanticMatcher.getCategoryName(parseInt(componentId, 10), domain ?? 'pyme') ??
+              componentId;
 
-            const alreadyPresent = rawCoverages.some(r => {
+            const alreadyPresent = rawCoverages.some((r) => {
               const mapped = mapRawToCanonicalSync(r.rawName, domain ?? 'pyme');
               return mapped === componentName;
             });
 
-            if (!alreadyPresent && !implicit.some(i => i.rawName === raw.rawName && i.canonicalName === componentName)) {
+            if (
+              !alreadyPresent &&
+              !implicit.some((i) => i.rawName === raw.rawName && i.canonicalName === componentName)
+            ) {
               implicit.push({
                 rawName: raw.rawName,
                 canonicalName: componentName,
@@ -616,7 +680,7 @@ function mapRawToCanonicalSync(rawName: string, domain: string = 'pyme'): string
     const definition = thesaurusService.getCoberturaDefinition(category.name, domain);
     if (definition) {
       const allTerms = [...definition.sinonimos, ...definition.terminos_busqueda];
-      if (allTerms.some(t => normalizeText(t) === normalized)) {
+      if (allTerms.some((t) => normalizeText(t) === normalized)) {
         return category.name;
       }
     }
@@ -640,8 +704,18 @@ export async function buildCanonicalCoverages(
 ): Promise<NormalizationResult> {
   const d = domain ?? 'pyme';
   // Ontology mode (fluid architecture)
-  if (featureFlags.isEnabled('semanticCoverageOntology') && !featureFlags.isEnabled('useLegacyCoverageMatcher')) {
-    return buildOntologyBasedCoverages(rawCoverages, insuredAssets, generalDeductibles, pageTextMap, d, insurerName);
+  if (
+    featureFlags.isEnabled('semanticCoverageOntology') &&
+    !featureFlags.isEnabled('useLegacyCoverageMatcher')
+  ) {
+    return buildOntologyBasedCoverages(
+      rawCoverages,
+      insuredAssets,
+      generalDeductibles,
+      pageTextMap,
+      d,
+      insurerName
+    );
   }
 
   // Legacy mode (N categories for domain)
@@ -661,7 +735,7 @@ export async function buildCanonicalCoverages(
   }> = [];
 
   // Collect coverage names for batch processing
-  const coverageNames = withAmounts.map(c => c.rawName);
+  const coverageNames = withAmounts.map((c) => c.rawName);
   const batchResults = await mapRawToCanonicalBatch(coverageNames, d, insurerName);
 
   for (let i = 0; i < withAmounts.length; i++) {
@@ -686,17 +760,15 @@ export async function buildCanonicalCoverages(
 
   for (const category of canonicalCategories) {
     // Find explicit matches
-    const explicitMatches = mapped.filter(m => m.canonicalName === category.name);
-    
+    const explicitMatches = mapped.filter((m) => m.canonicalName === category.name);
+
     // Find implicit matches
-    const implicitMatches = implicit.filter(i => i.canonicalName === category.name);
-    
+    const implicitMatches = implicit.filter((i) => i.canonicalName === category.name);
+
     if (explicitMatches.length > 0) {
       // Use best explicit match
-      const best = explicitMatches.reduce((a, b) =>
-        a.confidence > b.confidence ? a : b
-      );
-      
+      const best = explicitMatches.reduce((a, b) => (a.confidence > b.confidence ? a : b));
+
       canonicalCoverages.push({
         name: category.name,
         status: 'present',
@@ -705,20 +777,19 @@ export async function buildCanonicalCoverages(
         premium: best.coverage.premium || null,
         confidence: best.confidence,
         graphConfidence: best.graphConfidence,
-        rawNames: explicitMatches.map(m => m.coverage.rawName),
+        rawNames: explicitMatches.map((m) => m.coverage.rawName),
         matchMethod: best.method as CanonicalCoverage['matchMethod'],
         needsReview: best.confidence < 70,
         categoryId: category.id,
       });
-      
+
       totalConfidence += best.confidence;
       if (best.confidence < 70) needsReview = true;
-      
     } else if (implicitMatches.length > 0) {
       // Use implicit
       const bestImplicit = implicitMatches[0];
-      const parentCoverage = rawCoverages.find(r => r.rawName === bestImplicit.rawName);
-      
+      const parentCoverage = rawCoverages.find((r) => r.rawName === bestImplicit.rawName);
+
       canonicalCoverages.push({
         name: category.name,
         status: 'present',
@@ -733,10 +804,9 @@ export async function buildCanonicalCoverages(
         notes: `Cobertura implícita en: ${bestImplicit.rawName}`,
         categoryId: category.id,
       });
-      
+
       totalConfidence += bestImplicit.confidence;
       needsReview = true;
-      
     } else {
       // Missing
       canonicalCoverages.push({
@@ -754,19 +824,17 @@ export async function buildCanonicalCoverages(
       });
     }
   }
-  
+
   const missingCoverages = canonicalCoverages
-    .filter(c => c.status === 'missing')
-    .map(c => c.name);
-  
+    .filter((c) => c.status === 'missing')
+    .map((c) => c.name);
+
   // Collect uncategorized coverages (those that didn't match any canonical category)
-  const rawUncategorized = mapped
-    .filter(m => m.canonicalName === null)
-    .map(m => m.coverage);
-  
+  const rawUncategorized = mapped.filter((m) => m.canonicalName === null).map((m) => m.coverage);
+
   // Group uncategorized coverages by semantic similarity
   const grouped = groupUncategorizedCoverages(rawUncategorized);
-  
+
   // Flatten groups into CanonicalCoverage array with categoryId
   const uncategorizedCoverages: CanonicalCoverage[] = [];
   for (const group of grouped) {
@@ -787,11 +855,12 @@ export async function buildCanonicalCoverages(
       });
     }
   }
-  
-  const avgConfidence = canonicalCoverages.length > 0 
-    ? totalConfidence / canonicalCoverages.filter(c => c.status === 'present').length 
-    : 0;
-  
+
+  const avgConfidence =
+    canonicalCoverages.length > 0
+      ? totalConfidence / canonicalCoverages.filter((c) => c.status === 'present').length
+      : 0;
+
   return {
     canonicalCoverages,
     uncategorizedCoverages,
@@ -817,19 +886,19 @@ async function buildOntologyBasedCoverages(
   const d = domain ?? 'pyme';
   // Step 1: Resolve deductibles
   const withDeductibles = resolveDeductibles(rawCoverages, generalDeductibles);
-  
+
   // Step 2: Derive insured amounts
   const withAmounts = deriveInsuredAmounts(withDeductibles, insuredAssets);
-  
+
   // Step 3: Map using ontology with concurrency pool (max 5)
   const mappings: Array<{
     coverage: RawCoverage;
     mapping: CoverageMapping;
   }> = new Array(withAmounts.length);
-  
+
   const limit = 5;
   const executing: Set<Promise<void>> = new Set();
-  
+
   for (let i = 0; i < withAmounts.length; i++) {
     const coverage = withAmounts[i];
     const task = (async () => {
@@ -837,7 +906,10 @@ async function buildOntologyBasedCoverages(
 
       // Reverse String page mapping using literal rawTextSnippet evidence
       if (pageTextMap && coverage.rawTextSnippet) {
-        const resolvedPage = pdfExtractor.findExactPageForSnippet(pageTextMap, coverage.rawTextSnippet);
+        const resolvedPage = pdfExtractor.findExactPageForSnippet(
+          pageTextMap,
+          coverage.rawTextSnippet
+        );
         if (resolvedPage !== null) {
           coverage.pageNumber = resolvedPage;
           mapping.pageNumber = resolvedPage;
@@ -845,7 +917,7 @@ async function buildOntologyBasedCoverages(
       }
 
       mappings[i] = { coverage, mapping };
-      
+
       // Save for learning
       if (mapping.confidence > 0.5) {
         await coverageOntology.saveMapping(mapping).catch(() => {});
@@ -861,46 +933,51 @@ async function buildOntologyBasedCoverages(
     }
   }
   await Promise.all(executing);
-  
+
   // Step 4: Group by semantic similarity
-  const groups: Record<string, {
-    coverages: Array<{
-      rawCoverage: RawCoverage;
-      confidence: number;
-      isComposite: boolean;
-      components?: string[];
-    }>;
-    totalConfidence: number;
-  }> = {};
-  
+  const groups: Record<
+    string,
+    {
+      coverages: Array<{
+        rawCoverage: RawCoverage;
+        confidence: number;
+        isComposite: boolean;
+        components?: string[];
+      }>;
+      totalConfidence: number;
+    }
+  > = {};
+
   for (const { coverage, mapping } of mappings) {
     if (mapping.groups.length === 0) {
       // Ungrouped - will be added as uncategorized
-      console.log(`[coverageNormalizer] Coverage ungrouped: "${coverage.rawName}" - adding as uncategorized`);
+      console.log(
+        `[coverageNormalizer] Coverage ungrouped: "${coverage.rawName}" - adding as uncategorized`
+      );
       continue;
     }
-    
+
     // Use best group
     const bestGroup = mapping.groups[0];
     const node = coverageOntology.getNodeById(bestGroup.groupId, d);
-    
+
     if (!node) continue;
-    
+
     const groupName = node.name;
-    
+
     if (!groups[groupName]) {
       groups[groupName] = { coverages: [], totalConfidence: 0 };
     }
-    
+
     groups[groupName].coverages.push({
       rawCoverage: coverage,
       confidence: bestGroup.confidence,
       isComposite: mapping.isComposite,
-      components: mapping.components
+      components: mapping.components,
     });
     groups[groupName].totalConfidence += bestGroup.confidence;
   }
-  
+
   // Step 5: Build canonical coverages from groups using the active domain categories
   const canonicalCategories = semanticMatcher.getAllCategories(d);
   const canonicalCoverages: CanonicalCoverage[] = [];
@@ -910,16 +987,14 @@ async function buildOntologyBasedCoverages(
 
   for (const category of canonicalCategories) {
     const groupData = groups[category.name];
-    
+
     if (groupData && groupData.coverages.length > 0) {
       // Use best coverage in group
-      const best = groupData.coverages.reduce((a, b) => 
-        a.confidence > b.confidence ? a : b
-      );
-      
+      const best = groupData.coverages.reduce((a, b) => (a.confidence > b.confidence ? a : b));
+
       const avgConfidence = groupData.totalConfidence / groupData.coverages.length;
       const groupNeedsReview = avgConfidence < 0.7 || best.isComposite;
-      
+
       canonicalCoverages.push({
         name: category.name,
         status: 'present',
@@ -928,15 +1003,15 @@ async function buildOntologyBasedCoverages(
         premium: best.rawCoverage.premium || null,
         confidence: Math.round(avgConfidence * 100),
         graphConfidence: null,
-        rawNames: groupData.coverages.map(c => c.rawCoverage.rawName),
+        rawNames: groupData.coverages.map((c) => c.rawCoverage.rawName),
         matchMethod: best.isComposite ? 'ontology-composite' : 'ontology',
         needsReview: groupNeedsReview,
         notes: best.isComposite ? `Cobertura compuesta: ${best.components?.join(', ')}` : undefined,
         categoryId: category.id,
         rawTextSnippet: best.rawCoverage.rawTextSnippet || undefined,
-        pageNumber: best.rawCoverage.pageNumber || undefined
+        pageNumber: best.rawCoverage.pageNumber || undefined,
       });
-      
+
       totalConfidence += avgConfidence * 100;
       presentCount++;
       if (groupNeedsReview) needsReview = true;
@@ -953,18 +1028,16 @@ async function buildOntologyBasedCoverages(
         rawNames: [],
         matchMethod: null,
         needsReview: false,
-        categoryId: category.id
+        categoryId: category.id,
       });
     }
   }
-  
+
   // Add ungrouped coverages as uncategorized
   const groupedRawNames = new Set(
-    mappings
-      .filter(m => m.mapping.groups.length > 0)
-      .map(m => m.coverage.rawName)
+    mappings.filter((m) => m.mapping.groups.length > 0).map((m) => m.coverage.rawName)
   );
-  
+
   const uncategorizedCoverages: CanonicalCoverage[] = [];
   for (const { coverage } of mappings) {
     if (!groupedRawNames.has(coverage.rawName)) {
@@ -981,25 +1054,23 @@ async function buildOntologyBasedCoverages(
         needsReview: true,
         notes: 'Sin clasificación semántica',
         rawTextSnippet: coverage.rawTextSnippet || undefined,
-        pageNumber: coverage.pageNumber || undefined
+        pageNumber: coverage.pageNumber || undefined,
       });
     }
   }
-  
+
   const avgConfidence = presentCount > 0 ? totalConfidence / presentCount : 0;
-  
+
   const missingCoverages = canonicalCoverages
-    .filter(c => c.status === 'missing')
-    .map(c => c.name);
-  
+    .filter((c) => c.status === 'missing')
+    .map((c) => c.name);
+
   return {
     canonicalCoverages,
     uncategorizedCoverages,
     missingCoverages,
     needsReview,
     totalConfidence: Math.round(avgConfidence),
-    generalDeductibles
+    generalDeductibles,
   };
 }
-
-

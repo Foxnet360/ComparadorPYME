@@ -1,25 +1,25 @@
 import * as React from 'react';
-import { useState} from 'react';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip as RechartsTooltip, 
+import { useState } from 'react';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
   ResponsiveContainer,
   LineChart,
   Line,
   PieChart,
   Pie,
-  Cell
+  Cell,
 } from 'recharts';
-import { 
-  Brain, 
-  TrendingUp, 
-  AlertTriangle, 
-  CheckCircle, 
-  Clock, 
+import {
+  Brain,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
   BookOpen,
   Target,
   Activity,
@@ -27,7 +27,7 @@ import {
   Filter,
   ChevronDown,
   ChevronUp,
-  BarChart3
+  BarChart3,
 } from 'lucide-react';
 
 interface LearningMetric {
@@ -45,11 +45,7 @@ interface LearningMetric {
 
 const COLORS = ['#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6'];
 
-export const CuratorDashboard = ({ 
-  metrics = [], 
-  consensusHistory = [],
-  isLoading = false 
-}) => {
+export const CuratorDashboard = ({ metrics = [], consensusHistory = [], isLoading = false }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'corrections' | 'consensus'>('overview');
   const [sortField, setSortField] = useState<keyof LearningMetric>('timestamp');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -57,20 +53,23 @@ export const CuratorDashboard = ({
 
   // Calculate summary statistics
   const totalCorrections = metrics.length;
-  const pendingReviews = metrics.filter(m => m.confidenceAfter < 0.7).length;
-  const consensusRate = consensusHistory.length > 0 
-    ? consensusHistory[consensusHistory.length - 1].consensusRate 
-    : 0;
-  const avgConfidence = metrics.length > 0
-    ? metrics.reduce((sum, m) => sum + m.confidenceAfter, 0) / metrics.length
-    : 0;
+  const pendingReviews = metrics.filter((m) => m.confidenceAfter < 0.7).length;
+  const consensusRate =
+    consensusHistory.length > 0 ? consensusHistory[consensusHistory.length - 1].consensusRate : 0;
+  const avgConfidence =
+    metrics.length > 0
+      ? metrics.reduce((sum, m) => sum + m.confidenceAfter, 0) / metrics.length
+      : 0;
 
   // Corrections by category for pie chart
-  const correctionsByCategory = metrics.reduce((acc, metric) => {
-    const category = metric.correctedMapping || 'Sin categoría';
-    acc[category] = (acc[category] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const correctionsByCategory = metrics.reduce(
+    (acc, metric) => {
+      const category = metric.correctedMapping || 'Sin categoría';
+      acc[category] = (acc[category] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
 
   const pieData = Object.entries(correctionsByCategory)
     .map(([name, value]) => ({ name, value }))
@@ -80,21 +79,28 @@ export const CuratorDashboard = ({
   // Confidence trend over time
   const confidenceTrend = metrics
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-    .reduce((acc, metric, _idx) => {
-      const date = new Date(metric.timestamp).toLocaleDateString('es-CO');
-      const existing = acc.find(item => item.date === date);
-      if (existing) {
-        existing.avgConfidence = (existing.avgConfidence * existing.count + metric.confidenceAfter) / (existing.count + 1);
-        existing.count += 1;
-      } else {
-        acc.push({ date, avgConfidence: metric.confidenceAfter, count: 1 });
-      }
-      return acc;
-    }, [] as Array<{ date: string; avgConfidence: number; count: number }>);
+    .reduce(
+      (acc, metric, _idx) => {
+        const date = new Date(metric.timestamp).toLocaleDateString('es-CO');
+        const existing = acc.find((item) => item.date === date);
+        if (existing) {
+          existing.avgConfidence =
+            (existing.avgConfidence * existing.count + metric.confidenceAfter) /
+            (existing.count + 1);
+          existing.count += 1;
+        } else {
+          acc.push({ date, avgConfidence: metric.confidenceAfter, count: 1 });
+        }
+        return acc;
+      },
+      [] as Array<{ date: string; avgConfidence: number; count: number }>
+    );
 
   // Filter and sort metrics
   const filteredMetrics = metrics
-    .filter(m => !filterCoverage || m.coverageName.toLowerCase().includes(filterCoverage.toLowerCase()))
+    .filter(
+      (m) => !filterCoverage || m.coverageName.toLowerCase().includes(filterCoverage.toLowerCase())
+    )
     .sort((a, b) => {
       const aVal = a[sortField];
       const bVal = b[sortField];
@@ -136,7 +142,9 @@ export const CuratorDashboard = ({
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-400">Última actualización:</span>
-          <span className="text-xs font-mono bg-slate-800 px-2 py-1 rounded">{new Date().toLocaleString('es-CO')}</span>
+          <span className="text-xs font-mono bg-slate-800 px-2 py-1 rounded">
+            {new Date().toLocaleString('es-CO')}
+          </span>
         </div>
       </div>
 
@@ -145,8 +153,8 @@ export const CuratorDashboard = ({
         {[
           { id: 'overview', label: 'Resumen', icon: BarChart3 },
           { id: 'corrections', label: 'Correcciones', icon: BookOpen },
-          { id: 'consensus', label: 'Consenso', icon: Target }
-        ].map(tab => (
+          { id: 'consensus', label: 'Consenso', icon: Target },
+        ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as 'overview' | 'corrections' | 'consensus')}
@@ -170,7 +178,9 @@ export const CuratorDashboard = ({
             <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Correcciones Totales</p>
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">
+                    Correcciones Totales
+                  </p>
                   <p className="text-2xl font-bold text-slate-900 mt-1">{totalCorrections}</p>
                 </div>
                 <div className="bg-blue-50 p-3 rounded-lg">
@@ -186,7 +196,9 @@ export const CuratorDashboard = ({
             <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Revisiones Pendientes</p>
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">
+                    Revisiones Pendientes
+                  </p>
                   <p className="text-2xl font-bold text-slate-900 mt-1">{pendingReviews}</p>
                 </div>
                 <div className="bg-amber-50 p-3 rounded-lg">
@@ -201,8 +213,12 @@ export const CuratorDashboard = ({
             <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Tasa de Consenso</p>
-                  <p className="text-2xl font-bold text-slate-900 mt-1">{(consensusRate * 100).toFixed(1)}%</p>
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">
+                    Tasa de Consenso
+                  </p>
+                  <p className="text-2xl font-bold text-slate-900 mt-1">
+                    {(consensusRate * 100).toFixed(1)}%
+                  </p>
                 </div>
                 <div className="bg-green-50 p-3 rounded-lg">
                   <CheckCircle className="text-green-600" size={20} />
@@ -216,8 +232,12 @@ export const CuratorDashboard = ({
             <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Confianza Promedio</p>
-                  <p className="text-2xl font-bold text-slate-900 mt-1">{(avgConfidence * 100).toFixed(1)}%</p>
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">
+                    Confianza Promedio
+                  </p>
+                  <p className="text-2xl font-bold text-slate-900 mt-1">
+                    {(avgConfidence * 100).toFixed(1)}%
+                  </p>
                 </div>
                 <div className="bg-purple-50 p-3 rounded-lg">
                   <Activity className="text-purple-600" size={20} />
@@ -242,12 +262,26 @@ export const CuratorDashboard = ({
                   <LineChart data={confidenceTrend}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                     <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                    <YAxis domain={[0, 1]} tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} tick={{ fontSize: 11 }} />
-                    <RechartsTooltip 
-                      formatter={(value: number) => [`${(value * 100).toFixed(1)}%`, 'Confianza']}
-                      contentStyle={{ borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '12px' }}
+                    <YAxis
+                      domain={[0, 1]}
+                      tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
+                      tick={{ fontSize: 11 }}
                     />
-                    <Line type="monotone" dataKey="avgConfidence" stroke="#3B82F6" strokeWidth={2} dot={{ fill: '#3B82F6', r: 4 }} />
+                    <RechartsTooltip
+                      formatter={(value: number) => [`${(value * 100).toFixed(1)}%`, 'Confianza']}
+                      contentStyle={{
+                        borderRadius: '8px',
+                        border: '1px solid #E2E8F0',
+                        fontSize: '12px',
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="avgConfidence"
+                      stroke="#3B82F6"
+                      strokeWidth={2}
+                      dot={{ fill: '#3B82F6', r: 4 }}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -275,14 +309,23 @@ export const CuratorDashboard = ({
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <RechartsTooltip contentStyle={{ borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '12px' }} />
+                    <RechartsTooltip
+                      contentStyle={{
+                        borderRadius: '8px',
+                        border: '1px solid #E2E8F0',
+                        fontSize: '12px',
+                      }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
               <div className="flex flex-wrap gap-2 mt-2">
                 {pieData.map((entry, index) => (
                   <div key={entry.name} className="flex items-center gap-1 text-xs">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                    <div
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                    />
                     <span className="text-slate-600">{entry.name}</span>
                   </div>
                 ))}
@@ -306,7 +349,10 @@ export const CuratorDashboard = ({
               className="flex-1 text-sm text-slate-700 placeholder-slate-400 outline-none"
             />
             {filterCoverage && (
-              <button onClick={() => setFilterCoverage('')} className="text-xs text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setFilterCoverage('')}
+                className="text-xs text-slate-400 hover:text-slate-600"
+              >
                 Limpiar
               </button>
             )}
@@ -325,18 +371,21 @@ export const CuratorDashboard = ({
                       { key: 'correctedMapping', label: 'Corrección' },
                       { key: 'confidenceBefore', label: 'Conf. Inicial' },
                       { key: 'confidenceAfter', label: 'Conf. Final' },
-                      { key: 'userId', label: 'Usuario' }
-                    ].map(col => (
-                      <th 
+                      { key: 'userId', label: 'Usuario' },
+                    ].map((col) => (
+                      <th
                         key={col.key}
                         onClick={() => handleSort(col.key as keyof LearningMetric)}
                         className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
                       >
                         <div className="flex items-center gap-1">
                           {col.label}
-                          {sortField === col.key && (
-                            sortDirection === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />
-                          )}
+                          {sortField === col.key &&
+                            (sortDirection === 'asc' ? (
+                              <ChevronUp size={12} />
+                            ) : (
+                              <ChevronDown size={12} />
+                            ))}
                         </div>
                       </th>
                     ))}
@@ -401,11 +450,42 @@ export const CuratorDashboard = ({
                   <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                   <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                   <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
-                  <YAxis yAxisId="right" orientation="right" domain={[0, 1]} tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} tick={{ fontSize: 11 }} />
-                  <RechartsTooltip contentStyle={{ borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '12px' }} />
-                  <Bar yAxisId="left" dataKey="totalClassifications" fill="#3B82F6" radius={[4, 4, 0, 0]} name="Total" />
-                  <Bar yAxisId="left" dataKey="discrepancies" fill="#EF4444" radius={[4, 4, 0, 0]} name="Discrepancias" />
-                  <Line yAxisId="right" type="monotone" dataKey="consensusRate" stroke="#10B981" strokeWidth={2} name="Tasa de Consenso" />
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    domain={[0, 1]}
+                    tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
+                    tick={{ fontSize: 11 }}
+                  />
+                  <RechartsTooltip
+                    contentStyle={{
+                      borderRadius: '8px',
+                      border: '1px solid #E2E8F0',
+                      fontSize: '12px',
+                    }}
+                  />
+                  <Bar
+                    yAxisId="left"
+                    dataKey="totalClassifications"
+                    fill="#3B82F6"
+                    radius={[4, 4, 0, 0]}
+                    name="Total"
+                  />
+                  <Bar
+                    yAxisId="left"
+                    dataKey="discrepancies"
+                    fill="#EF4444"
+                    radius={[4, 4, 0, 0]}
+                    name="Discrepancias"
+                  />
+                  <Line
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="consensusRate"
+                    stroke="#10B981"
+                    strokeWidth={2}
+                    name="Tasa de Consenso"
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -449,8 +529,8 @@ export const CuratorDashboard = ({
                 <div>
                   <p className="text-xs text-slate-500">Confianza Promedio</p>
                   <p className="text-xl font-bold text-slate-900">
-                    {consensusHistory.length > 0 
-                      ? `${(consensusHistory.reduce((sum, h) => sum + h.avgConfidence, 0) / consensusHistory.length * 100).toFixed(1)}%`
+                    {consensusHistory.length > 0
+                      ? `${((consensusHistory.reduce((sum, h) => sum + h.avgConfidence, 0) / consensusHistory.length) * 100).toFixed(1)}%`
                       : 'N/A'}
                   </p>
                 </div>
@@ -471,7 +551,9 @@ const ConfidenceBadge = ({ value }: { value: number }) => {
   else if (value >= 0.5) colorClass = 'bg-orange-50 text-orange-700 border-orange-200';
 
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${colorClass}`}>
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${colorClass}`}
+    >
       {(value * 100).toFixed(0)}%
     </span>
   );

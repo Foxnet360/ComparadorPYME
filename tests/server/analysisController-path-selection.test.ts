@@ -16,9 +16,7 @@ vi.mock('../../server/src/repositories/analysisRepository', () => ({
   getAnalysisHistoryByUser: vi.fn(async () => []),
 }));
 
-const { analysisController } = await import(
-  '../../server/src/controllers/analysisController'
-);
+const { analysisController } = await import('../../server/src/controllers/analysisController');
 
 const app = express();
 app.use(express.json());
@@ -37,39 +35,41 @@ function makeAdapterResult(engine: 'unified' | 'fallback' = 'unified') {
         id: 'client_info',
         label: 'Cotizaciones PYME - SBS',
         sectionId: 0,
-        cells: [{ value: '', isExcluded: false, isWinner: false }]
+        cells: [{ value: '', isExcluded: false, isWinner: false }],
       },
       {
         type: 'header',
         id: 'section_0',
         label: 'INFORMACIÓN GENERAL',
         sectionId: 1,
-        cells: [{ value: '', isExcluded: false, isWinner: false }]
+        cells: [{ value: '', isExcluded: false, isWinner: false }],
       },
       {
         type: 'data',
         id: 'section_0_row_0',
         label: 'Incendio',
         sectionId: 1,
-        cells: [{ value: '100M', isExcluded: false, isWinner: false, notes: '10%', confidence: 95 }]
+        cells: [
+          { value: '100M', isExcluded: false, isWinner: false, notes: '10%', confidence: 95 },
+        ],
       },
       {
         type: 'header',
         id: 'financials',
         label: 'PRIMAS Y COSTOS',
         sectionId: 999,
-        cells: [{ value: '', isExcluded: false, isWinner: false }]
+        cells: [{ value: '', isExcluded: false, isWinner: false }],
       },
       {
         type: 'data',
         id: 'premium_total',
         label: 'TOTAL A PAGAR',
         sectionId: 999,
-        cells: [{ value: '$5.000.000', isExcluded: false, isWinner: false }]
-      }
+        cells: [{ value: '$5.000.000', isExcluded: false, isWinner: false }],
+      },
     ],
     engine,
-    correlationId: `test-${engine}-123`
+    correlationId: `test-${engine}-123`,
   };
 }
 

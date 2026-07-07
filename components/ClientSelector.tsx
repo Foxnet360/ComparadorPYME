@@ -9,14 +9,23 @@ interface ClientSelectorProps {
   disabled?: boolean;
 }
 
-const ClientSelector: React.FC<ClientSelectorProps> = ({ selectedClient, onSelectClient, disabled }) => {
+const ClientSelector: React.FC<ClientSelectorProps> = ({
+  selectedClient,
+  onSelectClient,
+  disabled,
+}) => {
   const [clients, setClients] = useState<Client[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
-  const [newClient, setNewClient] = useState<Partial<Client>>({ name: '', nit: '', contactPerson: '', industry: '' });
+  const [newClient, setNewClient] = useState<Partial<Client>>({
+    name: '',
+    nit: '',
+    contactPerson: '',
+    industry: '',
+  });
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -26,9 +35,10 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({ selectedClient, onSelec
     fetchClients();
   }, []);
 
-  const filteredClients = clients.filter(c =>
-    (c.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-    (c.nit || '').includes(searchTerm)
+  const filteredClients = clients.filter(
+    (c) =>
+      (c.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (c.nit || '').includes(searchTerm)
   );
 
   const handleCreateClient = (e: React.FormEvent) => {
@@ -41,10 +51,10 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({ selectedClient, onSelec
       nit: newClient.nit,
       contactPerson: newClient.contactPerson,
       industry: newClient.industry,
-      email: newClient.email
+      email: newClient.email,
     };
 
-    storageService.addClient(client).then(updatedList => {
+    storageService.addClient(client).then((updatedList) => {
       setClients(updatedList);
       onSelectClient(client);
       setShowModal(false);
@@ -62,14 +72,20 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({ selectedClient, onSelec
         onClick={() => !disabled && setIsOpen(!isOpen)}
       >
         <div className="flex items-center space-x-3 overflow-hidden">
-          <div className={`p-2 rounded-lg ${selectedClient ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-400'}`}>
+          <div
+            className={`p-2 rounded-lg ${selectedClient ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-400'}`}
+          >
             <Building2 size={20} />
           </div>
           <div className="flex flex-col truncate">
-            <span className={`font-medium truncate ${selectedClient ? 'text-slate-800' : 'text-slate-500'}`}>
-              {selectedClient ? selectedClient.name : "Seleccionar Cliente..."}
+            <span
+              className={`font-medium truncate ${selectedClient ? 'text-slate-800' : 'text-slate-500'}`}
+            >
+              {selectedClient ? selectedClient.name : 'Seleccionar Cliente...'}
             </span>
-            {selectedClient && <span className="text-xs text-slate-400">NIT: {selectedClient.nit}</span>}
+            {selectedClient && (
+              <span className="text-xs text-slate-400">NIT: {selectedClient.nit}</span>
+            )}
           </div>
         </div>
         {!disabled && <Search size={16} className="text-slate-400 ml-2 flex-shrink-0" />}
@@ -80,7 +96,10 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({ selectedClient, onSelec
         <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
           <div className="p-3 border-b border-slate-100 bg-slate-50">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                size={14}
+              />
               <input
                 autoFocus
                 type="text"
@@ -93,7 +112,7 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({ selectedClient, onSelec
           </div>
 
           <div className="max-h-48 overflow-y-auto scrollbar-thin">
-            {filteredClients.map(client => (
+            {filteredClients.map((client) => (
               <div
                 key={client.id}
                 className="px-4 py-3 hover:bg-slate-50 cursor-pointer flex items-center justify-between group"
@@ -103,14 +122,20 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({ selectedClient, onSelec
                 }}
               >
                 <div>
-                  <div className="text-sm font-medium text-slate-800 group-hover:text-indigo-700">{client.name}</div>
+                  <div className="text-sm font-medium text-slate-800 group-hover:text-indigo-700">
+                    {client.name}
+                  </div>
                   <div className="text-xs text-slate-500">{client.nit}</div>
                 </div>
-                {client.id === selectedClient?.id && <div className="w-2 h-2 rounded-full bg-indigo-600"></div>}
+                {client.id === selectedClient?.id && (
+                  <div className="w-2 h-2 rounded-full bg-indigo-600"></div>
+                )}
               </div>
             ))}
             {filteredClients.length === 0 && (
-              <div className="p-4 text-center text-xs text-slate-400">No se encontraron clientes.</div>
+              <div className="p-4 text-center text-xs text-slate-400">
+                No se encontraron clientes.
+              </div>
             )}
           </div>
 
@@ -127,7 +152,9 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({ selectedClient, onSelec
       )}
 
       {/* Backdrop for dropdown */}
-      {isOpen && <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsOpen(false)}></div>}
+      {isOpen && (
+        <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsOpen(false)}></div>
+      )}
 
       {/* Create Client Modal */}
       {showModal && (
@@ -135,14 +162,24 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({ selectedClient, onSelec
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
               <h3 className="font-bold text-lg text-slate-800">Registrar Nuevo Cliente</h3>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X size={20} />
+              </button>
             </div>
 
             <form onSubmit={handleCreateClient} className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Razón Social <span className="text-red-500">*</span></label>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                  Razón Social <span className="text-red-500">*</span>
+                </label>
                 <div className="relative">
-                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                  <Building2
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                    size={18}
+                  />
                   <input
                     required
                     type="text"
@@ -155,9 +192,14 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({ selectedClient, onSelec
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">NIT / RUT <span className="text-red-500">*</span></label>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                  NIT / RUT <span className="text-red-500">*</span>
+                </label>
                 <div className="relative">
-                  <FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                  <FileText
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                    size={18}
+                  />
                   <input
                     required
                     type="text"
@@ -171,20 +213,29 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({ selectedClient, onSelec
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Contacto</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                    Contacto
+                  </label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <User
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                      size={18}
+                    />
                     <input
                       type="text"
                       placeholder="Nombre"
                       className="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
                       value={newClient.contactPerson}
-                      onChange={(e) => setNewClient({ ...newClient, contactPerson: e.target.value })}
+                      onChange={(e) =>
+                        setNewClient({ ...newClient, contactPerson: e.target.value })
+                      }
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Sector</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                    Sector
+                  </label>
                   <input
                     type="text"
                     placeholder="Ej. Transporte"
@@ -196,9 +247,14 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({ selectedClient, onSelec
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Correo Electrónico</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                  Correo Electrónico
+                </label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                  <Mail
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                    size={18}
+                  />
                   <input
                     type="email"
                     placeholder="contacto@empresa.com"
@@ -210,8 +266,19 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({ selectedClient, onSelec
               </div>
 
               <div className="pt-4 flex justify-end space-x-3">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
-                <button type="submit" className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-md font-medium">Crear Cliente</button>
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-md font-medium"
+                >
+                  Crear Cliente
+                </button>
               </div>
             </form>
           </div>

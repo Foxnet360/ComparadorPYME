@@ -20,11 +20,7 @@ export class RepositoryError extends Error {
 export function handleDbError(error: PostgrestError | null, context: string): void {
   if (error) {
     console.error(`❌ [Repository] ${context}:`, error);
-    throw new RepositoryError(
-      `${context} failed: ${error.message}`,
-      error.code,
-      error
-    );
+    throw new RepositoryError(`${context} failed: ${error.message}`, error.code, error);
   }
 }
 

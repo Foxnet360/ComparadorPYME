@@ -11,7 +11,9 @@ interface MockChain {
   range: ReturnType<typeof vi.fn>;
 }
 
-const createMockChain = (finalValue: Record<string, unknown> = { data: [], error: null, count: 0 }) => {
+const createMockChain = (
+  finalValue: Record<string, unknown> = { data: [], error: null, count: 0 }
+) => {
   const chain: MockChain = vi.fn().mockReturnThis() as unknown as MockChain;
   chain.eq = vi.fn().mockReturnThis();
   chain.ilike = vi.fn().mockReturnThis();

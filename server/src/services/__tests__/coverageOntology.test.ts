@@ -36,10 +36,10 @@ vi.mock('../../config/database', () => {
     eq: vi.fn().mockReturnThis(),
     limit: vi.fn().mockResolvedValue({ data: [], error: null }),
     upsert: vi.fn().mockResolvedValue({ data: { id: 'mocked-id' }, error: null }),
-    single: vi.fn().mockResolvedValue({ data: { id: 'mocked-id' }, error: null })
+    single: vi.fn().mockResolvedValue({ data: { id: 'mocked-id' }, error: null }),
   };
   return {
-    supabase: mockSupabase
+    supabase: mockSupabase,
   };
 });
 
@@ -53,9 +53,9 @@ vi.mock('@google/genai', () => {
           justification: 'Mocked justification',
           approved: true,
           alternativeGroupId: null,
-          reason: 'Mocked critic reason'
-        })
-      })
+          reason: 'Mocked critic reason',
+        }),
+      }),
     };
   }
   return {
@@ -66,7 +66,7 @@ vi.mock('@google/genai', () => {
       OBJECT: 'object',
       BOOLEAN: 'boolean',
     },
-    GoogleGenAI: MockGoogleGenAI
+    GoogleGenAI: MockGoogleGenAI,
   };
 });
 
@@ -78,12 +78,12 @@ vi.mock('../vector/embeddingService', () => {
       'AMPARO BASICO': [0.9, 0.8, 0.7, 0.6],
       'TODO RIESGO': [0.85, 0.75, 0.65, 0.55],
       'DAÑO MATERIAL': [0.8, 0.7, 0.6, 0.5],
-      'Incendio': [0.7, 0.6, 0.5, 0.4],
+      Incendio: [0.7, 0.6, 0.5, 0.4],
       'Edificios y Contenidos': [0.75, 0.65, 0.55, 0.45],
       'Equipos y Maquinaria': [0.6, 0.5, 0.4, 0.3],
       'Rotura de Maquinaria': [0.55, 0.45, 0.35, 0.25],
       'Responsabilidad Civil': [0.5, 0.4, 0.3, 0.2],
-      'Terremoto': [0.4, 0.3, 0.2, 0.1]
+      Terremoto: [0.4, 0.3, 0.2, 0.1],
     };
     return Promise.resolve(mockEmbeddings[text] || [0.1, 0.1, 0.1, 0.1]);
   });
@@ -92,23 +92,25 @@ vi.mock('../vector/embeddingService', () => {
     embeddingService: {
       generateEmbedding: generateEmbeddingMock,
       generateEmbeddingsBatch: vi.fn((texts: string[]) => {
-        return Promise.resolve(texts.map(text => {
-          const mockEmbeddings: Record<string, number[]> = {
-            'AMPARO BASICO': [0.9, 0.8, 0.7, 0.6],
-            'TODO RIESGO': [0.85, 0.75, 0.65, 0.55],
-            'DAÑO MATERIAL': [0.8, 0.7, 0.6, 0.5],
-            'Incendio': [0.7, 0.6, 0.5, 0.4],
-            'Edificios y Contenidos': [0.75, 0.65, 0.55, 0.45],
-            'Equipos y Maquinaria': [0.6, 0.5, 0.4, 0.3],
-            'Rotura de Maquinaria': [0.55, 0.45, 0.35, 0.25],
-            'Responsabilidad Civil': [0.5, 0.4, 0.3, 0.2],
-            'Terremoto': [0.4, 0.3, 0.2, 0.1]
-          };
-          return {
-            text,
-            embedding: mockEmbeddings[text] || [0.1, 0.1, 0.1, 0.1]
-          };
-        }));
+        return Promise.resolve(
+          texts.map((text) => {
+            const mockEmbeddings: Record<string, number[]> = {
+              'AMPARO BASICO': [0.9, 0.8, 0.7, 0.6],
+              'TODO RIESGO': [0.85, 0.75, 0.65, 0.55],
+              'DAÑO MATERIAL': [0.8, 0.7, 0.6, 0.5],
+              Incendio: [0.7, 0.6, 0.5, 0.4],
+              'Edificios y Contenidos': [0.75, 0.65, 0.55, 0.45],
+              'Equipos y Maquinaria': [0.6, 0.5, 0.4, 0.3],
+              'Rotura de Maquinaria': [0.55, 0.45, 0.35, 0.25],
+              'Responsabilidad Civil': [0.5, 0.4, 0.3, 0.2],
+              Terremoto: [0.4, 0.3, 0.2, 0.1],
+            };
+            return {
+              text,
+              embedding: mockEmbeddings[text] || [0.1, 0.1, 0.1, 0.1],
+            };
+          })
+        );
       }),
       cosineSimilarity: vi.fn((a: number[], b: number[]) => {
         // Simple dot product for testing
@@ -121,8 +123,8 @@ vi.mock('../vector/embeddingService', () => {
           normB += b[i] * b[i];
         }
         return dot / (Math.sqrt(normA) * Math.sqrt(normB) + 0.001);
-      })
-    }
+      }),
+    },
   };
 });
 
@@ -131,8 +133,8 @@ describe('coverageOntology', () => {
     it('should return all ontology nodes', () => {
       const nodes = coverageOntology.getNodes();
       expect(nodes.length).toBeGreaterThan(0);
-      expect(nodes.some(n => n.level === 1)).toBe(true);
-      expect(nodes.some(n => n.level === 2)).toBe(true);
+      expect(nodes.some((n) => n.level === 1)).toBe(true);
+      expect(nodes.some((n) => n.level === 2)).toBe(true);
     });
   });
 
@@ -164,7 +166,7 @@ describe('coverageOntology', () => {
   describe('mapCoverage', () => {
     it('should detect composite coverages', async () => {
       const mapping = await coverageOntology.mapCoverage('TODO RIESGO AMPARO BASICO');
-      
+
       expect(mapping.isComposite).toBe(true);
       expect(mapping.components).toBeDefined();
       expect(mapping.components?.length).toBeGreaterThan(0);
@@ -173,14 +175,14 @@ describe('coverageOntology', () => {
 
     it('should map simple coverage names', async () => {
       const mapping = await coverageOntology.mapCoverage('Incendio Edificio');
-      
+
       expect(mapping.groups.length).toBeGreaterThan(0);
       expect(mapping.confidence).toBeGreaterThan(0);
     });
 
     it('should handle unknown coverage names', async () => {
       const mapping = await coverageOntology.mapCoverage('xyz-unknown-coverage');
-      
+
       // Should still return a result, possibly with low confidence
       expect(mapping).toBeDefined();
       expect(mapping.rawName).toBe('xyz-unknown-coverage');
@@ -192,14 +194,14 @@ describe('coverageOntology', () => {
       const coverages = [
         { name: 'AMPARO BASICO', insurerName: 'MAPFRE' },
         { name: 'TODO RIESGO', insurerName: 'CHUBB' },
-        { name: 'Responsabilidad Civil', insurerName: 'BBVA' }
+        { name: 'Responsabilidad Civil', insurerName: 'BBVA' },
       ];
 
       const groups = await coverageOntology.groupCoverages(coverages);
-      
+
       expect(groups.length).toBeGreaterThan(0);
       // At least one group should have multiple coverages (AMPARO BASICO and TODO RIESGO are similar)
-      expect(groups.some(g => g.coverages.length > 1)).toBe(true);
+      expect(groups.some((g) => g.coverages.length > 1)).toBe(true);
     });
 
     it('should handle empty input', async () => {
@@ -266,7 +268,7 @@ describe('coverageOntology', () => {
       );
 
       expect(mapping.groups.length).toBeGreaterThan(0);
-      expect(mapping.groups.map(g => g.groupId)).toContain('incendio');
+      expect(mapping.groups.map((g) => g.groupId)).toContain('incendio');
     });
 
     it('does not apply override for generic insurer', async () => {
@@ -277,7 +279,7 @@ describe('coverageOntology', () => {
       );
 
       expect(mapping.groups.length).toBeGreaterThan(0);
-      expect(mapping.groups.map(g => g.groupId)).toContain('incendio');
+      expect(mapping.groups.map((g) => g.groupId)).toContain('incendio');
     });
   });
 
@@ -288,7 +290,7 @@ describe('coverageOntology', () => {
         insurerName: 'TEST',
         groups: [{ groupId: 'incendio', confidence: 0.9 }],
         isComposite: false,
-        confidence: 0.9
+        confidence: 0.9,
       };
 
       // Should not throw

@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DocumentIndexingService, DocumentMetadata } from '../documentIndexingService';
 
-
-
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
@@ -22,69 +20,69 @@ vi.mock('../../config/database', () => ({
     from: vi.fn(() => ({
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
-          single: vi.fn(() => Promise.resolve({ data: { id: 'insurer-123' }, error: null }))
+          single: vi.fn(() => Promise.resolve({ data: { id: 'insurer-123' }, error: null })),
         })),
-        single: vi.fn(() => Promise.resolve({ data: { id: 'insurer-123' }, error: null }))
+        single: vi.fn(() => Promise.resolve({ data: { id: 'insurer-123' }, error: null })),
       })),
       insert: vi.fn(() => ({
         select: vi.fn(() => ({
-          single: vi.fn(() => Promise.resolve({ data: { id: 'insurer-123' }, error: null }))
-        }))
+          single: vi.fn(() => Promise.resolve({ data: { id: 'insurer-123' }, error: null })),
+        })),
       })),
       delete: vi.fn(() => ({
-        eq: vi.fn(() => Promise.resolve({ error: null }))
+        eq: vi.fn(() => Promise.resolve({ error: null })),
       })),
     })),
     storage: {
       from: vi.fn(() => ({
-        remove: vi.fn(() => Promise.resolve({ error: null }))
-      }))
-    }
+        remove: vi.fn(() => Promise.resolve({ error: null })),
+      })),
+    },
   },
-  handleSupabaseError: (err: unknown) => err
+  handleSupabaseError: (err: unknown) => err,
 }));
 
 vi.mock('../../config/featureFlags', () => ({
   featureFlags: {
-    isEnabled: (key: string) => mockIsEnabled(key)
-  }
+    isEnabled: (key: string) => mockIsEnabled(key),
+  },
 }));
 
 vi.mock('../structuredClauseExtractor', () => ({
   structuredClauseExtractor: {
     extractFromText: (...args: unknown[]) => mockExtractFromText(...args),
-    storeStructuredClause: (...args: unknown[]) => mockStoreStructuredClause(...args)
-  }
+    storeStructuredClause: (...args: unknown[]) => mockStoreStructuredClause(...args),
+  },
 }));
 
 vi.mock('../pdfExtractor', () => ({
   pdfExtractor: {
-    extractTextFromPdf: (path: string) => mockExtractTextFromPdf(path)
-  }
+    extractTextFromPdf: (path: string) => mockExtractTextFromPdf(path),
+  },
 }));
 
 vi.mock('../pdfRenderer', () => ({
   pdfRenderer: {
-    renderDocumentPages: (...args: unknown[]) => mockRenderDocumentPages(...args)
-  }
+    renderDocumentPages: (...args: unknown[]) => mockRenderDocumentPages(...args),
+  },
 }));
 
 vi.mock('../semanticChunker', () => ({
   semanticChunker: {
-    createChunksFromPages: (...args: unknown[]) => mockCreateChunksFromPages(...args)
-  }
+    createChunksFromPages: (...args: unknown[]) => mockCreateChunksFromPages(...args),
+  },
 }));
 
 vi.mock('../vector/embeddingService', () => ({
   embeddingService: {
-    generateEmbedding: (text: string) => mockGenerateEmbedding(text)
-  }
+    generateEmbedding: (text: string) => mockGenerateEmbedding(text),
+  },
 }));
 
 vi.mock('../gemini', () => ({
   geminiService: {
-    performOcrOnImage: vi.fn(() => Promise.resolve('OCR text'))
-  }
+    performOcrOnImage: vi.fn(() => Promise.resolve('OCR text')),
+  },
 }));
 
 // ---------------------------------------------------------------------------
@@ -96,17 +94,22 @@ function makeExtractionResult(overrides: Record<string, unknown> = {}) {
     text: 'Sample clause text for testing',
     isScanned: false,
     warnings: [],
-    pages: [
-      { pageNumber: 1, text: 'Page 1 text', wordCount: 10, hasContent: true }
-    ],
+    pages: [{ pageNumber: 1, text: 'Page 1 text', wordCount: 10, hasContent: true }],
     metadata: { pageCount: 1, title: 'Test', author: '' },
-    ...overrides
+    ...overrides,
   };
 }
 
 function makeRenderedPages() {
   return [
-    { pageNumber: 1, storageUrl: 'url', storagePath: 'path', width: 800, height: 600, buffer: null }
+    {
+      pageNumber: 1,
+      storageUrl: 'url',
+      storagePath: 'path',
+      width: 800,
+      height: 600,
+      buffer: null,
+    },
   ];
 }
 
@@ -117,8 +120,8 @@ function makeChunks() {
       contentNormalized: 'chunk normalized',
       metadata: { pageStart: 1 },
       coverageTags: [],
-      sectionType: 'coverage'
-    }
+      sectionType: 'coverage',
+    },
   ];
 }
 
@@ -127,7 +130,7 @@ function makeMetadata(): DocumentMetadata {
     insurerName: 'SBS',
     documentName: 'Test Clausulado',
     documentType: 'CLAUSULADO_GENERAL',
-    productName: 'PYME BASICA'
+    productName: 'PYME BASICA',
   };
 }
 
@@ -172,7 +175,7 @@ describe('DocumentIndexingService — auto-extraction hook', () => {
         coverages: [],
         generalExclusions: [],
         generalConditions: [],
-        definitions: {}
+        definitions: {},
       });
       mockStoreStructuredClause.mockResolvedValue('clause-id-456');
 
@@ -215,7 +218,7 @@ describe('DocumentIndexingService — auto-extraction hook', () => {
         coverages: [],
         generalExclusions: [],
         generalConditions: [],
-        definitions: {}
+        definitions: {},
       });
       mockStoreStructuredClause.mockRejectedValue(new Error('DB write failed'));
 
@@ -228,8 +231,8 @@ describe('DocumentIndexingService — auto-extraction hook', () => {
 
     it('should enforce 30-second timeout on extraction', async () => {
       mockIsEnabled.mockReturnValue(true);
-      mockExtractFromText.mockImplementation(() =>
-        new Promise(resolve => setTimeout(() => resolve({ coverages: [] }), 60_000))
+      mockExtractFromText.mockImplementation(
+        () => new Promise((resolve) => setTimeout(() => resolve({ coverages: [] }), 60_000))
       );
 
       const result = await service.indexDocument('/fake/path.pdf', makeMetadata());

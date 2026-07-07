@@ -1,7 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import {
-  selectExtractionPrompt,
-} from '../quoteProcessingService';
+import { selectExtractionPrompt } from '../quoteProcessingService';
 import { FormatDetectionResult } from '../formatDetector';
 import { LayoutParserResult } from '../layoutParser';
 import { TemplateRegistryEntry } from '../../schemas/templateRegistrySchema';
@@ -45,7 +43,9 @@ vi.mock('../promptBuilder', () => ({
   buildPromptForFamily: (...args: unknown[]) => mockBuildPromptForFamily(...args),
 }));
 
-function makeDetectionResult(overrides: Partial<FormatDetectionResult> = {}): FormatDetectionResult {
+function makeDetectionResult(
+  overrides: Partial<FormatDetectionResult> = {}
+): FormatDetectionResult {
   return {
     family: 'TABLE-INTEGRATED',
     confidence: 85,

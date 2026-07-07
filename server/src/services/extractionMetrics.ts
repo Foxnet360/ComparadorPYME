@@ -23,7 +23,11 @@ export interface ExtractionMetricsEmitter {
 const defaultLogger: StructuredLogger = createStructuredLogger('extraction.metrics');
 
 function defaultSink(event: ExtractionMetrics): void {
-  defaultLogger.info('extraction.metrics', 'ExtractionMetrics event', event as unknown as Record<string, unknown>);
+  defaultLogger.info(
+    'extraction.metrics',
+    'ExtractionMetrics event',
+    event as unknown as Record<string, unknown>
+  );
 }
 
 function createEmptyLayerHits(): Record<MatchLayer, number> {
@@ -105,7 +109,12 @@ function mergeNormalizationConfidence(
   if (!update) return base;
 
   return {
-    min: update.min !== undefined ? (base.min === 0 ? update.min : Math.min(base.min, update.min)) : base.min,
+    min:
+      update.min !== undefined
+        ? base.min === 0
+          ? update.min
+          : Math.min(base.min, update.min)
+        : base.min,
     max: update.max !== undefined ? Math.max(base.max, update.max) : base.max,
     avg: update.avg !== undefined ? update.avg : base.avg,
     below75: base.below75 + (update.below75 || 0),

@@ -10,7 +10,10 @@
  * - Optionally strips non-alphanumeric characters (keeping spaces)
  * - Trims whitespace
  */
-export function normalizeText(text: string | undefined | null, stripNonAlphanumeric = false): string {
+export function normalizeText(
+  text: string | undefined | null,
+  stripNonAlphanumeric = false
+): string {
   if (!text || typeof text !== 'string') return '';
   let result = text
     .toLowerCase()
@@ -38,6 +41,9 @@ export function normalizeTextNullable(text: string | undefined | null): string |
 /**
  * Check if two texts are similar (case-insensitive, accent-insensitive)
  */
-export function areTextsSimilar(text1: string | undefined | null, text2: string | undefined | null): boolean {
+export function areTextsSimilar(
+  text1: string | undefined | null,
+  text2: string | undefined | null
+): boolean {
   return normalizeText(text1) === normalizeText(text2);
 }

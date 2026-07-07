@@ -7,10 +7,10 @@ interface CollapsibleTextProps {
   defaultExpanded?: boolean;
 }
 
-export const CollapsibleText: React.FC<CollapsibleTextProps> = ({ 
-  title, 
-  children, 
-  defaultExpanded = false 
+export const CollapsibleText: React.FC<CollapsibleTextProps> = ({
+  title,
+  children,
+  defaultExpanded = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
@@ -30,9 +30,7 @@ export const CollapsibleText: React.FC<CollapsibleTextProps> = ({
           isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
-        <div className="p-4">
-          {children}
-        </div>
+        <div className="p-4">{children}</div>
       </div>
     </div>
   );

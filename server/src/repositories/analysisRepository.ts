@@ -3,7 +3,7 @@
  * Database operations for analysis_history table
  */
 
-import { supabase, handleDbError} from './baseRepository';
+import { supabase, handleDbError } from './baseRepository';
 import { QuoteAnalysis } from '../types';
 
 export interface AnalysisHistoryRecord {
@@ -34,9 +34,7 @@ export interface AnalysisHistoryRecord {
   fallback_reason?: string;
 }
 
-export async function saveAnalysisHistory(
-  data: Record<string, unknown>
-): Promise<string | null> {
+export async function saveAnalysisHistory(data: Record<string, unknown>): Promise<string | null> {
   const { data: result, error } = await supabase
     .from('analysis_history')
     .insert(data as never)
@@ -51,9 +49,7 @@ export async function saveAnalysisHistory(
   return (result as { id?: string })?.id || null;
 }
 
-export async function getAnalysisHistoryByUser(
-  userId: string
-): Promise<AnalysisHistoryRecord[]> {
+export async function getAnalysisHistoryByUser(userId: string): Promise<AnalysisHistoryRecord[]> {
   const { data, error } = await supabase
     .from('analysis_history')
     .select('*')
@@ -67,14 +63,8 @@ export async function getAnalysisHistoryByUser(
   return data || [];
 }
 
-export async function getAnalysisById(
-  id: string
-): Promise<AnalysisHistoryRecord | null> {
-  const { data, error } = await supabase
-    .from('analysis_history')
-    .select('*')
-    .eq('id', id)
-    .single();
+export async function getAnalysisById(id: string): Promise<AnalysisHistoryRecord | null> {
+  const { data, error } = await supabase.from('analysis_history').select('*').eq('id', id).single();
 
   if (error) {
     handleDbError(error, 'Failed to fetch analysis by id');
@@ -119,7 +109,7 @@ export async function getUnifiedEngineMetrics(
       successRate: 0,
       fallbackRate: 0,
       avgProcessingTimeMs: 0,
-      avgConfidenceScore: 0
+      avgConfidenceScore: 0,
     };
   }
 
@@ -130,11 +120,16 @@ export async function getUnifiedEngineMetrics(
   const fallback = records.filter((r: EngineMetricsRecord) => r.engine_type === 'fallback').length;
 
   const processingTimes = records
-    .filter((r: EngineMetricsRecord) => typeof r.processing_time_ms === 'number' && r.processing_time_ms > 0)
+    .filter(
+      (r: EngineMetricsRecord) =>
+        typeof r.processing_time_ms === 'number' && r.processing_time_ms > 0
+    )
     .map((r: EngineMetricsRecord) => r.processing_time_ms as number);
-  
+
   const confidenceScores = records
-    .filter((r: EngineMetricsRecord) => typeof r.confidence_score === 'number' && r.confidence_score > 0)
+    .filter(
+      (r: EngineMetricsRecord) => typeof r.confidence_score === 'number' && r.confidence_score > 0
+    )
     .map((r: EngineMetricsRecord) => r.confidence_score as number);
 
   return {
@@ -144,11 +139,17 @@ export async function getUnifiedEngineMetrics(
     fallback,
     successRate: total > 0 ? Math.round(((unified + legacy) / total) * 100) : 0,
     fallbackRate: total > 0 ? Math.round((fallback / total) * 100) : 0,
-    avgProcessingTimeMs: processingTimes.length > 0 
-      ? Math.round(processingTimes.reduce((a: number, b: number) => a + b, 0) / processingTimes.length)
-      : 0,
-    avgConfidenceScore: confidenceScores.length > 0
-      ? Math.round(confidenceScores.reduce((a: number, b: number) => a + b, 0) / confidenceScores.length)
-      : 0
+    avgProcessingTimeMs:
+      processingTimes.length > 0
+        ? Math.round(
+            processingTimes.reduce((a: number, b: number) => a + b, 0) / processingTimes.length
+          )
+        : 0,
+    avgConfidenceScore:
+      confidenceScores.length > 0
+        ? Math.round(
+            confidenceScores.reduce((a: number, b: number) => a + b, 0) / confidenceScores.length
+          )
+        : 0,
   };
 }

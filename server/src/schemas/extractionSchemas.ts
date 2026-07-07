@@ -105,16 +105,7 @@ export const QuoteExtractionSchema = passthrough({
 // -----------------------------------------------------------------------------
 
 export const DeductibleComponentSchema = passthrough({
-  type: z.enum([
-    'percentage',
-    'fixed',
-    'smmlv',
-    'uvt',
-    'minimum',
-    'maximum',
-    'na',
-    'unknown',
-  ]),
+  type: z.enum(['percentage', 'fixed', 'smmlv', 'uvt', 'minimum', 'maximum', 'na', 'unknown']),
   value: z.number(),
   currency: z.string().nullish(),
 });

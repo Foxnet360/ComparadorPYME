@@ -1,12 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import {
-  mapCoverageName,
-  normalizeCoverages,
-  loadThesaurus,
-} from '../thesaurusMapper';
+import { mapCoverageName, normalizeCoverages, loadThesaurus } from '../thesaurusMapper';
 
 describe('extended thesaurus', () => {
-
   describe('sub-limit mapping', () => {
     it('should map Remoción de Escombros to Incendio parent with sub-limit type', () => {
       const result = mapCoverageName('Remoción de Escombros');
@@ -55,9 +50,7 @@ describe('extended thesaurus', () => {
 
   describe('type-specific thresholds in normalizeCoverages', () => {
     it('should accept sub-limits at 0.65 confidence', () => {
-      const coverages = [
-        { name: 'Remoción de Escombros', value: '1000000', deductible: '10%' },
-      ];
+      const coverages = [{ name: 'Remoción de Escombros', value: '1000000', deductible: '10%' }];
 
       const result = normalizeCoverages(coverages);
       expect(result.normalized[0].type).toBe('sub-limit');
@@ -68,9 +61,7 @@ describe('extended thesaurus', () => {
     });
 
     it('should include parentCoverage for sub-limits', () => {
-      const coverages = [
-        { name: 'Remoción de Escombros', value: '1000000', deductible: '10%' },
-      ];
+      const coverages = [{ name: 'Remoción de Escombros', value: '1000000', deductible: '10%' }];
 
       const result = normalizeCoverages(coverages);
       expect(result.normalized[0].parentCoverage).toBeDefined();
@@ -93,16 +84,16 @@ describe('extended thesaurus', () => {
     it('should load main thesaurus', () => {
       const thesaurus = loadThesaurus();
       expect(thesaurus.length).toBeGreaterThan(0);
-      
-      const mainEntries = thesaurus.filter(t => !t.type || t.type === 'main');
+
+      const mainEntries = thesaurus.filter((t) => !t.type || t.type === 'main');
       expect(mainEntries.length).toBeGreaterThan(0);
     });
 
     it('should have main coverages from base thesaurus', () => {
       const thesaurus = loadThesaurus();
-      const mainEntries = thesaurus.filter(t => !t.type || t.type === 'main');
-      const coverageNames = mainEntries.map(t => t.canonicalName);
-      
+      const mainEntries = thesaurus.filter((t) => !t.type || t.type === 'main');
+      const coverageNames = mainEntries.map((t) => t.canonicalName);
+
       expect(coverageNames).toContain('Incendio (Edificio y Contenidos)');
       expect(coverageNames).toContain('Responsabilidad Civil (RCE)');
     });

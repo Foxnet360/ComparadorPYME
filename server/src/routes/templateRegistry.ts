@@ -35,9 +35,7 @@ function getDomain(req: Request): string {
   return typeof value === 'string' ? value : 'pyme';
 }
 
-export function createTemplateRegistryRoutes(
-  service: TemplateRegistryService
-): Router {
+export function createTemplateRegistryRoutes(service: TemplateRegistryService): Router {
   const router = Router();
 
   router.use(authMiddleware);

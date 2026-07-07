@@ -1,5 +1,5 @@
 import * as ExcelJS from 'exceljs';
-import { QuoteAnalysis, } from '../types';
+import { QuoteAnalysis } from '../types';
 import { transformQuotesToMatrix, parseNumericValue, formatMatrixValue } from './matrixTransformer';
 
 interface ClientInfo {
@@ -21,7 +21,11 @@ export function formatRatioCell(val: string | number): { value: string | number;
   }
 }
 
-export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: ClientInfo, cellNotes?: Record<string, string>): Promise<Buffer> {
+export async function generateExcelBuffer(
+  quotes: QuoteAnalysis[],
+  clientInfo?: ClientInfo,
+  cellNotes?: Record<string, string>
+): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Agente Comparador CSA';
   workbook.lastModifiedBy = 'Agente Comparador CSA';
@@ -38,14 +42,20 @@ export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: 
   const clientLocation = clientInfo?.location || 'Diagonal 76A Bis 55A-19, Bogota D.C.';
 
   // Find max asset value from Incendio coverages
-  const assetValues = quotes.map(q => {
-    const incendio = q.coverages.find(c => c.name.toLowerCase().includes('incendio') || c.canonicalName?.toLowerCase().includes('incendio'));
+  const assetValues = quotes.map((q) => {
+    const incendio = q.coverages.find(
+      (c) =>
+        c.name.toLowerCase().includes('incendio') ||
+        c.canonicalName?.toLowerCase().includes('incendio')
+    );
     return parseNumericValue(incendio?.value);
   });
   const maxAsset = Math.max(...assetValues);
-  const totalAssetValueStr = maxAsset > 0 
-    ? '$' + maxAsset.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
-    : '$119.600.000';
+  const totalAssetValueStr =
+    maxAsset > 0
+      ? '$' +
+        maxAsset.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+      : '$119.600.000';
 
   // -------------------------------------------------------------
   // Sheet 1: Portada
@@ -74,8 +84,13 @@ export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: 
 
   // Resumen Ejecutivo Section
   portada.getCell('B6').value = 'RESUMEN EJECUTIVO';
-  portada.getCell('B6').font = { name: 'Calibri', size: 12, bold: true, color: { argb: 'FF333333' } };
-  
+  portada.getCell('B6').font = {
+    name: 'Calibri',
+    size: 12,
+    bold: true,
+    color: { argb: 'FF333333' },
+  };
+
   const addInfoRow = (label: string, value: string, rowIdx: number) => {
     const cellA = portada.getCell(`B${rowIdx}`);
     cellA.value = label;
@@ -91,20 +106,47 @@ export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: 
   addInfoRow('Actividad:', clientActivity, 9);
   addInfoRow('Ubicación:', clientLocation, 10);
   addInfoRow('Valor Total Bienes:', totalAssetValueStr, 11);
-  addInfoRow('Total Aseguradoras:', `${quotes.length} (${quotes.map(q => q.insurerName).join(', ')})`, 12);
+  addInfoRow(
+    'Total Aseguradoras:',
+    `${quotes.length} (${quotes.map((q) => q.insurerName).join(', ')})`,
+    12
+  );
 
   // File Content / Navigability Guide Section
   portada.getCell('B15').value = 'CONTENIDO DEL ARCHIVO';
-  portada.getCell('B15').font = { name: 'Calibri', size: 12, bold: true, color: { argb: 'FF333333' } };
+  portada.getCell('B15').font = {
+    name: 'Calibri',
+    size: 12,
+    bold: true,
+    color: { argb: 'FF333333' },
+  };
 
   portada.getCell('B17').value = 'Hoja';
-  portada.getCell('B17').font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
-  portada.getCell('B17').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF333333' } };
+  portada.getCell('B17').font = {
+    name: 'Calibri',
+    size: 11,
+    bold: true,
+    color: { argb: 'FFFFFFFF' },
+  };
+  portada.getCell('B17').fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF333333' },
+  };
   portada.getCell('B17').alignment = { horizontal: 'center' };
 
   portada.getCell('D17').value = 'Descripción';
-  portada.getCell('D17').font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
-  portada.getCell('D17').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF333333' } };
+  portada.getCell('D17').font = {
+    name: 'Calibri',
+    size: 11,
+    bold: true,
+    color: { argb: 'FFFFFFFF' },
+  };
+  portada.getCell('D17').fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF333333' },
+  };
 
   const addNavRow = (sheetName: string, desc: string, rowIdx: number) => {
     const cellA = portada.getCell(`B${rowIdx}`);
@@ -114,7 +156,7 @@ export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: 
     cellA.border = {
       bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
       left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-      right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+      right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
     };
 
     const cellB = portada.getCell(`D${rowIdx}`);
@@ -123,14 +165,21 @@ export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: 
     cellB.border = {
       bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
       left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-      right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+      right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
     };
   };
 
   addNavRow('Portada', 'Resumen ejecutivo y guía de navegación rápida', 18);
-  addNavRow('Coberturas y Deducibles', 'Tabla comparativa principal de amparos canónicos y amparos exclusivos', 19);
-  addNavRow('Primas y Costos', 'Resumen matemático de primas netas, gastos, IVA y totales a pagar', 20);
-
+  addNavRow(
+    'Coberturas y Deducibles',
+    'Tabla comparativa principal de amparos canónicos y amparos exclusivos',
+    19
+  );
+  addNavRow(
+    'Primas y Costos',
+    'Resumen matemático de primas netas, gastos, IVA y totales a pagar',
+    20
+  );
 
   // -------------------------------------------------------------
   // Sheet 2: Coberturas y Deducibles
@@ -180,11 +229,16 @@ export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: 
 
   // Populate Matrix Rows (sectionId < 100)
   let currentExcelRow = 5;
-  const coverageRows = matrix.filter(row => row.sectionId < 100);
+  const coverageRows = matrix.filter((row) => row.sectionId < 100);
 
   for (const row of coverageRows) {
     if (row.type === 'header') {
-      coveragesSheet.mergeCells(currentExcelRow, 1, currentExcelRow, quotes.length + 1 + notesColumnOffset);
+      coveragesSheet.mergeCells(
+        currentExcelRow,
+        1,
+        currentExcelRow,
+        quotes.length + 1 + notesColumnOffset
+      );
       const cell = coveragesSheet.getCell(currentExcelRow, 1);
       cell.value = row.label;
       cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF0066CC' } };
@@ -207,7 +261,7 @@ export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: 
       labelCell.alignment = { vertical: 'middle', horizontal: 'left' };
       labelCell.border = {
         bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-        right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+        right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
       };
 
       // Insurers Value Cells
@@ -218,7 +272,9 @@ export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: 
         const excluded = cell.isExcluded;
 
         // Check if value is a numeric amount (e.g. for "Valor Asegurado" row)
-        const isNumericRow = row.label.toLowerCase().includes('valor') || row.label.toLowerCase().includes('sublímite');
+        const isNumericRow =
+          row.label.toLowerCase().includes('valor') ||
+          row.label.toLowerCase().includes('sublímite');
         const numericVal = isNumericRow ? parseNumericValue(val) : 0;
 
         if (excluded) {
@@ -243,7 +299,7 @@ export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: 
         xlCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
         xlCell.border = {
           bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-          right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+          right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
         };
 
         // Inject page tracking as Cell comments
@@ -262,7 +318,7 @@ export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: 
         notesCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
         notesCell.border = {
           bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-          right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+          right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
         };
         if (note) {
           notesCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3E8FF' } }; // Light purple background
@@ -272,7 +328,6 @@ export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: 
       currentExcelRow++;
     }
   }
-
 
   // -------------------------------------------------------------
   // Sheet 3: Primas y Costos
@@ -311,7 +366,7 @@ export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: 
 
   // Populate Matrix Rows (sectionId >= 100)
   let currentFinExcelRow = 5;
-  const financialRows = matrix.filter(row => row.sectionId >= 100);
+  const financialRows = matrix.filter((row) => row.sectionId >= 100);
 
   for (const row of financialRows) {
     if (row.type === 'header') {
@@ -337,7 +392,7 @@ export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: 
       labelCell.alignment = { vertical: 'middle', horizontal: 'left' };
       labelCell.border = {
         bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-        right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+        right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
       };
 
       // Insurer Value Cells
@@ -378,7 +433,7 @@ export async function generateExcelBuffer(quotes: QuoteAnalysis[], clientInfo?: 
         xlCell.alignment = { vertical: 'middle', horizontal: 'center' };
         xlCell.border = {
           bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-          right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+          right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
         };
       });
 

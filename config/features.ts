@@ -1,6 +1,6 @@
 /**
  * Feature Flags Configuration
- * 
+ *
  * Controls which advanced analysis features are enabled.
  * Set via environment variables at build time.
  */
@@ -8,42 +8,42 @@
 export const FEATURES = {
   /**
    * Enable advanced analysis tab and features
-   * When true: shows "Análisis Avanzado" tab with clause validation, 
+   * When true: shows "Análisis Avanzado" tab with clause validation,
    * deductible risk, contextual analysis, and legal opinions
    * When false: only basic analysis is shown (backward compatible)
    */
   ADVANCED_ANALYSIS: import.meta.env.VITE_ENABLE_ADVANCED_ANALYSIS === 'true',
-  
+
   /**
    * Enable clause coverage validation metrics in dashboard
    * Shows verified/phantom/missing coverage counts
    */
   CLAUSE_VALIDATION: import.meta.env.VITE_ENABLE_ADVANCED_ANALYSIS === 'true',
-  
+
   /**
    * Enable deductible risk analysis visualization
    * Shows risk gauges for each deductible
    */
   DEDUCTIBLE_RISK: import.meta.env.VITE_ENABLE_ADVANCED_ANALYSIS === 'true',
-  
+
   /**
    * Enable contextual risk analysis
    * Shows risk cards based on client profile and exclusions
    */
   CONTEXTUAL_RISK: import.meta.env.VITE_ENABLE_ADVANCED_ANALYSIS === 'true',
-  
+
   /**
    * Enable warranty compliance dashboard
    * Shows compliance analysis for special conditions
    */
   WARRANTY_COMPLIANCE: import.meta.env.VITE_ENABLE_ADVANCED_ANALYSIS === 'true',
-  
+
   /**
    * Enable legal opinions and negotiation points
    * Shows AI-generated legal analysis and negotiation suggestions
    */
   LEGAL_OPINION: import.meta.env.VITE_ENABLE_ADVANCED_ANALYSIS === 'true',
-  
+
   /**
    * Enable multimodal PDF extraction using Gemini 2.5 Pro vision
    * When true: uses File API + vision for better table extraction
@@ -51,7 +51,7 @@ export const FEATURES = {
    * Default: true (V2 deployed at 100%)
    */
   MULTIMODAL_EXTRACTION: import.meta.env.VITE_ENABLE_MULTIMODAL_EXTRACTION !== 'false',
-  
+
   /**
    * Enable V2.1 fixes: deductible extraction, uncategorized coverages,
    * RAG optimization, auto-enrichment, risk visualizations
@@ -60,7 +60,7 @@ export const FEATURES = {
    * Default: false (requires explicit enable)
    */
   V2_1_FIXES: import.meta.env.VITE_ENABLE_V2_1_FIXES === 'true',
-  
+
   /**
    * Enable V2.2 fixes: RAG precision, anti-hallucination, scoring defaults,
    * deductible matrix, audit business context, premium IVA toggle

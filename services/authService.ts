@@ -2,37 +2,42 @@ import { createClient, User } from '@supabase/supabase-js';
 import { UserProfile } from '../types';
 
 const supabaseUrl = 'https://nubiecwypgfekhvaffxm.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51YmllY3d5cGdmZWtodmFmZnhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0MDgxMjQsImV4cCI6MjA4OTk4NDEyNH0.Yxh0tCPZm9pyysQxsdDaWRJbf54FnNKhrqQo9ZsI4yw';
+const supabaseAnonKey =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51YmllY3d5cGdmZWtodmFmZnhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0MDgxMjQsImV4cCI6MjA4OTk4NDEyNH0.Yxh0tCPZm9pyysQxsdDaWRJbf54FnNKhrqQo9ZsI4yw';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true
-  }
+    detectSessionInUrl: true,
+  },
 });
 
 export const authService = {
   // Registro de usuario
-  signUp: async (email: string, password: string, name: string): Promise<{ user: User | null; message: string }> => {
+  signUp: async (
+    email: string,
+    password: string,
+    name: string
+  ): Promise<{ user: User | null; message: string }> => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           name: name,
-          role: 'USER'
-        }
-      }
+          role: 'USER',
+        },
+      },
     });
 
     if (error) {
       throw new Error(error.message);
     }
 
-    return { 
-      user: data.user, 
-      message: '¡Registro exitoso! Ya puedes iniciar sesión con tu cuenta.'
+    return {
+      user: data.user,
+      message: '¡Registro exitoso! Ya puedes iniciar sesión con tu cuenta.',
     };
   },
 
@@ -40,7 +45,7 @@ export const authService = {
   signIn: async (email: string, password: string): Promise<UserProfile> => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
-      password
+      password,
     });
 
     if (error) {
@@ -56,8 +61,10 @@ export const authService = {
       email: data.user.email || '',
       name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Usuario',
       role: data.user.user_metadata?.role || 'USER',
-      avatarUrl: data.user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.user.user_metadata?.name || 'Usuario')}&background=4f46e5&color=fff`,
-      intermediaryName: data.user.user_metadata?.intermediary_name || ''
+      avatarUrl:
+        data.user.user_metadata?.avatar_url ||
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(data.user.user_metadata?.name || 'Usuario')}&background=4f46e5&color=fff`,
+      intermediaryName: data.user.user_metadata?.intermediary_name || '',
     };
 
     // Guardar en localStorage para compatibilidad
@@ -74,8 +81,10 @@ export const authService = {
 
   // Obtener usuario actual
   getCurrentUser: async (): Promise<UserProfile | null> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     if (!user) {
       // Intentar recuperar de localStorage
       const stored = localStorage.getItem('seguro_app_user');
@@ -90,8 +99,10 @@ export const authService = {
       email: user.email || '',
       name: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuario',
       role: user.user_metadata?.role || 'USER',
-      avatarUrl: user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_metadata?.name || 'Usuario')}&background=4f46e5&color=fff`,
-      intermediaryName: user.user_metadata?.intermediary_name || ''
+      avatarUrl:
+        user.user_metadata?.avatar_url ||
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_metadata?.name || 'Usuario')}&background=4f46e5&color=fff`,
+      intermediaryName: user.user_metadata?.intermediary_name || '',
     };
 
     return profile;
@@ -100,7 +111,7 @@ export const authService = {
   // Enviar email de recuperación de contraseña
   resetPassword: async (email: string): Promise<void> => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://compapyme.baconhacks.com/reset-password'
+      redirectTo: 'https://compapyme.baconhacks.com/reset-password',
     });
 
     if (error) {
@@ -117,8 +128,10 @@ export const authService = {
           email: session.user.email || '',
           name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Usuario',
           role: session.user.user_metadata?.role || 'USER',
-          avatarUrl: session.user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user.user_metadata?.name || 'Usuario')}&background=4f46e5&color=fff`,
-          intermediaryName: session.user.user_metadata?.intermediary_name || ''
+          avatarUrl:
+            session.user.user_metadata?.avatar_url ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user.user_metadata?.name || 'Usuario')}&background=4f46e5&color=fff`,
+          intermediaryName: session.user.user_metadata?.intermediary_name || '',
         };
         localStorage.setItem('seguro_app_user', JSON.stringify(profile));
         callback(profile);
@@ -127,5 +140,5 @@ export const authService = {
         callback(null);
       }
     });
-  }
+  },
 };

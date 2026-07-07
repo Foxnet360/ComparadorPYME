@@ -66,9 +66,7 @@ describe('domainBundleSchema', () => {
       const minimal = {
         version: '1.0.0',
         domain: 'pyme',
-        categories: [
-          { id: 1, name: 'Incendio', aliases: ['Fuego'] },
-        ],
+        categories: [{ id: 1, name: 'Incendio', aliases: ['Fuego'] }],
       };
       const result = validateTaxonomyBundle(minimal);
       expect(result.success).toBe(true);
@@ -147,9 +145,7 @@ describe('domainBundleSchema', () => {
     it('rejects confidence outside 0-1 range', () => {
       const invalid = {
         ...validOntology,
-        compositePatterns: [
-          { pattern: 'test', components: ['a'], confidence: 1.5 },
-        ],
+        compositePatterns: [{ pattern: 'test', components: ['a'], confidence: 1.5 }],
       };
       const result = validateOntologyBundle(invalid);
       expect(result.success).toBe(false);
@@ -248,9 +244,7 @@ describe('domainBundleSchema', () => {
     it('assertThesaurusBundle returns parsed data', () => {
       const data = assertThesaurusBundle(validThesaurus);
       expect(data.entries[1].type).toBe('main');
-      expect(data.extensions![0].parentCoverage).toBe(
-        'Incendio y Líneas Aliadas (ILA)'
-      );
+      expect(data.extensions![0].parentCoverage).toBe('Incendio y Líneas Aliadas (ILA)');
     });
   });
 

@@ -21,11 +21,7 @@ export type MatchLayer =
   | 'ontology'
   | 'none';
 
-export type InsurerDetectionSource =
-  | 'content'
-  | 'alias'
-  | 'filename'
-  | 'unknown';
+export type InsurerDetectionSource = 'content' | 'alias' | 'filename' | 'unknown';
 
 export type GroundingStatus =
   | 'verified'

@@ -15,8 +15,8 @@ const hasSupabase = !!process.env.SUPABASE_URL && !!process.env.SUPABASE_SERVICE
 vi.mock('../vector/embeddingService', () => ({
   embeddingService: {
     generateEmbedding: vi.fn(() => Promise.resolve([0.1, 0.2, 0.3])),
-    cosineSimilarity: vi.fn(() => 0.85)
-  }
+    cosineSimilarity: vi.fn(() => 0.85),
+  },
 }));
 
 vi.mock('../config/database', () => ({
@@ -24,9 +24,9 @@ vi.mock('../config/database', () => ({
     from: vi.fn(() => ({
       insert: vi.fn(() => Promise.resolve({ data: { id: 'test-id' }, error: null })),
       select: vi.fn(() => Promise.resolve({ data: [], error: null })),
-      rpc: vi.fn(() => Promise.resolve({ data: [], error: null }))
-    }))
-  }
+      rpc: vi.fn(() => Promise.resolve({ data: [], error: null })),
+    })),
+  },
 }));
 
 vi.mock('@google/genai', () => ({
@@ -40,33 +40,35 @@ vi.mock('@google/genai', () => ({
   GoogleGenAI: vi.fn(function () {
     return {
       models: {
-        generateContent: vi.fn(() => Promise.resolve({
-          text: JSON.stringify({
-            coverages: [
-              {
-                name: 'AMPARO BASICO',
-                description: 'Cobertura todo riesgo de daño material',
-                insuredAmount: '$500,000,000',
-                deductible: {
-                  components: [
-                    { type: 'percentage', value: 10 },
-                    { type: 'minimum', value: 5, currency: 'SMMLV' }
-                  ],
-                  rawText: '10% con mínimo de 5 SMMLV'
+        generateContent: vi.fn(() =>
+          Promise.resolve({
+            text: JSON.stringify({
+              coverages: [
+                {
+                  name: 'AMPARO BASICO',
+                  description: 'Cobertura todo riesgo de daño material',
+                  insuredAmount: '$500,000,000',
+                  deductible: {
+                    components: [
+                      { type: 'percentage', value: 10 },
+                      { type: 'minimum', value: 5, currency: 'SMMLV' },
+                    ],
+                    rawText: '10% con mínimo de 5 SMMLV',
+                  },
+                  exclusions: ['Guerra', 'Terrorismo'],
+                  conditions: ['Mantenimiento preventivo'],
+                  sourcePage: 1,
                 },
-                exclusions: ['Guerra', 'Terrorismo'],
-                conditions: ['Mantenimiento preventivo'],
-                sourcePage: 1
-              }
-            ],
-            generalExclusions: ['Actos dolosos'],
-            generalConditions: ['Pago de prima'],
-            definitions: { SMMLV: 'Salario Mínimo Mensual Legal Vigente' }
+              ],
+              generalExclusions: ['Actos dolosos'],
+              generalConditions: ['Pago de prima'],
+              definitions: { SMMLV: 'Salario Mínimo Mensual Legal Vigente' },
+            }),
           })
-        }))
-      }
+        ),
+      },
     };
-  })
+  }),
 }));
 
 describe('End-to-End Analysis Flow', () => {
@@ -88,8 +90,8 @@ CONDICIONES ESPECIALES:
 === FIN`,
       coverages: [
         { name: 'Incendio', value: '$500M', deductible: '10%', premium: 2500000 },
-        { name: 'Responsabilidad Civil', value: '$1M', deductible: 'No aplica', premium: 800000 }
-      ]
+        { name: 'Responsabilidad Civil', value: '$1M', deductible: 'No aplica', premium: 800000 },
+      ],
     },
     {
       insurerName: 'CHUBB',
@@ -108,9 +110,9 @@ CONDICIONES ESPECIALES:
 === FIN`,
       coverages: [
         { name: 'Todo Riesgo', value: '$450M', deductible: '10% min 5 SMMLV', premium: 2800000 },
-        { name: 'Responsabilidad Civil', value: '$1M', deductible: 'No aplica', premium: 750000 }
-      ]
-    }
+        { name: 'Responsabilidad Civil', value: '$1M', deductible: 'No aplica', premium: 750000 },
+      ],
+    },
   ];
 
   describe('Complete analysis pipeline', () => {
@@ -124,73 +126,83 @@ CONDICIONES ESPECIALES:
     });
 
     it('should normalize coverages using ontology', async () => {
-      const rawCoverages = mockQuotes[0].coverages.map(c => ({
+      const rawCoverages = mockQuotes[0].coverages.map((c) => ({
         rawName: c.name,
         insuredAmount: parseInt(c.value.replace(/[^0-9]/g, '')),
         deductible: c.deductible,
-        premium: c.premium
+        premium: c.premium,
       }));
 
       const normalized = await buildCanonicalCoverages(rawCoverages);
-      
+
       expect(normalized.canonicalCoverages.length).toBeGreaterThan(0);
       expect(normalized.totalConfidence).toBeGreaterThan(0);
     });
 
     it('should compare variables across quotes', async () => {
-      const quotesForComparison = mockQuotes.map(q => ({
+      const quotesForComparison = mockQuotes.map((q) => ({
         insurerName: q.insurerName,
-        coverages: q.coverages.map(c => ({
+        coverages: q.coverages.map((c) => ({
           rawName: c.name,
           displayName: c.name,
-          insuredAmount: { value: parseInt(c.value.replace(/[^0-9]/g, '')), currency: 'COP', rawText: c.value },
+          insuredAmount: {
+            value: parseInt(c.value.replace(/[^0-9]/g, '')),
+            currency: 'COP',
+            rawText: c.value,
+          },
           deductible: {
             components: [{ type: 'percentage', value: 10 }],
-            normalized: { minAmount: 0, maxAmount: Infinity, percentage: 10, isPercentageBased: true },
-            rawText: c.deductible
+            normalized: {
+              minAmount: 0,
+              maxAmount: Infinity,
+              percentage: 10,
+              isPercentageBased: true,
+            },
+            rawText: c.deductible,
           },
           exclusions: [],
-          conditions: []
-        }))
+          conditions: [],
+        })),
       }));
 
       const comparisons = await variableComparator.compareQuotes(quotesForComparison);
-      
+
       expect(comparisons.length).toBeGreaterThan(0);
-      
+
       // Should identify differences in insured amounts
-      const amparoComparison = comparisons.find(c => 
-        c.groupName.toLowerCase().includes('edificio') ||
-        c.groupName.toLowerCase().includes('riesgo')
+      const amparoComparison = comparisons.find(
+        (c) =>
+          c.groupName.toLowerCase().includes('edificio') ||
+          c.groupName.toLowerCase().includes('riesgo')
       );
-      
+
       if (amparoComparison) {
         expect(amparoComparison.variables.length).toBe(2); // Both quotes have it
       }
     });
 
     it('should score quotes comprehensively', async () => {
-      const parsedQuotes = mockQuotes.map(q => ({
+      const parsedQuotes = mockQuotes.map((q) => ({
         insurerName: q.insurerName,
-        coverages: q.coverages.map(c => ({
+        coverages: q.coverages.map((c) => ({
           name: c.name,
           canonicalName: c.name,
           value: c.value,
           deductible: c.deductible,
-          premium: c.premium
+          premium: c.premium,
         })),
-        priceAnnual: q.coverages.reduce((sum, c) => sum + c.premium, 0)
+        priceAnnual: q.coverages.reduce((sum, c) => sum + c.premium, 0),
       }));
 
       const crossRefs: CrossReferenceResult[] = []; // Empty for basic scoring
-      
+
       for (const quote of parsedQuotes) {
         const score = await quoteScorer.calculateScore(
           quote as unknown as ParsedQuote,
           crossRefs,
           parsedQuotes as unknown as ParsedQuote[]
         );
-        
+
         expect(score.totalScore).toBeGreaterThanOrEqual(0);
         expect(score.totalScore).toBeLessThanOrEqual(100);
         expect(score.breakdown).toBeDefined();
@@ -220,12 +232,12 @@ CONDICIONES ESPECIALES:
       const testCases = [
         { text: '10%', expectedPercentage: 10 },
         { text: '5 SMMLV', expectedMin: 5 * getDomainConstants().smmlv },
-        { text: 'sin deducible', expectedZero: true }
+        { text: 'sin deducible', expectedZero: true },
       ];
 
       for (const testCase of testCases) {
         const result = await deductibleParser.parse(testCase.text);
-        
+
         if (testCase.expectedPercentage) {
           expect(result.normalized.percentage).toBe(testCase.expectedPercentage);
         }
@@ -246,11 +258,9 @@ CONDICIONES ESPECIALES:
         quotes: [
           {
             insurerName: 'MAPFRE',
-            coverages: [
-              { name: 'Incendio', value: '$500M', deductible: '10%' }
-            ]
-          }
-        ]
+            coverages: [{ name: 'Incendio', value: '$500M', deductible: '10%' }],
+          },
+        ],
       };
 
       const response = await processChatMessage(
@@ -269,7 +279,7 @@ CONDICIONES ESPECIALES:
       const emptyQuote = {
         insurerName: 'TEST',
         coverages: [],
-        priceAnnual: 0
+        priceAnnual: 0,
       };
 
       const score = await quoteScorer.calculateScore(
@@ -285,10 +295,8 @@ CONDICIONES ESPECIALES:
     it('should handle missing coverage data', async () => {
       const incompleteQuote = {
         insurerName: 'TEST',
-        coverages: [
-          { name: 'Unknown Coverage', value: '', deductible: '', premium: 0 }
-        ],
-        priceAnnual: 0
+        coverages: [{ name: 'Unknown Coverage', value: '', deductible: '', premium: 0 }],
+        priceAnnual: 0,
       };
 
       const score = await quoteScorer.calculateScore(

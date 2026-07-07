@@ -27,7 +27,7 @@ vi.mock('../../repositories/chatRepository', () => ({
         thread_id: threadId,
         role: 'user',
         content: '¿Qué coberturas tiene AXA?',
-        created_at: '2024-01-01T00:00:00Z'
+        created_at: '2024-01-01T00:00:00Z',
       },
       {
         id: 'msg-2',
@@ -40,8 +40,8 @@ vi.mock('../../repositories/chatRepository', () => ({
         tokens_input: 500,
         tokens_output: 100,
         latency_ms: 1200,
-        created_at: '2024-01-01T00:00:01Z'
-      }
+        created_at: '2024-01-01T00:00:01Z',
+      },
     ]),
     archiveThread: vi.fn(async () => {}),
     listUserThreads: vi.fn(async (userId) => [
@@ -54,10 +54,10 @@ vi.mock('../../repositories/chatRepository', () => ({
         title: 'Análisis: Test Client',
         status: 'active',
         created_at: '2024-01-01T00:00:00Z',
-        updated_at: '2024-01-01T00:00:00Z'
-      }
-    ])
-  }
+        updated_at: '2024-01-01T00:00:00Z',
+      },
+    ]),
+  },
 }));
 
 // Mock chat service
@@ -67,18 +67,18 @@ vi.mock('../../services/chatService', () => ({
     citations: [],
     tokensUsed: 600,
     modelUsed: 'gemini-2.5-flash-lite',
-    source: 'direct'
+    source: 'direct',
   })),
   generateSuggestedQuestions: vi.fn(() => [
     '¿Qué coberturas incluye esta póliza?',
     '¿Cuál es el deducible promedio?',
-    '¿Qué riesgos debo considerar?'
+    '¿Qué riesgos debo considerar?',
   ]),
   getConversationHistory: vi.fn(async (_threadId, _limit) => [
     { role: 'user', text: '¿Qué coberturas tiene AXA?' },
-    { role: 'model', text: '📄 Según la cotización, AXA ofrece: Incendio, RCE, y Robo.' }
+    { role: 'model', text: '📄 Según la cotización, AXA ofrece: Incendio, RCE, y Robo.' },
   ]),
-  getOrCreateThread: vi.fn(async (_userId, _reportId) => 'thread-123')
+  getOrCreateThread: vi.fn(async (_userId, _reportId) => 'thread-123'),
 }));
 
 describe('Chat Routes v2.0', () => {
@@ -93,20 +93,16 @@ describe('Chat Routes v2.0', () => {
         quotes: [
           {
             insurerName: 'AXA',
-            coverages: [
-              { name: 'Incendio', value: '$500M', deductible: '10%' }
-            ]
-          }
-        ]
+            coverages: [{ name: 'Incendio', value: '$500M', deductible: '10%' }],
+          },
+        ],
       };
 
-      const response = await request(app)
-        .post('/api/chat')
-        .send({
-          message: '¿Qué coberturas tiene AXA?',
-          reportContext,
-          userId: 'user-123'
-        });
+      const response = await request(app).post('/api/chat').send({
+        message: '¿Qué coberturas tiene AXA?',
+        reportContext,
+        userId: 'user-123',
+      });
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('text');
@@ -118,17 +114,15 @@ describe('Chat Routes v2.0', () => {
     it('should accept optional threadId', async () => {
       const reportContext = {
         id: 'report-456',
-        quotes: []
+        quotes: [],
       };
 
-      const response = await request(app)
-        .post('/api/chat')
-        .send({
-          message: 'Hola',
-          reportContext,
-          threadId: 'existing-thread-789',
-          userId: 'user-123'
-        });
+      const response = await request(app).post('/api/chat').send({
+        message: 'Hola',
+        reportContext,
+        threadId: 'existing-thread-789',
+        userId: 'user-123',
+      });
 
       expect(response.status).toBe(200);
     });
@@ -137,7 +131,7 @@ describe('Chat Routes v2.0', () => {
       const response = await request(app)
         .post('/api/chat')
         .send({
-          reportContext: { id: 'report-456' }
+          reportContext: { id: 'report-456' },
         });
 
       expect(response.status).toBe(400);
@@ -150,7 +144,7 @@ describe('Chat Routes v2.0', () => {
         .send({
           message: '¿Qué deducible tiene?',
           reportContext: { id: 'report-456', quotes: [] },
-          userId: 'user-123'
+          userId: 'user-123',
         });
 
       expect(response.status).toBe(200);
@@ -162,7 +156,7 @@ describe('Chat Routes v2.0', () => {
   describe('GET /api/chat/threads/report/:reportId', () => {
     it('should return thread and messages for existing report', async () => {
       const { chatRepository } = await import('../../repositories/chatRepository');
-      
+
       // Mock existing thread
       vi.mocked(chatRepository.getThreadByReport).mockResolvedValueOnce({
         id: 'thread-123',
@@ -173,7 +167,7 @@ describe('Chat Routes v2.0', () => {
         title: 'Análisis: Test Client',
         status: 'active',
         created_at: '2024-01-01T00:00:00Z',
-        updated_at: '2024-01-01T00:00:00Z'
+        updated_at: '2024-01-01T00:00:00Z',
       } as unknown as ChatThread);
 
       const response = await request(app)
@@ -189,7 +183,7 @@ describe('Chat Routes v2.0', () => {
 
     it('should create new thread if none exists', async () => {
       const { chatRepository } = await import('../../repositories/chatRepository');
-      
+
       // Mock no existing thread
       vi.mocked(chatRepository.getThreadByReport).mockResolvedValueOnce(null);
 
@@ -205,8 +199,7 @@ describe('Chat Routes v2.0', () => {
 
   describe('GET /api/chat/threads/:id/messages', () => {
     it('should return messages for a thread', async () => {
-      const response = await request(app)
-        .get('/api/chat/threads/thread-123/messages');
+      const response = await request(app).get('/api/chat/threads/thread-123/messages');
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('messages');
@@ -216,8 +209,7 @@ describe('Chat Routes v2.0', () => {
 
   describe('DELETE /api/chat/threads/:id', () => {
     it('should archive a thread', async () => {
-      const response = await request(app)
-        .delete('/api/chat/threads/thread-123');
+      const response = await request(app).delete('/api/chat/threads/thread-123');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -231,14 +223,12 @@ describe('Chat Routes v2.0', () => {
           {
             insurerName: 'AXA',
             score: 85,
-            coverages: [{ name: 'Incendio', value: '$500M' }]
-          }
-        ]
+            coverages: [{ name: 'Incendio', value: '$500M' }],
+          },
+        ],
       };
 
-      const response = await request(app)
-        .post('/api/chat/suggestions')
-        .send({ reportContext });
+      const response = await request(app).post('/api/chat/suggestions').send({ reportContext });
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('suggestions');
@@ -249,9 +239,7 @@ describe('Chat Routes v2.0', () => {
 
   describe('GET /api/chat/threads', () => {
     it('should list user threads', async () => {
-      const response = await request(app)
-        .get('/api/chat/threads')
-        .query({ userId: 'user-123' });
+      const response = await request(app).get('/api/chat/threads').query({ userId: 'user-123' });
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('threads');
@@ -269,15 +257,15 @@ describe('Chat Routes v2.0', () => {
             .post('/api/chat')
             .send({
               message: `Test message ${i}`,
-              reportContext: { id: 'report-456' }
+              reportContext: { id: 'report-456' },
             })
         );
       }
 
       const responses = await Promise.all(promises);
-      
+
       // At least one should be rate limited
-      const rateLimitedResponses = responses.filter(r => r.status === 429);
+      const rateLimitedResponses = responses.filter((r) => r.status === 429);
       expect(rateLimitedResponses.length).toBeGreaterThan(0);
     });
   });

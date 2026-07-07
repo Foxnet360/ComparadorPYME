@@ -5,12 +5,7 @@ import {
   assertTemplateRegistryEntry,
   TemplateRegistryEntry,
 } from '../schemas/templateRegistrySchema';
-import {
-  getCacheValue,
-  setCacheValue,
-  deleteCacheValue,
-  getCacheKeys,
-} from './cache/redisCache';
+import { getCacheValue, setCacheValue, deleteCacheValue, getCacheKeys } from './cache/redisCache';
 import {
   createStructuredLogger,
   globalMetrics,
@@ -138,9 +133,7 @@ function layoutMarkerMatches(
   }
 
   const regex = new RegExp(marker.textRegex, 'i');
-  const candidatePages = marker.page
-    ? pages.filter((p) => p.page === marker.page)
-    : pages;
+  const candidatePages = marker.page ? pages.filter((p) => p.page === marker.page) : pages;
 
   for (const page of candidatePages) {
     for (const item of page.items) {
@@ -313,9 +306,7 @@ export function createTemplateRegistryService(
     return templateCache.get(domain) ?? [];
   }
 
-  async function matchTemplate(
-    input: TemplateMatchInput
-  ): Promise<TemplateMatchResult> {
+  async function matchTemplate(input: TemplateMatchInput): Promise<TemplateMatchResult> {
     const domain = input.domain ?? DEFAULT_DOMAIN;
     const entries = await loadTemplates(domain);
 
@@ -384,10 +375,9 @@ export function createTemplateRegistryService(
       return { valid: true };
     }
 
-    const errors =
-      validate.errors?.map((err) =>
-        `${err.instancePath || '/'}: ${err.message ?? 'invalid value'}`
-      ) ?? ['Schema validation failed'];
+    const errors = validate.errors?.map(
+      (err) => `${err.instancePath || '/'}: ${err.message ?? 'invalid value'}`
+    ) ?? ['Schema validation failed'];
 
     logger.warn('schema_validation_failed', 'Template payload validation failed', {
       domain,
@@ -433,9 +423,7 @@ export function createTemplateRegistryService(
     }
 
     const row = entryToRow(entry, domain);
-    const { error } = await db
-      .from('template_registry')
-      .upsert(row, { onConflict: 'template_id' });
+    const { error } = await db.from('template_registry').upsert(row, { onConflict: 'template_id' });
 
     if (error) {
       throw new Error(`Failed to upsert template: ${error.message}`);

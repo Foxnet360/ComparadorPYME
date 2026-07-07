@@ -3,34 +3,33 @@
  * Validates business rules and calculates confidence score for comparison results
  */
 
-import { ValidationResult, UnifiedComparisonResult } from "../../types/unifiedComparison";
+import { ValidationResult, UnifiedComparisonResult } from '../../types/unifiedComparison';
 
 type ValidatableResult = UnifiedComparisonResult & Record<string, unknown>;
 
 export class ComparisonResultValidator {
-  
   /**
    * Validate comparison result against schema and business rules
    */
   validate(result: unknown, expectedInsurerCount: number): ValidationResult {
     const schemaErrors: string[] = [];
     const businessWarnings: string[] = [];
-    
+
     // Schema validation
     this.validateSchema(result, schemaErrors);
-    
+
     // Business rules validation
     this.validateBusinessRules(result, expectedInsurerCount, businessWarnings);
-    
+
     // Calculate confidence score
     const confidence = this.calculateConfidence(result, expectedInsurerCount);
-    
+
     return {
       isValid: schemaErrors.length === 0,
       schemaErrors,
       businessWarnings,
       confidence,
-      needsHumanReview: confidence < 0.90 || schemaErrors.length > 0
+      needsHumanReview: confidence < 0.9 || schemaErrors.length > 0,
     };
   }
 
@@ -40,7 +39,14 @@ export class ComparisonResultValidator {
   private validateSchema(result: unknown, errors: string[]): void {
     const r = result as ValidatableResult;
     // Check required top-level fields
-    const requiredFields = ['metadata', 'client', 'insurers', 'coverageMatrix', 'financials', 'analysis'];
+    const requiredFields = [
+      'metadata',
+      'client',
+      'insurers',
+      'coverageMatrix',
+      'financials',
+      'analysis',
+    ];
     for (const field of requiredFields) {
       if (!r[field]) {
         errors.push(`Missing required field: ${field}`);
@@ -49,7 +55,14 @@ export class ComparisonResultValidator {
 
     // Validate metadata
     if (r.metadata) {
-      const metaFields = ['generatedAt', 'model', 'thinkingLevel', 'pdfCount', 'confidence', 'needsHumanReview'];
+      const metaFields = [
+        'generatedAt',
+        'model',
+        'thinkingLevel',
+        'pdfCount',
+        'confidence',
+        'needsHumanReview',
+      ];
       const metadata = r.metadata as Record<string, unknown>;
       for (const field of metaFields) {
         if (metadata[field] === undefined) {
@@ -100,8 +113,8 @@ export class ComparisonResultValidator {
    * Validate business rules
    */
   private validateBusinessRules(
-    result: unknown, 
-    expectedInsurerCount: number, 
+    result: unknown,
+    expectedInsurerCount: number,
     warnings: string[]
   ): void {
     const r = result as ValidatableResult;
@@ -120,9 +133,7 @@ export class ComparisonResultValidator {
 
     // Check for significant differences
     if (r.analysis && r.analysis.significantDifferences) {
-      const highSeverity = r.analysis.significantDifferences.filter(
-        d => d.severity === 'high'
-      );
+      const highSeverity = r.analysis.significantDifferences.filter((d) => d.severity === 'high');
       if (highSeverity.length > 0) {
         warnings.push(`${highSeverity.length} high-severity differences detected`);
       }
@@ -130,11 +141,13 @@ export class ComparisonResultValidator {
 
     // Validate premium totals
     if (r.financials && r.financials.premiums) {
-      r.financials.premiums.forEach(premium => {
+      r.financials.premiums.forEach((premium) => {
         if (premium.total && premium.netPremium) {
           const expectedTotal = premium.netPremium + (premium.fees || 0) + (premium.taxes || 0);
           if (Math.abs(premium.total - expectedTotal) > 1) {
-            warnings.push(`Premium total mismatch for ${premium.insurer}: ${premium.total} vs expected ${expectedTotal}`);
+            warnings.push(
+              `Premium total mismatch for ${premium.insurer}: ${premium.total} vs expected ${expectedTotal}`
+            );
           }
         }
       });
@@ -143,11 +156,11 @@ export class ComparisonResultValidator {
     // Check for ambiguous values
     let ambiguousCount = 0;
     if (r.coverageMatrix) {
-      r.coverageMatrix.forEach(section => {
+      r.coverageMatrix.forEach((section) => {
         if (section.rows) {
-          section.rows.forEach(row => {
+          section.rows.forEach((row) => {
             if (row.cells) {
-              row.cells.forEach(cell => {
+              row.cells.forEach((cell) => {
                 if (cell.isAmbiguous) {
                   ambiguousCount++;
                 }
@@ -160,7 +173,7 @@ export class ComparisonResultValidator {
         }
       });
     }
-    
+
     if (ambiguousCount > 0) {
       warnings.push(`${ambiguousCount} ambiguous values detected (may need human review)`);
     }
@@ -188,7 +201,7 @@ export class ComparisonResultValidator {
     } else {
       // Deduct for sections with missing data
       const emptySections = r.coverageMatrix.filter(
-        section => !section.rows || section.rows.length === 0
+        (section) => !section.rows || section.rows.length === 0
       ).length;
       deductions += emptySections * 0.05;
     }
@@ -201,9 +214,9 @@ export class ComparisonResultValidator {
     // Deduct for ambiguous values
     let ambiguousCount = 0;
     if (r.coverageMatrix) {
-      r.coverageMatrix.forEach(section => {
-        section.rows?.forEach(row => {
-          row.cells?.forEach(cell => {
+      r.coverageMatrix.forEach((section) => {
+        section.rows?.forEach((row) => {
+          row.cells?.forEach((cell) => {
             if (cell.isAmbiguous || cell.value === 'Ver condiciones' || cell.value === null) {
               ambiguousCount++;
             }

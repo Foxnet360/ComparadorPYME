@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
-import { pdfExtractor} from '../pdfExtractor';
+import { pdfExtractor } from '../pdfExtractor';
 import { featureFlags } from '../../config/featureFlags';
 
 const mockPages = vi.hoisted(() => ({ pages: [] as unknown[][] }));
@@ -33,14 +33,7 @@ function makeTextItem(
 ): Record<string, unknown> {
   // Build a transform matrix for the given translation and rotation (in degrees).
   const rad = (rotation * Math.PI) / 180;
-  const transform = [
-    Math.cos(rad),
-    Math.sin(rad),
-    -Math.sin(rad),
-    Math.cos(rad),
-    x,
-    y,
-  ];
+  const transform = [Math.cos(rad), Math.sin(rad), -Math.sin(rad), Math.cos(rad), x, y];
   return { str, dir: 'ltr', width, height, transform, fontName: 'MockFont' };
 }
 
@@ -48,7 +41,10 @@ function writeTempPdf(): string {
   const dir = path.join('/tmp', 'opencode');
   fs.mkdirSync(dir, { recursive: true });
   const filePath = path.join(dir, `test-${Date.now()}.pdf`);
-  fs.writeFileSync(filePath, '%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n>>\nendobj\ntrailer\n<<\n/Size 1\n/Root 1 0 R\n>>\n%%EOF\n');
+  fs.writeFileSync(
+    filePath,
+    '%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n>>\nendobj\ntrailer\n<<\n/Size 1\n/Root 1 0 R\n>>\n%%EOF\n'
+  );
   return filePath;
 }
 
@@ -61,10 +57,7 @@ describe('pdfExtractor layout-aware path', () => {
   it('extractLayoutFromPdf returns page text items with positions and rotation', async () => {
     const filePath = writeTempPdf();
     mockPages.pages = [
-      [
-        makeTextItem('Cobertura', 100, 700),
-        makeTextItem('Suma Asegurada', 260, 700),
-      ],
+      [makeTextItem('Cobertura', 100, 700), makeTextItem('Suma Asegurada', 260, 700)],
       [makeTextItem('Página 2', 100, 700, 60, 12, 90)],
     ];
 

@@ -1,10 +1,22 @@
 import { describe, it, expect } from 'vitest';
-import { buildPromptForFamily, getSupportedFormatFamilies, buildTemplatePrompt } from '../promptBuilder';
+import {
+  buildPromptForFamily,
+  getSupportedFormatFamilies,
+  buildTemplatePrompt,
+} from '../promptBuilder';
 import { TemplateRegistryEntry, LayoutTable } from '../../schemas/templateRegistrySchema';
 
 const INSURER_NAMES = [
-  'hdi', 'chubb', 'axa', 'colpatria', 'sbs', 'liberty',
-  'bolivar', 'bolívar', 'allianz', 'mapfre',
+  'hdi',
+  'chubb',
+  'axa',
+  'colpatria',
+  'sbs',
+  'liberty',
+  'bolivar',
+  'bolívar',
+  'allianz',
+  'mapfre',
 ];
 
 describe('promptBuilder', () => {

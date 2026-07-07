@@ -1,8 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import {
-  createTemplateRegistryService,
-  RegistryCache,
-} from '../templateRegistryService';
+import { createTemplateRegistryService, RegistryCache } from '../templateRegistryService';
 import { TemplateRegistryEntry } from '../../types/templateGraph';
 
 const bbvaText = `BBVA SEGUROS

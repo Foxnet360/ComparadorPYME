@@ -9,3 +9,5 @@ package-lock.json
 supabase/
 *.md
 .prettierignore
+csa-prop.json
+csa-proposal-instructions.json

@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { ComparisonReport, UserProfile, DashboardStats, HistoryEntry } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
-import { formatCOPMillions, formatCOP} from '../utils/formatCurrency';
+import { formatCOPMillions, formatCOP } from '../utils/formatCurrency';
 import { normalizeText } from '../utils/textUtils';
 
 // Helper for robust string matching (ignores accents, case, whitespace)
@@ -10,15 +10,15 @@ import { normalizeText } from '../utils/textUtils';
 // Format coverage value for PDF (similar to UI formatting)
 const formatCoverageValuePDF = (value: string | undefined | null): string => {
   if (!value || typeof value !== 'string') return 'NO ESPECIFICADO';
-  
+
   const trimmed = value.trim();
   const upperValue = trimmed.toUpperCase();
-  
+
   // Special text values - return as-is
   if (['EXCLUIDO', 'NO CUBRE', 'NO APLICA', 'NO ESPECIFICADO', 'INCLUIDO'].includes(upperValue)) {
     return trimmed;
   }
-  
+
   // Handle "500M" format (millions)
   const millionMatch = trimmed.match(/^(\d+(?:[.,]\d+)?)\s*M$/i);
   if (millionMatch) {
@@ -27,7 +27,7 @@ const formatCoverageValuePDF = (value: string | undefined | null): string => {
       return formatCOP(num * 1000000);
     }
   }
-  
+
   // Handle values with $ sign or plain numbers
   const dollarMatch = trimmed.match(/^\$?\s*([\d.,]+)\s*(.*)$/);
   if (dollarMatch) {
@@ -37,7 +37,7 @@ const formatCoverageValuePDF = (value: string | undefined | null): string => {
       return formatCOP(num);
     }
   }
-  
+
   // If nothing matched, return original value
   return trimmed;
 };
@@ -48,7 +48,11 @@ interface PDFOptions {
   primaryColor?: [number, number, number];
 }
 
-export const generatePDF = (report: ComparisonReport, options?: PDFOptions, cellNotes?: Record<string, string>) => {
+export const generatePDF = (
+  report: ComparisonReport,
+  options?: PDFOptions,
+  cellNotes?: Record<string, string>
+) => {
   const doc = new jsPDF();
   const today = new Date().toLocaleDateString('es-ES');
 
@@ -66,18 +70,18 @@ export const generatePDF = (report: ComparisonReport, options?: PDFOptions, cell
       try {
         doc.addImage(options.logoBase64, 'PNG', 160, 5, 35, 20, undefined, 'FAST');
       } catch (e) {
-        console.warn("Failed to add logo", e);
+        console.warn('Failed to add logo', e);
       }
     }
 
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(18);
-    doc.setFont("helvetica", "bold");
+    doc.setFont('helvetica', 'bold');
     const displayTitle = options?.customTitle || title;
     doc.text(displayTitle.substring(0, 50), 14, 18);
 
     doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
+    doc.setFont('helvetica', 'normal');
     doc.text(`Informe generado el ${today}`, 14, 25);
 
     // Reset text color for body
@@ -86,16 +90,19 @@ export const generatePDF = (report: ComparisonReport, options?: PDFOptions, cell
   };
 
   // --- PAGE 1: RESUMEN EJECUTIVO ---
-  let currentY = addHeader("Resumen Ejecutivo y Recomendación");
+  let currentY = addHeader('Resumen Ejecutivo y Recomendación');
 
   doc.setFontSize(12);
-  doc.setFont("helvetica", "bold");
-  doc.text("Dictamen del Auditor", 14, currentY);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Dictamen del Auditor', 14, currentY);
   currentY += 8;
 
   doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  const splitRecommendation = doc.splitTextToSize(report.recommendation || "Sin recomendación.", 180);
+  doc.setFont('helvetica', 'normal');
+  const splitRecommendation = doc.splitTextToSize(
+    report.recommendation || 'Sin recomendación.',
+    180
+  );
   doc.text(splitRecommendation, 14, currentY);
 
   currentY += splitRecommendation.length * 5 + 10;
@@ -103,42 +110,45 @@ export const generatePDF = (report: ComparisonReport, options?: PDFOptions, cell
   // New Section: Análisis por Perfil en el PDF
   const quotes = report.quotes || [];
 
-  quotes.forEach(q => {
-    if (currentY > 250) { doc.addPage(); currentY = addHeader("Resumen Ejecutivo (Cont.)"); }
+  quotes.forEach((q) => {
+    if (currentY > 250) {
+      doc.addPage();
+      currentY = addHeader('Resumen Ejecutivo (Cont.)');
+    }
 
     doc.setFillColor(240, 240, 240);
     doc.rect(14, currentY, 182, 8, 'F');
-    doc.setFont("helvetica", "bold");
+    doc.setFont('helvetica', 'bold');
     doc.text(q.insurerName, 16, currentY + 5.5);
     currentY += 12;
 
     doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.text("Enfoque Cliente (Beneficios):", 16, currentY);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Enfoque Cliente (Beneficios):', 16, currentY);
     currentY += 5;
 
-    doc.setFont("helvetica", "normal");
-    const clientText = doc.splitTextToSize(q.clientAnalysis || "N/A", 175);
+    doc.setFont('helvetica', 'normal');
+    const clientText = doc.splitTextToSize(q.clientAnalysis || 'N/A', 175);
     doc.text(clientText, 16, currentY);
-    currentY += (clientText.length * 4) + 6;
+    currentY += clientText.length * 4 + 6;
 
-    doc.setFont("helvetica", "bold");
-    doc.text("Enfoque Técnico (Riesgos y Clausulado):", 16, currentY);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Enfoque Técnico (Riesgos y Clausulado):', 16, currentY);
     currentY += 5;
 
-    doc.setFont("helvetica", "normal");
-    const techText = doc.splitTextToSize(q.technicalAnalysis || "N/A", 175);
+    doc.setFont('helvetica', 'normal');
+    const techText = doc.splitTextToSize(q.technicalAnalysis || 'N/A', 175);
     doc.text(techText, 16, currentY);
-    currentY += (techText.length * 4) + 10;
+    currentY += techText.length * 4 + 10;
   });
 
   // --- PAGE 2: PLANTILLA PYME (COBERTURAS) ---
   doc.addPage();
-  currentY = addHeader("Matriz Comparativa Normalizada (PYME)");
+  currentY = addHeader('Matriz Comparativa Normalizada (PYME)');
 
-  const insurers = quotes.map(q => q.insurerName || "Aseguradora");
+  const insurers = quotes.map((q) => q.insurerName || 'Aseguradora');
   const hasNotes = cellNotes && Object.keys(cellNotes).length > 0;
-  const tableHead = hasNotes 
+  const tableHead = hasNotes
     ? [['Rubro Estandarizado', ...insurers, 'Insights del Consultor']]
     : [['Rubro Estandarizado', ...insurers]];
 
@@ -149,7 +159,7 @@ export const generatePDF = (report: ComparisonReport, options?: PDFOptions, cell
     quotes.forEach((q, _quoteIndex) => {
       const coverages = Array.isArray(q.coverages) ? q.coverages : [];
       // Robust matching
-      const found = coverages.find(c => {
+      const found = coverages.find((c) => {
         if (!c.name) return false;
         const nItem = normalizeText(standardItem);
         const nName = normalizeText(c.name);
@@ -157,18 +167,18 @@ export const generatePDF = (report: ComparisonReport, options?: PDFOptions, cell
       });
 
       let cellValue = found ? formatCoverageValuePDF(found.value) : 'NO ESPECIFICADO';
-      if (cellValue.length > 50) cellValue = cellValue.substring(0, 50) + "...";
+      if (cellValue.length > 50) cellValue = cellValue.substring(0, 50) + '...';
 
       row.push(cellValue);
     });
-    
+
     // Add notes column if notes exist
     if (hasNotes) {
       const cellId = `coverage-${standardItem}`;
       const note = cellNotes?.[cellId];
       row.push(note ? (note.length > 60 ? note.substring(0, 60) + '...' : note) : '');
     }
-    
+
     tableBody.push(row);
   });
 
@@ -183,81 +193,95 @@ export const generatePDF = (report: ComparisonReport, options?: PDFOptions, cell
     alternateRowStyles: { fillColor: LIGHT_GRAY },
   });
 
-
   // --- PAGE 3: DEDUCIBLES ---
   doc.addPage();
-  currentY = addHeader("Análisis de Estructura de Deducibles");
+  currentY = addHeader('Análisis de Estructura de Deducibles');
 
   const deducRows: Array<[string, string]> = [];
   if (report.deductibleComparison && report.deductibleComparison.length > 0) {
-    report.deductibleComparison.forEach(d => deducRows.push([d.insurer, d.deductibleText]));
+    report.deductibleComparison.forEach((d) => deducRows.push([d.insurer, d.deductibleText]));
   } else {
-    quotes.forEach(q => deducRows.push([q.insurerName, q.deductibles]));
+    quotes.forEach((q) => deducRows.push([q.insurerName, q.deductibles]));
   }
 
-  deducRows.forEach(row => {
-    if (currentY > 250) { doc.addPage(); currentY = addHeader("Análisis de Estructura de Deducibles (Cont.)"); }
+  deducRows.forEach((row) => {
+    if (currentY > 250) {
+      doc.addPage();
+      currentY = addHeader('Análisis de Estructura de Deducibles (Cont.)');
+    }
 
     doc.setFillColor(241, 245, 249);
     doc.rect(14, currentY, 182, 8, 'F');
     doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
+    doc.setFont('helvetica', 'bold');
     doc.text(row[0] as string, 16, currentY + 5.5);
     currentY += 12;
 
     doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
+    doc.setFont('helvetica', 'normal');
     const splitDed = doc.splitTextToSize(row[1] as string, 175);
     doc.text(splitDed, 16, currentY);
 
-    currentY += (splitDed.length * 4) + 10;
+    currentY += splitDed.length * 4 + 10;
   });
-
 
   // --- PAGE 4: AUDITORÍA DE RIESGOS (INSIGHTS) ---
   doc.addPage();
-  currentY = addHeader("Matriz de Hallazgos y Riesgos");
+  currentY = addHeader('Matriz de Hallazgos y Riesgos');
 
-  quotes.forEach(q => {
-    if (currentY > 240) { doc.addPage(); currentY = addHeader("Matriz de Hallazgos (Cont.)"); }
+  quotes.forEach((q) => {
+    if (currentY > 240) {
+      doc.addPage();
+      currentY = addHeader('Matriz de Hallazgos (Cont.)');
+    }
 
     doc.setDrawColor(200, 200, 200);
     doc.line(14, currentY, 196, currentY);
     currentY += 5;
 
     doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
+    doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
     doc.text(`${q.insurerName} (Score: ${q.score}/100)`, 14, currentY);
     currentY += 8;
 
     if (q.alerts && q.alerts.length > 0) {
-      q.alerts.forEach(alert => {
-        if (currentY > 270) { doc.addPage(); currentY = addHeader("Matriz de Hallazgos (Cont.)"); }
+      q.alerts.forEach((alert) => {
+        if (currentY > 270) {
+          doc.addPage();
+          currentY = addHeader('Matriz de Hallazgos (Cont.)');
+        }
 
         let color: [number, number, number] = [50, 50, 50];
-        let label = "INFO";
+        let label = 'INFO';
 
-        if (alert.level === 'CRITICAL') { label = "RIESGO CRÍTICO"; color = [220, 38, 38]; }
-        else if (alert.level === 'WARNING') { label = "ATENCIÓN"; color = [217, 119, 6]; }
-        else if (alert.level === 'GOOD') { label = "PUNTO FUERTE"; color = [22, 163, 74]; }
+        if (alert.level === 'CRITICAL') {
+          label = 'RIESGO CRÍTICO';
+          color = [220, 38, 38];
+        } else if (alert.level === 'WARNING') {
+          label = 'ATENCIÓN';
+          color = [217, 119, 6];
+        } else if (alert.level === 'GOOD') {
+          label = 'PUNTO FUERTE';
+          color = [22, 163, 74];
+        }
 
-        doc.setFont("helvetica", "bold");
+        doc.setFont('helvetica', 'bold');
         doc.setTextColor(color[0], color[1], color[2]);
         doc.setFontSize(9);
         doc.text(`[${label}] ${alert.title}`, 14, currentY);
 
-        doc.setFont("helvetica", "normal");
+        doc.setFont('helvetica', 'normal');
         doc.setTextColor(70, 70, 70);
         const desc = doc.splitTextToSize(alert.description, 170);
         doc.text(desc, 14, currentY + 4);
 
-        currentY += 4 + (desc.length * 4) + 4;
+        currentY += 4 + desc.length * 4 + 4;
       });
     } else {
       doc.setFontSize(10);
       doc.setTextColor(100, 100, 100);
-      doc.text("Sin hallazgos relevantes.", 14, currentY);
+      doc.text('Sin hallazgos relevantes.', 14, currentY);
       currentY += 10;
     }
     currentY += 10;
@@ -271,10 +295,14 @@ export const generatePDF = (report: ComparisonReport, options?: PDFOptions, cell
     doc.text(`Página ${i} de ${pageCount}`, 190, 290, { align: 'right' });
   }
 
-  doc.save("Reporte_Analisis_PYME.pdf");
+  doc.save('Reporte_Analisis_PYME.pdf');
 };
 
-export const generatePerformanceReport = (user: UserProfile, stats: DashboardStats, history: HistoryEntry[]) => {
+export const generatePerformanceReport = (
+  user: UserProfile,
+  stats: DashboardStats,
+  history: HistoryEntry[]
+) => {
   const doc = new jsPDF();
   const today = new Date().toLocaleDateString('es-ES');
   const PRIMARY_COLOR: [number, number, number] = [79, 70, 229];
@@ -285,11 +313,11 @@ export const generatePerformanceReport = (user: UserProfile, stats: DashboardSta
 
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(22);
-  doc.setFont("helvetica", "bold");
-  doc.text("Informe de Desempeño Comercial", 14, 20);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Informe de Desempeño Comercial', 14, 20);
 
   doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
+  doc.setFont('helvetica', 'normal');
   doc.text(`Generado el: ${today}`, 14, 30);
   doc.text(`Agente: ${user.name}`, 140, 20);
   doc.text(`Intermediario: ${user.intermediaryName || 'N/A'}`, 140, 26);
@@ -302,8 +330,8 @@ export const generatePerformanceReport = (user: UserProfile, stats: DashboardSta
   // Stats Section
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(14);
-  doc.setFont("helvetica", "bold");
-  doc.text("Resumen del Mes Actual", 14, currentY);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Resumen del Mes Actual', 14, currentY);
   currentY += 10;
 
   // Draw Stats Cards (Text representation)
@@ -318,31 +346,33 @@ export const generatePerformanceReport = (user: UserProfile, stats: DashboardSta
 
     doc.setFontSize(12);
     doc.setTextColor(30, 41, 59);
-    doc.setFont("helvetica", "bold");
+    doc.setFont('helvetica', 'bold');
     doc.text(value, x + 5, y + 18);
   };
 
-  drawStat("Cotizaciones", stats.totalQuotes.toString(), 14, currentY);
-  drawStat("Tasa Cierre", `${stats.conversionRate}%`, 60, currentY);
-  drawStat("Primas Vendidas", formatCOPMillions(stats.totalPremiumSold), 106, currentY);
-  drawStat("Prospectos", stats.activeProspects.toString(), 152, currentY);
+  drawStat('Cotizaciones', stats.totalQuotes.toString(), 14, currentY);
+  drawStat('Tasa Cierre', `${stats.conversionRate}%`, 60, currentY);
+  drawStat('Primas Vendidas', formatCOPMillions(stats.totalPremiumSold), 106, currentY);
+  drawStat('Prospectos', stats.activeProspects.toString(), 152, currentY);
 
   currentY += 40;
 
   // History Table
   doc.setFontSize(14);
-  doc.text("Historial de Actividad Reciente", 14, currentY);
+  doc.text('Historial de Actividad Reciente', 14, currentY);
   currentY += 10;
 
   const tableHead = [['Fecha', 'Cliente', 'Aseguradoras', 'Opción Ganadora', 'Valor', 'Estado']];
-  const tableBody = history.slice(0, 20).map(h => [
-    h.date,
-    h.clientName,
-    h.insurers.join(", "),
-    h.bestOption,
-    formatCOPMillions(h.premiumValue),
-    h.status
-  ]);
+  const tableBody = history
+    .slice(0, 20)
+    .map((h) => [
+      h.date,
+      h.clientName,
+      h.insurers.join(', '),
+      h.bestOption,
+      formatCOPMillions(h.premiumValue),
+      h.status,
+    ]);
 
   autoTable(doc, {
     startY: currentY,

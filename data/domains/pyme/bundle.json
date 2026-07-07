@@ -1,10 +1,5 @@
 {
   "version": "1.0.0",
   "domain": "pyme",
-  "files": [
-    "taxonomy.json",
-    "ontology.json",
-    "thesaurus.json",
-    "template-seeds.json"
-  ]
+  "files": ["taxonomy.json", "ontology.json", "thesaurus.json", "template-seeds.json"]
 }

@@ -111,13 +111,7 @@
     {
       "id": 7,
       "name": "Vidrios Planos",
-      "aliases": [
-        "Vidrios",
-        "Placas",
-        "Cristales",
-        "Vidrios Planos",
-        "Vidrios planos"
-      ]
+      "aliases": ["Vidrios", "Placas", "Cristales", "Vidrios Planos", "Vidrios planos"]
     },
     {
       "id": 8,
@@ -156,22 +150,12 @@
     {
       "id": 11,
       "name": "Asistencia PYME",
-      "aliases": [
-        "Asistencia",
-        "Servicios PYME",
-        "Servicios de asistencia",
-        "Asistencia pyme"
-      ]
+      "aliases": ["Asistencia", "Servicios PYME", "Servicios de asistencia", "Asistencia pyme"]
     },
     {
       "id": 12,
       "name": "Asistencia Legal",
-      "aliases": [
-        "Legal",
-        "Asesoría Legal",
-        "Asistencia Jurídica",
-        "Asistencia legal"
-      ]
+      "aliases": ["Legal", "Asesoría Legal", "Asistencia Jurídica", "Asistencia legal"]
     },
     {
       "id": 13,

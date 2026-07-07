@@ -44,8 +44,10 @@ export function calculateSimilarity(str1: string, str2: string): number {
 
   // Contains match
   if (normalized1.includes(normalized2) || normalized2.includes(normalized1)) {
-    const ratio = Math.min(normalized1.length, normalized2.length) / Math.max(normalized1.length, normalized2.length);
-    return 0.7 + (ratio * 0.2); // 0.7-0.9 based on length ratio
+    const ratio =
+      Math.min(normalized1.length, normalized2.length) /
+      Math.max(normalized1.length, normalized2.length);
+    return 0.7 + ratio * 0.2; // 0.7-0.9 based on length ratio
   }
 
   // Levenshtein distance
@@ -53,5 +55,5 @@ export function calculateSimilarity(str1: string, str2: string): number {
   if (maxLength === 0) return 1.0;
 
   const distance = levenshteinDistance(normalized1, normalized2);
-  return 1 - (distance / maxLength);
+  return 1 - distance / maxLength;
 }

@@ -107,8 +107,10 @@ console.log('='.repeat(80));
 
 for (const test of testCases) {
   const result = normalizeDeductible(test.input);
-  const pass = result.normalized === test.expectedNormalized && result.needsReview === test.expectedNeedsReview;
-  
+  const pass =
+    result.normalized === test.expectedNormalized &&
+    result.needsReview === test.expectedNeedsReview;
+
   if (pass) {
     passed++;
     console.log(`✅ PASS: ${test.description}`);
@@ -118,7 +120,9 @@ for (const test of testCases) {
     failed++;
     console.log(`❌ FAIL: ${test.description}`);
     console.log(`   Input:    "${test.input}"`);
-    console.log(`   Expected: "${test.expectedNormalized}" (needsReview: ${test.expectedNeedsReview})`);
+    console.log(
+      `   Expected: "${test.expectedNormalized}" (needsReview: ${test.expectedNeedsReview})`
+    );
     console.log(`   Got:      "${result.normalized}" (needsReview: ${result.needsReview})`);
   }
   console.log();

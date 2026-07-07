@@ -5,11 +5,7 @@
  */
 
 import { supabase } from '../config/database';
-import {
-  deleteCacheValue,
-  getCacheValue,
-  setCacheValue,
-} from './cache/redisCache';
+import { deleteCacheValue, getCacheValue, setCacheValue } from './cache/redisCache';
 
 import { normalizeText } from '../utils/textUtils';
 import {
@@ -51,7 +47,10 @@ interface GraphTableBuilder {
   delete(): GraphFilterBuilder;
 }
 
-interface GraphFilterBuilder extends PromiseLike<{ data: unknown; error: { message: string } | null }> {
+interface GraphFilterBuilder extends PromiseLike<{
+  data: unknown;
+  error: { message: string } | null;
+}> {
   eq(column: string, value: unknown): GraphFilterBuilder;
   in(column: string, values: readonly unknown[]): GraphFilterBuilder;
 }
@@ -64,12 +63,7 @@ export interface CoverageGraphService {
   ): Promise<GraphDeductibleLink[]>;
   addEdge(edge: GraphEdge): Promise<void>;
   addEdges(edges: GraphEdge[]): Promise<void>;
-  learnCorrection(
-    raw: string,
-    canonical: string,
-    insurer?: string,
-    domain?: string
-  ): Promise<void>;
+  learnCorrection(raw: string, canonical: string, insurer?: string, domain?: string): Promise<void>;
   propagate(): Promise<void>;
   listEdges(filters: {
     from?: string;
@@ -113,17 +107,13 @@ function normalizeNodeName(name: string): string {
 }
 
 function graphCacheKey(rawName: string, insurer: string, domain: string): string {
-  return `graph:query:${domain}:${insurer || 'global'}:${Buffer.from(
-    normalizeNodeName(rawName)
-  )
+  return `graph:query:${domain}:${insurer || 'global'}:${Buffer.from(normalizeNodeName(rawName))
     .toString('base64')
     .substring(0, 32)}`;
 }
 
 function deductibleCacheKey(text: string, insurer: string, domain: string): string {
-  return `graph:deductible:${domain}:${insurer || 'global'}:${Buffer.from(
-    normalizeNodeName(text)
-  )
+  return `graph:deductible:${domain}:${insurer || 'global'}:${Buffer.from(normalizeNodeName(text))
     .toString('base64')
     .substring(0, 32)}`;
 }
@@ -168,7 +158,10 @@ function fromGraphEdge(edge: GraphEdge): DbEdge {
 }
 
 function isCanonicalNode(nodeId: string): boolean {
-  return nodeId.startsWith('cat:') || !nodeId.startsWith('raw:') && !nodeId.startsWith('alias:') && !nodeId.startsWith('composite:');
+  return (
+    nodeId.startsWith('cat:') ||
+    (!nodeId.startsWith('raw:') && !nodeId.startsWith('alias:') && !nodeId.startsWith('composite:'))
+  );
 }
 
 function stripPrefix(nodeId: string): string {
@@ -188,16 +181,18 @@ function rankMappings(
     .slice(0, DEFAULT_TOP_K);
 }
 
-export function createCoverageGraphService(deps: {
-  db?: GraphDbClient;
-  cache?: {
-    get: (key: string) => Promise<string | null>;
-    setex: (key: string, ttl: number, value: string) => Promise<void>;
-    del: (key: string) => Promise<void>;
-  };
-  logger?: StructuredLogger;
-  metrics?: MetricCollector;
-} = {}): CoverageGraphService {
+export function createCoverageGraphService(
+  deps: {
+    db?: GraphDbClient;
+    cache?: {
+      get: (key: string) => Promise<string | null>;
+      setex: (key: string, ttl: number, value: string) => Promise<void>;
+      del: (key: string) => Promise<void>;
+    };
+    logger?: StructuredLogger;
+    metrics?: MetricCollector;
+  } = {}
+): CoverageGraphService {
   const db: GraphDbClient = deps.db ?? (supabase as unknown as GraphDbClient);
   const cache = deps.cache ?? {
     get: getCacheValue,
@@ -251,10 +246,7 @@ export function createCoverageGraphService(deps: {
   }
 
   async function fetchAllEdges(domain: string): Promise<DbEdge[]> {
-    const { data, error } = await db
-      .from('coverage_graph_edges')
-      .select('*')
-      .eq('domain', domain);
+    const { data, error } = await db.from('coverage_graph_edges').select('*').eq('domain', domain);
     if (error) {
       logger.error('graph_query_failed', 'Failed to load coverage graph edges', {
         domain,
@@ -266,7 +258,10 @@ export function createCoverageGraphService(deps: {
     return (data ?? []) as DbEdge[];
   }
 
-  async function computeEmbeddingSimilarity(raw: string, canonicalId: string): Promise<number | undefined> {
+  async function computeEmbeddingSimilarity(
+    raw: string,
+    canonicalId: string
+  ): Promise<number | undefined> {
     try {
       const [rawEmbedding, canonicalEmbedding] = await Promise.all([
         embeddingService.generateEmbedding(raw),
@@ -291,7 +286,10 @@ export function createCoverageGraphService(deps: {
     }
 
     const allDomainEdges = await fetchAllEdges(domain);
-    const mappings = new Map<string, { canonicalId: string; confidence: number; provenance: string }>();
+    const mappings = new Map<
+      string,
+      { canonicalId: string; confidence: number; provenance: string }
+    >();
     const visitedCompositeNodes = new Set<string>();
     const components = new Set<string>();
 
@@ -531,11 +529,9 @@ export function createCoverageGraphService(deps: {
       }
 
       const row = fromGraphEdge(edge);
-      const { error } = await db
-        .from('coverage_graph_edges')
-        .upsert(row, {
-          onConflict: 'from_node,to_node,edge_type,insurer,domain',
-        });
+      const { error } = await db.from('coverage_graph_edges').upsert(row, {
+        onConflict: 'from_node,to_node,edge_type,insurer,domain',
+      });
 
       if (error) {
         throw new Error(`Failed to add graph edge: ${error.message}`);
@@ -555,11 +551,9 @@ export function createCoverageGraphService(deps: {
 
       if (rows.length === 0) return;
 
-      const { error } = await db
-        .from('coverage_graph_edges')
-        .upsert(rows, {
-          onConflict: 'from_node,to_node,edge_type,insurer,domain',
-        });
+      const { error } = await db.from('coverage_graph_edges').upsert(rows, {
+        onConflict: 'from_node,to_node,edge_type,insurer,domain',
+      });
 
       if (error) {
         throw new Error(`Failed to add graph edges: ${error.message}`);
@@ -597,11 +591,9 @@ export function createCoverageGraphService(deps: {
         domain: domain ?? 'pyme',
       };
 
-      const { error } = await db
-        .from('coverage_graph_edges')
-        .upsert(row, {
-          onConflict: 'from_node,to_node,edge_type,insurer,domain',
-        });
+      const { error } = await db.from('coverage_graph_edges').upsert(row, {
+        onConflict: 'from_node,to_node,edge_type,insurer,domain',
+      });
 
       if (error) {
         throw new Error(`Failed to learn correction: ${error.message}`);
@@ -643,11 +635,9 @@ export function createCoverageGraphService(deps: {
 
       if (updates.length === 0) return;
 
-      const { error: upsertError } = await db
-        .from('coverage_graph_edges')
-        .upsert(updates, {
-          onConflict: 'from_node,to_node,edge_type,insurer,domain',
-        });
+      const { error: upsertError } = await db.from('coverage_graph_edges').upsert(updates, {
+        onConflict: 'from_node,to_node,edge_type,insurer,domain',
+      });
 
       if (upsertError) {
         throw new Error(`Failed to update propagated weights: ${upsertError.message}`);

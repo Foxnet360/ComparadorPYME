@@ -12,12 +12,12 @@ vi.mock('../gemini', () => ({
           components: [
             { type: 'percentage', value: 10 },
             { type: 'minimum', value: 5, currency: 'SMMLV' },
-            { type: 'maximum', value: 50, currency: 'SMMLV' }
+            { type: 'maximum', value: 50, currency: 'SMMLV' },
           ],
           isZero: false,
           hasMinimum: true,
           hasMaximum: true,
-          isComposite: true
+          isComposite: true,
         });
       }
       if (text.includes('sin aplicación')) {
@@ -26,19 +26,19 @@ vi.mock('../gemini', () => ({
           isZero: true,
           hasMinimum: false,
           hasMaximum: false,
-          isComposite: false
+          isComposite: false,
         });
       }
       if (text.includes('15% con tope')) {
         return Promise.resolve({
           components: [
             { type: 'percentage', value: 15 },
-            { type: 'maximum', value: 100, currency: 'SMMLV' }
+            { type: 'maximum', value: 100, currency: 'SMMLV' },
           ],
           isZero: false,
           hasMinimum: false,
           hasMaximum: true,
-          isComposite: true
+          isComposite: true,
         });
       }
       // Default fallback
@@ -47,10 +47,10 @@ vi.mock('../gemini', () => ({
         isZero: false,
         hasMinimum: false,
         hasMaximum: false,
-        isComposite: false
+        isComposite: false,
       });
-    })
-  }
+    }),
+  },
 }));
 
 describe('deductibleParser - Unit Tests', () => {
@@ -109,9 +109,9 @@ describe('deductibleParser - Unit Tests', () => {
         components: [{ type: 'percentage' as const, value: 10 }],
         semantics: { isZero: false, hasMinimum: false, hasMaximum: false, isComposite: false },
         normalized: { minAmount: 0, maxAmount: 0, percentage: 10, isPercentageBased: true },
-        rawText: '10%'
+        rawText: '10%',
       } as unknown as DeductibleStructure;
-      
+
       const validation = deductibleParser.validate(structure);
       expect(validation.isValid).toBe(true);
       expect(validation.issues).toHaveLength(0);
@@ -122,9 +122,9 @@ describe('deductibleParser - Unit Tests', () => {
         components: [{ type: 'percentage' as const, value: 150 }],
         semantics: { isZero: false, hasMinimum: false, hasMaximum: false, isComposite: false },
         normalized: { minAmount: 0, maxAmount: 0, percentage: 150, isPercentageBased: true },
-        rawText: '150%'
+        rawText: '150%',
       } as unknown as DeductibleStructure;
-      
+
       const validation = deductibleParser.validate(structure);
       expect(validation.isValid).toBe(false);
       expect(validation.issues.length).toBeGreaterThan(0);
@@ -135,9 +135,9 @@ describe('deductibleParser - Unit Tests', () => {
         components: [{ type: 'fixed' as const, value: -100 }],
         semantics: { isZero: false, hasMinimum: false, hasMaximum: false, isComposite: false },
         normalized: { minAmount: -100, maxAmount: 0, percentage: 0, isPercentageBased: false },
-        rawText: '-100'
+        rawText: '-100',
       } as unknown as DeductibleStructure;
-      
+
       const validation = deductibleParser.validate(structure);
       expect(validation.isValid).toBe(false);
     });
@@ -146,13 +146,13 @@ describe('deductibleParser - Unit Tests', () => {
       const structure = {
         components: [
           { type: 'minimum' as const, value: 100 },
-          { type: 'maximum' as const, value: 50 }
+          { type: 'maximum' as const, value: 50 },
         ],
         semantics: { isZero: false, hasMinimum: true, hasMaximum: true, isComposite: true },
         normalized: { minAmount: 100, maxAmount: 50, percentage: 0, isPercentageBased: false },
-        rawText: 'min 100 max 50'
+        rawText: 'min 100 max 50',
       } as unknown as DeductibleStructure;
-      
+
       const validation = deductibleParser.validate(structure);
       expect(validation.isValid).toBe(false);
     });
@@ -187,7 +187,8 @@ describe('deductibleParser - Unit Tests', () => {
     });
 
     it('should handle very long deductible text', async () => {
-      const longText = '10% con mínimo de 5 SMMLV y tope de 50 SMMLV aplicable solo a daños mayores a 1 SMMLV con excepción de rotura de maquinaria';
+      const longText =
+        '10% con mínimo de 5 SMMLV y tope de 50 SMMLV aplicable solo a daños mayores a 1 SMMLV con excepción de rotura de maquinaria';
       const result = await deductibleParser.parse(longText);
       expect(result).toBeDefined();
       expect(result.rawText).toBe(longText);

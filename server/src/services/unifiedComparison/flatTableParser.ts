@@ -84,7 +84,10 @@ function detectFormat(raw: string): 'markdown' | 'csv' | 'json' | 'kv' {
     return 'json';
   }
 
-  const lines = trimmed.split('\n').map((line) => line.trim()).filter(Boolean);
+  const lines = trimmed
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
 
   if (lines.some((line) => line.startsWith('|') && line.endsWith('|'))) {
     return 'markdown';
@@ -130,7 +133,10 @@ function buildCell(insurer: string, rawValue: string | null | undefined) {
 // ---------------------------------------------------------------------------
 
 function splitMarkdownLine(line: string): string[] {
-  return line.split('|').slice(1, -1).map((cell) => cell.trim());
+  return line
+    .split('|')
+    .slice(1, -1)
+    .map((cell) => cell.trim());
 }
 
 function isMarkdownSeparator(line: string): boolean {
@@ -150,7 +156,10 @@ function parseMarkdown(raw: string): RawTable {
 
   const headerCells = splitMarkdownLine(lines[0]);
   // First header cell is the row-label column; remaining cells are insurers.
-  const insurers = headerCells.slice(1).map((cell) => cell.trim()).filter(Boolean);
+  const insurers = headerCells
+    .slice(1)
+    .map((cell) => cell.trim())
+    .filter(Boolean);
 
   const rows = new Map<string, RowValues>();
   const extraRows = new Map<string, RowValues>();
@@ -163,7 +172,10 @@ function parseMarkdown(raw: string): RawTable {
     const label = cells[0]?.trim();
     if (!label) continue;
 
-    const values = padValues(cells.slice(1).map((cell) => cell.trim()), insurers.length);
+    const values = padValues(
+      cells.slice(1).map((cell) => cell.trim()),
+      insurers.length
+    );
     const canonical = mapRowLabel(label);
     const target = canonical ? rows : extraRows;
     target.set(canonical || label, values);
@@ -216,7 +228,10 @@ function parseCsvLine(line: string, delimiter: string): string[] {
 }
 
 function parseCsv(raw: string): RawTable {
-  const lines = raw.split('\n').map((line) => line.trim()).filter(Boolean);
+  const lines = raw
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
   if (lines.length < 2) {
     throw new Error('CSV input must have at least a header and one data row');
   }
@@ -232,7 +247,10 @@ function parseCsv(raw: string): RawTable {
     firstHeader === '' || /^(fila|concepto|cobertura|row|label|rowlabel)$/i.test(firstHeader);
 
   const insurers = hasRowLabelColumn
-    ? headerCells.slice(1).map((cell) => cell.trim()).filter(Boolean)
+    ? headerCells
+        .slice(1)
+        .map((cell) => cell.trim())
+        .filter(Boolean)
     : headerCells.map((cell) => cell.trim()).filter(Boolean);
 
   const rows = new Map<string, RowValues>();
@@ -244,7 +262,9 @@ function parseCsv(raw: string): RawTable {
     if (hasRowLabelColumn && !label) continue;
 
     const values = padValues(
-      hasRowLabelColumn ? cells.slice(1).map((cell) => cell.trim()) : cells.map((cell) => cell.trim()),
+      hasRowLabelColumn
+        ? cells.slice(1).map((cell) => cell.trim())
+        : cells.map((cell) => cell.trim()),
       insurers.length
     );
 
@@ -353,9 +373,7 @@ function parseJsonAsInsurerMap(data: Record<string, unknown>): RawTable {
       const insurerObj = data[insurer];
       if (typeof insurerObj !== 'object' || insurerObj === null) return '';
 
-      const matchedKey = Object.keys(insurerObj).find(
-        (key) => mapRowLabel(key) === canonicalLabel
-      );
+      const matchedKey = Object.keys(insurerObj).find((key) => mapRowLabel(key) === canonicalLabel);
       if (!matchedKey) return '';
 
       const val = (insurerObj as Record<string, unknown>)[matchedKey];
@@ -371,7 +389,10 @@ function parseJsonAsInsurerMap(data: Record<string, unknown>): RawTable {
       if (mapRowLabel(key)) continue;
       const value = val === null || val === undefined ? '' : String(val);
       if (!extraRows.has(key)) {
-        extraRows.set(key, insurers.map(() => ''));
+        extraRows.set(
+          key,
+          insurers.map(() => '')
+        );
       }
       const idx = insurers.indexOf(insurer);
       extraRows.get(key)![idx] = value;
@@ -386,7 +407,10 @@ function parseJsonAsInsurerMap(data: Record<string, unknown>): RawTable {
 // ---------------------------------------------------------------------------
 
 function parseKeyValue(raw: string): RawTable {
-  const lines = raw.split('\n').map((line) => line.trim()).filter(Boolean);
+  const lines = raw
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
 
   const rows = new Map<string, Array<{ insurer: string; value: string }>>();
   const insurersSet = new Set<string>();
@@ -530,10 +554,9 @@ export class FlatTableParser {
           break;
       }
     } catch (error) {
-      throw new FlatTableParseError(
-        `Failed to parse flat ${format} table`,
-        [{ message: error instanceof Error ? error.message : String(error) }]
-      );
+      throw new FlatTableParseError(`Failed to parse flat ${format} table`, [
+        { message: error instanceof Error ? error.message : String(error) },
+      ]);
     }
 
     return buildResult(rawTable, options, warnings);

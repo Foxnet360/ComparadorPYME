@@ -59,7 +59,7 @@ describe('deductibleAnalyzer integration with canonical parser', () => {
     const result = await deductibleAnalyzer.analyze('Test', '10%', '10%', 500_000_000);
 
     expect(result.deductibleAmount).toBe(50_000_000);
-    expect(result.deductibleRatio).toBe(0.10);
+    expect(result.deductibleRatio).toBe(0.1);
   });
 
   it('uses parser output for SMMLV deductibles', async () => {
@@ -78,7 +78,7 @@ describe('deductibleAnalyzer integration with canonical parser', () => {
 
     expect(result.hasCap).toBe(true);
     expect(result.capAmount).toBe(500 * 1_423_500);
-    expect(result.deductibleAmount).toBeLessThanOrEqual(result.insuredAmount * 0.10);
+    expect(result.deductibleAmount).toBeLessThanOrEqual(result.insuredAmount * 0.1);
   });
 
   it('handles compound greater_of deductible', async () => {

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi} from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { GoogleGenAI } from '@google/genai';
 import { structuredClauseExtractor, StructuredClause } from '../structuredClauseExtractor';
 
@@ -8,22 +8,22 @@ vi.mock('../../config/database', () => ({
     from: vi.fn(() => ({
       insert: vi.fn(() => ({
         select: vi.fn(() => ({
-          single: vi.fn(() => Promise.resolve({ data: { id: 'test-id-123' }, error: null }))
-        }))
+          single: vi.fn(() => Promise.resolve({ data: { id: 'test-id-123' }, error: null })),
+        })),
       })),
       upsert: vi.fn(() => Promise.resolve({ data: null, error: null })),
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
           order: vi.fn(() => ({
-            limit: vi.fn(() => Promise.resolve({ data: [], error: null }))
+            limit: vi.fn(() => Promise.resolve({ data: [], error: null })),
           })),
-          single: vi.fn(() => Promise.resolve({ data: null, error: null }))
+          single: vi.fn(() => Promise.resolve({ data: null, error: null })),
         })),
-        single: vi.fn(() => Promise.resolve({ data: null, error: null }))
+        single: vi.fn(() => Promise.resolve({ data: null, error: null })),
       })),
-      rpc: vi.fn(() => Promise.resolve({ data: [], error: null }))
-    }))
-  }
+      rpc: vi.fn(() => Promise.resolve({ data: [], error: null })),
+    })),
+  },
 }));
 
 vi.mock('@google/genai', () => ({
@@ -37,33 +37,35 @@ vi.mock('@google/genai', () => ({
   GoogleGenAI: vi.fn(function () {
     return {
       models: {
-        generateContent: vi.fn(() => Promise.resolve({
-          text: JSON.stringify({
-            coverages: [
-              {
-                name: 'AMPARO BASICO',
-                description: 'Cobertura todo riesgo',
-                insuredAmount: '$500,000,000',
-                deductible: {
-                  components: [
-                    { type: 'percentage', value: 10 },
-                    { type: 'minimum', value: 5, currency: 'SMMLV' }
-                  ],
-                  rawText: '10% con mínimo de 5 SMMLV'
+        generateContent: vi.fn(() =>
+          Promise.resolve({
+            text: JSON.stringify({
+              coverages: [
+                {
+                  name: 'AMPARO BASICO',
+                  description: 'Cobertura todo riesgo',
+                  insuredAmount: '$500,000,000',
+                  deductible: {
+                    components: [
+                      { type: 'percentage', value: 10 },
+                      { type: 'minimum', value: 5, currency: 'SMMLV' },
+                    ],
+                    rawText: '10% con mínimo de 5 SMMLV',
+                  },
+                  exclusions: ['Guerra', 'Terrorismo'],
+                  conditions: ['Mantenimiento preventivo'],
+                  sourcePage: 1,
                 },
-                exclusions: ['Guerra', 'Terrorismo'],
-                conditions: ['Mantenimiento preventivo'],
-                sourcePage: 1
-              }
-            ],
-            generalExclusions: ['Actos dolosos'],
-            generalConditions: ['Pago de prima'],
-            definitions: { SMMLV: 'Salario Mínimo Mensual Legal Vigente' }
+              ],
+              generalExclusions: ['Actos dolosos'],
+              generalConditions: ['Pago de prima'],
+              definitions: { SMMLV: 'Salario Mínimo Mensual Legal Vigente' },
+            }),
           })
-        }))
-      }
+        ),
+      },
     };
-  })
+  }),
 }));
 
 describe('structuredClauseExtractor', () => {
@@ -89,16 +91,16 @@ describe('structuredClauseExtractor', () => {
       mockedGenAI.mockImplementationOnce(function () {
         return {
           models: {
-            generateContent: vi.fn(() => Promise.resolve({
-              text: 'invalid json'
-            }))
-          }
+            generateContent: vi.fn(() =>
+              Promise.resolve({
+                text: 'invalid json',
+              })
+            ),
+          },
         } as unknown as GoogleGenAI;
       });
 
-      await expect(
-        structuredClauseExtractor.extractFromText('', 'TEST')
-      ).rejects.toThrow();
+      await expect(structuredClauseExtractor.extractFromText('', 'TEST')).rejects.toThrow();
     });
   });
 
@@ -111,7 +113,7 @@ describe('structuredClauseExtractor', () => {
         coverages: [],
         generalExclusions: [],
         generalConditions: [],
-        definitions: {}
+        definitions: {},
       };
 
       const id = await structuredClauseExtractor.storeStructuredClause(clause, 'doc-123');
@@ -138,12 +140,12 @@ describe('structuredClauseExtractor', () => {
             description: 'Cobertura de incendio',
             exclusions: [],
             conditions: [],
-            sourcePage: 1
-          }
+            sourcePage: 1,
+          },
         ],
         generalExclusions: [],
         generalConditions: [],
-        definitions: {}
+        definitions: {},
       };
 
       const rawText = 'Este documento cubre Incendio y otros riesgos';
@@ -164,12 +166,12 @@ describe('structuredClauseExtractor', () => {
             description: 'No existe',
             exclusions: [],
             conditions: [],
-            sourcePage: 1
-          }
+            sourcePage: 1,
+          },
         ],
         generalExclusions: [],
         generalConditions: [],
-        definitions: {}
+        definitions: {},
       };
 
       const rawText = 'Este documento solo cubre Incendio';

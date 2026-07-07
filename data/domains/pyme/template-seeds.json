@@ -5,10 +5,7 @@
     "displayName": "BBVA PYME",
     "version": 1,
     "fingerprints": {
-      "textMarkers": [
-        "BBVA SEGUROS",
-        "COBERTURAS / DEDUCIBLE"
-      ],
+      "textMarkers": ["BBVA SEGUROS", "COBERTURAS / DEDUCIBLE"],
       "layoutMarkers": [
         {
           "page": 1,
@@ -51,10 +48,7 @@
     "displayName": "SBS PYME",
     "version": 1,
     "fingerprints": {
-      "textMarkers": [
-        "SEGUROS SBS",
-        "Resumen de coberturas y primas"
-      ],
+      "textMarkers": ["SEGUROS SBS", "Resumen de coberturas y primas"],
       "layoutMarkers": [
         {
           "page": 1,
@@ -97,11 +91,7 @@
     "displayName": "MAPFRE PYME",
     "version": 1,
     "fingerprints": {
-      "textMarkers": [
-        "MAPFRE",
-        "SECCION PRIMERA",
-        "SECCION SEGUNDA"
-      ],
+      "textMarkers": ["MAPFRE", "SECCION PRIMERA", "SECCION SEGUNDA"],
       "layoutMarkers": [
         {
           "page": 1,

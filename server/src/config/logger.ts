@@ -5,7 +5,7 @@ const isTest = process.env.NODE_ENV === 'test';
 
 export const logger = pino({
   level: process.env.LOG_LEVEL || 'info',
-  transport: isDevelopment 
+  transport: isDevelopment
     ? {
         target: 'pino-pretty',
         options: {
@@ -20,7 +20,15 @@ export const logger = pino({
     env: process.env.NODE_ENV || 'development',
   },
   redact: {
-    paths: ['req.headers.authorization', 'req.headers.cookie', '*.password', '*.token', '*.apiKey', '*.api_key', '*.secret'],
+    paths: [
+      'req.headers.authorization',
+      'req.headers.cookie',
+      '*.password',
+      '*.token',
+      '*.apiKey',
+      '*.api_key',
+      '*.secret',
+    ],
     remove: true,
   },
 });

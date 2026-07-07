@@ -104,7 +104,11 @@ describe('hybridDeductibleParser (PR3 canonical parser)', () => {
 
       expect(result.compoundOperator).toBe('lesser_of');
       expect(result.components).toContainEqual({ type: 'percentage', value: 10 });
-      expect(result.components).toContainEqual({ type: 'maximum', value: 1000000, currency: 'COP' });
+      expect(result.components).toContainEqual({
+        type: 'maximum',
+        value: 1000000,
+        currency: 'COP',
+      });
       expect(result.normalized.maxAmount).toBe(1000000);
     });
 

@@ -202,11 +202,6 @@ describe('learningEngine graph integration', () => {
 
     await learningEngine.applyCorrection(correction);
 
-    expect(mockLearnCorrection).toHaveBeenCalledWith(
-      'amparo basico',
-      'incendio',
-      'SBS',
-      'pyme'
-    );
+    expect(mockLearnCorrection).toHaveBeenCalledWith('amparo basico', 'incendio', 'SBS', 'pyme');
   });
 });

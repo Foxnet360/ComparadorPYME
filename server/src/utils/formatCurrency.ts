@@ -8,7 +8,7 @@ export function formatCOP(
   options: { decimals?: number; showSymbol?: boolean } = {}
 ): string {
   const { decimals = 0, showSymbol = true } = options;
-  
+
   if (amount === undefined || amount === null || isNaN(amount)) {
     return showSymbol ? '$0' : '0';
   }
@@ -59,10 +59,7 @@ export function formatCOPMillions(amount: number | undefined | null): string {
  * @param decimals - Number of decimal places (default: 1)
  * @returns Formatted string like "12,5%" or "0%"
  */
-export function formatPercentage(
-  value: number | undefined | null,
-  decimals: number = 1
-): string {
+export function formatPercentage(value: number | undefined | null, decimals: number = 1): string {
   if (value === undefined || value === null || isNaN(value)) {
     return '0%';
   }

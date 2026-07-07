@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { CoverageVariables, VariableComparison } from '../types/analysis';
-import { BarChart3, ChevronDown, ChevronUp, AlertTriangle, Check} from 'lucide-react';
+import { BarChart3, ChevronDown, ChevronUp, AlertTriangle, Check } from 'lucide-react';
 
 interface VariableComparisonMatrixProps {
   comparisons: VariableComparison[];
   insurers: string[];
 }
 
-const VariableComparisonMatrix: React.FC<VariableComparisonMatrixProps> = ({ comparisons, insurers }) => {
+const VariableComparisonMatrix: React.FC<VariableComparisonMatrixProps> = ({
+  comparisons,
+  insurers,
+}) => {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [showOnlyDifferences, setShowOnlyDifferences] = useState(false);
 
@@ -25,7 +28,12 @@ const VariableComparisonMatrix: React.FC<VariableComparisonMatrixProps> = ({ com
     if (!value) return '-';
     if (typeof value === 'object') {
       const obj = value as Record<string, unknown>;
-      if (obj.value && obj.currency && typeof obj.value === 'number' && typeof obj.currency === 'string') {
+      if (
+        obj.value &&
+        obj.currency &&
+        typeof obj.value === 'number' &&
+        typeof obj.currency === 'string'
+      ) {
         return `${obj.currency} ${obj.value.toLocaleString()}`;
       }
       return JSON.stringify(value);
@@ -38,7 +46,8 @@ const VariableComparisonMatrix: React.FC<VariableComparisonMatrixProps> = ({ com
     if (deductible.normalized) {
       const parts = [];
       if (deductible.normalized.percentage > 0) parts.push(`${deductible.normalized.percentage}%`);
-      if (deductible.normalized.minAmount > 0) parts.push(`min: ${deductible.normalized.minAmount.toLocaleString()}`);
+      if (deductible.normalized.minAmount > 0)
+        parts.push(`min: ${deductible.normalized.minAmount.toLocaleString()}`);
       if (deductible.normalized.maxAmount > 0 && deductible.normalized.maxAmount !== Infinity) {
         parts.push(`max: ${deductible.normalized.maxAmount.toLocaleString()}`);
       }
@@ -50,9 +59,9 @@ const VariableComparisonMatrix: React.FC<VariableComparisonMatrixProps> = ({ com
   };
 
   const filteredComparisons = showOnlyDifferences
-    ? comparisons.filter(c => {
+    ? comparisons.filter((c) => {
         // Show if there are differences in values or if coverage is exclusive
-        const values = c.variables.map(v => v.insuredAmount?.value);
+        const values = c.variables.map((v) => v.insuredAmount?.value);
         const uniqueValues = [...new Set(values)];
         return uniqueValues.length > 1 || c.exclusiveCoverages.length > 0;
       })
@@ -64,7 +73,9 @@ const VariableComparisonMatrix: React.FC<VariableComparisonMatrixProps> = ({ com
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <BarChart3 className="text-indigo-600" size={24} />
-            <h2 className="text-xl font-bold text-slate-900">Matriz de Comparación Variable a Variable</h2>
+            <h2 className="text-xl font-bold text-slate-900">
+              Matriz de Comparación Variable a Variable
+            </h2>
           </div>
           <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
             <input
@@ -76,10 +87,10 @@ const VariableComparisonMatrix: React.FC<VariableComparisonMatrixProps> = ({ com
             Mostrar solo diferencias
           </label>
         </div>
-        
+
         <p className="text-slate-600 text-sm">
-          Comparación directa de valores asegurados, deducibles, sublímites y exclusiones 
-          sin forzar categorías canónicas.
+          Comparación directa de valores asegurados, deducibles, sublímites y exclusiones sin forzar
+          categorías canónicas.
         </p>
       </div>
 
@@ -90,8 +101,8 @@ const VariableComparisonMatrix: React.FC<VariableComparisonMatrixProps> = ({ com
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider w-48">
                 Variable / Aseguradora
               </th>
-              {insurers.map(insurer => (
-                <th 
+              {insurers.map((insurer) => (
+                <th
                   key={insurer}
                   className="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider min-w-[150px]"
                 >
@@ -106,7 +117,7 @@ const VariableComparisonMatrix: React.FC<VariableComparisonMatrixProps> = ({ com
           <tbody className="divide-y divide-slate-200">
             {filteredComparisons.map((comparison) => (
               <React.Fragment key={comparison.groupId}>
-                <tr 
+                <tr
                   className={`hover:bg-slate-50 cursor-pointer ${
                     comparison.exclusiveCoverages.length > 0 ? 'bg-amber-50/50' : ''
                   }`}
@@ -128,9 +139,9 @@ const VariableComparisonMatrix: React.FC<VariableComparisonMatrixProps> = ({ com
                       )}
                     </div>
                   </td>
-                  
-                  {insurers.map(insurer => {
-                    const variable = comparison.variables.find(v => v.insurerName === insurer);
+
+                  {insurers.map((insurer) => {
+                    const variable = comparison.variables.find((v) => v.insurerName === insurer);
                     return (
                       <td key={insurer} className="px-4 py-4 text-center">
                         {variable ? (
@@ -158,7 +169,7 @@ const VariableComparisonMatrix: React.FC<VariableComparisonMatrixProps> = ({ com
                       </td>
                     );
                   })}
-                  
+
                   <td className="px-4 py-4 text-center">
                     {comparison.analysis.bestInsuredAmount && (
                       <div className="flex items-center justify-center gap-1 text-xs text-green-600">
@@ -180,16 +191,23 @@ const VariableComparisonMatrix: React.FC<VariableComparisonMatrixProps> = ({ com
                     )}
                   </td>
                 </tr>
-                
+
                 {expandedGroups.has(comparison.groupId) && (
                   <tr className="bg-slate-50/50">
                     <td colSpan={insurers.length + 2} className="px-4 py-4">
                       <div className="space-y-3">
-                        <h4 className="text-sm font-semibold text-slate-700">Detalles de cobertura</h4>
-                        
+                        <h4 className="text-sm font-semibold text-slate-700">
+                          Detalles de cobertura
+                        </h4>
+
                         {comparison.variables.map((variable) => (
-                          <div key={variable.insurerName} className="bg-white rounded-lg p-3 border border-slate-200">
-                            <div className="font-medium text-slate-900 mb-2">{variable.insurerName}</div>
+                          <div
+                            key={variable.insurerName}
+                            className="bg-white rounded-lg p-3 border border-slate-200"
+                          >
+                            <div className="font-medium text-slate-900 mb-2">
+                              {variable.insurerName}
+                            </div>
                             <div className="grid grid-cols-2 gap-2 text-sm">
                               <div>
                                 <span className="text-slate-500">Nombre original: </span>
@@ -197,42 +215,53 @@ const VariableComparisonMatrix: React.FC<VariableComparisonMatrixProps> = ({ com
                               </div>
                               <div>
                                 <span className="text-slate-500">Confianza: </span>
-                                <span className="text-slate-900">{(variable.confidence * 100).toFixed(0)}%</span>
+                                <span className="text-slate-900">
+                                  {(variable.confidence * 100).toFixed(0)}%
+                                </span>
                               </div>
                               <div>
                                 <span className="text-slate-500">Valor asegurado: </span>
-                                <span className="text-slate-900">{formatValue(variable.insuredAmount)}</span>
+                                <span className="text-slate-900">
+                                  {formatValue(variable.insuredAmount)}
+                                </span>
                               </div>
                               <div>
                                 <span className="text-slate-500">Deducible: </span>
-                                <span className="text-slate-900">{formatDeductible(variable.deductible)}</span>
+                                <span className="text-slate-900">
+                                  {formatDeductible(variable.deductible)}
+                                </span>
                               </div>
                             </div>
-                            
+
                             {variable.exclusions.length > 0 && (
                               <div className="mt-2">
                                 <span className="text-xs text-slate-500">Exclusiones: </span>
-                                <span className="text-xs text-red-600">{variable.exclusions.join(', ')}</span>
+                                <span className="text-xs text-red-600">
+                                  {variable.exclusions.join(', ')}
+                                </span>
                               </div>
                             )}
-                            
+
                             {variable.conditions.length > 0 && (
                               <div className="mt-2">
                                 <span className="text-xs text-slate-500">Condiciones: </span>
-                                <span className="text-xs text-slate-700">{variable.conditions.join(', ')}</span>
+                                <span className="text-xs text-slate-700">
+                                  {variable.conditions.join(', ')}
+                                </span>
                               </div>
                             )}
                           </div>
                         ))}
-                        
+
                         {comparison.exclusiveCoverages.length > 0 && (
                           <div className="mt-3">
                             <div className="flex items-center gap-2 text-amber-700 bg-amber-50 p-3 rounded-lg">
                               <AlertTriangle size={16} />
                               <span className="text-sm font-medium">
-                                Coberturas exclusivas: {comparison.exclusiveCoverages.map(e => 
-                                  `${e.rawName} (${e.insurerName})`
-                                ).join(', ')}
+                                Coberturas exclusivas:{' '}
+                                {comparison.exclusiveCoverages
+                                  .map((e) => `${e.rawName} (${e.insurerName})`)
+                                  .join(', ')}
                               </span>
                             </div>
                           </div>
@@ -246,7 +275,7 @@ const VariableComparisonMatrix: React.FC<VariableComparisonMatrixProps> = ({ com
           </tbody>
         </table>
       </div>
-      
+
       {filteredComparisons.length === 0 && (
         <div className="p-8 text-center text-slate-500">
           No se encontraron diferencias entre las cotizaciones.

@@ -37,9 +37,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <div className="p-6 bg-red-50 border border-red-200 rounded-xl">
           <div className="flex items-center space-x-3 mb-3">
             <AlertTriangle className="text-red-600" size={24} />
-            <h3 className="text-lg font-semibold text-red-800">
-              Algo salió mal
-            </h3>
+            <h3 className="text-lg font-semibold text-red-800">Algo salió mal</h3>
           </div>
           <p className="text-red-700 mb-4">
             Ocurrió un error inesperado. Por favor, recarga la página o intenta nuevamente.

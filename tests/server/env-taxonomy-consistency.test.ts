@@ -78,9 +78,7 @@ describe('checkEnvTaxonomyConsistency', () => {
 
     checkEnvTaxonomyConsistency(makeConfig(1423500, 42412));
     expect(mockLogger.warn).toHaveBeenCalled();
-    const warning = mockLogger.warn.mock.calls.find((call) =>
-      call[0].includes('SMMLV_VALUE')
-    );
+    const warning = mockLogger.warn.mock.calls.find((call) => call[0].includes('SMMLV_VALUE'));
     expect(warning).toBeDefined();
   });
 
@@ -94,9 +92,7 @@ describe('checkEnvTaxonomyConsistency', () => {
     });
 
     checkEnvTaxonomyConsistency(makeConfig(1423500, 42412));
-    const warning = mockLogger.warn.mock.calls.find((call) =>
-      call[0].includes('UVT_VALUE')
-    );
+    const warning = mockLogger.warn.mock.calls.find((call) => call[0].includes('UVT_VALUE'));
     expect(warning).toBeDefined();
   });
 

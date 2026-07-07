@@ -59,9 +59,9 @@ vi.mock('@google/genai', () => ({
           justification: 'Mocked: coverage is exclusive and requires human review',
           approved: true,
           alternativeGroupId: null,
-          reason: 'Mocked critic approval'
-        })
-      })
+          reason: 'Mocked critic approval',
+        }),
+      }),
     };
   },
   Type: {
@@ -70,7 +70,7 @@ vi.mock('@google/genai', () => ({
     BOOLEAN: 'boolean',
     ARRAY: 'array',
     OBJECT: 'object',
-  }
+  },
 }));
 
 // Mock embedding service to avoid real embeddings
@@ -78,10 +78,10 @@ vi.mock('../../services/vector/embeddingService', () => ({
   embeddingService: {
     generateEmbedding: vi.fn(() => Promise.resolve([0.1, 0.2, 0.3])),
     generateEmbeddingsBatch: vi.fn((texts: string[]) =>
-      Promise.resolve(texts.map(text => ({ text, embedding: [0.1, 0.2, 0.3] })))
+      Promise.resolve(texts.map((text) => ({ text, embedding: [0.1, 0.2, 0.3] })))
     ),
-    cosineSimilarity: vi.fn(() => 0.5)
-  }
+    cosineSimilarity: vi.fn(() => 0.5),
+  },
 }));
 
 // Mock cache to avoid Redis dependency
@@ -90,7 +90,7 @@ vi.mock('../../services/cache/redisCache', () => ({
   setCacheValue: vi.fn(() => Promise.resolve(undefined)),
   deleteCacheValue: vi.fn(() => Promise.resolve(undefined)),
   getCachedCoverageMapping: vi.fn(() => Promise.resolve(null)),
-  setCachedCoverageMapping: vi.fn(() => Promise.resolve())
+  setCachedCoverageMapping: vi.fn(() => Promise.resolve()),
 }));
 
 // Import real Supabase client (lazy init)
@@ -100,7 +100,8 @@ import { supabase } from '../../config/database';
 import { getReviewQueueCoverages } from '../../controllers/reviewQueueController';
 import { buildCanonicalCoverages } from '../../services/coverageNormalizer';
 
-const hasSupabaseCredentials = !!process.env.SUPABASE_URL && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+const hasSupabaseCredentials =
+  !!process.env.SUPABASE_URL && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 describe('Review Queue E2E Flow', () => {
   const app = express();
@@ -126,7 +127,7 @@ describe('Review Queue E2E Flow', () => {
 
         // The coverage should appear as uncategorized (unmapped)
         const uncategorized = normalizationResult.uncategorizedCoverages || [];
-        const foundUncategorized = uncategorized.find(c => c.rawNames.includes(rawName));
+        const foundUncategorized = uncategorized.find((c) => c.rawNames.includes(rawName));
         expect(foundUncategorized).toBeDefined();
         expect(foundUncategorized?.needsReview).toBe(true);
 
@@ -152,7 +153,9 @@ describe('Review Queue E2E Flow', () => {
         expect(response.body).toHaveProperty('pagination');
         expect(response.body.pagination.total).toBeGreaterThan(0);
 
-        const match = response.body.data.find((r: Record<string, unknown>) => r.rawName === rawName);
+        const match = response.body.data.find(
+          (r: Record<string, unknown>) => r.rawName === rawName
+        );
         expect(match).toBeDefined();
         expect(match).toHaveProperty('id');
         expect(match).toHaveProperty('rawName');
@@ -163,10 +166,7 @@ describe('Review Queue E2E Flow', () => {
         expect(match).toHaveProperty('createdAt');
       } finally {
         // Step 4: Cleanup test data
-        await supabase
-          .from('coverage_mappings')
-          .delete()
-          .eq('raw_name', rawName);
+        await supabase.from('coverage_mappings').delete().eq('raw_name', rawName);
       }
     }
   );

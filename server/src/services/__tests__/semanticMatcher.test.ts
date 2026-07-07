@@ -25,7 +25,7 @@ vi.mock('../coverageOntology', () => ({
     })),
     saveMapping: vi.fn(async () => {}),
     getNodeById: vi.fn(),
-  }
+  },
 }));
 
 // Mock dependencies
@@ -34,13 +34,13 @@ vi.mock('../vector/embeddingService', () => ({
     generateEmbedding: vi.fn(),
     generateEmbeddingsBatch: vi.fn(),
     cosineSimilarity: vi.fn(),
-  }
+  },
 }));
 
 vi.mock('../gemini', () => ({
   geminiService: {
     extractText: vi.fn(),
-  }
+  },
 }));
 
 vi.mock('../../config/env', () => ({
@@ -77,7 +77,7 @@ describe('semanticMatcher', () => {
   describe('Layer 1: Thesaurus Exact Matching', () => {
     it('should match exact canonical names', async () => {
       const result = await semanticMatcher.matchCoverage('Incendio (Edificio y Contenidos)');
-      
+
       expect(result.categoryId).toBe(1);
       expect(result.canonicalName).toBe('Incendio (Edificio y Contenidos)');
       expect(result.confidence).toBe(1.0);
@@ -87,7 +87,7 @@ describe('semanticMatcher', () => {
     it('should match exact synonyms from thesaurus', async () => {
       // "Responsabilidad Civil (RCE)" has synonyms in thesaurus
       const result = await semanticMatcher.matchCoverage('Responsabilidad Civil');
-      
+
       expect(result.categoryId).toBe(6);
       expect(result.canonicalName).toBe('Responsabilidad Civil (RCE)');
       expect(result.confidence).toBe(1.0);
@@ -96,21 +96,21 @@ describe('semanticMatcher', () => {
 
     it('should match case-insensitively', async () => {
       const result = await semanticMatcher.matchCoverage('INCENDIO (EDIFICIO Y CONTENIDOS)');
-      
+
       expect(result.categoryId).toBe(1);
       expect(result.confidence).toBe(1.0);
     });
 
     it('should match with accents normalized', async () => {
       const result = await semanticMatcher.matchCoverage('Responsabilidad Civil (RCE)');
-      
+
       expect(result.categoryId).toBe(6);
       expect(result.confidence).toBe(1.0);
     });
 
     it('should return partial match confidence for substring matches', async () => {
       const result = await semanticMatcher.matchCoverage('Incendio');
-      
+
       // Should match category 1 but with lower confidence (partial match)
       expect(result.categoryId).toBe(1);
       expect(result.confidence).toBeGreaterThanOrEqual(0.9);
@@ -121,7 +121,7 @@ describe('semanticMatcher', () => {
       // "ROTURA DE VIDRIOS" should map to Vidrios Planos (cat 7) not Rotura de Maquinaria (cat 5)
       // because "vidrios" (7 chars) is more specific than "rotura" (6 chars)
       const result = await semanticMatcher.matchCoverage('ROTURA DE VIDRIOS');
-      
+
       expect(result.categoryId).toBe(7);
       expect(result.canonicalName).toBe('Vidrios Planos');
       expect(result.method).toBe('thesaurus');
@@ -131,7 +131,7 @@ describe('semanticMatcher', () => {
   describe('Layer 2: Fuzzy Matching', () => {
     it('should match with small typos', async () => {
       const result = await semanticMatcher.matchCoverage('Responsaviliad Civil');
-      
+
       expect(result.categoryId).toBe(6);
       expect(result.canonicalName).toBe('Responsabilidad Civil (RCE)');
       expect(result.method).toBe('fuzzy');
@@ -140,14 +140,14 @@ describe('semanticMatcher', () => {
 
     it('should match with missing accents', async () => {
       const result = await semanticMatcher.matchCoverage('Equipo Electrico y Electronico');
-      
+
       expect(result.categoryId).toBe(4);
       expect(result.confidence).toBeGreaterThanOrEqual(CONFIDENCE_THRESHOLDS.FUZZY_MIN);
     });
 
     it('should not match when confidence is below threshold', async () => {
       const result = await semanticMatcher.matchCoverage('XYZ123 Nonexistent Coverage');
-      
+
       // Should not match by fuzzy since distance is too high
       expect(result.categoryId).toBeNull();
       expect(result.confidence).toBe(0);
@@ -155,7 +155,7 @@ describe('semanticMatcher', () => {
 
     it('should handle single character differences', async () => {
       const result = await semanticMatcher.matchCoverage('Vidrios Planos');
-      
+
       expect(result.categoryId).toBe(7);
       expect(result.confidence).toBeGreaterThanOrEqual(CONFIDENCE_THRESHOLDS.FUZZY_MIN);
     });
@@ -164,28 +164,34 @@ describe('semanticMatcher', () => {
   describe('Layer 3: Embedding Matching', () => {
     it('should match using embeddings when thesaurus and fuzzy fail', async () => {
       // Mock embeddings
-      const mockCoverageEmbedding = Array(768).fill(0).map((_, i) => i / 768);
-      const mockCategoryEmbedding = Array(768).fill(0).map((_, i) => i / 768);
-      
+      const mockCoverageEmbedding = Array(768)
+        .fill(0)
+        .map((_, i) => i / 768);
+      const mockCategoryEmbedding = Array(768)
+        .fill(0)
+        .map((_, i) => i / 768);
+
       vi.mocked(embeddingService.generateEmbedding).mockResolvedValue(mockCoverageEmbedding);
       vi.mocked(embeddingService.generateEmbeddingsBatch).mockResolvedValue(
-        semanticMatcher.getAllCategories().map(cat => ({
+        semanticMatcher.getAllCategories().map((cat) => ({
           embedding: mockCategoryEmbedding,
           text: cat.name,
-          model: 'gemini-embedding-001'
+          model: 'gemini-embedding-001',
         }))
       );
       vi.mocked(embeddingService.cosineSimilarity).mockReturnValue(0.85);
 
       // Use a name that won't match by thesaurus or fuzzy
       const result = await semanticMatcher.matchCoverage('XYZCoverageForEmbedding456');
-      
+
       expect(result.method).toBe('embedding');
       expect(result.confidence).toBeGreaterThanOrEqual(CONFIDENCE_THRESHOLDS.EMBEDDING_MIN);
     });
 
     it('should fall back to LLM when embedding generation throws', async () => {
-      vi.mocked(embeddingService.generateEmbedding).mockRejectedValue(new Error('Embedding API unavailable'));
+      vi.mocked(embeddingService.generateEmbedding).mockRejectedValue(
+        new Error('Embedding API unavailable')
+      );
       vi.mocked(geminiService.extractText).mockResolvedValue('CATEGORIA: 6\nCONFIANZA: 0.85');
 
       const result = await semanticMatcher.matchCoverage('FallbackCoverageAfterEmbeddingFailure');
@@ -195,46 +201,50 @@ describe('semanticMatcher', () => {
     });
 
     it('should use cached embeddings for repeated queries', async () => {
-      const mockEmbedding = Array(768).fill(0).map((_, i) => i / 768);
-      
+      const mockEmbedding = Array(768)
+        .fill(0)
+        .map((_, i) => i / 768);
+
       vi.mocked(embeddingService.generateEmbedding).mockResolvedValue(mockEmbedding);
       vi.mocked(embeddingService.generateEmbeddingsBatch).mockResolvedValue(
-        semanticMatcher.getAllCategories().map(cat => ({
+        semanticMatcher.getAllCategories().map((cat) => ({
           embedding: mockEmbedding,
           text: cat.name,
-          model: 'gemini-embedding-001'
+          model: 'gemini-embedding-001',
         }))
       );
       vi.mocked(embeddingService.cosineSimilarity).mockReturnValue(0.85);
 
       // Use a name that won't match by thesaurus or fuzzy
       const coverageName = 'XYZCoverage123';
-      
+
       // First call
       await semanticMatcher.matchCoverage(coverageName);
-      
+
       // Second call - should use cache
       await semanticMatcher.matchCoverage(coverageName);
-      
+
       // generateEmbedding should only be called once due to caching
       expect(embeddingService.generateEmbedding).toHaveBeenCalledTimes(1);
     });
 
     it('should not match when cosine similarity is below threshold', async () => {
-      const mockEmbedding = Array(768).fill(0).map((_, i) => i / 768);
-      
+      const mockEmbedding = Array(768)
+        .fill(0)
+        .map((_, i) => i / 768);
+
       vi.mocked(embeddingService.generateEmbedding).mockResolvedValue(mockEmbedding);
       vi.mocked(embeddingService.generateEmbeddingsBatch).mockResolvedValue(
-        semanticMatcher.getAllCategories().map(cat => ({
+        semanticMatcher.getAllCategories().map((cat) => ({
           embedding: mockEmbedding,
           text: cat.name,
-          model: 'gemini-embedding-001'
+          model: 'gemini-embedding-001',
         }))
       );
       vi.mocked(embeddingService.cosineSimilarity).mockReturnValue(0.5); // Below threshold
 
       const result = await semanticMatcher.matchCoverage('Completely Unrelated Coverage Name');
-      
+
       // Should fall through to LLM or return null
       expect(result.method).not.toBe('embedding');
     });
@@ -246,7 +256,7 @@ describe('semanticMatcher', () => {
       vi.mocked(geminiService.extractText).mockResolvedValue('CATEGORIA: 6\nCONFIANZA: 0.85');
 
       const result = await semanticMatcher.matchCoverage('RC Extranjera');
-      
+
       expect(result.method).toBe('llm');
       expect(result.categoryId).toBe(6);
       expect(result.confidence).toBe(0.85);
@@ -257,7 +267,7 @@ describe('semanticMatcher', () => {
 
       // Use a name that won't match by thesaurus or fuzzy
       const result = await semanticMatcher.matchCoverage('XYZAmbiguousCoverage123');
-      
+
       expect(result.categoryId).toBe(3);
       expect(result.confidence).toBe(0.75);
     });
@@ -266,7 +276,7 @@ describe('semanticMatcher', () => {
       vi.mocked(geminiService.extractText).mockResolvedValue('CATEGORIA: 6\nCONFIANZA: 0.3');
 
       const result = await semanticMatcher.matchCoverage('Ambiguous Coverage');
-      
+
       // Should not return LLM match since confidence is below threshold
       expect(result.categoryId).toBeNull();
       expect(result.confidence).toBe(0);
@@ -276,7 +286,7 @@ describe('semanticMatcher', () => {
       vi.mocked(geminiService.extractText).mockResolvedValue('Invalid response format');
 
       const result = await semanticMatcher.matchCoverage('Unknown Coverage');
-      
+
       expect(result.categoryId).toBeNull();
       expect(result.confidence).toBe(0);
     });
@@ -285,22 +295,23 @@ describe('semanticMatcher', () => {
   describe('Edge Cases', () => {
     it('should handle empty string', async () => {
       const result = await semanticMatcher.matchCoverage('');
-      
+
       expect(result.categoryId).toBeNull();
       expect(result.confidence).toBe(0);
     });
 
     it('should handle null/undefined', async () => {
       const result = await semanticMatcher.matchCoverage('');
-      
+
       expect(result.categoryId).toBeNull();
       expect(result.confidence).toBe(0);
     });
 
     it('should handle very long coverage names', async () => {
-      const longName = 'Responsabilidad Civil Extracontractual por Daños a Terceros en Establecimientos Comerciales y Eventos';
+      const longName =
+        'Responsabilidad Civil Extracontractual por Daños a Terceros en Establecimientos Comerciales y Eventos';
       const result = await semanticMatcher.matchCoverage(longName);
-      
+
       // Should still match to RC category
       expect(result.categoryId).toBe(6);
     });
@@ -329,7 +340,7 @@ describe('semanticMatcher', () => {
         'Responsabilidad Civil',
         'Robo y Hurto',
         'Equipo Electrónico',
-        'Vidrios Planos'
+        'Vidrios Planos',
       ];
 
       const start = Date.now();
@@ -338,9 +349,9 @@ describe('semanticMatcher', () => {
 
       expect(results).toHaveLength(5);
       expect(duration).toBeLessThan(5000); // Should complete in under 5 seconds
-      
+
       // All should be matched by thesaurus (fastest layer)
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.method).toBe('thesaurus');
         expect(result.confidence).toBeGreaterThanOrEqual(0.9);
       });
@@ -359,11 +370,9 @@ describe('semanticMatcher', () => {
       vi.mocked(coverageOntology.mapCoverage).mockResolvedValue({
         rawName: 'Robo con Violencia',
         insurerName: '',
-        groups: [
-          { groupId: 'sustraccion_hurto', confidence: 0.95 }
-        ],
+        groups: [{ groupId: 'sustraccion_hurto', confidence: 0.95 }],
         isComposite: false,
-        confidence: 0.95
+        confidence: 0.95,
       });
 
       vi.mocked(coverageOntology.getNodeById).mockReturnValue({
@@ -372,7 +381,7 @@ describe('semanticMatcher', () => {
         level: 2,
         childrenIds: [],
         aliases: ['Robo', 'Hurto', 'Sustracción'],
-        riskType: 'general'
+        riskType: 'general',
       });
 
       const result = await semanticMatcher.matchProbabilistic('Robo con Violencia');
@@ -387,11 +396,9 @@ describe('semanticMatcher', () => {
       vi.mocked(coverageOntology.mapCoverage).mockResolvedValue({
         rawName: 'Amparo Inexistente Muy Raro',
         insurerName: '',
-        groups: [
-          { groupId: 'unknown_ontology_id', confidence: 0.5 }
-        ],
+        groups: [{ groupId: 'unknown_ontology_id', confidence: 0.5 }],
         isComposite: false,
-        confidence: 0.5
+        confidence: 0.5,
       });
 
       vi.mocked(coverageOntology.getNodeById).mockReturnValue(undefined);

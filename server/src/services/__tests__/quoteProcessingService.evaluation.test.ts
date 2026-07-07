@@ -61,7 +61,11 @@ vi.mock('../reconciliationService', () => ({
 
 vi.mock('../vector/embeddingService', () => ({
   embeddingService: {
-    generateEmbedding: vi.fn(async () => Array(3072).fill(0).map((_, i) => i / 3072)),
+    generateEmbedding: vi.fn(async () =>
+      Array(3072)
+        .fill(0)
+        .map((_, i) => i / 3072)
+    ),
     generateEmbeddingsBatch: vi.fn(async (texts: string[]) => texts.map(() => Array(3072).fill(0))),
     cosineSimilarity: vi.fn(() => 0.95),
   },
@@ -111,7 +115,9 @@ function makeMulterFile(originalname: string): Express.Multer.File {
   } as Express.Multer.File;
 }
 
-function buildSyntheticExtraction(fixture: import('../evaluationHarness').GoldenQuote): Record<string, unknown> {
+function buildSyntheticExtraction(
+  fixture: import('../evaluationHarness').GoldenQuote
+): Record<string, unknown> {
   return {
     insurerName: fixture.insurer,
     policyName: `${fixture.insurer} PYME Policy`,
@@ -128,7 +134,9 @@ function buildSyntheticExtraction(fixture: import('../evaluationHarness').Golden
     validityPeriod: '2024-01-01 - 2024-12-31',
     coverages: fixture.expectedCoverages.map((c) => ({
       rawName: c.canonicalName,
-      insuredAmount: c.insuredAmount ? `$${c.insuredAmount.toLocaleString('es-CO')}` : 'NO ESPECIFICADO',
+      insuredAmount: c.insuredAmount
+        ? `$${c.insuredAmount.toLocaleString('es-CO')}`
+        : 'NO ESPECIFICADO',
       deductible: c.deductible || 'No aplica',
       premium: '$0',
       subLimits: [],
@@ -150,7 +158,16 @@ function buildSyntheticExtraction(fixture: import('../evaluationHarness').Golden
 }
 
 async function loadFirstFixtureOfInsurer(insurer: string) {
-  const fixturesDir = path.resolve(__dirname, '..', '..', '..', '..', 'tests', 'fixtures', 'golden-set');
+  const fixturesDir = path.resolve(
+    __dirname,
+    '..',
+    '..',
+    '..',
+    '..',
+    'tests',
+    'fixtures',
+    'golden-set'
+  );
   const fixtures = await loadGoldenSet(fixturesDir, {
     readdir: (dir) => fs.readdir(dir),
     readFile: (filePath) => fs.readFile(filePath, 'utf8'),
@@ -203,7 +220,9 @@ describe('processQuoteMultimodal - golden-set integration', () => {
     expect(result.insurerName).toBe('BBVA');
     expect(result.coverages.length).toBeGreaterThan(0);
     for (const expected of fixture.expectedCoverages) {
-      const found = result.coverages.find((c) => c.canonicalName === expected.canonicalName || c.name === expected.canonicalName);
+      const found = result.coverages.find(
+        (c) => c.canonicalName === expected.canonicalName || c.name === expected.canonicalName
+      );
       expect(found).toBeDefined();
     }
     expect(mockExtractFromPdfWithVision).toHaveBeenCalled();
@@ -225,13 +244,25 @@ describe('processQuoteMultimodal - golden-set integration', () => {
 
     expect(result.insurerName).toBe('SBS');
     const firstExpected = fixture.expectedCoverages[0];
-    const found = result.coverages.find((c) => c.canonicalName === firstExpected.canonicalName || c.name === firstExpected.canonicalName);
+    const found = result.coverages.find(
+      (c) =>
+        c.canonicalName === firstExpected.canonicalName || c.name === firstExpected.canonicalName
+    );
     expect(found).toBeDefined();
     expect(found?.deductible).toBe(firstExpected.deductible);
   });
 
   it('falls back to generic extraction for an unknown/mixed fixture', async () => {
-    const fixturesDir = path.resolve(__dirname, '..', '..', '..', '..', 'tests', 'fixtures', 'golden-set');
+    const fixturesDir = path.resolve(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      '..',
+      'tests',
+      'fixtures',
+      'golden-set'
+    );
     const fixtures = await loadGoldenSet(fixturesDir, {
       readdir: (dir) => fs.readdir(dir),
       readFile: (filePath) => fs.readFile(filePath, 'utf8'),
@@ -276,13 +307,15 @@ describe('golden-set pipeline runner adapter', () => {
         templateId: goldenFixture.templateId,
         coverages: parsed.coverages.map((c) => ({
           canonicalName: c.canonicalName || c.name,
-          insuredAmount: c.value !== 'NO ESPECIFICADO' ? parseInt(c.value.replace(/\D/g, ''), 10) || 0 : 0,
+          insuredAmount:
+            c.value !== 'NO ESPECIFICADO' ? parseInt(c.value.replace(/\D/g, ''), 10) || 0 : 0,
           deductible: c.deductible,
           premium: 0,
         })),
         uncategorizedCoverages: (parsed.uncategorizedCoverages || []).map((c) => ({
           canonicalName: c.canonicalName || c.name,
-          insuredAmount: c.value !== 'NO ESPECIFICADO' ? parseInt(c.value.replace(/\D/g, ''), 10) || 0 : 0,
+          insuredAmount:
+            c.value !== 'NO ESPECIFICADO' ? parseInt(c.value.replace(/\D/g, ''), 10) || 0 : 0,
           deductible: c.deductible,
         })),
         rawCoverageCount: parsed.coverages.length + (parsed.uncategorizedCoverages?.length || 0),

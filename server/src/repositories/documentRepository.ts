@@ -18,11 +18,7 @@ export interface DocumentRecord {
 }
 
 export async function getDocumentById(id: string): Promise<DocumentRecord | null> {
-  const { data, error } = await supabase
-    .from('documents')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const { data, error } = await supabase.from('documents').select('*').eq('id', id).single();
 
   if (error) {
     if (error.code === 'PGRST116') return null; // Not found
@@ -59,8 +55,14 @@ export async function archiveDocument(id: string): Promise<void> {
 
 export async function getDocumentCounts(id: string): Promise<{ chunks: number; images: number }> {
   const [{ count: chunkCount }, { count: imageCount }] = await Promise.all([
-    supabase.from('document_chunks' as never).select('*', { count: 'exact', head: true }).eq('document_id', id),
-    supabase.from('document_images' as never).select('*', { count: 'exact', head: true }).eq('document_id', id),
+    supabase
+      .from('document_chunks' as never)
+      .select('*', { count: 'exact', head: true })
+      .eq('document_id', id),
+    supabase
+      .from('document_images' as never)
+      .select('*', { count: 'exact', head: true })
+      .eq('document_id', id),
   ]);
 
   return { chunks: chunkCount || 0, images: imageCount || 0 };

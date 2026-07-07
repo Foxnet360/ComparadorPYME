@@ -97,11 +97,13 @@ export const deductibleParser = {
    * Build structured deductible from parsed JSON (backward-compatible shape).
    */
   buildStructureFromParsed(parsed: Record<string, unknown>, rawText: string): DeductibleStructure {
-    const components: DeductibleComponent[] = ((parsed.components || []) as Array<{
-      type: string;
-      value: unknown;
-      currency?: unknown;
-    }>).map((c) => ({
+    const components: DeductibleComponent[] = (
+      (parsed.components || []) as Array<{
+        type: string;
+        value: unknown;
+        currency?: unknown;
+      }>
+    ).map((c) => ({
       type: c.type as DeductibleComponent['type'],
       value: typeof c.value === 'number' ? c.value : Number(c.value) || 0,
       currency: c.currency ? String(c.currency) : undefined,
@@ -194,8 +196,13 @@ export const deductibleParser = {
     }
 
     // Check min < max
-    if (structure.normalized.minAmount > structure.normalized.maxAmount && structure.normalized.maxAmount > 0) {
-      issues.push(`Minimum (${structure.normalized.minAmount}) exceeds maximum (${structure.normalized.maxAmount})`);
+    if (
+      structure.normalized.minAmount > structure.normalized.maxAmount &&
+      structure.normalized.maxAmount > 0
+    ) {
+      issues.push(
+        `Minimum (${structure.normalized.minAmount}) exceeds maximum (${structure.normalized.maxAmount})`
+      );
     }
 
     // Check for negative values

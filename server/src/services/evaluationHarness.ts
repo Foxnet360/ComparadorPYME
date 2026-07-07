@@ -6,7 +6,7 @@
  */
 
 import path from 'path';
-import { PageTextItems} from './templateRegistryService';
+import { PageTextItems } from './templateRegistryService';
 import { LayoutTable } from '../schemas/templateRegistrySchema';
 
 // ---------------------------------------------------------------------------
@@ -186,7 +186,8 @@ export function evaluateFixture(
       continue;
     }
 
-    const nameMatch = normalizeName(matched.canonicalName) === normalizeName(expected.canonicalName);
+    const nameMatch =
+      normalizeName(matched.canonicalName) === normalizeName(expected.canonicalName);
     const valueMatch = valuesMatch(expected.insuredAmount, matched.insuredAmount);
     const deductibleMatch =
       expected.deductible === undefined ||
@@ -201,22 +202,30 @@ export function evaluateFixture(
     }
   }
 
-  const expectedWithDeductible = golden.expectedCoverages.filter((e) => e.deductible !== undefined)
-    .length;
+  const expectedWithDeductible = golden.expectedCoverages.filter(
+    (e) => e.deductible !== undefined
+  ).length;
 
   const falsePositiveCoverageCount = actual.coverages.filter(
-    (c) => !golden.expectedCoverages.some((e) => normalizeName(e.canonicalName) === normalizeName(c.canonicalName))
+    (c) =>
+      !golden.expectedCoverages.some(
+        (e) => normalizeName(e.canonicalName) === normalizeName(c.canonicalName)
+      )
   ).length;
 
   const uncategorizedCoverageCount = actual.uncategorizedCoverages.length;
-  const rawCoverageCount = Math.max(actual.rawCoverageCount, actual.coverages.length + uncategorizedCoverageCount);
+  const rawCoverageCount = Math.max(
+    actual.rawCoverageCount,
+    actual.coverages.length + uncategorizedCoverageCount
+  );
 
   const coverageAccuracy = expectedCount > 0 ? correctCoverageCount / expectedCount : 0;
   const deductibleAccuracy =
     expectedWithDeductible > 0
       ? (expectedWithDeductible - deductibleMismatchCount) / expectedWithDeductible
       : 1;
-  const uncategorizedRate = rawCoverageCount > 0 ? uncategorizedCoverageCount / rawCoverageCount : 0;
+  const uncategorizedRate =
+    rawCoverageCount > 0 ? uncategorizedCoverageCount / rawCoverageCount : 0;
 
   const needsManualCompletion =
     coverageAccuracy < thresholds.coverageAccuracyThreshold ||
@@ -224,7 +233,8 @@ export function evaluateFixture(
     uncategorizedRate > thresholds.uncategorizedRateThreshold;
 
   const manualCompletionRate = needsManualCompletion ? 1 : 0;
-  const correctionRate = expectedCount > 0 ? (expectedCount - correctCoverageCount) / expectedCount : 0;
+  const correctionRate =
+    expectedCount > 0 ? (expectedCount - correctCoverageCount) / expectedCount : 0;
 
   return {
     fixtureId: golden.fixtureId,
@@ -271,7 +281,10 @@ export function computeAggregateMetrics(results: FixtureResult[]): EvaluationMet
   const totalExpectedCoverages = results.reduce((sum, r) => sum + r.expectedCoverageCount, 0);
   const totalCorrectCoverages = results.reduce((sum, r) => sum + r.correctCoverageCount, 0);
   const totalDeductibleMismatches = results.reduce((sum, r) => sum + r.deductibleMismatchCount, 0);
-  const totalUncategorizedCoverages = results.reduce((sum, r) => sum + r.uncategorizedCoverageCount, 0);
+  const totalUncategorizedCoverages = results.reduce(
+    (sum, r) => sum + r.uncategorizedCoverageCount,
+    0
+  );
 
   // Coverage accuracy weighted by expected coverages so large quotes don't skew the unweighted mean.
   const coverageAccuracy =
@@ -427,10 +440,7 @@ function isGoldenQuote(data: unknown): data is GoldenQuote {
   );
 }
 
-export async function loadGoldenSet(
-  directory: string,
-  fs: FileSystemLike
-): Promise<GoldenQuote[]> {
+export async function loadGoldenSet(directory: string, fs: FileSystemLike): Promise<GoldenQuote[]> {
   const files = await fs.readdir(directory);
   const jsonFiles = files.filter((f) => f.toLowerCase().endsWith('.json'));
 
@@ -445,7 +455,9 @@ export async function loadGoldenSet(
         console.warn(`⚠️ [EvaluationHarness] Skipping invalid fixture ${file}`);
       }
     } catch (error: unknown) {
-      console.warn(`⚠️ [EvaluationHarness] Failed to load fixture ${file}: ${error instanceof Error ? error.message : String(error)}`);
+      console.warn(
+        `⚠️ [EvaluationHarness] Failed to load fixture ${file}: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 

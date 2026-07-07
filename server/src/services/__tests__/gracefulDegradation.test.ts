@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { GeminiRateLimitError, GeminiServiceUnavailableError, GeminiTimeoutError } from '../../errors/geminiErrors';
+import {
+  GeminiRateLimitError,
+  GeminiServiceUnavailableError,
+  GeminiTimeoutError,
+} from '../../errors/geminiErrors';
 
 describe('Graceful Degradation', () => {
   describe('Error placeholder objects', () => {
@@ -15,7 +19,7 @@ describe('Graceful Degradation', () => {
         parseConfidence: 0,
         isFailed: true,
         errorCategory: 'SERVICE_UNAVAILABLE',
-        errorCode: 'GEMINI_SERVICE_UNAVAILABLE'
+        errorCode: 'GEMINI_SERVICE_UNAVAILABLE',
       };
 
       expect(failedQuote).toHaveProperty('isFailed', true);
@@ -30,13 +34,13 @@ describe('Graceful Degradation', () => {
       const serviceError = {
         isFailed: true,
         errorCategory: 'SERVICE_UNAVAILABLE',
-        errorCode: 'GEMINI_SERVICE_UNAVAILABLE'
+        errorCode: 'GEMINI_SERVICE_UNAVAILABLE',
       };
 
       const extractionError = {
         isFailed: true,
         errorCategory: 'EXTRACTION_FAILED',
-        errorCode: 'EXTRACTION_ERROR'
+        errorCode: 'EXTRACTION_ERROR',
       };
 
       expect(serviceError.errorCategory).not.toBe(extractionError.errorCategory);
@@ -47,7 +51,7 @@ describe('Graceful Degradation', () => {
   describe('Error categorization', () => {
     it('should categorize 503 errors as service unavailable', () => {
       const error = new GeminiServiceUnavailableError();
-      
+
       expect(error.errorCode).toBe('GEMINI_SERVICE_UNAVAILABLE');
       expect(error.statusCode).toBe(503);
       expect(error.userMessage).toContain('temporalmente no disponible');
@@ -55,7 +59,7 @@ describe('Graceful Degradation', () => {
 
     it('should categorize timeout errors correctly', () => {
       const error = new GeminiTimeoutError();
-      
+
       expect(error.errorCode).toBe('GEMINI_TIMEOUT');
       expect(error.statusCode).toBe(504);
       expect(error.userMessage).toContain('demasiado tiempo');
@@ -63,7 +67,7 @@ describe('Graceful Degradation', () => {
 
     it('should categorize rate limit errors correctly', () => {
       const error = new GeminiRateLimitError();
-      
+
       expect(error.errorCode).toBe('GEMINI_RATE_LIMIT');
       expect(error.statusCode).toBe(429);
       expect(error.userMessage).toContain('Límite de requests');
@@ -75,11 +79,11 @@ describe('Graceful Degradation', () => {
       const quotes = [
         { insurerName: 'Insurer 1', isFailed: false, priceAnnual: 1000000 },
         { insurerName: 'Insurer 2', isFailed: true, errorCode: 'GEMINI_SERVICE_UNAVAILABLE' },
-        { insurerName: 'Insurer 3', isFailed: false, priceAnnual: 2000000 }
+        { insurerName: 'Insurer 3', isFailed: false, priceAnnual: 2000000 },
       ];
 
-      const successfulQuotes = quotes.filter(q => !q.isFailed);
-      const failedQuotes = quotes.filter(q => q.isFailed);
+      const successfulQuotes = quotes.filter((q) => !q.isFailed);
+      const failedQuotes = quotes.filter((q) => q.isFailed);
 
       expect(successfulQuotes).toHaveLength(2);
       expect(failedQuotes).toHaveLength(1);
@@ -90,10 +94,10 @@ describe('Graceful Degradation', () => {
     it('should handle all quotes failing', () => {
       const quotes = [
         { insurerName: 'Insurer 1', isFailed: true, errorCode: 'GEMINI_TIMEOUT' },
-        { insurerName: 'Insurer 2', isFailed: true, errorCode: 'GEMINI_RATE_LIMIT' }
+        { insurerName: 'Insurer 2', isFailed: true, errorCode: 'GEMINI_RATE_LIMIT' },
       ];
 
-      const allFailed = quotes.every(q => q.isFailed);
+      const allFailed = quotes.every((q) => q.isFailed);
       expect(allFailed).toBe(true);
     });
   });

@@ -87,12 +87,9 @@ vi.mock('../../server/src/utils/structuredLogger', () => ({
   },
 }));
 
-const { processQuoteMultimodal } = await import(
-  '../../server/src/services/quoteProcessingService'
-);
-const { createExtractionMetricsEmitter } = await import(
-  '../../server/src/services/extractionMetrics'
-);
+const { processQuoteMultimodal } = await import('../../server/src/services/quoteProcessingService');
+const { createExtractionMetricsEmitter } =
+  await import('../../server/src/services/extractionMetrics');
 
 describe('processQuoteMultimodal metrics and formatFamily', () => {
   beforeEach(() => {
@@ -100,7 +97,14 @@ describe('processQuoteMultimodal metrics and formatFamily', () => {
 
     extractTextFromPdf.mockResolvedValue({
       text: 'COTIZACION SBS PYME Integral AMPAROS BASICOS DEDUCIBLES QUE APLICAN',
-      pages: [{ pageNumber: 1, text: 'COTIZACION SBS PYME Integral AMPAROS BASICOS DEDUCIBLES QUE APLICAN', wordCount: 4, hasContent: true }],
+      pages: [
+        {
+          pageNumber: 1,
+          text: 'COTIZACION SBS PYME Integral AMPAROS BASICOS DEDUCIBLES QUE APLICAN',
+          wordCount: 4,
+          hasContent: true,
+        },
+      ],
       pageTextMap: { 1: 'COTIZACION SBS PYME Integral AMPAROS BASICOS DEDUCIBLES QUE APLICAN' },
       metadata: { pageCount: 1 },
       warnings: [],
@@ -156,7 +160,10 @@ describe('processQuoteMultimodal metrics and formatFamily', () => {
 
   it('propagates formatFamily into metrics and parsed quote', async () => {
     const metrics = createExtractionMetricsEmitter();
-    const file = { path: '/tmp/quote.pdf', originalname: 'quote-sbs.pdf' } as unknown as Express.Multer.File;
+    const file = {
+      path: '/tmp/quote.pdf',
+      originalname: 'quote-sbs.pdf',
+    } as unknown as Express.Multer.File;
 
     const parsed = await processQuoteMultimodal(file, 0, 1, {
       domain: 'pyme',
@@ -175,29 +182,40 @@ describe('processQuoteMultimodal metrics and formatFamily', () => {
   });
 
   it('emits repair metric when JSON repair is used', async () => {
-    extractFromPdfWithVision.mockImplementation(async (_path, _prompt, _name, _text, options: { onRepairUsed?: (reason: string) => void }) => {
-      if (options?.onRepairUsed) {
-        options.onRepairUsed('trailing_comma');
+    extractFromPdfWithVision.mockImplementation(
+      async (
+        _path,
+        _prompt,
+        _name,
+        _text,
+        options: { onRepairUsed?: (reason: string) => void }
+      ) => {
+        if (options?.onRepairUsed) {
+          options.onRepairUsed('trailing_comma');
+        }
+        return {
+          insurerName: 'SBS',
+          policyName: 'PYME Integral',
+          formatFamily: 'TABLE-DOUBLE',
+          premium: { totalPayable: 5_000_000, currency: 'COP' },
+          rawCoverages: [
+            {
+              rawName: 'Incendio',
+              rawTextSnippet: 'Incendio y Riesgos Aliados con suma asegurada de 100 millones',
+              pageNumber: 1,
+              insuredAmount: 100_000_000,
+              deductible: '10%',
+            },
+          ],
+        };
       }
-      return {
-        insurerName: 'SBS',
-        policyName: 'PYME Integral',
-        formatFamily: 'TABLE-DOUBLE',
-        premium: { totalPayable: 5_000_000, currency: 'COP' },
-        rawCoverages: [
-          {
-            rawName: 'Incendio',
-            rawTextSnippet: 'Incendio y Riesgos Aliados con suma asegurada de 100 millones',
-            pageNumber: 1,
-            insuredAmount: 100_000_000,
-            deductible: '10%',
-          },
-        ],
-      };
-    });
+    );
 
     const metrics = createExtractionMetricsEmitter();
-    const file = { path: '/tmp/quote.pdf', originalname: 'quote-sbs.pdf' } as unknown as Express.Multer.File;
+    const file = {
+      path: '/tmp/quote.pdf',
+      originalname: 'quote-sbs.pdf',
+    } as unknown as Express.Multer.File;
 
     await processQuoteMultimodal(file, 0, 1, {
       domain: 'pyme',
@@ -214,7 +232,10 @@ describe('processQuoteMultimodal metrics and formatFamily', () => {
     extractFromPdfWithVision.mockRejectedValue(new Error('Gemini service unavailable (503)'));
 
     const metrics = createExtractionMetricsEmitter();
-    const file = { path: '/tmp/quote.pdf', originalname: 'quote-sbs.pdf' } as unknown as Express.Multer.File;
+    const file = {
+      path: '/tmp/quote.pdf',
+      originalname: 'quote-sbs.pdf',
+    } as unknown as Express.Multer.File;
 
     const parsed = await processQuoteMultimodal(file, 0, 1, {
       domain: 'pyme',

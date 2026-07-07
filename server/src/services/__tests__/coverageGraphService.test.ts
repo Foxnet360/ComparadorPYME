@@ -4,7 +4,11 @@ import { GraphEdge } from '../../types/templateGraph';
 
 vi.mock('../vector/embeddingService', () => ({
   embeddingService: {
-    generateEmbedding: vi.fn(async (_text: string) => Array(3072).fill(0).map((_, i) => i / 3072)),
+    generateEmbedding: vi.fn(async (_text: string) =>
+      Array(3072)
+        .fill(0)
+        .map((_, i) => i / 3072)
+    ),
     cosineSimilarity: vi.fn(() => 1.0),
   },
 }));
@@ -55,9 +59,12 @@ function makeFakeDb(initialEdges: FakeEdge[] = []): FakeDb {
   function buildTable(table: string): FakeTable {
     if (table !== 'coverage_graph_edges') {
       return {
-        select: vi.fn(() => ({
-          eq: vi.fn(() => Promise.resolve({ data: [], error: null })),
-        } as unknown as FakeFilterBuilder)),
+        select: vi.fn(
+          () =>
+            ({
+              eq: vi.fn(() => Promise.resolve({ data: [], error: null })),
+            }) as unknown as FakeFilterBuilder
+        ),
         upsert: vi.fn(() => Promise.resolve({ data: null, error: null })),
         delete: vi.fn(() => {
           const delChain: FakeDeleteBuilder = {
@@ -104,7 +111,8 @@ function makeFakeDb(initialEdges: FakeEdge[] = []): FakeDb {
                 for (const [col, val] of Object.entries(chain.filters)) {
                   if (typeof val === 'object' && val !== null && 'ilike' in val) {
                     const text = String(e[col] ?? '').toLowerCase();
-                    if (!text.includes(String((val as Record<string, unknown>).ilike))) return false;
+                    if (!text.includes(String((val as Record<string, unknown>).ilike)))
+                      return false;
                   } else if ((e[col] ?? '') !== val && !(val === '' && (e[col] ?? '') === '')) {
                     return false;
                   }

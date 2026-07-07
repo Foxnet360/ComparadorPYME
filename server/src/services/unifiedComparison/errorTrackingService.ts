@@ -13,12 +13,24 @@ interface GenericDbTable {
     eq(column: string, value: string): Promise<{ error: unknown }>;
   };
   select(columns?: string): {
-    gte(column: string, value: string): {
+    gte(
+      column: string,
+      value: string
+    ): {
       lte(column: string, value: string): Promise<GenericDbResult>;
     };
-    eq(column: string, value: string): {
-      gte(column: string, value: string): {
-        lte(column: string, value: string): {
+    eq(
+      column: string,
+      value: string
+    ): {
+      gte(
+        column: string,
+        value: string
+      ): {
+        lte(
+          column: string,
+          value: string
+        ): {
           order(column: string, options?: { ascending?: boolean }): Promise<GenericDbResult>;
         };
       };
@@ -38,7 +50,7 @@ export enum ErrorCategory {
   CACHE = 'cache',
   NETWORK = 'network',
   TIMEOUT = 'timeout',
-  UNKNOWN = 'unknown'
+  UNKNOWN = 'unknown',
 }
 
 export interface TrackedError {
@@ -65,30 +77,42 @@ class ErrorTrackingService {
   categorizeError(error: Error): ErrorCategory {
     const message = error.message.toLowerCase();
 
-    if (message.includes('gemini') || message.includes('generatecontent') || message.includes('model')) {
+    if (
+      message.includes('gemini') ||
+      message.includes('generatecontent') ||
+      message.includes('model')
+    ) {
       return ErrorCategory.GEMINI_API;
     }
-    
+
     if (message.includes('upload') || message.includes('file') || message.includes('pdf')) {
       return ErrorCategory.PDF_UPLOAD;
     }
-    
+
     if (message.includes('json') || message.includes('parse') || message.includes('syntax')) {
       return ErrorCategory.JSON_PARSE;
     }
-    
-    if (message.includes('schema') || message.includes('validation') || message.includes('invalid')) {
+
+    if (
+      message.includes('schema') ||
+      message.includes('validation') ||
+      message.includes('invalid')
+    ) {
       return ErrorCategory.SCHEMA_VALIDATION;
     }
-    
+
     if (message.includes('cache') || message.includes('redis') || message.includes('memory')) {
       return ErrorCategory.CACHE;
     }
-    
-    if (message.includes('network') || message.includes('connection') || message.includes('timeout')) {
+
+    if (
+      message.includes('network') ||
+      message.includes('connection') ||
+      message.includes('timeout')
+    ) {
       return ErrorCategory.NETWORK;
     }
-    
+
     if (message.includes('timeout') || message.includes('exceeded')) {
       return ErrorCategory.TIMEOUT;
     }
@@ -106,7 +130,7 @@ class ErrorTrackingService {
     metadata?: Record<string, unknown>
   ): Promise<void> {
     const category = this.categorizeError(error);
-    
+
     const trackedError: TrackedError = {
       correlationId,
       category,
@@ -114,11 +138,11 @@ class ErrorTrackingService {
       stack: error.stack,
       metadata: metadata || {},
       pdfCount: pdfPaths.length,
-      pdfNames: pdfPaths.map(p => {
+      pdfNames: pdfPaths.map((p) => {
         const parts = p.split('/');
         return parts[parts.length - 1];
       }),
-      resolved: false
+      resolved: false,
     };
 
     // Add to buffer
@@ -140,7 +164,7 @@ class ErrorTrackingService {
     if (this.errorBuffer.length === 0) return;
 
     try {
-      const errors = this.errorBuffer.map(err => ({
+      const errors = this.errorBuffer.map((err) => ({
         correlation_id: err.correlationId,
         category: err.category,
         message: err.message,
@@ -149,15 +173,18 @@ class ErrorTrackingService {
         pdf_count: err.pdfCount,
         pdf_names: err.pdfNames,
         resolved: err.resolved,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       }));
 
       await errorsTable().insert(errors as Record<string, unknown>[]);
-      
+
       console.log(`📝 [ErrorTracking] Flushed ${this.errorBuffer.length} errors to database`);
       this.errorBuffer = [];
     } catch (dbError) {
-      console.error('❌ [ErrorTracking] Failed to flush errors:', dbError instanceof Error ? dbError.message : String(dbError));
+      console.error(
+        '❌ [ErrorTracking] Failed to flush errors:',
+        dbError instanceof Error ? dbError.message : String(dbError)
+      );
     }
   }
 
@@ -182,7 +209,7 @@ class ErrorTrackingService {
       if (error) throw error;
 
       const errors = (data || []) as Record<string, unknown>[];
-      
+
       // Count by category
       const byCategory: Record<ErrorCategory, number> = {
         [ErrorCategory.GEMINI_API]: 0,
@@ -192,23 +219,26 @@ class ErrorTrackingService {
         [ErrorCategory.CACHE]: 0,
         [ErrorCategory.NETWORK]: 0,
         [ErrorCategory.TIMEOUT]: 0,
-        [ErrorCategory.UNKNOWN]: 0
+        [ErrorCategory.UNKNOWN]: 0,
       };
 
-      errors.forEach(err => {
+      errors.forEach((err) => {
         const category = err.category as ErrorCategory;
         byCategory[category] = (byCategory[category] || 0) + 1;
       });
 
       // Get top errors
-      const errorCounts: Record<string, { message: string; count: number; category: ErrorCategory }> = {};
-      errors.forEach(err => {
+      const errorCounts: Record<
+        string,
+        { message: string; count: number; category: ErrorCategory }
+      > = {};
+      errors.forEach((err) => {
         const key = `${err.category}:${err.message}`;
         if (!errorCounts[key]) {
           errorCounts[key] = {
             message: err.message as string,
             count: 0,
-            category: err.category as ErrorCategory
+            category: err.category as ErrorCategory,
           };
         }
         errorCounts[key].count++;
@@ -219,23 +249,25 @@ class ErrorTrackingService {
         .slice(0, 10);
 
       // Calculate resolution rate
-      const resolved = errors.filter(err => err.resolved).length;
+      const resolved = errors.filter((err) => err.resolved).length;
       const resolutionRate = errors.length > 0 ? Math.round((resolved / errors.length) * 100) : 0;
 
       return {
         total: errors.length,
         byCategory,
         topErrors,
-        resolutionRate
+        resolutionRate,
       };
-
     } catch (error) {
-      console.error('❌ [ErrorTracking] Failed to get error summary:', error instanceof Error ? error.message : String(error));
+      console.error(
+        '❌ [ErrorTracking] Failed to get error summary:',
+        error instanceof Error ? error.message : String(error)
+      );
       return {
         total: 0,
         byCategory: {} as Record<ErrorCategory, number>,
         topErrors: [],
-        resolutionRate: 0
+        resolutionRate: 0,
       };
     }
   }
@@ -249,7 +281,7 @@ class ErrorTrackingService {
         .update({
           resolved: true,
           resolution,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', errorId);
 
@@ -257,9 +289,11 @@ class ErrorTrackingService {
 
       console.log(`✅ [ErrorTracking] Error ${errorId} resolved: ${resolution}`);
       return true;
-
     } catch (error) {
-      console.error('❌ [ErrorTracking] Failed to resolve error:', error instanceof Error ? error.message : String(error));
+      console.error(
+        '❌ [ErrorTracking] Failed to resolve error:',
+        error instanceof Error ? error.message : String(error)
+      );
       return false;
     }
   }
@@ -282,7 +316,7 @@ class ErrorTrackingService {
 
       if (error) throw error;
 
-      return ((data || []) as Record<string, unknown>[]).map(err => ({
+      return ((data || []) as Record<string, unknown>[]).map((err) => ({
         id: err.id as string | undefined,
         correlationId: err.correlation_id as string,
         category: err.category as ErrorCategory,
@@ -293,11 +327,13 @@ class ErrorTrackingService {
         pdfNames: err.pdf_names as string[],
         createdAt: err.created_at as string | undefined,
         resolved: err.resolved as boolean,
-        resolution: err.resolution as string | undefined
+        resolution: err.resolution as string | undefined,
       }));
-
     } catch (error) {
-      console.error('❌ [ErrorTracking] Failed to get errors by category:', error instanceof Error ? error.message : String(error));
+      console.error(
+        '❌ [ErrorTracking] Failed to get errors by category:',
+        error instanceof Error ? error.message : String(error)
+      );
       return [];
     }
   }

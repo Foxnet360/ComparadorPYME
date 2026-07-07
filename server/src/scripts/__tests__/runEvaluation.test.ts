@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { main, createPipelineRunner} from '../runEvaluation';
+import { main, createPipelineRunner } from '../runEvaluation';
 import { GoldenQuote } from '../services/evaluationHarness';
 
 // ---------------------------------------------------------------------------
@@ -89,7 +89,11 @@ function makeFixture(overrides: Partial<GoldenQuote> = {}): GoldenQuote {
       },
     ],
     expectedCoverages: [
-      { canonicalName: 'Incendio (Edificio y Contenidos)', insuredAmount: 500000000, deductible: '10%' },
+      {
+        canonicalName: 'Incendio (Edificio y Contenidos)',
+        insuredAmount: 500000000,
+        deductible: '10%',
+      },
     ],
     annotatedBy: 'analyst-a',
     ...overrides,
@@ -118,7 +122,11 @@ describe('runEvaluation CLI', () => {
       templateId: 'bbva-pyme-v1',
       fileName: 'bbva-001.pdf',
       expectedCoverages: [
-        { canonicalName: 'Incendio (Edificio y Contenidos)', insuredAmount: 500000000, deductible: '10%' },
+        {
+          canonicalName: 'Incendio (Edificio y Contenidos)',
+          insuredAmount: 500000000,
+          deductible: '10%',
+        },
       ],
       annotatedBy: 'analyst-a',
     });
@@ -144,7 +152,9 @@ describe('runEvaluation CLI', () => {
   }, 15_000);
 
   it('throws when the fixtures directory does not exist', async () => {
-    await expect(main([path.join(tempDir, 'missing')])).rejects.toThrow('Fixtures directory not found');
+    await expect(main([path.join(tempDir, 'missing')])).rejects.toThrow(
+      'Fixtures directory not found'
+    );
   });
 
   it('throws for an unknown runner flag', async () => {
@@ -188,7 +198,11 @@ describe('createPipelineRunner', () => {
 
     // If the restoration logic is broken, these properties would still be the
     // mock arrow functions we assigned inside the runner.
-    expect(typeof (await import('../../services/pdfExtractor')).pdfExtractor.extractTextFromPdf).toBe('function');
-    expect(typeof (await import('../../services/gemini')).geminiService.extractFromPdfWithVision).toBe('function');
+    expect(
+      typeof (await import('../../services/pdfExtractor')).pdfExtractor.extractTextFromPdf
+    ).toBe('function');
+    expect(
+      typeof (await import('../../services/gemini')).geminiService.extractFromPdfWithVision
+    ).toBe('function');
   }, 15_000);
 });

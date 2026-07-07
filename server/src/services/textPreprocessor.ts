@@ -45,7 +45,7 @@ export function calculateContentDensity(text: string, pageCount: number): number
 export function detectComplexity(text: string, pageCount: number): 'simple' | 'medium' | 'complex' {
   if (pageCount <= 5) return 'simple';
   if (pageCount <= 10) return 'medium';
-  
+
   // For documents >10 pages, check density
   const density = calculateContentDensity(text, pageCount);
   if (density > 2500) return 'complex';
@@ -305,7 +305,7 @@ export function removeArtifacts(text: string): string {
   cleaned = cleaned.replace(/^\s*\d+\s*$/gm, '');
 
   // Remove common headers/footers patterns
-  cleaned = cleaned.replace(/^(CotizaciÃ³n|Cotizacion|Page|Pagina|PÃ¡gina)\s*\d+.*$/gmi, '');
+  cleaned = cleaned.replace(/^(CotizaciÃ³n|Cotizacion|Page|Pagina|PÃ¡gina)\s*\d+.*$/gim, '');
 
   // Remove lines that are just repeated dashes or equal signs
   cleaned = cleaned.replace(/^[-=]{3,}$/gm, '');
@@ -323,7 +323,7 @@ export function removeArtifacts(text: string): string {
  */
 export function extractRelevantSections(text: string): string {
   const extractedSections: string[] = [];
-  
+
   // Look for coverage-related sections
   const coveragePatterns = [
     /(?:COBERTURAS?|AMPAROS?|GARANTIAS?|SECCION(?:ES)?)[\s\S]*?(?:(?:DEDUCIBLES?|CONDICIONES|CLÁUSULAS|NOTAS?|ANEXOS?)[\s\S]*?)?(?=\n\s*\n|$)/i,
@@ -353,24 +353,23 @@ export function extractRelevantSections(text: string): string {
   // Combine all extracted sections
   if (extractedSections.length > 0) {
     const combined = extractedSections.join('\n\n---SECCION---\n\n');
-    
+
     // Check minimum extraction size
     if (combined.length >= 2000) {
-      return combined.length > 12000 
-        ? combined.substring(0, 12000) + '\n[... contenido truncado ...]' 
+      return combined.length > 12000
+        ? combined.substring(0, 12000) + '\n[... contenido truncado ...]'
         : combined;
     }
   }
 
   // Fallback: if sections too small, use first 12000 chars + premium search
-  let fallback = text.length > 12000 
-    ? text.substring(0, 12000) + '\n[... contenido truncado ...]' 
-    : text;
-  
+  let fallback =
+    text.length > 12000 ? text.substring(0, 12000) + '\n[... contenido truncado ...]' : text;
+
   // Search for premium keywords in full text and append if found
   const premiumKeywords = ['prima', 'total a pagar', 'valor total', 'prima neta'];
   const premiumMatches: string[] = [];
-  
+
   for (const keyword of premiumKeywords) {
     const regex = new RegExp(`(?:${keyword})[\\s\\S]{0,300}`, 'gi');
     const matches = text.match(regex);
@@ -378,7 +377,7 @@ export function extractRelevantSections(text: string): string {
       premiumMatches.push(...matches.slice(0, 2)); // Max 2 matches per keyword
     }
   }
-  
+
   if (premiumMatches.length > 0) {
     fallback += '\n\n---PREMIUM INFO---\n\n' + premiumMatches.join('\n');
   }

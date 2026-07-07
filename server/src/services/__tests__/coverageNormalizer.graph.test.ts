@@ -75,7 +75,9 @@ describe('coverageNormalizer graph integration', () => {
       method: null,
     });
     vi.mocked(semanticMatcher.normalizeBatch).mockResolvedValue([]);
-    vi.mocked(featureFlags.isEnabled).mockImplementation((flag: string) => flag === 'useTemplateGraphPipeline');
+    vi.mocked(featureFlags.isEnabled).mockImplementation(
+      (flag: string) => flag === 'useTemplateGraphPipeline'
+    );
   });
 
   describe('mapRawToCanonical', () => {
@@ -111,12 +113,12 @@ describe('coverageNormalizer graph integration', () => {
     });
 
     it('returns standard match when available and does not call graph', async () => {
-    vi.mocked(semanticMatcher.matchCoverage).mockResolvedValue({
-      categoryId: 1,
-      canonicalName: 'Incendio (Edificio y Contenidos)',
-      confidence: 0.95,
-      method: 'embedding',
-    });
+      vi.mocked(semanticMatcher.matchCoverage).mockResolvedValue({
+        categoryId: 1,
+        canonicalName: 'Incendio (Edificio y Contenidos)',
+        confidence: 0.95,
+        method: 'embedding',
+      });
 
       const result = await mapRawToCanonical('Algo', 'pyme');
 
@@ -151,9 +153,7 @@ describe('coverageNormalizer graph integration', () => {
 
     it('injects implicit coverages from graph decomposition', async () => {
       vi.mocked(coverageGraphService.query).mockResolvedValue({
-        mappings: [
-          { canonicalId: 'incendio', confidence: 0.9, provenance: 'maps_to' },
-        ],
+        mappings: [{ canonicalId: 'incendio', confidence: 0.9, provenance: 'maps_to' }],
         composite: true,
         components: ['terremoto', 'hmacc'],
       });
@@ -196,7 +196,9 @@ describe('coverageNormalizer graph integration', () => {
     });
 
     it('falls back to uncategorized coverage when graph pipeline is disabled and ontology has no groups', async () => {
-      vi.mocked(featureFlags.isEnabled).mockImplementation((flag: string) => flag !== 'useTemplateGraphPipeline');
+      vi.mocked(featureFlags.isEnabled).mockImplementation(
+        (flag: string) => flag !== 'useTemplateGraphPipeline'
+      );
       vi.mocked(coverageOntology.mapCoverage).mockResolvedValue({
         rawName: 'Cobertura Desconocida',
         groups: [],

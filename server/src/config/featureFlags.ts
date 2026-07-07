@@ -76,7 +76,7 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   // Backward compatibility flags (for gradual migration)
   useLegacyCoverageMatcher: false,
   useLegacyDeductibleParser: false,
-  useLegacyChatOnlyRAG: false
+  useLegacyChatOnlyRAG: false,
 };
 
 // Development configuration - for testing
@@ -103,7 +103,7 @@ export const PRODUCTION_ROLLOUT_FLAGS: FeatureFlags = {
   graphLearningEnabled: false,
   useLegacyCoverageMatcher: false,
   useLegacyDeductibleParser: false,
-  useLegacyChatOnlyRAG: false
+  useLegacyChatOnlyRAG: false,
 };
 
 // Maps recognized env var names to FeatureFlags keys. Fixes the old key
@@ -133,17 +133,17 @@ const ENV_FLAG_MAP: Record<string, keyof FeatureFlags> = {
 
 export class FeatureFlagManager {
   private flags: FeatureFlags;
-  
+
   constructor(flags: FeatureFlags = DEFAULT_FEATURE_FLAGS) {
     this.flags = { ...flags };
-    
+
     // Override from environment variables if present
     this.loadFromEnvironment();
-    
+
     // Log feature flags on startup
     this.logFeatureFlags();
   }
-  
+
   private logFeatureFlags(): void {
     console.log('🚩 [FeatureFlags] Configuration:');
     const flags = this.getFlags();
@@ -151,13 +151,15 @@ export class FeatureFlagManager {
       const status = value ? '✅' : '❌';
       console.log(`   ${status} ${key}: ${value}`);
     });
-    
+
     // Log any auto-disabled features
     if (!redisAvailable && flags.learningEngine) {
-      console.warn('⚠️ [FeatureFlags] learningEngine was disabled because REDIS_URL is not configured');
+      console.warn(
+        '⚠️ [FeatureFlags] learningEngine was disabled because REDIS_URL is not configured'
+      );
     }
   }
-  
+
   private loadFromEnvironment(): void {
     const envFlags = process.env.FEATURE_FLAGS;
     if (envFlags) {
@@ -177,25 +179,27 @@ export class FeatureFlagManager {
       }
     }
   }
-  
+
   isEnabled(feature: keyof FeatureFlags): boolean {
     return this.flags[feature];
   }
-  
+
   getFlags(): FeatureFlags {
     return { ...this.flags };
   }
-  
+
   updateFlag(feature: keyof FeatureFlags, enabled: boolean): void {
     this.flags[feature] = enabled;
     console.log(`🚩 [FeatureFlags] ${feature} = ${enabled}`);
   }
-  
+
   // Check if any legacy mode is active
   isLegacyMode(): boolean {
-    return this.flags.useLegacyCoverageMatcher || 
-           this.flags.useLegacyDeductibleParser || 
-           this.flags.useLegacyChatOnlyRAG;
+    return (
+      this.flags.useLegacyCoverageMatcher ||
+      this.flags.useLegacyDeductibleParser ||
+      this.flags.useLegacyChatOnlyRAG
+    );
   }
 }
 

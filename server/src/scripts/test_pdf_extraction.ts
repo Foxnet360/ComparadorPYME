@@ -1,9 +1,9 @@
 /**
  * Test Suite: PDF Text Extraction Optimization Verification
- * 
+ *
  * Este script verifica que la extracción de texto de PDFs funciona correctamente
  * y reduce los tokens de entrada comparado con el método anterior (File API).
- * 
+ *
  * Usage:
  *   cd server && npx ts-node src/scripts/test_pdf_extraction.ts
  */
@@ -30,7 +30,7 @@ async function runTest(
 ): Promise<TestResult> {
   console.log(`\n🧪 Testing: ${name}`);
   const start = Date.now();
-  
+
   try {
     const result = await fn();
     const duration = Date.now() - start;
@@ -50,19 +50,19 @@ async function makeRequest(formData: FormData): Promise<Record<string, unknown>>
     method: 'POST',
     body: formData as unknown,
   });
-  
+
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`HTTP ${response.status}: ${errorText}`);
   }
-  
+
   return response.json();
 }
 
 // Test 5.1: Probar con PDF de cotización real (texto nativo)
 async function testRealPdfExtraction(): Promise<Record<string, unknown>> {
   console.log('  📄 Testing PDF text extraction...');
-  
+
   // Create a sample text file to simulate a PDF with native text
   const sampleQuoteText = `
 COTIZACIÓN DE SEGURO TODO RIESGO
@@ -101,25 +101,27 @@ VIGENCIA: 12 meses desde la fecha de inicio
 
   const tempPdfPath = path.join(__dirname, '../../test_mocks/temp_quote_test.txt');
   fs.writeFileSync(tempPdfPath, sampleQuoteText);
-  
+
   try {
     // Test extraction
     const extractionResult = await pdfExtractor.extractTextFromPdf(tempPdfPath);
     const extractedText = extractionResult.text;
-    
+
     if (!extractedText || extractedText.length === 0) {
       throw new Error('No text extracted from PDF');
     }
-    
+
     console.log(`  ✅ Extracted ${extractedText.length} characters`);
-    
+
     // Verify key content is present
-    const hasInsurer = extractedText.toLowerCase().includes('bolívar') || 
-                       extractedText.toLowerCase().includes('seguros');
-    const hasCoverages = extractedText.toLowerCase().includes('incendio') ||
-                         extractedText.toLowerCase().includes('robo');
+    const hasInsurer =
+      extractedText.toLowerCase().includes('bolívar') ||
+      extractedText.toLowerCase().includes('seguros');
+    const hasCoverages =
+      extractedText.toLowerCase().includes('incendio') ||
+      extractedText.toLowerCase().includes('robo');
     const hasPrices = extractedText.includes('$');
-    
+
     return {
       extractedLength: extractedText.length,
       hasInsurer,
@@ -138,12 +140,12 @@ VIGENCIA: 12 meses desde la fecha de inicio
 // Test 5.2: Comparar tokens de entrada antes/después
 async function testTokenComparison(): Promise<Record<string, unknown>> {
   console.log('  📊 Comparing token usage...');
-  
+
   // Simulate the old approach (File API - image-based)
   // A typical PDF page as image is ~500-1000 tokens per page
   // A 3-page quote would be ~2000-3000 tokens
   const oldApproachTokens = 2500; // Estimated for 3-page quote as images
-  
+
   // Create sample text
   const sampleText = `
 COTIZACIÓN SEGURO TODO RIESGO
@@ -160,20 +162,20 @@ Prima Total: $1.650.000
 
   const tempPath = path.join(__dirname, '../../test_mocks/temp_token_test.txt');
   fs.writeFileSync(tempPath, sampleText);
-  
+
   try {
     const extractionResult = await pdfExtractor.extractTextFromPdf(tempPath);
     const extractedText = extractionResult.text;
-    
+
     // New approach: ~4 chars per token
     const newApproachTokens = Math.ceil(extractedText.length / 4);
-    
-    const reductionValue = ((oldApproachTokens - newApproachTokens) / oldApproachTokens * 100);
-    
+
+    const reductionValue = ((oldApproachTokens - newApproachTokens) / oldApproachTokens) * 100;
+
     console.log(`  📉 Token reduction: ${formatPercentage(reductionValue / 100, 1)}`);
     console.log(`     Old (File API): ~${oldApproachTokens} tokens`);
     console.log(`     New (Text): ~${newApproachTokens} tokens`);
-    
+
     return {
       oldApproach: oldApproachTokens,
       newApproach: newApproachTokens,
@@ -191,7 +193,7 @@ Prima Total: $1.650.000
 // Test 5.3: Validar que el output JSON mantiene la misma estructura
 async function testOutputStructure(): Promise<Record<string, unknown>> {
   console.log('  📋 Validating output JSON structure...');
-  
+
   // Create a sample quote
   const sampleQuote = `
 COTIZACIÓN - SEGUROS BOLÍVAR
@@ -212,15 +214,15 @@ TOTAL PRIMA: $1.650.000
 
   const tempPath = path.join(__dirname, '../../test_mocks/temp_structure_test.txt');
   fs.writeFileSync(tempPath, sampleQuote);
-  
+
   try {
     // Upload and analyze
     const formData = new FormData();
     formData.append('quotes', fs.createReadStream(tempPath));
     formData.append('clientName', 'Structure Test');
-    
+
     const result = await makeRequest(formData);
-    
+
     // Validate structure
     const checks = {
       hasQuotesArray: Array.isArray(result.quotes),
@@ -242,13 +244,13 @@ TOTAL PRIMA: $1.650.000
           );
         }),
     };
-    
-    const allPassed = Object.values(checks).every(v => v === true);
-    
+
+    const allPassed = Object.values(checks).every((v) => v === true);
+
     if (!allPassed) {
       throw new Error(`Structure validation failed: ${JSON.stringify(checks)}`);
     }
-    
+
     const firstQuote =
       Array.isArray(result.quotes) && result.quotes.length > 0
         ? (result.quotes[0] as Record<string, unknown>)
@@ -279,23 +281,23 @@ async function runAllTests() {
   console.log('║  PDF Text Extraction - Verification Test Suite        ║');
   console.log('╚════════════════════════════════════════════════════════╝');
   console.log(`API URL: ${API_URL}`);
-  
+
   const results: TestResult[] = [];
-  
+
   // Run all verification tests
   results.push(await runTest('5.1: Real PDF extraction', testRealPdfExtraction));
   results.push(await runTest('5.2: Token comparison', testTokenComparison));
   results.push(await runTest('5.3: Output structure validation', testOutputStructure));
-  
+
   // Summary
   console.log('\n╔════════════════════════════════════════════════════════╗');
   console.log('║  Test Summary                                          ║');
   console.log('╚════════════════════════════════════════════════════════╝');
-  
-  const passed = results.filter(r => r.success).length;
-  const failed = results.filter(r => !r.success).length;
-  
-  results.forEach(r => {
+
+  const passed = results.filter((r) => r.success).length;
+  const failed = results.filter((r) => !r.success).length;
+
+  results.forEach((r) => {
     const icon = r.success ? '✅' : '❌';
     console.log(`${icon} ${r.task} (${r.duration}ms)`);
     if (r.error) {
@@ -305,9 +307,9 @@ async function runAllTests() {
       console.log(`   Details:`, JSON.stringify(r.details, null, 2).substring(0, 200) + '...');
     }
   });
-  
+
   console.log(`\n📊 Results: ${passed} passed, ${failed} failed`);
-  
+
   if (failed === 0) {
     console.log('\n🎉 All verification tests passed!');
     console.log('\nNext steps:');
@@ -322,7 +324,7 @@ async function runAllTests() {
 
 // Run if called directly
 if (require.main === module) {
-  runAllTests().catch(error => {
+  runAllTests().catch((error) => {
     console.error('Test suite failed:', error);
     process.exit(1);
   });

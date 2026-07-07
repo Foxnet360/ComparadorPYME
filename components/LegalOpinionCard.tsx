@@ -20,7 +20,7 @@ export const LegalOpinionCard: React.FC<LegalOpinionCardProps> = ({
   clauseInterpretation,
   recommendation,
   citations,
-  confidence
+  confidence,
 }) => {
   return (
     <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">

@@ -67,13 +67,14 @@ export const chatRepository = {
     userId: string,
     reportContext: ReportContext | null | undefined
   ): Promise<string> {
-    const insurerNames = reportContext?.quotes?.map((q: ReportContextQuote) => q.insurerName).filter(Boolean) || [];
+    const insurerNames =
+      reportContext?.quotes?.map((q: ReportContextQuote) => q.insurerName).filter(Boolean) || [];
     const clientName = reportContext?.clientName || 'Cliente Desconocido';
     const reportId = reportContext?.id;
-    
+
     // Generate context summary
     const contextSummary = chatRepository.generateContextSummary(reportContext);
-    
+
     const { data, error } = await supabase
       .from('chat_threads' as never)
       .insert({
@@ -83,16 +84,16 @@ export const chatRepository = {
         insurer_names: insurerNames,
         title: `Análisis: ${clientName}`,
         status: 'active',
-        context_summary: contextSummary
+        context_summary: contextSummary,
       } as never)
       .select()
       .single();
-    
+
     if (error) {
       console.error('❌ [chatRepository] Error creating thread:', error);
       throw error;
     }
-    
+
     return (data as { id: string }).id;
   },
 
@@ -113,16 +114,16 @@ export const chatRepository = {
       .eq('status', 'active')
       .order('updated_at', { ascending: false })
       .limit(1);
-    
+
     if (findError) {
       console.error('❌ [chatRepository] Error finding thread:', findError);
       throw findError;
     }
-    
+
     if (existing && existing.length > 0) {
       return (existing[0] as ChatThread).id;
     }
-    
+
     // Create new thread
     return chatRepository.createThread(userId, reportContext || { id: reportId });
   },
@@ -130,10 +131,7 @@ export const chatRepository = {
   /**
    * Get thread by report ID
    */
-  async getThreadByReport(
-    userId: string,
-    reportId: string
-  ): Promise<ChatThread | null> {
+  async getThreadByReport(userId: string, reportId: string): Promise<ChatThread | null> {
     const { data, error } = await supabase
       .from('chat_threads' as never)
       .select('*')
@@ -143,40 +141,37 @@ export const chatRepository = {
       .order('updated_at', { ascending: false })
       .limit(1)
       .single();
-    
+
     if (error) {
       if (error.code === 'PGRST116') return null; // No rows returned
       console.error('❌ [chatRepository] Error getting thread:', error);
       throw error;
     }
-    
+
     return data as ChatThread;
   },
 
   /**
    * Save a message to the database
    */
-  async saveMessage(
-    threadId: string,
-    message: Omit<ChatMessageDB, 'thread_id'>
-  ): Promise<void> {
-    const { error } = await supabase
-      .from('chat_messages' as never)
-      .insert({
-        thread_id: threadId,
-        role: message.role,
-        content: message.content,
-        sources_used: message.sources_used || [],
-        citations: message.citations || [],
-        model_used: message.model_used,
-        tokens_input: message.tokens_input,
-        tokens_output: message.tokens_output,
-        tokens_used: message.tokens_used || (message.tokens_input && message.tokens_output 
-          ? message.tokens_input + message.tokens_output 
+  async saveMessage(threadId: string, message: Omit<ChatMessageDB, 'thread_id'>): Promise<void> {
+    const { error } = await supabase.from('chat_messages' as never).insert({
+      thread_id: threadId,
+      role: message.role,
+      content: message.content,
+      sources_used: message.sources_used || [],
+      citations: message.citations || [],
+      model_used: message.model_used,
+      tokens_input: message.tokens_input,
+      tokens_output: message.tokens_output,
+      tokens_used:
+        message.tokens_used ||
+        (message.tokens_input && message.tokens_output
+          ? message.tokens_input + message.tokens_output
           : undefined),
-        latency_ms: message.latency_ms
-      } as never);
-    
+      latency_ms: message.latency_ms,
+    } as never);
+
     if (error) {
       console.error('❌ [chatRepository] Error saving message:', error);
       throw error;
@@ -186,22 +181,19 @@ export const chatRepository = {
   /**
    * Get conversation history for a thread
    */
-  async getHistory(
-    threadId: string,
-    limit: number = 20
-  ): Promise<ChatMessageDB[]> {
+  async getHistory(threadId: string, limit: number = 20): Promise<ChatMessageDB[]> {
     const { data, error } = await supabase
       .from('chat_messages' as never)
       .select('*')
       .eq('thread_id', threadId)
       .order('created_at', { ascending: false })
       .limit(limit);
-    
+
     if (error) {
       console.error('❌ [chatRepository] Error getting history:', error);
       throw error;
     }
-    
+
     return (data || []).reverse() as ChatMessageDB[];
   },
 
@@ -214,7 +206,7 @@ export const chatRepository = {
       // @ts-expect-error - Supabase type inference issue
       .update({ status: 'archived' })
       .eq('id', threadId);
-    
+
     if (error) {
       console.error('❌ [chatRepository] Error archiving thread:', error);
       throw error;
@@ -231,12 +223,12 @@ export const chatRepository = {
       .eq('user_id', userId)
       .eq('status', 'active')
       .order('updated_at', { ascending: false });
-    
+
     if (error) {
       console.error('❌ [chatRepository] Error listing threads:', error);
       throw error;
     }
-    
+
     return (data || []) as ChatThread[];
   },
 
@@ -247,12 +239,12 @@ export const chatRepository = {
     if (!reportContext || !reportContext.quotes) {
       return 'No hay datos de cotización disponibles';
     }
-    
+
     const quotes = reportContext.quotes;
     const insurerNames = quotes.map((q: ReportContextQuote) => q.insurerName).filter(Boolean);
-    
+
     let summary = `Análisis de ${insurerNames.length} aseguradoras: ${insurerNames.join(', ')}. `;
-    
+
     // Add key coverages
     const coverageNames = new Set<string>();
     quotes.forEach((q: ReportContextQuote) => {
@@ -262,22 +254,22 @@ export const chatRepository = {
         }
       });
     });
-    
+
     if (coverageNames.size > 0) {
       summary += `Coberturas principales: ${Array.from(coverageNames).slice(0, 5).join(', ')}. `;
     }
-    
+
     // Add critical alerts
-    const criticalAlerts = quotes.flatMap((q: ReportContextQuote) => 
+    const criticalAlerts = quotes.flatMap((q: ReportContextQuote) =>
       (q.alerts || []).filter((a: ReportContextQuoteAlert) => a.level === 'CRITICAL')
     );
-    
+
     if (criticalAlerts.length > 0) {
       summary += `Alertas críticas: ${criticalAlerts.length}. `;
     }
-    
+
     return summary;
-  }
+  },
 };
 
 export default chatRepository;

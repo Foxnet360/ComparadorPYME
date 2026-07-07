@@ -10,32 +10,34 @@ vi.mock('../../repositories/chatRepository', () => ({
     saveMessage: vi.fn(async () => {}),
     getHistory: vi.fn(async () => []),
     archiveThread: vi.fn(async () => {}),
-    listUserThreads: vi.fn(async () => [])
-  }
+    listUserThreads: vi.fn(async () => []),
+  },
 }));
 
 // Mock dependencies
 vi.mock('../ragRetrievalService', () => ({
   ragRetrievalService: {
     search: vi.fn(async () => []),
-    reRankResults: vi.fn(async (query, results) => results)
-  }
+    reRankResults: vi.fn(async (query, results) => results),
+  },
 }));
 
 vi.mock('../structuredClauseExtractor', () => ({
   structuredClauseExtractor: {
-    searchClause: vi.fn(async () => null)
-  }
+    searchClause: vi.fn(async () => null),
+  },
 }));
 
 vi.mock('@google/genai', () => ({
   GoogleGenAI: class MockGoogleGenAI {
     models = {
-      generateContent: vi.fn(() => Promise.resolve({
-        text: '📄 Según la cotización, la cobertura de incendio tiene un deducible del 10%.'
-      }))
+      generateContent: vi.fn(() =>
+        Promise.resolve({
+          text: '📄 Según la cotización, la cobertura de incendio tiene un deducible del 10%.',
+        })
+      ),
     };
-  }
+  },
 }));
 
 describe('chatService - Triple Source with Missing RAG', () => {
@@ -43,11 +45,9 @@ describe('chatService - Triple Source with Missing RAG', () => {
     quotes: [
       {
         insurerName: 'MAPFRE',
-        coverages: [
-          { name: 'Incendio', value: '$500,000,000', deductible: '10%' }
-        ]
-      }
-    ]
+        coverages: [{ name: 'Incendio', value: '$500,000,000', deductible: '10%' }],
+      },
+    ],
   };
 
   beforeEach(() => {

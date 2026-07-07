@@ -7,7 +7,14 @@ import {
   LayoutParserOptions,
 } from '../layoutParser';
 
-function item(text: string, x: number, y: number, width = 60, height = 12, rotation = 0): LayoutTextItem {
+function item(
+  text: string,
+  x: number,
+  y: number,
+  width = 60,
+  height = 12,
+  rotation = 0
+): LayoutTextItem {
   return { text, x, y, width, height, rotation };
 }
 
@@ -56,10 +63,22 @@ describe('layoutParser', () => {
       const table = result.tables[0];
       expect(table.page).toBe(1);
       expect(table.headers).toHaveLength(3);
-      expect(table.headers.map((h) => h.text)).toEqual(['Cobertura', 'Suma Asegurada', 'Deducible']);
+      expect(table.headers.map((h) => h.text)).toEqual([
+        'Cobertura',
+        'Suma Asegurada',
+        'Deducible',
+      ]);
       expect(table.rows).toHaveLength(2);
-      expect(table.rows[0].map((c) => c.text)).toEqual(['Incendio', '$ 100.000.000', '5% min 1 SMMLV']);
-      expect(table.rows[1].map((c) => c.text)).toEqual(['Terremoto', '$ 50.000.000', '10% min 5 SMMLV']);
+      expect(table.rows[0].map((c) => c.text)).toEqual([
+        'Incendio',
+        '$ 100.000.000',
+        '5% min 1 SMMLV',
+      ]);
+      expect(table.rows[1].map((c) => c.text)).toEqual([
+        'Terremoto',
+        '$ 50.000.000',
+        '10% min 5 SMMLV',
+      ]);
     });
 
     it('detects two tables separated by a vertical gap', () => {

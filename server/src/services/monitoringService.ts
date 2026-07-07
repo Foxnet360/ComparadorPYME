@@ -80,7 +80,7 @@ class MonitoringService {
         extracted_value: extractedValue,
         correct_value: correctValue,
         is_correct: isCorrect,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       } as unknown as never[]);
     } catch (error) {
       console.error('❌ [Monitoring] Failed to record extraction accuracy:', error);
@@ -103,7 +103,7 @@ class MonitoringService {
         parsed_result: parsedResult,
         is_correct: isCorrect,
         error_type: errorType,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       } as unknown as never[]);
     } catch (error) {
       console.error('❌ [Monitoring] Failed to record deductible accuracy:', error);
@@ -127,7 +127,7 @@ class MonitoringService {
         source,
         user_rating: userRating,
         was_helpful: wasHelpful,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       } as unknown as never[]);
     } catch (error) {
       console.error('❌ [Monitoring] Failed to record chat quality:', error);
@@ -144,7 +144,7 @@ class MonitoringService {
         rating: feedback.rating,
         comment: feedback.comment,
         user_id: feedback.userId,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       } as unknown as never[]);
     } catch (error) {
       console.error('❌ [Monitoring] Failed to collect feedback:', error);
@@ -165,7 +165,7 @@ class MonitoringService {
       duration_ms: durationMs,
       success,
       metadata,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     this.metricsBuffer.push(metric);
@@ -183,12 +183,12 @@ class MonitoringService {
 
     try {
       await supabase.from('performance_logs').insert(
-        this.metricsBuffer.map(m => ({
+        this.metricsBuffer.map((m) => ({
           operation: m.operation,
           duration_ms: m.duration_ms,
           success: m.success,
           metadata: m.metadata,
-          timestamp: m.timestamp
+          timestamp: m.timestamp,
         })) as unknown as never[]
       );
       this.metricsBuffer = [];
@@ -200,10 +200,7 @@ class MonitoringService {
   /**
    * Get accuracy summary for date range
    */
-  async getAccuracySummary(
-    startDate: string,
-    endDate: string
-  ): Promise<AccuracyMetrics> {
+  async getAccuracySummary(startDate: string, endDate: string): Promise<AccuracyMetrics> {
     try {
       const { data: extractionData } = await supabase
         .from('accuracy_logs')
@@ -222,16 +219,16 @@ class MonitoringService {
       const extractionList = (extractionData || []) as AccuracyLogRow[];
       const deductibleList = (deductibleData || []) as AccuracyLogRow[];
       const extractionTotal = extractionList.length;
-      const extractionCorrect = extractionList.filter(d => d.is_correct).length;
+      const extractionCorrect = extractionList.filter((d) => d.is_correct).length;
       const deductibleTotal = deductibleList.length;
-      const deductibleCorrect = deductibleList.filter(d => d.is_correct).length;
+      const deductibleCorrect = deductibleList.filter((d) => d.is_correct).length;
 
       return {
         extractionAccuracy: extractionTotal > 0 ? extractionCorrect / extractionTotal : 0,
         deductibleParsingAccuracy: deductibleTotal > 0 ? deductibleCorrect / deductibleTotal : 0,
         ontologyMappingAccuracy: 0, // Will be implemented with learning engine
         chatResponseAccuracy: 0, // Will be implemented with chat quality tracking
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     } catch (error) {
       console.error('❌ [Monitoring] Failed to get accuracy summary:', error);
@@ -240,7 +237,7 @@ class MonitoringService {
         deductibleParsingAccuracy: 0,
         ontologyMappingAccuracy: 0,
         chatResponseAccuracy: 0,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     }
   }
@@ -248,10 +245,7 @@ class MonitoringService {
   /**
    * Get performance summary
    */
-  async getPerformanceSummary(
-    startDate: string,
-    endDate: string
-  ): Promise<PerformanceMetrics> {
+  async getPerformanceSummary(startDate: string, endDate: string): Promise<PerformanceMetrics> {
     try {
       const { data } = await supabase
         .from('performance_logs')
@@ -261,9 +255,9 @@ class MonitoringService {
 
       const dataList = (data || []) as PerformanceLogRow[];
 
-      const durations = dataList.map(d => d.duration_ms).sort((a, b) => a - b);
+      const durations = dataList.map((d) => d.duration_ms).sort((a, b) => a - b);
       const total = durations.length;
-      const successCount = dataList.filter(d => d.success).length;
+      const successCount = dataList.filter((d) => d.success).length;
 
       return {
         avgAnalysisTime: durations.reduce((a, b) => a + b, 0) / total,
@@ -271,7 +265,7 @@ class MonitoringService {
         p95AnalysisTime: durations[Math.floor(total * 0.95)],
         p99AnalysisTime: durations[Math.floor(total * 0.99)],
         errorRate: (total - successCount) / total,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     } catch (error) {
       console.error('❌ [Monitoring] Failed to get performance summary:', error);
@@ -281,7 +275,7 @@ class MonitoringService {
         p95AnalysisTime: 0,
         p99AnalysisTime: 0,
         errorRate: 0,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     }
   }
@@ -307,8 +301,8 @@ class MonitoringService {
       const dataList = (data || []) as FeedbackRow[];
 
       const byFeature: Record<string, { ratings: number[]; count: number }> = {};
-      
-      dataList.forEach(item => {
+
+      dataList.forEach((item) => {
         if (!byFeature[item.feature]) {
           byFeature[item.feature] = { ratings: [], count: 0 };
         }
@@ -317,25 +311,25 @@ class MonitoringService {
       });
 
       const result: Record<string, { avgRating: number; count: number }> = {};
-      
+
       Object.entries(byFeature).forEach(([feature, stats]) => {
         result[feature] = {
           avgRating: stats.ratings.reduce((a, b) => a + b, 0) / stats.count,
-          count: stats.count
+          count: stats.count,
         };
       });
 
       return {
         avgRating: dataList.reduce((sum, item) => sum + item.rating, 0) / dataList.length,
         totalFeedback: dataList.length,
-        byFeature: result
+        byFeature: result,
       };
     } catch (error) {
       console.error('❌ [Monitoring] Failed to get feedback summary:', error);
       return {
         avgRating: 0,
         totalFeedback: 0,
-        byFeature: {}
+        byFeature: {},
       };
     }
   }
@@ -374,13 +368,13 @@ class MonitoringService {
 
       const records = (data || []) as EngineComparisonRow[];
 
-      const unifiedRecords = records.filter(r => r.engine_type === 'unified');
-      const legacyRecords = records.filter(r => r.engine_type === 'legacy');
-      const fallbackRecords = records.filter(r => r.engine_type === 'fallback');
+      const unifiedRecords = records.filter((r) => r.engine_type === 'unified');
+      const legacyRecords = records.filter((r) => r.engine_type === 'legacy');
+      const fallbackRecords = records.filter((r) => r.engine_type === 'fallback');
 
       // Calculate top fallback reasons
       const reasonCounts: Record<string, number> = {};
-      fallbackRecords.forEach(r => {
+      fallbackRecords.forEach((r) => {
         const reason = r.fallback_reason || 'Unknown';
         reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
       });
@@ -393,39 +387,53 @@ class MonitoringService {
       return {
         unified: {
           count: unifiedRecords.length,
-          avgProcessingTime: unifiedRecords.length > 0
-            ? Math.round(unifiedRecords.reduce((sum, r) => sum + (r.processing_time_ms || 0), 0) / unifiedRecords.length)
-            : 0,
-          avgConfidence: unifiedRecords.length > 0
-            ? Math.round(unifiedRecords.reduce((sum, r) => sum + (r.confidence_score || 0), 0) / unifiedRecords.length)
-            : 0,
-          successRate: records.length > 0
-            ? Math.round((unifiedRecords.length / records.length) * 100)
-            : 0
+          avgProcessingTime:
+            unifiedRecords.length > 0
+              ? Math.round(
+                  unifiedRecords.reduce((sum, r) => sum + (r.processing_time_ms || 0), 0) /
+                    unifiedRecords.length
+                )
+              : 0,
+          avgConfidence:
+            unifiedRecords.length > 0
+              ? Math.round(
+                  unifiedRecords.reduce((sum, r) => sum + (r.confidence_score || 0), 0) /
+                    unifiedRecords.length
+                )
+              : 0,
+          successRate:
+            records.length > 0 ? Math.round((unifiedRecords.length / records.length) * 100) : 0,
         },
         legacy: {
           count: legacyRecords.length,
-          avgProcessingTime: legacyRecords.length > 0
-            ? Math.round(legacyRecords.reduce((sum, r) => sum + (r.processing_time_ms || 0), 0) / legacyRecords.length)
-            : 0,
-          avgConfidence: legacyRecords.length > 0
-            ? Math.round(legacyRecords.reduce((sum, r) => sum + (r.confidence_score || 0), 0) / legacyRecords.length)
-            : 0
+          avgProcessingTime:
+            legacyRecords.length > 0
+              ? Math.round(
+                  legacyRecords.reduce((sum, r) => sum + (r.processing_time_ms || 0), 0) /
+                    legacyRecords.length
+                )
+              : 0,
+          avgConfidence:
+            legacyRecords.length > 0
+              ? Math.round(
+                  legacyRecords.reduce((sum, r) => sum + (r.confidence_score || 0), 0) /
+                    legacyRecords.length
+                )
+              : 0,
         },
         fallback: {
           count: fallbackRecords.length,
-          rate: records.length > 0
-            ? Math.round((fallbackRecords.length / records.length) * 100)
-            : 0,
-          topReasons
-        }
+          rate:
+            records.length > 0 ? Math.round((fallbackRecords.length / records.length) * 100) : 0,
+          topReasons,
+        },
       };
     } catch (error) {
       console.error('❌ [Monitoring] Failed to get engine comparison metrics:', error);
       return {
         unified: { count: 0, avgProcessingTime: 0, avgConfidence: 0, successRate: 0 },
         legacy: { count: 0, avgProcessingTime: 0, avgConfidence: 0 },
-        fallback: { count: 0, rate: 0, topReasons: [] }
+        fallback: { count: 0, rate: 0, topReasons: [] },
       };
     }
   }

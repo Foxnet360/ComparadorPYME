@@ -1,4 +1,4 @@
-import { describe, it, expect} from 'vitest';
+import { describe, it, expect } from 'vitest';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import {
@@ -20,8 +20,16 @@ function makeGolden(overrides: Partial<GoldenQuote> = {}): GoldenQuote {
     fileName: 'bbva-001.pdf',
     pageTextItems: [],
     expectedCoverages: [
-      { canonicalName: 'Incendio (Edificio y Contenidos)', insuredAmount: 500000000, deductible: '10%' },
-      { canonicalName: 'Responsabilidad Civil (RCE)', insuredAmount: 100000000, deductible: '5 SMMLV' },
+      {
+        canonicalName: 'Incendio (Edificio y Contenidos)',
+        insuredAmount: 500000000,
+        deductible: '10%',
+      },
+      {
+        canonicalName: 'Responsabilidad Civil (RCE)',
+        insuredAmount: 100000000,
+        deductible: '5 SMMLV',
+      },
     ],
     annotatedBy: 'analyst-a',
     ...overrides,
@@ -44,8 +52,16 @@ describe('evaluateFixture', () => {
     const golden = makeGolden();
     const actual = makePipelineOutput({
       coverages: [
-        { canonicalName: 'Incendio (Edificio y Contenidos)', insuredAmount: 500000000, deductible: '10%' },
-        { canonicalName: 'Responsabilidad Civil (RCE)', insuredAmount: 100000000, deductible: '5 SMMLV' },
+        {
+          canonicalName: 'Incendio (Edificio y Contenidos)',
+          insuredAmount: 500000000,
+          deductible: '10%',
+        },
+        {
+          canonicalName: 'Responsabilidad Civil (RCE)',
+          insuredAmount: 100000000,
+          deductible: '5 SMMLV',
+        },
       ],
       rawCoverageCount: 2,
     });
@@ -63,7 +79,11 @@ describe('evaluateFixture', () => {
     const golden = makeGolden();
     const actual = makePipelineOutput({
       coverages: [
-        { canonicalName: 'Incendio (Edificio y Contenidos)', insuredAmount: 500000000, deductible: '10%' },
+        {
+          canonicalName: 'Incendio (Edificio y Contenidos)',
+          insuredAmount: 500000000,
+          deductible: '10%',
+        },
       ],
       rawCoverageCount: 1,
     });
@@ -79,8 +99,16 @@ describe('evaluateFixture', () => {
     const golden = makeGolden();
     const actual = makePipelineOutput({
       coverages: [
-        { canonicalName: 'Incendio (Edificio y Contenidos)', insuredAmount: 500000000, deductible: '15%' },
-        { canonicalName: 'Responsabilidad Civil (RCE)', insuredAmount: 100000000, deductible: '5 SMMLV' },
+        {
+          canonicalName: 'Incendio (Edificio y Contenidos)',
+          insuredAmount: 500000000,
+          deductible: '15%',
+        },
+        {
+          canonicalName: 'Responsabilidad Civil (RCE)',
+          insuredAmount: 100000000,
+          deductible: '5 SMMLV',
+        },
       ],
       rawCoverageCount: 2,
     });
@@ -95,9 +123,15 @@ describe('evaluateFixture', () => {
     const golden = makeGolden();
     const actual = makePipelineOutput({
       coverages: [
-        { canonicalName: 'Incendio (Edificio y Contenidos)', insuredAmount: 500000000, deductible: '10%' },
+        {
+          canonicalName: 'Incendio (Edificio y Contenidos)',
+          insuredAmount: 500000000,
+          deductible: '10%',
+        },
       ],
-      uncategorizedCoverages: [{ canonicalName: 'Cobertura Rara', insuredAmount: 0, deductible: '' }],
+      uncategorizedCoverages: [
+        { canonicalName: 'Cobertura Rara', insuredAmount: 0, deductible: '' },
+      ],
       rawCoverageCount: 2,
     });
 
@@ -111,7 +145,11 @@ describe('evaluateFixture', () => {
     const golden = makeGolden({ expectedCoverages: [makeGolden().expectedCoverages[0]] });
     const actual = makePipelineOutput({
       coverages: [
-        { canonicalName: 'Incendio (Edificio y Contenidos)', insuredAmount: 500000000, deductible: '10%' },
+        {
+          canonicalName: 'Incendio (Edificio y Contenidos)',
+          insuredAmount: 500000000,
+          deductible: '10%',
+        },
         { canonicalName: 'Rotura de Maquinaria', insuredAmount: 50000000, deductible: 'No aplica' },
       ],
       rawCoverageCount: 2,
@@ -222,8 +260,42 @@ describe('buildEvaluationReport', () => {
 
   it('reports per-insurer breakdown', () => {
     const results: FixtureResult[] = [
-      { fixtureId: 'b1', insurer: 'BBVA', coverageAccuracy: 1, deductibleAccuracy: 1, uncategorizedRate: 0, manualCompletionRate: 0, correctionRate: 0, correctCoverageCount: 1, missingCoverageCount: 0, falsePositiveCoverageCount: 0, deductibleMismatchCount: 0, uncategorizedCoverageCount: 0, expectedCoverageCount: 1, rawCoverageCount: 1, needsManualCompletion: false, regressions: [] },
-      { fixtureId: 's1', insurer: 'SBS', coverageAccuracy: 0.8, deductibleAccuracy: 0.9, uncategorizedRate: 0.1, manualCompletionRate: 1, correctionRate: 0.2, correctCoverageCount: 4, missingCoverageCount: 1, falsePositiveCoverageCount: 0, deductibleMismatchCount: 0, uncategorizedCoverageCount: 1, expectedCoverageCount: 5, rawCoverageCount: 6, needsManualCompletion: true, regressions: [] },
+      {
+        fixtureId: 'b1',
+        insurer: 'BBVA',
+        coverageAccuracy: 1,
+        deductibleAccuracy: 1,
+        uncategorizedRate: 0,
+        manualCompletionRate: 0,
+        correctionRate: 0,
+        correctCoverageCount: 1,
+        missingCoverageCount: 0,
+        falsePositiveCoverageCount: 0,
+        deductibleMismatchCount: 0,
+        uncategorizedCoverageCount: 0,
+        expectedCoverageCount: 1,
+        rawCoverageCount: 1,
+        needsManualCompletion: false,
+        regressions: [],
+      },
+      {
+        fixtureId: 's1',
+        insurer: 'SBS',
+        coverageAccuracy: 0.8,
+        deductibleAccuracy: 0.9,
+        uncategorizedRate: 0.1,
+        manualCompletionRate: 1,
+        correctionRate: 0.2,
+        correctCoverageCount: 4,
+        missingCoverageCount: 1,
+        falsePositiveCoverageCount: 0,
+        deductibleMismatchCount: 0,
+        uncategorizedCoverageCount: 1,
+        expectedCoverageCount: 5,
+        rawCoverageCount: 6,
+        needsManualCompletion: true,
+        regressions: [],
+      },
     ];
 
     const report = buildEvaluationReport(results);
@@ -253,7 +325,16 @@ describe('loadGoldenSet', () => {
   });
 
   it('loads the real golden-set fixture directory', async () => {
-    const fixturesDir = path.resolve(__dirname, '..', '..', '..', '..', 'tests', 'fixtures', 'golden-set');
+    const fixturesDir = path.resolve(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      '..',
+      'tests',
+      'fixtures',
+      'golden-set'
+    );
     const fixtures = await loadGoldenSet(fixturesDir, {
       readdir: (dir) => fs.readdir(dir),
       readFile: (filePath) => fs.readFile(filePath, 'utf8'),

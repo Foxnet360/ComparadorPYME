@@ -54,7 +54,7 @@ describe('Domain threading (PYME default + per-domain bundles)', () => {
   it('returns 14 canonical categories for default domain', () => {
     const categories = semanticMatcher.getAllCategories();
     expect(categories.length).toBe(14);
-    expect(categories.map(c => c.name)).toContain('Incendio (Edificio y Contenidos)');
+    expect(categories.map((c) => c.name)).toContain('Incendio (Edificio y Contenidos)');
   });
 
   it('falls back to PYME when an unknown domain is requested', () => {
@@ -66,7 +66,7 @@ describe('Domain threading (PYME default + per-domain bundles)', () => {
   it('loads ontology nodes for PYME domain', () => {
     const nodes = coverageOntology.getNodes('pyme');
     expect(nodes.length).toBeGreaterThan(0);
-    const incendio = nodes.find(n => n.id === 'incendio');
+    const incendio = nodes.find((n) => n.id === 'incendio');
     expect(incendio).toBeTruthy();
     expect(incendio?.name).toBe('Incendio (Edificio y Contenidos)');
   });
@@ -96,7 +96,7 @@ describe('Domain threading (PYME default + per-domain bundles)', () => {
     const otherCategoriesReloaded = semanticMatcher.getAllCategories('cache-isolation-test-domain');
     expect(pymeCategoriesReloaded.length).toBe(14);
     expect(otherCategoriesReloaded.length).toBe(14);
-    expect(pymeCategoriesReloaded.map(c => c.name)).not.toContain('Fake Category');
-    expect(otherCategoriesReloaded.map(c => c.name)).not.toContain('Fake Category');
+    expect(pymeCategoriesReloaded.map((c) => c.name)).not.toContain('Fake Category');
+    expect(otherCategoriesReloaded.map((c) => c.name)).not.toContain('Fake Category');
   });
 });

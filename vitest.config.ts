@@ -7,10 +7,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'unit-backend',
-          include: [
-            'server/src/**/*.test.ts',
-            'tests/server/**/*.test.ts',
-          ],
+          include: ['server/src/**/*.test.ts', 'tests/server/**/*.test.ts'],
           exclude: [
             'server/dist/**',
             'node_modules/**',
@@ -32,15 +29,8 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'unit-frontend',
-          include: [
-            'src/**/*.test.tsx',
-            'src/**/*.test.ts',
-            'hooks/**/*.test.ts',
-          ],
-          exclude: [
-            'node_modules/**',
-            'dist/**',
-          ],
+          include: ['src/**/*.test.tsx', 'src/**/*.test.ts', 'hooks/**/*.test.ts'],
+          exclude: ['node_modules/**', 'dist/**'],
           environment: 'jsdom',
           globals: true,
           testTimeout: 10000,

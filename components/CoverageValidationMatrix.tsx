@@ -56,18 +56,18 @@ const getStatusColor = (status: string) => {
   }
 };
 
-export const CoverageValidationMatrix: React.FC<CoverageValidationMatrixProps> = ({ validations }) => {
+export const CoverageValidationMatrix: React.FC<CoverageValidationMatrixProps> = ({
+  validations,
+}) => {
   if (!validations || validations.length === 0) {
     return (
-      <div className="text-sm text-slate-500 p-4">
-        No hay datos de validación de coberturas.
-      </div>
+      <div className="text-sm text-slate-500 p-4">No hay datos de validación de coberturas.</div>
     );
   }
 
-  const verified = validations.filter(v => v.status === 'VERIFIED');
-  const phantom = validations.filter(v => v.status === 'PHANTOM');
-  const mandatoryMissing = validations.filter(v => v.status === 'MANDATORY_MISSING');
+  const verified = validations.filter((v) => v.status === 'VERIFIED');
+  const phantom = validations.filter((v) => v.status === 'PHANTOM');
+  const mandatoryMissing = validations.filter((v) => v.status === 'MANDATORY_MISSING');
 
   return (
     <div className="space-y-4">
@@ -80,7 +80,7 @@ export const CoverageValidationMatrix: React.FC<CoverageValidationMatrixProps> =
           </div>
           <p className="text-2xl font-bold text-green-700 mt-1">{verified.length}</p>
         </div>
-        
+
         <div className="bg-red-50 rounded-lg p-3 border border-red-200">
           <div className="flex items-center gap-2">
             <AlertCircle className="text-red-600" size={16} />
@@ -88,7 +88,7 @@ export const CoverageValidationMatrix: React.FC<CoverageValidationMatrixProps> =
           </div>
           <p className="text-2xl font-bold text-red-700 mt-1">{phantom.length}</p>
         </div>
-        
+
         <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
           <div className="flex items-center gap-2">
             <AlertTriangle className="text-amber-600" size={16} />
@@ -111,11 +111,11 @@ export const CoverageValidationMatrix: React.FC<CoverageValidationMatrixProps> =
           <tbody className="divide-y divide-slate-100">
             {validations.map((validation, idx) => (
               <tr key={idx} className="hover:bg-slate-50">
-                <td className="px-4 py-2 font-medium text-slate-800">
-                  {validation.coverageName}
-                </td>
+                <td className="px-4 py-2 font-medium text-slate-800">{validation.coverageName}</td>
                 <td className="px-4 py-2">
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(validation.status)}`}>
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(validation.status)}`}
+                  >
                     {getStatusIcon(validation.status)}
                     {getStatusLabel(validation.status)}
                   </span>

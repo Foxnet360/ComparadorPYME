@@ -54,7 +54,7 @@ class MemoryCache {
 
     this.cache.set(key, {
       embedding,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -96,7 +96,8 @@ export async function getCachedEmbedding(name: string): Promise<number[] | null>
       .single();
 
     if (error) {
-      if (error.code !== 'PGRST116') { // Not found is OK
+      if (error.code !== 'PGRST116') {
+        // Not found is OK
         console.warn(`⚠️ [EmbeddingCache] Supabase error: ${error.message}`);
       }
       return null;
@@ -126,16 +127,17 @@ export async function setCachedEmbedding(name: string, embedding: number[]): Pro
 
   // 2. Store in Supabase
   try {
-    const { error } = await supabase
-      .from('coverage_embeddings_cache')
-      .upsert({
+    const { error } = await supabase.from('coverage_embeddings_cache').upsert(
+      {
         coverage_name: normalizedName,
         embedding,
         model: EMBEDDING_MODEL_NAME,
-        dimensions: embedding.length
-      } as unknown as never, {
-        onConflict: 'coverage_name,model'
-      });
+        dimensions: embedding.length,
+      } as unknown as never,
+      {
+        onConflict: 'coverage_name,model',
+      }
+    );
 
     if (error) {
       console.warn(`⚠️ [EmbeddingCache] Failed to store in Supabase: ${error.message}`);
@@ -212,13 +214,13 @@ export async function setBatch(coverageNames: string[], embeddings: number[][]):
       coverage_name: name,
       embedding: embeddings[i],
       model: EMBEDDING_MODEL_NAME,
-      dimensions: embeddings[i].length
+      dimensions: embeddings[i].length,
     }));
 
     const { error } = await supabase
       .from('coverage_embeddings_cache')
       .upsert(rows as unknown as never[], {
-        onConflict: 'coverage_name,model'
+        onConflict: 'coverage_name,model',
       });
 
     if (error) {
@@ -234,6 +236,6 @@ export async function setBatch(coverageNames: string[], embeddings: number[][]):
  */
 export function getCacheStats(): { memorySize: number } {
   return {
-    memorySize: memoryCache.size()
+    memorySize: memoryCache.size(),
   };
 }

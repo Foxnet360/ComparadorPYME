@@ -99,10 +99,10 @@ describe('processQuotesBatch', () => {
       return makeParsedQuote({ insurerName: file.originalname.replace('.pdf', '') });
     });
 
-    const result = await processQuotesBatch(
-      ['/tmp/quote-a.pdf', '/tmp/quote-b.pdf'],
-      { concurrencyLimit: 1, processQuoteMultimodal: mockMultimodal }
-    );
+    const result = await processQuotesBatch(['/tmp/quote-a.pdf', '/tmp/quote-b.pdf'], {
+      concurrencyLimit: 1,
+      processQuoteMultimodal: mockMultimodal,
+    });
 
     expect(result).toHaveLength(2);
     expect(result[0].insurerName).toBe('quote-a');
@@ -119,10 +119,10 @@ describe('processQuotesBatch', () => {
       return makeParsedQuote({ insurerName: file.originalname.replace('.pdf', '') });
     });
 
-    const result = await processQuotesBatch(
-      ['/tmp/quote-a.pdf', '/tmp/quote-b.pdf'],
-      { concurrencyLimit: 2, processQuoteMultimodal: mockMultimodal }
-    );
+    const result = await processQuotesBatch(['/tmp/quote-a.pdf', '/tmp/quote-b.pdf'], {
+      concurrencyLimit: 2,
+      processQuoteMultimodal: mockMultimodal,
+    });
 
     expect(result).toHaveLength(2);
     // Both should have started before either finished.
@@ -135,7 +135,9 @@ describe('processQuotesBatch', () => {
       return false;
     });
 
-    mockLegacy.mockImplementation(async (_quote, index, _total) => makeParsedQuote({ insurerName: `legacy-${index}` }));
+    mockLegacy.mockImplementation(async (_quote, index, _total) =>
+      makeParsedQuote({ insurerName: `legacy-${index}` })
+    );
 
     const result = await processQuotesBatch(['/tmp/quote-a.pdf'], {
       concurrencyLimit: 1,

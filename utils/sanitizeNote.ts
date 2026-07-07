@@ -8,13 +8,28 @@ import { marked } from 'marked';
 export function sanitizeNote(rawContent: string): string {
   // Primero convertir markdown a HTML
   const html = marked.parse(rawContent, { async: false }) as string;
-  
+
   // Luego sanitizar con DOMPurify
   const sanitized = DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+    ALLOWED_TAGS: [
+      'p',
+      'br',
+      'strong',
+      'em',
+      'ul',
+      'ol',
+      'li',
+      'a',
+      'h1',
+      'h2',
+      'h3',
+      'h4',
+      'h5',
+      'h6',
+    ],
     ALLOWED_ATTR: ['href', 'title', 'target'],
   });
-  
+
   return sanitized;
 }
 

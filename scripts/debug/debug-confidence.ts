@@ -1,7 +1,7 @@
 /**
  * Debug script for confidence scoring
  * Shows detailed breakdown of how confidence scores are calculated for each quote
- * 
+ *
  * Usage:
  *   GEMINI_API_KEY=your_key npx tsx debug-confidence.ts
  */
@@ -10,9 +10,13 @@ import { pdfExtractor } from './src/services/pdfExtractor';
 import { geminiService } from './src/services/gemini';
 import { preprocessText } from './src/services/textPreprocessor';
 import { parseJsonWithRepair } from './src/services/jsonRepair';
-import { mapCoverageName, normalizeDeductible, loadThesaurus } from './src/services/thesaurusMapper';
+import {
+  mapCoverageName,
+  normalizeDeductible,
+  loadThesaurus,
+} from './src/services/thesaurusMapper';
 import { validateQuote, ValidationResult } from './src/services/quoteValidator';
-import { getConfidenceLabel} from './src/services/confidenceScorer';
+import { getConfidenceLabel } from './src/services/confidenceScorer';
 import { ParsedQuote } from './src/services/quoteParser';
 import { formatPercentage, formatNumber } from './src/utils/formatCurrency';
 import fs from 'fs';
@@ -23,24 +27,27 @@ type GeminiQuoteExtraction = Awaited<ReturnType<typeof geminiService.extractStru
 const QUOTES_DIR = path.join(process.cwd(), '..', '..', 'Ejemplos', 'laser-home');
 
 // Replicate the internal scoring functions with detailed logging
-function debugCoverageCompleteness(quote: ParsedQuote, _label: string): { score: number; details: string } {
+function debugCoverageCompleteness(
+  quote: ParsedQuote,
+  _label: string
+): { score: number; details: string } {
   let details = '';
-  
+
   if (quote.expectedCoverages && Array.isArray(quote.expectedCoverages)) {
     const expectedCoverages = quote.expectedCoverages;
     const expectedCount = expectedCoverages.length;
     const presentCount = expectedCoverages.filter((c) => c.status === 'present').length;
     const missingCount = expectedCoverages.filter((c) => c.status === 'missing').length;
     const excludedCount = expectedCoverages.filter((c) => c.status === 'excluded').length;
-    
+
     details += `  Using expectedCoverages array (${expectedCount} total)\n`;
     details += `  - present: ${presentCount}, missing: ${missingCount}, excluded: ${excludedCount}\n`;
-    
+
     if (expectedCount === 0) {
       details += `  → expectedCount is 0, returning 0\n`;
       return { score: 0, details };
     }
-    
+
     const realisticTarget = 8;
     if (presentCount >= realisticTarget) {
       details += `  → presentCount (${presentCount}) >= realisticTarget (${realisticTarget}), score = 100\n`;
@@ -50,21 +57,21 @@ function debugCoverageCompleteness(quote: ParsedQuote, _label: string): { score:
     details += `  → Score = min(100, (${presentCount} / ${realisticTarget}) * 100) = ${formatPercentage(score / 100, 2)}\n`;
     return { score, details };
   }
-  
+
   // Fallback to legacy calculation
   if (!quote.coverages || quote.coverages.length === 0) {
     details += `  No coverages found, returning 0\n`;
     return { score: 0, details };
   }
-  
+
   const realisticTarget = 8;
-  const presentCount = quote.coverages.filter(c => 
-    c.value && c.value !== 'NO ESPECIFICADO' && c.value !== 'EXCLUIDO'
+  const presentCount = quote.coverages.filter(
+    (c) => c.value && c.value !== 'NO ESPECIFICADO' && c.value !== 'EXCLUIDO'
   ).length;
-  
+
   details += `  Using legacy coverages array (${quote.coverages.length} total)\n`;
   details += `  - coverages with valid values: ${presentCount}\n`;
-  
+
   if (presentCount >= realisticTarget) {
     details += `  → presentCount (${presentCount}) >= realisticTarget (${realisticTarget}), score = 100\n`;
     return { score: 100, details };
@@ -74,17 +81,20 @@ function debugCoverageCompleteness(quote: ParsedQuote, _label: string): { score:
   return { score, details };
 }
 
-function debugNumericParseSuccess(quote: ParsedQuote, _label: string): { score: number; details: string } {
+function debugNumericParseSuccess(
+  quote: ParsedQuote,
+  _label: string
+): { score: number; details: string } {
   let details = '';
-  
+
   if (!quote.coverages || quote.coverages.length === 0) {
     details += `  No coverages found, returning 0\n`;
     return { score: 0, details };
   }
-  
+
   let totalNumericFields = 0;
   let successfulParses = 0;
-  
+
   // Check premium
   if (quote.priceAnnual > 0) {
     totalNumericFields++;
@@ -94,7 +104,7 @@ function debugNumericParseSuccess(quote: ParsedQuote, _label: string): { score: 
     totalNumericFields++;
     details += `  Premium: ${quote.priceAnnual} ❌ (parse failed or zero)\n`;
   }
-  
+
   // Check coverage values
   details += `  Coverage values:\n`;
   for (const coverage of quote.coverages) {
@@ -111,7 +121,7 @@ function debugNumericParseSuccess(quote: ParsedQuote, _label: string): { score: 
       details += `    "${coverage.name}": "${coverage.value}" → skipped (not a numeric field)\n`;
     }
   }
-  
+
   if (totalNumericFields === 0) {
     details += `  → totalNumericFields is 0, returning 0\n`;
     return { score: 0, details };
@@ -121,86 +131,94 @@ function debugNumericParseSuccess(quote: ParsedQuote, _label: string): { score: 
   return { score, details };
 }
 
-function debugValidationPassRate(validation: ValidationResult, _label: string): { score: number; details: string } {
+function debugValidationPassRate(
+  validation: ValidationResult,
+  _label: string
+): { score: number; details: string } {
   let details = '';
   const totalChecks = 6;
   let passedChecks = 0;
-  
+
   details += `  Validation checks (6 total):\n`;
-  
+
   // Check 1: Coverage completeness
   const check1 = validation.coverageCount >= 5;
   if (check1) passedChecks++;
   details += `    1. coverageCount >= 5: ${validation.coverageCount} ${check1 ? '✅' : '❌'}\n`;
-  
+
   // Check 2: No critical errors
-  const criticalCount = validation.flags.filter(f => f.severity === 'CRITICAL').length;
+  const criticalCount = validation.flags.filter((f) => f.severity === 'CRITICAL').length;
   const check2 = criticalCount === 0;
   if (check2) passedChecks++;
   details += `    2. No critical errors: ${criticalCount} critical ${check2 ? '✅' : '❌'}\n`;
-  
+
   // Check 3: Numeric parse success
   const check3 = validation.numericParseSuccess;
   if (check3) passedChecks++;
   details += `    3. numericParseSuccess: ${validation.numericParseSuccess} ${check3 ? '✅' : '❌'}\n`;
-  
+
   // Check 4: Premium exists
-  const hasPremium = !validation.flags.some(f => f.code === 'PREMIUM_MISSING');
+  const hasPremium = !validation.flags.some((f) => f.code === 'PREMIUM_MISSING');
   const check4 = hasPremium;
   if (check4) passedChecks++;
   details += `    4. Premium exists: ${hasPremium} ${check4 ? '✅' : '❌'}\n`;
-  
+
   // Check 5: Deductible formats valid
-  const hasDeductibleErrors = validation.flags.some(f => f.code === 'DEDUCTIBLE_UNRECOGNIZED_FORMAT');
+  const hasDeductibleErrors = validation.flags.some(
+    (f) => f.code === 'DEDUCTIBLE_UNRECOGNIZED_FORMAT'
+  );
   const check5 = !hasDeductibleErrors;
   if (check5) passedChecks++;
   details += `    5. No deductible errors: ${!hasDeductibleErrors} ${check5 ? '✅' : '❌'}\n`;
-  
+
   // Check 6: Less than 3 warnings
-  const warningCount = validation.flags.filter(f => f.severity === 'WARNING').length;
+  const warningCount = validation.flags.filter((f) => f.severity === 'WARNING').length;
   const check6 = warningCount < 3;
   if (check6) passedChecks++;
   details += `    6. Warnings < 3: ${warningCount} warnings ${check6 ? '✅' : '❌'}\n`;
-  
+
   const score = (passedChecks / totalChecks) * 100;
   details += `  → ${passedChecks}/${totalChecks} passed = ${formatPercentage(score / 100, 2)}\n`;
   return { score, details };
 }
 
-function debugSchemaCompliance(quote: ParsedQuote, _label: string): { score: number; details: string } {
+function debugSchemaCompliance(
+  quote: ParsedQuote,
+  _label: string
+): { score: number; details: string } {
   let details = '';
   let score = 0;
-  
+
   details += `  Schema compliance checks:\n`;
-  
+
   if (quote.insurerName && quote.insurerName !== 'NO ESPECIFICADO') {
     score += 25;
     details += `    insurerName: "${quote.insurerName}" → +25 ✅\n`;
   } else {
     details += `    insurerName: "${quote.insurerName}" → +0 ❌\n`;
   }
-  
+
   if (quote.policyName && quote.policyName !== 'NO ESPECIFICADO') {
     score += 25;
     details += `    policyName: "${quote.policyName}" → +25 ✅\n`;
   } else {
     details += `    policyName: "${quote.policyName}" → +0 ❌\n`;
   }
-  
+
   if (quote.priceAnnual > 0) {
     score += 25;
     details += `    priceAnnual: ${quote.priceAnnual} → +25 ✅\n`;
   } else {
     details += `    priceAnnual: ${quote.priceAnnual} → +0 ❌\n`;
   }
-  
+
   if (quote.coverages && quote.coverages.length > 0) {
     score += 25;
     details += `    coverages: ${quote.coverages.length} → +25 ✅\n`;
   } else {
     details += `    coverages: ${quote.coverages?.length || 0} → +0 ❌\n`;
   }
-  
+
   details += `  → Raw score = ${score}\n`;
   return { score, details };
 }
@@ -213,77 +231,89 @@ function printConfidenceBreakdown(
   console.log(`\n${'='.repeat(70)}`);
   console.log(`📊 CONFIDENCE SCORE BREAKDOWN`);
   console.log(`${'='.repeat(70)}`);
-  
+
   const weights = {
-    coverageCompleteness: 0.30,
+    coverageCompleteness: 0.3,
     numericParseSuccess: 0.25,
     validationPassRate: 0.25,
-    schemaCompliance: 0.20,
+    schemaCompliance: 0.2,
   };
-  
+
   // Calculate each component with debug info
   const covResult = debugCoverageCompleteness(quote, 'Coverage Completeness');
   const numResult = debugNumericParseSuccess(quote, 'Numeric Parse Success');
   const valResult = debugValidationPassRate(validation, 'Validation Pass Rate');
   const schResult = debugSchemaCompliance(quote, 'Schema Compliance');
-  
+
   console.log(`\n1️⃣  COVERAGE COMPLETENESS (weight: ${weights.coverageCompleteness})`);
   console.log(covResult.details);
-  
+
   console.log(`\n2️⃣  NUMERIC PARSE SUCCESS (weight: ${weights.numericParseSuccess})`);
   console.log(numResult.details);
-  
+
   console.log(`\n3️⃣  VALIDATION PASS RATE (weight: ${weights.validationPassRate})`);
   console.log(valResult.details);
-  
+
   console.log(`\n4️⃣  SCHEMA COMPLIANCE (weight: ${weights.schemaCompliance})`);
   let schemaScore = schResult.score;
   console.log(schResult.details);
-  
+
   if (isStructured) {
     const bonusScore = Math.min(100, schemaScore * 1.2);
-    console.log(`  Structured extraction bonus: ${schemaScore} × 1.2 = ${formatNumber(bonusScore, 2)} (capped at 100)`);
+    console.log(
+      `  Structured extraction bonus: ${schemaScore} × 1.2 = ${formatNumber(bonusScore, 2)} (capped at 100)`
+    );
     schemaScore = bonusScore;
   }
-  
+
   // Calculate weighted score
-  let weightedScore = 
+  let weightedScore =
     covResult.score * weights.coverageCompleteness +
     numResult.score * weights.numericParseSuccess +
     valResult.score * weights.validationPassRate +
     schemaScore * weights.schemaCompliance;
-  
+
   console.log(`\n📐 WEIGHTED CALCULATION:`);
-  console.log(`  Coverage:     ${formatNumber(covResult.score, 2)} × ${weights.coverageCompleteness} = ${formatNumber(covResult.score * weights.coverageCompleteness, 2)}`);
-  console.log(`  Numeric:      ${formatNumber(numResult.score, 2)} × ${weights.numericParseSuccess} = ${formatNumber(numResult.score * weights.numericParseSuccess, 2)}`);
-  console.log(`  Validation:   ${formatNumber(valResult.score, 2)} × ${weights.validationPassRate} = ${formatNumber(valResult.score * weights.validationPassRate, 2)}`);
-  console.log(`  Schema:       ${formatNumber(schemaScore, 2)} × ${weights.schemaCompliance} = ${formatNumber(schemaScore * weights.schemaCompliance, 2)}`);
+  console.log(
+    `  Coverage:     ${formatNumber(covResult.score, 2)} × ${weights.coverageCompleteness} = ${formatNumber(covResult.score * weights.coverageCompleteness, 2)}`
+  );
+  console.log(
+    `  Numeric:      ${formatNumber(numResult.score, 2)} × ${weights.numericParseSuccess} = ${formatNumber(numResult.score * weights.numericParseSuccess, 2)}`
+  );
+  console.log(
+    `  Validation:   ${formatNumber(valResult.score, 2)} × ${weights.validationPassRate} = ${formatNumber(valResult.score * weights.validationPassRate, 2)}`
+  );
+  console.log(
+    `  Schema:       ${formatNumber(schemaScore, 2)} × ${weights.schemaCompliance} = ${formatNumber(schemaScore * weights.schemaCompliance, 2)}`
+  );
   console.log(`  ───────────────────────────────────────`);
   console.log(`  Subtotal:     ${formatNumber(weightedScore, 2)}`);
-  
+
   // Penalties
-  const hasPremiumIssue = validation.flags.some(f => 
-    f.code === 'PREMIUM_MISSING' || f.code === 'PREMIUM_SUSPECT'
+  const hasPremiumIssue = validation.flags.some(
+    (f) => f.code === 'PREMIUM_MISSING' || f.code === 'PREMIUM_SUSPECT'
   );
-  
+
   if (hasPremiumIssue) {
     console.log(`\n⚠️  PENALTY APPLIED:`);
-    console.log(`  Premium issue detected (${validation.flags.find(f => f.code === 'PREMIUM_MISSING' || f.code === 'PREMIUM_SUSPECT')?.code})`);
+    console.log(
+      `  Premium issue detected (${validation.flags.find((f) => f.code === 'PREMIUM_MISSING' || f.code === 'PREMIUM_SUSPECT')?.code})`
+    );
     console.log(`  Score: ${weightedScore.toFixed(2)} - 25 = ${(weightedScore - 25).toFixed(2)}`);
     weightedScore -= 25;
   } else {
     console.log(`\n✅ No penalties applied`);
   }
-  
+
   // Final score
   const finalScore = Math.max(0, Math.min(100, Math.round(weightedScore)));
-  
+
   console.log(`\n🏆 FINAL SCORE:`);
   console.log(`  Clamped to [0, 100]: ${finalScore}/100`);
   console.log(`  Label: ${getConfidenceLabel(finalScore)}`);
   console.log(`  Needs Review: ${finalScore < 75 ? 'YES ⚠️' : 'No ✅'}`);
   console.log(`  Is Critical: ${finalScore < 50 ? 'YES 🚨' : 'No ✅'}`);
-  
+
   return finalScore;
 }
 
@@ -298,28 +328,28 @@ async function debugQuote(pdfPath: string, insurerName: string) {
     console.log('📄 STAGE 1: PDF Text Extraction');
     console.log('-'.repeat(50));
     const extraction = await pdfExtractor.extractTextFromPdf(pdfPath);
-    console.log(`✅ Extracted ${extraction.text.length} chars from ${extraction.metadata.pageCount} pages\n`);
+    console.log(
+      `✅ Extracted ${extraction.text.length} chars from ${extraction.metadata.pageCount} pages\n`
+    );
 
     // === STAGE 2: PRE-PROCESSING ===
     console.log('🧹 STAGE 2: Text Pre-processing');
     console.log('-'.repeat(50));
-    const preprocessed = preprocessText(
-      extraction.text,
-      extraction.metadata.pageCount,
-      {
-        normalizeNumbers: true,
-        fixEncoding: true,
-        removeArtifacts: true,
-        extractSections: extraction.metadata.pageCount > 10,
-      }
-    );
+    const preprocessed = preprocessText(extraction.text, extraction.metadata.pageCount, {
+      normalizeNumbers: true,
+      fixEncoding: true,
+      removeArtifacts: true,
+      extractSections: extraction.metadata.pageCount > 10,
+    });
     console.log(`✅ Pre-processing complete`);
-    console.log(`   Size: ${preprocessed.metadata.originalLength} → ${preprocessed.metadata.cleanedLength} chars\n`);
+    console.log(
+      `   Size: ${preprocessed.metadata.originalLength} → ${preprocessed.metadata.cleanedLength} chars\n`
+    );
 
     // === STAGE 3: GEMINI STRUCTURED EXTRACTION ===
     console.log(`🤖 STAGE 3: Gemini Structured Extraction`);
     console.log('-'.repeat(50));
-    
+
     if (!process.env.GEMINI_API_KEY) {
       console.log('⚠️  GEMINI_API_KEY not set. Skipping AI extraction.\n');
       return;
@@ -352,12 +382,20 @@ IMPORTANTE - FORMATO DE RESPUESTA:
       );
 
       if (!geminiResult.coverages || geminiResult.coverages.length === 0) {
-        console.log(`   ⚠️  Structured extraction returned 0 coverages. Trying text-based extraction...`);
+        console.log(
+          `   ⚠️  Structured extraction returned 0 coverages. Trying text-based extraction...`
+        );
         const textResult = await geminiService.extractText(preprocessed.text, prompt);
-        
+
         const repaired = parseJsonWithRepair(textResult);
-        if (repaired.success && (repaired.data as GeminiQuoteExtraction).coverages && (repaired.data as GeminiQuoteExtraction).coverages.length > 0) {
-          console.log(`   ✅ Text extraction found ${(repaired.data as GeminiQuoteExtraction).coverages.length} coverages!`);
+        if (
+          repaired.success &&
+          (repaired.data as GeminiQuoteExtraction).coverages &&
+          (repaired.data as GeminiQuoteExtraction).coverages.length > 0
+        ) {
+          console.log(
+            `   ✅ Text extraction found ${(repaired.data as GeminiQuoteExtraction).coverages.length} coverages!`
+          );
           geminiResult = repaired.data as GeminiQuoteExtraction;
         }
       }
@@ -365,9 +403,10 @@ IMPORTANTE - FORMATO DE RESPUESTA:
       console.log(`✅ Gemini extraction successful`);
       console.log(`   Aseguradora: ${geminiResult.insurerName}`);
       console.log(`   Póliza: ${geminiResult.policyName}`);
-      console.log(`   Prima: ${geminiResult.priceAnnual?.toLocaleString('es-CO')} ${geminiResult.currency}`);
+      console.log(
+        `   Prima: ${geminiResult.priceAnnual?.toLocaleString('es-CO')} ${geminiResult.currency}`
+      );
       console.log(`   Coberturas: ${geminiResult.coverages?.length || 0}`);
-
     } catch (geminiError: Error) {
       console.log(`❌ Gemini extraction failed: ${geminiError.message}`);
       return;
@@ -384,7 +423,7 @@ IMPORTANTE - FORMATO DE RESPUESTA:
       let normalizedCoverages = geminiResult.coverages.map((cov) => {
         const mapping = mapCoverageName(cov.name);
         const deductibleNorm = normalizeDeductible(cov.deductible || '');
-        
+
         return {
           originalName: cov.name,
           canonicalName: mapping.canonicalName,
@@ -409,7 +448,7 @@ IMPORTANTE - FORMATO DE RESPUESTA:
       normalizedCoverages = normalizedCoverages.filter((cov) => cov.confidence >= 0.3);
 
       console.log(`✅ Normalized ${normalizedCoverages.length} coverages`);
-      
+
       geminiResult.coverages = normalizedCoverages.map((c) => ({
         name: c.canonicalName,
         value: c.value,
@@ -424,7 +463,7 @@ IMPORTANTE - FORMATO DE RESPUESTA:
     console.log('-'.repeat(50));
 
     const validation = validateQuote(geminiResult);
-    
+
     console.log(`   Valid: ${validation.isValid ? '✅' : '❌'}`);
     console.log(`   Coverages: ${validation.coverageCount}/${validation.expectedCoverageCount}`);
     console.log(`   Flags: ${validation.flags.length}`);
@@ -439,24 +478,30 @@ IMPORTANTE - FORMATO DE RESPUESTA:
 
     // Save detailed results
     const outputPath = pdfPath.replace('.pdf', '_confidence_debug.json');
-    fs.writeFileSync(outputPath, JSON.stringify({
-      insurerName,
-      geminiResult: {
-        insurerName: geminiResult.insurerName,
-        policyName: geminiResult.policyName,
-        priceAnnual: geminiResult.priceAnnual,
-        currency: geminiResult.currency,
-        coverageCount: geminiResult.coverages?.length || 0,
-      },
-      validation: {
-        isValid: validation.isValid,
-        coverageCount: validation.coverageCount,
-        flags: validation.flags,
-      },
-      confidenceScore: finalScore,
-    }, null, 2));
+    fs.writeFileSync(
+      outputPath,
+      JSON.stringify(
+        {
+          insurerName,
+          geminiResult: {
+            insurerName: geminiResult.insurerName,
+            policyName: geminiResult.policyName,
+            priceAnnual: geminiResult.priceAnnual,
+            currency: geminiResult.currency,
+            coverageCount: geminiResult.coverages?.length || 0,
+          },
+          validation: {
+            isValid: validation.isValid,
+            coverageCount: validation.coverageCount,
+            flags: validation.flags,
+          },
+          confidenceScore: finalScore,
+        },
+        null,
+        2
+      )
+    );
     console.log(`\n💾 Debug results saved to: ${path.basename(outputPath)}`);
-
   } catch (error: Error) {
     console.error(`\n❌ Debug failed:`, error.message);
   }

@@ -5,7 +5,12 @@ import { quoteParser, ParsedQuote } from '../services/quoteParser';
 import { detectFormatFamily, extractForDetection } from '../services/formatDetector';
 import { buildPromptForFamily } from '../services/promptBuilder';
 import { buildCanonicalCoverages } from '../services/coverageNormalizer';
-import { extractPremiumBreakdown, extractPerCoveragePremiums, validatePremiumBreakdown, normalizeCurrency } from '../services/premiumExtractor';
+import {
+  extractPremiumBreakdown,
+  extractPerCoveragePremiums,
+  validatePremiumBreakdown,
+  normalizeCurrency,
+} from '../services/premiumExtractor';
 import fs from 'fs';
 
 /**
@@ -44,7 +49,7 @@ export async function compareExtraction(req: Request, res: Response) {
 
       try {
         const quickText = extractForDetection(
-          await pdfExtractor.extractTextFromPdf(file.path).then(r => r.text),
+          await pdfExtractor.extractTextFromPdf(file.path).then((r) => r.text),
           2000
         );
         const formatResult = detectFormatFamily(quickText);
@@ -74,7 +79,7 @@ export async function compareExtraction(req: Request, res: Response) {
           policyName: extracted.policyName || 'NO ESPECIFICADO',
           priceAnnual: premiumBreakdown.totalPayable || 0,
           currency: normalizeCurrency(premiumBreakdown.currency),
-          coverages: normalizationResult.canonicalCoverages.map(c => ({
+          coverages: normalizationResult.canonicalCoverages.map((c) => ({
             name: c.name,
             canonicalName: c.name,
             value: c.insuredAmount ? c.insuredAmount.toString() : 'NO ESPECIFICADO',
@@ -84,11 +89,11 @@ export async function compareExtraction(req: Request, res: Response) {
           validityPeriod: extracted.validityPeriod ?? undefined,
           specialConditions: [
             ...(extracted.specialConditions || []),
-            ...(premiumValidation.warnings),
+            ...premiumValidation.warnings,
           ],
           rawText: JSON.stringify(extracted),
           parseConfidence: normalizationResult.totalConfidence,
-          expectedCoverages: normalizationResult.canonicalCoverages.map(c => ({
+          expectedCoverages: normalizationResult.canonicalCoverages.map((c) => ({
             name: c.name,
             status: c.status,
             value: c.insuredAmount ? c.insuredAmount.toString() : null,
@@ -122,10 +127,12 @@ export async function compareExtraction(req: Request, res: Response) {
           confidence: v2Result?.parseConfidence,
         },
         improvements: {
-          timeReduction: v1Time > 0 ? ((v1Time - v2Time) / v1Time * 100).toFixed(1) + '%' : 'N/A',
+          timeReduction: v1Time > 0 ? (((v1Time - v2Time) / v1Time) * 100).toFixed(1) + '%' : 'N/A',
           coveragesDiff: (v2Result?.coverages?.length || 0) - (v1Result?.coverages?.length || 0),
-          confidenceDiff: ((v2Result?.parseConfidence || 0) - (v1Result?.parseConfidence || 0)).toFixed(2),
-        }
+          confidenceDiff: (
+            (v2Result?.parseConfidence || 0) - (v1Result?.parseConfidence || 0)
+          ).toFixed(2),
+        },
       };
 
       results.push(comparison);
@@ -141,12 +148,16 @@ export async function compareExtraction(req: Request, res: Response) {
     // Summary
     const summary = {
       totalFiles: results.length,
-      v1Success: results.filter(r => r.v1.success).length,
-      v2Success: results.filter(r => r.v2.success).length,
+      v1Success: results.filter((r) => r.v1.success).length,
+      v2Success: results.filter((r) => r.v2.success).length,
       avgV1Time: Math.round(results.reduce((acc, r) => acc + r.v1.timeMs, 0) / results.length),
       avgV2Time: Math.round(results.reduce((acc, r) => acc + r.v2.timeMs, 0) / results.length),
-      avgConfidenceV1: (results.reduce((acc, r) => acc + (r.v1.confidence || 0), 0) / results.length).toFixed(2),
-      avgConfidenceV2: (results.reduce((acc, r) => acc + (r.v2.confidence || 0), 0) / results.length).toFixed(2),
+      avgConfidenceV1: (
+        results.reduce((acc, r) => acc + (r.v1.confidence || 0), 0) / results.length
+      ).toFixed(2),
+      avgConfidenceV2: (
+        results.reduce((acc, r) => acc + (r.v2.confidence || 0), 0) / results.length
+      ).toFixed(2),
     };
 
     res.json({
@@ -155,7 +166,6 @@ export async function compareExtraction(req: Request, res: Response) {
       comparisons: results,
       recommendation: summary.v2Success >= summary.v1Success ? 'V2 recommended' : 'V1 more stable',
     });
-
   } catch (error: unknown) {
     console.error('Compare extraction error:', error);
     res.status(500).json({

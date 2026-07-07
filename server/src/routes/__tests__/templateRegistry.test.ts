@@ -44,7 +44,11 @@ function createMockService() {
     deleteTemplate: vi.fn(async () => {}),
     invalidateCache: vi.fn(async () => {}),
     refreshCache: vi.fn(async () => {}),
-    matchTemplate: vi.fn(async () => ({ templateId: null, templateConfidence: null, template: null })),
+    matchTemplate: vi.fn(async () => ({
+      templateId: null,
+      templateConfidence: null,
+      template: null,
+    })),
     validatePayload: vi.fn(() => ({ valid: true })),
   };
 }
@@ -57,7 +61,10 @@ function buildApp(role: string = 'admin') {
     (req as AuthenticatedRequest).user = { id: 'user', role };
     next();
   });
-  app.use('/api/templates/registry', createTemplateRegistryRoutes(service as unknown as TemplateRegistryService));
+  app.use(
+    '/api/templates/registry',
+    createTemplateRegistryRoutes(service as unknown as TemplateRegistryService)
+  );
   return { app, service };
 }
 
@@ -102,9 +109,7 @@ describe('templateRegistry routes', () => {
       promptAddon: '',
     };
 
-    const response = await request(app)
-      .post('/api/templates/registry')
-      .send(entry);
+    const response = await request(app).post('/api/templates/registry').send(entry);
 
     expect(response.status).toBe(200);
     expect(service.upsertTemplate).toHaveBeenCalledWith(entry, 'pyme');
@@ -113,9 +118,7 @@ describe('templateRegistry routes', () => {
   it('rejects an invalid template payload', async () => {
     const { app } = buildApp();
 
-    const response = await request(app)
-      .post('/api/templates/registry')
-      .send({ insurer: 'TEST' });
+    const response = await request(app).post('/api/templates/registry').send({ insurer: 'TEST' });
 
     expect(response.status).toBe(400);
   });

@@ -4,7 +4,8 @@ import { geminiService } from './src/services/gemini';
 import { parseJsonWithRepair } from './src/services/jsonRepair';
 import { QuoteExtraction } from './src/schemas/extractionSchemas';
 
-const PDF_PATH = '/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/Ejemplos/laser-home/Cotización - BBVA.pdf';
+const PDF_PATH =
+  '/home/foxnet360/Documentos/dev/Corredores/Comparador-CSA_DEF/Ejemplos/laser-home/Cotización - BBVA.pdf';
 
 const PROMPT = `Extrae TODAS las coberturas de esta cotización de seguros. 
 Devuelve el resultado en formato JSON con esta estructura exacta:
@@ -26,8 +27,10 @@ async function main() {
   // Step 1: Extract text from PDF
   console.log('1. Extracting text from PDF...');
   const extraction = await pdfExtractor.extractTextFromPdf(PDF_PATH);
-  console.log(`   - Extracted ${extraction.text.length} chars from ${extraction.pages.length} pages`);
-  console.log(`   - Pages with content: ${extraction.pages.filter(p => p.hasContent).length}`);
+  console.log(
+    `   - Extracted ${extraction.text.length} chars from ${extraction.pages.length} pages`
+  );
+  console.log(`   - Pages with content: ${extraction.pages.filter((p) => p.hasContent).length}`);
   console.log(`   - Is scanned: ${extraction.isScanned}`);
   if (extraction.warnings.length > 0) {
     console.log(`   - Warnings: ${extraction.warnings.join(', ')}`);
@@ -80,7 +83,9 @@ async function main() {
     console.log(`   - Insurer: ${data.insurerName || 'N/A'}`);
     console.log(`   - Policy: ${data.policyName || 'N/A'}`);
     console.log(`   - Price Annual: ${data.priceAnnual || 'N/A'} ${data.currency || ''}`);
-    console.log(`   - Number of coverages found: ${Array.isArray(coverages) ? coverages.length : 0}`);
+    console.log(
+      `   - Number of coverages found: ${Array.isArray(coverages) ? coverages.length : 0}`
+    );
     if (Array.isArray(coverages) && coverages.length > 0) {
       console.log('\n   First 5 coverages:');
       coverages.slice(0, 5).forEach((c, i: number) => {
@@ -94,7 +99,7 @@ async function main() {
   console.log('\n=== END DEBUG ===');
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.error('Fatal error:', err);
   process.exit(1);
 });

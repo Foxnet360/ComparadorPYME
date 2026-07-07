@@ -2,21 +2,18 @@
  * Format Family Service
  * Replaces insurer-specific profiles with format-family-based detection
  * Provides specialized prompts based on document layout instead of insurer name
- * 
+ *
  * @deprecated Use formatDetector.ts and promptBuilder.ts directly
  * This service maintains backward compatibility during migration
  */
 
-import { 
-  detectFormatFamily, 
-  FormatFamily, 
+import {
+  detectFormatFamily,
+  FormatFamily,
   FormatDetectionResult,
-  getFormatFamilyDescription 
+  getFormatFamilyDescription,
 } from './formatDetector';
-import { 
-  buildPromptForFamily, 
-  getSupportedFormatFamilies 
-} from './promptBuilder';
+import { buildPromptForFamily, getSupportedFormatFamilies } from './promptBuilder';
 
 // Re-export types for backward compatibility
 export type { FormatFamily, FormatDetectionResult };

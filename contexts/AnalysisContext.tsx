@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useCallback} from 'react';
+import React, { createContext, useContext, useReducer, useCallback } from 'react';
 import { ComparisonReport, AppStatus, Client } from '../types';
 import { CorrectionQueue } from '../services/correctionQueue';
 
@@ -78,7 +78,10 @@ type AnalysisAction =
   | { type: 'SET_STATUS_MESSAGE'; payload: string }
   | { type: 'SET_ERROR_MESSAGE'; payload: string }
   | { type: 'ADD_CORRECTION'; payload: Correction }
-  | { type: 'UPDATE_CORRECTION_STATUS'; payload: { id: string; status: 'pending' | 'success' | 'error' } }
+  | {
+      type: 'UPDATE_CORRECTION_STATUS';
+      payload: { id: string; status: 'pending' | 'success' | 'error' };
+    }
   | { type: 'SET_CELL_NOTE'; payload: CellNote }
   | { type: 'DELETE_CELL_NOTE'; payload: string }
   | { type: 'OPEN_PDF_VIEWER'; payload: PdfViewerState }
@@ -142,7 +145,7 @@ function analysisReducer(state: AnalysisState, action: AnalysisAction): Analysis
     case 'UPDATE_CORRECTION_STATUS':
       return {
         ...state,
-        corrections: state.corrections.map(c =>
+        corrections: state.corrections.map((c) =>
           c.id === action.payload.id ? { ...c, status: action.payload.status } : c
         ),
       };
@@ -212,24 +215,24 @@ export const AnalysisProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   React.useEffect(() => {
     const handleOnline = async () => {
       dispatch({ type: 'SET_ONLINE_STATUS', payload: true });
-      
+
       // Check if there are pending corrections in the queue
       const pendingCount = CorrectionQueue.getCount();
       if (pendingCount > 0) {
         await CorrectionQueue.sync();
       }
     };
-    
+
     const handleOffline = () => dispatch({ type: 'SET_ONLINE_STATUS', payload: false });
-    
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    
+
     // Initial sync check
     if (navigator.onLine) {
       handleOnline();
     }
-    
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
@@ -264,19 +267,25 @@ export const useAnalysis = (): AnalysisContextType => {
 // Hook for corrections
 export const useCorrections = () => {
   const { state, dispatch } = useAnalysis();
-  
-  const addCorrection = useCallback((correction: Correction) => {
-    dispatch({ type: 'ADD_CORRECTION', payload: correction });
-  }, [dispatch]);
-  
-  const updateCorrectionStatus = useCallback((id: string, status: 'pending' | 'success' | 'error') => {
-    dispatch({ type: 'UPDATE_CORRECTION_STATUS', payload: { id, status } });
-  }, [dispatch]);
-  
+
+  const addCorrection = useCallback(
+    (correction: Correction) => {
+      dispatch({ type: 'ADD_CORRECTION', payload: correction });
+    },
+    [dispatch]
+  );
+
+  const updateCorrectionStatus = useCallback(
+    (id: string, status: 'pending' | 'success' | 'error') => {
+      dispatch({ type: 'UPDATE_CORRECTION_STATUS', payload: { id, status } });
+    },
+    [dispatch]
+  );
+
   const getPendingCorrections = useCallback(() => {
-    return state.corrections.filter(c => c.status === 'pending');
+    return state.corrections.filter((c) => c.status === 'pending');
   }, [state.corrections]);
-  
+
   return {
     corrections: state.corrections,
     addCorrection,
@@ -288,22 +297,31 @@ export const useCorrections = () => {
 // Hook for cell notes
 export const useCellNotes = () => {
   const { state, dispatch } = useAnalysis();
-  
-  const setCellNote = useCallback((cellId: string, content: string) => {
-    dispatch({
-      type: 'SET_CELL_NOTE',
-      payload: { cellId, content, timestamp: Date.now() },
-    });
-  }, [dispatch]);
-  
-  const deleteCellNote = useCallback((cellId: string) => {
-    dispatch({ type: 'DELETE_CELL_NOTE', payload: cellId });
-  }, [dispatch]);
-  
-  const getCellNote = useCallback((cellId: string) => {
-    return state.cellNotes[cellId] || null;
-  }, [state.cellNotes]);
-  
+
+  const setCellNote = useCallback(
+    (cellId: string, content: string) => {
+      dispatch({
+        type: 'SET_CELL_NOTE',
+        payload: { cellId, content, timestamp: Date.now() },
+      });
+    },
+    [dispatch]
+  );
+
+  const deleteCellNote = useCallback(
+    (cellId: string) => {
+      dispatch({ type: 'DELETE_CELL_NOTE', payload: cellId });
+    },
+    [dispatch]
+  );
+
+  const getCellNote = useCallback(
+    (cellId: string) => {
+      return state.cellNotes[cellId] || null;
+    },
+    [state.cellNotes]
+  );
+
   return {
     cellNotes: state.cellNotes,
     setCellNote,
@@ -315,18 +333,21 @@ export const useCellNotes = () => {
 // Hook for PDF viewer
 export const usePdfViewer = () => {
   const { state, dispatch } = useAnalysis();
-  
-  const openPdfViewer = useCallback((payload: Omit<PdfViewerState, 'isOpen'>) => {
-    dispatch({
-      type: 'OPEN_PDF_VIEWER',
-      payload: { ...payload, isOpen: true },
-    });
-  }, [dispatch]);
-  
+
+  const openPdfViewer = useCallback(
+    (payload: Omit<PdfViewerState, 'isOpen'>) => {
+      dispatch({
+        type: 'OPEN_PDF_VIEWER',
+        payload: { ...payload, isOpen: true },
+      });
+    },
+    [dispatch]
+  );
+
   const closePdfViewer = useCallback(() => {
     dispatch({ type: 'CLOSE_PDF_VIEWER' });
   }, [dispatch]);
-  
+
   return {
     pdfViewer: state.pdfViewer,
     openPdfViewer,
@@ -337,18 +358,28 @@ export const usePdfViewer = () => {
 // Hook for audit progress
 export const useAuditProgress = () => {
   const { state, dispatch } = useAnalysis();
-  
-  const updateProgress = useCallback((progress: Partial<AuditProgress>) => {
-    dispatch({ type: 'UPDATE_AUDIT_PROGRESS', payload: progress });
-  }, [dispatch]);
-  
+
+  const updateProgress = useCallback(
+    (progress: Partial<AuditProgress>) => {
+      dispatch({ type: 'UPDATE_AUDIT_PROGRESS', payload: progress });
+    },
+    [dispatch]
+  );
+
   const getProgressPercentage = useCallback(() => {
-    const { totalDiscrepancies, resolvedDiscrepancies, totalInverseAlerts, resolvedInverseAlerts, totalLowConfidence, resolvedLowConfidence } = state.auditProgress;
+    const {
+      totalDiscrepancies,
+      resolvedDiscrepancies,
+      totalInverseAlerts,
+      resolvedInverseAlerts,
+      totalLowConfidence,
+      resolvedLowConfidence,
+    } = state.auditProgress;
     const total = totalDiscrepancies + totalInverseAlerts + totalLowConfidence;
     const resolved = resolvedDiscrepancies + resolvedInverseAlerts + resolvedLowConfidence;
     return total === 0 ? 100 : Math.round((resolved / total) * 100);
   }, [state.auditProgress]);
-  
+
   return {
     auditProgress: state.auditProgress,
     updateProgress,

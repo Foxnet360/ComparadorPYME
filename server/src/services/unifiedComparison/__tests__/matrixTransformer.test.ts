@@ -5,10 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  flatResultToMatrixRows,
-  quotesToMatrixRows,
-} from '../matrixTransformer';
+import { flatResultToMatrixRows, quotesToMatrixRows } from '../matrixTransformer';
 import { FlatComparisonResult } from '../comparisonSchema';
 import { ParsedQuote } from '../../quoteParser';
 
@@ -189,7 +186,10 @@ describe('flatResultToMatrixRows', () => {
 
 describe('quotesToMatrixRows', () => {
   it('creates a header row with insurer names from parsed quotes', () => {
-    const quotes = [makeParsedQuote({ insurerName: 'BBVA' }), makeParsedQuote({ insurerName: 'AXA' })];
+    const quotes = [
+      makeParsedQuote({ insurerName: 'BBVA' }),
+      makeParsedQuote({ insurerName: 'AXA' }),
+    ];
     const matrix = quotesToMatrixRows(quotes);
 
     expect(matrix[0].label).toContain('BBVA');
@@ -262,7 +262,9 @@ describe('quotesToMatrixRows', () => {
   });
 
   it('renders special conditions as warning rows', () => {
-    const quotes = [makeParsedQuote({ specialConditions: ['Condición especial A', 'Condición especial B'] })];
+    const quotes = [
+      makeParsedQuote({ specialConditions: ['Condición especial A', 'Condición especial B'] }),
+    ];
     const matrix = quotesToMatrixRows(quotes);
 
     const warnings = matrix.filter((r) => r.id.startsWith('warning_'));

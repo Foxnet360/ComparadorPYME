@@ -12,9 +12,9 @@ async function listModels() {
       `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`
     );
     const data = await response.json();
-    
+
     console.log('Modelos disponibles:\n');
-    data.models.forEach(model => {
+    data.models.forEach((model) => {
       console.log(`- ${model.name}`);
       console.log(`  Display: ${model.displayName}`);
       console.log(`  Supported: ${model.supportedGenerationMethods?.join(', ') || 'N/A'}`);

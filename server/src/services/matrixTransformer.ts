@@ -17,130 +17,126 @@ interface CategoryConfig {
 export const CATEGORY_CONFIGS: CategoryConfig[] = [
   {
     id: 1,
-    canonicalName: "Incendio (Edificio y Contenidos)",
-    headerLabel: "AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL",
+    canonicalName: 'Incendio (Edificio y Contenidos)',
+    headerLabel: 'AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL',
     rows: [
-      { label: "Valor Asegurado", field: "value" },
-      { label: "Deducible", field: "deductible" },
-      { label: "Incluye", field: "details" }
-    ]
+      { label: 'Valor Asegurado', field: 'value' },
+      { label: 'Deducible', field: 'deductible' },
+      { label: 'Incluye', field: 'details' },
+    ],
   },
   {
     id: 14,
-    canonicalName: "Terremoto y Eventos Catastróficos",
-    headerLabel: "TERREMOTO / TEMBLOR / ERUPCIÓN VOLCÁNICA",
+    canonicalName: 'Terremoto y Eventos Catastróficos',
+    headerLabel: 'TERREMOTO / TEMBLOR / ERUPCIÓN VOLCÁNICA',
     rows: [
-      { label: "Valor Asegurado", field: "value" },
-      { label: "Deducible", field: "deductible" }
-    ]
+      { label: 'Valor Asegurado', field: 'value' },
+      { label: 'Deducible', field: 'deductible' },
+    ],
   },
   {
     id: 13,
-    canonicalName: "Huelga, Motín, Asonada (HMACC)",
-    headerLabel: "AMIT / HMACC (HUELGA, MOTÍN, ASONADA, CONMOCIÓN CIVIL)",
+    canonicalName: 'Huelga, Motín, Asonada (HMACC)',
+    headerLabel: 'AMIT / HMACC (HUELGA, MOTÍN, ASONADA, CONMOCIÓN CIVIL)',
     rows: [
-      { label: "Valor Asegurado", field: "value" },
-      { label: "Deducible", field: "deductible" }
-    ]
+      { label: 'Valor Asegurado', field: 'value' },
+      { label: 'Deducible', field: 'deductible' },
+    ],
   },
   {
     id: 4,
-    canonicalName: "Equipo Eléctrico y Electrónico",
-    headerLabel: "DAÑO INTERNO - EQUIPO ELÉCTRICO Y ELECTRÓNICO",
+    canonicalName: 'Equipo Eléctrico y Electrónico',
+    headerLabel: 'DAÑO INTERNO - EQUIPO ELÉCTRICO Y ELECTRÓNICO',
     rows: [
-      { label: "Valor Asegurado", field: "value" },
-      { label: "Deducible", field: "deductible" }
-    ]
+      { label: 'Valor Asegurado', field: 'value' },
+      { label: 'Deducible', field: 'deductible' },
+    ],
   },
   {
     id: 3,
-    canonicalName: "Sustracción / Hurto",
-    headerLabel: "HURTO CALIFICADO / SUSTRACCIÓN CON VIOLENCIA",
+    canonicalName: 'Sustracción / Hurto',
+    headerLabel: 'HURTO CALIFICADO / SUSTRACCIÓN CON VIOLENCIA',
     rows: [
-      { label: "Valor Asegurado", field: "value" },
-      { label: "Deducible", field: "deductible" }
-    ]
+      { label: 'Valor Asegurado', field: 'value' },
+      { label: 'Deducible', field: 'deductible' },
+    ],
   },
   {
     id: 2,
-    canonicalName: "Lucro Cesante",
-    headerLabel: "LUCRO CESANTE / PÉRDIDAS CONSECUENCIALES",
+    canonicalName: 'Lucro Cesante',
+    headerLabel: 'LUCRO CESANTE / PÉRDIDAS CONSECUENCIALES',
     rows: [
-      { label: "Valor Asegurado", field: "value" },
-      { label: "Deducible", field: "deductible" }
-    ]
+      { label: 'Valor Asegurado', field: 'value' },
+      { label: 'Deducible', field: 'deductible' },
+    ],
   },
   {
     id: 8,
-    canonicalName: "Manejo Global / Infidelidad",
-    headerLabel: "INFIDELIDAD DE EMPLEADOS",
+    canonicalName: 'Manejo Global / Infidelidad',
+    headerLabel: 'INFIDELIDAD DE EMPLEADOS',
     rows: [
-      { label: "Valor Asegurado", field: "value" },
-      { label: "Deducible", field: "deductible" }
-    ]
+      { label: 'Valor Asegurado', field: 'value' },
+      { label: 'Deducible', field: 'deductible' },
+    ],
   },
   {
     id: 6,
-    canonicalName: "Responsabilidad Civil (RCE)",
-    headerLabel: "RESPONSABILIDAD CIVIL EXTRACONTRACTUAL (RCE)",
+    canonicalName: 'Responsabilidad Civil (RCE)',
+    headerLabel: 'RESPONSABILIDAD CIVIL EXTRACONTRACTUAL (RCE)',
     rows: [
-      { label: "Valor Asegurado", field: "value" },
-      { label: "Deducible", field: "deductible" },
-      { label: "Incluye", field: "details" }
-    ]
+      { label: 'Valor Asegurado', field: 'value' },
+      { label: 'Deducible', field: 'deductible' },
+      { label: 'Incluye', field: 'details' },
+    ],
   },
   {
     id: 5,
-    canonicalName: "Rotura de Maquinaria",
-    headerLabel: "ROTURA DE MAQUINARIA",
+    canonicalName: 'Rotura de Maquinaria',
+    headerLabel: 'ROTURA DE MAQUINARIA',
     rows: [
-      { label: "Cobertura", field: "value" },
-      { label: "Deducible", field: "deductible" }
-    ]
+      { label: 'Cobertura', field: 'value' },
+      { label: 'Deducible', field: 'deductible' },
+    ],
   },
   {
     id: 7,
-    canonicalName: "Vidrios Planos",
-    headerLabel: "ROTURA ACCIDENTAL DE VIDRIOS",
+    canonicalName: 'Vidrios Planos',
+    headerLabel: 'ROTURA ACCIDENTAL DE VIDRIOS',
     rows: [
-      { label: "Sublímite", field: "value" },
-      { label: "Deducible", field: "deductible" }
-    ]
+      { label: 'Sublímite', field: 'value' },
+      { label: 'Deducible', field: 'deductible' },
+    ],
   },
   {
     id: 9,
-    canonicalName: "Transporte de Mercancías",
-    headerLabel: "TRANSPORTE DE MERCANCÍAS",
+    canonicalName: 'Transporte de Mercancías',
+    headerLabel: 'TRANSPORTE DE MERCANCÍAS',
     rows: [
-      { label: "Valor Asegurado", field: "value" },
-      { label: "Deducible", field: "deductible" }
-    ]
+      { label: 'Valor Asegurado', field: 'value' },
+      { label: 'Deducible', field: 'deductible' },
+    ],
   },
   {
     id: 10,
-    canonicalName: "Transporte de Valores",
-    headerLabel: "TRANSPORTE DE VALORES",
+    canonicalName: 'Transporte de Valores',
+    headerLabel: 'TRANSPORTE DE VALORES',
     rows: [
-      { label: "Valor Asegurado", field: "value" },
-      { label: "Deducible", field: "deductible" }
-    ]
+      { label: 'Valor Asegurado', field: 'value' },
+      { label: 'Deducible', field: 'deductible' },
+    ],
   },
   {
     id: 11,
-    canonicalName: "Asistencia PYME",
-    headerLabel: "ASISTENCIAS",
-    rows: [
-      { label: "Incluida", field: "details" }
-    ]
+    canonicalName: 'Asistencia PYME',
+    headerLabel: 'ASISTENCIAS',
+    rows: [{ label: 'Incluida', field: 'details' }],
   },
   {
     id: 12,
-    canonicalName: "Asistencia Legal",
-    headerLabel: "ASISTENCIA LEGAL",
-    rows: [
-      { label: "Incluida", field: "details" }
-    ]
-  }
+    canonicalName: 'Asistencia Legal',
+    headerLabel: 'ASISTENCIA LEGAL',
+    rows: [{ label: 'Incluida', field: 'details' }],
+  },
 ];
 
 export function isExcludedValue(val: string | undefined | null): boolean {
@@ -200,7 +196,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
       id: `section_${config.id}`,
       label: config.headerLabel,
       sectionId: config.id,
-      cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false }))
+      cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false })),
     });
 
     // Add Data Rows (Valor Asegurado, Deducible, Incluye)
@@ -210,26 +206,33 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
       for (let i = 0; i < numQuotes; i++) {
         const quote = quotes[i];
         // Match coverage item semantically or by categoryId
-        const cov = quote.coverages.find(c => 
-          (c.categoryId === config.id || 
-           c.canonicalName === config.canonicalName || 
-           c.name === config.canonicalName) &&
-          (c.matchConfidence === undefined || c.matchConfidence === null || c.matchConfidence >= 0.65)
+        const cov = quote.coverages.find(
+          (c) =>
+            (c.categoryId === config.id ||
+              c.canonicalName === config.canonicalName ||
+              c.name === config.canonicalName) &&
+            (c.matchConfidence === undefined ||
+              c.matchConfidence === null ||
+              c.matchConfidence >= 0.65)
         );
 
-          if (cov) {
+        if (cov) {
           let cellValue = '';
           if (rowConfig.field === 'value') {
             cellValue = formatMatrixValue(cov.value || 'No incluida');
           } else if (rowConfig.field === 'deductible') {
             cellValue = cov.deductible || 'No aplica';
           } else {
-            cellValue = cov.description || (cov as CoverageItem & { details?: string }).details || 'Incluido bajo condiciones generales';
+            cellValue =
+              cov.description ||
+              (cov as CoverageItem & { details?: string }).details ||
+              'Incluido bajo condiciones generales';
           }
 
-          const excluded = rowConfig.field === 'deductible' && cellValue.toLowerCase().trim() === 'no aplica'
-            ? false
-            : isExcludedValue(cellValue);
+          const excluded =
+            rowConfig.field === 'deductible' && cellValue.toLowerCase().trim() === 'no aplica'
+              ? false
+              : isExcludedValue(cellValue);
           const firstCitation = cov.citations?.[0];
 
           cells.push({
@@ -238,20 +241,20 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
             isWinner: false,
             notes: cov.description,
             pageNumber: firstCitation?.page,
-            confidence: cov.matchConfidence
+            confidence: cov.matchConfidence,
           });
         } else {
           cells.push({
             value: 'No incluida',
             isExcluded: true,
-            isWinner: false
+            isWinner: false,
           });
         }
       }
 
       // Determine Winner for Data Row
       if (rowConfig.field === 'value') {
-        const numericValues = cells.map(c => parseNumericValue(c.value));
+        const numericValues = cells.map((c) => parseNumericValue(c.value));
         const maxVal = Math.max(...numericValues);
         if (maxVal > 0) {
           cells.forEach((cell, idx) => {
@@ -262,9 +265,9 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
         }
       } else if (rowConfig.field === 'deductible') {
         // "No aplica" is the best deductible
-        const hasNoAplica = cells.some(c => c.value.toLowerCase().trim() === 'no aplica');
+        const hasNoAplica = cells.some((c) => c.value.toLowerCase().trim() === 'no aplica');
         if (hasNoAplica) {
-          cells.forEach(cell => {
+          cells.forEach((cell) => {
             if (cell.value.toLowerCase().trim() === 'no aplica' && !cell.isExcluded) {
               cell.isWinner = true;
             }
@@ -277,7 +280,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
         id: `section_${config.id}_row_${rowConfig.field}`,
         label: rowConfig.label,
         sectionId: config.id,
-        cells
+        cells,
       });
     }
 
@@ -287,7 +290,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
       id: `spacer_${config.id}`,
       label: '',
       sectionId: config.id,
-      cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false }))
+      cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false })),
     });
   }
 
@@ -295,10 +298,11 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
   const exclusiveGroups = new Map<string, Array<{ quoteIdx: number; item: CoverageItem }>>();
 
   quotes.forEach((quote, quoteIdx) => {
-    quote.coverages.forEach(c => {
+    quote.coverages.forEach((c) => {
       const isUnmapped = c.categoryId === undefined || c.categoryId === null;
-      const isLowConfidence = c.matchConfidence !== undefined && c.matchConfidence !== null && c.matchConfidence < 0.65;
-      
+      const isLowConfidence =
+        c.matchConfidence !== undefined && c.matchConfidence !== null && c.matchConfidence < 0.65;
+
       if (isUnmapped || isLowConfidence) {
         // Group by lowercase normalized name
         const key = (c.canonicalName || c.name).trim().toLowerCase();
@@ -317,7 +321,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
       id: 'section_exclusive_header',
       label: 'AMPAROS EXCLUSIVOS / VENTAJAS COMPETITIVAS',
       sectionId: 99,
-      cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false }))
+      cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false })),
     });
 
     exclusiveGroups.forEach((groupItems, rawKey) => {
@@ -325,7 +329,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
       const repName = groupItems[0].item.canonicalName || groupItems[0].item.name;
 
       for (let i = 0; i < numQuotes; i++) {
-        const matchingItem = groupItems.find(gi => gi.quoteIdx === i);
+        const matchingItem = groupItems.find((gi) => gi.quoteIdx === i);
         if (matchingItem) {
           const item = matchingItem.item;
           let displayVal = formatMatrixValue(item.value || 'Incluido');
@@ -339,13 +343,13 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
             isWinner: true, // Offered exclusively or competitively
             notes: item.description,
             pageNumber: item.citations?.[0]?.page,
-            confidence: item.matchConfidence
+            confidence: item.matchConfidence,
           });
         } else {
           cells.push({
             value: 'No incluida',
             isExcluded: true,
-            isWinner: false
+            isWinner: false,
           });
         }
       }
@@ -355,7 +359,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
         id: `exclusive_${rawKey.replace(/[^a-z0-9]/g, '_')}`,
         label: repName,
         sectionId: 99,
-        cells
+        cells,
       });
     });
 
@@ -365,7 +369,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
       id: 'spacer_exclusive',
       label: '',
       sectionId: 99,
-      cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false }))
+      cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false })),
     });
   }
 
@@ -375,11 +379,11 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     id: 'section_financial_header',
     label: 'COMPARATIVA DE PRIMAS Y COSTOS',
     sectionId: 100,
-    cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false }))
+    cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false })),
   });
 
-  const netPremiums = quotes.map(q => q.priceAnnual || 0);
-  const expenses = quotes.map(q => {
+  const netPremiums = quotes.map((q) => q.priceAnnual || 0);
+  const expenses = quotes.map((q) => {
     if (q.priceAnnual === 0) return 0;
     // Map standard expense mock data
     if (q.insurerName.toLowerCase().includes('mapfre')) return 10000;
@@ -387,11 +391,11 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     return 0; // Default
   });
   const subtotals = netPremiums.map((net, idx) => net + expenses[idx]);
-  const ivas = subtotals.map(sub => Math.round(sub * 0.19));
+  const ivas = subtotals.map((sub) => Math.round(sub * 0.19));
   const totals = subtotals.map((sub, idx) => sub + ivas[idx]);
 
   // Determine Cheaper Total Price Winner
-  const positiveTotals = totals.filter(t => t > 0);
+  const positiveTotals = totals.filter((t) => t > 0);
   const minTotal = positiveTotals.length > 0 ? Math.min(...positiveTotals) : 0;
 
   // Row: Prima Neta
@@ -403,8 +407,9 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     cells: quotes.map((q, idx) => ({
       value: netPremiums[idx] > 0 ? formatCurrency(netPremiums[idx]) : 'No informada',
       isExcluded: netPremiums[idx] === 0,
-      isWinner: netPremiums[idx] > 0 && netPremiums[idx] === Math.min(...netPremiums.filter(n => n > 0))
-    }))
+      isWinner:
+        netPremiums[idx] > 0 && netPremiums[idx] === Math.min(...netPremiums.filter((n) => n > 0)),
+    })),
   });
 
   // Row: Gastos de Expedición
@@ -416,8 +421,8 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     cells: quotes.map((q, idx) => ({
       value: netPremiums[idx] > 0 ? formatCurrency(expenses[idx]) : 'No informado',
       isExcluded: netPremiums[idx] === 0,
-      isWinner: false
-    }))
+      isWinner: false,
+    })),
   });
 
   // Row: Subtotal
@@ -429,8 +434,8 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     cells: quotes.map((q, idx) => ({
       value: netPremiums[idx] > 0 ? formatCurrency(subtotals[idx]) : 'No informado',
       isExcluded: netPremiums[idx] === 0,
-      isWinner: false
-    }))
+      isWinner: false,
+    })),
   });
 
   // Row: IVA (19%)
@@ -442,8 +447,8 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     cells: quotes.map((q, idx) => ({
       value: netPremiums[idx] > 0 ? formatCurrency(ivas[idx]) : 'No informado',
       isExcluded: netPremiums[idx] === 0,
-      isWinner: false
-    }))
+      isWinner: false,
+    })),
   });
 
   // Row: TOTAL A PAGAR
@@ -455,13 +460,17 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     cells: quotes.map((q, idx) => ({
       value: netPremiums[idx] > 0 ? formatCurrency(totals[idx]) : 'No informado',
       isExcluded: netPremiums[idx] === 0,
-      isWinner: netPremiums[idx] > 0 && totals[idx] === minTotal
-    }))
+      isWinner: netPremiums[idx] > 0 && totals[idx] === minTotal,
+    })),
   });
 
   // Calculate ratio over total assets (Incendio Valor Asegurado)
-  const assetValues = quotes.map(q => {
-    const incendio = q.coverages.find(c => c.name.toLowerCase().includes('incendio') || c.canonicalName?.toLowerCase().includes('incendio'));
+  const assetValues = quotes.map((q) => {
+    const incendio = q.coverages.find(
+      (c) =>
+        c.name.toLowerCase().includes('incendio') ||
+        c.canonicalName?.toLowerCase().includes('incendio')
+    );
     return parseNumericValue(incendio?.value);
   });
   const maxAsset = Math.max(...assetValues);
@@ -478,11 +487,15 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
       }
       const ratio = totals[idx] / maxAsset;
       return {
-        value: ratio.toLocaleString('es-CO', { style: 'percent', minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        value: ratio.toLocaleString('es-CO', {
+          style: 'percent',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }),
         isExcluded: false,
-        isWinner: false
+        isWinner: false,
       };
-    })
+    }),
   });
 
   // Add Spacer
@@ -491,7 +504,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     id: 'spacer_financial',
     label: '',
     sectionId: 100,
-    cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false }))
+    cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false })),
   });
 
   // 4. Process Additional Information Section
@@ -500,7 +513,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     id: 'section_additional_header',
     label: 'INFORMACIÓN ADICIONAL',
     sectionId: 101,
-    cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false }))
+    cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false })),
   });
 
   // Row: Vigencia de cotización
@@ -509,14 +522,17 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     id: 'additional_validity',
     label: 'Vigencia de cotización:',
     sectionId: 101,
-    cells: quotes.map(q => {
+    cells: quotes.map((q) => {
       // Find validity if mentioned in text, default to 30 días
       let validity = '30 días';
-      if (q.technicalAnalysis?.toLowerCase().includes('60 días') || q.clientAnalysis?.toLowerCase().includes('60 días')) {
+      if (
+        q.technicalAnalysis?.toLowerCase().includes('60 días') ||
+        q.clientAnalysis?.toLowerCase().includes('60 días')
+      ) {
         validity = '60 días';
       }
       return { value: validity, isExcluded: false, isWinner: false };
-    })
+    }),
   });
 
   // Row: Producto
@@ -525,11 +541,11 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     id: 'additional_product',
     label: 'Producto:',
     sectionId: 101,
-    cells: quotes.map(q => ({
+    cells: quotes.map((q) => ({
       value: q.policyName || 'Multirriesgo PYME',
       isExcluded: false,
-      isWinner: false
-    }))
+      isWinner: false,
+    })),
   });
 
   // Row: Respaldo
@@ -538,11 +554,11 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     id: 'additional_backing',
     label: 'Respaldo:',
     sectionId: 101,
-    cells: quotes.map(q => ({
+    cells: quotes.map((q) => ({
       value: `${q.insurerName} 100%`,
       isExcluded: false,
-      isWinner: false
-    }))
+      isWinner: false,
+    })),
   });
 
   // Row: Comisión intermediario
@@ -551,10 +567,10 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     id: 'additional_commission',
     label: 'Comisión intermediario:',
     sectionId: 101,
-    cells: quotes.map(q => {
+    cells: quotes.map((q) => {
       const comm = q.insurerName.toLowerCase().includes('bbva') ? '15%' : 'No informada';
       return { value: comm, isExcluded: comm === 'No informada', isWinner: false };
-    })
+    }),
   });
 
   // Row: Asistencia incluida
@@ -563,13 +579,15 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     id: 'additional_assistance',
     label: 'Asistencia incluida:',
     sectionId: 101,
-    cells: quotes.map(q => {
-      const hasAssistance = q.coverages.some(c => 
-        (c.name.toLowerCase().includes('asistencia') || c.canonicalName?.toLowerCase().includes('asistencia')) &&
-        !isExcludedValue(c.value)
+    cells: quotes.map((q) => {
+      const hasAssistance = q.coverages.some(
+        (c) =>
+          (c.name.toLowerCase().includes('asistencia') ||
+            c.canonicalName?.toLowerCase().includes('asistencia')) &&
+          !isExcludedValue(c.value)
       );
       return { value: hasAssistance ? 'SI' : 'NO', isExcluded: !hasAssistance, isWinner: false };
-    })
+    }),
   });
 
   // Row: Modalidad RCE
@@ -578,10 +596,16 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     id: 'additional_rce_type',
     label: 'Modalidad RCE:',
     sectionId: 101,
-    cells: quotes.map(q => {
-      const occurrences = q.technicalAnalysis?.toLowerCase().includes('ocurrencia') || q.clientAnalysis?.toLowerCase().includes('ocurrencia');
-      return { value: occurrences ? 'Ocurrencia' : 'No informada', isExcluded: !occurrences, isWinner: false };
-    })
+    cells: quotes.map((q) => {
+      const occurrences =
+        q.technicalAnalysis?.toLowerCase().includes('ocurrencia') ||
+        q.clientAnalysis?.toLowerCase().includes('ocurrencia');
+      return {
+        value: occurrences ? 'Ocurrencia' : 'No informada',
+        isExcluded: !occurrences,
+        isWinner: false,
+      };
+    }),
   });
 
   // Row: Fecha cotización
@@ -590,14 +614,14 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     id: 'additional_date',
     label: 'Fecha cotización:',
     sectionId: 101,
-    cells: quotes.map(q => {
+    cells: quotes.map((q) => {
       // Mock quote dates to match inspect excel
       let dateStr = '05-feb-2026';
       if (q.insurerName.toLowerCase().includes('chubb')) dateStr = '27-ene-2026';
       else if (q.insurerName.toLowerCase().includes('bbva')) dateStr = '14-ene-2026';
       else if (q.insurerName.toLowerCase().includes('axa')) dateStr = '28-ene-2026';
       return { value: dateStr, isExcluded: false, isWinner: false };
-    })
+    }),
   });
 
   return matrix;

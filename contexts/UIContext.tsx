@@ -18,7 +18,10 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const [chatOpen, setChatOpen] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showClauseAdmin, setShowClauseAdmin] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: 'success' | 'error' | 'info';
+  } | null>(null);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setToast({ message, type });

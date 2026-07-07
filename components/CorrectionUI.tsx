@@ -26,11 +26,11 @@ export const CorrectionUI: React.FC<CorrectionUIProps> = ({ quote, onCorrection 
   const handleCorrection = async (field: string, originalValue: string) => {
     const correctedValue = corrections[field];
     const reason = reasons[field];
-    
+
     if (!correctedValue || correctedValue === originalValue) return;
-    
-    setSavingFields(prev => new Set(prev).add(field));
-    
+
+    setSavingFields((prev) => new Set(prev).add(field));
+
     try {
       // Call the real API
       const result = await submitCorrection({
@@ -43,20 +43,20 @@ export const CorrectionUI: React.FC<CorrectionUIProps> = ({ quote, onCorrection 
       });
 
       if (result.success) {
-        setSavedFields(prev => new Set(prev).add(field));
+        setSavedFields((prev) => new Set(prev).add(field));
         addToast(`Corrección guardada para ${field}`, 'success');
-        
+
         // Also call the parent callback if provided
         onCorrection({
           field,
           originalValue,
           correctedValue,
-          reason
+          reason,
         });
-        
+
         // Clear saved status after 3 seconds
         setTimeout(() => {
-          setSavedFields(prev => {
+          setSavedFields((prev) => {
             const next = new Set(prev);
             next.delete(field);
             return next;
@@ -68,7 +68,7 @@ export const CorrectionUI: React.FC<CorrectionUIProps> = ({ quote, onCorrection 
     } catch (_error) {
       addToast('Error de conexión. Corrección guardada localmente.', 'warning');
     } finally {
-      setSavingFields(prev => {
+      setSavingFields((prev) => {
         const next = new Set(prev);
         next.delete(field);
         return next;
@@ -77,35 +77,46 @@ export const CorrectionUI: React.FC<CorrectionUIProps> = ({ quote, onCorrection 
   };
 
   const handleReset = (field: string) => {
-    setCorrections(prev => {
+    setCorrections((prev) => {
       const next = { ...prev };
       delete next[field];
       return next;
     });
-    setReasons(prev => {
+    setReasons((prev) => {
       const next = { ...prev };
       delete next[field];
       return next;
     });
   };
 
-  const coverageFields = quote.coverages?.map(c => ({
-    field: `coverage_${c.name}`,
-    label: c.name,
-    value: c.value,
-    type: 'coverage'
-  })) || [];
+  const coverageFields =
+    quote.coverages?.map((c) => ({
+      field: `coverage_${c.name}`,
+      label: c.name,
+      value: c.value,
+      type: 'coverage',
+    })) || [];
 
   const deductibleField = {
     field: 'deductible',
     label: 'Deducible General',
     value: quote.deductibles,
-    type: 'deductible'
+    type: 'deductible',
   };
 
   const priceFields = [
-    { field: 'price_annual', label: 'Prima Anual', value: String(quote.priceAnnual || ''), type: 'price' },
-    { field: 'price_monthly', label: 'Prima Mensual', value: String(quote.priceMonthly || ''), type: 'price' }
+    {
+      field: 'price_annual',
+      label: 'Prima Anual',
+      value: String(quote.priceAnnual || ''),
+      type: 'price',
+    },
+    {
+      field: 'price_monthly',
+      label: 'Prima Mensual',
+      value: String(quote.priceMonthly || ''),
+      type: 'price',
+    },
   ];
 
   const allFields = [deductibleField, ...priceFields, ...coverageFields];
@@ -138,11 +149,11 @@ export const CorrectionUI: React.FC<CorrectionUIProps> = ({ quote, onCorrection 
           <X size={16} />
         </button>
       </div>
-      
+
       <p className="text-sm text-slate-600 mb-4">
         Si encuentras valores incorrectos, corrígelos aquí para mejorar el sistema:
       </p>
-      
+
       <div className="space-y-3">
         {allFields.map((field) => (
           <div key={field.field} className="bg-slate-50 rounded-lg p-3">
@@ -152,31 +163,39 @@ export const CorrectionUI: React.FC<CorrectionUIProps> = ({ quote, onCorrection 
                 Actual: {field.value || 'No especificado'}
               </span>
             </div>
-            
+
             <div className="flex gap-2">
               <input
                 type="text"
                 placeholder="Valor correcto..."
                 value={corrections[field.field] || ''}
-                onChange={(e) => setCorrections(prev => ({
-                  ...prev,
-                  [field.field]: e.target.value
-                }))}
+                onChange={(e) =>
+                  setCorrections((prev) => ({
+                    ...prev,
+                    [field.field]: e.target.value,
+                  }))
+                }
                 className="flex-1 text-sm border border-slate-300 rounded-md px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
               />
               <input
                 type="text"
                 placeholder="Razón (opcional)"
                 value={reasons[field.field] || ''}
-                onChange={(e) => setReasons(prev => ({
-                  ...prev,
-                  [field.field]: e.target.value
-                }))}
+                onChange={(e) =>
+                  setReasons((prev) => ({
+                    ...prev,
+                    [field.field]: e.target.value,
+                  }))
+                }
                 className="flex-1 text-sm border border-slate-300 rounded-md px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
               />
               <button
                 onClick={() => handleCorrection(field.field, field.value)}
-                disabled={!corrections[field.field] || corrections[field.field] === field.value || savingFields.has(field.field)}
+                disabled={
+                  !corrections[field.field] ||
+                  corrections[field.field] === field.value ||
+                  savingFields.has(field.field)
+                }
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   savedFields.has(field.field)
                     ? 'bg-green-100 text-green-700'
@@ -186,12 +205,14 @@ export const CorrectionUI: React.FC<CorrectionUIProps> = ({ quote, onCorrection 
                 {savingFields.has(field.field) ? (
                   <Loader2 size={16} className="animate-spin" />
                 ) : savedFields.has(field.field) ? (
-                  <><Check size={16} /></>
+                  <>
+                    <Check size={16} />
+                  </>
                 ) : (
                   <Save size={16} />
                 )}
               </button>
-              
+
               {corrections[field.field] && (
                 <button
                   onClick={() => handleReset(field.field)}
@@ -204,13 +225,13 @@ export const CorrectionUI: React.FC<CorrectionUIProps> = ({ quote, onCorrection 
           </div>
         ))}
       </div>
-      
+
       {quote.needsReview && (
         <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
           <AlertTriangle size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
           <p className="text-sm text-amber-800">
-            Esta cotización tiene baja confianza de extracción.
-            Tus correcciones son especialmente valiosas para mejorar el sistema.
+            Esta cotización tiene baja confianza de extracción. Tus correcciones son especialmente
+            valiosas para mejorar el sistema.
           </p>
         </div>
       )}

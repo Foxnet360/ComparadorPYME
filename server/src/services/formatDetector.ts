@@ -5,10 +5,7 @@
  */
 
 import { featureFlags } from '../config/featureFlags';
-import type {
-  TemplateRegistryService,
-  PageTextItems,
-} from './templateRegistryService';
+import type { TemplateRegistryService, PageTextItems } from './templateRegistryService';
 
 export type FormatFamily =
   | 'TABLE-DOUBLE'
@@ -46,28 +43,19 @@ const FALLBACK_WEIGHT = 0.5;
 const FORMAT_PATTERNS: FormatPattern[] = [
   {
     family: 'TABLE-DOUBLE',
-    patterns: [
-      /DEDUCIBLES\s+QUE\s+APLICAN/i,
-      /AMPAROS\s+BASICOS/i,
-    ],
+    patterns: [/DEDUCIBLES\s+QUE\s+APLICAN/i, /AMPAROS\s+BASICOS/i],
     keywords: ['DEDUCIBLES', 'AMPAROS', 'COBERTURAS'],
     weight: LAYOUT_WEIGHT,
   },
   {
     family: 'TABLE-INTEGRATED',
-    patterns: [
-      /Suma\s+Asegurada/i,
-      /Deducible/i,
-      /sub[líi]mite/i,
-    ],
+    patterns: [/Suma\s+Asegurada/i, /Deducible/i, /sub[líi]mite/i],
     keywords: ['Suma Asegurada', 'Deducible', 'Sublímite'],
     weight: LAYOUT_WEIGHT,
   },
   {
     family: 'SECTIONS',
-    patterns: [
-      /SECCION\s+(PRIMERA|SEGUNDA|TERCERA|CUARTA|QUINTA)/i,
-    ],
+    patterns: [/SECCION\s+(PRIMERA|SEGUNDA|TERCERA|CUARTA|QUINTA)/i],
     keywords: ['SECCION', 'AMPARO'],
     weight: LAYOUT_WEIGHT,
   },
@@ -80,7 +68,12 @@ const FORMAT_PATTERNS: FormatPattern[] = [
       /condiciones\s+particulares/i,
       /^\s*[\d]+\s*\.\s*(?:COBERTURA|SECCION|AMPARO)/im,
     ],
-    keywords: ['COBERTURA BÁSICA', 'COBERTURAS ESPECIFICAS', 'condiciones del contrato', 'condiciones particulares'],
+    keywords: [
+      'COBERTURA BÁSICA',
+      'COBERTURAS ESPECIFICAS',
+      'condiciones del contrato',
+      'condiciones particulares',
+    ],
     weight: LAYOUT_WEIGHT,
   },
   {
@@ -91,19 +84,13 @@ const FORMAT_PATTERNS: FormatPattern[] = [
   },
   {
     family: 'PRICE-TABLE',
-    patterns: [
-      /Resumen\s+de\s+coberturas\s+y\s+primas/i,
-      /\$\s*[\d.,]+\s*(?:PRIMA|IMPUESTOS)/i,
-    ],
+    patterns: [/Resumen\s+de\s+coberturas\s+y\s+primas/i, /\$\s*[\d.,]+\s*(?:PRIMA|IMPUESTOS)/i],
     keywords: ['Resumen', 'coberturas', 'primas', 'PRIMA', 'IMPUESTOS'],
     weight: LAYOUT_WEIGHT,
   },
   {
     family: 'DESCRIPTIVE',
-    patterns: [
-      /Este\s+amparo\s+cubre/i,
-      /daños\s+súbitos/i,
-    ],
+    patterns: [/Este\s+amparo\s+cubre/i, /daños\s+súbitos/i],
     keywords: ['CUBRE', 'EXCLUSION', 'PROPIEDAD', 'DESCRIPCION'],
     weight: LAYOUT_WEIGHT,
   },
@@ -162,10 +149,11 @@ export function detectFormatFamily(text: string): FormatDetectionResult {
   }
 
   // Detect table structures
-  hasTables = /\|.*\|.*\|/.test(text) || 
-              /Suma\s+Asegurada/i.test(text) || 
-              /Deducible/i.test(text) ||
-              /Coberturas/i.test(text);
+  hasTables =
+    /\|.*\|.*\|/.test(text) ||
+    /Suma\s+Asegurada/i.test(text) ||
+    /Deducible/i.test(text) ||
+    /Coberturas/i.test(text);
 
   // Detect sections
   hasSections = /SECCION\s+\d|SECCION\s+(PRIMERA|SEGUNDA|TERCERA)/i.test(text);
@@ -226,11 +214,7 @@ export async function detectFormatWithRegistry(
     domain: options?.domain,
   });
 
-  if (
-    match.templateId &&
-    match.template &&
-    isInsurerTemplateEnabled(match.template.insurer)
-  ) {
+  if (match.templateId && match.template && isInsurerTemplateEnabled(match.template.insurer)) {
     return {
       ...base,
       templateId: match.templateId,
@@ -262,12 +246,12 @@ export function getFormatFamilyDescription(family: FormatFamily): string {
   const descriptions: Record<FormatFamily, string> = {
     'TABLE-DOUBLE': 'Tabla de coberturas + tabla de deducibles en página separada',
     'TABLE-INTEGRATED': 'Tabla única con coberturas, sumas aseguradas y deducibles',
-    'SECTIONS': 'Coberturas agrupadas en secciones numeradas',
-    'DESCRIPTIVE': 'Texto descriptivo extenso por cobertura con párrafos descriptivos',
-    'CONDITIONS': 'Documento de condiciones contractuales con bullets',
+    SECTIONS: 'Coberturas agrupadas en secciones numeradas',
+    DESCRIPTIVE: 'Texto descriptivo extenso por cobertura con párrafos descriptivos',
+    CONDITIONS: 'Documento de condiciones contractuales con bullets',
     'PRICE-TABLE': 'Tabla de primas por cobertura',
-    'TEXT': 'Texto corrido/carta sin estructura tabular definida',
-    'UNKNOWN': 'No se pudo determinar el formato',
+    TEXT: 'Texto corrido/carta sin estructura tabular definida',
+    UNKNOWN: 'No se pudo determinar el formato',
   };
   return descriptions[family] || 'Formato desconocido';
 }

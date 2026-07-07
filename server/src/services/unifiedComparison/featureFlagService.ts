@@ -18,7 +18,7 @@ class UnifiedComparisonFeatureFlag {
     const rolloutPercentage = parseInt(process.env.USE_UNIFIED_ENGINE_ROLLOUT || '100', 10);
     this.rolloutConfig = {
       percentage: Math.min(100, Math.max(0, rolloutPercentage)),
-      enabledUsers: process.env.USE_UNIFIED_ENGINE_USERS?.split(',') || []
+      enabledUsers: process.env.USE_UNIFIED_ENGINE_USERS?.split(',') || [],
     };
   }
 
@@ -85,7 +85,8 @@ class UnifiedComparisonFeatureFlag {
    * Remove a user from the enabled users list
    */
   removeEnabledUser(userId: string): void {
-    this.rolloutConfig.enabledUsers = this.rolloutConfig.enabledUsers?.filter(id => id !== userId) || [];
+    this.rolloutConfig.enabledUsers =
+      this.rolloutConfig.enabledUsers?.filter((id) => id !== userId) || [];
     console.log(`🚩 [UnifiedComparison] Removed user ${userId} from enabled list`);
   }
 
@@ -104,7 +105,7 @@ class UnifiedComparisonFeatureFlag {
     let hash = 0;
     for (let i = 0; i < userId.length; i++) {
       const char = userId.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32bit integer
     }
     // Convert to positive percentage (0-99)

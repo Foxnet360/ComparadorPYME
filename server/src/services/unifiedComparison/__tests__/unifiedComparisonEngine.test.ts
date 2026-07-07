@@ -4,10 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  UnifiedComparisonEngine,
-  UnifiedComparisonError,
-} from '../unifiedComparisonEngine';
+import { UnifiedComparisonEngine, UnifiedComparisonError } from '../unifiedComparisonEngine';
 import type { FlatComparisonResult } from '../comparisonSchema';
 
 const validFlatJson = JSON.stringify({
@@ -126,7 +123,10 @@ describe('UnifiedComparisonEngine (flat table)', () => {
     mockGemini = buildMockGemini([validFlatJson]);
 
     const engine = new UnifiedComparisonEngine({ retryDelayMs: 0 });
-    const result = (await engine.compare(['valid-fake1.pdf', 'valid-fake2.pdf'])) as FlatComparisonResult;
+    const result = (await engine.compare([
+      'valid-fake1.pdf',
+      'valid-fake2.pdf',
+    ])) as FlatComparisonResult;
 
     expect(result.insurers).toEqual(['MAPFRE', 'CHUBB']);
     expect(result.rows).toHaveLength(4);
@@ -163,7 +163,10 @@ describe('UnifiedComparisonEngine (flat table)', () => {
     mockGemini = buildMockGemini([malformedJson, validFlatJson]);
 
     const engine = new UnifiedComparisonEngine({ retryDelayMs: 0 });
-    const result = (await engine.compare(['correction-fake1.pdf', 'correction-fake2.pdf'])) as FlatComparisonResult;
+    const result = (await engine.compare([
+      'correction-fake1.pdf',
+      'correction-fake2.pdf',
+    ])) as FlatComparisonResult;
 
     expect(result.insurers).toEqual(['MAPFRE', 'CHUBB']);
     expect(mockGemini.models.generateContent).toHaveBeenCalledTimes(2);
@@ -194,10 +197,16 @@ describe('UnifiedComparisonEngine (flat table)', () => {
     mockGemini = buildMockGemini([validFlatJson]);
 
     const engine = new UnifiedComparisonEngine({ retryDelayMs: 0 });
-    const first = (await engine.compare(['cache-fake1.pdf', 'cache-fake2.pdf'])) as FlatComparisonResult;
+    const first = (await engine.compare([
+      'cache-fake1.pdf',
+      'cache-fake2.pdf',
+    ])) as FlatComparisonResult;
 
     // Second call with the same paths should hit the cache.
-    const second = (await engine.compare(['cache-fake1.pdf', 'cache-fake2.pdf'])) as FlatComparisonResult;
+    const second = (await engine.compare([
+      'cache-fake1.pdf',
+      'cache-fake2.pdf',
+    ])) as FlatComparisonResult;
 
     expect(second.metadata.fromCache).toBe(true);
     expect(second.insurers).toEqual(first.insurers);

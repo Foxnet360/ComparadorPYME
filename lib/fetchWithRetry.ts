@@ -84,7 +84,7 @@ export async function fetchWithRetry(
       retriesAttempted++;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error('Unknown error');
-      
+
       if (attempt === retries) {
         return {
           ok: false,
@@ -121,5 +121,5 @@ function calculateDelay(attempt: number, backoff: string, baseDelay: number): nu
 }
 
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

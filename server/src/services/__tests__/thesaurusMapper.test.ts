@@ -18,7 +18,7 @@ describe('thesaurusMapper', () => {
 
     it('should have common PYME coverages', () => {
       const thesaurus = loadThesaurus();
-      const coverageNames = thesaurus.map(t => t.canonicalName);
+      const coverageNames = thesaurus.map((t) => t.canonicalName);
 
       expect(coverageNames).toContain('Incendio (Edificio y Contenidos)');
       expect(coverageNames).toContain('Responsabilidad Civil (RCE)');
@@ -153,9 +153,7 @@ describe('thesaurusMapper', () => {
     });
 
     it('should track original names', () => {
-      const coverages = [
-        { name: 'Amparo Básico (Incendio)', value: '500M', deductible: '10%' },
-      ];
+      const coverages = [{ name: 'Amparo Básico (Incendio)', value: '500M', deductible: '10%' }];
 
       const result = normalizeCoverages(coverages);
       expect(result.normalized[0].originalName).toBe('Amparo Básico (Incendio)');

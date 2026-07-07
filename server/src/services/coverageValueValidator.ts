@@ -55,11 +55,7 @@ export function parseCoverageValue(value: string): number | null {
   }
 
   // Try to extract number
-  const cleanValue = value
-    .replace(/\$/g, '')
-    .replace(/\./g, '')
-    .replace(/,/g, '')
-    .trim();
+  const cleanValue = value.replace(/\$/g, '').replace(/\./g, '').replace(/,/g, '').trim();
 
   // Handle abbreviations like "500M", "1.5B"
   if (/^\d+\.?\d*\s*[MBKm]$/i.test(cleanValue)) {
@@ -98,9 +94,10 @@ export function validateCoverageValue(
   }
 
   // Find matching coverage (fuzzy match on canonical name)
-  const canonicalName = Object.keys(MIN_VALUES).find(key => 
-    coverageName.toLowerCase().includes(key.toLowerCase()) ||
-    key.toLowerCase().includes(coverageName.toLowerCase())
+  const canonicalName = Object.keys(MIN_VALUES).find(
+    (key) =>
+      coverageName.toLowerCase().includes(key.toLowerCase()) ||
+      key.toLowerCase().includes(coverageName.toLowerCase())
   );
 
   if (!canonicalName) {
@@ -115,7 +112,7 @@ export function validateCoverageValue(
       isValid: false,
       parsedValue,
       issue: 'too_small',
-      message: `Valor ${parsedValue.toLocaleString()} COP parece muy bajo para ${canonicalName}. Mínimo esperado: ${min.toLocaleString()} COP`
+      message: `Valor ${parsedValue.toLocaleString()} COP parece muy bajo para ${canonicalName}. Mínimo esperado: ${min.toLocaleString()} COP`,
     };
   }
 
@@ -124,7 +121,7 @@ export function validateCoverageValue(
       isValid: false,
       parsedValue,
       issue: 'too_large',
-      message: `Valor ${parsedValue.toLocaleString()} COP parece muy alto para ${canonicalName}. Máximo esperado: ${max.toLocaleString()} COP`
+      message: `Valor ${parsedValue.toLocaleString()} COP parece muy alto para ${canonicalName}. Máximo esperado: ${max.toLocaleString()} COP`,
     };
   }
 
@@ -134,23 +131,23 @@ export function validateCoverageValue(
 /**
  * Validate all coverages in a quote and return flags
  */
-export function validateCoverageValues(
-  coverages: Array<{ name: string; value: string }>
-): Array<{
+export function validateCoverageValues(coverages: Array<{ name: string; value: string }>): Array<{
   coverageName: string;
   value: string;
   isValid: boolean;
   issue?: string;
   message?: string;
 }> {
-  return coverages.map(c => {
-    const result = validateCoverageValue(c.name, c.value);
-    return {
-      coverageName: c.name,
-      value: c.value,
-      isValid: result.isValid,
-      issue: result.issue,
-      message: result.message
-    };
-  }).filter(r => !r.isValid);
+  return coverages
+    .map((c) => {
+      const result = validateCoverageValue(c.name, c.value);
+      return {
+        coverageName: c.name,
+        value: c.value,
+        isValid: result.isValid,
+        issue: result.issue,
+        message: result.message,
+      };
+    })
+    .filter((r) => !r.isValid);
 }

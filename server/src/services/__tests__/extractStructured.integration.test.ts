@@ -6,7 +6,6 @@ import { geminiService, QuoteExtractionSchema, QuoteExtraction } from '../gemini
  * Tests JSON mode extraction with schema validation
  */
 describe('extractStructured Integration', () => {
-  
   const sampleQuoteText = `
 SEGUROS BOLIVAR S.A.
 COTIZACION SEGURO PYME EMPRESARIAL
@@ -88,10 +87,7 @@ CONDICIONES ESPECIALES:
       return;
     }
 
-    const result = await geminiService.extractStructured(
-      sampleQuoteText,
-      structuredPrompt
-    );
+    const result = await geminiService.extractStructured(sampleQuoteText, structuredPrompt);
 
     // Verify schema compliance
     expect(result).toBeDefined();
@@ -100,7 +96,7 @@ CONDICIONES ESPECIALES:
     expect(typeof result.priceAnnual).toBe('number');
     expect(result.currency).toMatch(/^(COP|USD)$/);
     expect(Array.isArray(result.coverages)).toBe(true);
-    
+
     // Verify coverage structure
     if (result.coverages.length > 0) {
       const firstCoverage = result.coverages[0];
@@ -116,10 +112,7 @@ CONDICIONES ESPECIALES:
       return;
     }
 
-    const result = await geminiService.extractStructured(
-      sampleQuoteText,
-      structuredPrompt
-    );
+    const result = await geminiService.extractStructured(sampleQuoteText, structuredPrompt);
 
     // Validate schema structure manually
     expect(result).toMatchObject({
@@ -152,10 +145,7 @@ CONDICIONES ESPECIALES:
       // Missing premium and coverages
     `;
 
-    const result = await geminiService.extractStructured(
-      incompleteText,
-      structuredPrompt
-    );
+    const result = await geminiService.extractStructured(incompleteText, structuredPrompt);
 
     // Should still return valid structure with defaults
     expect(result).toBeDefined();

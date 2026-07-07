@@ -12,15 +12,15 @@ vi.mock('../../config/database', () => ({
             limit: vi.fn(async () => ({
               data: [
                 { coverage_name: 'Sustracción / Hurto', is_mandatory: true, page_number: 15 },
-                { coverage_name: 'Equipo Eléctrico', is_mandatory: false, page_number: 18 }
+                { coverage_name: 'Equipo Eléctrico', is_mandatory: false, page_number: 18 },
               ],
-              error: null
-            }))
-          }))
-        }))
-      }))
-    }))
-  }
+              error: null,
+            })),
+          })),
+        })),
+      })),
+    })),
+  },
 }));
 
 describe('inverseCoverageChecker', () => {
@@ -30,7 +30,7 @@ describe('inverseCoverageChecker', () => {
         mockQuote,
         'Seguros Bolívar'
       );
-      
+
       expect(result.totalClauseCoverages).toBeGreaterThan(0);
       expect(result.results).toBeDefined();
     });
@@ -40,11 +40,11 @@ describe('inverseCoverageChecker', () => {
         mockQuote,
         'Seguros Bolívar'
       );
-      
+
       for (const item of result.results) {
         expect(item.existsInClause).toBe(true);
         expect(item.existsInQuote).toBe(false);
-        
+
         if (item.isMandatory) {
           expect(item.status).toBe('MANDATORY_MISSING');
           expect(item.alertLevel).toBe('CRITICAL');
@@ -60,11 +60,12 @@ describe('inverseCoverageChecker', () => {
         mockQuote,
         'Seguros Bolívar'
       );
-      
+
       expect(result.mandatoryMissingCount).toBeGreaterThanOrEqual(0);
       expect(result.optionalMissingCount).toBeGreaterThanOrEqual(0);
-      expect(result.mandatoryMissingCount + result.optionalMissingCount)
-        .toBe(result.results.length);
+      expect(result.mandatoryMissingCount + result.optionalMissingCount).toBe(
+        result.results.length
+      );
     });
 
     it('should handle quote with all coverages present', async () => {
@@ -73,15 +74,15 @@ describe('inverseCoverageChecker', () => {
         coverages: [
           ...mockQuote.coverages,
           { name: 'Sustracción / Hurto', value: '50M', deductible: '10%' },
-          { name: 'Equipo Eléctrico', value: '30M', deductible: '10%' }
-        ]
+          { name: 'Equipo Eléctrico', value: '30M', deductible: '10%' },
+        ],
       };
-      
+
       const result = await inverseCoverageChecker.checkMissingCoverages(
         fullQuote,
         'Seguros Bolívar'
       );
-      
+
       // Should have fewer or no missing coverages
       expect(result.results.length).toBeLessThanOrEqual(2);
     });
@@ -94,15 +95,15 @@ describe('inverseCoverageChecker', () => {
           { name: 'RC', value: '100M', deductible: '5%' },
           { name: 'Lucro Cesante', value: '100M', deductible: 'No aplica' },
           { name: 'Sustracción / Hurto', value: '50M', deductible: '10%' },
-          { name: 'Equipo Eléctrico', value: '30M', deductible: '10%' }
-        ]
+          { name: 'Equipo Eléctrico', value: '30M', deductible: '10%' },
+        ],
       };
-      
+
       const result = await inverseCoverageChecker.checkMissingCoverages(
         quoteWithAll,
         'Seguros Bolívar'
       );
-      
+
       expect(result.results.length).toBe(0);
       expect(result.mandatoryMissingCount).toBe(0);
       expect(result.optionalMissingCount).toBe(0);
@@ -110,12 +111,12 @@ describe('inverseCoverageChecker', () => {
 
     it('should handle empty quote', async () => {
       const emptyQuote = { ...mockQuote, coverages: [] };
-      
+
       const result = await inverseCoverageChecker.checkMissingCoverages(
         emptyQuote,
         'Seguros Bolívar'
       );
-      
+
       expect(result.results.length).toBeGreaterThan(0);
       expect(result.mandatoryMissingCount).toBeGreaterThan(0);
     });
@@ -125,12 +126,12 @@ describe('inverseCoverageChecker', () => {
         mockQuote,
         'Seguros Bolívar'
       );
-      
+
       expect(result).toHaveProperty('results');
       expect(result).toHaveProperty('mandatoryMissingCount');
       expect(result).toHaveProperty('optionalMissingCount');
       expect(result).toHaveProperty('totalClauseCoverages');
-      
+
       for (const item of result.results) {
         expect(item).toHaveProperty('coverageName');
         expect(item).toHaveProperty('isMandatory');

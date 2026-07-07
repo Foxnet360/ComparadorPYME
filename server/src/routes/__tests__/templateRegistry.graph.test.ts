@@ -46,7 +46,11 @@ function createMockService() {
     deleteTemplate: vi.fn(async () => {}),
     invalidateCache: vi.fn(async () => {}),
     refreshCache: vi.fn(async () => {}),
-    matchTemplate: vi.fn(async () => ({ templateId: null, templateConfidence: null, template: null })),
+    matchTemplate: vi.fn(async () => ({
+      templateId: null,
+      templateConfidence: null,
+      template: null,
+    })),
     validatePayload: vi.fn(() => ({ valid: true })),
   };
 }
@@ -59,7 +63,10 @@ function buildApp(role: string = 'admin') {
     (req as AuthenticatedRequest).user = { id: 'user', role };
     next();
   });
-  app.use('/api/templates/registry', createTemplateRegistryRoutes(service as unknown as TemplateRegistryService));
+  app.use(
+    '/api/templates/registry',
+    createTemplateRegistryRoutes(service as unknown as TemplateRegistryService)
+  );
   return { app, service };
 }
 
@@ -132,7 +139,12 @@ describe('templateRegistry graph admin routes', () => {
 
     const response = await request(app)
       .post('/api/templates/registry/admin/graph/corrections')
-      .send({ raw: 'Daño Material Global', canonical: 'Incendio (Edificio y Contenidos)', domain: 'pyme', insurer: 'mapfre' });
+      .send({
+        raw: 'Daño Material Global',
+        canonical: 'Incendio (Edificio y Contenidos)',
+        domain: 'pyme',
+        insurer: 'mapfre',
+      });
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);

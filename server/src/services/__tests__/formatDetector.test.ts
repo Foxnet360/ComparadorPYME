@@ -234,7 +234,11 @@ Todo riesgo daños materiales`;
       featureFlags.updateFlag('useTemplateGraphPipeline', true);
 
       const registry = createTemplateRegistryService();
-      const result = await detectFormatWithRegistry('Some random text without any insurance terms', registry, { domain: 'pyme' });
+      const result = await detectFormatWithRegistry(
+        'Some random text without any insurance terms',
+        registry,
+        { domain: 'pyme' }
+      );
 
       expect(result.templateId).toBeNull();
       expect(result.templateConfidence).toBeNull();

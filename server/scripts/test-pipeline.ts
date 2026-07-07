@@ -1,7 +1,7 @@
 /**
  * End-to-end pipeline test script
  * Tests full flow: PDF → Preprocessing → Gemini → Thesaurus → Validation
- * 
+ *
  * Usage:
  *   export GEMINI_API_KEY=your_key_here
  *   npx ts-node scripts/test-pipeline.ts
@@ -11,7 +11,11 @@ import { pdfExtractor } from '../src/services/pdfExtractor';
 import { geminiService } from '../src/services/gemini';
 import { preprocessText } from '../src/services/textPreprocessor';
 import { parseJsonWithRepair } from '../src/services/jsonRepair';
-import { mapCoverageName, normalizeDeductible, loadThesaurus } from '../src/services/thesaurusMapper';
+import {
+  mapCoverageName,
+  normalizeDeductible,
+  loadThesaurus,
+} from '../src/services/thesaurusMapper';
 import { validateQuote } from '../src/services/quoteValidator';
 import { calculateConfidence, getConfidenceLabel } from '../src/services/confidenceScorer';
 import { formatPercentage } from '../src/utils/formatCurrency';
@@ -45,7 +49,7 @@ async function testPipeline(pdfPath: string, insurerName: string) {
     console.log('📄 STAGE 1: PDF Text Extraction');
     console.log('-'.repeat(50));
     const extraction = await pdfExtractor.extractTextFromPdf(pdfPath);
-    
+
     pipelineResults.stages.extraction = {
       success: true,
       chars: extraction.text.length,
@@ -53,23 +57,21 @@ async function testPipeline(pdfPath: string, insurerName: string) {
       warnings: extraction.warnings.length,
     };
 
-    console.log(`✅ Extracted ${extraction.text.length} chars from ${extraction.metadata.pageCount} pages`);
+    console.log(
+      `✅ Extracted ${extraction.text.length} chars from ${extraction.metadata.pageCount} pages`
+    );
     console.log(`   Warnings: ${extraction.warnings.length}`);
     console.log(`   Preview: "${extraction.text.substring(0, 150)}..."\n`);
 
     // === STAGE 2: PRE-PROCESSING ===
     console.log('🧹 STAGE 2: Text Pre-processing');
     console.log('-'.repeat(50));
-    const preprocessed = preprocessText(
-      extraction.text,
-      extraction.metadata.pageCount,
-      {
-        normalizeNumbers: true,
-        fixEncoding: true,
-        removeArtifacts: true,
-        extractSections: extraction.metadata.pageCount > 10,
-      }
-    );
+    const preprocessed = preprocessText(extraction.text, extraction.metadata.pageCount, {
+      normalizeNumbers: true,
+      fixEncoding: true,
+      removeArtifacts: true,
+      extractSections: extraction.metadata.pageCount > 10,
+    });
 
     pipelineResults.stages.preprocessing = {
       success: true,
@@ -82,18 +84,22 @@ async function testPipeline(pdfPath: string, insurerName: string) {
     console.log(`✅ Pre-processing complete`);
     console.log(`   Complexity: ${preprocessed.metadata.complexity}`);
     console.log(`   Changes: ${preprocessed.metadata.changes.join(', ') || 'None'}`);
-    console.log(`   Size: ${preprocessed.metadata.originalLength} → ${preprocessed.metadata.cleanedLength} chars`);
+    console.log(
+      `   Size: ${preprocessed.metadata.originalLength} → ${preprocessed.metadata.cleanedLength} chars`
+    );
     console.log(`   Preview: "${preprocessed.text.substring(0, 150)}..."\n`);
 
     // Check for Colombian numbers before/after
     const hasColombianBefore = /\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?/.test(extraction.text);
     const hasColombianAfter = /\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?/.test(preprocessed.text);
-    console.log(`   Colombian format: ${hasColombianBefore ? 'Present' : 'Not found'} → ${hasColombianAfter ? 'Still present' : 'Normalized'}`);
+    console.log(
+      `   Colombian format: ${hasColombianBefore ? 'Present' : 'Not found'} → ${hasColombianAfter ? 'Still present' : 'Normalized'}`
+    );
 
     // === STAGE 3: GEMINI STRUCTURED EXTRACTION ===
     console.log(`\n🤖 STAGE 3: Gemini Structured Extraction`);
     console.log('-'.repeat(50));
-    
+
     if (!process.env.GEMINI_API_KEY) {
       console.log('⚠️  GEMINI_API_KEY not set. Skipping AI extraction.');
       console.log('   Set it with: export GEMINI_API_KEY=your_key_here\n');
@@ -117,7 +123,7 @@ IMPORTANTE - FORMATO DE RESPUESTA:
 - El array "coverages" debe contener SOLO las coberturas que encontraste en el documento
 - El array "expectedCoverages" debe contener las 14 coberturas PYME estándar con su estado (present/missing/excluded)
 - Copia los nombres exactos del PDF, no uses nombres genéricos
-- Los deducibles pueden ser: porcentajes ("10%"), montos fijos ("5 SMMLV"), o textos ("NO APLICA", "APLICA")`
+- Los deducibles pueden ser: porcentajes ("10%"), montos fijos ("5 SMMLV"), o textos ("NO APLICA", "APLICA")`;
 
     let geminiResult: QuoteExtraction;
     try {
@@ -130,13 +136,24 @@ IMPORTANTE - FORMATO DE RESPUESTA:
 
       // If structured extraction returns 0 coverages, try text-based extraction
       if (!geminiResult.coverages || geminiResult.coverages.length === 0) {
-        console.log(`   ⚠️  Structured extraction returned 0 coverages. Trying text-based extraction...`);
+        console.log(
+          `   ⚠️  Structured extraction returned 0 coverages. Trying text-based extraction...`
+        );
         const textResult = await geminiService.extractText(preprocessed.text, prompt);
-        
+
         // Try to parse as JSON
         const repaired = parseJsonWithRepair(textResult);
-        if (repaired.success && repaired.data && typeof repaired.data === 'object' && 'coverages' in repaired.data && Array.isArray((repaired.data as Record<string, unknown>).coverages) && ((repaired.data as Record<string, unknown>).coverages as unknown[]).length > 0) {
-          console.log(`   ✅ Text extraction found ${((repaired.data as Record<string, unknown>).coverages as unknown[]).length} coverages!`);
+        if (
+          repaired.success &&
+          repaired.data &&
+          typeof repaired.data === 'object' &&
+          'coverages' in repaired.data &&
+          Array.isArray((repaired.data as Record<string, unknown>).coverages) &&
+          ((repaired.data as Record<string, unknown>).coverages as unknown[]).length > 0
+        ) {
+          console.log(
+            `   ✅ Text extraction found ${((repaired.data as Record<string, unknown>).coverages as unknown[]).length} coverages!`
+          );
           geminiResult = repaired.data as QuoteExtraction;
         }
       }
@@ -153,20 +170,22 @@ IMPORTANTE - FORMATO DE RESPUESTA:
       console.log(`✅ Gemini extraction successful`);
       console.log(`   Aseguradora: ${geminiResult.insurerName}`);
       console.log(`   Póliza: ${geminiResult.policyName}`);
-      console.log(`   Prima: ${geminiResult.priceAnnual?.toLocaleString('es-CO')} ${geminiResult.currency}`);
+      console.log(
+        `   Prima: ${geminiResult.priceAnnual?.toLocaleString('es-CO')} ${geminiResult.currency}`
+      );
       console.log(`   Coberturas: ${geminiResult.coverages?.length || 0}`);
-
     } catch (geminiError: unknown) {
-      const geminiMessage = geminiError instanceof Error ? geminiError.message : String(geminiError);
+      const geminiMessage =
+        geminiError instanceof Error ? geminiError.message : String(geminiError);
       console.log(`❌ Gemini extraction failed: ${geminiMessage}`);
-      
+
       // Try fallback: legacy extraction
       console.log(`   🔄 Trying legacy extraction...`);
       try {
         const legacyResult = await geminiService.extractText(preprocessed.text, prompt);
         console.log(`   ⚠️  Legacy extraction returned text (not structured)`);
         console.log(`   Length: ${legacyResult.length} chars`);
-        
+
         // Try to parse as JSON
         const repaired = parseJsonWithRepair(legacyResult);
         if (repaired.success) {
@@ -187,7 +206,8 @@ IMPORTANTE - FORMATO DE RESPUESTA:
           return pipelineResults;
         }
       } catch (legacyError: unknown) {
-        const legacyMessage = legacyError instanceof Error ? legacyError.message : String(legacyError);
+        const legacyMessage =
+          legacyError instanceof Error ? legacyError.message : String(legacyError);
         console.log(`   ❌ Legacy extraction also failed: ${legacyMessage}`);
         pipelineResults.stages.gemini = {
           success: false,
@@ -209,7 +229,7 @@ IMPORTANTE - FORMATO DE RESPUESTA:
       let normalizedCoverages = geminiResult.coverages.map((cov) => {
         const mapping = mapCoverageName(cov.name);
         const deductibleNorm = normalizeDeductible(cov.deductible || '');
-        
+
         return {
           originalName: cov.name,
           canonicalName: mapping.canonicalName,
@@ -221,7 +241,7 @@ IMPORTANTE - FORMATO DE RESPUESTA:
       });
 
       // Remove duplicates based on canonical name (keep highest confidence)
-      const seen = new Map<string, typeof normalizedCoverages[0]>();
+      const seen = new Map<string, (typeof normalizedCoverages)[0]>();
       normalizedCoverages.forEach((cov) => {
         const existing = seen.get(cov.canonicalName);
         if (!existing || cov.confidence > existing.confidence) {
@@ -234,23 +254,28 @@ IMPORTANTE - FORMATO DE RESPUESTA:
       normalizedCoverages = normalizedCoverages.filter((cov) => cov.confidence >= 0.3);
 
       const needsReviewCount = normalizedCoverages.filter((c) => c.needsReview).length;
-      
+
       pipelineResults.stages.thesaurus = {
         success: true,
         coverageCount: normalizedCoverages.length,
-        normalizedCount: normalizedCoverages.filter((c) => c.canonicalName !== c.originalName).length,
+        normalizedCount: normalizedCoverages.filter((c) => c.canonicalName !== c.originalName)
+          .length,
         needsReviewCount,
       };
 
       console.log(`✅ Normalized ${normalizedCoverages.length} coverages`);
-      console.log(`   Mapped to canonical: ${normalizedCoverages.filter((c) => c.canonicalName !== c.originalName).length}`);
+      console.log(
+        `   Mapped to canonical: ${normalizedCoverages.filter((c) => c.canonicalName !== c.originalName).length}`
+      );
       console.log(`   Need review: ${needsReviewCount}`);
-      
+
       console.log(`\n   Coverage mappings:`);
       normalizedCoverages.forEach((cov, i: number) => {
         const arrow = cov.originalName !== cov.canonicalName ? '→' : '=';
         const status = cov.needsReview ? '⚠️' : '✅';
-        console.log(`   ${i+1}. ${status} "${cov.originalName}" ${arrow} "${cov.canonicalName}" (${formatPercentage(cov.confidence, 0)})`);
+        console.log(
+          `   ${i + 1}. ${status} "${cov.originalName}" ${arrow} "${cov.canonicalName}" (${formatPercentage(cov.confidence, 0)})`
+        );
       });
 
       // Replace with normalized
@@ -270,8 +295,14 @@ IMPORTANTE - FORMATO DE RESPUESTA:
     console.log(`\n✅ STAGE 5: Validation & Confidence Scoring`);
     console.log('-'.repeat(50));
 
-    const validation = validateQuote(geminiResult as unknown as import('../src/services/quoteParser').ParsedQuote);
-    const confidence = calculateConfidence(geminiResult as unknown as import('../src/services/quoteParser').ParsedQuote, validation, true);
+    const validation = validateQuote(
+      geminiResult as unknown as import('../src/services/quoteParser').ParsedQuote
+    );
+    const confidence = calculateConfidence(
+      geminiResult as unknown as import('../src/services/quoteParser').ParsedQuote,
+      validation,
+      true
+    );
 
     pipelineResults.stages.validation = {
       isValid: validation.isValid,
@@ -305,7 +336,9 @@ IMPORTANTE - FORMATO DE RESPUESTA:
       passed: confidencePass,
       status: confidencePass ? '✅ PASS' : '❌ FAIL',
     };
-    console.log(`   ${confidencePass ? '✅' : '❌'} Confidence: ${confidence.score}/100 ${confidencePass ? '(>= 85)' : '(< 85)'}`);
+    console.log(
+      `   ${confidencePass ? '✅' : '❌'} Confidence: ${confidence.score}/100 ${confidencePass ? '(>= 85)' : '(< 85)'}`
+    );
 
     // 5.3: Premium detection (priceAnnual > 0)
     const premiumPass = geminiResult.priceAnnual > 0;
@@ -315,12 +348,16 @@ IMPORTANTE - FORMATO DE RESPUESTA:
       passed: premiumPass,
       status: premiumPass ? '✅ PASS' : '❌ FAIL',
     };
-    console.log(`   ${premiumPass ? '✅' : '❌'} Premium: ${geminiResult.priceAnnual?.toLocaleString('es-CO')} ${geminiResult.currency} ${premiumPass ? '(> 0)' : '(MISSING)'}`);
+    console.log(
+      `   ${premiumPass ? '✅' : '❌'} Premium: ${geminiResult.priceAnnual?.toLocaleString('es-CO')} ${geminiResult.currency} ${premiumPass ? '(> 0)' : '(MISSING)'}`
+    );
 
     // 5.4: Thesaurus mapping >= 80%
-    const mappedCount = geminiResult.coverages?.filter((c) => c.originalName && c.name !== c.originalName).length || 0;
+    const mappedCount =
+      geminiResult.coverages?.filter((c) => c.originalName && c.name !== c.originalName).length ||
+      0;
     const totalCoverages = geminiResult.coverages?.length || 0;
-    const mappingRate = totalCoverages > 0 ? (mappedCount / totalCoverages) : 0;
+    const mappingRate = totalCoverages > 0 ? mappedCount / totalCoverages : 0;
     const mappingPass = mappingRate >= 0.8;
     pipelineResults.validations.thesaurusMapping = {
       check: 'Thesaurus mapping >= 80%',
@@ -328,7 +365,9 @@ IMPORTANTE - FORMATO DE RESPUESTA:
       passed: mappingPass,
       status: mappingPass ? '✅ PASS' : '❌ FAIL',
     };
-    console.log(`   ${mappingPass ? '✅' : '❌'} Thesaurus mapping: ${formatPercentage(mappingRate, 1)} (${mappedCount}/${totalCoverages}) ${mappingPass ? '(>= 80%)' : '(< 80%)'}`);
+    console.log(
+      `   ${mappingPass ? '✅' : '❌'} Thesaurus mapping: ${formatPercentage(mappingRate, 1)} (${mappedCount}/${totalCoverages}) ${mappingPass ? '(>= 80%)' : '(< 80%)'}`
+    );
 
     // 5.5: Section preservation (CHUBB >= 2000 chars after preprocessing)
     const sectionPass = preprocessed.metadata.cleanedLength >= 2000;
@@ -338,7 +377,9 @@ IMPORTANTE - FORMATO DE RESPUESTA:
       passed: sectionPass,
       status: sectionPass ? '✅ PASS' : '❌ FAIL',
     };
-    console.log(`   ${sectionPass ? '✅' : '❌'} Section preservation: ${preprocessed.metadata.cleanedLength} chars ${sectionPass ? '(>= 2000)' : '(< 2000)'}`);
+    console.log(
+      `   ${sectionPass ? '✅' : '❌'} Section preservation: ${preprocessed.metadata.cleanedLength} chars ${sectionPass ? '(>= 2000)' : '(< 2000)'}`
+    );
 
     // Overall validation
     const allPassed = confidencePass && premiumPass && mappingPass && sectionPass;
@@ -346,7 +387,9 @@ IMPORTANTE - FORMATO DE RESPUESTA:
       passed: allPassed,
       status: allPassed ? '✅ ALL CHECKS PASSED' : '❌ SOME CHECKS FAILED',
     };
-    console.log(`\n   ${allPassed ? '✅' : '❌'} OVERALL: ${allPassed ? 'All validations passed' : 'Some validations failed'}`);
+    console.log(
+      `\n   ${allPassed ? '✅' : '❌'} OVERALL: ${allPassed ? 'All validations passed' : 'Some validations failed'}`
+    );
 
     // === SAVE RESULTS ===
     const outputPath = pdfPath.replace('.pdf', '_pipeline_result.json');
@@ -354,7 +397,6 @@ IMPORTANTE - FORMATO DE RESPUESTA:
     console.log(`\n💾 Results saved to: ${path.basename(outputPath)}`);
 
     return pipelineResults;
-
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`\n❌ Pipeline failed:`, message);
@@ -369,10 +411,14 @@ async function main() {
 
   // Check prerequisites
   console.log('Prerequisites:');
-  console.log(`  GEMINI_API_KEY: ${process.env.GEMINI_API_KEY ? '✅ Set' : '❌ Not set (AI extraction will be skipped)'}`);
-  
+  console.log(
+    `  GEMINI_API_KEY: ${process.env.GEMINI_API_KEY ? '✅ Set' : '❌ Not set (AI extraction will be skipped)'}`
+  );
+
   const thesaurusPath = path.join(process.cwd(), '..', 'tesauro(pyme).md');
-  console.log(`  Thesaurus file: ${fs.existsSync(thesaurusPath) ? '✅ Found' : '❌ Not found'} (${thesaurusPath})`);
+  console.log(
+    `  Thesaurus file: ${fs.existsSync(thesaurusPath) ? '✅ Found' : '❌ Not found'} (${thesaurusPath})`
+  );
   console.log();
 
   // Test with available quotes
@@ -410,18 +456,21 @@ async function main() {
   console.log(`With Thesaurus: ${withThesaurus.length}\n`);
 
   results.forEach((r) => {
-    const geminiStatus = r.stages?.gemini?.success ? '✅' : 
-                        r.stages?.gemini?.skipped ? '⏭️' : '❌';
+    const geminiStatus = r.stages?.gemini?.success ? '✅' : r.stages?.gemini?.skipped ? '⏭️' : '❌';
     const thesStatus = r.stages?.thesaurus?.success ? '✅' : '❌';
     const confScore = r.stages?.validation?.confidenceScore || 'N/A';
     const validations = r.validations || {};
-    
+
     console.log(`  ${r.insurerName}:`);
-    console.log(`    PDF: ✅ | Preprocess: ✅ | Gemini: ${geminiStatus} | Thesaurus: ${thesStatus}`);
+    console.log(
+      `    PDF: ✅ | Preprocess: ✅ | Gemini: ${geminiStatus} | Thesaurus: ${thesStatus}`
+    );
     if (r.stages?.validation) {
-      console.log(`    Confidence: ${confScore}/100 | Coverages: ${r.stages.validation.coverageCount}`);
+      console.log(
+        `    Confidence: ${confScore}/100 | Coverages: ${r.stages.validation.coverageCount}`
+      );
     }
-    
+
     // Show validation checks
     if (validations.confidence) {
       const v = validations;

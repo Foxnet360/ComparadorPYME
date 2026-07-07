@@ -45,7 +45,7 @@ export function validatePremium(quote: ParsedQuote): ValidationFlag | null {
       field: 'priceAnnual',
       severity: 'CRITICAL',
       message: 'Prima anual no especificada o es 0',
-      code: 'PREMIUM_MISSING'
+      code: 'PREMIUM_MISSING',
     };
   }
 
@@ -54,7 +54,7 @@ export function validatePremium(quote: ParsedQuote): ValidationFlag | null {
       field: 'priceAnnual',
       severity: 'WARNING',
       message: `Prima anual (${quote.priceAnnual}) está por debajo del mínimo esperado (${PREMIUM_RANGE.min})`,
-      code: 'PREMIUM_SUSPECT'
+      code: 'PREMIUM_SUSPECT',
     };
   }
 
@@ -63,7 +63,7 @@ export function validatePremium(quote: ParsedQuote): ValidationFlag | null {
       field: 'priceAnnual',
       severity: 'WARNING',
       message: `Prima anual (${quote.priceAnnual}) excede el máximo esperado (${PREMIUM_RANGE.max})`,
-      code: 'PREMIUM_SUSPECT'
+      code: 'PREMIUM_SUSPECT',
     };
   }
 
@@ -85,34 +85,36 @@ export function validateCoverageCompleteness(quote: ParsedQuote): ValidationFlag
         .filter((c) => c.status === 'missing')
         .map((c) => c.name)
         .slice(0, 3);
-      
+
       return {
         field: 'coverages',
         severity: 'WARNING',
         message: `Faltan ${missingCount} coberturas: ${missingNames.join(', ')}${missingCount > 3 ? '...' : ''}`,
-        code: 'COVERAGES_INCOMPLETE'
+        code: 'COVERAGES_INCOMPLETE',
       };
     }
-    
+
     return null;
   }
-  
+
   // Fallback to legacy validation using coverages array
   if (!quote.coverages || quote.coverages.length === 0) {
     return {
       field: 'coverages',
       severity: 'WARNING',
       message: `Faltan ${EXPECTED_COVERAGES.length} coberturas: ${EXPECTED_COVERAGES.slice(0, 3).join(', ')}...`,
-      code: 'COVERAGES_INCOMPLETE'
+      code: 'COVERAGES_INCOMPLETE',
     };
   }
 
-  const coverageNames = quote.coverages.map(c => c.name);
-  const missingCoverages = EXPECTED_COVERAGES.filter(expected => 
-    !coverageNames.some(name => 
-      name.toLowerCase().includes(expected.toLowerCase()) ||
-      expected.toLowerCase().includes(name.toLowerCase())
-    )
+  const coverageNames = quote.coverages.map((c) => c.name);
+  const missingCoverages = EXPECTED_COVERAGES.filter(
+    (expected) =>
+      !coverageNames.some(
+        (name) =>
+          name.toLowerCase().includes(expected.toLowerCase()) ||
+          expected.toLowerCase().includes(name.toLowerCase())
+      )
   );
 
   if (missingCoverages.length > 0) {
@@ -120,7 +122,7 @@ export function validateCoverageCompleteness(quote: ParsedQuote): ValidationFlag
       field: 'coverages',
       severity: 'WARNING',
       message: `Faltan ${missingCoverages.length} coberturas: ${missingCoverages.slice(0, 3).join(', ')}${missingCoverages.length > 3 ? '...' : ''}`,
-      code: 'COVERAGES_INCOMPLETE'
+      code: 'COVERAGES_INCOMPLETE',
     };
   }
 
@@ -151,7 +153,7 @@ export function validateDeductibleFormat(deductible: string): ValidationFlag | n
       field: 'deductible',
       severity: 'INFO',
       message: `Formato de deducible no reconocido: "${deductible}"`,
-      code: 'DEDUCTIBLE_UNRECOGNIZED_FORMAT'
+      code: 'DEDUCTIBLE_UNRECOGNIZED_FORMAT',
     };
   }
 
@@ -161,7 +163,7 @@ export function validateDeductibleFormat(deductible: string): ValidationFlag | n
       field: 'deductible',
       severity: 'WARNING',
       message: `Deducible de ${structure.normalized.percentage}% es inusualmente alto`,
-      code: 'DEDUCTIBLE_HIGH_PERCENTAGE'
+      code: 'DEDUCTIBLE_HIGH_PERCENTAGE',
     };
   }
 
@@ -174,14 +176,14 @@ export function validateDeductibleFormat(deductible: string): ValidationFlag | n
 export function validateCoverageValues(quote: ParsedQuote): ValidationFlag[] {
   const flags: ValidationFlag[] = [];
 
-  for (const coverage of (quote.coverages || [])) {
+  for (const coverage of quote.coverages || []) {
     // Check for missing values
     if (!coverage.value || coverage.value === '') {
       flags.push({
         field: `coverage.${coverage.name}.value`,
         severity: 'WARNING',
         message: `Cobertura "${coverage.name}" no tiene valor especificado`,
-        code: 'COVERAGE_VALUE_MISSING'
+        code: 'COVERAGE_VALUE_MISSING',
       });
       continue;
     }
@@ -194,7 +196,7 @@ export function validateCoverageValues(quote: ParsedQuote): ValidationFlag[] {
           field: `coverage.${coverage.name}.value`,
           severity: 'WARNING',
           message: `Valor asegurado ${coverage.value} excede el máximo esperado`,
-          code: 'COVERAGE_VALUE_TOO_HIGH'
+          code: 'COVERAGE_VALUE_TOO_HIGH',
         });
       }
     }
@@ -204,7 +206,7 @@ export function validateCoverageValues(quote: ParsedQuote): ValidationFlag[] {
     if (deductibleFlag) {
       flags.push({
         ...deductibleFlag,
-        field: `coverage.${coverage.name}.deductible`
+        field: `coverage.${coverage.name}.deductible`,
       });
     }
   }
@@ -217,13 +219,13 @@ export function validateCoverageValues(quote: ParsedQuote): ValidationFlag[] {
  */
 function isValidCoverageValue(value: string): boolean {
   if (!value || value === 'NO ESPECIFICADO' || value === 'EXCLUIDO') return false;
-  
+
   const trimmed = value.trim().toLowerCase();
-  
+
   // Numeric values
   const cleaned = value.replace(/[$\s.,]/g, '');
   if (!isNaN(parseFloat(cleaned)) && cleaned !== '') return true;
-  
+
   // Common descriptive values that indicate valid coverage
   const validPatterns = [
     /^incluid[oa]/i,
@@ -238,15 +240,15 @@ function isValidCoverageValue(value: string): boolean {
     /^franquicia/i,
     /^\d+%/,
   ];
-  
-  return validPatterns.some(pattern => pattern.test(trimmed));
+
+  return validPatterns.some((pattern) => pattern.test(trimmed));
 }
 
 /**
  * Validate numeric fields parse correctly
  */
 export function validateNumericParsing(quote: ParsedQuote): ValidationFlag | null {
-  const hasInvalidNumeric = (quote.coverages || []).some(c => {
+  const hasInvalidNumeric = (quote.coverages || []).some((c) => {
     if (c.value === 'NO ESPECIFICADO' || c.value === 'EXCLUIDO') return false;
     return !isValidCoverageValue(c.value);
   });
@@ -256,7 +258,7 @@ export function validateNumericParsing(quote: ParsedQuote): ValidationFlag | nul
       field: 'coverages',
       severity: 'WARNING',
       message: 'Algunos valores numéricos no pudieron ser parseados correctamente',
-      code: 'NUMERIC_PARSE_ERROR'
+      code: 'NUMERIC_PARSE_ERROR',
     };
   }
 
@@ -271,26 +273,26 @@ export function validateConsistency(quote: ParsedQuote): ValidationFlag[] {
 
   // Check currency consistency
   if (quote.currency === 'COP' && quote.coverages && quote.coverages.length > 0) {
-    const hasUSDFormat = quote.coverages.some(c => 
-      c.value.includes('$') && !c.value.includes('.')
+    const hasUSDFormat = quote.coverages.some(
+      (c) => c.value.includes('$') && !c.value.includes('.')
     );
     if (hasUSDFormat) {
       flags.push({
         field: 'currency',
         severity: 'INFO',
         message: 'Moneda es COP pero algunos valores usan formato USD',
-        code: 'CURRENCY_FORMAT_MISMATCH'
+        code: 'CURRENCY_FORMAT_MISMATCH',
       });
     }
   }
 
   // Check if total coverage values are reasonable compared to premium
   const coverageValues = (quote.coverages || [])
-    .map(c => {
+    .map((c) => {
       if (c.value === 'NO ESPECIFICADO' || c.value === 'EXCLUIDO') return 0;
       return parseFloat(c.value.replace(/[$\s.,]/g, '')) || 0;
     })
-    .filter(v => v > 0);
+    .filter((v) => v > 0);
 
   if (coverageValues.length > 0 && quote.priceAnnual > 0) {
     const totalCoverage = coverageValues.reduce((a, b) => a + b, 0);
@@ -299,7 +301,7 @@ export function validateConsistency(quote: ParsedQuote): ValidationFlag[] {
         field: 'coverages',
         severity: 'INFO',
         message: 'Suma total de coberturas es baja en relación a la prima (posible subaseguro)',
-        code: 'PREMIUM_COVERAGE_RATIO'
+        code: 'PREMIUM_COVERAGE_RATIO',
       });
     }
   }
@@ -330,7 +332,7 @@ export function validateQuote(quote: ParsedQuote): ValidationResult {
   flags.push(...consistencyFlags);
 
   // Determine overall validity
-  const criticalCount = flags.filter(f => f.severity === 'CRITICAL').length;
+  const criticalCount = flags.filter((f) => f.severity === 'CRITICAL').length;
   const hasCriticalErrors = criticalCount > 0;
 
   return {
@@ -339,7 +341,7 @@ export function validateQuote(quote: ParsedQuote): ValidationResult {
     coverageCount: quote.coverages?.length || 0,
     expectedCoverageCount: EXPECTED_COVERAGES.length,
     numericParseSuccess: !numericFlag,
-    premiumSource: (quote as QuoteWithPremiumSource).premiumSource || 'unknown'
+    premiumSource: (quote as QuoteWithPremiumSource).premiumSource || 'unknown',
   };
 }
 
@@ -347,9 +349,9 @@ export function validateQuote(quote: ParsedQuote): ValidationResult {
  * Get validation summary for display
  */
 export function getValidationSummary(result: ValidationResult): string {
-  const critical = result.flags.filter(f => f.severity === 'CRITICAL').length;
-  const warnings = result.flags.filter(f => f.severity === 'WARNING').length;
-  const info = result.flags.filter(f => f.severity === 'INFO').length;
+  const critical = result.flags.filter((f) => f.severity === 'CRITICAL').length;
+  const warnings = result.flags.filter((f) => f.severity === 'WARNING').length;
+  const info = result.flags.filter((f) => f.severity === 'INFO').length;
 
   return `${result.coverageCount}/${result.expectedCoverageCount} coberturas | ${critical} críticas | ${warnings} advertencias | ${info} info`;
 }

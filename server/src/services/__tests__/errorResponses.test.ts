@@ -7,7 +7,7 @@ import {
   GeminiServiceUnavailableError,
   GeminiTimeoutError,
   GeminiInvalidResponseError,
-  GeminiUnknownError
+  GeminiUnknownError,
 } from '../../errors/geminiErrors';
 
 // Mock the logger to avoid initialization issues
@@ -15,8 +15,8 @@ vi.mock('../../config/logger', () => ({
   default: {
     error: vi.fn(),
     info: vi.fn(),
-    warn: vi.fn()
-  }
+    warn: vi.fn(),
+  },
 }));
 
 describe('Error Response Format', () => {
@@ -24,21 +24,22 @@ describe('Error Response Format', () => {
     const res = {
       statusCode: 200,
       json: vi.fn(),
-      status: vi.fn(function(code: number) {
+      status: vi.fn(function (code: number) {
         this.statusCode = code;
         return this;
       }),
       locals: {
-        requestId: 'test-request-id-123'
+        requestId: 'test-request-id-123',
       },
-      setHeader: vi.fn()
+      setHeader: vi.fn(),
     } as unknown as Response;
     return res;
   };
 
-  const createMockRequest = (): Request => ({
-    headers: {}
-  } as unknown as Request);
+  const createMockRequest = (): Request =>
+    ({
+      headers: {},
+    }) as unknown as Request;
 
   describe('GeminiError responses', () => {
     it('should include requestId in Gemini error responses', () => {
@@ -50,7 +51,7 @@ describe('Error Response Format', () => {
 
       expect(res.json).toHaveBeenCalled();
       const response = res.json.mock.calls[0][0];
-      
+
       expect(response).toHaveProperty('success', false);
       expect(response).toHaveProperty('error');
       expect(response.error).toHaveProperty('requestId', 'test-request-id-123');
@@ -64,10 +65,12 @@ describe('Error Response Format', () => {
       errorHandler(error, req, res, vi.fn());
 
       const response = res.json.mock.calls[0][0];
-      
+
       expect(response.error).toHaveProperty('code', 'GEMINI_RATE_LIMIT');
       expect(response.error).toHaveProperty('message');
-      expect(response.error.message).toBe('Límite de requests excedido. Espera 1 minuto y reintenta.');
+      expect(response.error.message).toBe(
+        'Límite de requests excedido. Espera 1 minuto y reintenta.'
+      );
     });
 
     it('should include retryAfter for rate limit errors', () => {
@@ -78,7 +81,7 @@ describe('Error Response Format', () => {
       errorHandler(error, req, res, vi.fn());
 
       const response = res.json.mock.calls[0][0];
-      
+
       expect(response.error).toHaveProperty('retryAfter', 120);
     });
 
@@ -88,7 +91,7 @@ describe('Error Response Format', () => {
         { error: new GeminiServiceUnavailableError(), expectedStatus: 503 },
         { error: new GeminiTimeoutError(), expectedStatus: 504 },
         { error: new GeminiInvalidResponseError(), expectedStatus: 502 },
-        { error: new GeminiUnknownError(), expectedStatus: 500 }
+        { error: new GeminiUnknownError(), expectedStatus: 500 },
       ];
 
       testCases.forEach(({ error, expectedStatus }) => {
@@ -109,7 +112,7 @@ describe('Error Response Format', () => {
       errorHandler(error, req, res, vi.fn());
 
       const response = res.json.mock.calls[0][0];
-      
+
       expect(response.error.message).toContain('demasiado tiempo');
       expect(response.error.message).toContain('PDF');
     });
@@ -125,7 +128,7 @@ describe('Error Response Format', () => {
       errorHandler(error, req, res, vi.fn());
 
       const response = res.json.mock.calls[0][0];
-      
+
       expect(response.error.requestId).toBe('custom-request-id-456');
     });
 
@@ -138,7 +141,7 @@ describe('Error Response Format', () => {
       errorHandler(error, req, res, vi.fn());
 
       const response = res.json.mock.calls[0][0];
-      
+
       expect(response.error).toHaveProperty('requestId');
       expect(response.error.requestId).toBeUndefined();
     });

@@ -67,7 +67,7 @@ export const InlineNoteEditor: React.FC<InlineNoteEditorProps> = ({
           </button>
         </div>
       </div>
-      
+
       <textarea
         ref={textareaRef}
         value={content}
@@ -77,24 +77,20 @@ export const InlineNoteEditor: React.FC<InlineNoteEditorProps> = ({
         className="flex-1 p-3 text-sm resize-none outline-none"
         maxLength={2000}
       />
-      
+
       {content && (
         <div className="px-3 py-2 border-t bg-slate-50">
           <p className="text-xs text-slate-400 mb-1">Vista previa:</p>
-          <div 
+          <div
             className="text-xs text-slate-600 prose prose-sm max-w-none"
             dangerouslySetInnerHTML={{ __html: previewHtml }}
           />
         </div>
       )}
-      
+
       <div className="px-3 py-1.5 border-t bg-slate-50 flex justify-between items-center">
-        <span className="text-[10px] text-slate-400">
-          {content.length}/2000 caracteres
-        </span>
-        <span className="text-[10px] text-slate-400">
-          Markdown soportado
-        </span>
+        <span className="text-[10px] text-slate-400">{content.length}/2000 caracteres</span>
+        <span className="text-[10px] text-slate-400">Markdown soportado</span>
       </div>
     </div>
   );

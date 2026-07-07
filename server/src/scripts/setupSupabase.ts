@@ -28,12 +28,12 @@ async function setupDatabase() {
     const migrationFiles = [
       '001_initial_schema.sql',
       '002_vector_functions.sql',
-      '003_storage_policies.sql'
+      '003_storage_policies.sql',
     ];
 
     for (const file of migrationFiles) {
       const filePath = path.join(migrationsDir, file);
-      
+
       if (!fs.existsSync(filePath)) {
         console.warn(`⚠️  Archivo no encontrado: ${file}`);
         continue;
@@ -41,20 +41,19 @@ async function setupDatabase() {
 
       console.log(`📄 Ejecutando: ${file}`);
       const sql = fs.readFileSync(filePath, 'utf-8');
-      
+
       // Dividir SQL en statements individuales
       const statements = sql
         .split(';')
-        .map(s => s.trim())
-        .filter(s => s.length > 0 && !s.startsWith('--') && !s.startsWith('/*'));
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0 && !s.startsWith('--') && !s.startsWith('/*'));
 
       for (const statement of statements) {
         try {
           const { error } = await supabase.rpc('exec_sql', { sql: statement + ';' });
           if (error) {
             // Algunos errores son esperados si los objetos ya existen
-            if (!error.message.includes('already exists') && 
-                !error.message.includes('duplicate')) {
+            if (!error.message.includes('already exists') && !error.message.includes('duplicate')) {
               console.warn(`   ⚠️  ${error.message}`);
             }
           }
@@ -69,13 +68,10 @@ async function setupDatabase() {
     // Verificar tablas creadas
     console.log('🔍 Verificando tablas...');
     const tables = ['insurers', 'documents', 'page_images', 'chunks', 'analysis_history'];
-    
+
     for (const table of tables) {
-      const { error } = await supabase
-        .from(table)
-        .select('count')
-        .limit(1);
-      
+      const { error } = await supabase.from(table).select('count').limit(1);
+
       if (error) {
         console.warn(`   ⚠️  Tabla '${table}': ${error.message}`);
       } else {
@@ -84,19 +80,19 @@ async function setupDatabase() {
     }
 
     console.log('\n📦 Configurando Storage...');
-    
+
     // Verificar/crear bucket
     const bucketName = 'clause-pages';
     const { data: buckets } = await supabase.storage.listBuckets();
-    const bucketExists = buckets?.some(b => b.name === bucketName);
-    
+    const bucketExists = buckets?.some((b) => b.name === bucketName);
+
     if (!bucketExists) {
       console.log(`   Creando bucket '${bucketName}'...`);
       const { error: bucketError } = await supabase.storage.createBucket(bucketName, {
         public: true,
         fileSizeLimit: 52428800, // 50MB
       });
-      
+
       if (bucketError) {
         console.warn(`   ⚠️  Error creando bucket: ${bucketError.message}`);
         console.log('   ℹ️  Puede que el bucket ya exista o necesites crearlo manualmente');
@@ -112,7 +108,6 @@ async function setupDatabase() {
     console.log('1. Configura las políticas de Storage manualmente en el dashboard de Supabase');
     console.log('2. Ejecuta: npm run verify-supabase');
     console.log('3. Empieza a indexar documentos!');
-
   } catch (error) {
     console.error('❌ Error durante setup:', error);
     process.exit(1);

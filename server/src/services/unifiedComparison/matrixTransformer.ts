@@ -91,9 +91,7 @@ export function flatResultToMatrixRows(result: FlatComparisonResult): MatrixRow[
     cells: emptyCells(numInsurers),
   });
 
-  const primaRow = result.rows.find((r) =>
-    r.label.toLowerCase().includes('prima')
-  );
+  const primaRow = result.rows.find((r) => r.label.toLowerCase().includes('prima'));
   if (primaRow) {
     matrix.push({
       type: 'data',
@@ -104,9 +102,7 @@ export function flatResultToMatrixRows(result: FlatComparisonResult): MatrixRow[
     });
   }
 
-  const paymentRow = result.rows.find((r) =>
-    r.label.toLowerCase().includes('pago')
-  );
+  const paymentRow = result.rows.find((r) => r.label.toLowerCase().includes('pago'));
   if (paymentRow) {
     matrix.push({
       type: 'data',
@@ -156,10 +152,7 @@ function cellFromQuoteCoverage(coverage: ParsedQuote['coverages'][number] | unde
     return { value: 'No informado', isExcluded: true, isWinner: false };
   }
   const value = coverage.value ?? 'No informado';
-  const isExcluded =
-    value === 'No informado' ||
-    value === 'NO ESPECIFICADO' ||
-    value === '';
+  const isExcluded = value === 'No informado' || value === 'NO ESPECIFICADO' || value === '';
   return {
     value,
     isExcluded,
@@ -193,9 +186,7 @@ export function quotesToMatrixRows(quotes: ParsedQuote[]): MatrixRow[] {
   });
 
   const coverageNames = new Set<string>();
-  quotes.forEach((q) =>
-    q.coverages.forEach((c) => coverageNames.add(c.canonicalName || c.name))
-  );
+  quotes.forEach((q) => q.coverages.forEach((c) => coverageNames.add(c.canonicalName || c.name)));
 
   Array.from(coverageNames).forEach((name, index) => {
     matrix.push({
@@ -204,9 +195,7 @@ export function quotesToMatrixRows(quotes: ParsedQuote[]): MatrixRow[] {
       label: name,
       sectionId: COVERAGE_SECTION_ID,
       cells: quotes.map((q) => {
-        const coverage = q.coverages.find(
-          (c) => (c.canonicalName || c.name) === name
-        );
+        const coverage = q.coverages.find((c) => (c.canonicalName || c.name) === name);
         return cellFromQuoteCoverage(coverage);
       }),
     });

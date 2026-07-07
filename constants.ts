@@ -101,6 +101,7 @@ Tu base de conocimiento es el informe generado.
 Responde con precisión técnica o lenguaje sencillo según te lo pidan.
 `;
 
-export const DISCLAIMER_TEXT = "Advertencia Metodológica: Este análisis automatizado reduce el tiempo de comparación manual, aplicando principios de prevalencia técnica. Los elementos marcados como críticos requieren validación humana especializada. Esta herramienta potencia la asesoría profesional, no la sustituye.";
+export const DISCLAIMER_TEXT =
+  'Advertencia Metodológica: Este análisis automatizado reduce el tiempo de comparación manual, aplicando principios de prevalencia técnica. Los elementos marcados como críticos requieren validación humana especializada. Esta herramienta potencia la asesoría profesional, no la sustituye.';
 
 export const MOCK_IMAGES = [];
