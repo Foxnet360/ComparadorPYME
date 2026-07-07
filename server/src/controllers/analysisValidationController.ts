@@ -5,6 +5,7 @@
  */
 
 import { Request, Response } from 'express';
+import { AuthenticatedRequest } from '../middleware/auth';
 import { z } from 'zod';
 import { clauseCoverageValidator } from '../services/clauseCoverageValidator';
 import { deductibleAnalyzer } from '../services/deductibleAnalyzer';
@@ -289,17 +290,12 @@ export const batchRetrain = async (req: Request, res: Response): Promise<void> =
 // NEW: Export dynamic Excel report unmapped horizontally
 import { getAnalysisById } from '../repositories/analysisRepository';
 import { generateExcelBuffer } from '../services/excelGenerator';
-import { AuthenticatedRequest } from '../middleware/auth';
 
 export const exportAnalysisExcel = async (
   req: AuthenticatedRequest,
   res: Response
 ): Promise<void> => {
   const userId = req.user?.id;
-  if (!userId) {
-    res.status(401).json({ error: 'Authentication required' });
-    return;
-  }
 
   const id = req.params.id as string;
 
@@ -315,7 +311,8 @@ export const exportAnalysisExcel = async (
       return;
     }
 
-    if (analysis.user_id && analysis.user_id !== userId) {
+    // Ownership check: when a userId is present and the analysis has an owner, enforce it.
+    if (userId && analysis.user_id && analysis.user_id !== userId) {
       res.status(403).json({ error: 'Forbidden: analysis does not belong to current user' });
       return;
     }

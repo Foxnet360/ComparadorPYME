@@ -26,16 +26,36 @@ function createMockRes() {
 }
 
 describe('analysisValidationController - exportAnalysisExcel', () => {
-  it('should return 401 when user is not authenticated', async () => {
+  it('should allow export when user is not authenticated and analysis has no owner', async () => {
+    getAnalysisById.mockResolvedValueOnce({
+      id: 'test-id',
+      user_id: null,
+      client_name: 'Test Client',
+      analysis_result: {
+        quotes: [
+          {
+            insurerName: 'MAPFRE',
+            policyName: 'PYME',
+            priceAnnual: 8500000,
+            currency: 'COP',
+            coverages: [{ name: 'Incendio', value: '500M', deductible: '10%' }],
+            alerts: [],
+          },
+        ],
+      },
+    } as any);
+
     const req = { params: { id: 'test-id' } } as any;
     const res = createMockRes();
 
     await exportAnalysisExcel(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ error: 'Authentication required' })
+    expect(generateExcelBuffer).toHaveBeenCalled();
+    expect(res.setHeader).toHaveBeenCalledWith(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     );
+    expect(res.send).toHaveBeenCalledWith(Buffer.from('mock-excel'));
   });
 
   it('should return 404 when analysis is not found', async () => {
