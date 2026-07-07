@@ -12,6 +12,7 @@ import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { comparisonPromptBuilder } from '../services/unifiedComparison/comparisonPromptBuilder';
 import { flatTableParser } from '../services/unifiedComparison/flatTableParser';
 import { comparisonEngineAdapter } from '../services/unifiedComparison/comparisonEngineAdapter';
+import { featureFlags } from '../config/featureFlags';
 import type { FlatComparisonResult } from '../services/unifiedComparison/comparisonSchema';
 import type { MatrixRow } from '../types';
 
@@ -50,9 +51,16 @@ interface GeminiFile {
   state?: string;
 }
 
-const CANONICAL_ROW_LABELS = ['Bienes Asegurados', 'Deducibles', 'Prima con IVA', 'Forma de Pago'];
+const V1_CANONICAL_ROW_LABELS = [
+  'Bienes Asegurados',
+  'Deducibles',
+  'Prima con IVA',
+  'Forma de Pago',
+];
 
 const GEMINI_TIMEOUT_MS = 60_000;
+const MATCH_RATE_THRESHOLD = 0.9;
+const FALLBACK_RATE_THRESHOLD = 0.1;
 
 // ---------------------------------------------------------------------------
 // Cell-level matcher
@@ -141,7 +149,9 @@ function longestCommonSubstringLength(a: string, b: string): number {
 
 /**
  * Compare every cell in the baseline against the aligned tool cell and report
- * the match rate plus a list of mismatches.
+ * the match rate plus a list of mismatches. Rows are matched by canonical label,
+ * so variable row counts are supported. A baseline row that is missing from the
+ * tool counts as a mismatch for every cell.
  */
 export function calculateMatchRate(
   baseline: FlatComparisonResult,
@@ -156,13 +166,23 @@ export function calculateMatchRate(
     const toolRow = tool.rows.find(
       (r) => normalizeCellValue(r.label) === normalizeCellValue(baselineRow.label)
     );
-    if (!toolRow) continue;
 
     for (let baselineIdx = 0; baselineIdx < baselineRow.cells.length; baselineIdx++) {
       totalCells++;
       const baselineCell = baselineRow.cells[baselineIdx];
-      const toolIdx = mapping[baselineIdx];
       const baselineValue = baselineCell.value ?? 'No informado';
+
+      if (!toolRow) {
+        mismatches.push({
+          row: baselineRow.label,
+          insurer: baselineCell.insurer,
+          baseline: baselineValue,
+          tool: 'No informado',
+        });
+        continue;
+      }
+
+      const toolIdx = mapping[baselineIdx];
 
       if (toolIdx < 0) {
         mismatches.push({
@@ -219,45 +239,69 @@ function extractInsurersFromMatrix(matrix: MatrixRow[]): string[] {
 
 function findMatrixRowByLabel(matrix: MatrixRow[], label: string): MatrixRow | undefined {
   return matrix.find(
-    (row) => row.type === 'data' && normalizeCellValue(row.label) === normalizeCellValue(label)
+    (row) =>
+      row.type === 'data' && normalizeCellValue(row.label) === normalizeCellValue(label)
   );
 }
 
-/**
- * Reconstruct a FlatComparisonResult from the MatrixRow[] produced by the
- * comparison engine adapter. This lets the harness compare the tool path to
- * the direct-LLM baseline using the same cell coordinates.
- */
-export function matrixRowsToFlatResult(matrix: MatrixRow[]): FlatComparisonResult {
+function buildFlatCell(
+  insurer: string,
+  value: string | null | undefined,
+  confidence?: number
+): {
+  insurer: string;
+  value: string;
+  rawText?: string;
+  notFound?: boolean;
+  confidence?: number;
+} {
+  const notFound = value === null || value === 'No informado' || value === '';
+  const cell: {
+    insurer: string;
+    value: string;
+    rawText?: string;
+    notFound?: boolean;
+    confidence?: number;
+  } = {
+    insurer,
+    value: notFound ? 'No informado' : (value as string),
+    notFound: notFound || undefined,
+  };
+
+  if (value !== undefined && value !== null) {
+    cell.rawText = value;
+  }
+  if (confidence !== undefined) {
+    cell.confidence = confidence;
+  }
+
+  return cell;
+}
+
+function matrixRowsToFlatResultV1(matrix: MatrixRow[]): FlatComparisonResult {
   const insurers = extractInsurersFromMatrix(matrix);
   const now = new Date().toISOString();
 
-  const rows = CANONICAL_ROW_LABELS.map((label) => {
+  const rows = V1_CANONICAL_ROW_LABELS.map((label) => {
     const matrixRow = findMatrixRowByLabel(matrix, label);
     const cells = insurers.map((insurer, idx) => {
       const matrixCell = matrixRow?.cells[idx];
-      const value = matrixCell?.value ?? null;
-      const notFound = value === null || value === 'No informado' || value === '';
-      return {
-        insurer,
-        value: notFound ? 'No informado' : value,
-        rawText: value ?? undefined,
-        notFound: notFound || undefined,
-      };
+      return buildFlatCell(insurer, matrixCell?.value ?? null, matrixCell?.confidence);
     });
     return { label, cells };
   });
 
-  const canonicalNormalized = new Set(CANONICAL_ROW_LABELS.map(normalizeCellValue));
+  const canonicalNormalized = new Set(V1_CANONICAL_ROW_LABELS.map(normalizeCellValue));
   const extraRows = matrix
-    .filter((row) => row.type === 'data' && !canonicalNormalized.has(normalizeCellValue(row.label)))
+    .filter(
+      (row) =>
+        row.type === 'data' && !canonicalNormalized.has(normalizeCellValue(row.label))
+    )
     .map((row) => ({
       label: row.label,
-      cells: insurers.map((insurer, idx) => ({
-        insurer,
-        value: row.cells[idx]?.value ?? null,
-        rawText: row.cells[idx]?.value ?? undefined,
-      })),
+      cells: insurers.map((insurer, idx) =>
+        buildFlatCell(insurer, row.cells[idx]?.value ?? null, row.cells[idx]?.confidence)
+      ),
     }));
 
   return {
@@ -275,6 +319,68 @@ export function matrixRowsToFlatResult(matrix: MatrixRow[]): FlatComparisonResul
     extraRows,
     warnings: [],
   };
+}
+
+function matrixRowsToFlatResultV2(matrix: MatrixRow[]): FlatComparisonResult {
+  const insurers = extractInsurersFromMatrix(matrix);
+  const now = new Date().toISOString();
+
+  const rows: FlatComparisonResult['rows'] = [];
+  let currentSection: string | undefined;
+
+  for (const row of matrix) {
+    if (row.type === 'header') {
+      // The top-level header carries insurer names, not a data section.
+      if (row.id !== 'client_info') {
+        currentSection = row.label;
+      }
+      continue;
+    }
+
+    if (row.type === 'data') {
+      rows.push({
+        label: row.label,
+        section: currentSection,
+        cells: insurers.map((insurer, idx) =>
+          buildFlatCell(insurer, row.cells[idx]?.value ?? null, row.cells[idx]?.confidence)
+        ),
+      });
+    }
+  }
+
+  return {
+    metadata: {
+      generatedAt: now,
+      model: 'adapter',
+      pdfCount: insurers.length,
+      processingTimeMs: 0,
+      confidence: 0.85,
+      needsHumanReview: false,
+    },
+    insurers,
+    schemaVersion: 2,
+    rows,
+    extraRows: [],
+    warnings: [],
+  };
+}
+
+/**
+ * Reconstruct a FlatComparisonResult from the MatrixRow[] produced by the
+ * comparison engine adapter. This lets the harness compare the tool path to
+ * the direct-LLM baseline using the same cell coordinates.
+ *
+ * The reconstruction respects the schema version returned by the adapter so that
+ * v1 cached results keep the legacy four-row shape while v2 results preserve
+ * section-aware granular rows and per-cell confidence.
+ */
+export function matrixRowsToFlatResult(
+  matrix: MatrixRow[],
+  schemaVersion: 1 | 2 = 1
+): FlatComparisonResult {
+  return schemaVersion === 2
+    ? matrixRowsToFlatResultV2(matrix)
+    : matrixRowsToFlatResultV1(matrix);
 }
 
 // ---------------------------------------------------------------------------
@@ -343,10 +449,7 @@ async function callGeminiBaseline(files: GeminiFile[], prompt: string): Promise<
   });
 
   const timeoutPromise = new Promise<never>((_, reject) =>
-    setTimeout(
-      () => reject(new Error(`Baseline Gemini call timed out after ${GEMINI_TIMEOUT_MS}ms`)),
-      GEMINI_TIMEOUT_MS
-    )
+    setTimeout(() => reject(new Error(`Baseline Gemini call timed out after ${GEMINI_TIMEOUT_MS}ms`)), GEMINI_TIMEOUT_MS)
   );
 
   const result = await Promise.race([geminiPromise, timeoutPromise]);
@@ -356,23 +459,33 @@ async function callGeminiBaseline(files: GeminiFile[], prompt: string): Promise<
   return result.text;
 }
 
-async function runBaselineComparison(pdfPaths: string[]): Promise<FlatComparisonResult> {
+async function runBaselineComparison(
+  pdfPaths: string[],
+  granularEnabled: boolean
+): Promise<FlatComparisonResult> {
   let uploadedFiles: GeminiFile[] = [];
 
   try {
     uploadedFiles = await uploadFiles(pdfPaths);
-    const prompt = comparisonPromptBuilder.buildComparisonPrompt({
+    const promptContext = {
       insurerCount: pdfPaths.length,
       hasClauses: false,
-    });
+    };
+    const prompt = granularEnabled
+      ? comparisonPromptBuilder.buildV2ComparisonPrompt(promptContext)
+      : comparisonPromptBuilder.buildComparisonPrompt(promptContext);
     const responseText = await callGeminiBaseline(uploadedFiles, prompt);
 
-    return flatTableParser.parse(responseText, {
+    const parseOptions = {
       pdfCount: pdfPaths.length,
       model: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
       confidence: 0.85,
       needsHumanReview: false,
-    });
+    };
+
+    return granularEnabled
+      ? flatTableParser.parseV2(responseText, parseOptions)
+      : flatTableParser.parse(responseText, parseOptions);
   } finally {
     if (uploadedFiles.length > 0) {
       const ai = getGenAI();
@@ -396,7 +509,7 @@ async function runToolComparison(
   userId?: string
 ): Promise<ToolComparisonResult> {
   const adapterResult = await comparisonEngineAdapter.generateComparison(pdfPaths, userId);
-  const result = matrixRowsToFlatResult(adapterResult.matrix);
+  const result = matrixRowsToFlatResult(adapterResult.matrix, adapterResult.schemaVersion);
 
   return {
     result,
@@ -441,6 +554,7 @@ async function saveJson(filePath: string, data: unknown): Promise<void> {
 export interface RunExtractionQualityEvalOptions {
   updateBaseline?: boolean;
   userId?: string;
+  granularComparisonSchema?: boolean;
 }
 
 /**
@@ -459,6 +573,7 @@ export async function runExtractionQualityEval(
 ): Promise<ExtractionQualityReport> {
   const snapshotPath = resolveProjectPath(fixture.baselineSnapshotPath);
   const pdfPaths = fixture.pdfPaths.map(resolveProjectPath);
+  const granularEnabled = options.granularComparisonSchema ?? true;
 
   for (const pdfPath of pdfPaths) {
     if (!(await pathExists(pdfPath))) {
@@ -466,28 +581,40 @@ export async function runExtractionQualityEval(
     }
   }
 
+  // Ensure the production adapter uses the same schema version as the baseline.
+  const originalGranularFlag = featureFlags.isEnabled('granularComparisonSchema');
+  if (granularEnabled !== originalGranularFlag) {
+    featureFlags.updateFlag('granularComparisonSchema', granularEnabled);
+  }
+
   let baseline = options.updateBaseline
     ? undefined
     : await loadJson<FlatComparisonResult>(snapshotPath);
 
-  if (!baseline) {
-    baseline = await runBaselineComparison(pdfPaths);
-    await saveJson(snapshotPath, baseline);
+  try {
+    if (!baseline) {
+      baseline = await runBaselineComparison(pdfPaths, granularEnabled);
+      await saveJson(snapshotPath, baseline);
+    }
+
+    const tool = await runToolComparison(pdfPaths, options.userId);
+    const { matchRate, mismatches } = calculateMatchRate(baseline, tool.result);
+    const fallbackRate = tool.engine === 'fallback' ? 1 : 0;
+    const passed = matchRate >= MATCH_RATE_THRESHOLD && fallbackRate <= FALLBACK_RATE_THRESHOLD;
+
+    return {
+      baseline,
+      tool: tool.result,
+      matchRate,
+      mismatches,
+      fallbackRate,
+      passed,
+    };
+  } finally {
+    if (featureFlags.isEnabled('granularComparisonSchema') !== originalGranularFlag) {
+      featureFlags.updateFlag('granularComparisonSchema', originalGranularFlag);
+    }
   }
-
-  const tool = await runToolComparison(pdfPaths, options.userId);
-  const { matchRate, mismatches } = calculateMatchRate(baseline, tool.result);
-  const fallbackRate = tool.engine === 'fallback' ? 1 : 0;
-  const passed = matchRate >= 0.9 && fallbackRate <= 0.1;
-
-  return {
-    baseline,
-    tool: tool.result,
-    matchRate,
-    mismatches,
-    fallbackRate,
-    passed,
-  };
 }
 
 /**

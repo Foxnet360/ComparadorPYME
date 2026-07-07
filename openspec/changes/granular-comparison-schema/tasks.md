@@ -52,7 +52,7 @@ Chain strategy: stacked-to-main
 
 ## Phase 4: Evaluation & Tests
 
-- [ ] 4.1 Update `extractionQualityEval.ts` to use variable row counts, label-based matching, and regenerate baseline.
-- [ ] 4.2 Create Vitest harness for 3-quote baseline match-rate >= 90%.
-- [ ] 4.3 Add fallback-rate guard (<= 10%) to CI test.
-- [ ] 4.4 Verify v1 cached objects render through legacy matrix path.
+- [x] 4.1 Update `extractionQualityEval.ts` to use variable row counts, label-based matching, and regenerate baseline.
+- [x] 4.2 Create Vitest harness for 3-quote baseline match-rate >= 90%.
+- [x] 4.3 Add fallback-rate guard (<= 10%) to CI test.
+- [x] 4.4 Verify v1 cached objects render through legacy matrix path.
