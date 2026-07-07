@@ -11,10 +11,12 @@ import { unifiedComparisonEngine, UnifiedComparisonError } from './unifiedCompar
 import { unifiedComparisonFlag } from './featureFlagService';
 import { processQuotesBatch } from '../quoteProcessingService';
 import { flatResultToMatrixRows, quotesToMatrixRows } from './matrixTransformer';
+import { resolveComparisonSchemaVersion } from './comparisonSchema';
 
 export interface ComparisonAdapterResult {
   matrix: MatrixRow[];
   engine: 'unified' | 'fallback';
+  schemaVersion: 1 | 2;
   fallbackReason?: string;
   correlationId: string;
 }
@@ -41,6 +43,7 @@ export class ComparisonEngineAdapter {
       return {
         matrix,
         engine: 'fallback',
+        schemaVersion: 1,
         fallbackReason: 'unified_disabled_by_flag',
         correlationId,
       };
@@ -49,12 +52,19 @@ export class ComparisonEngineAdapter {
     try {
       console.log(`🚀 [Adapter] Using unified comparison engine [${correlationId}]`);
       const result = await unifiedComparisonEngine.compare(pdfPaths);
+      const schemaVersion = resolveComparisonSchemaVersion(
+        result,
+        unifiedComparisonFlag.isGranularComparisonSchemaEnabled()
+      );
       const matrix = flatResultToMatrixRows(result);
 
-      console.log(`✅ [Adapter] Unified engine succeeded [${correlationId}]`);
+      console.log(
+        `✅ [Adapter] Unified engine succeeded [${correlationId}] schemaVersion=${schemaVersion}`
+      );
       return {
         matrix,
         engine: 'unified',
+        schemaVersion,
         correlationId,
       };
     } catch (error) {
@@ -77,6 +87,7 @@ export class ComparisonEngineAdapter {
       return {
         matrix,
         engine: 'fallback',
+        schemaVersion: 1,
         fallbackReason: reason,
         correlationId: fallbackCorrelationId,
       };

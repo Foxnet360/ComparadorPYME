@@ -7,6 +7,14 @@ import { z } from 'zod';
 import { Type } from '@google/genai';
 const SchemaType = Type;
 
+export enum SchemaSection {
+  INFORMACION_GENERAL = 'INFORMACIÓN GENERAL',
+  BIENES_ASEGURADOS = 'BIENES ASEGURADOS',
+  COBERTURAS = 'COBERTURAS',
+  DEDUCIBLES = 'DEDUCIBLES',
+  CONDICIONES = 'CONDICIONES',
+}
+
 // -----------------------------------------------------------------------------
 // Flat comparison schema (direct-LLM table output)
 // -----------------------------------------------------------------------------
@@ -21,24 +29,40 @@ export const FlatComparisonMetadataSchema = z.object({
   fromCache: z.boolean().optional(),
 });
 
-export const FlatComparisonCellSchema = z.object({
+export const FlatComparisonCellSchemaV1 = z.object({
   insurer: z.string().min(1),
   value: z.string().nullable(),
   rawText: z.string().optional(),
   notFound: z.boolean().optional(),
 });
 
-export const FlatComparisonRowSchema = z.object({
-  label: z.string().min(1),
-  cells: z.array(FlatComparisonCellSchema),
+export const FlatComparisonCellSchemaV2 = z.object({
+  insurer: z.string().min(1),
+  value: z.string().nullable(),
+  rawText: z.string().optional(),
+  notFound: z.boolean().optional(),
+  confidence: z.number().min(0).max(1).optional(),
+  isAmbiguous: z.boolean().optional(),
 });
 
-export const FlatComparisonSchema = z
+export const FlatComparisonRowSchemaV1 = z.object({
+  label: z.string().min(1),
+  cells: z.array(FlatComparisonCellSchemaV1),
+});
+
+export const FlatComparisonRowSchemaV2 = z.object({
+  label: z.string().min(1),
+  section: z.string().optional(),
+  cells: z.array(FlatComparisonCellSchemaV2),
+});
+
+export const FlatComparisonSchemaV1 = z
   .object({
     metadata: FlatComparisonMetadataSchema,
     insurers: z.array(z.string().min(1)).min(1),
-    rows: z.array(FlatComparisonRowSchema).length(4),
-    extraRows: z.array(FlatComparisonRowSchema).default([]),
+    schemaVersion: z.number().default(1).optional(),
+    rows: z.array(FlatComparisonRowSchemaV1).length(4),
+    extraRows: z.array(FlatComparisonRowSchemaV1).default([]),
     warnings: z.array(z.string()).default([]),
   })
   .refine(
@@ -51,9 +75,47 @@ export const FlatComparisonSchema = z
     { message: 'Each row must contain one cell per insurer' }
   );
 
+export const FlatComparisonSchemaV2 = z
+  .object({
+    metadata: FlatComparisonMetadataSchema,
+    insurers: z.array(z.string().min(1)).min(1),
+    schemaVersion: z.number().default(2),
+    rows: z.array(FlatComparisonRowSchemaV2),
+    extraRows: z.array(FlatComparisonRowSchemaV2).default([]),
+    warnings: z.array(z.string()).default([]),
+  })
+  .refine(
+    (data) =>
+      data.rows.every(
+        (row) =>
+          row.cells.length === data.insurers.length &&
+          row.cells.every((cell) => data.insurers.includes(cell.insurer))
+      ),
+    { message: 'Each row must contain one cell per insurer' }
+  );
+
+export const FlatComparisonSchema = FlatComparisonSchemaV2;
+export const FlatComparisonCellSchema = FlatComparisonCellSchemaV2;
+export const FlatComparisonRowSchema = FlatComparisonRowSchemaV2;
+
+export type FlatComparisonResultV1 = z.infer<typeof FlatComparisonSchemaV1>;
+export type FlatComparisonRowV1 = z.infer<typeof FlatComparisonRowSchemaV1>;
+export type FlatComparisonCellV1 = z.infer<typeof FlatComparisonCellSchemaV1>;
+export type FlatComparisonResultV2 = z.infer<typeof FlatComparisonSchemaV2>;
+export type FlatComparisonRowV2 = z.infer<typeof FlatComparisonRowSchemaV2>;
+export type FlatComparisonCellV2 = z.infer<typeof FlatComparisonCellSchemaV2>;
 export type FlatComparisonResult = z.infer<typeof FlatComparisonSchema>;
 export type FlatComparisonRow = z.infer<typeof FlatComparisonRowSchema>;
 export type FlatComparisonCell = z.infer<typeof FlatComparisonCellSchema>;
+
+export function resolveComparisonSchemaVersion(result: unknown, flagEnabled: boolean): 1 | 2 {
+  if (!flagEnabled) return 1;
+  const resultVersion =
+    typeof result === 'object' && result !== null && 'schemaVersion' in result
+      ? (result as { schemaVersion: unknown }).schemaVersion
+      : undefined;
+  return resultVersion === 2 ? 2 : 1;
+}
 
 // -----------------------------------------------------------------------------
 // Legacy Gemini structured-output schema (kept for rollback)

@@ -270,6 +270,7 @@ export function matrixRowsToFlatResult(matrix: MatrixRow[]): FlatComparisonResul
       needsHumanReview: false,
     },
     insurers,
+    schemaVersion: 1,
     rows,
     extraRows,
     warnings: [],

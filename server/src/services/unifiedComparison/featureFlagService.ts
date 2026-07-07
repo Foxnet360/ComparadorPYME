@@ -23,6 +23,13 @@ class UnifiedComparisonFeatureFlag {
   }
 
   /**
+   * Check if the granular comparison schema v2 is enabled
+   */
+  isGranularComparisonSchemaEnabled(): boolean {
+    return featureFlags.isEnabled('granularComparisonSchema');
+  }
+
+  /**
    * Check if unified comparison engine is enabled for this request
    */
   isEnabled(userId?: string): boolean {

@@ -16,7 +16,7 @@ vi.mock('../../quoteProcessingService', () => ({
   processQuotesBatch: vi.fn(),
 }));
 
-function makeFlatResult(): FlatComparisonResult {
+function makeFlatResult(overrides: Partial<FlatComparisonResult> = {}): FlatComparisonResult {
   return {
     metadata: {
       generatedAt: '2026-07-01T00:00:00Z',
@@ -59,6 +59,7 @@ function makeFlatResult(): FlatComparisonResult {
     ],
     extraRows: [],
     warnings: [],
+    ...overrides,
   };
 }
 
@@ -199,5 +200,41 @@ describe('ComparisonEngineAdapter', () => {
     await expect(comparisonEngineAdapter.generateComparison(['a.pdf'])).rejects.toThrow(
       'batch failed'
     );
+  });
+
+  it('tags result as schema v2 when flag is enabled and result has schemaVersion 2', async () => {
+    featureFlags.updateFlag('granularComparisonSchema', true);
+    compareSpy.mockResolvedValue(makeFlatResult({ schemaVersion: 2 }));
+
+    const result = await comparisonEngineAdapter.generateComparison(['a.pdf', 'b.pdf']);
+
+    expect(result.schemaVersion).toBe(2);
+  });
+
+  it('tags result as schema v1 when flag is disabled even if result has schemaVersion 2', async () => {
+    featureFlags.updateFlag('granularComparisonSchema', false);
+    compareSpy.mockResolvedValue(makeFlatResult({ schemaVersion: 2 }));
+
+    const result = await comparisonEngineAdapter.generateComparison(['a.pdf', 'b.pdf']);
+
+    expect(result.schemaVersion).toBe(1);
+  });
+
+  it('tags result as schema v1 when cached result lacks schemaVersion', async () => {
+    featureFlags.updateFlag('granularComparisonSchema', true);
+    compareSpy.mockResolvedValue(makeFlatResult({ schemaVersion: undefined }));
+
+    const result = await comparisonEngineAdapter.generateComparison(['a.pdf', 'b.pdf']);
+
+    expect(result.schemaVersion).toBe(1);
+  });
+
+  it('tags legacy batch results as schema v1', async () => {
+    featureFlags.updateFlag('useUnifiedComparisonEngine', false);
+    featureFlags.updateFlag('granularComparisonSchema', true);
+
+    const result = await comparisonEngineAdapter.generateComparison(['a.pdf']);
+
+    expect(result.schemaVersion).toBe(1);
   });
 });

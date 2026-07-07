@@ -512,6 +512,7 @@ function buildResult(
       needsHumanReview: options.needsHumanReview ?? true,
     },
     insurers,
+    schemaVersion: 1,
     rows,
     extraRows,
     warnings,
