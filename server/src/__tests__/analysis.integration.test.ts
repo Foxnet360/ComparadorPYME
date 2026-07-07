@@ -130,5 +130,18 @@ describe('Complete Analysis Flow Integration', () => {
 
       expect(response.status).toBe(401);
     });
+
+    it('should require authentication for analysis upload', async () => {
+      const appNoAuth = express();
+      appNoAuth.use(express.json());
+      appNoAuth.post('/api/analyze', analysisController.uploadAndAnalyze);
+      appNoAuth.use(errorHandler);
+
+      const response = await request(appNoAuth)
+        .post('/api/analyze')
+        .field('clientName', 'Test Client');
+
+      expect(response.status).toBe(401);
+    });
   });
 });

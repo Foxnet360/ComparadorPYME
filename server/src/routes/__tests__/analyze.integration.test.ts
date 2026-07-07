@@ -2,7 +2,11 @@ import { describe, it, expect, vi } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import multer from 'multer';
+import os from 'os';
+import path from 'path';
+import fs from 'fs';
 import { analysisController } from '../../controllers/analysisController';
+import { AuthenticatedRequest } from '../../middleware/auth';
 
 // Mock all services to avoid env variable requirements
 vi.mock('../../services/gemini', () => ({
@@ -303,7 +307,14 @@ vi.mock('../../config/database', () => {
 const app = express();
 app.use(express.json());
 
-const upload = multer({ storage: multer.memoryStorage() });
+// Mock auth middleware for testing
+app.use((req, res, next) => {
+  (req as AuthenticatedRequest).user = { id: 'test-user-123' };
+  next();
+});
+
+const uploadDir = fs.mkdtempSync(path.join(os.tmpdir(), 'analyze-test-'));
+const upload = multer({ dest: uploadDir });
 app.post(
   '/api/analyze',
   upload.fields([

@@ -289,8 +289,18 @@ export const batchRetrain = async (req: Request, res: Response): Promise<void> =
 // NEW: Export dynamic Excel report unmapped horizontally
 import { getAnalysisById } from '../repositories/analysisRepository';
 import { generateExcelBuffer } from '../services/excelGenerator';
+import { AuthenticatedRequest } from '../middleware/auth';
 
-export const exportAnalysisExcel = async (req: Request, res: Response): Promise<void> => {
+export const exportAnalysisExcel = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+
   const id = req.params.id as string;
 
   if (!id) {
@@ -302,6 +312,11 @@ export const exportAnalysisExcel = async (req: Request, res: Response): Promise<
     const analysis = await getAnalysisById(id);
     if (!analysis) {
       res.status(404).json({ error: `Analysis with id ${id} not found` });
+      return;
+    }
+
+    if (analysis.user_id && analysis.user_id !== userId) {
+      res.status(403).json({ error: 'Forbidden: analysis does not belong to current user' });
       return;
     }
 

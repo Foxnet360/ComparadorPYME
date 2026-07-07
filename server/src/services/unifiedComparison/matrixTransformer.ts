@@ -218,7 +218,7 @@ function cellFromFlatValueV2(
     value: isMissing ? 'No informado' : value,
     isExcluded: isMissing,
     isWinner: false,
-    confidence: isMissing ? 0 : confidence,
+    confidence: isMissing ? 0 : (confidence ?? 0),
     notes,
   };
 }
@@ -271,7 +271,7 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
         value: cell.value,
         notFound: cell.notFound,
         confidence: cell.confidence,
-        notes: cell.rawText || formatDeductible(cell.deductible),
+        notes: cell.rawText ?? formatDeductible(cell.deductible),
       })),
     });
   }
@@ -284,7 +284,7 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
         notFound: cell.notFound,
         confidence: cell.confidence,
         isAmbiguous: cell.isAmbiguous,
-        notes: cell.rawText || formatDeductible(cell.deductible),
+        notes: cell.rawText ?? formatDeductible(cell.deductible),
       })),
     });
   }

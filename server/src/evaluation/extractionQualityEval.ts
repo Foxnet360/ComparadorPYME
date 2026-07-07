@@ -13,6 +13,7 @@ import { comparisonPromptBuilder } from '../services/unifiedComparison/compariso
 import { flatTableParser } from '../services/unifiedComparison/flatTableParser';
 import { comparisonEngineAdapter } from '../services/unifiedComparison/comparisonEngineAdapter';
 import type { FlatComparisonResult } from '../services/unifiedComparison/comparisonSchema';
+import { SchemaSection } from '../services/unifiedComparison/comparisonSchema';
 import type { MatrixRow } from '../types';
 
 export interface ExtractionQualityFixture {
@@ -321,13 +322,13 @@ function matrixRowsToFlatResultV2(matrix: MatrixRow[]): FlatComparisonResult {
   const now = new Date().toISOString();
 
   const rows: FlatComparisonResult['rows'] = [];
-  let currentSection: string | undefined;
+  let currentSection: SchemaSection | undefined;
 
   for (const row of matrix) {
     if (row.type === 'header') {
       // The top-level header carries insurer names, not a data section.
       if (row.id !== 'client_info') {
-        currentSection = row.label;
+        currentSection = row.label as SchemaSection;
       }
       continue;
     }

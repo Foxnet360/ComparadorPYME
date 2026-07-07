@@ -358,6 +358,46 @@ describe('flatResultToMatrixRowsV2', () => {
     expect(row.cells[0].notes).toBe('10% PERD - Min 1 SMMLV');
     expect(row.cells[1].notes).toBe('5% siniestro');
   });
+
+  it('defaults v2 cell confidence to 0 when missing', () => {
+    const result = makeFlatResultV2({
+      rows: [
+        {
+          label: 'Edificio',
+          section: SchemaSection.BIENES_ASEGURADOS,
+          cells: [
+            { insurer: 'MAPFRE', value: '$500M', rawText: '$500M' },
+            { insurer: 'CHUBB', value: '$600M', rawText: '$600M', confidence: 0.9 },
+          ],
+        },
+      ],
+    });
+    const matrix = flatResultToMatrixRowsV2(result);
+
+    const row = matrix.find((r) => r.label === 'Edificio')!;
+    expect(row.cells[0].confidence).toBe(0);
+    expect(row.cells[1].confidence).toBe(0.9);
+  });
+
+  it('preserves empty rawText as notes on v2 matrix cells', () => {
+    const result = makeFlatResultV2({
+      rows: [
+        {
+          label: 'Edificio',
+          section: SchemaSection.DEDUCIBLES,
+          cells: [
+            { insurer: 'MAPFRE', value: '10%', rawText: '', confidence: 0.92 },
+            { insurer: 'CHUBB', value: '5%', confidence: 0.9 },
+          ],
+        },
+      ],
+    });
+    const matrix = flatResultToMatrixRowsV2(result);
+
+    const row = matrix.find((r) => r.label === 'Edificio')!;
+    expect(row.cells[0].notes).toBe('');
+    expect(row.cells[1].notes).toBeUndefined();
+  });
 });
 
 describe('quotesToMatrixRows', () => {

@@ -72,64 +72,88 @@ const ROW_LABEL_ALIASES = new Map<string, string>([
 interface AliasEntry {
   aliases: string[];
   canonical: string;
-  section: string;
+  section: SchemaSection;
 }
 
 const ALIAS_MAP: AliasEntry[] = [
   {
     aliases: ['bienes asegurados'],
     canonical: 'Bienes Asegurados',
-    section: 'INFORMACIÓN GENERAL',
+    section: SchemaSection.INFORMACION_GENERAL,
   },
-  { aliases: ['edificio', 'valor edificio'], canonical: 'Edificio', section: 'BIENES ASEGURADOS' },
-  { aliases: ['contenidos', 'contenido'], canonical: 'Contenidos', section: 'BIENES ASEGURADOS' },
-  { aliases: ['mercancias', 'mercaderias'], canonical: 'Mercancías', section: 'BIENES ASEGURADOS' },
+  {
+    aliases: ['edificio', 'valor edificio'],
+    canonical: 'Edificio',
+    section: SchemaSection.BIENES_ASEGURADOS,
+  },
+  {
+    aliases: ['contenidos', 'contenido'],
+    canonical: 'Contenidos',
+    section: SchemaSection.BIENES_ASEGURADOS,
+  },
+  {
+    aliases: ['mercancias', 'mercaderias'],
+    canonical: 'Mercancías',
+    section: SchemaSection.BIENES_ASEGURADOS,
+  },
   {
     aliases: ['equipo electrico', 'eq. electrico', 'eee'],
     canonical: 'Equipo Eléctrico',
-    section: 'COBERTURAS',
+    section: SchemaSection.COBERTURAS,
   },
   {
     aliases: ['maquinaria', 'equipo maquinaria', 'equipo de maquinaria'],
     canonical: 'Maquinaria',
-    section: 'COBERTURAS',
+    section: SchemaSection.COBERTURAS,
   },
-  { aliases: ['responsabilidad civil'], canonical: 'Responsabilidad Civil', section: 'COBERTURAS' },
-  { aliases: ['terremoto'], canonical: 'Terremoto', section: 'COBERTURAS' },
-  { aliases: ['deducible', 'deducibles'], canonical: 'Deducibles', section: 'DEDUCIBLES' },
+  {
+    aliases: ['responsabilidad civil'],
+    canonical: 'Responsabilidad Civil',
+    section: SchemaSection.COBERTURAS,
+  },
+  { aliases: ['terremoto'], canonical: 'Terremoto', section: SchemaSection.COBERTURAS },
+  {
+    aliases: ['deducible', 'deducibles'],
+    canonical: 'Deducibles',
+    section: SchemaSection.DEDUCIBLES,
+  },
   {
     aliases: ['deducible edificio', 'ded. edificio'],
     canonical: 'Deducible Edificio',
-    section: 'DEDUCIBLES',
+    section: SchemaSection.DEDUCIBLES,
   },
   {
     aliases: ['deducible contenidos', 'ded. contenidos'],
     canonical: 'Deducible Contenidos',
-    section: 'DEDUCIBLES',
+    section: SchemaSection.DEDUCIBLES,
   },
   {
     aliases: ['deducible mercancias', 'ded. mercancias', 'deducible mercaderias'],
     canonical: 'Deducible Mercancías',
-    section: 'DEDUCIBLES',
+    section: SchemaSection.DEDUCIBLES,
   },
   {
     aliases: ['deducible equipo electrico', 'ded. equipo electrico', 'deducible eee'],
     canonical: 'Deducible Equipo Eléctrico',
-    section: 'DEDUCIBLES',
+    section: SchemaSection.DEDUCIBLES,
   },
   {
     aliases: ['prima con iva', 'prima total con iva'],
     canonical: 'Prima con IVA',
-    section: 'INFORMACIÓN GENERAL',
+    section: SchemaSection.INFORMACION_GENERAL,
   },
-  { aliases: ['forma de pago'], canonical: 'Forma de Pago', section: 'INFORMACIÓN GENERAL' },
-  { aliases: ['observaciones'], canonical: 'Observaciones', section: 'CONDICIONES' },
-  { aliases: ['exclusiones'], canonical: 'Exclusiones', section: 'CONDICIONES' },
+  {
+    aliases: ['forma de pago'],
+    canonical: 'Forma de Pago',
+    section: SchemaSection.INFORMACION_GENERAL,
+  },
+  { aliases: ['observaciones'], canonical: 'Observaciones', section: SchemaSection.CONDICIONES },
+  { aliases: ['exclusiones'], canonical: 'Exclusiones', section: SchemaSection.CONDICIONES },
 ];
 
 export interface NormalizedAlias {
   canonical: string;
-  section: string;
+  section: SchemaSection;
   quality: number;
 }
 

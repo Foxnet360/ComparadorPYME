@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import fs from 'fs';
 
 import { ParsedQuote } from '../services/quoteParser';
@@ -114,10 +114,16 @@ interface UnifiedComparisonReport {
 }
 
 export const analysisController = {
-  uploadAndAnalyze: async (req: Request, res: Response): Promise<void> => {
+  uploadAndAnalyze: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     const startTime = Date.now();
 
     try {
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+
       const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
       const quoteFiles = files?.['quotes'] || [];
 
@@ -130,10 +136,7 @@ export const analysisController = {
       console.log(`🔧 Pipeline: ${isMultimodalEnabled() ? 'Multimodal (V2)' : 'Legacy (V1)'}`);
 
       const pdfPaths = quoteFiles.map((f) => f.path);
-      const adapterResult = await comparisonEngineAdapter.generateComparison(
-        pdfPaths,
-        req.body.userId
-      );
+      const adapterResult = await comparisonEngineAdapter.generateComparison(pdfPaths, userId);
       const matrixRows = adapterResult.matrix;
 
       // Debug: Log matrix structure
@@ -161,7 +164,6 @@ export const analysisController = {
       });
 
       // Save to Supabase
-      const userId = req.body.userId || 'anonymous';
       const clientName = req.body.clientName || 'Cliente';
 
       try {
@@ -238,7 +240,7 @@ export const analysisController = {
 
   getHistory: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      const userId = (req.query.userId as string) || req.user?.id;
+      const userId = req.user?.id;
       if (!userId) {
         res.status(401).json({ success: false, error: 'Authentication required' });
         return;

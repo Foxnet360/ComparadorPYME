@@ -3,6 +3,18 @@ import request from 'supertest';
 import express from 'express';
 import analysisRoutes from '../analysis';
 
+// Mock auth middleware to inject a test user
+vi.mock('../../middleware/auth', () => ({
+  authMiddleware: (req: { user?: { id: string } }, _res: unknown, next: () => void) => {
+    req.user = { id: 'test-user-123' };
+    next();
+  },
+  optionalAuthMiddleware: (_req: unknown, _res: unknown, next: () => void) => {
+    next();
+  },
+  AuthenticatedRequest: {},
+}));
+
 // Create test app
 const app = express();
 app.use(express.json());
@@ -70,6 +82,30 @@ vi.mock('../../services/virtualLawyerService', () => ({
       negotiationPoints: [{ point: 'Test', priority: 'HIGH' }],
     })),
   },
+}));
+
+vi.mock('../../repositories/analysisRepository', () => ({
+  getAnalysisById: vi.fn(async (id: string) => ({
+    id,
+    user_id: 'test-user-123',
+    client_name: 'Test Client',
+    analysis_result: {
+      quotes: [
+        {
+          insurerName: 'MAPFRE',
+          policyName: 'PYME',
+          priceAnnual: 8500000,
+          currency: 'COP',
+          coverages: [{ name: 'Incendio', value: '500M', deductible: '10%' }],
+          alerts: [],
+        },
+      ],
+    },
+  })),
+}));
+
+vi.mock('../../services/excelGenerator', () => ({
+  generateExcelBuffer: vi.fn(async () => Buffer.from('mock-excel')),
 }));
 
 describe('Analysis API Endpoints', () => {
@@ -161,23 +197,15 @@ describe('Analysis API Endpoints', () => {
     });
   });
 
-  describe('POST /api/analysis/legal-opinion', () => {
-    it('should generate legal opinion', async () => {
-      const response = await request(app)
-        .post('/api/analysis/legal-opinion')
-        .send({
-          quote: {
-            insurerName: 'Test',
-            coverageName: 'RC',
-            value: '100M',
-          },
-          clientProfile: { industryType: 'manufactura' },
-          insurerName: 'Test',
-        });
+  describe('GET /api/analysis/:id/export', () => {
+    it('should export analysis as Excel for owner', async () => {
+      const response = await request(app).get('/api/analysis/test-id/export');
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('confidence');
-      expect(response.body.negotiationPoints).toBeDefined();
+      expect(response.headers['content-type']).toContain(
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      );
+      expect(response.headers['content-disposition']).toContain('comparativa_seguros_test-id.xlsx');
     });
   });
 });

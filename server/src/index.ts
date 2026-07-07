@@ -47,6 +47,7 @@ if (activeKey && viteKey && activeKey !== viteKey) {
 // Import controllers after dotenv is loaded (they depend on env vars)
 import { analysisController } from './controllers/analysisController';
 import { compareExtraction } from './controllers/compareController';
+import { authMiddleware } from './middleware/auth';
 
 // Import routes
 import auditRoutes from './routes/audit';
@@ -166,6 +167,7 @@ app.post('/api/compare-extraction', upload.array('quotes', 10), compareExtractio
 // Analysis routes
 app.post(
   '/api/analyze',
+  authMiddleware,
   upload.fields([
     { name: 'quotes', maxCount: 10 },
     { name: 'clauses', maxCount: 10 },
@@ -173,7 +175,7 @@ app.post(
   analysisController.uploadAndAnalyze
 );
 
-app.get('/api/history', analysisController.getHistory);
+app.get('/api/history', authMiddleware, analysisController.getHistory);
 
 // Document Indexing routes
 import { documentController } from './controllers/documentController';

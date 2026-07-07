@@ -69,7 +69,7 @@ export const FlatComparisonRowSchemaV1 = z.object({
 
 export const FlatComparisonRowSchemaV2 = z.object({
   label: z.string().min(1),
-  section: z.string().optional(),
+  section: z.nativeEnum(SchemaSection).optional(),
   cells: z.array(FlatComparisonCellSchemaV2),
 });
 
