@@ -44,11 +44,11 @@ Chain strategy: stacked-to-main
 
 ## Phase 3: Frontend & Integration
 
-- [ ] 3.1 Update `UnifiedCoverageMatrix.tsx` to render section headers and confidence badges (green/yellow/red).
-- [ ] 3.2 Update `VirtualizedCoverageMatrix.tsx` to render section headers spanning all columns.
-- [ ] 3.3 Preserve section grouping and confidence in matrix export logic.
-- [ ] 3.4 Update `analysisController.ts` to preserve `section` and `confidence` in report conversion.
-- [ ] 3.5 Add smoke tests for header rows and badge rendering.
+- [x] 3.1 Update `UnifiedCoverageMatrix.tsx` to render section headers and confidence badges (green/yellow/red).
+- [x] 3.2 Update `VirtualizedCoverageMatrix.tsx` to render section headers spanning all columns.
+- [x] 3.3 Preserve section grouping and confidence in matrix export logic.
+- [x] 3.4 Update `analysisController.ts` to preserve `section` and `confidence` in report conversion.
+- [x] 3.5 Add smoke tests for header rows and badge rendering.
 
 ## Phase 4: Evaluation & Tests
 

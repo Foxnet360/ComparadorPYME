@@ -127,7 +127,7 @@ export const VirtualizedCoverageMatrix: React.FC<VirtualizedMatrixProps> = ({
               >
                 <div
                   role="gridcell"
-                  className="px-6 py-3 text-xs md:text-sm text-blue-800 uppercase tracking-wide"
+                  className="px-6 py-3 text-xs md:text-sm text-blue-800 uppercase tracking-wide w-full"
                 >
                   {row.label}
                 </div>

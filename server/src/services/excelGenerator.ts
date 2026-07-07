@@ -302,9 +302,13 @@ export async function generateExcelBuffer(
           right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
         };
 
-        // Inject page tracking as Cell comments
+        // Inject provenance as Cell comments
         if (cell.pageNumber !== undefined && cell.pageNumber !== null) {
           xlCell.note = `Fuente original: PDF cotización, Página ${cell.pageNumber}`;
+        }
+        if (cell.confidence !== undefined && cell.confidence !== null) {
+          const confidenceText = `Confianza: ${(cell.confidence * 100).toFixed(0)}%`;
+          xlCell.note = xlCell.note ? `${xlCell.note}\n${confidenceText}` : confidenceText;
         }
       });
 

@@ -271,4 +271,80 @@ describe('excelGenerator', () => {
       expect(exclusiveCell!.value).toBe('Incluido');
     });
   });
+
+  describe('section grouping and confidence export', () => {
+    const mockQuotesWithConfidence: QuoteAnalysis[] = [
+      {
+        insurerName: 'MAPFRE',
+        policyName: 'TODO RIESGO PYME',
+        priceMonthly: 0,
+        priceAnnual: 677801,
+        currency: 'COP',
+        deductibles: '',
+        scoringBreakdown: {
+          coverage: 8,
+          deductibles: 7,
+          exclusions: 8,
+          priceRatio: 9,
+          sublimits: 8,
+          warranties: 8,
+        },
+        clientAnalysis: '',
+        technicalAnalysis: '',
+        score: 82,
+        alerts: [],
+        coverages: [
+          {
+            name: 'Incendio (Edificio y Contenidos)',
+            value: '$119.600.000',
+            deductible: '10% PERD - Min 1 SMMLV',
+            categoryId: 1,
+            matchConfidence: 0.95,
+          },
+        ],
+      },
+    ];
+
+    it('should preserve section headers in the coverages sheet', async () => {
+      const buffer = await generateExcelBuffer(mockQuotesWithConfidence);
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+
+      const coveragesSheet = workbook.getWorksheet('Coberturas y Deducibles');
+      expect(coveragesSheet).toBeDefined();
+
+      let foundHeader = false;
+      coveragesSheet!.eachRow((row) => {
+        const cellA = row.getCell(1);
+        if (cellA.value === 'AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL') {
+          foundHeader = true;
+        }
+      });
+
+      expect(foundHeader).toBe(true);
+    });
+
+    it('should include cell confidence as a cell note when available', async () => {
+      const buffer = await generateExcelBuffer(mockQuotesWithConfidence);
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+
+      const coveragesSheet = workbook.getWorksheet('Coberturas y Deducibles');
+      expect(coveragesSheet).toBeDefined();
+
+      let confidenceCell: ExcelJS.Cell | undefined;
+      coveragesSheet!.eachRow((row) => {
+        const cellA = row.getCell(1);
+        if (cellA.value === 'Valor Asegurado' && !confidenceCell) {
+          confidenceCell = row.getCell(2); // First insurer column
+        }
+      });
+
+      expect(confidenceCell).toBeDefined();
+      expect(confidenceCell!.note).toBeDefined();
+      expect(typeof confidenceCell!.note).toBe('string');
+      expect(confidenceCell!.note).toContain('Confianza');
+      expect(confidenceCell!.note).toContain('95');
+    });
+  });
 });
