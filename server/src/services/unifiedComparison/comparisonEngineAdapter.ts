@@ -10,11 +10,7 @@ import { MatrixRow } from '../../types';
 import { unifiedComparisonEngine, UnifiedComparisonError } from './unifiedComparisonEngine';
 import { unifiedComparisonFlag } from './featureFlagService';
 import { processQuotesBatch } from '../quoteProcessingService';
-import {
-  flatResultToMatrixRows,
-  flatResultToMatrixRowsV2,
-  quotesToMatrixRows,
-} from './matrixTransformer';
+import { flatResultToMatrixRows, flatResultToMatrixRowsV2, quotesToMatrixRows } from './matrixTransformer';
 import { resolveComparisonSchemaVersion } from './comparisonSchema';
 
 export interface ComparisonAdapterResult {
@@ -31,7 +27,13 @@ export class ComparisonEngineAdapter {
    * per-quote batch service on failure. Returns a typed envelope with routing
    * metadata so callers can log engine type and fallback reasons consistently.
    */
-  async generateComparison(pdfPaths: string[], userId?: string): Promise<ComparisonAdapterResult> {
+  async generateComparison(
+    pdfPaths: string[],
+    options?: string | { userId?: string; granularComparisonSchema?: boolean }
+  ): Promise<ComparisonAdapterResult> {
+    const opts = typeof options === 'string' ? { userId: options } : options || {};
+    const userId = opts.userId;
+    const granularOverride = opts.granularComparisonSchema;
     const correlationId = `adapter-${Date.now()}-${randomUUID().slice(0, 8)}`;
     const flagEnabled = unifiedComparisonFlag.isEnabled(userId);
 
@@ -40,9 +42,7 @@ export class ComparisonEngineAdapter {
     );
 
     if (!flagEnabled) {
-      console.log(
-        `📦 [Adapter] Routing to legacy batch service (flag disabled) [${correlationId}]`
-      );
+      console.log(`📦 [Adapter] Routing to legacy batch service (flag disabled) [${correlationId}]`);
       const matrix = await this.runLegacyBatch(pdfPaths, 'unified_disabled_by_flag', correlationId);
       return {
         matrix,
@@ -55,17 +55,20 @@ export class ComparisonEngineAdapter {
 
     try {
       console.log(`🚀 [Adapter] Using unified comparison engine [${correlationId}]`);
-      const result = await unifiedComparisonEngine.compare(pdfPaths);
+      const result =
+        granularOverride !== undefined
+          ? await unifiedComparisonEngine.compare(pdfPaths, { granularComparisonSchema: granularOverride })
+          : await unifiedComparisonEngine.compare(pdfPaths);
       const schemaVersion = resolveComparisonSchemaVersion(
         result,
-        unifiedComparisonFlag.isGranularComparisonSchemaEnabled()
+        granularOverride ?? unifiedComparisonFlag.isGranularComparisonSchemaEnabled()
       );
       const matrix =
-        schemaVersion === 2 ? flatResultToMatrixRowsV2(result) : flatResultToMatrixRows(result);
+        schemaVersion === 2
+          ? flatResultToMatrixRowsV2(result)
+          : flatResultToMatrixRows(result);
 
-      console.log(
-        `✅ [Adapter] Unified engine succeeded [${correlationId}] schemaVersion=${schemaVersion}`
-      );
+      console.log(`✅ [Adapter] Unified engine succeeded [${correlationId}] schemaVersion=${schemaVersion}`);
       return {
         matrix,
         engine: 'unified',
@@ -77,12 +80,14 @@ export class ComparisonEngineAdapter {
         error instanceof UnifiedComparisonError
           ? error.reason
           : error instanceof Error
-            ? error.message
-            : String(error);
+          ? error.message
+          : String(error);
       const fallbackCorrelationId =
         error instanceof UnifiedComparisonError ? error.correlationId : correlationId;
 
-      console.error(`❌ [Adapter] Unified engine failed [${fallbackCorrelationId}]: ${reason}`);
+      console.error(
+        `❌ [Adapter] Unified engine failed [${fallbackCorrelationId}]: ${reason}`
+      );
       console.error(
         `🔄 [Adapter] routing=fallback, reason=${reason}, correlationId=${fallbackCorrelationId}`
       );
@@ -102,7 +107,10 @@ export class ComparisonEngineAdapter {
   /**
    * Validate comparison with clauses (deep mode)
    */
-  async validateWithClauses(comparisonId: string, clausePaths: string[]): Promise<MatrixRow[]> {
+  async validateWithClauses(
+    comparisonId: string,
+    clausePaths: string[]
+  ): Promise<MatrixRow[]> {
     console.log(`🔍 [Adapter] Deep mode validation for comparison ${comparisonId}`);
 
     if (!clausePaths || clausePaths.length === 0) {
@@ -123,10 +131,7 @@ export class ComparisonEngineAdapter {
 
       throw new Error('Deep mode not yet fully implemented');
     } catch (error) {
-      console.error(
-        `❌ [Adapter] Deep mode failed:`,
-        error instanceof Error ? error.message : String(error)
-      );
+      console.error(`❌ [Adapter] Deep mode failed:`, error instanceof Error ? error.message : String(error));
       throw error;
     }
   }

@@ -59,4 +59,48 @@ describe('analysisController - matrixRowsToComparisonReport', () => {
     expect(coverage).toBeDefined();
     expect(coverage!.section).toBeUndefined();
   });
+
+  it('aligns matrix cells to quote files by insurer name when column order differs', () => {
+    const matrixRows: MatrixRow[] = [
+      {
+        type: 'header',
+        id: 'client_info',
+        label: 'Cotizaciones PYME - CHUBB, MAPFRE',
+        sectionId: 0,
+        cells: [],
+      },
+      {
+        type: 'header',
+        id: 'section_0',
+        label: 'INFORMACIÓN GENERAL',
+        sectionId: 1,
+        cells: [],
+      },
+      {
+        type: 'data',
+        id: 'premium_total',
+        label: 'TOTAL A PAGAR',
+        sectionId: 1,
+        cells: [
+          { value: '$ 6.000.000', isExcluded: false, isWinner: false, confidence: 0.75 },
+          { value: '$ 5.000.000', isExcluded: false, isWinner: false, confidence: 0.95 },
+        ],
+      },
+    ];
+
+    const quoteFiles = [
+      { originalname: 'COTIZACION-MAPFRE.pdf' },
+      { originalname: 'COTIZACION-CHUBB.pdf' },
+    ] as Express.Multer.File[];
+
+    const report = matrixRowsToComparisonReport(matrixRows, quoteFiles);
+
+    const mapfre = report.quotes.find(q => q.insurerName === 'MAPFRE');
+    const chubb = report.quotes.find(q => q.insurerName === 'CHUBB');
+
+    expect(mapfre).toBeDefined();
+    expect(chubb).toBeDefined();
+    expect(mapfre!.priceAnnual).toBe(5_000_000);
+    expect(chubb!.priceAnnual).toBe(6_000_000);
+  });
 });

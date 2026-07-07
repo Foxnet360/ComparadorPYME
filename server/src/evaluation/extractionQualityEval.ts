@@ -12,7 +12,6 @@ import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { comparisonPromptBuilder } from '../services/unifiedComparison/comparisonPromptBuilder';
 import { flatTableParser } from '../services/unifiedComparison/flatTableParser';
 import { comparisonEngineAdapter } from '../services/unifiedComparison/comparisonEngineAdapter';
-import { featureFlags } from '../config/featureFlags';
 import type { FlatComparisonResult } from '../services/unifiedComparison/comparisonSchema';
 import type { MatrixRow } from '../types';
 
@@ -506,9 +505,13 @@ async function runBaselineComparison(
 
 async function runToolComparison(
   pdfPaths: string[],
-  userId?: string
+  userId?: string,
+  granularComparisonSchema?: boolean
 ): Promise<ToolComparisonResult> {
-  const adapterResult = await comparisonEngineAdapter.generateComparison(pdfPaths, userId);
+  const adapterResult = await comparisonEngineAdapter.generateComparison(pdfPaths, {
+    userId,
+    granularComparisonSchema,
+  });
   const result = matrixRowsToFlatResult(adapterResult.matrix, adapterResult.schemaVersion);
 
   return {
@@ -573,18 +576,12 @@ export async function runExtractionQualityEval(
 ): Promise<ExtractionQualityReport> {
   const snapshotPath = resolveProjectPath(fixture.baselineSnapshotPath);
   const pdfPaths = fixture.pdfPaths.map(resolveProjectPath);
-  const granularEnabled = options.granularComparisonSchema ?? true;
+  const granularEnabled = options.granularComparisonSchema ?? false;
 
   for (const pdfPath of pdfPaths) {
     if (!(await pathExists(pdfPath))) {
       throw new Error(`Fixture PDF not found: ${pdfPath}`);
     }
-  }
-
-  // Ensure the production adapter uses the same schema version as the baseline.
-  const originalGranularFlag = featureFlags.isEnabled('granularComparisonSchema');
-  if (granularEnabled !== originalGranularFlag) {
-    featureFlags.updateFlag('granularComparisonSchema', granularEnabled);
   }
 
   let baseline = options.updateBaseline
@@ -597,7 +594,7 @@ export async function runExtractionQualityEval(
       await saveJson(snapshotPath, baseline);
     }
 
-    const tool = await runToolComparison(pdfPaths, options.userId);
+    const tool = await runToolComparison(pdfPaths, options.userId, granularEnabled);
     const { matchRate, mismatches } = calculateMatchRate(baseline, tool.result);
     const fallbackRate = tool.engine === 'fallback' ? 1 : 0;
     const passed = matchRate >= MATCH_RATE_THRESHOLD && fallbackRate <= FALLBACK_RATE_THRESHOLD;
@@ -611,9 +608,9 @@ export async function runExtractionQualityEval(
       passed,
     };
   } finally {
-    if (featureFlags.isEnabled('granularComparisonSchema') !== originalGranularFlag) {
-      featureFlags.updateFlag('granularComparisonSchema', originalGranularFlag);
-    }
+    // No global state is mutated by this harness; the finally block is kept for
+    // future cleanup, but feature-flag overrides are now passed locally to the
+    // adapter instead of being written to the shared singleton.
   }
 }
 

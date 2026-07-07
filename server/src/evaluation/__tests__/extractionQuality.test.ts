@@ -187,6 +187,69 @@ afterEach(() => {
   featureFlags.updateFlag('granularComparisonSchema', false);
 });
 
+function makeV1Matrix(): MatrixRow[] {
+  return [
+    {
+      type: 'header',
+      id: 'client_info',
+      label: 'Cotizaciones PYME - Aseguradora Demo A, Aseguradora Demo B, Aseguradora Demo C',
+      sectionId: 0,
+      cells: [],
+    },
+    {
+      type: 'header',
+      id: 'section_0',
+      label: 'INFORMACIÓN GENERAL',
+      sectionId: 1,
+      cells: [],
+    },
+    {
+      type: 'data',
+      id: 'section_0_row_0',
+      label: 'Bienes Asegurados',
+      sectionId: 1,
+      cells: [
+        { value: 'Edificio y contenidos', isExcluded: false, isWinner: false },
+        { value: 'Edificio y contenidos', isExcluded: false, isWinner: false },
+        { value: 'Edificio, contenidos y equipos', isExcluded: false, isWinner: false },
+      ],
+    },
+    {
+      type: 'data',
+      id: 'section_0_row_1',
+      label: 'Deducibles',
+      sectionId: 1,
+      cells: [
+        { value: '10% sobre el siniestro', isExcluded: false, isWinner: false },
+        { value: '10% sobre el siniestro', isExcluded: false, isWinner: false },
+        { value: '15% sobre el siniestro', isExcluded: false, isWinner: false },
+      ],
+    },
+    {
+      type: 'data',
+      id: 'section_0_row_2',
+      label: 'Prima con IVA',
+      sectionId: 1,
+      cells: [
+        { value: '$ 1.000.000', isExcluded: false, isWinner: false },
+        { value: '$ 1.200.000', isExcluded: false, isWinner: false },
+        { value: '$ 1.150.000', isExcluded: false, isWinner: false },
+      ],
+    },
+    {
+      type: 'data',
+      id: 'section_0_row_3',
+      label: 'Forma de Pago',
+      sectionId: 1,
+      cells: [
+        { value: 'Anual', isExcluded: false, isWinner: false },
+        { value: 'Anual', isExcluded: false, isWinner: false },
+        { value: 'Mensual', isExcluded: false, isWinner: false },
+      ],
+    },
+  ];
+}
+
 describe('normalizeCellValue', () => {
   it('lowercases, removes accents and collapses whitespace', () => {
     expect(normalizeCellValue('  Prima CON IVA: $1.234.567  ')).toBe('prima con iva 1234567');
@@ -470,7 +533,7 @@ describe('extraction quality regression', () => {
       path.resolve(__dirname, '../fixtures/extraction-quality/baseline-snapshot.json')
     );
 
-    const report = await runExtractionQualityEval(fixture);
+    const report = await runExtractionQualityEval(fixture, { granularComparisonSchema: true });
 
     expect(report.matchRate).toBeGreaterThanOrEqual(0.9);
     expect(report.fallbackRate).toBeLessThanOrEqual(0.1);
@@ -500,7 +563,7 @@ describe('extraction quality regression', () => {
       path.resolve(__dirname, '../fixtures/extraction-quality/baseline-snapshot.json')
     );
 
-    const report = await runExtractionQualityEval(fixture);
+    const report = await runExtractionQualityEval(fixture, { granularComparisonSchema: true });
 
     expect(report.matchRate).toBeLessThan(0.9);
     expect(report.passed).toBe(false);
@@ -525,6 +588,47 @@ describe('extraction quality regression', () => {
     expect(report.passed).toBe(false);
   });
 
+  it('defaults to schema v1 when no option is provided', async () => {
+    vi.spyOn(comparisonEngineAdapter, 'generateComparison').mockResolvedValue({
+      matrix: makeV1Matrix(),
+      engine: 'unified',
+      schemaVersion: 1,
+      correlationId: 'test',
+    });
+
+    const fixture = buildFixture(
+      path.resolve(__dirname, '../fixtures/extraction-quality/baseline-snapshot.json')
+    );
+
+    const report = await runExtractionQualityEval(fixture);
+
+    expect(report.tool.schemaVersion).toBe(1);
+    expect(comparisonEngineAdapter.generateComparison).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ granularComparisonSchema: false })
+    );
+  });
+
+  it('does not mutate the global feature flag when overriding schema version', async () => {
+    featureFlags.updateFlag('granularComparisonSchema', false);
+    const before = featureFlags.isEnabled('granularComparisonSchema');
+
+    vi.spyOn(comparisonEngineAdapter, 'generateComparison').mockResolvedValue({
+      matrix: makeMatchingV2Matrix(),
+      engine: 'unified',
+      schemaVersion: 2,
+      correlationId: 'test',
+    });
+
+    const fixture = buildFixture(
+      path.resolve(__dirname, '../fixtures/extraction-quality/baseline-snapshot.json')
+    );
+
+    await runExtractionQualityEval(fixture, { granularComparisonSchema: true });
+
+    expect(featureFlags.isEnabled('granularComparisonSchema')).toBe(before);
+  });
+
   it('runs the evaluation harness against the real API when fixtures and key are available', async () => {
     const fixture = buildFixture(
       path.resolve(__dirname, '../fixtures/extraction-quality/baseline-snapshot.json')
@@ -535,7 +639,7 @@ describe('extraction quality regression', () => {
       return;
     }
 
-    const report = await runExtractionQualityEval(fixture);
+    const report = await runExtractionQualityEval(fixture, { granularComparisonSchema: true });
 
     expect(report.fallbackRate).toBeLessThanOrEqual(0.1);
     expect(report.matchRate).toBeGreaterThanOrEqual(0.9);
