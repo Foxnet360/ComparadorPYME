@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { matrixRowsToComparisonReport } from '../analysisController';
-import { MatrixRow } from '../../../types';
+import { MatrixRow } from '../../types';
 
 describe('analysisController - matrixRowsToComparisonReport', () => {
   it('preserves confidence and section from v2 MatrixRow cells', () => {
@@ -102,5 +102,36 @@ describe('analysisController - matrixRowsToComparisonReport', () => {
     expect(chubb).toBeDefined();
     expect(mapfre!.priceAnnual).toBe(5_000_000);
     expect(chubb!.priceAnnual).toBe(6_000_000);
+  });
+
+  it('maps cell notes to coverage deductible', () => {
+    const matrixRows: MatrixRow[] = [
+      {
+        type: 'header',
+        id: 'section_0',
+        label: 'DEDUCIBLES',
+        sectionId: 1,
+        cells: [
+          { value: '', isExcluded: false, isWinner: false },
+        ],
+      },
+      {
+        type: 'data',
+        id: 'section_0_row_0',
+        label: 'Incendio Edificio',
+        sectionId: 1,
+        cells: [
+          { value: '10%', isExcluded: false, isWinner: false, notes: '10% PERD - Min 1 SMMLV', confidence: 0.92 },
+        ],
+      },
+    ];
+
+    const quoteFiles = [{ originalname: 'COTIZACION-MAPFRE.pdf' }] as Express.Multer.File[];
+
+    const report = matrixRowsToComparisonReport(matrixRows, quoteFiles);
+
+    const coverage = report.quotes[0].coverages.find(c => c.name === 'Incendio Edificio');
+    expect(coverage).toBeDefined();
+    expect(coverage!.deductible).toBe('10% PERD - Min 1 SMMLV');
   });
 });
