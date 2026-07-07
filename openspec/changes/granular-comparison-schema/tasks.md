@@ -35,12 +35,12 @@ Chain strategy: stacked-to-main
 
 ## Phase 2: Core Backend
 
-- [ ] 2.1 Add `buildV2ComparisonPrompt()` in `comparisonPromptBuilder.ts` with granular template; keep `buildV1ComparisonPrompt()`.
-- [ ] 2.2 Implement alias dictionary, `normalizeAlias()`, and section assignment in `flatTableParser.ts`.
-- [ ] 2.3 Implement `computeCellConfidence()` with signal-based scoring in `flatTableParser.ts`.
-- [ ] 2.4 Update `matrixTransformer.ts` to group rows by `section` and emit `type: 'header'` rows.
-- [ ] 2.5 Update `unifiedComparisonEngine.ts` to pass flag context to builder and parser.
-- [ ] 2.6 Write integration tests for parser alias matching, ambiguity, and section grouping.
+- [x] 2.1 Add `buildV2ComparisonPrompt()` in `comparisonPromptBuilder.ts` with granular template; keep `buildV1ComparisonPrompt()`.
+- [x] 2.2 Implement alias dictionary, `normalizeAlias()`, and section assignment in `flatTableParser.ts`.
+- [x] 2.3 Implement `computeCellConfidence()` with signal-based scoring in `flatTableParser.ts`.
+- [x] 2.4 Update `matrixTransformer.ts` to group rows by `section` and emit `type: 'header'` rows.
+- [x] 2.5 Update `unifiedComparisonEngine.ts` to pass flag context to builder and parser.
+- [x] 2.6 Write integration tests for parser alias matching, ambiguity, and section grouping.
 
 ## Phase 3: Frontend & Integration
 

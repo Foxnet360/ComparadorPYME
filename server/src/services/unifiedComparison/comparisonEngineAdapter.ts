@@ -10,7 +10,11 @@ import { MatrixRow } from '../../types';
 import { unifiedComparisonEngine, UnifiedComparisonError } from './unifiedComparisonEngine';
 import { unifiedComparisonFlag } from './featureFlagService';
 import { processQuotesBatch } from '../quoteProcessingService';
-import { flatResultToMatrixRows, quotesToMatrixRows } from './matrixTransformer';
+import {
+  flatResultToMatrixRows,
+  flatResultToMatrixRowsV2,
+  quotesToMatrixRows,
+} from './matrixTransformer';
 import { resolveComparisonSchemaVersion } from './comparisonSchema';
 
 export interface ComparisonAdapterResult {
@@ -56,7 +60,8 @@ export class ComparisonEngineAdapter {
         result,
         unifiedComparisonFlag.isGranularComparisonSchemaEnabled()
       );
-      const matrix = flatResultToMatrixRows(result);
+      const matrix =
+        schemaVersion === 2 ? flatResultToMatrixRowsV2(result) : flatResultToMatrixRows(result);
 
       console.log(
         `✅ [Adapter] Unified engine succeeded [${correlationId}] schemaVersion=${schemaVersion}`

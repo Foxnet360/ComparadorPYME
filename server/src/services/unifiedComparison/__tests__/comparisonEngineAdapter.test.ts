@@ -229,12 +229,33 @@ describe('ComparisonEngineAdapter', () => {
     expect(result.schemaVersion).toBe(1);
   });
 
-  it('tags legacy batch results as schema v1', async () => {
-    featureFlags.updateFlag('useUnifiedComparisonEngine', false);
+  it('transforms v2 result into section-aware MatrixRow[]', async () => {
     featureFlags.updateFlag('granularComparisonSchema', true);
+    compareSpy.mockResolvedValue(
+      makeFlatResult({
+        schemaVersion: 2,
+        rows: [
+          {
+            label: 'Edificio',
+            section: 'BIENES ASEGURADOS',
+            cells: [
+              { insurer: 'MAPFRE', value: '$500M', confidence: 0.92 },
+              { insurer: 'CHUBB', value: '$600M', confidence: 0.9 },
+            ],
+          },
+        ],
+      })
+    );
 
-    const result = await comparisonEngineAdapter.generateComparison(['a.pdf']);
+    const result = await comparisonEngineAdapter.generateComparison(['a.pdf', 'b.pdf']);
 
-    expect(result.schemaVersion).toBe(1);
+    expect(result.schemaVersion).toBe(2);
+    const sectionHeader = result.matrix.find(
+      (r) => r.type === 'header' && r.label === 'BIENES ASEGURADOS'
+    );
+    expect(sectionHeader).toBeDefined();
+    const edificioRow = result.matrix.find((r) => r.label === 'Edificio');
+    expect(edificioRow).toBeDefined();
+    expect(edificioRow!.cells[0].confidence).toBe(0.92);
   });
 });
