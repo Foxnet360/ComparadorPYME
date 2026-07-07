@@ -313,7 +313,7 @@ export function parseDeductible(text: string | null | undefined): {
 
   if (minimum === undefined) {
     const minMoneyMatch = normalized.match(
-      /m[i\u00ed]n\.?\s*[\$]?\s*([\d.,]+)\s*(?:cop|usd|uf|ums)?/i
+      /m[i\u00ed]n\.?\s*[$]?\s*([\d.,]+)\s*(?:cop|usd|uf|ums)?/i
     );
     if (minMoneyMatch) {
       minimum = parseDeductibleNumber(minMoneyMatch[1]);
@@ -323,7 +323,7 @@ export function parseDeductible(text: string | null | undefined): {
 
   // If no percentage and no minimum, look for a standalone money amount as fixed deductible.
   if (percentage === undefined && minimum === undefined) {
-    const fixedMoneyMatch = normalized.match(/[\$]?\s*([\d.,]+)\s*(?:cop|usd|uf|ums)?/);
+    const fixedMoneyMatch = normalized.match(/[$]?\s*([\d.,]+)\s*(?:cop|usd|uf|ums)?/);
     if (fixedMoneyMatch) {
       minimum = parseDeductibleNumber(fixedMoneyMatch[1]);
       currency = (fixedMoneyMatch[2] || 'COP').toUpperCase();
