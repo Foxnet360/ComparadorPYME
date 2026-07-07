@@ -8,6 +8,7 @@ import { ComparisonEngineConfig, UnifiedComparisonResult } from '../../types/uni
 import { comparisonPromptBuilder } from './comparisonPromptBuilder';
 import { FlatComparisonResult } from './comparisonSchema';
 import { flatTableParser } from './flatTableParser';
+import { unifiedComparisonFlag } from './featureFlagService';
 import { getCachedUnifiedResult, setCachedUnifiedResult } from '../cache/redisCache';
 import crypto from 'crypto';
 import fs from 'fs';
@@ -49,6 +50,10 @@ const DEFAULT_CONFIG: ComparisonEngineConfig = {
   retryDelayMs: 5000,
 };
 
+export interface CompareOptions {
+  granularComparisonSchema?: boolean;
+}
+
 export class UnifiedComparisonEngine {
   private config: ComparisonEngineConfig;
 
@@ -77,13 +82,19 @@ export class UnifiedComparisonEngine {
   /**
    * Compare multiple insurance quotes in a single LLM call
    */
-  async compare(pdfPaths: string[]): Promise<FlatComparisonResult> {
+  async compare(pdfPaths: string[], options?: CompareOptions): Promise<FlatComparisonResult> {
     const startTime = Date.now();
     const correlationId = `compare-${Date.now()}`;
     let uploadedFiles: GeminiFile[] = [];
+    const granularEnabled =
+      options?.granularComparisonSchema ??
+      unifiedComparisonFlag.isGranularComparisonSchemaEnabled();
 
     console.log(
       `🔍 [UnifiedComparison] Starting comparison for ${pdfPaths.length} quotes [${correlationId}]`
+    );
+    console.log(
+      `🚩 [UnifiedComparison] granularComparisonSchema=${granularEnabled} [${correlationId}]`
     );
 
     // Check cache first
@@ -110,19 +121,23 @@ export class UnifiedComparisonEngine {
       );
 
       // 2. Build prompt
-      const prompt = comparisonPromptBuilder.buildComparisonPrompt({
+      const promptContext = {
         insurerCount: pdfPaths.length,
         hasClauses: false,
-      });
+      };
+      const prompt = granularEnabled
+        ? comparisonPromptBuilder.buildV2ComparisonPrompt(promptContext)
+        : comparisonPromptBuilder.buildComparisonPrompt(promptContext);
 
       // 3. Call Gemini with structured output
       const result = await this.callGemini(uploadedFiles, prompt, correlationId);
 
-      // 4. Parse and validate response using the flat table parser
+      // 4. Parse and validate response using the appropriate parser
       const parsedResult = await this.parseAndValidateResult(
         result,
         pdfPaths.length,
-        correlationId
+        correlationId,
+        granularEnabled
       );
 
       // 5. Add runtime metadata
@@ -366,14 +381,18 @@ export class UnifiedComparisonEngine {
   private async parseAndValidateResult(
     responseText: string,
     pdfCount: number,
-    correlationId: string
+    correlationId: string,
+    granularEnabled: boolean
   ): Promise<FlatComparisonResult> {
     let retries = 0;
     let lastError: string | null = null;
 
     while (retries <= this.config.maxRetries) {
       try {
-        const parsedResult = flatTableParser.parse(responseText, {
+        const parser = granularEnabled
+          ? flatTableParser.parseV2.bind(flatTableParser)
+          : flatTableParser.parse.bind(flatTableParser);
+        const parsedResult = parser(responseText, {
           pdfCount,
           model: this.config.model,
           confidence: 0,
@@ -384,18 +403,23 @@ export class UnifiedComparisonEngine {
       } catch (error) {
         lastError = error instanceof Error ? error.message : String(error);
         console.warn(
-          `⚠️ [UnifiedComparison] Flat parse failed (attempt ${retries + 1}) [${correlationId}]:`,
+          `⚠️ [UnifiedComparison] ${granularEnabled ? 'Granular' : 'Flat'} parse failed (attempt ${retries + 1}) [${correlationId}]:`,
           lastError
         );
 
         if (retries < this.config.maxRetries) {
-          const correctionPrompt = comparisonPromptBuilder.buildCorrectionPrompt(
-            responseText,
-            lastError || 'Unknown error'
-          );
+          const correctionPrompt = granularEnabled
+            ? comparisonPromptBuilder.buildV2CorrectionPrompt(
+                responseText,
+                lastError || 'Unknown error'
+              )
+            : comparisonPromptBuilder.buildCorrectionPrompt(
+                responseText,
+                lastError || 'Unknown error'
+              );
 
           console.log(
-            `🔄 [UnifiedComparison] Retrying with correction prompt... [${correlationId}]`
+            `🔄 [UnifiedComparison] Retrying with ${granularEnabled ? 'v2' : 'v1'} correction prompt... [${correlationId}]`
           );
 
           const ai = getGenAI();

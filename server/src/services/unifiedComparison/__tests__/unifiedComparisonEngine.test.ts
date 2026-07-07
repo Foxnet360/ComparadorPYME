@@ -41,6 +41,28 @@ const validFlatJson = JSON.stringify({
   ],
 });
 
+const validGranularJson = JSON.stringify({
+  insurers: ['MAPFRE', 'CHUBB'],
+  rows: [
+    {
+      label: 'Edificio',
+      section: 'BIENES ASEGURADOS',
+      cells: [
+        { insurer: 'MAPFRE', value: '$500M', rawText: '$500M' },
+        { insurer: 'CHUBB', value: '$600M', rawText: '$600M' },
+      ],
+    },
+    {
+      label: 'Prima con IVA',
+      section: 'INFORMACIÓN GENERAL',
+      cells: [
+        { insurer: 'MAPFRE', value: '$1.000.000', rawText: '$1.000.000' },
+        { insurer: 'CHUBB', value: '$900.000', rawText: '$900.000' },
+      ],
+    },
+  ],
+});
+
 const malformedJson = 'this is not json';
 
 interface MockGeminiInstance {
@@ -212,6 +234,43 @@ describe('UnifiedComparisonEngine (flat table)', () => {
     expect(second.insurers).toEqual(first.insurers);
     // Gemini should only have been called once.
     expect(mockGemini.models.generateContent).toHaveBeenCalledTimes(1);
+  });
+
+  it('should use the v2 parser and prompt when granularComparisonSchema is enabled', async () => {
+    mockGemini = buildMockGemini([validGranularJson]);
+
+    const engine = new UnifiedComparisonEngine({ retryDelayMs: 0 });
+    const result = await engine.compare(['granular-fake1.pdf', 'granular-fake2.pdf'], {
+      granularComparisonSchema: true,
+    });
+
+    expect(result.schemaVersion).toBe(2);
+    expect(result.rows).toHaveLength(2);
+    expect(result.rows[0].label).toBe('Edificio');
+    expect(result.rows[0].section).toBe('BIENES ASEGURADOS');
+    expect(result.rows[0].cells[0].confidence).toBeGreaterThan(0.7);
+
+    const promptCall = mockGemini.models.generateContent.mock.calls[0][0];
+    expect(promptCall.contents[promptCall.contents.length - 1].text).toContain(
+      'filas agrupadas por sección'
+    );
+  });
+
+  it('should keep v1 behavior when granularComparisonSchema is disabled', async () => {
+    mockGemini = buildMockGemini([validFlatJson]);
+
+    const engine = new UnifiedComparisonEngine({ retryDelayMs: 0 });
+    const result = await engine.compare(['v1-fake1.pdf', 'v1-fake2.pdf'], {
+      granularComparisonSchema: false,
+    });
+
+    expect(result.schemaVersion).toBe(1);
+    expect(result.rows).toHaveLength(4);
+
+    const promptCall = mockGemini.models.generateContent.mock.calls[0][0];
+    expect(promptCall.contents[promptCall.contents.length - 1].text).toContain(
+      'EXACTAMENTE estas filas'
+    );
   });
 });
 

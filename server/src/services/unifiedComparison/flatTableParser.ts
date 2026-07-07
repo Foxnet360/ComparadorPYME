@@ -4,7 +4,12 @@
  * FlatComparisonSchema shape (4 rows × N insurers).
  */
 
-import { FlatComparisonSchema, type FlatComparisonResult } from './comparisonSchema';
+import {
+  FlatComparisonSchema,
+  type FlatComparisonResult,
+  type FlatComparisonResultV2,
+  type FlatComparisonCell,
+} from './comparisonSchema';
 import { parseJsonWithRepair } from '../jsonRepair';
 
 export const FLAT_ROW_LABELS = [
@@ -58,6 +63,134 @@ const ROW_LABEL_ALIASES = new Map<string, string>([
   ['pago', 'Forma de Pago'],
 ]);
 
+// ---------------------------------------------------------------------------
+// v2 alias normalization and section assignment
+// ---------------------------------------------------------------------------
+
+interface AliasEntry {
+  aliases: string[];
+  canonical: string;
+  section: string;
+}
+
+const ALIAS_MAP: AliasEntry[] = [
+  {
+    aliases: ['bienes asegurados'],
+    canonical: 'Bienes Asegurados',
+    section: 'INFORMACIÓN GENERAL',
+  },
+  { aliases: ['edificio', 'valor edificio'], canonical: 'Edificio', section: 'BIENES ASEGURADOS' },
+  { aliases: ['contenidos', 'contenido'], canonical: 'Contenidos', section: 'BIENES ASEGURADOS' },
+  { aliases: ['mercancias', 'mercaderias'], canonical: 'Mercancías', section: 'BIENES ASEGURADOS' },
+  {
+    aliases: ['equipo electrico', 'eq. electrico', 'eee'],
+    canonical: 'Equipo Eléctrico',
+    section: 'COBERTURAS',
+  },
+  {
+    aliases: ['maquinaria', 'equipo maquinaria', 'equipo de maquinaria'],
+    canonical: 'Maquinaria',
+    section: 'COBERTURAS',
+  },
+  { aliases: ['responsabilidad civil'], canonical: 'Responsabilidad Civil', section: 'COBERTURAS' },
+  { aliases: ['terremoto'], canonical: 'Terremoto', section: 'COBERTURAS' },
+  { aliases: ['deducible', 'deducibles'], canonical: 'Deducibles', section: 'DEDUCIBLES' },
+  {
+    aliases: ['prima con iva', 'prima total con iva'],
+    canonical: 'Prima con IVA',
+    section: 'INFORMACIÓN GENERAL',
+  },
+  { aliases: ['forma de pago'], canonical: 'Forma de Pago', section: 'INFORMACIÓN GENERAL' },
+  { aliases: ['observaciones'], canonical: 'Observaciones', section: 'CONDICIONES' },
+  { aliases: ['exclusiones'], canonical: 'Exclusiones', section: 'CONDICIONES' },
+];
+
+export interface NormalizedAlias {
+  canonical: string;
+  section: string;
+  quality: number;
+}
+
+function exactMatchQuality(alias: string, normalized: string): number {
+  return alias === normalized ? 1 : alias.length > normalized.length ? 0.5 : 0.7;
+}
+
+export function normalizeAlias(input: string): NormalizedAlias | undefined {
+  const normalized = normalizeLabel(input);
+  if (!normalized) return undefined;
+
+  const matches: { entry: AliasEntry; matchedAlias: string; quality: number }[] = [];
+  for (const entry of ALIAS_MAP) {
+    for (const rawAlias of entry.aliases) {
+      const alias = normalizeLabel(rawAlias);
+      if (normalized.includes(alias) || alias.includes(normalized)) {
+        matches.push({
+          entry,
+          matchedAlias: alias,
+          quality: exactMatchQuality(alias, normalized),
+        });
+      }
+    }
+  }
+
+  if (matches.length === 0) return undefined;
+
+  // Prefer the highest quality match; tie-break by longest alias length.
+  matches.sort((a, b) => {
+    if (b.quality !== a.quality) return b.quality - a.quality;
+    return b.matchedAlias.length - a.matchedAlias.length;
+  });
+
+  const best = matches[0];
+  const canonicals = new Set(
+    matches
+      .filter(
+        (m) => m.quality === best.quality || m.matchedAlias.length === best.matchedAlias.length
+      )
+      .map((m) => m.entry.canonical)
+  );
+
+  // Ambiguous if multiple distinct canonicals match and the input is not an exact match of the best alias.
+  if (canonicals.size > 1 && best.matchedAlias !== normalized) {
+    return undefined;
+  }
+
+  return {
+    canonical: best.entry.canonical,
+    section: best.entry.section,
+    quality: best.quality,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// v2 per-cell confidence
+// ---------------------------------------------------------------------------
+
+function isValidValuePattern(value: string | null): boolean {
+  if (value === null || value === undefined) return false;
+  const trimmed = value.trim().toLowerCase();
+  if (trimmed === '' || trimmed === 'no informado') return false;
+  // Accept currency, percentage, numeric, or deductible-like patterns.
+  return /[$\d]/.test(value) || /%|smmlv|uf|umed|deducible|minimo|min/.test(trimmed);
+}
+
+export function computeCellConfidence(
+  cell: Partial<FlatComparisonCell>,
+  aliasQuality: number
+): number {
+  let score = 1.0;
+  if (cell.notFound) score -= 0.5;
+  if (!cell.rawText || cell.rawText.trim().length === 0) score -= 0.15;
+  score *= aliasQuality;
+  if (!isValidValuePattern(cell.value ?? null)) score -= 0.15;
+  if (cell.isAmbiguous) score -= 0.2;
+  return Math.max(0.0, Math.min(1.0, score));
+}
+
+// ---------------------------------------------------------------------------
+// Row-label normalization (accent-tolerant, case-insensitive)
+// ---------------------------------------------------------------------------
+
 function normalizeLabel(text: string): string {
   return text
     .toLowerCase()
@@ -110,6 +243,11 @@ function padValues(values: string[], length: number): string[] {
     result.push('');
   }
   return result;
+}
+
+function paddedOrNull(values: RowValues, index: number): string | null {
+  const value = values[index];
+  return value === undefined || value === null || value.trim() === '' ? null : value;
 }
 
 function isEmptyValue(value: string | null): boolean {
@@ -496,11 +634,6 @@ function buildResult(
     })),
   }));
 
-  function paddedOrNull(values: RowValues, index: number): string | null {
-    const value = values[index];
-    return value === undefined || value === null || value.trim() === '' ? null : value;
-  }
-
   const now = new Date().toISOString();
   const result: FlatComparisonResult = {
     metadata: {
@@ -513,6 +646,175 @@ function buildResult(
     },
     insurers,
     schemaVersion: 1,
+    rows,
+    extraRows,
+    warnings,
+  };
+
+  const validation = FlatComparisonSchema.safeParse(result);
+  if (!validation.success) {
+    throw new FlatTableParseError(
+      'Parsed table failed schema validation',
+      validation.error.issues.map((issue) => ({ message: issue.message }))
+    );
+  }
+
+  return result;
+}
+
+function buildV2Cell(
+  insurer: string,
+  rawValue: string | null | undefined,
+  aliasQuality: number,
+  isAmbiguous: boolean
+) {
+  const raw = rawValue ?? '';
+  const notFound = isEmptyValue(raw);
+  const cell = {
+    insurer,
+    value: notFound ? 'No informado' : raw.trim(),
+    rawText: rawValue ?? undefined,
+    notFound: notFound || undefined,
+    ...(isAmbiguous ? { isAmbiguous: true } : {}),
+  };
+  return {
+    ...cell,
+    confidence: computeCellConfidence(cell, aliasQuality),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// v2 JSON parser (keeps raw labels for alias normalization)
+// ---------------------------------------------------------------------------
+
+function extractCellValueV2(cell: unknown): string {
+  return extractCellValue(cell);
+}
+
+function parseJsonV2(raw: string): RawTable {
+  const parseResult = parseJsonWithRepair(raw);
+  if (!parseResult.success) {
+    throw new Error(parseResult.error || 'JSON parsing failed');
+  }
+
+  const data = parseResult.data;
+
+  if (Array.isArray(data)) {
+    throw new Error('JSON array root is not supported');
+  }
+
+  if (typeof data !== 'object' || data === null) {
+    throw new Error('JSON root must be an object');
+  }
+
+  const insurers = Array.isArray((data as Record<string, unknown>).insurers)
+    ? ((data as Record<string, unknown>).insurers as unknown[])
+        .map((item) => String(item).trim())
+        .filter(Boolean)
+    : [];
+  const inputRows = Array.isArray((data as Record<string, unknown>).rows)
+    ? ((data as Record<string, unknown>).rows as unknown[])
+    : [];
+
+  const rows = new Map<string, RowValues>();
+  const extraRows = new Map<string, RowValues>();
+
+  for (const row of inputRows) {
+    if (typeof row !== 'object' || row === null || !('label' in row)) continue;
+
+    const label = String((row as { label: unknown }).label).trim();
+    if (!label) continue;
+
+    let values: string[] = [];
+    if ('cells' in row && Array.isArray((row as { cells: unknown }).cells)) {
+      const cells = (row as { cells: unknown[] }).cells;
+      values = insurers.map((insurer) => {
+        const matched = cells.find(
+          (cell) =>
+            typeof cell === 'object' &&
+            cell !== null &&
+            String((cell as { insurer?: unknown }).insurer).trim() === insurer
+        );
+        if (matched != null) {
+          return extractCellValueV2(matched);
+        }
+        const idx = insurers.indexOf(insurer);
+        return extractCellValueV2(cells[idx]);
+      });
+    }
+
+    // Keep the raw label; alias normalization happens in buildV2Result.
+    rows.set(label, padValues(values, insurers.length));
+  }
+
+  return { insurers, rows, extraRows };
+}
+
+// ---------------------------------------------------------------------------
+// v2 result builder
+// ---------------------------------------------------------------------------
+
+function buildV2Result(
+  rawTable: RawTable,
+  options: ParseOptions = {},
+  warnings: string[] = []
+): FlatComparisonResultV2 {
+  const insurers = rawTable.insurers.filter(Boolean);
+  if (insurers.length === 0) {
+    throw new FlatTableParseError('No insurers detected in the table', []);
+  }
+
+  const rows: FlatComparisonResultV2['rows'] = [];
+  const extraRows: FlatComparisonResultV2['extraRows'] = [];
+
+  for (const [label, values] of rawTable.rows.entries()) {
+    const normalized = normalizeAlias(label);
+
+    if (normalized) {
+      rows.push({
+        label: normalized.canonical,
+        section: normalized.section,
+        cells: insurers.map((insurer, index) =>
+          buildV2Cell(insurer, paddedOrNull(values, index), normalized.quality, false)
+        ),
+      });
+    } else {
+      // Ambiguous or unmapped label: keep as extra row with isAmbiguous flag.
+      const isAmbiguous = ALIAS_MAP.some((entry) =>
+        entry.aliases.some(
+          (alias) => normalizeLabel(label).includes(alias) || alias.includes(normalizeLabel(label))
+        )
+      );
+      extraRows.push({
+        label,
+        cells: insurers.map((insurer, index) =>
+          buildV2Cell(insurer, paddedOrNull(values, index), 0.5, isAmbiguous)
+        ),
+      });
+    }
+  }
+
+  for (const [label, values] of rawTable.extraRows.entries()) {
+    extraRows.push({
+      label,
+      cells: insurers.map((insurer, index) =>
+        buildV2Cell(insurer, paddedOrNull(values, index), 0.5, false)
+      ),
+    });
+  }
+
+  const now = new Date().toISOString();
+  const result: FlatComparisonResultV2 = {
+    metadata: {
+      generatedAt: options.generatedAt ?? now,
+      model: options.model ?? 'unknown',
+      pdfCount: options.pdfCount ?? insurers.length,
+      processingTimeMs: options.processingTimeMs ?? 0,
+      confidence: options.confidence ?? 0,
+      needsHumanReview: options.needsHumanReview ?? true,
+    },
+    insurers,
+    schemaVersion: 2,
     rows,
     extraRows,
     warnings,
@@ -561,6 +863,26 @@ export class FlatTableParser {
     }
 
     return buildResult(rawTable, options, warnings);
+  }
+
+  parseV2(raw: string, options?: ParseOptions): FlatComparisonResultV2 {
+    const format = detectFormat(raw);
+    if (format !== 'json') {
+      throw new FlatTableParseError('v2 parser only supports JSON input', []);
+    }
+
+    let rawTable: RawTable;
+    const warnings: string[] = [];
+
+    try {
+      rawTable = parseJsonV2(raw);
+    } catch (error) {
+      throw new FlatTableParseError('Failed to parse granular JSON table', [
+        { message: error instanceof Error ? error.message : String(error) },
+      ]);
+    }
+
+    return buildV2Result(rawTable, options, warnings);
   }
 }
 
