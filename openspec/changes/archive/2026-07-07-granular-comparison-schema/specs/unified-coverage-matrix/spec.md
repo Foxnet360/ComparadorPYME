@@ -1,12 +1,4 @@
-# Spec: Unified Coverage Matrix (Delta)
-
-## Capability
-Visualización de comparación de cotizaciones en una matriz de 14 categorías fijas con indicadores de confianza, manejo de coberturas no categorizadas agrupadas, y visualización de deducibles con gauges.
-
-## User Story
-**Como** usuario del comparador
-**Quiero** ver todas las coberturas organizadas en categorías estándar
-**Para** comparar fácilmente qué incluye cada aseguradora
+# Delta for Unified Coverage Matrix
 
 ## MODIFIED Requirements
 
@@ -46,38 +38,6 @@ El frontend SHALL renderizar la comparación en una matriz de filas granulares a
 - THEN se abre el editor inline de notas consultivas
 - AND la celda muestra un icono de nota si tiene contenido guardado
 
-### Requirement: Semántica ARIA para accesibilidad
-La matriz SHALL implementar roles y atributos ARIA para cumplir con WCAG 2.1 AA.
-
-#### Scenario: Roles ARIA
-- **WHEN** la matriz se renderiza
-- **THEN** el contenedor tiene role="grid" y aria-label="Matriz de coberturas de seguros"
-- **AND** cada fila tiene role="row" con aria-rowindex
-- **AND** cada celda interactiva tiene role="gridcell" y tabindex="0"
-
-#### Scenario: Navegación por teclado
-- **WHEN** el usuario navega con teclado (flechas, Tab, Enter, Escape)
-- **THEN** las flechas mueven el foco entre celdas adyacentes
-- **AND** Enter activa la acción principal de la celda (abrir corrección o visor PDF)
-- **AND** Escape cierra cualquier popup o editor abierto
-
-#### Scenario: Anuncios para screen readers
-- **WHEN** una celda recibe foco
-- **THEN** el screen reader anuncia el contenido: "[Categoría], [Aseguradora], [Valor], [Estado]"
-- **AND** cuando una corrección se guarda, se anuncia: "Corrección guardada para [cobertura]"
-
-### Requirement: Virtualización de matriz grande
-La matriz SHALL implementar virtualización cuando el número total de celdas excede 100.
-
-#### Scenario: Virtualización activada
-- **WHEN** hay más de 3 aseguradoras (resultando en >100 celdas)
-- **THEN** solo las filas visibles en el viewport se renderizan en el DOM
-- **AND** el scroll permanece fluido sin lag
-
-#### Scenario: Foco persistente
-- **WHEN** el usuario navega por teclado en una matriz virtualizada
-- **THEN** el foco se mantiene en la celda correcta aunque las filas entren/salgan del viewport
-
 ### Requirement: Indicadores de confianza visual
 
 Cada celda de cobertura SHALL mostrar el nivel de confianza del match o de la extracción mediante badges de color. El valor de confianza MUST provenir del campo `confidence` de la celda, no de un valor hardcodeado.
@@ -104,17 +64,6 @@ Cada celda de cobertura SHALL mostrar el nivel de confianza del match o de la ex
 - WHEN el usuario hace hover sobre una celda de cobertura
 - THEN el tooltip muestra el nombre original extraído del PDF, el nombre canónico, el método de match usado, Y la fuente del valor (extraído/calculado/inferido)
 
-### Requirement: Responsive design
-La matriz unificada SHALL ser usable en pantallas de diferentes tamaños.
-
-#### Scenario: Scroll horizontal
-- **WHEN** hay más de 3 cotizaciones
-- **THEN** la tabla permite scroll horizontal manteniendo la columna de categorías fija
-
-#### Scenario: Vista móvil
-- **WHEN** el ancho de pantalla es < 768px
-- **THEN** la tabla cambia a tarjetas apiladas por categoría, mostrando una aseguradora por tarjeta
-
 ## ADDED Requirements
 
 ### Requirement: Encabezado de sección como fila propia
@@ -126,9 +75,3 @@ La matriz SHALL renderizar cada sección como una fila de encabezado que abarca 
 - WHEN la matriz recibe filas con `section` definida
 - THEN se inserta una fila de encabezado con el nombre de la sección
 - AND las filas de datos siguen directamente debajo de su encabezado
-
-## Dependencies
-- Componente ComparisonReport
-- Componente PdfViewer (nuevo)
-- Componente AuditWizard (nuevo)
-- pdfjs-dist

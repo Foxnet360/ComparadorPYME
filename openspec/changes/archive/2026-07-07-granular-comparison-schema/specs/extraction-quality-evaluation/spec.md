@@ -1,9 +1,6 @@
-# Spec: Extraction Quality Evaluation
+# Delta for Extraction Quality Evaluation
 
-## Capability
-Evaluation harness and metric collection that compares tool output against a direct-LLM baseline on a fixed quote set.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Fixed quote set baseline
 
@@ -54,7 +51,3 @@ The system SHALL run the evaluation harness as part of the Vitest suite and asse
 - WHEN the comparison completes
 - THEN it SHALL assert match rate >= 90%
 - AND it SHALL fail the test if the unified engine fallback rate exceeds 10%
-
-## Dependencies
-- `unified-comparison-extraction` for the production tool path
-- `comparison-engine-adapter` for routing and fallback metrics
