@@ -238,8 +238,7 @@ function extractInsurersFromMatrix(matrix: MatrixRow[]): string[] {
 
 function findMatrixRowByLabel(matrix: MatrixRow[], label: string): MatrixRow | undefined {
   return matrix.find(
-    (row) =>
-      row.type === 'data' && normalizeCellValue(row.label) === normalizeCellValue(label)
+    (row) => row.type === 'data' && normalizeCellValue(row.label) === normalizeCellValue(label)
   );
 }
 
@@ -292,10 +291,7 @@ function matrixRowsToFlatResultV1(matrix: MatrixRow[]): FlatComparisonResult {
 
   const canonicalNormalized = new Set(V1_CANONICAL_ROW_LABELS.map(normalizeCellValue));
   const extraRows = matrix
-    .filter(
-      (row) =>
-        row.type === 'data' && !canonicalNormalized.has(normalizeCellValue(row.label))
-    )
+    .filter((row) => row.type === 'data' && !canonicalNormalized.has(normalizeCellValue(row.label)))
     .map((row) => ({
       label: row.label,
       cells: insurers.map((insurer, idx) =>
@@ -377,9 +373,7 @@ export function matrixRowsToFlatResult(
   matrix: MatrixRow[],
   schemaVersion: 1 | 2 = 1
 ): FlatComparisonResult {
-  return schemaVersion === 2
-    ? matrixRowsToFlatResultV2(matrix)
-    : matrixRowsToFlatResultV1(matrix);
+  return schemaVersion === 2 ? matrixRowsToFlatResultV2(matrix) : matrixRowsToFlatResultV1(matrix);
 }
 
 // ---------------------------------------------------------------------------
@@ -448,7 +442,10 @@ async function callGeminiBaseline(files: GeminiFile[], prompt: string): Promise<
   });
 
   const timeoutPromise = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error(`Baseline Gemini call timed out after ${GEMINI_TIMEOUT_MS}ms`)), GEMINI_TIMEOUT_MS)
+    setTimeout(
+      () => reject(new Error(`Baseline Gemini call timed out after ${GEMINI_TIMEOUT_MS}ms`)),
+      GEMINI_TIMEOUT_MS
+    )
   );
 
   const result = await Promise.race([geminiPromise, timeoutPromise]);

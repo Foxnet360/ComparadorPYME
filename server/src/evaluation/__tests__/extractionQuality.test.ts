@@ -118,7 +118,12 @@ function makeMatchingV2Matrix(): MatrixRow[] {
       cells: [
         { value: 'Edificio y contenidos', isExcluded: false, isWinner: false, confidence: 0.92 },
         { value: 'Edificio y contenidos', isExcluded: false, isWinner: false, confidence: 0.9 },
-        { value: 'Edificio, contenidos y equipos', isExcluded: false, isWinner: false, confidence: 0.88 },
+        {
+          value: 'Edificio, contenidos y equipos',
+          isExcluded: false,
+          isWinner: false,
+          confidence: 0.88,
+        },
       ],
     },
     {
@@ -332,16 +337,46 @@ describe('calculateMatchRate', () => {
   });
 
   it('matches variable row counts by canonical label for schema v2', () => {
-    const baseline = makeV2FlatResult(['A', 'B'], [
-      { section: 'INFORMACIÓN GENERAL', label: 'Prima con IVA', values: { A: '$1.000.000', B: '$2.000.000' } },
-      { section: 'BIENES ASEGURADOS', label: 'Edificio', values: { A: '$500.000.000', B: '$400.000.000' } },
-      { section: 'BIENES ASEGURADOS', label: 'Contenidos', values: { A: '$200.000.000', B: '$150.000.000' } },
-    ]);
-    const tool = makeV2FlatResult(['A', 'B'], [
-      { section: 'BIENES ASEGURADOS', label: 'Contenidos', values: { A: '$200.000.000', B: '$150.000.000' } },
-      { section: 'BIENES ASEGURADOS', label: 'Edificio', values: { A: '$500.000.000', B: '$400.000.000' } },
-      { section: 'INFORMACIÓN GENERAL', label: 'Prima con IVA', values: { A: '$1.000.000', B: '$2.000.000' } },
-    ]);
+    const baseline = makeV2FlatResult(
+      ['A', 'B'],
+      [
+        {
+          section: 'INFORMACIÓN GENERAL',
+          label: 'Prima con IVA',
+          values: { A: '$1.000.000', B: '$2.000.000' },
+        },
+        {
+          section: 'BIENES ASEGURADOS',
+          label: 'Edificio',
+          values: { A: '$500.000.000', B: '$400.000.000' },
+        },
+        {
+          section: 'BIENES ASEGURADOS',
+          label: 'Contenidos',
+          values: { A: '$200.000.000', B: '$150.000.000' },
+        },
+      ]
+    );
+    const tool = makeV2FlatResult(
+      ['A', 'B'],
+      [
+        {
+          section: 'BIENES ASEGURADOS',
+          label: 'Contenidos',
+          values: { A: '$200.000.000', B: '$150.000.000' },
+        },
+        {
+          section: 'BIENES ASEGURADOS',
+          label: 'Edificio',
+          values: { A: '$500.000.000', B: '$400.000.000' },
+        },
+        {
+          section: 'INFORMACIÓN GENERAL',
+          label: 'Prima con IVA',
+          values: { A: '$1.000.000', B: '$2.000.000' },
+        },
+      ]
+    );
 
     const report = calculateMatchRate(baseline, tool);
     expect(report.matchRate).toBe(1);
@@ -349,9 +384,10 @@ describe('calculateMatchRate', () => {
   });
 
   it('counts missing baseline rows as mismatches in variable-row comparisons', () => {
-    const baseline = makeV2FlatResult(['A'], [
-      { section: 'COBERTURAS', label: 'Equipo Eléctrico', values: { A: 'Incluido' } },
-    ]);
+    const baseline = makeV2FlatResult(
+      ['A'],
+      [{ section: 'COBERTURAS', label: 'Equipo Eléctrico', values: { A: 'Incluido' } }]
+    );
     const tool = makeV2FlatResult(['A'], []);
 
     const report = calculateMatchRate(baseline, tool);
@@ -514,7 +550,10 @@ describe('matrixRowsToFlatResult', () => {
 
     expect(result.schemaVersion).toBe(2);
     expect(result.rows).toHaveLength(2);
-    expect(result.rows[0]).toMatchObject({ label: 'Bienes Asegurados', section: 'INFORMACIÓN GENERAL' });
+    expect(result.rows[0]).toMatchObject({
+      label: 'Bienes Asegurados',
+      section: 'INFORMACIÓN GENERAL',
+    });
     expect(result.rows[1]).toMatchObject({ label: 'Edificio', section: 'BIENES ASEGURADOS' });
     expect(result.rows[1].cells[0].confidence).toBe(0.91);
   });
