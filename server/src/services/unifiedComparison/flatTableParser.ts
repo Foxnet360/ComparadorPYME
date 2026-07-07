@@ -4,12 +4,7 @@
  * FlatComparisonSchema shape (4 rows × N insurers).
  */
 
-import {
-  FlatComparisonSchema,
-  type FlatComparisonResult,
-  type FlatComparisonResultV2,
-  type FlatComparisonCell,
-} from './comparisonSchema';
+import { FlatComparisonSchema, SchemaSection, type FlatComparisonResult, type FlatComparisonResultV2, type FlatComparisonCell, type StructuredDeductible } from './comparisonSchema';
 import { parseJsonWithRepair } from '../jsonRepair';
 
 export const FLAT_ROW_LABELS = [
@@ -74,32 +69,20 @@ interface AliasEntry {
 }
 
 const ALIAS_MAP: AliasEntry[] = [
-  {
-    aliases: ['bienes asegurados'],
-    canonical: 'Bienes Asegurados',
-    section: 'INFORMACIÓN GENERAL',
-  },
+  { aliases: ['bienes asegurados'], canonical: 'Bienes Asegurados', section: 'INFORMACIÓN GENERAL' },
   { aliases: ['edificio', 'valor edificio'], canonical: 'Edificio', section: 'BIENES ASEGURADOS' },
   { aliases: ['contenidos', 'contenido'], canonical: 'Contenidos', section: 'BIENES ASEGURADOS' },
   { aliases: ['mercancias', 'mercaderias'], canonical: 'Mercancías', section: 'BIENES ASEGURADOS' },
-  {
-    aliases: ['equipo electrico', 'eq. electrico', 'eee'],
-    canonical: 'Equipo Eléctrico',
-    section: 'COBERTURAS',
-  },
-  {
-    aliases: ['maquinaria', 'equipo maquinaria', 'equipo de maquinaria'],
-    canonical: 'Maquinaria',
-    section: 'COBERTURAS',
-  },
+  { aliases: ['equipo electrico', 'eq. electrico', 'eee'], canonical: 'Equipo Eléctrico', section: 'COBERTURAS' },
+  { aliases: ['maquinaria', 'equipo maquinaria', 'equipo de maquinaria'], canonical: 'Maquinaria', section: 'COBERTURAS' },
   { aliases: ['responsabilidad civil'], canonical: 'Responsabilidad Civil', section: 'COBERTURAS' },
   { aliases: ['terremoto'], canonical: 'Terremoto', section: 'COBERTURAS' },
   { aliases: ['deducible', 'deducibles'], canonical: 'Deducibles', section: 'DEDUCIBLES' },
-  {
-    aliases: ['prima con iva', 'prima total con iva'],
-    canonical: 'Prima con IVA',
-    section: 'INFORMACIÓN GENERAL',
-  },
+  { aliases: ['deducible edificio', 'ded. edificio'], canonical: 'Deducible Edificio', section: 'DEDUCIBLES' },
+  { aliases: ['deducible contenidos', 'ded. contenidos'], canonical: 'Deducible Contenidos', section: 'DEDUCIBLES' },
+  { aliases: ['deducible mercancias', 'ded. mercancias', 'deducible mercaderias'], canonical: 'Deducible Mercancías', section: 'DEDUCIBLES' },
+  { aliases: ['deducible equipo electrico', 'ded. equipo electrico', 'deducible eee'], canonical: 'Deducible Equipo Eléctrico', section: 'DEDUCIBLES' },
+  { aliases: ['prima con iva', 'prima total con iva'], canonical: 'Prima con IVA', section: 'INFORMACIÓN GENERAL' },
   { aliases: ['forma de pago'], canonical: 'Forma de Pago', section: 'INFORMACIÓN GENERAL' },
   { aliases: ['observaciones'], canonical: 'Observaciones', section: 'CONDICIONES' },
   { aliases: ['exclusiones'], canonical: 'Exclusiones', section: 'CONDICIONES' },
@@ -144,9 +127,7 @@ export function normalizeAlias(input: string): NormalizedAlias | undefined {
   const best = matches[0];
   const canonicals = new Set(
     matches
-      .filter(
-        (m) => m.quality === best.quality || m.matchedAlias.length === best.matchedAlias.length
-      )
+      .filter((m) => m.quality === best.quality || m.matchedAlias.length === best.matchedAlias.length)
       .map((m) => m.entry.canonical)
   );
 
@@ -174,10 +155,7 @@ function isValidValuePattern(value: string | null): boolean {
   return /[$\d]/.test(value) || /%|smmlv|uf|umed|deducible|minimo|min/.test(trimmed);
 }
 
-export function computeCellConfidence(
-  cell: Partial<FlatComparisonCell>,
-  aliasQuality: number
-): number {
+export function computeCellConfidence(cell: Partial<FlatComparisonCell>, aliasQuality: number): number {
   let score = 1.0;
   if (cell.notFound) score -= 0.5;
   if (!cell.rawText || cell.rawText.trim().length === 0) score -= 0.15;
@@ -185,6 +163,115 @@ export function computeCellConfidence(
   if (!isValidValuePattern(cell.value ?? null)) score -= 0.15;
   if (cell.isAmbiguous) score -= 0.2;
   return Math.max(0.0, Math.min(1.0, score));
+}
+
+// ---------------------------------------------------------------------------
+// Structured deductible extraction
+// ---------------------------------------------------------------------------
+
+function normalizeDeductibleText(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
+
+function parseDeductibleNumber(value: string): number {
+  const clean = value.trim().replace(/\s/g, '');
+  if (clean.includes(',')) {
+    // comma is decimal separator
+    return parseFloat(clean.replace(/\./g, '').replace(',', '.'));
+  }
+  if (clean.includes('.')) {
+    const parts = clean.split('.');
+    // If all groups after the first are exactly 3 digits, treat as thousands separator.
+    if (parts.length > 1 && parts.slice(1).every((p) => /^\d{3}$/.test(p))) {
+      return parseFloat(clean.replace(/\./g, ''));
+    }
+    // Otherwise treat as decimal.
+    return parseFloat(clean);
+  }
+  return parseFloat(clean);
+}
+
+export function parseDeductible(
+  text: string | null | undefined
+): { deductible: StructuredDeductible; isAmbiguous: boolean } {
+  const raw = text ?? '';
+  if (raw.trim() === '') {
+    return { deductible: { type: 'see_conditions' }, isAmbiguous: true };
+  }
+
+  const normalized = normalizeDeductibleText(raw);
+
+  if (/\bno aplica\b/.test(normalized) || /\bn\/a\b/.test(normalized)) {
+    return { deductible: { type: 'not_applicable' }, isAmbiguous: false };
+  }
+
+  if (
+    /\bver condiciones\b/.test(normalized) ||
+    /\bver clausulado\b/.test(normalized) ||
+    /\bsegun condiciones\b/.test(normalized) ||
+    /\bsegun clausulado\b/.test(normalized) ||
+    /\ba definir\b/.test(normalized) ||
+    /\bpor determinar\b/.test(normalized)
+  ) {
+    return { deductible: { type: 'see_conditions' }, isAmbiguous: true };
+  }
+
+  const percentageMatch = normalized.match(/([\d.,]+)\s*%/);
+  const percentage = percentageMatch ? parseDeductibleNumber(percentageMatch[1]) : undefined;
+
+  let minimum: number | undefined;
+  let currency: string | undefined;
+
+  const minSmmlvMatch = normalized.match(/m[i\u00ed]n\.?\s*([\d.,]+)\s*(?:smmlv|salarios?|smlv|ums)/i);
+  if (minSmmlvMatch) {
+    minimum = parseDeductibleNumber(minSmmlvMatch[1]);
+    currency = 'SMMLV';
+  }
+
+  if (minimum === undefined) {
+    const standaloneSmmlvMatch = normalized.match(/([\d.,]+)\s*(?:smmlv|salarios?|smlv|ums)/i);
+    if (standaloneSmmlvMatch) {
+      minimum = parseDeductibleNumber(standaloneSmmlvMatch[1]);
+      currency = 'SMMLV';
+    }
+  }
+
+  if (minimum === undefined) {
+    const minMoneyMatch = normalized.match(/m[i\u00ed]n\.?\s*[\$]?\s*([\d.,]+)\s*(?:cop|usd|uf|ums)?/i);
+    if (minMoneyMatch) {
+      minimum = parseDeductibleNumber(minMoneyMatch[1]);
+      currency = (minMoneyMatch[2] || 'COP').toUpperCase();
+    }
+  }
+
+  // If no percentage and no minimum, look for a standalone money amount as fixed deductible.
+  if (percentage === undefined && minimum === undefined) {
+    const fixedMoneyMatch = normalized.match(/[\$]?\s*([\d.,]+)\s*(?:cop|usd|uf|ums)?/);
+    if (fixedMoneyMatch) {
+      minimum = parseDeductibleNumber(fixedMoneyMatch[1]);
+      currency = (fixedMoneyMatch[2] || 'COP').toUpperCase();
+      return { deductible: { minimum, currency, type: 'fixed' }, isAmbiguous: false };
+    }
+  }
+
+  if (percentage !== undefined && minimum !== undefined) {
+    return {
+      deductible: { percentage, minimum, currency, type: 'percentage_with_minimum' },
+      isAmbiguous: false,
+    };
+  }
+  if (percentage !== undefined) {
+    return { deductible: { percentage, type: 'percentage' }, isAmbiguous: false };
+  }
+  if (minimum !== undefined) {
+    return { deductible: { minimum, currency, type: 'minimum' }, isAmbiguous: false };
+  }
+
+  return { deductible: { type: 'see_conditions' }, isAmbiguous: true };
 }
 
 // ---------------------------------------------------------------------------
@@ -217,10 +304,7 @@ function detectFormat(raw: string): 'markdown' | 'csv' | 'json' | 'kv' {
     return 'json';
   }
 
-  const lines = trimmed
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
+  const lines = trimmed.split('\n').map((line) => line.trim()).filter(Boolean);
 
   if (lines.some((line) => line.startsWith('|') && line.endsWith('|'))) {
     return 'markdown';
@@ -271,10 +355,7 @@ function buildCell(insurer: string, rawValue: string | null | undefined) {
 // ---------------------------------------------------------------------------
 
 function splitMarkdownLine(line: string): string[] {
-  return line
-    .split('|')
-    .slice(1, -1)
-    .map((cell) => cell.trim());
+  return line.split('|').slice(1, -1).map((cell) => cell.trim());
 }
 
 function isMarkdownSeparator(line: string): boolean {
@@ -294,10 +375,7 @@ function parseMarkdown(raw: string): RawTable {
 
   const headerCells = splitMarkdownLine(lines[0]);
   // First header cell is the row-label column; remaining cells are insurers.
-  const insurers = headerCells
-    .slice(1)
-    .map((cell) => cell.trim())
-    .filter(Boolean);
+  const insurers = headerCells.slice(1).map((cell) => cell.trim()).filter(Boolean);
 
   const rows = new Map<string, RowValues>();
   const extraRows = new Map<string, RowValues>();
@@ -310,10 +388,7 @@ function parseMarkdown(raw: string): RawTable {
     const label = cells[0]?.trim();
     if (!label) continue;
 
-    const values = padValues(
-      cells.slice(1).map((cell) => cell.trim()),
-      insurers.length
-    );
+    const values = padValues(cells.slice(1).map((cell) => cell.trim()), insurers.length);
     const canonical = mapRowLabel(label);
     const target = canonical ? rows : extraRows;
     target.set(canonical || label, values);
@@ -366,10 +441,7 @@ function parseCsvLine(line: string, delimiter: string): string[] {
 }
 
 function parseCsv(raw: string): RawTable {
-  const lines = raw
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
+  const lines = raw.split('\n').map((line) => line.trim()).filter(Boolean);
   if (lines.length < 2) {
     throw new Error('CSV input must have at least a header and one data row');
   }
@@ -385,10 +457,7 @@ function parseCsv(raw: string): RawTable {
     firstHeader === '' || /^(fila|concepto|cobertura|row|label|rowlabel)$/i.test(firstHeader);
 
   const insurers = hasRowLabelColumn
-    ? headerCells
-        .slice(1)
-        .map((cell) => cell.trim())
-        .filter(Boolean)
+    ? headerCells.slice(1).map((cell) => cell.trim()).filter(Boolean)
     : headerCells.map((cell) => cell.trim()).filter(Boolean);
 
   const rows = new Map<string, RowValues>();
@@ -400,9 +469,7 @@ function parseCsv(raw: string): RawTable {
     if (hasRowLabelColumn && !label) continue;
 
     const values = padValues(
-      hasRowLabelColumn
-        ? cells.slice(1).map((cell) => cell.trim())
-        : cells.map((cell) => cell.trim()),
+      hasRowLabelColumn ? cells.slice(1).map((cell) => cell.trim()) : cells.map((cell) => cell.trim()),
       insurers.length
     );
 
@@ -511,7 +578,9 @@ function parseJsonAsInsurerMap(data: Record<string, unknown>): RawTable {
       const insurerObj = data[insurer];
       if (typeof insurerObj !== 'object' || insurerObj === null) return '';
 
-      const matchedKey = Object.keys(insurerObj).find((key) => mapRowLabel(key) === canonicalLabel);
+      const matchedKey = Object.keys(insurerObj).find(
+        (key) => mapRowLabel(key) === canonicalLabel
+      );
       if (!matchedKey) return '';
 
       const val = (insurerObj as Record<string, unknown>)[matchedKey];
@@ -527,10 +596,7 @@ function parseJsonAsInsurerMap(data: Record<string, unknown>): RawTable {
       if (mapRowLabel(key)) continue;
       const value = val === null || val === undefined ? '' : String(val);
       if (!extraRows.has(key)) {
-        extraRows.set(
-          key,
-          insurers.map(() => '')
-        );
+        extraRows.set(key, insurers.map(() => ''));
       }
       const idx = insurers.indexOf(insurer);
       extraRows.get(key)![idx] = value;
@@ -545,10 +611,7 @@ function parseJsonAsInsurerMap(data: Record<string, unknown>): RawTable {
 // ---------------------------------------------------------------------------
 
 function parseKeyValue(raw: string): RawTable {
-  const lines = raw
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
+  const lines = raw.split('\n').map((line) => line.trim()).filter(Boolean);
 
   const rows = new Map<string, Array<{ insurer: string; value: string }>>();
   const insurersSet = new Set<string>();
@@ -666,16 +729,36 @@ function buildV2Cell(
   insurer: string,
   rawValue: string | null | undefined,
   aliasQuality: number,
-  isAmbiguous: boolean
+  isAmbiguous: boolean,
+  section?: string
 ) {
   const raw = rawValue ?? '';
-  const notFound = isEmptyValue(raw);
+  let notFound = isEmptyValue(raw);
+  let value = notFound ? 'No informado' : raw.trim();
+  let deductible: StructuredDeductible | undefined;
+
+  if (section === SchemaSection.DEDUCIBLES) {
+    const parsed = parseDeductible(rawValue);
+    deductible = parsed.deductible;
+
+    if (deductible.type === 'see_conditions') {
+      value = 'Ver condiciones';
+      notFound = false;
+    } else if (deductible.type === 'not_applicable') {
+      value = 'No aplica';
+      notFound = false;
+    }
+
+    isAmbiguous = isAmbiguous || parsed.isAmbiguous;
+  }
+
   const cell = {
     insurer,
-    value: notFound ? 'No informado' : raw.trim(),
+    value,
     rawText: rawValue ?? undefined,
     notFound: notFound || undefined,
     ...(isAmbiguous ? { isAmbiguous: true } : {}),
+    ...(deductible ? { deductible } : {}),
   };
   return {
     ...cell,
@@ -708,9 +791,7 @@ function parseJsonV2(raw: string): RawTable {
   }
 
   const insurers = Array.isArray((data as Record<string, unknown>).insurers)
-    ? ((data as Record<string, unknown>).insurers as unknown[])
-        .map((item) => String(item).trim())
-        .filter(Boolean)
+    ? ((data as Record<string, unknown>).insurers as unknown[]).map((item) => String(item).trim()).filter(Boolean)
     : [];
   const inputRows = Array.isArray((data as Record<string, unknown>).rows)
     ? ((data as Record<string, unknown>).rows as unknown[])
@@ -775,15 +856,13 @@ function buildV2Result(
         label: normalized.canonical,
         section: normalized.section,
         cells: insurers.map((insurer, index) =>
-          buildV2Cell(insurer, paddedOrNull(values, index), normalized.quality, false)
+          buildV2Cell(insurer, paddedOrNull(values, index), normalized.quality, false, normalized.section)
         ),
       });
     } else {
       // Ambiguous or unmapped label: keep as extra row with isAmbiguous flag.
       const isAmbiguous = ALIAS_MAP.some((entry) =>
-        entry.aliases.some(
-          (alias) => normalizeLabel(label).includes(alias) || alias.includes(normalizeLabel(label))
-        )
+        entry.aliases.some((alias) => normalizeLabel(label).includes(alias) || alias.includes(normalizeLabel(label)))
       );
       extraRows.push({
         label,
@@ -857,9 +936,10 @@ export class FlatTableParser {
           break;
       }
     } catch (error) {
-      throw new FlatTableParseError(`Failed to parse flat ${format} table`, [
-        { message: error instanceof Error ? error.message : String(error) },
-      ]);
+      throw new FlatTableParseError(
+        `Failed to parse flat ${format} table`,
+        [{ message: error instanceof Error ? error.message : String(error) }]
+      );
     }
 
     return buildResult(rawTable, options, warnings);
@@ -877,9 +957,10 @@ export class FlatTableParser {
     try {
       rawTable = parseJsonV2(raw);
     } catch (error) {
-      throw new FlatTableParseError('Failed to parse granular JSON table', [
-        { message: error instanceof Error ? error.message : String(error) },
-      ]);
+      throw new FlatTableParseError(
+        'Failed to parse granular JSON table',
+        [{ message: error instanceof Error ? error.message : String(error) }]
+      );
     }
 
     return buildV2Result(rawTable, options, warnings);
