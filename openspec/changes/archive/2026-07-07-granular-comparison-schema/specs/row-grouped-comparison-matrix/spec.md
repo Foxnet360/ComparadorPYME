@@ -1,7 +1,4 @@
-# Spec: Row Grouped Comparison Matrix
-
-## Capability
-Motor dinámico de comparación que unifica coberturas, deducibles, e inclusiones en filas agrupadas horizontales, compartiendo la misma lógica lógica de layout para el Dashboard React y la exportación de Excel.
+# Delta for Row Grouped Comparison Matrix
 
 ## MODIFIED Requirements
 
