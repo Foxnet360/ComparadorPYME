@@ -719,12 +719,14 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
 
 interface UnifiedCoverageMatrixProps {
   quotes: QuoteAnalysis[];
+  rows?: MatrixRow[];
   viewMode?: 'client' | 'technical';
   analysisId?: string; // Optional ID for direct exports
 }
 
 export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
   quotes,
+  rows,
   viewMode = 'technical',
   analysisId,
 }) => {
@@ -818,7 +820,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
     return confidence !== undefined && confidence !== null && confidence <= 0.5;
   };
 
-  const fullMatrix = transformQuotesToMatrix(quotes);
+  const fullMatrix = rows ?? transformQuotesToMatrix(quotes);
 
   // Partition matrix rows according to active tabs
   const filteredRows = fullMatrix.filter((row) => {

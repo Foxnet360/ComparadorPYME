@@ -84,6 +84,8 @@ interface UnifiedQuote {
     deductible: string;
     isPositive: boolean;
     valueSource: 'extracted';
+    confidence?: number;
+    section?: string;
   }>;
   alerts: Array<{
     level: string;
@@ -427,7 +429,7 @@ export function generateComparison(
 /**
  * Convert MatrixRow[] from unified engine to ComparisonReport format
  */
-function matrixRowsToComparisonReport(
+export function matrixRowsToComparisonReport(
   matrixRows: MatrixRow[],
   quoteFiles: Express.Multer.File[]
 ): UnifiedComparisonReport {
@@ -444,8 +446,11 @@ function matrixRowsToComparisonReport(
     let priceAnnual = 0;
 
     // Extract coverages from matrix rows
+    let currentSection: string | undefined;
     matrixRows.forEach((row) => {
-      if (row.type === 'data' && row.cells && row.cells[idx]) {
+      if (row.type === 'header') {
+        currentSection = row.label;
+      } else if (row.type === 'data' && row.cells && row.cells[idx]) {
         const cell = row.cells[idx];
         const value = cell.value || '';
 
@@ -476,6 +481,8 @@ function matrixRowsToComparisonReport(
             deductible: cell.notes || 'No especificado',
             isPositive: !cell.isExcluded,
             valueSource: 'extracted' as const,
+            confidence: cell.confidence,
+            section: currentSection,
           });
         }
       }
