@@ -105,7 +105,13 @@ describe('FlatComparisonSchema (v2)', () => {
           label: 'Edificio',
           section: SchemaSection.BIENES_ASEGURADOS,
           cells: [
-            { insurer: 'MAPFRE', value: '$500M', rawText: 'Edificio 500M', confidence: 0.92, isAmbiguous: false },
+            {
+              insurer: 'MAPFRE',
+              value: '$500M',
+              rawText: 'Edificio 500M',
+              confidence: 0.92,
+              isAmbiguous: false,
+            },
             { insurer: 'CHUBB', value: '$600M', confidence: 0.9 },
             { insurer: 'BBVA', value: null, notFound: true, confidence: 0 },
           ],

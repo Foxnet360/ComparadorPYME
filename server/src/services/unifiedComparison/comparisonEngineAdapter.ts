@@ -58,7 +58,9 @@ export class ComparisonEngineAdapter {
       );
       const matrix = flatResultToMatrixRows(result);
 
-      console.log(`✅ [Adapter] Unified engine succeeded [${correlationId}] schemaVersion=${schemaVersion}`);
+      console.log(
+        `✅ [Adapter] Unified engine succeeded [${correlationId}] schemaVersion=${schemaVersion}`
+      );
       return {
         matrix,
         engine: 'unified',
