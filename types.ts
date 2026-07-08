@@ -381,6 +381,8 @@ export interface MatrixCell {
   needsHumanReview?: boolean;
   calculatedPage?: number;
   justification?: string;
+  canonicalName?: string;
+  matchMethod?: 'thesaurus' | 'fuzzy' | 'embedding' | 'llm' | null;
 }
 
 export interface MatrixRow {

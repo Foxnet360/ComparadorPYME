@@ -31,6 +31,10 @@ vi.mock('../../../components/UnifiedCoverageMatrix', () => ({
   UnifiedCoverageMatrix: () => <div>Coverage Matrix</div>,
 }));
 
+vi.mock('../../../config/features', () => ({
+  isAdvancedAnalysisEnabled: () => true,
+}));
+
 vi.mock('../../../components/CoverageValidationMatrix', () => ({
   CoverageValidationMatrix: () => <div data-testid="coverage-validation">Coverage Validation</div>,
 }));

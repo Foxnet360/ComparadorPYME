@@ -1,5 +1,5 @@
 import { ComparisonReport } from '../types';
-import { API_BASE_URL } from './apiConfig';
+import { apiClient } from './apiClient';
 
 export const analyzeQuotesWithGemini = async (
   quoteFiles: File[],
@@ -10,18 +10,6 @@ export const analyzeQuotesWithGemini = async (
 ): Promise<ComparisonReport> => {
   const formData = new FormData();
   formData.append('clientName', clientName);
-
-  // Add User Metadata from LocalStorage
-  const user = localStorage.getItem('seguro_app_user');
-  if (user) {
-    try {
-      const parsed = JSON.parse(user);
-      if (parsed.id) formData.append('userId', parsed.id);
-      if (parsed.email) formData.append('userEmail', parsed.email);
-    } catch (e) {
-      console.warn('Failed to parse user from storage', e);
-    }
-  }
 
   if (onStatusUpdate) onStatusUpdate('Preparando archivos para envío...');
 
@@ -38,23 +26,10 @@ export const analyzeQuotesWithGemini = async (
   if (onStatusUpdate) onStatusUpdate('Subiendo archivos al servidor seguro (Cloud Run)...');
 
   try {
-    const response = await fetch(`${API_BASE_URL}/analyze`, {
+    const response = await apiClient.fetch('/analyze', {
       method: 'POST',
       body: formData,
     });
-
-    if (!response.ok) {
-      let errorMessage = `Server error: ${response.statusText}`;
-      try {
-        const errorData = await response.json();
-        if (errorData.error) {
-          errorMessage = errorData.error;
-        }
-      } catch (_e) {
-        // Could not parse JSON, stick to statusText
-      }
-      throw new Error(errorMessage);
-    }
 
     if (onStatusUpdate) onStatusUpdate('Procesando con Gemini Advanced (RAG)...');
 
@@ -62,7 +37,16 @@ export const analyzeQuotesWithGemini = async (
     return result as ComparisonReport;
   } catch (error) {
     console.error('API Error:', error);
-    throw error;
+
+    const rawMessage = error instanceof Error ? error.message : String(error);
+
+    if (rawMessage.includes('Sesión expirada')) {
+      throw new Error('Sesión expirada. Por favor inicia sesión nuevamente.');
+    }
+
+    throw new Error(
+      rawMessage || 'Error al analizar las cotizaciones. Inténtalo de nuevo más tarde.'
+    );
   }
 };
 
