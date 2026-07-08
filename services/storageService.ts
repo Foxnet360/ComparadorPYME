@@ -9,12 +9,9 @@ import {
   QuoteAnalysis,
 } from '../types';
 import { dbService } from './db';
+import { apiClient } from './apiClient';
 
 const USER_KEY = 'seguro_app_user';
-// Use relative URL in production (same domain), localhost only in dev
-const isLocal =
-  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_URL = isLocal ? 'http://localhost:8080/api' : '/api';
 
 // Mock Data for initial load (fallback only)
 const MOCK_CLIENTS: Client[] = [
@@ -113,48 +110,43 @@ export const storageService = {
 
   // --- HISTORY & STATS ---
   getHistory: async (): Promise<HistoryEntry[]> => {
-    const currentUser = storageService.getCurrentUser();
-    if (!currentUser || !currentUser.id) return [];
-
     try {
-      const response = await fetch(`${API_URL}/history?userId=${currentUser.id}`);
-      if (response.ok) {
-        const cloudHistory: Array<{
-          id: string;
-          user_id?: string;
-          created_at?: string;
-          client_name?: string;
-          analysis_result?: { quotes?: QuoteAnalysis[] };
-        }> = await response.json();
+      const response = await apiClient.fetch('/history');
+      const cloudHistory: Array<{
+        id: string;
+        user_id?: string;
+        created_at?: string;
+        client_name?: string;
+        analysis_result?: { quotes?: QuoteAnalysis[] };
+      }> = await response.json();
 
-        // Transform backend data (snake_case) to frontend format (camelCase)
-        const transformedHistory: HistoryEntry[] = cloudHistory.map((item) => {
-          const analysisResult = item.analysis_result || {};
-          const quotes = analysisResult.quotes || [];
-          const bestQuote =
-            quotes.length > 0
-              ? quotes.reduce<QuoteAnalysis>((prev, curr) =>
-                  prev.score > curr.score ? prev : curr
-                )
-              : null;
+      // Transform backend data (snake_case) to frontend format (camelCase)
+      const transformedHistory: HistoryEntry[] = cloudHistory.map((item) => {
+        const analysisResult = item.analysis_result || {};
+        const quotes = analysisResult.quotes || [];
+        const bestQuote =
+          quotes.length > 0
+            ? quotes.reduce((prev, curr) =>
+                prev.score > curr.score ? prev : curr
+              )
+            : null;
 
-          return {
-            id: item.id,
-            userId: item.user_id,
-            date: item.created_at
-              ? item.created_at.split('T')[0]
-              : new Date().toISOString().split('T')[0],
-            clientName: item.client_name || 'Cliente Sin Nombre',
-            insurers: quotes.map((q) => q.insurerName || 'Desconocido'),
-            bestOption: bestQuote?.insurerName || 'N/A',
-            premiumValue: bestQuote?.priceAnnual || 0,
-            status: 'SENT', // Default status - could be stored in DB in future
-            fullReport: analysisResult as ComparisonReport,
-          };
-        });
+        return {
+          id: item.id,
+          userId: item.user_id,
+          date: item.created_at
+            ? item.created_at.split('T')[0]
+            : new Date().toISOString().split('T')[0],
+          clientName: item.client_name || 'Cliente Sin Nombre',
+          insurers: quotes.map((q) => q.insurerName || 'Desconocido'),
+          bestOption: bestQuote?.insurerName || 'N/A',
+          premiumValue: bestQuote?.priceAnnual || 0,
+          status: 'SENT', // Default status - could be stored in DB in future
+          fullReport: analysisResult as ComparisonReport,
+        };
+      });
 
-        return transformedHistory;
-      }
+      return transformedHistory;
     } catch (e) {
       console.warn('Backend Unreachable, falling back to local storage', e);
     }
@@ -176,7 +168,7 @@ export const storageService = {
     }
 
     // Backend already saves the analysis, we just need to update local cache
-    const bestQuote = report.quotes.reduce<QuoteAnalysis>((prev, curr) =>
+    const bestQuote = report.quotes.reduce((prev, curr) =>
       prev.score > curr.score ? prev : curr
     );
     const insurers = report.quotes.map((q) => q.insurerName || 'Desconocido');
