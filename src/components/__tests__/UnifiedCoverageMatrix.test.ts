@@ -89,7 +89,7 @@ describe('UnifiedCoverageMatrix - Pure Functions', () => {
       const cellNotes = {
         'row1-0': { content: 'Keep this' },
         'row1-1': { content: '' },
-        'row2-0': { timestamp: 12345 },
+        'row2-0': { content: undefined },
         'row2-1': { content: 'Also keep' },
       };
       const result = buildExportNotes(cellNotes);

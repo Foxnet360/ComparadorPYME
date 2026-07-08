@@ -23,6 +23,8 @@ import { formatPercentage } from '../utils/formatCurrency';
 import { useOptimisticCorrection } from '../hooks/useOptimisticCorrection';
 import { usePdfViewer, useCellNotes } from '../contexts/AnalysisContext';
 import { InlineNoteEditor } from './InlineNoteEditor';
+import { apiClient } from '../services/apiClient';
+import { useToasts, ToastContainer } from './ToastNotification';
 
 const PdfViewer = lazy(() => import('./PdfViewer'));
 
@@ -335,6 +337,8 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
             needsHumanReview: cov.needsHumanReview,
             calculatedPage: cov.calculatedPage,
             justification: cov.justification,
+            canonicalName: cov.canonicalName,
+            matchMethod: cov.matchMethod,
           });
         } else {
           cells.push({
@@ -455,6 +459,8 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
             needsHumanReview: bestItem.needsHumanReview,
             calculatedPage: bestItem.calculatedPage,
             justification: bestItem.justification,
+            canonicalName: bestItem.canonicalName,
+            matchMethod: bestItem.matchMethod,
           });
         } else {
           cells.push({
@@ -752,6 +758,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
   const { submitCorrection } = useOptimisticCorrection();
   const { openPdfViewer } = usePdfViewer();
   const { cellNotes, setCellNote, getCellNote } = useCellNotes();
+  const { toasts, addToast, removeToast, success, error } = useToasts();
   const [savingCorrections, setSavingCorrections] = useState<Set<string>>(new Set());
   const [editingNote, setEditingNote] = useState<{ rowId: string; colIdx: number } | null>(null);
 
@@ -832,21 +839,21 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
   const getConfidenceBadgeColor = (confidence: number | undefined) => {
     if (confidence === undefined || confidence === null)
       return 'bg-slate-100 text-slate-500 border-slate-200';
-    if (confidence >= 0.9) return 'bg-green-50 text-green-700 border-green-200';
-    if (confidence >= 0.7) return 'bg-yellow-50 text-yellow-700 border-yellow-200';
-    return 'bg-red-50 text-red-700 border-red-200';
+    if (confidence >= 0.8) return 'bg-green-100 text-green-700 border-green-300';
+    if (confidence >= 0.5) return 'bg-yellow-100 text-yellow-700 border-yellow-300';
+    return 'bg-red-100 text-red-700 border-red-300';
   };
 
   const getConfidenceText = (confidence: number | undefined) => {
     if (confidence === undefined || confidence === null) return 'Sin match';
-    if (confidence >= 0.9) return 'Exacto';
-    if (confidence >= 0.7) return 'Aproximado';
-    return 'Revisar';
+    if (confidence >= 0.8) return 'Alta';
+    if (confidence >= 0.5) return 'Media';
+    return 'Baja';
   };
 
   const handleExportExcel = async () => {
     if (!analysisId) {
-      alert('ID de análisis no disponible para exportación.');
+      addToast('ID de análisis no disponible para exportación.', 'warning');
       return;
     }
     setIsExporting(true);
@@ -854,29 +861,30 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
       // Create a simplified version of cellNotes for export
       const exportNotes = buildExportNotes(cellNotes);
 
-      // POST request with notes
-      const response = await fetch(`/api/analysis/${analysisId}/export`, {
+      const response = await apiClient.fetch(`/analysis/${analysisId}/export`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cellNotes: exportNotes }),
       });
 
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `comparativa_seguros_${analysisId}.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      } else {
-        throw new Error('Export failed');
-      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `comparativa_seguros_${analysisId}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      success('Excel descargado correctamente.');
     } catch (err) {
       console.error('Error al exportar Excel:', err);
-      alert('Error al descargar el archivo Excel.');
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'No se pudo descargar el Excel. Inténtalo de nuevo más tarde.';
+      error(message);
     } finally {
       setIsExporting(false);
     }
@@ -901,7 +909,11 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
             disabled={isExporting}
             className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 font-semibold text-sm transition-all shadow-md active:scale-95 disabled:opacity-50"
           >
-            <Download size={16} />
+            {isExporting ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Download size={16} />
+            )}
             {isExporting ? 'Generando Excel...' : 'Descargar Excel Comparativo'}
           </button>
         )}
@@ -950,8 +962,20 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
         role="grid"
         aria-label="Matriz de coberturas de seguros"
       >
-        <div className="overflow-x-auto relative">
-          <table className="w-full text-sm border-collapse text-left">
+        {filteredRows.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-12 text-center text-slate-500">
+            <ListChecks className="text-slate-300 mb-4" size={48} />
+            <h3 className="text-lg font-semibold text-slate-700 mb-2">
+              No hay datos para mostrar
+            </h3>
+            <p className="text-sm max-w-md">
+              La matriz de coberturas está vacía. Sube las cotizaciones de las aseguradoras para
+              generar la comparativa.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto relative">
+            <table className="w-full text-sm border-collapse text-left">
             <thead className="bg-[#E6F0FA] text-[#0066CC] font-bold text-xs uppercase border-b border-blue-200 sticky top-0 z-20">
               <tr role="row">
                 <th
@@ -1030,7 +1054,11 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                         isWinner
                           ? 'bg-amber-50/60 font-semibold text-amber-900 border border-amber-200/50'
                           : ''
-                      } ${excluded ? 'text-red-500 italic bg-slate-50/20' : 'text-slate-800'} ${
+                      } ${
+                        excluded
+                          ? 'text-slate-400 italic bg-slate-100/60 line-through decoration-slate-400'
+                          : 'text-slate-800'
+                      } ${
                         lowConfidence
                           ? 'bg-yellow-50/40 border-2 border-yellow-400/60 shadow-sm'
                           : ''
@@ -1077,6 +1105,14 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                             </span>
                           )}
 
+                          {/* Confidence indicator */}
+                          {cell.confidence !== undefined && (
+                            <span
+                              className={`absolute top-1 left-1 w-2.5 h-2.5 rounded-full border ${getConfidenceBadgeColor(cell.confidence)} cursor-help`}
+                              title={`Confianza: ${formatPercentage(cell.confidence, 0)} (${getConfidenceText(cell.confidence)})`}
+                            />
+                          )}
+
                           {/* Winner trophy */}
                           {isWinner && !lowConfidence && (
                             <span
@@ -1104,7 +1140,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                           {/* Cell Value Rendering */}
                           <div className="flex flex-col items-center justify-center gap-1.5">
                             {excluded ? (
-                              <span className="text-red-400 font-medium">No incluida</span>
+                              <span className="text-slate-400 font-medium">No incluida</span>
                             ) : (
                               <span
                                 className={`${isWinner ? 'text-amber-950 font-bold' : 'text-slate-800 font-medium'}`}
@@ -1244,9 +1280,30 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                                   </div>
                                 )}
 
+                                {/* Canonical Name & Match Method */}
+                                {(cell.canonicalName || cell.matchMethod) && (
+                                  <div className="mt-2 pt-2 border-t border-slate-800">
+                                    {cell.canonicalName && (
+                                      <div className="flex justify-between py-0.5">
+                                        <span className="text-slate-400">Nombre canónico:</span>
+                                        <span className="font-semibold text-white text-right max-w-[180px] truncate">
+                                          {cell.canonicalName}
+                                        </span>
+                                      </div>
+                                    )}
+                                    {cell.matchMethod && (
+                                      <div className="flex justify-between py-0.5">
+                                        <span className="text-slate-400">Método:</span>
+                                        <span className="font-semibold text-white capitalize">
+                                          {cell.matchMethod}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
                                 {/* Page Evidence */}
-                                {(cell.calculatedPage !== undefined ||
-                                  cell.pageNumber !== undefined) && (
+                                {(cell.calculatedPage !== undefined || cell.pageNumber !== undefined) && (
                                   <div className="flex justify-between py-0.5">
                                     <span className="text-slate-400">Página:</span>
                                     <span className="font-semibold text-white">
@@ -1257,14 +1314,16 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                                   </div>
                                 )}
 
-                                {/* Raw Text Snippet */}
-                                {cell.rawTextSnippet && (
+                                {/* Notes / Raw Text Snippet */}
+                                {(cell.notes || cell.rawTextSnippet) && (
                                   <div className="mt-2 pt-2 border-t border-slate-800">
                                     <span className="font-semibold text-slate-400 block mb-1">
-                                      Evidencia textual (verbatim):
+                                      {cell.notes ? 'Notas' : 'Evidencia textual (verbatim):'}
                                     </span>
                                     <div className="bg-slate-800/50 rounded-lg p-2 text-[11px] text-slate-300 leading-relaxed italic border border-slate-700/50">
-                                      "{cell.rawTextSnippet}"
+                                      "{cell.notes && cell.notes.length > 200
+                                        ? `${cell.notes.slice(0, 200)}...`
+                                        : cell.notes || cell.rawTextSnippet}"
                                     </div>
                                   </div>
                                 )}
@@ -1308,6 +1367,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
             </tbody>
           </table>
         </div>
+      )}
       </div>
 
       {/* Methodology Alert Note */}
@@ -1325,6 +1385,8 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
       <Suspense fallback={null}>
         <PdfViewer />
       </Suspense>
+
+      <ToastContainer toasts={toasts} onClose={removeToast} />
     </div>
   );
 };
