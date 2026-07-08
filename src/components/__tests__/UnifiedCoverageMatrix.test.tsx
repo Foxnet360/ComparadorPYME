@@ -172,7 +172,9 @@ describe('UnifiedCoverageMatrix', () => {
       blob: vi.fn().mockResolvedValue(new Blob(['excel'], { type: 'application/octet-stream' })),
     } as unknown as Response);
 
-    renderWithProvider(<UnifiedCoverageMatrix quotes={baseQuotes} rows={v2MatrixRows} analysisId="abc-123" />);
+    renderWithProvider(
+      <UnifiedCoverageMatrix quotes={baseQuotes} rows={v2MatrixRows} analysisId="abc-123" />
+    );
 
     const exportButton = screen.getByText('Descargar Excel Comparativo');
     fireEvent.click(exportButton);
@@ -196,7 +198,9 @@ describe('UnifiedCoverageMatrix', () => {
 
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
 
-    renderWithProvider(<UnifiedCoverageMatrix quotes={baseQuotes} rows={v2MatrixRows} analysisId="abc-123" />);
+    renderWithProvider(
+      <UnifiedCoverageMatrix quotes={baseQuotes} rows={v2MatrixRows} analysisId="abc-123" />
+    );
 
     fireEvent.click(screen.getByText('Descargar Excel Comparativo'));
 

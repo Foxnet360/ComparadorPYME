@@ -126,9 +126,7 @@ export const storageService = {
         const quotes = analysisResult.quotes || [];
         const bestQuote =
           quotes.length > 0
-            ? quotes.reduce((prev, curr) =>
-                prev.score > curr.score ? prev : curr
-              )
+            ? quotes.reduce((prev, curr) => (prev.score > curr.score ? prev : curr))
             : null;
 
         return {
@@ -168,9 +166,7 @@ export const storageService = {
     }
 
     // Backend already saves the analysis, we just need to update local cache
-    const bestQuote = report.quotes.reduce((prev, curr) =>
-      prev.score > curr.score ? prev : curr
-    );
+    const bestQuote = report.quotes.reduce((prev, curr) => (prev.score > curr.score ? prev : curr));
     const insurers = report.quotes.map((q) => q.insurerName || 'Desconocido');
 
     // Use backend-generated UUID if available, otherwise generate a valid UUID

@@ -34,7 +34,7 @@ describe('apiClient', () => {
       expires_in: 3600,
       token_type: 'bearer',
       user: { id: 'user-1' },
-    } as unknown as import('@supabase/supabase-js').Session);
+    }) as unknown as import('@supabase/supabase-js').Session;
 
   describe('getAuthToken', () => {
     it('returns access_token when session exists', async () => {
