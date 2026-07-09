@@ -251,4 +251,77 @@ describe('UnifiedCoverageMatrix', () => {
     expect(screen.queryByText('AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL')).toBeNull();
     expect(screen.queryByText('RESPONSABILIDAD CIVIL EXTRACONTRACTUAL (RCE)')).toBeNull();
   });
+
+  it('renders the Header Metadata Card when metadata is provided', () => {
+    const testMetadata = [
+      {
+        insurer: 'MAPFRE',
+        cliente: 'Juan Perez',
+        tipoSeguro: 'Multirriesgo PYME',
+        ubicacionRiesgo: 'Calle 123, Bogota',
+        anoConstruccion: '2015',
+        pisos: '3',
+        aliado: 'Aliado CSA',
+        actividadOcupacion: 'Comercial',
+        documento: 'NIT 123456',
+        vigencia: 'Anual',
+      },
+    ];
+
+    renderWithProvider(
+      <UnifiedCoverageMatrix quotes={baseQuotes} rows={v2MatrixRows} metadata={testMetadata} />
+    );
+
+    expect(screen.getByText('Información del Riesgo & Metadatos')).toBeTruthy();
+    expect(screen.getByText('Juan Perez')).toBeTruthy();
+    expect(screen.getByText('Calle 123, Bogota')).toBeTruthy();
+    expect(screen.getByText('Aliado CSA')).toBeTruthy();
+  });
+
+  it('correctly filters rows based on tabs and maps financial rows with sectionId 100', () => {
+    const mixedRows: MatrixRow[] = [
+      {
+        type: 'header',
+        id: 'section_0',
+        label: 'COBERTURAS GENERALES',
+        sectionId: 1,
+        cells: [{ value: '', isExcluded: false, isWinner: false }],
+      },
+      {
+        type: 'data',
+        id: 'section_0_row_0',
+        label: 'Incendio',
+        sectionId: 1,
+        cells: [{ value: '$10M', isExcluded: false, isWinner: false }],
+      },
+      {
+        type: 'header',
+        id: 'section_financial_header',
+        label: 'PRIMAS Y COSTOS',
+        sectionId: 100,
+        cells: [{ value: '', isExcluded: false, isWinner: false }],
+      },
+      {
+        type: 'data',
+        id: 'financial_total',
+        label: 'TOTAL A PAGAR',
+        sectionId: 100,
+        cells: [{ value: '$1M', isExcluded: false, isWinner: false }],
+      },
+    ];
+
+    renderWithProvider(<UnifiedCoverageMatrix quotes={baseQuotes} rows={mixedRows} />);
+
+    // By default, the active tab is 'coverages' (sectionId < 100), so we should see 'Incendio' but not 'TOTAL A PAGAR'
+    expect(screen.getByText('Incendio')).toBeTruthy();
+    expect(screen.queryByText('TOTAL A PAGAR')).toBeNull();
+
+    // Switch to financials tab
+    const financialsTab = screen.getByText('Primas y Costos');
+    fireEvent.click(financialsTab);
+
+    // Now we should see 'TOTAL A PAGAR' but not 'Incendio'
+    expect(screen.getByText('TOTAL A PAGAR')).toBeTruthy();
+    expect(screen.queryByText('Incendio')).toBeNull();
+  });
 });
