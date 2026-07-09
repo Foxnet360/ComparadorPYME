@@ -93,6 +93,28 @@ export const storageService = {
 
   // --- CLIENTS ---
   getClients: async (): Promise<Client[]> => {
+    const currentUser = storageService.getCurrentUser();
+    if (currentUser) {
+      try {
+        const response = await apiClient.fetch('/clients');
+        const cloudClients: Client[] = await response.json();
+
+        // Sync and cache cloud clients to local IndexedDB
+        for (const client of cloudClients) {
+          if (client && client.id) {
+            await dbService.put('clients', client);
+          }
+        }
+
+        return cloudClients;
+      } catch (error) {
+        console.warn(
+          '⚠️ Failed to fetch clients from backend, falling back to local IndexedDB',
+          error
+        );
+      }
+    }
+
     const clients = await dbService.getAll('clients');
     if (clients.length === 0) {
       for (const client of MOCK_CLIENTS) {
@@ -104,7 +126,29 @@ export const storageService = {
   },
 
   addClient: async (client: Client): Promise<Client[]> => {
+    // Put into local IndexedDB for responsiveness and offline usage
     await dbService.put('clients', client);
+
+    // Sync with cloud backend database if authenticated
+    try {
+      const currentUser = storageService.getCurrentUser();
+      if (currentUser) {
+        await apiClient.fetch('/clients', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(client),
+        });
+        console.log('✅ Client successfully synchronized to backend');
+      }
+    } catch (error) {
+      console.warn(
+        '⚠️ Syncing client to backend failed. Will keep in local IndexedDB only.',
+        error
+      );
+    }
+
     return await storageService.getClients();
   },
 

@@ -10,6 +10,8 @@ import path from 'path';
 import fs from 'fs';
 import { comparisonEngineAdapter } from '../services/unifiedComparison/comparisonEngineAdapter';
 import { unifiedComparisonFlag } from '../services/unifiedComparison/featureFlagService';
+import { saveAnalysisHistory } from '../repositories/analysisRepository';
+import { matrixRowsToComparisonReport } from '../controllers/analysisController';
 
 const router = express.Router();
 
@@ -34,6 +36,7 @@ const upload = multer({
  * Create a unified comparison of multiple insurance quotes
  */
 router.post('/unified', upload.array('quotes', 10), async (req, res) => {
+  const startTime = Date.now();
   const correlationId = `api-unified-${Date.now()}`;
   const userId = (req as AuthenticatedRequest).user?.id;
 
@@ -81,6 +84,38 @@ router.post('/unified', upload.array('quotes', 10), async (req, res) => {
     // Generate comparison
     const adapterResult = await comparisonEngineAdapter.generateComparison(filePaths, userId);
 
+    // Save to analysis_history in database if user is authenticated
+    let savedId: string | null = null;
+    if (userId) {
+      try {
+        const clientName = req.body.clientName || 'Cliente';
+        const comparisonResult = await matrixRowsToComparisonReport(adapterResult.matrix, files);
+        const duration = Date.now() - startTime;
+
+        const insertData = {
+          user_id: userId,
+          client_name: clientName,
+          analysis_result: comparisonResult,
+          recommendation: comparisonResult.recommendation || null,
+          total_score: comparisonResult.quotes?.[0]?.score || null,
+          extraction_confidence: 85,
+          needs_review: false,
+          validation_flags_count: 0,
+          engine_type: adapterResult.engine,
+          processing_time_ms: duration,
+          confidence_score: 85,
+          unified_result: comparisonResult,
+          fallback_reason: adapterResult.fallbackReason || null,
+          correlation_id: adapterResult.correlationId,
+        };
+
+        savedId = await saveAnalysisHistory(insertData);
+        console.log(`💾 [API] Unified comparison persisted to database with ID: ${savedId}`);
+      } catch (saveError) {
+        console.error('❌ [API] Failed to persist unified comparison:', saveError);
+      }
+    }
+
     // Clean up temporary files
     files.forEach((f) => {
       try {
@@ -97,6 +132,7 @@ router.post('/unified', upload.array('quotes', 10), async (req, res) => {
       engine: adapterResult.engine,
       fallbackReason: adapterResult.fallbackReason,
       data: adapterResult.matrix,
+      id: savedId || undefined,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Comparison failed';

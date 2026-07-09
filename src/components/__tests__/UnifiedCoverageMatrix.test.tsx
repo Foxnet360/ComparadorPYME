@@ -211,4 +211,44 @@ describe('UnifiedCoverageMatrix', () => {
     expect(alertSpy).not.toHaveBeenCalled();
     alertSpy.mockRestore();
   });
+
+  it('hides confidence scores/badges and warning alerts in client viewMode', () => {
+    renderWithProvider(
+      <UnifiedCoverageMatrix quotes={baseQuotes} rows={v2MatrixRows} viewMode="client" />
+    );
+
+    // Confidence text indicators (e.g., 'Alta', 'Media', 'Baja') should not be present
+    expect(screen.queryByText('Alta')).toBeNull();
+    expect(screen.queryByText('Media')).toBeNull();
+    expect(screen.queryByText('Baja')).toBeNull();
+  });
+
+  it('simplifies technical header labels in client viewMode', () => {
+    const technicalHeaderRows: MatrixRow[] = [
+      {
+        type: 'header',
+        id: 'section_1',
+        label: 'AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL',
+        sectionId: 1,
+        cells: [{ value: '', isExcluded: false, isWinner: false }],
+      },
+      {
+        type: 'header',
+        id: 'section_6',
+        label: 'RESPONSABILIDAD CIVIL EXTRACONTRACTUAL (RCE)',
+        sectionId: 6,
+        cells: [{ value: '', isExcluded: false, isWinner: false }],
+      },
+    ];
+
+    renderWithProvider(
+      <UnifiedCoverageMatrix quotes={baseQuotes} rows={technicalHeaderRows} viewMode="client" />
+    );
+
+    // It should render simplified headers instead of technical ones
+    expect(screen.getByText('Cobertura Todo Riesgo Daño Material')).toBeTruthy();
+    expect(screen.getByText('Responsabilidad Civil (Daños a Terceros)')).toBeTruthy();
+    expect(screen.queryByText('AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL')).toBeNull();
+    expect(screen.queryByText('RESPONSABILIDAD CIVIL EXTRACONTRACTUAL (RCE)')).toBeNull();
+  });
 });
