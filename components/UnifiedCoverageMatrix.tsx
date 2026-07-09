@@ -243,6 +243,19 @@ export function formatMatrixValue(val: string | undefined | null): string {
   return val;
 }
 
+export function simplifyHeaderLabel(label: string): string {
+  const upper = label.toUpperCase();
+  if (upper.includes('AMPARO BÁSICO')) return 'Cobertura Todo Riesgo Daño Material';
+  if (upper.includes('AMIT / HMACC')) return 'Cobertura de Terrorismo, Huelga y Motín';
+  if (upper.includes('DAÑO INTERNO')) return 'Equipo Eléctrico y Electrónico';
+  if (upper.includes('HURTO CALIFICADO')) return 'Hurto y Sustracción con Violencia';
+  if (upper.includes('LUCRO CESANTE')) return 'Lucro Cesante / Pérdida de Ingresos';
+  if (upper.includes('RESPONSABILIDAD CIVIL')) return 'Responsabilidad Civil (Daños a Terceros)';
+  if (upper.includes('AMPAROS EXCLUSIVOS')) return 'Beneficios y Ventajas Competitivas';
+  if (upper.includes('COMPARATIVA DE PRIMAS')) return 'Resumen de Primas y Costos';
+  return label;
+}
+
 function localLevenshteinDistance(str1: string, str2: string): number {
   const matrix: number[][] = [];
   for (let i = 0; i <= str1.length; i++) {
@@ -275,6 +288,32 @@ function calculateSimilarity(str1: string, str2: string): number {
   const maxLen = Math.max(n1.length, n2.length);
   if (maxLen === 0) return 1.0;
   return 1 - localLevenshteinDistance(n1, n2) / maxLen;
+}
+
+export function isBillingOrPaymentNoise(name: string): boolean {
+  const lower = name.toLowerCase();
+  return (
+    lower.includes('forma de pago') ||
+    lower.includes('prima ') ||
+    lower.includes('prima_') ||
+    lower.includes('iva') ||
+    lower.includes('gastos de expedición') ||
+    lower.includes('gastos de expedicion') ||
+    lower.includes('comisión') ||
+    lower.includes('comision') ||
+    lower.includes('cuota') ||
+    lower.includes('financiación') ||
+    lower.includes('financiacion') ||
+    lower.includes('pago fraccionado') ||
+    lower.includes('intermediario') ||
+    lower.includes('costo') ||
+    lower.includes('valor aseg') ||
+    lower.includes('vigencia') ||
+    lower.includes('producto') ||
+    lower.includes('respaldo') ||
+    lower.includes('asistencia legal') ||
+    lower.includes('asistencias')
+  );
 }
 
 export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
@@ -403,6 +442,10 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
 
       if (isUnmapped || isLowConfidence) {
         const coverageName = (c.canonicalName || c.name).trim();
+
+        if (isBillingOrPaymentNoise(coverageName)) {
+          return;
+        }
 
         // Find if there is an existing group that is semantically similar (similarity >= 0.70)
         let foundGroup = exclusiveGroups.find(
@@ -992,6 +1035,8 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
               <tbody className="divide-y divide-slate-100">
                 {filteredRows.map((row) => {
                   if (row.type === 'header') {
+                    const displayLabel =
+                      viewMode === 'client' ? simplifyHeaderLabel(row.label) : row.label;
                     return (
                       <tr key={row.id} className="bg-[#E6F0FA]/40 font-bold" role="row">
                         <td
@@ -999,7 +1044,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                           colSpan={quotes.length + 1}
                           className="px-6 py-3 text-xs md:text-sm text-blue-800 uppercase tracking-wide border-y border-blue-50/50"
                         >
-                          {row.label}
+                          {displayLabel}
                         </td>
                       </tr>
                     );
@@ -1100,7 +1145,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                             )}
 
                             {/* Confidence indicator */}
-                            {cell.confidence !== undefined && (
+                            {viewMode === 'technical' && cell.confidence !== undefined && (
                               <span
                                 className={`absolute top-1 left-1 w-2.5 h-2.5 rounded-full border ${getConfidenceBadgeColor(cell.confidence)} cursor-help`}
                                 title={`Confianza: ${formatPercentage(cell.confidence, 0)} (${getConfidenceText(cell.confidence)})`}
@@ -1108,7 +1153,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                             )}
 
                             {/* Winner trophy */}
-                            {isWinner && !lowConfidence && (
+                            {isWinner && (viewMode === 'technical' ? !lowConfidence : true) && (
                               <span
                                 className="absolute top-1 right-2 text-amber-500 hover:scale-110 transition-transform cursor-help"
                                 title="Condición / Valor favorable"
@@ -1118,7 +1163,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                             )}
 
                             {/* Low Confidence / Needs Review Alert */}
-                            {(lowConfidence || needsReview) && (
+                            {viewMode === 'technical' && (lowConfidence || needsReview) && (
                               <span
                                 className="absolute top-1 right-2 text-yellow-600 hover:scale-110 transition-transform cursor-help z-10"
                                 title={
@@ -1373,10 +1418,20 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
       <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-start gap-3 shadow-inner">
         <Info className="text-slate-500 mt-0.5 flex-shrink-0" size={16} />
         <div className="text-xs text-slate-500 leading-relaxed">
-          <span className="font-semibold text-slate-700">Nota técnica:</span> La correspondencia en
-          esta matriz horizontal ha sido alineada determinísticamente por nuestro transformador. El
-          contenido coincide de manera exacta y paritaria con el reporte Excel monocromático de 3
-          pestañas.
+          {viewMode === 'client' ? (
+            <>
+              <span className="font-semibold text-slate-700">Nota:</span> La correspondencia en esta
+              matriz horizontal ha sido alineada por nuestro motor de análisis. El contenido
+              coincide de manera exacta con el reporte de cotizaciones.
+            </>
+          ) : (
+            <>
+              <span className="font-semibold text-slate-700">Nota técnica:</span> La correspondencia
+              en esta matriz horizontal ha sido alineada determinísticamente por nuestro
+              transformador. El contenido coincide de manera exacta y paritaria con el reporte Excel
+              monocromático de 3 pestañas.
+            </>
+          )}
         </div>
       </div>
 

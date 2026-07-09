@@ -102,6 +102,21 @@ export const parseDeductibleForBadge = (deductible: string): BadgeConfig => {
 
 export const DeductibleBadge: React.FC<DeductibleBadgeProps> = ({ deductible, className = '' }) => {
   const [showTooltip, setShowTooltip] = useState(false);
+
+  if (deductible && deductible.includes(';')) {
+    const parts = deductible
+      .split(';')
+      .map((p) => p.trim())
+      .filter(Boolean);
+    return (
+      <div className="flex flex-col gap-1 items-center">
+        {parts.map((part, idx) => (
+          <DeductibleBadge key={idx} deductible={part} className={className} />
+        ))}
+      </div>
+    );
+  }
+
   const config = parseDeductibleForBadge(deductible);
 
   return (

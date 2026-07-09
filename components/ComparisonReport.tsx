@@ -673,8 +673,20 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
             <div className="space-y-3">
               {report.quotes.map((quote, idx) => (
                 <CollapsibleText key={idx} title={`${quote.insurerName} - Texto Original`}>
-                  <div className="prose prose-sm text-slate-600 whitespace-pre-line leading-7 bg-slate-50 p-4 rounded-lg">
-                    {quote.deductibles || 'No detallado.'}
+                  <div className="prose prose-sm text-slate-600 leading-7 bg-slate-50 p-4 rounded-lg">
+                    {quote.deductibles && quote.deductibles.includes(';') ? (
+                      <ul className="list-disc pl-5 space-y-1">
+                        {quote.deductibles.split(';').map((part, pIdx) => {
+                          const trimmed = part.trim();
+                          if (!trimmed) return null;
+                          return <li key={pIdx}>{trimmed}</li>;
+                        })}
+                      </ul>
+                    ) : (
+                      <div className="whitespace-pre-line">
+                        {quote.deductibles || 'No detallado.'}
+                      </div>
+                    )}
                   </div>
                 </CollapsibleText>
               ))}
