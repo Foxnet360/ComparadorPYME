@@ -138,4 +138,60 @@ describe('analysisController - matrixRowsToComparisonReport', () => {
     expect(coverage).toBeDefined();
     expect(coverage!.deductible).toBe('10% PERD - Min 1 SMMLV');
   });
+
+  it('correctly parses complex Colombian premium decimal and thousand formats', () => {
+    const matrixRows: MatrixRow[] = [
+      {
+        type: 'header',
+        id: 'client_info',
+        label: 'Cotizaciones PYME - MAPFRE',
+        sectionId: 0,
+        cells: [],
+      },
+      {
+        type: 'data',
+        id: 'premium_total',
+        label: 'TOTAL A PAGAR',
+        sectionId: 1,
+        cells: [
+          { value: '$1.134.400,50', isExcluded: false, isWinner: false, confidence: 0.95 },
+        ],
+      },
+    ];
+
+    const quoteFiles = [
+      { originalname: 'COTIZACION-MAPFRE.pdf' },
+    ] as Express.Multer.File[];
+
+    const report = matrixRowsToComparisonReport(matrixRows, quoteFiles);
+    expect(report.quotes[0].priceAnnual).toBe(1134400.50);
+  });
+
+  it('gracefully handles unparseable premiums and does not corrupt default value', () => {
+    const matrixRows: MatrixRow[] = [
+      {
+        type: 'header',
+        id: 'client_info',
+        label: 'Cotizaciones PYME - MAPFRE',
+        sectionId: 0,
+        cells: [],
+      },
+      {
+        type: 'data',
+        id: 'premium_total',
+        label: 'TOTAL A PAGAR',
+        sectionId: 1,
+        cells: [
+          { value: 'No informado', isExcluded: false, isWinner: false, confidence: 0.95 },
+        ],
+      },
+    ];
+
+    const quoteFiles = [
+      { originalname: 'COTIZACION-MAPFRE.pdf' },
+    ] as Express.Multer.File[];
+
+    const report = matrixRowsToComparisonReport(matrixRows, quoteFiles);
+    expect(report.quotes[0].priceAnnual).toBe(0); // maintains original/default value
+  });
 });
