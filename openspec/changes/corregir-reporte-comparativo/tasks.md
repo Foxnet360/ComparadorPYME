@@ -46,17 +46,17 @@ Chain strategy: feature-branch-chain
   - **Done**: Top matrix shows mapped, bottom shows extra rows. (~45 lines)
 
 ## Phase 4: Dynamic Scoring & Risk Audit (PR 4)
-- [ ] 4.1 Convert parsed matrix rows to backend `ParsedQuote[]` format inside controller.
+- [x] 4.1 Convert parsed matrix rows to backend `ParsedQuote[]` format inside controller.
   - **Files**: `server/src/controllers/analysisController.ts`
   - **Done**: Matrix cells match standard quote structures. (~30 lines)
-- [ ] 4.2 Invoke `quoteScorer` and `quoteBasedAuditor` to calculate dynamic scores and audits.
+- [x] 4.2 Invoke `quoteScorer` and `quoteBasedAuditor` to calculate dynamic scores and audits.
   - **Files**: `server/src/controllers/analysisController.ts`
   - **Done**: Overall ratings and risk audit replace static 85s. (~50 lines)
 
 ## Phase 5: UI/UX & Toggle (PR 5)
-- [ ] 5.1 Parse semicolon-delimited deductibles and format them as clean stacked list items.
+- [x] 5.1 Parse semicolon-delimited deductibles and format them as clean stacked list items.
   - **Files**: `components/DeductibleBadge.tsx`, `components/UnifiedCoverageMatrix.tsx`
   - **Done**: Semi-colon cell content renders as list badges. (~45 lines)
-- [ ] 5.2 Bind client/técnico viewMode toggle to hide confidence scores and technical citations for clients.
+- [x] 5.2 Bind client/técnico viewMode toggle to hide confidence scores and technical citations for clients.
   - **Files**: `components/UnifiedCoverageMatrix.tsx`
   - **Done**: Visual elements toggle smoothly on click. (~65 lines)
