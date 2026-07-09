@@ -56,6 +56,7 @@ import analysisRoutes from './routes/analysis';
 import comparisonRoutes from './routes/comparisonRoutes';
 import monitoringRoutes from './routes/monitoring';
 import templateRegistryRoutes from './routes/templateRegistry';
+import clientRoutes from './routes/clientRoutes';
 
 // Graph seeding lifecycle
 import { buildGraphEdgesFromDomain, seedCoverageGraph } from './services/graphSeeder';
@@ -209,7 +210,10 @@ app.use('/api/monitoring', monitoringRoutes);
 app.use('/api/templates/registry', templateRegistryRoutes);
 
 // NEW: Unified Comparison routes
-app.use('/api/comparison', comparisonRoutes);
+app.use('/api/comparison', optionalAuthMiddleware, comparisonRoutes);
+
+// NEW: Client Sync routes
+app.use('/api/clients', optionalAuthMiddleware, clientRoutes);
 
 // Centralized error handling middleware (must be after all routes)
 import { errorHandler } from './middleware/errorHandler';
