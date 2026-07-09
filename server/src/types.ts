@@ -107,7 +107,7 @@ export interface ComparisonReport {
     insurer: string;
     deductibleText: string;
   }[];
-  matrix?: MatrixRow[];       // Synced backend rows
+  matrix?: MatrixRow[]; // Synced backend rows
   quoteMetadata?: QuoteMetadata[]; // Extracted risk details
 }
 

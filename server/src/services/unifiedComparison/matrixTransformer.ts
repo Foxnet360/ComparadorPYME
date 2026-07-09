@@ -260,9 +260,10 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
   }[] = [];
 
   for (const row of result.rows) {
-    const section = isFinancialRowLabel(row.label) || row.section === 'FINANCIAL'
-      ? FINANCIAL_SECTION_LABEL
-      : row.section || 'OTROS';
+    const section =
+      isFinancialRowLabel(row.label) || row.section === 'FINANCIAL'
+        ? FINANCIAL_SECTION_LABEL
+        : row.section || 'OTROS';
     if (!sectionGroups.has(section)) {
       sectionGroups.set(section, []);
     }

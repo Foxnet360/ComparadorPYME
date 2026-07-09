@@ -324,20 +324,20 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
   const BUSINESS_SECTIONS = [
     {
       name: 'BIENES ASEGURADOS',
-      categoryIds: [1, 4, 5, 7, 9, 11]
+      categoryIds: [1, 4, 5, 7, 9, 11],
     },
     {
       name: 'COBERTURAS',
-      categoryIds: [2, 6, 8, 10, 12]
+      categoryIds: [2, 6, 8, 10, 12],
     },
     {
       name: 'SUSTRACCIÓN',
-      categoryIds: [3]
+      categoryIds: [3],
     },
     {
       name: 'DEDUCIBLES',
-      categoryIds: [13, 14]
-    }
+      categoryIds: [13, 14],
+    },
   ];
 
   // 1. Process Canonical Categories grouped by Business Sections
@@ -352,7 +352,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     });
 
     for (const catId of section.categoryIds) {
-      const config = CATEGORY_CONFIGS.find(c => c.id === catId);
+      const config = CATEGORY_CONFIGS.find((c) => c.id === catId);
       if (!config) continue;
 
       // Push category sub-header
@@ -1041,65 +1041,94 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {metadata.map((meta, idx) => (
-              <div key={idx} className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex flex-col justify-between">
+              <div
+                key={idx}
+                className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex flex-col justify-between"
+              >
                 <div>
                   <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-2">
                     <span className="font-extrabold text-blue-800 text-sm">{meta.insurer}</span>
-                    <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full">Extracción V2</span>
+                    <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full">
+                      Extracción V2
+                    </span>
                   </div>
                   <div className="space-y-2 text-xs text-slate-600">
                     {meta.cliente && (
                       <div className="flex justify-between">
                         <span className="font-medium text-slate-500">Cliente:</span>
-                        <span className="font-semibold text-slate-800 text-right">{meta.cliente}</span>
+                        <span className="font-semibold text-slate-800 text-right">
+                          {meta.cliente}
+                        </span>
                       </div>
                     )}
                     {meta.tipoSeguro && (
                       <div className="flex justify-between">
                         <span className="font-medium text-slate-500">Tipo de Seguro:</span>
-                        <span className="font-semibold text-slate-800 text-right">{meta.tipoSeguro}</span>
+                        <span className="font-semibold text-slate-800 text-right">
+                          {meta.tipoSeguro}
+                        </span>
                       </div>
                     )}
                     {meta.ubicacionRiesgo && (
                       <div className="flex justify-between">
                         <span className="font-medium text-slate-500">Ubicación del Riesgo:</span>
-                        <span className="font-semibold text-slate-800 text-right max-w-[150px] truncate" title={meta.ubicacionRiesgo}>{meta.ubicacionRiesgo}</span>
+                        <span
+                          className="font-semibold text-slate-800 text-right max-w-[150px] truncate"
+                          title={meta.ubicacionRiesgo}
+                        >
+                          {meta.ubicacionRiesgo}
+                        </span>
                       </div>
                     )}
                     {meta.anoConstruccion && (
                       <div className="flex justify-between">
                         <span className="font-medium text-slate-500">Año de Construcción:</span>
-                        <span className="font-semibold text-slate-800 text-right">{meta.anoConstruccion}</span>
+                        <span className="font-semibold text-slate-800 text-right">
+                          {meta.anoConstruccion}
+                        </span>
                       </div>
                     )}
                     {meta.pisos && (
                       <div className="flex justify-between">
                         <span className="font-medium text-slate-500">Pisos:</span>
-                        <span className="font-semibold text-slate-800 text-right">{meta.pisos}</span>
+                        <span className="font-semibold text-slate-800 text-right">
+                          {meta.pisos}
+                        </span>
                       </div>
                     )}
                     {meta.aliado && (
                       <div className="flex justify-between">
                         <span className="font-medium text-slate-500">Aliado:</span>
-                        <span className="font-semibold text-slate-800 text-right">{meta.aliado}</span>
+                        <span className="font-semibold text-slate-800 text-right">
+                          {meta.aliado}
+                        </span>
                       </div>
                     )}
                     {meta.actividadOcupacion && (
                       <div className="flex justify-between">
                         <span className="font-medium text-slate-500">Actividad/Ocupación:</span>
-                        <span className="font-semibold text-slate-800 text-right max-w-[150px] truncate" title={meta.actividadOcupacion}>{meta.actividadOcupacion}</span>
+                        <span
+                          className="font-semibold text-slate-800 text-right max-w-[150px] truncate"
+                          title={meta.actividadOcupacion}
+                        >
+                          {meta.actividadOcupacion}
+                        </span>
                       </div>
                     )}
                     {meta.documento && (
                       <div className="flex justify-between">
                         <span className="font-medium text-slate-500">Documento:</span>
-                        <span className="font-semibold text-slate-800 text-right">{meta.documento}</span>
+                        <span className="font-semibold text-slate-800 text-right">
+                          {meta.documento}
+                        </span>
                       </div>
                     )}
                     {meta.vigencia && (
                       <div className="flex justify-between">
                         <span className="font-medium text-slate-500">Vigencia:</span>
-                        <span className="font-semibold text-slate-800 text-right">{meta.vigencia}</span>
+                        <span className="font-semibold text-slate-800 text-right">
+                          {meta.vigencia}
+                        </span>
                       </div>
                     )}
                   </div>

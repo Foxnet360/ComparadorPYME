@@ -579,7 +579,7 @@ describe('flatTableParser.parseV2', () => {
           actividadOcupacion: 'Servicios',
           documento: '67890',
           vigencia: '2 anos',
-        }
+        },
       ],
       rows: [
         {
@@ -626,19 +626,19 @@ describe('flatTableParser.parseV2', () => {
 
     const result = flatTableParser.parseV2(input, baseOptions);
 
-    const mueblesRow = result.rows.find(r => r.label === 'Muebles y enseres');
+    const mueblesRow = result.rows.find((r) => r.label === 'Muebles y enseres');
     expect(mueblesRow).toBeDefined();
     expect(mueblesRow!.section).toBe('BIENES ASEGURADOS');
 
-    const incendioRow = result.rows.find(r => r.label === 'Todo Riesgo Incendio');
+    const incendioRow = result.rows.find((r) => r.label === 'Todo Riesgo Incendio');
     expect(incendioRow).toBeDefined();
     expect(incendioRow!.section).toBe('DEDUCIBLES');
 
-    const sustraccionRow = result.rows.find(r => r.label === 'Sustracción con Violencia');
+    const sustraccionRow = result.rows.find((r) => r.label === 'Sustracción con Violencia');
     expect(sustraccionRow).toBeDefined();
     expect(sustraccionRow!.section).toBe('SUSTRACCIÓN');
 
-    const gastosRow = result.rows.find(r => r.label === 'Gastos de expedición');
+    const gastosRow = result.rows.find((r) => r.label === 'Gastos de expedición');
     expect(gastosRow).toBeDefined();
     expect(gastosRow!.section).toBe('FINANCIAL');
   });

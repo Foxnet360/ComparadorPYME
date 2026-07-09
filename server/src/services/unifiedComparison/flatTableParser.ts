@@ -108,7 +108,13 @@ const ALIAS_MAP: AliasEntry[] = [
     section: SchemaSection.BIENES_ASEGURADOS,
   },
   {
-    aliases: ['equipo electrico y electronico', 'equipo electrico', 'eq. electrico', 'eee', 'equipo electronico'],
+    aliases: [
+      'equipo electrico y electronico',
+      'equipo electrico',
+      'eq. electrico',
+      'eee',
+      'equipo electronico',
+    ],
     canonical: 'Equipo eléctrico y electrónico',
     section: SchemaSection.BIENES_ASEGURADOS,
   },
@@ -295,7 +301,11 @@ export function sectionByKeyword(label: string): SchemaSection {
   ) {
     return SchemaSection.FINANCIAL;
   }
-  if (normalized.includes('exclusi') || normalized.includes('observaci') || normalized.includes('condici')) {
+  if (
+    normalized.includes('exclusi') ||
+    normalized.includes('observaci') ||
+    normalized.includes('condici')
+  ) {
     return SchemaSection.CONDICIONES;
   }
   return SchemaSection.COBERTURAS;
@@ -1004,9 +1014,9 @@ function parseJsonV2(raw: string): RawTable {
       values = insurers.map((insurer) => {
         const matched = cells.find(
           (cell) =>
-              typeof cell === 'object' &&
-              cell !== null &&
-              String((cell as { insurer?: unknown }).insurer).trim() === insurer
+            typeof cell === 'object' &&
+            cell !== null &&
+            String((cell as { insurer?: unknown }).insurer).trim() === insurer
         );
         if (matched != null) {
           return extractCellValueV2(matched);

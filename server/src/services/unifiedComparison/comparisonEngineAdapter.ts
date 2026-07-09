@@ -83,7 +83,8 @@ export class ComparisonEngineAdapter {
         engine: 'unified',
         schemaVersion,
         correlationId,
-        quoteMetadata: schemaVersion === 2 ? (result as FlatComparisonResultV2).quoteMetadata : undefined,
+        quoteMetadata:
+          schemaVersion === 2 ? (result as FlatComparisonResultV2).quoteMetadata : undefined,
       };
     } catch (error) {
       const reason =
