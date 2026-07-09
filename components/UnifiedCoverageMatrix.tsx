@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, lazy, Suspense, memo } from 'react';
-import { QuoteAnalysis, MatrixRow, MatrixCell, CoverageItem } from '../types';
+import { QuoteAnalysis, MatrixRow, MatrixCell, CoverageItem, QuoteMetadata } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
 import {
   Info,
@@ -320,112 +320,147 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
   const matrix: MatrixRow[] = [];
   const numQuotes = quotes.length;
 
-  // 1. Process Canonical Categories
-  for (const config of CATEGORY_CONFIGS) {
+  // Define business sections grouping
+  const BUSINESS_SECTIONS = [
+    {
+      name: 'BIENES ASEGURADOS',
+      categoryIds: [1, 4, 5, 7, 9, 11]
+    },
+    {
+      name: 'COBERTURAS',
+      categoryIds: [2, 6, 8, 10, 12]
+    },
+    {
+      name: 'SUSTRACCIÓN',
+      categoryIds: [3]
+    },
+    {
+      name: 'DEDUCIBLES',
+      categoryIds: [13, 14]
+    }
+  ];
+
+  // 1. Process Canonical Categories grouped by Business Sections
+  for (const section of BUSINESS_SECTIONS) {
+    // Push business section header
     matrix.push({
       type: 'header',
-      id: `section_${config.id}`,
-      label: config.headerLabel,
-      sectionId: config.id,
+      id: `section_group_${section.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
+      label: section.name,
+      sectionId: 1, // Use coverages section ID (1)
       cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false })),
     });
 
-    for (const rowConfig of config.rows) {
-      const cells: MatrixCell[] = [];
+    for (const catId of section.categoryIds) {
+      const config = CATEGORY_CONFIGS.find(c => c.id === catId);
+      if (!config) continue;
 
-      for (let i = 0; i < numQuotes; i++) {
-        const quote = quotes[i];
-        const cov = quote.coverages.find(
-          (c) =>
-            (c.categoryId === config.id ||
-              c.canonicalName === config.canonicalName ||
-              c.name === config.canonicalName) &&
-            (c.matchConfidence === undefined ||
-              c.matchConfidence === null ||
-              c.matchConfidence >= 0.65)
-        );
+      // Push category sub-header
+      matrix.push({
+        type: 'header',
+        id: `section_${config.id}`,
+        label: config.headerLabel,
+        sectionId: 1, // Use coverages section ID (1)
+        cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false })),
+      });
 
-        if (cov) {
-          let cellValue = '';
-          if (rowConfig.field === 'value') {
-            cellValue = cov.value || 'No incluida';
-          } else if (rowConfig.field === 'deductible') {
-            cellValue = cov.deductible || 'No aplica';
+      for (const rowConfig of config.rows) {
+        const cells: MatrixCell[] = [];
+
+        for (let i = 0; i < numQuotes; i++) {
+          const quote = quotes[i];
+          const cov = quote.coverages.find(
+            (c) =>
+              (c.categoryId === config.id ||
+                c.canonicalName === config.canonicalName ||
+                c.name === config.canonicalName) &&
+              (c.matchConfidence === undefined ||
+                c.matchConfidence === null ||
+                c.matchConfidence >= 0.65)
+          );
+
+          if (cov) {
+            let cellValue = '';
+            if (rowConfig.field === 'value') {
+              cellValue = cov.value || 'No incluida';
+            } else if (rowConfig.field === 'deductible') {
+              cellValue = cov.deductible || 'No aplica';
+            } else {
+              cellValue =
+                cov.description ||
+                (cov as CoverageItem & { details?: string }).details ||
+                'Incluido bajo condiciones generales';
+            }
+
+            // In a deductible row, "No aplica" is not an exclusion
+            const excluded =
+              rowConfig.field === 'deductible' && cellValue.toLowerCase().trim() === 'no aplica'
+                ? false
+                : isExcludedValue(cellValue);
+            const firstCitation = cov.citations?.[0];
+
+            cells.push({
+              value: cellValue,
+              isExcluded: excluded,
+              isWinner: false,
+              notes: cov.description,
+              pageNumber: firstCitation?.page || cov.citations?.[0]?.page,
+              confidence: cov.matchConfidence,
+              rawTextSnippet: cov.rawTextSnippet,
+              needsHumanReview: cov.needsHumanReview,
+              calculatedPage: cov.calculatedPage,
+              justification: cov.justification,
+              canonicalName: cov.canonicalName,
+              matchMethod: cov.matchMethod,
+            });
           } else {
-            cellValue =
-              cov.description ||
-              (cov as CoverageItem & { details?: string }).details ||
-              'Incluido bajo condiciones generales';
+            cells.push({
+              value: 'No incluida',
+              isExcluded: true,
+              isWinner: false,
+            });
           }
-
-          // In a deductible row, "No aplica" is not an exclusion
-          const excluded =
-            rowConfig.field === 'deductible' && cellValue.toLowerCase().trim() === 'no aplica'
-              ? false
-              : isExcludedValue(cellValue);
-          const firstCitation = cov.citations?.[0];
-
-          cells.push({
-            value: cellValue,
-            isExcluded: excluded,
-            isWinner: false,
-            notes: cov.description,
-            pageNumber: firstCitation?.page || cov.citations?.[0]?.page,
-            confidence: cov.matchConfidence,
-            rawTextSnippet: cov.rawTextSnippet,
-            needsHumanReview: cov.needsHumanReview,
-            calculatedPage: cov.calculatedPage,
-            justification: cov.justification,
-            canonicalName: cov.canonicalName,
-            matchMethod: cov.matchMethod,
-          });
-        } else {
-          cells.push({
-            value: 'No incluida',
-            isExcluded: true,
-            isWinner: false,
-          });
         }
-      }
 
-      // Winner Detection
-      if (rowConfig.field === 'value') {
-        const numericValues = cells.map((c) => parseNumericValue(c.value));
-        const maxVal = Math.max(...numericValues);
-        if (maxVal > 0) {
-          cells.forEach((cell, idx) => {
-            if (numericValues[idx] === maxVal && !cell.isExcluded) {
-              cell.isWinner = true;
-            }
-          });
+        // Winner Detection
+        if (rowConfig.field === 'value') {
+          const numericValues = cells.map((c) => parseNumericValue(c.value));
+          const maxVal = Math.max(...numericValues);
+          if (maxVal > 0) {
+            cells.forEach((cell, idx) => {
+              if (numericValues[idx] === maxVal && !cell.isExcluded) {
+                cell.isWinner = true;
+              }
+            });
+          }
+        } else if (rowConfig.field === 'deductible') {
+          const hasNoAplica = cells.some((c) => c.value.toLowerCase().trim() === 'no aplica');
+          if (hasNoAplica) {
+            cells.forEach((cell) => {
+              if (cell.value.toLowerCase().trim() === 'no aplica' && !cell.isExcluded) {
+                cell.isWinner = true;
+              }
+            });
+          }
         }
-      } else if (rowConfig.field === 'deductible') {
-        const hasNoAplica = cells.some((c) => c.value.toLowerCase().trim() === 'no aplica');
-        if (hasNoAplica) {
-          cells.forEach((cell) => {
-            if (cell.value.toLowerCase().trim() === 'no aplica' && !cell.isExcluded) {
-              cell.isWinner = true;
-            }
-          });
-        }
+
+        matrix.push({
+          type: 'data',
+          id: `section_${config.id}_row_${rowConfig.field}`,
+          label: rowConfig.label,
+          sectionId: 1, // Use coverages section ID (1)
+          cells,
+        });
       }
 
       matrix.push({
-        type: 'data',
-        id: `section_${config.id}_row_${rowConfig.field}`,
-        label: rowConfig.label,
-        sectionId: config.id,
-        cells,
+        type: 'spacer',
+        id: `spacer_${config.id}`,
+        label: '',
+        sectionId: 1, // Use coverages section ID (1)
+        cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false })),
       });
     }
-
-    matrix.push({
-      type: 'spacer',
-      id: `spacer_${config.id}`,
-      label: '',
-      sectionId: config.id,
-      cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false })),
-    });
   }
 
   // 2. Exclusive Coverages
@@ -769,6 +804,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
 interface UnifiedCoverageMatrixProps {
   quotes: QuoteAnalysis[];
   rows?: MatrixRow[];
+  metadata?: QuoteMetadata[];
   viewMode?: 'client' | 'technical';
   analysisId?: string; // Optional ID for direct exports
 }
@@ -776,6 +812,7 @@ interface UnifiedCoverageMatrixProps {
 export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
   quotes,
   rows,
+  metadata,
   viewMode = 'technical',
   analysisId,
 }) => {
@@ -994,6 +1031,84 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
           Información Adicional
         </button>
       </div>
+
+      {/* Header Metadata Card */}
+      {metadata && metadata.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+            <Calendar className="text-blue-600" size={20} />
+            <h3 className="font-bold text-slate-800 text-lg">Información del Riesgo & Metadatos</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {metadata.map((meta, idx) => (
+              <div key={idx} className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-2">
+                    <span className="font-extrabold text-blue-800 text-sm">{meta.insurer}</span>
+                    <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full">Extracción V2</span>
+                  </div>
+                  <div className="space-y-2 text-xs text-slate-600">
+                    {meta.cliente && (
+                      <div className="flex justify-between">
+                        <span className="font-medium text-slate-500">Cliente:</span>
+                        <span className="font-semibold text-slate-800 text-right">{meta.cliente}</span>
+                      </div>
+                    )}
+                    {meta.tipoSeguro && (
+                      <div className="flex justify-between">
+                        <span className="font-medium text-slate-500">Tipo de Seguro:</span>
+                        <span className="font-semibold text-slate-800 text-right">{meta.tipoSeguro}</span>
+                      </div>
+                    )}
+                    {meta.ubicacionRiesgo && (
+                      <div className="flex justify-between">
+                        <span className="font-medium text-slate-500">Ubicación del Riesgo:</span>
+                        <span className="font-semibold text-slate-800 text-right max-w-[150px] truncate" title={meta.ubicacionRiesgo}>{meta.ubicacionRiesgo}</span>
+                      </div>
+                    )}
+                    {meta.anoConstruccion && (
+                      <div className="flex justify-between">
+                        <span className="font-medium text-slate-500">Año de Construcción:</span>
+                        <span className="font-semibold text-slate-800 text-right">{meta.anoConstruccion}</span>
+                      </div>
+                    )}
+                    {meta.pisos && (
+                      <div className="flex justify-between">
+                        <span className="font-medium text-slate-500">Pisos:</span>
+                        <span className="font-semibold text-slate-800 text-right">{meta.pisos}</span>
+                      </div>
+                    )}
+                    {meta.aliado && (
+                      <div className="flex justify-between">
+                        <span className="font-medium text-slate-500">Aliado:</span>
+                        <span className="font-semibold text-slate-800 text-right">{meta.aliado}</span>
+                      </div>
+                    )}
+                    {meta.actividadOcupacion && (
+                      <div className="flex justify-between">
+                        <span className="font-medium text-slate-500">Actividad/Ocupación:</span>
+                        <span className="font-semibold text-slate-800 text-right max-w-[150px] truncate" title={meta.actividadOcupacion}>{meta.actividadOcupacion}</span>
+                      </div>
+                    )}
+                    {meta.documento && (
+                      <div className="flex justify-between">
+                        <span className="font-medium text-slate-500">Documento:</span>
+                        <span className="font-semibold text-slate-800 text-right">{meta.documento}</span>
+                      </div>
+                    )}
+                    {meta.vigencia && (
+                      <div className="flex justify-between">
+                        <span className="font-medium text-slate-500">Vigencia:</span>
+                        <span className="font-semibold text-slate-800 text-right">{meta.vigencia}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Grid Matrix Container */}
       <div

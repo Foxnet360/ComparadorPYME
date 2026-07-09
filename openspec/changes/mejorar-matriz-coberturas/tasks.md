@@ -43,11 +43,11 @@ Chain strategy: feature-branch-chain
 
 ## Phase 4: Frontend Integration & Fallback (PR 2)
 
-- [ ] 4.1 Update `ComparisonReport.tsx` to pass backend `matrix` and `quoteMetadata` to `<UnifiedCoverageMatrix>`.
-- [ ] 4.2 Fix tab/section filtering in `UnifiedCoverageMatrix.tsx` to use backend section IDs (financial = 100).
-- [ ] 4.3 Refactor client-side fallback in `UnifiedCoverageMatrix.tsx` to mirror backend grouping logic when backend `matrix` is absent.
+- [x] 4.1 Update `ComparisonReport.tsx` to pass backend `matrix` and `quoteMetadata` to `<UnifiedCoverageMatrix>`.
+- [x] 4.2 Fix tab/section filtering in `UnifiedCoverageMatrix.tsx` to use backend section IDs (financial = 100).
+- [x] 4.3 Refactor client-side fallback in `UnifiedCoverageMatrix.tsx` to mirror backend grouping logic when backend `matrix` is absent.
 
 ## Phase 5: UI & Frontend Verification (PR 2)
 
-- [ ] 5.1 Implement a responsive Header Metadata Card in `UnifiedCoverageMatrix.tsx` to display the 9 extracted metadata fields.
-- [ ] 5.2 Write unit tests in `UnifiedCoverageMatrix.test.tsx` for the metadata card rendering and financials tab filtering.
+- [x] 5.1 Implement a responsive Header Metadata Card in `UnifiedCoverageMatrix.tsx` to display the 9 extracted metadata fields.
+- [x] 5.2 Write unit tests in `UnifiedCoverageMatrix.test.tsx` for the metadata card rendering and financials tab filtering.
