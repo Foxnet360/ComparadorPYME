@@ -38,10 +38,10 @@ Chain strategy: feature-branch-chain
   - **Done**: Numeric premiums output without truncation. (~30 lines)
 
 ## Phase 3: Semantic Ontology Integration (PR 3)
-- [ ] 3.1 Pipe parsed unified engine rows through `coverageNormalizer` and `thesaurusMapper`.
+- [x] 3.1 Pipe parsed unified engine rows through `coverageNormalizer` and `thesaurusMapper`.
   - **Files**: `server/src/controllers/analysisController.ts`
   - **Done**: Raw cells map to valid `categoryId` and `canonicalName`. (~45 lines)
-- [ ] 3.2 Display canonical coverage rows in top matrix and group unmapped rows under "unmapped".
+- [x] 3.2 Display canonical coverage rows in top matrix and group unmapped rows under "unmapped".
   - **Files**: `components/UnifiedCoverageMatrix.tsx`
   - **Done**: Top matrix shows mapped, bottom shows extra rows. (~45 lines)
 
