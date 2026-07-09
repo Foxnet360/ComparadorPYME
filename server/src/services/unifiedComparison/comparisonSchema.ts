@@ -13,6 +13,8 @@ export enum SchemaSection {
   COBERTURAS = 'COBERTURAS',
   DEDUCIBLES = 'DEDUCIBLES',
   CONDICIONES = 'CONDICIONES',
+  SUSTRACCION = 'SUSTRACCIÓN',
+  FINANCIAL = 'FINANCIAL',
 }
 
 // -----------------------------------------------------------------------------
@@ -92,6 +94,19 @@ export const FlatComparisonSchemaV1 = z
     { message: 'Each row must contain one cell per insurer' }
   );
 
+export const QuoteMetadataSchema = z.object({
+  insurer: z.string().min(1),
+  cliente: z.string().nullable().optional(),
+  tipoSeguro: z.string().nullable().optional(),
+  ubicacionRiesgo: z.string().nullable().optional(),
+  anoConstruccion: z.string().nullable().optional(),
+  pisos: z.string().nullable().optional(),
+  aliado: z.string().nullable().optional(),
+  actividadOcupacion: z.string().nullable().optional(),
+  documento: z.string().nullable().optional(),
+  vigencia: z.string().nullable().optional(),
+});
+
 export const FlatComparisonSchemaV2 = z
   .object({
     metadata: FlatComparisonMetadataSchema,
@@ -100,6 +115,7 @@ export const FlatComparisonSchemaV2 = z
     rows: z.array(FlatComparisonRowSchemaV2),
     extraRows: z.array(FlatComparisonRowSchemaV2).default([]),
     warnings: z.array(z.string()).default([]),
+    quoteMetadata: z.array(QuoteMetadataSchema).optional(),
   })
   .refine(
     (data) =>

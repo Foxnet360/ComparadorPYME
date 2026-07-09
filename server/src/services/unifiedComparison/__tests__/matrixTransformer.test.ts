@@ -398,6 +398,10 @@ describe('flatResultToMatrixRowsV2', () => {
     expect(row.cells[0].notes).toBe('');
     expect(row.cells[1].notes).toBeUndefined();
   });
+
+  it('verifies FINANCIAL_SECTION_ID is aligned with frontend expectation (100)', () => {
+    expect(FINANCIAL_SECTION_ID).toBe(100);
+  });
 });
 
 describe('quotesToMatrixRows', () => {

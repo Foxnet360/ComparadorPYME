@@ -27,6 +27,7 @@ interface RawTable {
   insurers: string[];
   rows: Map<string, RowValues>;
   extraRows: Map<string, RowValues>;
+  quoteMetadata?: any[];
 }
 
 export interface ParseOptions {
@@ -79,7 +80,7 @@ const ALIAS_MAP: AliasEntry[] = [
   {
     aliases: ['bienes asegurados'],
     canonical: 'Bienes Asegurados',
-    section: SchemaSection.INFORMACION_GENERAL,
+    section: SchemaSection.BIENES_ASEGURADOS,
   },
   {
     aliases: ['edificio', 'valor edificio'],
@@ -97,21 +98,30 @@ const ALIAS_MAP: AliasEntry[] = [
     section: SchemaSection.BIENES_ASEGURADOS,
   },
   {
-    aliases: ['equipo electrico', 'eq. electrico', 'eee'],
-    canonical: 'Equipo Eléctrico',
-    section: SchemaSection.COBERTURAS,
+    aliases: ['muebles y enseres', 'muebles y enseres domesticos', 'muebles'],
+    canonical: 'Muebles y enseres',
+    section: SchemaSection.BIENES_ASEGURADOS,
   },
   {
-    aliases: ['maquinaria', 'equipo maquinaria', 'equipo de maquinaria'],
-    canonical: 'Maquinaria',
-    section: SchemaSection.COBERTURAS,
+    aliases: ['maquinaria y equipo', 'maquinaria', 'equipos y maquinaria'],
+    canonical: 'Maquinaria y equipo',
+    section: SchemaSection.BIENES_ASEGURADOS,
+  },
+  {
+    aliases: ['equipo electrico y electronico', 'equipo electrico', 'eq. electrico', 'eee', 'equipo electronico'],
+    canonical: 'Equipo eléctrico y electrónico',
+    section: SchemaSection.BIENES_ASEGURADOS,
+  },
+  {
+    aliases: ['asistencia', 'servicios de asistencia'],
+    canonical: 'Asistencia',
+    section: SchemaSection.BIENES_ASEGURADOS,
   },
   {
     aliases: ['responsabilidad civil'],
     canonical: 'Responsabilidad Civil',
     section: SchemaSection.COBERTURAS,
   },
-  { aliases: ['terremoto'], canonical: 'Terremoto', section: SchemaSection.COBERTURAS },
   {
     aliases: ['deducible', 'deducibles'],
     canonical: 'Deducibles',
@@ -138,14 +148,54 @@ const ALIAS_MAP: AliasEntry[] = [
     section: SchemaSection.DEDUCIBLES,
   },
   {
-    aliases: ['prima con iva', 'prima total con iva'],
-    canonical: 'Prima con IVA',
-    section: SchemaSection.INFORMACION_GENERAL,
+    aliases: ['todo riesgo incendio', 'incendio', 'deducible incendio'],
+    canonical: 'Todo Riesgo Incendio',
+    section: SchemaSection.DEDUCIBLES,
+  },
+  {
+    aliases: ['anegacion / cobertura extendida', 'anegacion', 'cobertura extendida'],
+    canonical: 'Anegación / Cobertura Extendida',
+    section: SchemaSection.DEDUCIBLES,
+  },
+  {
+    aliases: ['terremoto', 'deducible terremoto'],
+    canonical: 'Terremoto',
+    section: SchemaSection.DEDUCIBLES,
+  },
+  {
+    aliases: ['hmacc amit', 'hmacc', 'amit', 'huelga y motin'],
+    canonical: 'HMACC-AMIT',
+    section: SchemaSection.DEDUCIBLES,
+  },
+  {
+    aliases: ['sustraccion con violencia', 'sustraccion', 'robo'],
+    canonical: 'Sustracción con Violencia',
+    section: SchemaSection.SUSTRACCION,
+  },
+  {
+    aliases: ['prima con iva incluido', 'prima con iva', 'prima total con iva'],
+    canonical: 'Prima con IVA incluido',
+    section: SchemaSection.FINANCIAL,
+  },
+  {
+    aliases: ['gastos de expedicion', 'expedicion', 'gastos expedicion'],
+    canonical: 'Gastos de expedición',
+    section: SchemaSection.FINANCIAL,
+  },
+  {
+    aliases: ['iva', 'impuesto al valor agregado'],
+    canonical: 'IVA',
+    section: SchemaSection.FINANCIAL,
+  },
+  {
+    aliases: ['total prima', 'prima total', 'total a pagar'],
+    canonical: 'Total prima',
+    section: SchemaSection.FINANCIAL,
   },
   {
     aliases: ['forma de pago'],
-    canonical: 'Forma de Pago',
-    section: SchemaSection.INFORMACION_GENERAL,
+    canonical: 'Forma de pago',
+    section: SchemaSection.FINANCIAL,
   },
   { aliases: ['observaciones'], canonical: 'Observaciones', section: SchemaSection.CONDICIONES },
   { aliases: ['exclusiones'], canonical: 'Exclusiones', section: SchemaSection.CONDICIONES },
@@ -206,6 +256,49 @@ export function normalizeAlias(input: string): NormalizedAlias | undefined {
     section: best.entry.section,
     quality: best.quality,
   };
+}
+
+export function sectionByKeyword(label: string): SchemaSection {
+  const normalized = label.toLowerCase();
+  if (
+    normalized.includes('edificio') ||
+    normalized.includes('contenido') ||
+    normalized.includes('mercancia') ||
+    normalized.includes('mueble') ||
+    normalized.includes('maquinaria') ||
+    normalized.includes('equipo') ||
+    normalized.includes('asistencia') ||
+    normalized.includes('bienes')
+  ) {
+    return SchemaSection.BIENES_ASEGURADOS;
+  }
+  if (
+    normalized.includes('deducible') ||
+    normalized.includes('incendio') ||
+    normalized.includes('anegacion') ||
+    normalized.includes('terremoto') ||
+    normalized.includes('hmacc') ||
+    normalized.includes('amit')
+  ) {
+    return SchemaSection.DEDUCIBLES;
+  }
+  if (normalized.includes('sustraccion') || normalized.includes('robo')) {
+    return SchemaSection.SUSTRACCION;
+  }
+  if (
+    normalized.includes('prima') ||
+    normalized.includes('iva') ||
+    normalized.includes('gasto') ||
+    normalized.includes('expedicion') ||
+    normalized.includes('pago') ||
+    normalized.includes('financial')
+  ) {
+    return SchemaSection.FINANCIAL;
+  }
+  if (normalized.includes('exclusi') || normalized.includes('observaci') || normalized.includes('condici')) {
+    return SchemaSection.CONDICIONES;
+  }
+  return SchemaSection.COBERTURAS;
 }
 
 // ---------------------------------------------------------------------------
@@ -911,9 +1004,9 @@ function parseJsonV2(raw: string): RawTable {
       values = insurers.map((insurer) => {
         const matched = cells.find(
           (cell) =>
-            typeof cell === 'object' &&
-            cell !== null &&
-            String((cell as { insurer?: unknown }).insurer).trim() === insurer
+              typeof cell === 'object' &&
+              cell !== null &&
+              String((cell as { insurer?: unknown }).insurer).trim() === insurer
         );
         if (matched != null) {
           return extractCellValueV2(matched);
@@ -927,7 +1020,11 @@ function parseJsonV2(raw: string): RawTable {
     rows.set(label, padValues(values, insurers.length));
   }
 
-  return { insurers, rows, extraRows };
+  const quoteMetadata = Array.isArray((data as Record<string, unknown>).quoteMetadata)
+    ? ((data as Record<string, unknown>).quoteMetadata as any[])
+    : undefined;
+
+  return { insurers, rows, extraRows, quoteMetadata };
 }
 
 // ---------------------------------------------------------------------------
@@ -971,20 +1068,24 @@ function buildV2Result(
           (alias) => normalizeLabel(label).includes(alias) || alias.includes(normalizeLabel(label))
         )
       );
+      const fallbackSection = sectionByKeyword(label);
       extraRows.push({
         label,
+        section: fallbackSection,
         cells: insurers.map((insurer, index) =>
-          buildV2Cell(insurer, paddedOrNull(values, index), 0.5, isAmbiguous)
+          buildV2Cell(insurer, paddedOrNull(values, index), 0.5, isAmbiguous, fallbackSection)
         ),
       });
     }
   }
 
   for (const [label, values] of rawTable.extraRows.entries()) {
+    const fallbackSection = sectionByKeyword(label);
     extraRows.push({
       label,
+      section: fallbackSection,
       cells: insurers.map((insurer, index) =>
-        buildV2Cell(insurer, paddedOrNull(values, index), 0.5, false)
+        buildV2Cell(insurer, paddedOrNull(values, index), 0.5, false, fallbackSection)
       ),
     });
   }
@@ -1004,6 +1105,7 @@ function buildV2Result(
     rows,
     extraRows,
     warnings,
+    quoteMetadata: rawTable.quoteMetadata,
   };
 
   const validation = FlatComparisonSchema.safeParse(result);
