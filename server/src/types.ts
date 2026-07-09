@@ -86,6 +86,19 @@ export interface QuoteAnalysis {
   score: number;
 }
 
+export interface QuoteMetadata {
+  insurer: string;
+  cliente?: string | null;
+  tipoSeguro?: string | null;
+  ubicacionRiesgo?: string | null;
+  anoConstruccion?: string | null;
+  pisos?: string | null;
+  aliado?: string | null;
+  actividadOcupacion?: string | null;
+  documento?: string | null;
+  vigencia?: string | null;
+}
+
 export interface ComparisonReport {
   quotes: QuoteAnalysis[];
   recommendation: string;
@@ -94,6 +107,8 @@ export interface ComparisonReport {
     insurer: string;
     deductibleText: string;
   }[];
+  matrix?: MatrixRow[];       // Synced backend rows
+  quoteMetadata?: QuoteMetadata[]; // Extracted risk details
 }
 
 export type QuoteStatus = 'DRAFT' | 'SENT' | 'SOLD' | 'LOST';
