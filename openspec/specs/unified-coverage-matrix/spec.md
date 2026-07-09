@@ -132,3 +132,32 @@ La matriz SHALL renderizar cada sección como una fila de encabezado que abarca 
 - Componente PdfViewer (nuevo)
 - Componente AuditWizard (nuevo)
 - pdfjs-dist
+
+## Delta from change: mejorar-matriz-coberturas
+
+## MODIFIED Requirements
+
+### Requirement: Matriz de comparación unificada
+
+The frontend SHALL render comparison in a matrix of granular rows. It MUST pass backend `matrix` to `UnifiedCoverageMatrix` and render a responsive Header Metadata Card with the 9 extracted fields. If backend `matrix` is absent, it MUST fall back to client-side construction with the same grouping logic.
+
+(Previously: rendered a granular matrix by ignoring the backend `MatrixRow[]` and reconstructing it client-side without a metadata card.)
+
+#### Scenario: Matrix visualization & cell actions
+- WHEN user views Coberturas tab or triggers cell actions
+- THEN table shows sections with granular rows, preserving canonical order
+- AND cells display values with confidence badges, clickable citations, or double-click inline notes editor
+
+#### Scenario: Backend matrix & header metadata card
+- GIVEN report with pre-aligned backend matrix and header metadata
+- WHEN rendered
+- THEN `UnifiedCoverageMatrix` MUST use backend rows directly
+- AND render responsive Header Metadata Card with all 9 fields at top
+
+#### Scenario: Fallback client-side grouping & tab filtering
+- GIVEN report with no backend `matrix`
+- WHEN rendered or filtered by tabs
+- THEN it SHALL fall back to client-side grouping (Bienes, Deducibles, Sustracción, Financial)
+- AND financials tab MUST map the backend financial section ID
+- AND deductibles group under parent category when provided
+

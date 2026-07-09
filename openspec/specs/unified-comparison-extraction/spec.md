@@ -227,3 +227,59 @@ The system SHALL cache comparison results for performance.
 - **GIVEN** a deductible string containing a semicolon
 - **WHEN** rendered in the cell
 - **THEN** the string SHALL be parsed into multiple separate clean list items
+
+## Delta from change: mejorar-matriz-coberturas
+
+## MODIFIED Requirements
+
+### Requirement: Single-call multimodal comparison
+
+The system SHALL process N quote PDFs in a single Gemini call and request a section-aware comparison. Prompt builder MUST suggest business sections (Bienes Asegurados, Todo Riesgo Daños Materiales with deductibles, Sustracción con Violencia, Financial Footer) and the engine MUST extract quote-level header metadata: Cliente, Tipo de Seguro, Ubicación del Riesgo, Año Construcción, Pisos, Aliado, Actividad/Ocupación, Documento, Vigencia.
+
+(Previously: requested granular table with standard sub-rows but no header metadata or suggested business sections.)
+
+#### Scenario: Successful comparison & metadata extraction
+- GIVEN 4 quote PDFs with diverse business coverages and risk details
+- WHEN system triggers a single-call comparison with section suggestions
+- THEN it SHALL receive a granular table response within 60 seconds
+- AND extract the 9 header metadata fields for each quote
+
+#### Scenario: Coverage equivalence & deductible parsing
+- GIVEN differing insurer names (e.g., "Eq. Eléctrico") and deductible texts
+- WHEN flat table parsing, normalization, and deductible structuring run
+- THEN equivalent labels map to same canonical row, preserving raw wording
+- AND deductible text extracts to structured JSON (e.g., percentage, minimum)
+
+#### Scenario: Exclusive coverage detection
+- WHEN an insurer offers a unique coverage not found in other quotes
+- THEN system SHALL mark it as exclusive and note it in the analysis
+
+### Requirement: Section assignment
+
+The system SHALL assign every canonical row to a section. Flat table parser MUST classify labels:
+
+| Section | Canonical Labels |
+|---|---|
+| BIENES ASEGURADOS | Mercancías, Muebles y enseres, Maquinaria y equipo, Equipo eléctrico y electrónico, Asistencia |
+| DEDUCIBLES | Todo Riesgo Incendio, Anegación / Cobertura Extendida, Terremoto, HMACC-AMIT (grouped under parent) |
+| SUSTRACCIÓN | Sustracción con Violencia |
+| FINANCIAL | Prima con IVA incluido, Gastos de expedición, IVA, Total prima, Forma de pago (tagged with consistent ID) |
+
+(Previously: assigned rows to generic sections without precise mapping or a financial section ID.)
+
+#### Scenario: Section classification from labels
+- GIVEN raw labels "Prima con IVA incluido" or "HMACC-AMIT"
+- WHEN parser normalizes and assigns sections
+- THEN "Prima con IVA incluido" maps to FINANCIAL with consistent section ID
+- AND "HMACC-AMIT" maps to DEDUCIBLES
+
+## ADDED Requirements
+
+### Requirement: Aligned matrix API payload
+The API response SHALL include pre-aligned `MatrixRow[]` in `ComparisonReport` for direct frontend rendering.
+
+#### Scenario: API payload with matrix field
+- GIVEN a valid comparison report
+- WHEN served via `/api/comparison/unified`
+- THEN payload MUST include pre-aligned `matrix` rows
+
