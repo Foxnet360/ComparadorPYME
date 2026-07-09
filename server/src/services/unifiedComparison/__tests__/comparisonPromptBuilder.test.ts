@@ -53,12 +53,16 @@ describe('comparisonPromptBuilder', () => {
 });
 
 describe('comparisonPromptBuilder.buildV2ComparisonPrompt', () => {
-  it('suggests granular sub-rows such as Edificio, Contenidos, and Mercancías', () => {
+  it('suggests granular business-section sub-rows (Bienes, Deducibles, Sustracción, Financiero)', () => {
     const prompt = buildV2Prompt();
 
-    expect(prompt).toContain('Edificio');
-    expect(prompt).toContain('Contenidos');
+    expect(prompt).toContain('BIENES ASEGURADOS');
     expect(prompt).toContain('Mercancías');
+    expect(prompt).toContain('DEDUCIBLES');
+    expect(prompt).toContain('Todo Riesgo Incendio');
+    expect(prompt).toContain('SUSTRACCIÓN');
+    expect(prompt).toContain('Sustracción con Violencia');
+    expect(prompt).toContain('FINANCIAL');
   });
 
   it('requests a section-aware comparison table with insurers and rows', () => {

@@ -15,7 +15,7 @@ import {
   flatResultToMatrixRowsV2,
   quotesToMatrixRows,
 } from './matrixTransformer';
-import { resolveComparisonSchemaVersion } from './comparisonSchema';
+import { resolveComparisonSchemaVersion, FlatComparisonResultV2 } from './comparisonSchema';
 
 export interface ComparisonAdapterResult {
   matrix: MatrixRow[];
@@ -23,6 +23,7 @@ export interface ComparisonAdapterResult {
   schemaVersion: 1 | 2;
   fallbackReason?: string;
   correlationId: string;
+  quoteMetadata?: any[];
 }
 
 export class ComparisonEngineAdapter {
@@ -82,6 +83,7 @@ export class ComparisonEngineAdapter {
         engine: 'unified',
         schemaVersion,
         correlationId,
+        quoteMetadata: schemaVersion === 2 ? (result as FlatComparisonResultV2).quoteMetadata : undefined,
       };
     } catch (error) {
       const reason =
