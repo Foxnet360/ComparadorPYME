@@ -3,17 +3,17 @@ import { parseColombianCurrency } from '../currencyParser';
 
 describe('currencyParser - parseColombianCurrency', () => {
   it('should parse standard Colombian currency format with decimals', () => {
-    expect(parseColombianCurrency('$1.134.400,00')).toBe(1134400.00);
-    expect(parseColombianCurrency('1.134.400,50')).toBe(1134400.50);
+    expect(parseColombianCurrency('$1.134.400,00')).toBe(1134400.0);
+    expect(parseColombianCurrency('1.134.400,50')).toBe(1134400.5);
   });
 
   it('should parse standard Colombian currency format without decimals', () => {
-    expect(parseColombianCurrency('$1.134.400')).toBe(1134400.00);
-    expect(parseColombianCurrency('1.134.400')).toBe(1134400.00);
+    expect(parseColombianCurrency('$1.134.400')).toBe(1134400.0);
+    expect(parseColombianCurrency('1.134.400')).toBe(1134400.0);
   });
 
   it('should parse raw float with dot decimal', () => {
-    expect(parseColombianCurrency('1134400.00')).toBe(1134400.00);
+    expect(parseColombianCurrency('1134400.00')).toBe(1134400.0);
     expect(parseColombianCurrency('1134400.5')).toBe(1134400.5);
   });
 
