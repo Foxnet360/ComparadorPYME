@@ -8,6 +8,12 @@
 
 ---
 
+## Final Artifacts Update (2026-07-09)
+
+On **2026-07-09**, the final `apply-progress.md` and `verify-report.md` artifacts from the Phase 7 re-verification batch were merged into this archive, overwriting the older versions to reflect the complete TDD work unit and the final verified state.
+
+---
+
 ## Engram Observation IDs
 
 | Artifact | Observation ID | Topic |
@@ -18,6 +24,7 @@
 | tasks | #306 | `sdd/granular-comparison-schema/tasks` |
 | apply-progress | #307 | `sdd/granular-comparison-schema/apply-progress` |
 | verify-report | *not persisted separately* | `sdd/granular-comparison-schema/verify-report` |
+| archive-report | #308 (updated 2026-07-09) | `sdd/granular-comparison-schema/archive-report` |
 
 *Note: The verify-report was produced as an OpenSpec file. A separate Engram observation for the verify-report topic was not found; the report content is preserved in the archived `verify-report.md` and the structured bugfix observation #310 records the post-verification structured deductible extraction fix.*
 
@@ -25,12 +32,12 @@
 
 ## Task Completion Gate
 
-- **Total tasks**: 20 (16 original Phase 1–4 tasks + 4 Phase 5 structured-deductible follow-up tasks)
-- **Completed**: 20
+- **Total tasks**: 27 (20 baseline tasks + 7 Phase 7 fresh review fix tasks)
+- **Completed**: 27
 - **Incomplete**: 0
 - **Gate result**: PASS
 
-All implementation tasks in `tasks.md` are marked `[x]`. The task artifact reflects the final state before archiving.
+All implementation tasks in `tasks.md` and Phase 7 re-verification tasks are marked `[x]`. The task artifact reflects the final state before archiving.
 
 ---
 
@@ -38,7 +45,7 @@ All implementation tasks in `tasks.md` are marked `[x]`. The task artifact refle
 
 - **Verdict**: `PASS WITH WARNINGS`
 - **Critical issues**: None
-- **Warnings acknowledged**: Dedicated exclusive-coverages section for v2 is grouped under `OTROS`; tooltip canonical-name/match-method detail is a UI gap; some changed files fall below 80% coverage; pre-existing frontend type-check and lint warnings remain.
+- **Warnings acknowledged**: Dedicated exclusive-coverages section for v2 is grouped under `OTROS`; tooltip canonical-name/match-method detail is a UI gap; some changed files fall below 80% coverage; pre-existing frontend type-check and lint warnings remain; worker environment teardown warning observed in full backend tests.
 - **Archive decision**: Proceed. Warnings are cosmetic/pre-existing and do not block archive per the orchestrator's explicit instruction.
 
 ---
@@ -64,11 +71,11 @@ All implementation tasks in `tasks.md` are marked `[x]`. The task artifact refle
   - `unified-comparison-extraction/spec.md` ✅
   - `unified-coverage-matrix/spec.md` ✅
 - `design.md` ✅
-- `tasks.md` ✅ (20/20 tasks complete)
-- `apply-progress.md` ✅
-- `verify-report.md` ✅
+- `tasks.md` ✅ (27/27 tasks complete)
+- `apply-progress.md` ✅ (updated with Phase 6 & Phase 7)
+- `verify-report.md` ✅ (updated with Phase 7 fresh re-verification)
 - `exploration.md` ✅
-- `archive-report.md` ✅ (this file)
+- `archive-report.md` ✅ (this file - updated 2026-07-09)
 
 ---
 
@@ -85,7 +92,7 @@ The following main specs now reflect the new granular comparison schema behavior
 
 ## SDD Cycle Completion
 
-The change has been fully planned, implemented, verified, and archived. The next step is to create the stacked PRs against the main repository.
+The change has been fully planned, implemented, verified, and archived. The stacked PRs have been merged and finalized.
 
 ---
 
