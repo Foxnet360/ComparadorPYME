@@ -30,10 +30,10 @@ Chain strategy: feature-branch-chain
   - **Done**: Extraction triggers DB inserts for user. (~55 lines)
 
 ## Phase 2: Premium Decimal Parsing (PR 2)
-- [ ] 2.1 Write es-CO decimal-aware helper `parseColombianCurrency` to process local currency strings.
+- [x] 2.1 Write es-CO decimal-aware helper `parseColombianCurrency` to process local currency strings.
   - **Files**: `server/src/utils/currencyParser.ts`
   - **Done**: `$1.134.400,00` correctly parsed to `1134400.00`. (~30 lines)
-- [ ] 2.2 Wire parser inside the `matrixRowsToComparisonReport` V2 premium extraction pipeline.
+- [x] 2.2 Wire parser inside the `matrixRowsToComparisonReport` V2 premium extraction pipeline.
   - **Files**: `server/src/controllers/analysisController.ts`
   - **Done**: Numeric premiums output without truncation. (~30 lines)
 
