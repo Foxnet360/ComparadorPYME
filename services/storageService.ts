@@ -108,7 +108,10 @@ export const storageService = {
 
         return cloudClients;
       } catch (error) {
-        console.warn('⚠️ Failed to fetch clients from backend, falling back to local IndexedDB', error);
+        console.warn(
+          '⚠️ Failed to fetch clients from backend, falling back to local IndexedDB',
+          error
+        );
       }
     }
 
@@ -140,7 +143,10 @@ export const storageService = {
         console.log('✅ Client successfully synchronized to backend');
       }
     } catch (error) {
-      console.warn('⚠️ Syncing client to backend failed. Will keep in local IndexedDB only.', error);
+      console.warn(
+        '⚠️ Syncing client to backend failed. Will keep in local IndexedDB only.',
+        error
+      );
     }
 
     return await storageService.getClients();

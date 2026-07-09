@@ -201,46 +201,97 @@ export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes }) =>
                         >
                           {coverage ? (
                             <div className="flex flex-col items-center justify-center space-y-2">
-                              {/* Percentage and Minimum */}
-                              {parsed && parsed.percentage !== null ? (
-                                <div className="flex flex-col items-center">
-                                  <span
-                                    className={`text-base font-extrabold ${parsed.isHigh ? 'text-amber-600' : 'text-slate-800'}`}
-                                  >
-                                    {parsed.percentage}%
-                                  </span>
-                                  {parsed.minimum !== null && (
-                                    <span className="text-[10px] text-slate-500 font-medium">
-                                      Mín. {parsed.minimum} SMMLV
-                                    </span>
-                                  )}
+                              {/* Semicolon-delimited list parsing if contains semicolon */}
+                              {coverage.deductible && coverage.deductible.includes(';') ? (
+                                <div className="flex flex-col gap-2 w-full">
+                                  {coverage.deductible.split(';').map((part, pIdx) => {
+                                    const trimmed = part.trim();
+                                    if (!trimmed) return null;
+                                    const partParsed = parseDeductible(trimmed);
+                                    return (
+                                      <div
+                                        key={pIdx}
+                                        className="flex flex-col items-center border border-slate-100 p-1.5 rounded bg-slate-50/50"
+                                      >
+                                        {partParsed.percentage !== null ? (
+                                          <div className="flex flex-col items-center">
+                                            <span
+                                              className={`text-xs font-extrabold ${partParsed.isHigh ? 'text-amber-600' : 'text-slate-800'}`}
+                                            >
+                                              {partParsed.percentage}%
+                                            </span>
+                                            {partParsed.minimum !== null && (
+                                              <span className="text-[9px] text-slate-500 font-medium">
+                                                Mín. {partParsed.minimum} SMMLV
+                                              </span>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          <div
+                                            className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${getDeductibleColor(partParsed.isHigh, partParsed.isUnspecified)}`}
+                                          >
+                                            {partParsed.rawText}
+                                          </div>
+                                        )}
+                                        {partParsed.appliesTo && (
+                                          <div
+                                            className={`text-[8px] px-1 py-0.2 mt-1 rounded font-semibold border ${partParsed.appliesTo === 'perdida' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}
+                                          >
+                                            {partParsed.appliesTo === 'perdida'
+                                              ? 'Pérdida'
+                                              : 'Valor As.'}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               ) : (
-                                <div
-                                  className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
-                                    parsed
-                                      ? getDeductibleColor(parsed.isHigh, parsed.isUnspecified)
-                                      : 'bg-gray-100 text-slate-600 border-gray-200'
-                                  }`}
-                                >
-                                  {parsed?.rawText || 'N/A'}
-                                </div>
+                                <>
+                                  {/* Percentage and Minimum */}
+                                  {parsed && parsed.percentage !== null ? (
+                                    <div className="flex flex-col items-center">
+                                      <span
+                                        className={`text-base font-extrabold ${parsed.isHigh ? 'text-amber-600' : 'text-slate-800'}`}
+                                      >
+                                        {parsed.percentage}%
+                                      </span>
+                                      {parsed.minimum !== null && (
+                                        <span className="text-[10px] text-slate-500 font-medium">
+                                          Mín. {parsed.minimum} SMMLV
+                                        </span>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div
+                                      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
+                                        parsed
+                                          ? getDeductibleColor(parsed.isHigh, parsed.isUnspecified)
+                                          : 'bg-gray-100 text-slate-600 border-gray-200'
+                                      }`}
+                                    >
+                                      {parsed?.rawText || 'N/A'}
+                                    </div>
+                                  )}
+                                </>
                               )}
 
                               {/* Base of Application Badge */}
-                              {parsed && parsed.appliesTo && (
-                                <div
-                                  className={`text-[10px] px-1.5 py-0.5 rounded font-semibold border ${
-                                    parsed.appliesTo === 'perdida'
-                                      ? 'bg-green-50 text-green-700 border-green-200'
-                                      : 'bg-rose-50 text-rose-700 border-rose-200'
-                                  }`}
-                                >
-                                  {parsed.appliesTo === 'perdida'
-                                    ? 'Sobre Pérdida'
-                                    : 'Sobre Valor As.'}
-                                </div>
-                              )}
+                              {(!coverage.deductible || !coverage.deductible.includes(';')) &&
+                                parsed &&
+                                parsed.appliesTo && (
+                                  <div
+                                    className={`text-[10px] px-1.5 py-0.5 rounded font-semibold border ${
+                                      parsed.appliesTo === 'perdida'
+                                        ? 'bg-green-50 text-green-700 border-green-200'
+                                        : 'bg-rose-50 text-rose-700 border-rose-200'
+                                    }`}
+                                  >
+                                    {parsed.appliesTo === 'perdida'
+                                      ? 'Sobre Pérdida'
+                                      : 'Sobre Valor As.'}
+                                  </div>
+                                )}
 
                               {/* Trophy/Star Indicator for Best option */}
                               {isBest && (

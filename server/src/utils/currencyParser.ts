@@ -5,7 +5,7 @@
  *       "$1.134.400"    -> 1134400.00
  *       "1134400.00"    -> 1134400.00
  *       "1.134.400"     -> 1134400.00
- * 
+ *
  * Returns null for unparseable or empty values instead of garbage numbers.
  */
 export function parseColombianCurrency(valueStr: string | null | undefined): number | null {
@@ -19,11 +19,7 @@ export function parseColombianCurrency(valueStr: string | null | undefined): num
   }
 
   // Remove currency symbol, "COP", "USD", and whitespace
-  let cleanStr = trimmed
-    .replace(/^\$+/, '')
-    .replace(/COP/gi, '')
-    .replace(/USD/gi, '')
-    .trim();
+  let cleanStr = trimmed.replace(/^\$+/, '').replace(/COP/gi, '').replace(/USD/gi, '').trim();
 
   if (cleanStr === '') {
     return null;
