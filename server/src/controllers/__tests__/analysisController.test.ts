@@ -271,4 +271,50 @@ describe('analysisController - matrixRowsToComparisonReport', () => {
     const primaRow = report.quotes[0].coverages.find((c) => c.name === 'PRIMA ANUAL NETO');
     expect(primaRow).toBeUndefined();
   });
+
+  it('computes dynamic scoring and populates quoteAudit in the V2 path', async () => {
+    const matrixRows: MatrixRow[] = [
+      {
+        type: 'header',
+        id: 'section_0',
+        label: 'INFORMACIÓN GENERAL',
+        sectionId: 1,
+        cells: [],
+      },
+      {
+        type: 'data',
+        id: 'row_bienes',
+        label: 'Bienes bajo tierra',
+        sectionId: 1,
+        cells: [
+          {
+            value: 'Amparado',
+            isExcluded: false,
+            isWinner: false,
+            notes: '15% min 5 SMMLV',
+            confidence: 0.95,
+          },
+        ],
+      },
+    ];
+
+    const quoteFiles = [{ originalname: 'COTIZACION-MAPFRE.pdf' }] as Express.Multer.File[];
+
+    const report = await matrixRowsToComparisonReport(matrixRows, quoteFiles);
+
+    const quote = report.quotes[0];
+    expect(quote.score).toBeGreaterThan(0);
+    expect(quote.score).not.toBe(70); // Should not be the hardcoded 70
+    expect(quote.dataQualityScore).toBeGreaterThan(0);
+    expect(quote.dataQualityScore).not.toBe(85); // Should not be hardcoded 85
+    expect(quote.extractionConfidence).toBe(95); // (0.95 * 100)
+    expect(quote.parseConfidence).toBe(95);
+
+    // Audit assertions
+    expect(quote.quoteAudit).toBeDefined();
+    expect(quote.quoteAudit!.overallRiskScore).toBeGreaterThanOrEqual(0);
+    expect(quote.quoteAudit!.deductibleRisks.length).toBeGreaterThan(0);
+    expect(quote.quoteAudit!.missingCoverages.length).toBeGreaterThan(0);
+    expect(quote.quoteAudit!.summary).toContain('MAPFRE');
+  });
 });
