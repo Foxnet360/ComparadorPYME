@@ -14,6 +14,7 @@ import { comparisonEngineAdapter } from '../services/unifiedComparison/compariso
 
 import { saveAnalysisHistory, getAnalysisHistoryByUser } from '../repositories/analysisRepository';
 import { formatCOP } from '../utils/formatCurrency';
+import { parseColombianCurrency } from '../utils/currencyParser';
 import quoteBasedAuditor from '../services/quoteBasedAuditor';
 
 import { AlertItem, AlertLevel, MatrixRow, QuoteAnalysis } from '../types';
@@ -461,8 +462,8 @@ export function matrixRowsToComparisonReport(
 
         // Check if this is a premium row
         if (row.id === 'premium_total' || row.label === 'TOTAL A PAGAR') {
-          const numericValue = parseFloat(value.replace(/[^\d]/g, ''));
-          if (!isNaN(numericValue)) {
+          const numericValue = parseColombianCurrency(value);
+          if (numericValue !== null) {
             priceAnnual = numericValue;
           }
         } else if (row.id?.startsWith('premium_')) {
