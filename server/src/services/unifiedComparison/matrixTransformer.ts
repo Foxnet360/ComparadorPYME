@@ -14,7 +14,7 @@ import { ParsedQuote } from '../quoteParser';
 
 const HEADER_SECTION_ID = 0;
 const COVERAGE_SECTION_ID = 1;
-export const FINANCIAL_SECTION_ID = 999;
+export const FINANCIAL_SECTION_ID = 100;
 
 const FINANCIAL_SECTION_LABEL = 'PRIMAS Y COSTOS';
 
@@ -196,6 +196,7 @@ const SECTION_ORDER = [
   'INFORMACIÓN GENERAL',
   'BIENES ASEGURADOS',
   'COBERTURAS',
+  'SUSTRACCIÓN',
   'DEDUCIBLES',
   'CONDICIONES',
   FINANCIAL_SECTION_LABEL,
@@ -259,9 +260,10 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
   }[] = [];
 
   for (const row of result.rows) {
-    const section = isFinancialRowLabel(row.label)
-      ? FINANCIAL_SECTION_LABEL
-      : row.section || 'OTROS';
+    const section =
+      isFinancialRowLabel(row.label) || row.section === 'FINANCIAL'
+        ? FINANCIAL_SECTION_LABEL
+        : row.section || 'OTROS';
     if (!sectionGroups.has(section)) {
       sectionGroups.set(section, []);
     }

@@ -652,6 +652,8 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
         <div className="animate-in fade-in duration-300">
           <UnifiedCoverageMatrix
             quotes={report.quotes}
+            rows={report.matrix}
+            metadata={report.quoteMetadata}
             viewMode={viewMode}
             analysisId={report.id}
           />

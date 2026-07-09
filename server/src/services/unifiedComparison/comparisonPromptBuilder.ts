@@ -20,29 +20,26 @@ const FLAT_ROW_LABELS = [
 
 const GRANULAR_SECTIONS = [
   {
-    section: 'INFORMACIÓN GENERAL',
-    rows: ['Bienes Asegurados', 'Prima con IVA', 'Forma de Pago'],
-  },
-  {
     section: 'BIENES ASEGURADOS',
-    rows: ['Edificio', 'Contenidos', 'Mercancías'],
-  },
-  {
-    section: 'COBERTURAS',
-    rows: ['Equipo Eléctrico', 'Responsabilidad Civil', 'Terremoto'],
-  },
-  {
-    section: 'DEDUCIBLES',
     rows: [
-      'Deducible Edificio',
-      'Deducible Contenidos',
-      'Deducible Mercancías',
-      'Deducible Equipo Eléctrico',
+      'Mercancías',
+      'Muebles y enseres',
+      'Maquinaria y equipo',
+      'Equipo eléctrico y electrónico',
+      'Asistencia',
     ],
   },
   {
-    section: 'CONDICIONES',
-    rows: ['Observaciones', 'Exclusiones'],
+    section: 'DEDUCIBLES',
+    rows: ['Todo Riesgo Incendio', 'Anegación / Cobertura Extendida', 'Terremoto', 'HMACC-AMIT'],
+  },
+  {
+    section: 'SUSTRACCIÓN',
+    rows: ['Sustracción con Violencia'],
+  },
+  {
+    section: 'FINANCIAL',
+    rows: ['Prima con IVA incluido', 'Gastos de expedición', 'IVA', 'Total prima', 'Forma de pago'],
   },
 ] as const;
 
@@ -103,16 +100,38 @@ Genera una tabla comparativa con UNA columna por aseguradora y filas agrupadas p
 
 ${sectionList}
 
-Reglas:
+Reglas de Negocio para Secciones:
+1. BIENES ASEGURADOS: Extrae las sumas aseguradas o descripciones de Mercancías, Muebles y enseres, Maquinaria y equipo, Equipo eléctrico y electrónico, y Asistencia.
+2. DEDUCIBLES: Extrae los deducibles específicos para Todo Riesgo Incendio, Anegación / Cobertura Extendida, Terremoto, y HMACC-AMIT.
+3. SUSTRACCIÓN: Extrae límites y condiciones para Sustracción con Violencia.
+4. FINANCIAL: Extrae Prima con IVA incluido, Gastos de expedición, IVA, Total prima, y Forma de pago.
+
+Reglas Generales:
 - Copia los valores textualmente como aparecen en cada cotización.
 - No agrupes, no normalices a coberturas canónicas y no inventes datos.
 - Si una fila no aparece en una cotización, usa "No informado".
+- Además, para cada cotización, extrae los siguientes metadatos de cabecera: Cliente, Tipo de Seguro, Ubicación del Riesgo, Año Construcción, Pisos, Aliado, Actividad/Ocupación, Documento, Vigencia.
 - Responde únicamente con JSON válido que cumpla este schema:
 {
   "insurers": ["Aseguradora A", ...],
+  "quoteMetadata": [
+    {
+      "insurer": "Aseguradora A",
+      "cliente": "...",
+      "tipoSeguro": "...",
+      "ubicacionRiesgo": "...",
+      "anoConstruccion": "...",
+      "pisos": "...",
+      "aliado": "...",
+      "actividadOcupacion": "...",
+      "documento": "...",
+      "vigencia": "..."
+    },
+    ...
+  ],
   "rows": [
     {
-      "label": "Edificio",
+      "label": "Mercancías",
       "section": "BIENES ASEGURADOS",
       "cells": [
         {"insurer": "Aseguradora A", "value": "...", "rawText": "..."},
@@ -166,6 +185,20 @@ ${originalResponse.substring(0, 1000)}
 Por favor genera el JSON completo y válido con este schema:
 {
   "insurers": ["Aseguradora A", ...],
+  "quoteMetadata": [
+    {
+      "insurer": "Aseguradora A",
+      "cliente": "...",
+      "tipoSeguro": "...",
+      "ubicacionRiesgo": "...",
+      "anoConstruccion": "...",
+      "pisos": "...",
+      "aliado": "...",
+      "actividadOcupacion": "...",
+      "documento": "...",
+      "vigencia": "..."
+    }
+  ],
   "rows": [
     {
       "label": "...",
@@ -181,9 +214,10 @@ Por favor genera el JSON completo y válido con este schema:
 
 Asegúrate de que:
 1. El JSON tenga "insurers" como array de strings
-2. El JSON tenga "rows" como array de objetos con "label", "section" y "cells"
-3. Cada celda tenga "insurer" y "value"
-4. Si no encuentras una fila para una aseguradora, usa "No informado" como valor
+2. El JSON tenga "quoteMetadata" como array de objetos con los metadatos correspondientes por aseguradora
+3. El JSON tenga "rows" como array de objetos con "label", "section" y "cells"
+4. Cada celda tenga "insurer" y "value"
+5. Si no encuentras una fila para una aseguradora, usa "No informado" como valor
 
 Responde ÚNICAMENTE con el JSON corregido.`;
   }

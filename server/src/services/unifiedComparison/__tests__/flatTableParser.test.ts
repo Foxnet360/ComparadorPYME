@@ -273,18 +273,18 @@ describe('normalizeAlias', () => {
     expect(result!.canonical).toBe('Edificio');
   });
 
-  it('maps "Eq. Eléctrico" to canonical "Equipo Eléctrico"', () => {
+  it('maps "Eq. Eléctrico" to canonical "Equipo eléctrico y electrónico"', () => {
     const result = normalizeAlias('Eq. Eléctrico');
 
     expect(result).toBeDefined();
-    expect(result!.canonical).toBe('Equipo Eléctrico');
+    expect(result!.canonical).toBe('Equipo eléctrico y electrónico');
   });
 
   it('prefers the most specific alias match', () => {
     const result = normalizeAlias('Prima total con IVA');
 
     expect(result).toBeDefined();
-    expect(result!.canonical).toBe('Prima con IVA');
+    expect(result!.canonical).toBe('Prima con IVA incluido');
   });
 
   it('returns undefined for ambiguous labels such as "Equipo"', () => {
@@ -390,7 +390,7 @@ describe('flatTableParser.parseV2', () => {
     expect(result.rows).toHaveLength(2);
     expect(result.rows[0].label).toBe('Edificio');
     expect(result.rows[0].section).toBe('BIENES ASEGURADOS');
-    expect(result.rows[1].section).toBe('INFORMACIÓN GENERAL');
+    expect(result.rows[1].section).toBe('FINANCIAL');
   });
 
   it('routes ambiguous labels to extraRows with isAmbiguous flag', () => {
@@ -550,5 +550,96 @@ describe('flatTableParser.parseV2', () => {
     expect(result.rows[0].cells[0].value).toBe('No aplica');
     expect(result.rows[0].cells[0].deductible).toEqual({ type: 'not_applicable' });
     expect(result.rows[0].cells[0].isAmbiguous).toBeUndefined();
+  });
+
+  it('extracts quoteMetadata from JSON input', () => {
+    const input = JSON.stringify({
+      insurers: ['MAPFRE', 'CHUBB'],
+      quoteMetadata: [
+        {
+          insurer: 'MAPFRE',
+          cliente: 'Juan Perez',
+          tipoSeguro: 'Pyme',
+          ubicacionRiesgo: 'Bogota',
+          anoConstruccion: '2010',
+          pisos: '3',
+          aliado: 'Aliado A',
+          actividadOcupacion: 'Comercio',
+          documento: '12345',
+          vigencia: '1 ano',
+        },
+        {
+          insurer: 'CHUBB',
+          cliente: 'Maria Gomez',
+          tipoSeguro: 'Multirriesgo',
+          ubicacionRiesgo: 'Medellin',
+          anoConstruccion: '2015',
+          pisos: '5',
+          aliado: 'Aliado B',
+          actividadOcupacion: 'Servicios',
+          documento: '67890',
+          vigencia: '2 anos',
+        },
+      ],
+      rows: [
+        {
+          label: 'Mercancías',
+          cells: [
+            { insurer: 'MAPFRE', value: '$100M' },
+            { insurer: 'CHUBB', value: '$200M' },
+          ],
+        },
+      ],
+    });
+
+    const result = flatTableParser.parseV2(input, baseOptions);
+
+    expect(FlatComparisonSchemaV2.safeParse(result).success).toBe(true);
+    expect(result.quoteMetadata).toBeDefined();
+    expect(result.quoteMetadata).toHaveLength(2);
+    expect(result.quoteMetadata![0].cliente).toBe('Juan Perez');
+    expect(result.quoteMetadata![1].ubicacionRiesgo).toBe('Medellin');
+  });
+
+  it('classifies new business template sections properly', () => {
+    const input = JSON.stringify({
+      insurers: ['MAPFRE'],
+      rows: [
+        {
+          label: 'Muebles y enseres',
+          cells: [{ insurer: 'MAPFRE', value: '$50M' }],
+        },
+        {
+          label: 'Todo Riesgo Incendio',
+          cells: [{ insurer: 'MAPFRE', value: '10%' }],
+        },
+        {
+          label: 'Sustracción con Violencia',
+          cells: [{ insurer: 'MAPFRE', value: 'Incluido' }],
+        },
+        {
+          label: 'Gastos de expedición',
+          cells: [{ insurer: 'MAPFRE', value: '$10.000' }],
+        },
+      ],
+    });
+
+    const result = flatTableParser.parseV2(input, baseOptions);
+
+    const mueblesRow = result.rows.find((r) => r.label === 'Muebles y enseres');
+    expect(mueblesRow).toBeDefined();
+    expect(mueblesRow!.section).toBe('BIENES ASEGURADOS');
+
+    const incendioRow = result.rows.find((r) => r.label === 'Todo Riesgo Incendio');
+    expect(incendioRow).toBeDefined();
+    expect(incendioRow!.section).toBe('DEDUCIBLES');
+
+    const sustraccionRow = result.rows.find((r) => r.label === 'Sustracción con Violencia');
+    expect(sustraccionRow).toBeDefined();
+    expect(sustraccionRow!.section).toBe('SUSTRACCIÓN');
+
+    const gastosRow = result.rows.find((r) => r.label === 'Gastos de expedición');
+    expect(gastosRow).toBeDefined();
+    expect(gastosRow!.section).toBe('FINANCIAL');
   });
 });
