@@ -3,7 +3,7 @@ import fs from 'fs';
 
 import { ParsedQuote } from '../services/quoteParser';
 import { type CrossReferenceResult } from '../services/crossReferenceEngine';
-import { type ScoringResult, type ScoreBreakdown } from '../services/quoteScorer';
+import { quoteScorer, type ScoringResult, type ScoreBreakdown } from '../services/quoteScorer';
 import { type NarrativeResult } from '../services/narrativeService';
 import { type ValidationResult } from '../services/quoteValidator';
 import { type ConfidenceResult, type ConfidenceBreakdown } from '../services/confidenceScorer';
@@ -449,13 +449,14 @@ export async function matrixRowsToComparisonReport(
       ? alignInsurerIndices(insurerNames, matrixInsurers)
       : insurerNames.map((_, idx) => idx);
 
-  // Build quotes array
-  const quotes: UnifiedQuote[] = await Promise.all(
+  // Build intermediate quotes array in a first pass
+  const intermediateQuotes = await Promise.all(
     insurerNames.map(async (insurerName, idx) => {
       const coverages: UnifiedQuote['coverages'] = [];
       const alerts: UnifiedQuote['alerts'] = [];
       let priceAnnual = 0;
       const cellIdx = indexMap[idx];
+      const cellConfidences: number[] = [];
 
       // Extract coverages from matrix rows
       let currentSection: string | undefined;
@@ -474,6 +475,11 @@ export async function matrixRowsToComparisonReport(
         } else if (row.type === 'data' && row.cells && cellIdx >= 0 && row.cells[cellIdx]) {
           const cell = row.cells[cellIdx];
           const value = cell.value || '';
+
+          // Track cell confidence if present
+          if (typeof cell.confidence === 'number') {
+            cellConfidences.push(cell.confidence);
+          }
 
           // Check if this is a premium row
           if (row.id === 'premium_total' || row.label === 'TOTAL A PAGAR') {
@@ -563,43 +569,128 @@ export async function matrixRowsToComparisonReport(
         });
       }
 
+      const avgCellConfidence =
+        cellConfidences.length > 0
+          ? Math.round(
+              (cellConfidences.reduce((sum, val) => sum + val, 0) / cellConfidences.length) * 100
+            )
+          : 85;
+
+      const parsedQuote: ParsedQuote = {
+        insurerName,
+        policyName: 'Cotización PYME',
+        priceAnnual,
+        currency: 'COP',
+        coverages: coverages.map((c) => ({
+          name: c.name,
+          canonicalName: c.canonicalName || c.name,
+          value: c.value,
+          deductible: c.deductible,
+          confidence:
+            c.confidence !== undefined ? Math.round(c.confidence * 100) : avgCellConfidence,
+          categoryId: typeof c.categoryId === 'number' ? c.categoryId : null,
+          matchConfidence: c.matchConfidence,
+          matchMethod: c.matchMethod,
+          valueSource: 'extracted' as const,
+        })),
+        specialConditions: alerts.map((a) => a.description),
+        rawText: '',
+        parseConfidence: avgCellConfidence,
+      };
+
       return {
         insurerName,
         policyName: 'Cotización PYME',
-        priceMonthly: Math.round(priceAnnual / 12),
         priceAnnual,
+        priceMonthly: Math.round(priceAnnual / 12),
         currency: 'COP',
         deductibles: coverages.map((c) => c.deductible).join('; '),
         coverages,
         alerts,
-        scoringBreakdown: {
-          coverage: 70,
-          deductibles: 70,
-          exclusions: 70,
-          priceRatio: 70,
-          sublimits: 70,
-          warranties: 70,
-        },
-        clientAnalysis: `Análisis generado por el Motor Unificado para ${insurerName}`,
-        technicalAnalysis: '',
-        score: 70,
-        dataQualityScore: 85,
-        verificationConfidence: 85,
+        avgCellConfidence,
+        parsedQuote,
+      };
+    })
+  );
+
+  const allParsedQuotes = intermediateQuotes.map((iq) => iq.parsedQuote);
+
+  // Second pass: compute scores and risk audits
+  const quotes: UnifiedQuote[] = await Promise.all(
+    intermediateQuotes.map(async (iq) => {
+      const scoringResult = await quoteScorer.calculateScore(iq.parsedQuote, [], allParsedQuotes);
+
+      const audit = quoteBasedAuditor.auditQuote(
+        {
+          insurerName: iq.insurerName,
+          policyName: iq.policyName,
+          priceAnnual: iq.priceAnnual,
+          currency: iq.currency,
+          coverages: iq.coverages,
+          alerts: [],
+          scoringBreakdown: { ...scoringResult.breakdown },
+          clientAnalysis: `Análisis generado por el Motor Unificado para ${iq.insurerName}`,
+          technicalAnalysis: '',
+          score: scoringResult.totalScore,
+          deductibles: iq.deductibles,
+          rawText: '',
+        } as unknown as QuoteAnalysis,
+        intermediateQuotes as unknown as QuoteAnalysis[]
+      );
+
+      const combinedAlerts = [...iq.alerts];
+      if (audit.alerts) {
+        audit.alerts.forEach((alert) => {
+          const exists = combinedAlerts.some(
+            (existing) => existing.description === alert.description
+          );
+          if (!exists) {
+            combinedAlerts.push({
+              level: alert.level,
+              title: alert.title,
+              description: alert.description,
+            });
+          }
+        });
+      }
+
+      return {
+        insurerName: iq.insurerName,
+        policyName: iq.policyName,
+        priceMonthly: iq.priceMonthly,
+        priceAnnual: iq.priceAnnual,
+        currency: iq.currency,
+        deductibles: iq.deductibles,
+        coverages: iq.coverages,
+        alerts: combinedAlerts,
+        scoringBreakdown: { ...scoringResult.breakdown },
+        clientAnalysis:
+          audit.summary || `Análisis generado por el Motor Unificado para ${iq.insurerName}`,
+        technicalAnalysis: `Puntaje global: ${scoringResult.totalScore}/100. Calidad de datos: ${scoringResult.dataQualityScore}%. Confianza de verificación: ${scoringResult.verificationConfidence}%.`,
+        score: scoringResult.totalScore,
+        dataQualityScore: scoringResult.dataQualityScore,
+        verificationConfidence: scoringResult.verificationConfidence,
         isRagAvailable: false,
-        parseConfidence: 85,
+        parseConfidence: iq.avgCellConfidence,
         dualExtractionValidation: [],
-        specialConditions: alerts.map((a) => a.description),
-        extractionConfidence: 85,
-        confidenceBreakdown: null,
-        needsReview: false,
-        isCritical: false,
+        specialConditions: combinedAlerts.map((a) => a.description),
+        extractionConfidence: iq.avgCellConfidence,
+        confidenceBreakdown: {
+          ocrAccuracy: iq.avgCellConfidence,
+          layoutCertainty: iq.avgCellConfidence,
+          fieldVerification: iq.avgCellConfidence,
+        },
+        needsReview: iq.avgCellConfidence < 70,
+        isCritical: iq.avgCellConfidence < 50,
         validationFlags: [],
-        validationSummary: `${coverages.length} coberturas extraídas`,
+        validationSummary: `${iq.coverages.length} coberturas extraídas`,
         crossReferenceSummary: {
           verifiedCoverages: 0,
-          totalCoverages: coverages.length,
-          criticalAlerts: 0,
-          warningAlerts: alerts.length,
+          totalCoverages: iq.coverages.length,
+          criticalAlerts: combinedAlerts.filter((a) => a.level === 'CRITICAL').length,
+          warningAlerts: combinedAlerts.filter(
+            (a) => a.level === 'WARNING' || a.level === 'warning'
+          ).length,
         },
         clauseValidation: {
           hasClauseDocument: false,
@@ -614,13 +705,13 @@ export async function matrixRowsToComparisonReport(
         warrantyCompliance: null,
         legalOpinion: null,
         quoteAudit: {
-          deductibleRisks: [],
-          missingCoverages: [],
-          specialConditions: [],
-          negotiationPoints: [],
-          competitiveAdvantages: [],
-          overallRiskScore: 0,
-          summary: '',
+          deductibleRisks: audit.deductibleRisks,
+          missingCoverages: audit.missingCoverages,
+          specialConditions: audit.specialConditions,
+          negotiationPoints: audit.negotiationPoints,
+          competitiveAdvantages: audit.competitiveAdvantages,
+          overallRiskScore: audit.overallRiskScore,
+          summary: audit.summary,
         },
       };
     })
