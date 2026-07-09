@@ -30,33 +30,33 @@ Chain strategy: feature-branch-chain
   - **Done**: Extraction triggers DB inserts for user. (~55 lines)
 
 ## Phase 2: Premium Decimal Parsing (PR 2)
-- [ ] 2.1 Write es-CO decimal-aware helper `parseColombianCurrency` to process local currency strings.
+- [x] 2.1 Write es-CO decimal-aware helper `parseColombianCurrency` to process local currency strings.
   - **Files**: `server/src/utils/currencyParser.ts`
   - **Done**: `$1.134.400,00` correctly parsed to `1134400.00`. (~30 lines)
-- [ ] 2.2 Wire parser inside the `matrixRowsToComparisonReport` V2 premium extraction pipeline.
+- [x] 2.2 Wire parser inside the `matrixRowsToComparisonReport` V2 premium extraction pipeline.
   - **Files**: `server/src/controllers/analysisController.ts`
   - **Done**: Numeric premiums output without truncation. (~30 lines)
 
 ## Phase 3: Semantic Ontology Integration (PR 3)
-- [ ] 3.1 Pipe parsed unified engine rows through `coverageNormalizer` and `thesaurusMapper`.
+- [x] 3.1 Pipe parsed unified engine rows through `coverageNormalizer` and `thesaurusMapper`.
   - **Files**: `server/src/controllers/analysisController.ts`
   - **Done**: Raw cells map to valid `categoryId` and `canonicalName`. (~45 lines)
-- [ ] 3.2 Display canonical coverage rows in top matrix and group unmapped rows under "unmapped".
+- [x] 3.2 Display canonical coverage rows in top matrix and group unmapped rows under "unmapped".
   - **Files**: `components/UnifiedCoverageMatrix.tsx`
   - **Done**: Top matrix shows mapped, bottom shows extra rows. (~45 lines)
 
 ## Phase 4: Dynamic Scoring & Risk Audit (PR 4)
-- [ ] 4.1 Convert parsed matrix rows to backend `ParsedQuote[]` format inside controller.
+- [x] 4.1 Convert parsed matrix rows to backend `ParsedQuote[]` format inside controller.
   - **Files**: `server/src/controllers/analysisController.ts`
   - **Done**: Matrix cells match standard quote structures. (~30 lines)
-- [ ] 4.2 Invoke `quoteScorer` and `quoteBasedAuditor` to calculate dynamic scores and audits.
+- [x] 4.2 Invoke `quoteScorer` and `quoteBasedAuditor` to calculate dynamic scores and audits.
   - **Files**: `server/src/controllers/analysisController.ts`
   - **Done**: Overall ratings and risk audit replace static 85s. (~50 lines)
 
 ## Phase 5: UI/UX & Toggle (PR 5)
-- [ ] 5.1 Parse semicolon-delimited deductibles and format them as clean stacked list items.
+- [x] 5.1 Parse semicolon-delimited deductibles and format them as clean stacked list items.
   - **Files**: `components/DeductibleBadge.tsx`, `components/UnifiedCoverageMatrix.tsx`
   - **Done**: Semi-colon cell content renders as list badges. (~45 lines)
-- [ ] 5.2 Bind client/técnico viewMode toggle to hide confidence scores and technical citations for clients.
+- [x] 5.2 Bind client/técnico viewMode toggle to hide confidence scores and technical citations for clients.
   - **Files**: `components/UnifiedCoverageMatrix.tsx`
   - **Done**: Visual elements toggle smoothly on click. (~65 lines)
