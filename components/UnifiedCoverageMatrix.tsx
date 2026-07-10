@@ -807,6 +807,7 @@ interface UnifiedCoverageMatrixProps {
   metadata?: QuoteMetadata[];
   viewMode?: 'client' | 'technical';
   analysisId?: string; // Optional ID for direct exports
+  schemaVersion?: 1 | 2;
 }
 
 export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
@@ -815,6 +816,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
   metadata,
   viewMode = 'technical',
   analysisId,
+  schemaVersion,
 }) => {
   const [activeTab, setActiveTab] = useState<'coverages' | 'financials' | 'additional'>(
     'coverages'
@@ -907,7 +909,10 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
     return confidence !== undefined && confidence !== null && confidence <= 0.5;
   };
 
-  const fullMatrix = rows ?? transformQuotesToMatrix(quotes);
+  // Use backend rows for V2 granular reports; fallback to V1 client-side reconstruction
+  // for explicit V1 or when rows are missing entirely.
+  const useBackendRows = schemaVersion === 2 || (schemaVersion !== 1 && rows !== undefined);
+  const fullMatrix = useBackendRows ? (rows ?? []) : transformQuotesToMatrix(quotes);
 
   // Partition matrix rows according to active tabs
   const filteredRows = fullMatrix.filter((row) => {

@@ -13,8 +13,14 @@ interface BadgeConfig {
   riskLevel: 'low' | 'medium' | 'high' | 'none';
 }
 
+export const normalizeDeductibleBadgeValue = (text: string): string => {
+  if (!text) return text;
+  return text.replace(/\bS\.?\s*M\.?\s*M\.?\s*L\.?\s*V\.?\b/gi, 'SMMLV');
+};
+
 export const parseDeductibleForBadge = (deductible: string): BadgeConfig => {
-  const upperValue = deductible?.toUpperCase().trim() || '';
+  const normalizedValue = normalizeDeductibleBadgeValue(deductible);
+  const upperValue = normalizedValue?.toUpperCase().trim() || '';
 
   // No deductible
   if (

@@ -656,6 +656,7 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
             metadata={report.quoteMetadata}
             viewMode={viewMode}
             analysisId={report.id}
+            schemaVersion={report.schemaVersion}
           />
         </div>
       )}

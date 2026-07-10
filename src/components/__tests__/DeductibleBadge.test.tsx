@@ -29,6 +29,16 @@ describe('parseDeductibleForBadge', () => {
     expect(configHigh.riskLevel).toBe('high');
     expect(configHigh.label).toBe('8 SMMLV');
   });
+
+  it('normalizes dotted S.M.M.L.V. variations to SMMLV', () => {
+    const config = parseDeductibleForBadge('Min 5 S.M.M.L.V.');
+    expect(config.riskLevel).toBe('medium');
+    expect(config.label).toBe('5 SMMLV');
+
+    const configHigh = parseDeductibleForBadge('Min 8 S.M.M.L.V.');
+    expect(configHigh.riskLevel).toBe('high');
+    expect(configHigh.label).toBe('8 SMMLV');
+  });
 });
 
 describe('DeductibleBadge Component', () => {
