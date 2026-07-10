@@ -143,7 +143,8 @@ describe('UnifiedCoverageMatrix', () => {
   it('renders v1 quotes when no rows prop is provided', () => {
     renderWithProvider(<UnifiedCoverageMatrix quotes={baseQuotes} />);
 
-    expect(screen.getByText('AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL')).toBeTruthy();
+    // The header appears once in the business section and once in the DEDUCIBLES section
+    expect(screen.getAllByText('AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows a helpful empty state when matrix has no rows', () => {
@@ -348,7 +349,7 @@ describe('UnifiedCoverageMatrix', () => {
     );
 
     // V1 fallback should render the canonical category header from taxonomy, not the V2 row label
-    expect(screen.getByText('AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL')).toBeTruthy();
+    expect(screen.getAllByText('AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL').length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText('Responsabilidad Civil (RCE)')).toBeNull();
   });
 
@@ -377,5 +378,36 @@ describe('UnifiedCoverageMatrix', () => {
     expect(screen.getByText('COBERTURAS')).toBeTruthy();
     expect(screen.getByText('Responsabilidad Civil (RCE)')).toBeTruthy();
     expect(screen.queryByText('AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL')).toBeNull();
+  });
+
+  it('renders DEDUCIBLES section rows from V2 matrix', () => {
+    const rowsWithDeductibles: MatrixRow[] = [
+      {
+        type: 'header',
+        id: 'section_deductibles',
+        label: 'DEDUCIBLES',
+        sectionId: 13,
+        cells: [{ value: '', isExcluded: false, isWinner: false }],
+      },
+      {
+        type: 'data',
+        id: 'deductible_incendio',
+        label: 'Incendio (Edificio y Contenidos)',
+        sectionId: 13,
+        cells: [
+          { value: '10% PERD - Min 1 SMMLV', isExcluded: false, isWinner: false },
+          { value: 'No aplica', isExcluded: false, isWinner: false },
+        ],
+      },
+    ];
+
+    renderWithProvider(
+      <UnifiedCoverageMatrix quotes={baseQuotes} rows={rowsWithDeductibles} schemaVersion={2} />
+    );
+
+    expect(screen.getByText('DEDUCIBLES')).toBeTruthy();
+    expect(screen.getByText('Incendio (Edificio y Contenidos)')).toBeTruthy();
+    expect(screen.getByText('10% PERD - Min 1 SMMLV')).toBeTruthy();
+    expect(screen.getByText('No aplica')).toBeTruthy();
   });
 });

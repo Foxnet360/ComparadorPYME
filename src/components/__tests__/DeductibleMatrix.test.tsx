@@ -61,8 +61,8 @@ describe('DeductibleMatrix', () => {
 
     render(<DeductibleMatrix quotes={quotes} />);
 
-    // The normalized text should be rendered instead of the dotted variant
-    expect(screen.getByText(/1 SMMLV/)).toBeTruthy();
+    // The badge normalizes the dotted variant and shows the percentage portion
+    expect(screen.getByText(/10%/)).toBeTruthy();
   });
 
   it('renders a fallback for missing deductibles', () => {
@@ -70,6 +70,19 @@ describe('DeductibleMatrix', () => {
 
     render(<DeductibleMatrix quotes={quotes} />);
 
-    expect(screen.getByText('1 aseguradoras con deducibles no especificados')).toBeTruthy();
+    expect(screen.getByText('1 aseguradora con deducibles no especificados')).toBeTruthy();
+  });
+
+  it('omits rows where every quote has an unspecified deductible', () => {
+    const quotes = [
+      makeQuote('Aseguradora A', 'NO ESPECIFICADO'),
+      makeQuote('Aseguradora B', 'No Especificado'),
+    ];
+
+    render(<DeductibleMatrix quotes={quotes} />);
+
+    // The table body should not render the coverage row, only the summary panel
+    expect(screen.queryByText(CATEGORY_NAME)).toBeNull();
+    expect(screen.getByText('2 aseguradoras con deducibles no especificados')).toBeTruthy();
   });
 });

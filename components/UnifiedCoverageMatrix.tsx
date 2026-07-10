@@ -320,7 +320,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
   const matrix: MatrixRow[] = [];
   const numQuotes = quotes.length;
 
-  // Define business sections grouping
+  // Define business sections grouping (deductible rows are handled separately below)
   const BUSINESS_SECTIONS = [
     {
       name: 'BIENES ASEGURADOS',
@@ -328,15 +328,11 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     },
     {
       name: 'COBERTURAS',
-      categoryIds: [2, 6, 8, 10, 12],
+      categoryIds: [2, 6, 8, 10, 12, 13, 14],
     },
     {
       name: 'SUSTRACCIÓN',
       categoryIds: [3],
-    },
-    {
-      name: 'DEDUCIBLES',
-      categoryIds: [13, 14],
     },
   ];
 
@@ -365,6 +361,9 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
       });
 
       for (const rowConfig of config.rows) {
+        // Deductible rows are rendered in a dedicated DEDUCIBLES section below
+        if (rowConfig.field === 'deductible') continue;
+
         const cells: MatrixCell[] = [];
 
         for (let i = 0; i < numQuotes; i++) {
@@ -463,7 +462,124 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     }
   }
 
-  // 2. Exclusive Coverages
+  // 2. DEDUCIBLES section — all deductible rows across categories
+  matrix.push({
+    type: 'header',
+    id: 'section_group_deductibles',
+    label: 'DEDUCIBLES',
+    sectionId: 1, // Use coverages section ID (1)
+    cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false })),
+  });
+
+  for (const config of CATEGORY_CONFIGS) {
+    const deductibleRows = config.rows.filter((r) => r.field === 'deductible');
+    if (deductibleRows.length === 0) continue;
+
+    // Only show this category if at least one quote has data for it
+    const hasCoverage = quotes.some((q) =>
+      q.coverages.some(
+        (c) =>
+          c.categoryId === config.id ||
+          c.canonicalName === config.canonicalName ||
+          c.name === config.canonicalName
+      )
+    );
+    if (!hasCoverage) continue;
+
+    matrix.push({
+      type: 'header',
+      id: `deductible_header_${config.id}`,
+      label: config.headerLabel,
+      sectionId: 1, // Use coverages section ID (1)
+      cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false })),
+    });
+
+    for (const rowConfig of deductibleRows) {
+      const cells: MatrixCell[] = [];
+
+      for (let i = 0; i < numQuotes; i++) {
+        const quote = quotes[i];
+        const cov = quote.coverages.find(
+          (c) =>
+            (c.categoryId === config.id ||
+              c.canonicalName === config.canonicalName ||
+              c.name === config.canonicalName) &&
+            (c.matchConfidence === undefined ||
+              c.matchConfidence === null ||
+              c.matchConfidence >= 0.65)
+        );
+
+        if (cov) {
+          let cellValue = '';
+          if (rowConfig.field === 'value') {
+            cellValue = cov.value || 'No incluida';
+          } else if (rowConfig.field === 'deductible') {
+            cellValue = cov.deductible || 'No aplica';
+          } else {
+            cellValue =
+              cov.description ||
+              (cov as CoverageItem & { details?: string }).details ||
+              'Incluido bajo condiciones generales';
+          }
+
+          const excluded =
+            rowConfig.field === 'deductible' && cellValue.toLowerCase().trim() === 'no aplica'
+              ? false
+              : isExcludedValue(cellValue);
+          const firstCitation = cov.citations?.[0];
+
+          cells.push({
+            value: cellValue,
+            isExcluded: excluded,
+            isWinner: false,
+            notes: cov.description,
+            pageNumber: firstCitation?.page || cov.citations?.[0]?.page,
+            confidence: cov.matchConfidence,
+            rawTextSnippet: cov.rawTextSnippet,
+            needsHumanReview: cov.needsHumanReview,
+            calculatedPage: cov.calculatedPage,
+            justification: cov.justification,
+            canonicalName: cov.canonicalName,
+            matchMethod: cov.matchMethod,
+          });
+        } else {
+          cells.push({
+            value: 'No incluida',
+            isExcluded: true,
+            isWinner: false,
+          });
+        }
+      }
+
+      // Winner detection for deductible rows
+      const hasNoAplica = cells.some((c) => c.value.toLowerCase().trim() === 'no aplica');
+      if (hasNoAplica) {
+        cells.forEach((cell) => {
+          if (cell.value.toLowerCase().trim() === 'no aplica' && !cell.isExcluded) {
+            cell.isWinner = true;
+          }
+        });
+      }
+
+      matrix.push({
+        type: 'data',
+        id: `deductible_${config.id}_row_${rowConfig.field}`,
+        label: rowConfig.label,
+        sectionId: 1, // Use coverages section ID (1)
+        cells,
+      });
+    }
+
+    matrix.push({
+      type: 'spacer',
+      id: `spacer_deductible_${config.id}`,
+      label: '',
+      sectionId: 1, // Use coverages section ID (1)
+      cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false })),
+    });
+  }
+
+  // 3. Exclusive Coverages
   const exclusiveGroups: Array<{
     representativeName: string;
     items: Array<{ quoteIdx: number; item: CoverageItem }>;

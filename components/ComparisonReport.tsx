@@ -9,9 +9,6 @@ import {
   Scale,
   FileDown,
   Layers,
-  FileText,
-  User,
-  Briefcase,
   BookOpen,
 } from 'lucide-react';
 import {
@@ -36,7 +33,6 @@ import { generatePDF } from '../services/pdfService';
 import { AuditSection } from './AuditSection';
 import { UnifiedCoverageMatrix } from './UnifiedCoverageMatrix';
 import { ExecutiveSummary } from './ExecutiveSummary';
-import { CollapsibleText } from './CollapsibleText';
 import { CoverageValidationMatrix } from './CoverageValidationMatrix';
 import { DeductibleRiskGauge } from './DeductibleRiskGauge';
 import { DeductibleMatrix } from './DeductibleMatrix';
@@ -74,7 +70,6 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
         q.warrantyCompliance ||
         q.legalOpinion
     );
-  const [viewMode, setViewMode] = useState<'client' | 'technical'>('client');
   const [showExportModal, setShowExportModal] = useState(false);
   const [pdfOptions, setPdfOptions] = useState<{
     title: string;
@@ -84,6 +79,9 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
     title: 'Reporte Ejecutivo de Seguros',
     color: [79, 70, 229],
   });
+
+  // The dashboard is always shown in technical mode; the client/technical toggle was removed.
+  const viewMode: 'client' | 'technical' = 'technical';
 
   if (!report.quotes || report.quotes.length === 0) {
     return (
@@ -195,38 +193,14 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
         </div>
       )}
 
-      {/* Header Actions & View Toggle */}
+      {/* Header Actions */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200 relative">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">Dashboard de Análisis</h2>
-          <p className="text-sm text-slate-500">
-            {viewMode === 'client'
-              ? 'Vista simplificada para toma de decisiones.'
-              : 'Vista técnica detallada para auditores.'}
-          </p>
+          <p className="text-sm text-slate-500">Vista técnica detallada para auditores.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* View Toggle */}
-          <div className="flex bg-slate-100 p-1 rounded-lg">
-            <button
-              onClick={() => setViewMode('client')}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === 'client' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              <User size={16} />
-              <span>Cliente</span>
-            </button>
-            <button
-              onClick={() => setViewMode('technical')}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === 'technical' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              <Briefcase size={16} />
-              <span>Técnico</span>
-            </button>
-          </div>
-
-          <div className="h-6 w-px bg-slate-200 hidden sm:block"></div>
-
           <button
             onClick={() => setShowExportModal(true)}
             className="flex items-center space-x-2 bg-slate-800 text-white px-5 py-2.5 rounded-lg hover:bg-slate-700 transition-all shadow-sm text-sm font-medium"
@@ -666,35 +640,6 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
         <div className="animate-in fade-in duration-300 space-y-6">
           {/* Deductible Matrix - Structured Comparison */}
           <DeductibleMatrix quotes={report.quotes} />
-
-          {/* Texto Completo de Deducibles - Colapsable */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-            <div className="flex items-center mb-4 pb-3 border-b border-slate-100">
-              <FileText className="mr-2 text-indigo-600" size={20} />
-              <h3 className="font-bold text-slate-800">Texto Completo de Deducibles</h3>
-            </div>
-            <div className="space-y-3">
-              {report.quotes.map((quote, idx) => (
-                <CollapsibleText key={idx} title={`${quote.insurerName} - Texto Original`}>
-                  <div className="prose prose-sm text-slate-600 leading-7 bg-slate-50 p-4 rounded-lg">
-                    {quote.deductibles && quote.deductibles.includes(';') ? (
-                      <ul className="list-disc pl-5 space-y-1">
-                        {quote.deductibles.split(';').map((part, pIdx) => {
-                          const trimmed = part.trim();
-                          if (!trimmed) return null;
-                          return <li key={pIdx}>{trimmed}</li>;
-                        })}
-                      </ul>
-                    ) : (
-                      <div className="whitespace-pre-line">
-                        {quote.deductibles || 'No detallado.'}
-                      </div>
-                    )}
-                  </div>
-                </CollapsibleText>
-              ))}
-            </div>
-          </div>
         </div>
       )}
 

@@ -45,12 +45,15 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
     return currCriticals > prevCriticals ? current : prev;
   });
 
-  // Calculate potential savings
-  const prices = quotes.map((q) => q.priceAnnual).filter(Boolean);
-  const maxPrice = Math.max(...prices);
-  const minPrice = Math.min(...prices);
-  const savings = maxPrice - minPrice;
-  const savingsPercent = maxPrice > 0 ? Math.round((savings / maxPrice) * 100) : 0;
+  // Calculate potential savings only when all quotes have a valid price
+  const prices = quotes
+    .map((q) => q.priceAnnual)
+    .filter((p): p is number => typeof p === 'number' && p > 0);
+  const hasPrices = prices.length > 1;
+  const maxPrice = hasPrices ? Math.max(...prices) : 0;
+  const minPrice = hasPrices ? Math.min(...prices) : 0;
+  const savings = hasPrices ? maxPrice - minPrice : 0;
+  const savingsPercent = hasPrices && maxPrice > 0 ? Math.round((savings / maxPrice) * 100) : 0;
 
   // Count total alerts
   const totalCriticals = quotes.reduce(
@@ -122,15 +125,21 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
               </div>
               <div>
                 <p className="text-xs text-indigo-200 uppercase tracking-wide">Ahorro Potencial</p>
-                <p className="font-bold text-lg">{formatCOP(savings)}</p>
+                <p className="font-bold text-lg">
+                  {hasPrices ? formatCOP(savings) : 'No disponible'}
+                </p>
               </div>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold text-emerald-300">-{savingsPercent}%</span>
+              <span className={`text-3xl font-bold ${hasPrices ? 'text-emerald-300' : 'text-indigo-200'}`}>
+                {hasPrices ? `-${savingsPercent}%` : '-'}
+              </span>
               <span className="text-indigo-200">vs más cara</span>
             </div>
             <p className="text-sm text-indigo-200 mt-2">
-              {cheapestQuote?.insurerName} es la más económica
+              {hasPrices && cheapestQuote?.insurerName
+                ? `${cheapestQuote.insurerName} es la más económica`
+                : 'Prima anual no disponible para comparar'}
             </p>
           </div>
         </div>
