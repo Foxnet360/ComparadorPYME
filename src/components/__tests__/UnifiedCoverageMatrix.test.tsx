@@ -324,4 +324,58 @@ describe('UnifiedCoverageMatrix', () => {
     expect(screen.getByText('TOTAL A PAGAR')).toBeTruthy();
     expect(screen.queryByText('Incendio')).toBeNull();
   });
+
+  it('falls back to V1 layout when schemaVersion is 1, ignoring provided rows', () => {
+    const v2Rows: MatrixRow[] = [
+      {
+        type: 'header',
+        id: 'section_coberturas',
+        label: 'COBERTURAS',
+        sectionId: 1,
+        cells: [{ value: '', isExcluded: false, isWinner: false }],
+      },
+      {
+        type: 'data',
+        id: 'section_coberturas_row_0',
+        label: 'Responsabilidad Civil (RCE)',
+        sectionId: 1,
+        cells: [{ value: 'Incluida', isExcluded: false, isWinner: false }],
+      },
+    ];
+
+    renderWithProvider(
+      <UnifiedCoverageMatrix quotes={baseQuotes} rows={v2Rows} schemaVersion={1} />
+    );
+
+    // V1 fallback should render the canonical category header from taxonomy, not the V2 row label
+    expect(screen.getByText('AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL')).toBeTruthy();
+    expect(screen.queryByText('Responsabilidad Civil (RCE)')).toBeNull();
+  });
+
+  it('uses V2 rows when schemaVersion is 2', () => {
+    const v2Rows: MatrixRow[] = [
+      {
+        type: 'header',
+        id: 'section_coberturas',
+        label: 'COBERTURAS',
+        sectionId: 1,
+        cells: [{ value: '', isExcluded: false, isWinner: false }],
+      },
+      {
+        type: 'data',
+        id: 'section_coberturas_row_0',
+        label: 'Responsabilidad Civil (RCE)',
+        sectionId: 1,
+        cells: [{ value: 'Incluida', isExcluded: false, isWinner: false }],
+      },
+    ];
+
+    renderWithProvider(
+      <UnifiedCoverageMatrix quotes={baseQuotes} rows={v2Rows} schemaVersion={2} />
+    );
+
+    expect(screen.getByText('COBERTURAS')).toBeTruthy();
+    expect(screen.getByText('Responsabilidad Civil (RCE)')).toBeTruthy();
+    expect(screen.queryByText('AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL')).toBeNull();
+  });
 });

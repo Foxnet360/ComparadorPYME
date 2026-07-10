@@ -73,6 +73,7 @@ interface ComparisonResult {
   id?: string;
   matrix?: MatrixRow[];
   quoteMetadata?: any[];
+  schemaVersion?: 1 | 2;
 }
 
 interface UnifiedQuote {
@@ -121,6 +122,7 @@ interface UnifiedComparisonReport {
   id?: string;
   matrix?: MatrixRow[];
   quoteMetadata?: any[];
+  schemaVersion?: 1 | 2;
 }
 
 export const analysisController = {
@@ -163,6 +165,7 @@ export const analysisController = {
 
       comparisonResult.matrix = matrixRows;
       comparisonResult.quoteMetadata = adapterResult.quoteMetadata;
+      comparisonResult.schemaVersion = adapterResult.schemaVersion;
 
       // Debug: Log result structure
       console.log(`📊 [Adapter Debug] Quotes generated: ${comparisonResult.quotes?.length || 0}`);

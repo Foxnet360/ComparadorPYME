@@ -8,6 +8,18 @@ interface DeductibleMatrixProps {
   quotes: QuoteAnalysis[];
 }
 
+// Normaliza variaciones puntuadas de S.M.M.L.V. a SMMLV para presentación y parseo
+const normalizeDeductibleDisplay = (text: string): string => {
+  if (!text) return text;
+  return text.replace(/\bS\.?\s*M\.?\s*M\.?\s*L\.?\s*V\.?\b/gi, 'SMMLV');
+};
+
+const isUnspecifiedDeductible = (value: string | undefined): boolean => {
+  if (!value) return true;
+  const normalized = normalizeDeductibleDisplay(value).toUpperCase().trim();
+  return normalized === 'NO ESPECIFICADO' || normalized === 'NO ESPECIFICADA';
+};
+
 // Helper to parse deductible value for display
 const parseDeductible = (
   deductible: string
@@ -19,25 +31,31 @@ const parseDeductible = (
   isHigh: boolean;
   isUnspecified: boolean;
 } => {
-  if (!deductible || deductible === 'No aplica' || deductible === 'NO ESPECIFICADO') {
+  const normalizedDeductible = normalizeDeductibleDisplay(deductible);
+
+  if (
+    !normalizedDeductible ||
+    normalizedDeductible === 'No aplica' ||
+    isUnspecifiedDeductible(normalizedDeductible)
+  ) {
     return {
       percentage: null,
       minimum: null,
       appliesTo: null,
-      rawText: deductible || 'N/A',
+      rawText: normalizedDeductible || 'N/A',
       isHigh: false,
-      isUnspecified: !deductible || deductible === 'NO ESPECIFICADO',
+      isUnspecified: true,
     };
   }
 
-  const lower = deductible.toLowerCase();
+  const lower = normalizedDeductible.toLowerCase();
 
   // Extract percentage (handle both dot and comma as decimal separator)
-  const percentMatch = deductible.match(/(\d+(?:[.,]\d+)?)\s*%/);
+  const percentMatch = normalizedDeductible.match(/(\d+(?:[.,]\d+)?)\s*%/);
   const percentage = percentMatch ? parseFloat(percentMatch[1].replace(',', '.')) : null;
 
   // Extract minimum (SMMLV or values)
-  const minMatch = deductible.match(
+  const minMatch = normalizedDeductible.match(
     /(?:m[ií]n\.?|mínimo)\s*:?\s*(\d+(?:\.\d+)?)\s*(?:SMMLV|salarios?)/i
   );
   const minimum = minMatch ? parseFloat(minMatch[1]) : null;
@@ -54,7 +72,7 @@ const parseDeductible = (
     percentage,
     minimum,
     appliesTo,
-    rawText: deductible,
+    rawText: normalizedDeductible,
     isHigh: percentage ? percentage > 10 : false,
     isUnspecified: false,
   };
@@ -125,11 +143,11 @@ export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes }) =>
                 ? quotes.reduce((prev, curr) => {
                     const prevScore =
                       prev.coverages?.filter(
-                        (c) => c.deductible && c.deductible !== 'NO ESPECIFICADO'
+                        (c) => c.deductible && !isUnspecifiedDeductible(c.deductible)
                       ).length || 0;
                     const currScore =
                       curr.coverages?.filter(
-                        (c) => c.deductible && c.deductible !== 'NO ESPECIFICADO'
+                        (c) => c.deductible && !isUnspecifiedDeductible(c.deductible)
                       ).length || 0;
                     return currScore > prevScore ? curr : prev;
                   }).insurerName
@@ -145,7 +163,7 @@ export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes }) =>
             <p className="text-sm text-slate-600 font-medium">
               {
                 quotes.filter((q) =>
-                  q.coverages?.some((c) => !c.deductible || c.deductible === 'NO ESPECIFICADO')
+                  q.coverages?.some((c) => !c.deductible || isUnspecifiedDeductible(c.deductible))
                 ).length
               }{' '}
               aseguradoras con deducibles no especificados
