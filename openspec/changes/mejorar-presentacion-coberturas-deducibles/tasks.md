@@ -38,11 +38,11 @@ Chain strategy: feature-branch-chain
 - [x] 3.2 Ensure backend `npm run build` and `npm test` pass successfully.
 
 ## Phase 4: Frontend UI Grid (PR 2)
-- [ ] 4.1 Update `components/UnifiedCoverageMatrix.tsx` to render the 14 standard categories side-by-side.
-- [ ] 4.2 Fix casing check for unspecified deductibles in `components/DeductibleMatrix.tsx`.
-- [ ] 4.3 Add legacy V1 layout fallback logic in `components/UnifiedCoverageMatrix.tsx`.
+- [x] 4.1 Update `components/UnifiedCoverageMatrix.tsx` to render the 14 standard categories side-by-side.
+- [x] 4.2 Fix casing check for unspecified deductibles in `components/DeductibleMatrix.tsx`.
+- [x] 4.3 Add legacy V1 layout fallback logic in `components/UnifiedCoverageMatrix.tsx`.
 
 ## Phase 5: Verification & Cleanup (PR 2)
-- [ ] 5.1 Create / update component tests for `DeductibleMatrix` and `UnifiedCoverageMatrix`.
-- [ ] 5.2 Validate frontend accessibility and rendering performance under 100ms.
-- [ ] 5.3 Verify final integration and ensure overall `npm run build` and `npm test` are green.
+- [x] 5.1 Create / update component tests for `DeductibleMatrix` and `UnifiedCoverageMatrix`.
+- [x] 5.2 Validate frontend accessibility and rendering performance under 100ms.
+- [x] 5.3 Verify final integration and ensure overall `npm run build` and `npm test` are green.
