@@ -64,13 +64,7 @@ const GRANULAR_SECTIONS = [
   },
   {
     section: 'FINANCIAL',
-    rows: [
-      'Prima con IVA incluido',
-      'Gastos de expedición',
-      'IVA',
-      'Total prima',
-      'Forma de pago',
-    ],
+    rows: ['Prima con IVA incluido', 'Gastos de expedición', 'IVA', 'Total prima', 'Forma de pago'],
   },
 ] as const;
 

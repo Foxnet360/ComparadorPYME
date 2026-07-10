@@ -195,13 +195,7 @@ const ALIAS_MAP: AliasEntry[] = [
     section: SchemaSection.COBERTURAS,
   },
   {
-    aliases: [
-      'vidrios',
-      'vidrios planos',
-      'placas',
-      'cristales',
-      'rotura accidental de vidrios',
-    ],
+    aliases: ['vidrios', 'vidrios planos', 'placas', 'cristales', 'rotura accidental de vidrios'],
     canonical: 'Vidrios',
     section: SchemaSection.COBERTURAS,
   },
@@ -296,7 +290,13 @@ const ALIAS_MAP: AliasEntry[] = [
     section: SchemaSection.DEDUCIBLES,
   },
   {
-    aliases: ['responsabilidad civil (rce)', 'deducible rce', 'deducible responsabilidad civil', 'rce', 'deducible r.c.e.'],
+    aliases: [
+      'responsabilidad civil (rce)',
+      'deducible rce',
+      'deducible responsabilidad civil',
+      'rce',
+      'deducible r.c.e.',
+    ],
     canonical: 'RCE',
     section: SchemaSection.DEDUCIBLES,
   },

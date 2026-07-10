@@ -668,7 +668,9 @@ describe('flatTableParser.parseV2', () => {
     expect(amparoRow).toBeDefined();
     expect(amparoRow!.section).toBe('COBERTURAS');
 
-    const rceRow = result.rows.find((r) => r.label === 'Responsabilidad Civil Extracontractual (RCE)');
+    const rceRow = result.rows.find(
+      (r) => r.label === 'Responsabilidad Civil Extracontractual (RCE)'
+    );
     expect(rceRow).toBeDefined();
     expect(rceRow!.section).toBe('COBERTURAS');
 
