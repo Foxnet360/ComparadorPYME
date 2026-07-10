@@ -56,6 +56,14 @@ const GRANULAR_SECTIONS = [
       'Terremoto',
       'HMACC-AMIT',
       'RCE',
+      'Lucro Cesante',
+      'Rotura de Maquinaria',
+      'Equipos eléctricos y electrónicos',
+      'Vidrios',
+      'Manejo global / Infidelidad',
+      'Transporte de mercancías',
+      'Daños por agua / Anegación',
+      'Sustracción con Violencia',
     ],
   },
   {
@@ -121,14 +129,14 @@ ${context.hasClauses ? 'También se proporcionan clausulados para validación; �
 
     return `Eres un analista de seguros PYME en Colombia. He subido ${context.insurerCount} cotizaciones del mismo riesgo.
 
-Genera una tabla comparativa con UNA columna por aseguradora y filas agrupadas por sección. A continuación te sugiero filas granulares, pero PUEDES omitir, agregar o renombrar filas según lo que aparezca textualmente en cada cotización:
+Genera una tabla comparativa con UNA columna por aseguradora y filas agrupadas por sección. A continuación te sugiero filas granulares, pero PUEDES agregar o renombrar filas según lo que aparezca textualmente en cada cotización. No omitas una fila si la información existe en al menos una cotización.
 
 ${sectionList}
 
 Reglas de Negocio para Secciones:
 1. BIENES ASEGURADOS: Extrae las sumas aseguradas o descripciones de Mercancías, Muebles y enseres, Maquinaria y equipo, Equipo eléctrico y electrónico, y Asistencia.
 2. COBERTURAS: Extrae límites, amparos y condiciones de cobertura para Amparo básico todo riesgo, Terremoto, Responsabilidad Civil Extracontractual (RCE), Lucro Cesante, Rotura de Maquinaria, Equipos eléctricos y electrónicos, Gastos médicos, Asistencia, Vidrios, Manejo global / Infidelidad, Transporte de mercancías, Daños por agua / Anegación, HMACC-AMIT, y RC en proceso civil.
-3. DEDUCIBLES: Extrae los deducibles específicos para Todo Riesgo Incendio, Anegación / Cobertura Extendida, Terremoto, HMACC-AMIT, y RCE.
+3. DEDUCIBLES: Extrae los deducibles específicos para Todo Riesgo Incendio, Anegación / Cobertura Extendida, Terremoto, HMACC-AMIT, RCE, Lucro Cesante, Rotura de Maquinaria, Equipos eléctricos y electrónicos, Vidrios, Manejo global / Infidelidad, Transporte de mercancías, Daños por agua / Anegación, y Sustracción con Violencia. Debes incluir una fila por cada deducible que aparezca textualmente en las cotizaciones; no omitas deducibles.
 4. SUSTRACCIÓN: Extrae límites y condiciones para Sustracción con Violencia.
 5. FINANCIAL: Extrae Prima con IVA incluido, Gastos de expedición, IVA, Total prima, y Forma de pago.
 

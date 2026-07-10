@@ -276,7 +276,32 @@ describe('flatResultToMatrixRowsV2', () => {
     expect(edificioRow.cells[1].confidence).toBe(0.9);
   });
 
-  it('places extra rows in a dedicated section at the end', () => {
+  it('places financial extra rows in the financial section', () => {
+    const result = makeFlatResultV2({
+      extraRows: [
+        {
+          label: 'IVA',
+          cells: [
+            { insurer: 'MAPFRE', value: '$850.000', confidence: 0.95 },
+            { insurer: 'CHUBB', value: '$920.000', confidence: 0.94 },
+          ],
+        },
+      ],
+    });
+    const matrix = flatResultToMatrixRowsV2(result);
+
+    const financialSectionHeader = matrix.find(
+      (r) => r.type === 'header' && r.sectionId === FINANCIAL_SECTION_ID
+    );
+    expect(financialSectionHeader).toBeDefined();
+    expect(financialSectionHeader!.label).toBe('PRIMAS Y COSTOS');
+
+    const extraRow = matrix.find((r) => r.type === 'data' && r.label === 'IVA');
+    expect(extraRow).toBeDefined();
+    expect(extraRow!.sectionId).toBe(FINANCIAL_SECTION_ID);
+  });
+
+  it('places non-financial extra rows in a dedicated OTROS section', () => {
     const result = makeFlatResultV2({
       extraRows: [
         {
@@ -290,10 +315,13 @@ describe('flatResultToMatrixRowsV2', () => {
     });
     const matrix = flatResultToMatrixRowsV2(result);
 
-    const extraSectionHeader = matrix.find((r) => r.type === 'header' && r.label === 'OTROS');
-    expect(extraSectionHeader).toBeDefined();
-    const extraHeaderIndex = matrix.indexOf(extraSectionHeader!);
-    expect(matrix[extraHeaderIndex + 1].label).toBe('Asistencia');
+    const otrosSectionHeader = matrix.find((r) => r.type === 'header' && r.label === 'OTROS');
+    expect(otrosSectionHeader).toBeDefined();
+    expect(otrosSectionHeader!.sectionId).toBe(1);
+
+    const extraRow = matrix.find((r) => r.type === 'data' && r.label === 'Asistencia');
+    expect(extraRow).toBeDefined();
+    expect(extraRow!.sectionId).toBe(1);
   });
 
   it('tags v2 financial rows with FINANCIAL_SECTION_ID', () => {

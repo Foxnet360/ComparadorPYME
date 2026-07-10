@@ -1,0 +1,13 @@
+change: auditoria-pachito-deducibles-dashboard
+status: archived
+next: done
+phase: archive
+completed:
+  - exploration.md
+  - proposal.md
+  - specs/unified-comparison-extraction/spec.md
+  - specs/unified-coverage-matrix/spec.md
+  - design.md
+  - tasks.md
+  - verify-report.md
+  - archive-report.md
