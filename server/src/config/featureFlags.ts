@@ -79,7 +79,7 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   // - GRANULAR_COMPARISON_SCHEMA=false keeps the legacy four-row v1 schema.
   // Rollback: set GRANULAR_COMPARISON_SCHEMA=false. Cached v1 results without
   // schemaVersion continue to render through the legacy path.
-  granularComparisonSchema: false,
+  granularComparisonSchema: true,
 
   // Backward compatibility flags (for gradual migration)
   useLegacyCoverageMatcher: false,
@@ -91,7 +91,7 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
 export const DEVELOPMENT_FLAGS: FeatureFlags = {
   ...DEFAULT_FEATURE_FLAGS,
   learningEngine: false, // Disable in dev to avoid side effects
-  granularComparisonSchema: false, // Keep disabled by default until verified
+  granularComparisonSchema: true, // Keep disabled by default until verified
 };
 
 // Production rollout configuration - gradual activation
@@ -113,7 +113,7 @@ export const PRODUCTION_ROLLOUT_FLAGS: FeatureFlags = {
   useLegacyCoverageMatcher: false,
   useLegacyDeductibleParser: false,
   useLegacyChatOnlyRAG: false,
-  granularComparisonSchema: false,
+  granularComparisonSchema: true,
 };
 
 // Maps recognized env var names to FeatureFlags keys. Fixes the old key

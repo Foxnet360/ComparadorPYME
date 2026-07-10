@@ -642,4 +642,38 @@ describe('flatTableParser.parseV2', () => {
     expect(gastosRow).toBeDefined();
     expect(gastosRow!.section).toBe('FINANCIAL');
   });
+
+  it('classifies new standard COBERTURAS section and coverages properly', () => {
+    const input = JSON.stringify({
+      insurers: ['MAPFRE'],
+      rows: [
+        {
+          label: 'Amparo básico todo riesgo',
+          cells: [{ insurer: 'MAPFRE', value: '$100M' }],
+        },
+        {
+          label: 'Responsabilidad Civil Extracontractual (RCE)',
+          cells: [{ insurer: 'MAPFRE', value: 'Incluido' }],
+        },
+        {
+          label: 'RC en proceso civil',
+          cells: [{ insurer: 'MAPFRE', value: 'Incluido' }],
+        },
+      ],
+    });
+
+    const result = flatTableParser.parseV2(input, baseOptions);
+
+    const amparoRow = result.rows.find((r) => r.label === 'Amparo básico todo riesgo');
+    expect(amparoRow).toBeDefined();
+    expect(amparoRow!.section).toBe('COBERTURAS');
+
+    const rceRow = result.rows.find((r) => r.label === 'Responsabilidad Civil Extracontractual (RCE)');
+    expect(rceRow).toBeDefined();
+    expect(rceRow!.section).toBe('COBERTURAS');
+
+    const rcProcesoRow = result.rows.find((r) => r.label === 'RC en proceso civil');
+    expect(rcProcesoRow).toBeDefined();
+    expect(rcProcesoRow!.section).toBe('COBERTURAS');
+  });
 });

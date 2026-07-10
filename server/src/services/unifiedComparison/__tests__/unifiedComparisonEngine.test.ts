@@ -5,6 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { UnifiedComparisonEngine, UnifiedComparisonError } from '../unifiedComparisonEngine';
+import { featureFlags } from '../../../config/featureFlags';
 import type { FlatComparisonResult } from '../comparisonSchema';
 
 const validFlatJson = JSON.stringify({
@@ -134,11 +135,13 @@ describe('UnifiedComparisonEngine (flat table)', () => {
   beforeEach(() => {
     vi.stubEnv('GEMINI_API_KEY', 'test-api-key');
     mockGemini = buildMockGemini([]);
+    featureFlags.updateFlag('granularComparisonSchema', false);
   });
 
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.clearAllMocks();
+    featureFlags.updateFlag('granularComparisonSchema', true);
   });
 
   it('should return a FlatComparisonResult on a valid flat JSON response', async () => {

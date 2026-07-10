@@ -30,8 +30,33 @@ const GRANULAR_SECTIONS = [
     ],
   },
   {
+    section: 'COBERTURAS',
+    rows: [
+      'Amparo básico todo riesgo',
+      'Terremoto',
+      'Responsabilidad Civil Extracontractual (RCE)',
+      'Lucro Cesante',
+      'Rotura de Maquinaria',
+      'Equipos eléctricos y electrónicos',
+      'Gastos médicos',
+      'Asistencia',
+      'Vidrios',
+      'Manejo global / Infidelidad',
+      'Transporte de mercancías',
+      'Daños por agua / Anegación',
+      'HMACC-AMIT',
+      'RC en proceso civil',
+    ],
+  },
+  {
     section: 'DEDUCIBLES',
-    rows: ['Todo Riesgo Incendio', 'Anegación / Cobertura Extendida', 'Terremoto', 'HMACC-AMIT'],
+    rows: [
+      'Todo Riesgo Incendio',
+      'Anegación / Cobertura Extendida',
+      'Terremoto',
+      'HMACC-AMIT',
+      'RCE',
+    ],
   },
   {
     section: 'SUSTRACCIÓN',
@@ -39,7 +64,13 @@ const GRANULAR_SECTIONS = [
   },
   {
     section: 'FINANCIAL',
-    rows: ['Prima con IVA incluido', 'Gastos de expedición', 'IVA', 'Total prima', 'Forma de pago'],
+    rows: [
+      'Prima con IVA incluido',
+      'Gastos de expedición',
+      'IVA',
+      'Total prima',
+      'Forma de pago',
+    ],
   },
 ] as const;
 
@@ -102,9 +133,10 @@ ${sectionList}
 
 Reglas de Negocio para Secciones:
 1. BIENES ASEGURADOS: Extrae las sumas aseguradas o descripciones de Mercancías, Muebles y enseres, Maquinaria y equipo, Equipo eléctrico y electrónico, y Asistencia.
-2. DEDUCIBLES: Extrae los deducibles específicos para Todo Riesgo Incendio, Anegación / Cobertura Extendida, Terremoto, y HMACC-AMIT.
-3. SUSTRACCIÓN: Extrae límites y condiciones para Sustracción con Violencia.
-4. FINANCIAL: Extrae Prima con IVA incluido, Gastos de expedición, IVA, Total prima, y Forma de pago.
+2. COBERTURAS: Extrae límites, amparos y condiciones de cobertura para Amparo básico todo riesgo, Terremoto, Responsabilidad Civil Extracontractual (RCE), Lucro Cesante, Rotura de Maquinaria, Equipos eléctricos y electrónicos, Gastos médicos, Asistencia, Vidrios, Manejo global / Infidelidad, Transporte de mercancías, Daños por agua / Anegación, HMACC-AMIT, y RC en proceso civil.
+3. DEDUCIBLES: Extrae los deducibles específicos para Todo Riesgo Incendio, Anegación / Cobertura Extendida, Terremoto, HMACC-AMIT, y RCE.
+4. SUSTRACCIÓN: Extrae límites y condiciones para Sustracción con Violencia.
+5. FINANCIAL: Extrae Prima con IVA incluido, Gastos de expedición, IVA, Total prima, y Forma de pago.
 
 Reglas Generales:
 - Copia los valores textualmente como aparecen en cada cotización.

@@ -124,8 +124,130 @@ const ALIAS_MAP: AliasEntry[] = [
     section: SchemaSection.BIENES_ASEGURADOS,
   },
   {
-    aliases: ['responsabilidad civil'],
-    canonical: 'Responsabilidad Civil',
+    aliases: [
+      'amparo basico todo riesgo',
+      'amparo basico',
+      'todo riesgo',
+      'todo riesgo danos materiales',
+      'danos materiales',
+    ],
+    canonical: 'Amparo básico todo riesgo',
+    section: SchemaSection.COBERTURAS,
+  },
+  {
+    aliases: [
+      'terremoto y eventos catastroficos',
+      'terremoto, maremoto o tsunami, temblor o erupcion volcanica',
+      'terremoto',
+      'sismo',
+      'temblor',
+      'erupcion volcanica',
+    ],
+    canonical: 'Terremoto',
+    section: SchemaSection.COBERTURAS,
+  },
+  {
+    aliases: [
+      'responsabilidad civil extracontractual (rce)',
+      'responsabilidad civil extracontractual',
+      'rce',
+      'responsabilidad civil',
+      'dano a terceros',
+    ],
+    canonical: 'Responsabilidad Civil Extracontractual (RCE)',
+    section: SchemaSection.COBERTURAS,
+  },
+  {
+    aliases: [
+      'lucro cesante',
+      'perdida de beneficios',
+      'interrupcion de negocio',
+      'lucro cesante por danos materiales',
+      'perdidas consecuenciales',
+    ],
+    canonical: 'Lucro Cesante',
+    section: SchemaSection.COBERTURAS,
+  },
+  {
+    aliases: ['rotura de maquinaria', 'rotura de maquinas', 'rotura'],
+    canonical: 'Rotura de Maquinaria',
+    section: SchemaSection.COBERTURAS,
+  },
+  {
+    aliases: [
+      'equipos electricos y electronicos',
+      'equipo electrico y electronico',
+      'eee',
+      'equipo electrico',
+      'equipo electronico',
+    ],
+    canonical: 'Equipos eléctricos y electrónicos',
+    section: SchemaSection.COBERTURAS,
+  },
+  {
+    aliases: ['gastos medicos', 'accidentes personales', 'gastos de curacion'],
+    canonical: 'Gastos médicos',
+    section: SchemaSection.COBERTURAS,
+  },
+  {
+    aliases: ['asistencia', 'asistencia pyme', 'servicios de asistencia'],
+    canonical: 'Asistencia',
+    section: SchemaSection.COBERTURAS,
+  },
+  {
+    aliases: [
+      'vidrios',
+      'vidrios planos',
+      'placas',
+      'cristales',
+      'rotura accidental de vidrios',
+    ],
+    canonical: 'Vidrios',
+    section: SchemaSection.COBERTURAS,
+  },
+  {
+    aliases: [
+      'manejo global / infidelidad',
+      'manejo global',
+      'infidelidad de empleados',
+      'infidelidad',
+      'fraude de empleados',
+      'manejo global comercial',
+    ],
+    canonical: 'Manejo global / Infidelidad',
+    section: SchemaSection.COBERTURAS,
+  },
+  {
+    aliases: ['transporte de mercancias', 'transito de mercancias', 'transporte'],
+    canonical: 'Transporte de mercancías',
+    section: SchemaSection.COBERTURAS,
+  },
+  {
+    aliases: ['danos por agua / anegacion', 'danos por agua', 'anegacion', 'inundacion'],
+    canonical: 'Daños por agua / Anegación',
+    section: SchemaSection.COBERTURAS,
+  },
+  {
+    aliases: [
+      'hmacc amit',
+      'hmacc',
+      'amit',
+      'huelga y motin',
+      'huelga, motin, asonada',
+      'actos mal intencionados de terceros',
+    ],
+    canonical: 'HMACC-AMIT',
+    section: SchemaSection.COBERTURAS,
+  },
+  {
+    aliases: [
+      'rc en proceso civil',
+      'asistencia legal',
+      'asistencia juridica',
+      'legal',
+      'asesoria legal',
+    ],
+    canonical: 'RC en proceso civil',
     section: SchemaSection.COBERTURAS,
   },
   {
@@ -171,6 +293,11 @@ const ALIAS_MAP: AliasEntry[] = [
   {
     aliases: ['hmacc amit', 'hmacc', 'amit', 'huelga y motin'],
     canonical: 'HMACC-AMIT',
+    section: SchemaSection.DEDUCIBLES,
+  },
+  {
+    aliases: ['responsabilidad civil (rce)', 'deducible rce', 'deducible responsabilidad civil', 'rce', 'deducible r.c.e.'],
+    canonical: 'RCE',
     section: SchemaSection.DEDUCIBLES,
   },
   {
@@ -341,7 +468,8 @@ export function computeCellConfidence(
 // ---------------------------------------------------------------------------
 
 function normalizeDeductibleText(text: string): string {
-  return text
+  const cleanSmmlv = text.replace(/s\.m\.m\.l\.v\.?/gi, 'smmlv');
+  return cleanSmmlv
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
