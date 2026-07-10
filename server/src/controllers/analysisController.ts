@@ -11,6 +11,7 @@ import { type ClauseValidationSummary } from '../services/clauseCoverageValidato
 import { type DualExtractionResult } from '../services/dualExtractionService';
 import { isMultimodalEnabled } from '../services/quoteProcessingService';
 import { comparisonEngineAdapter } from '../services/unifiedComparison/comparisonEngineAdapter';
+import { FINANCIAL_SECTION_ID } from '../services/unifiedComparison/matrixTransformer';
 import { semanticMatcher } from '../services/semanticMatcher';
 
 import { saveAnalysisHistory, getAnalysisHistoryByUser } from '../repositories/analysisRepository';
@@ -468,7 +469,7 @@ export async function matrixRowsToComparisonReport(
       const cellIdx = indexMap[idx];
       const cellConfidences: number[] = [];
 
-      // Extract coverages from matrix rows
+      // Extract coverages from matrix rows (skip financial rows; premium is handled separately)
       let currentSection: string | undefined;
       const rowsToProcess: Array<{
         label: string;
@@ -483,6 +484,11 @@ export async function matrixRowsToComparisonReport(
         if (row.type === 'header') {
           currentSection = row.label;
         } else if (row.type === 'data' && row.cells && cellIdx >= 0 && row.cells[cellIdx]) {
+          // Financial rows are rendered separately; do not treat them as coverages
+          if (row.sectionId === FINANCIAL_SECTION_ID) {
+            return;
+          }
+
           const cell = row.cells[cellIdx];
           const value = cell.value || '';
 
@@ -491,18 +497,8 @@ export async function matrixRowsToComparisonReport(
             cellConfidences.push(cell.confidence);
           }
 
-          // Check if this is a premium row
-          if (row.id === 'premium_total' || row.label === 'TOTAL A PAGAR') {
-            const numericValue = parseColombianCurrency(value);
-            if (numericValue !== null) {
-              priceAnnual = numericValue;
-            }
-          } else if (row.id?.startsWith('premium_')) {
-            // Skip other premium rows for now
-          } else if (row.id?.startsWith('meta_')) {
-            // Skip metadata rows
-          } else if (row.id?.startsWith('warning_')) {
-            // Add warning alerts
+          // Add warning alerts
+          if (row.id?.startsWith('warning_')) {
             if (value && value !== 'No informado') {
               alerts.push({
                 level: 'WARNING',
@@ -510,17 +506,18 @@ export async function matrixRowsToComparisonReport(
                 description: value,
               });
             }
-          } else {
-            // Regular coverage row
-            rowsToProcess.push({
-              label: row.label || 'Cobertura',
-              value: value === 'No informado' || value === 'N.C.' ? 'No incluido' : value,
-              deductible: cell.notes || 'No especificado',
-              isExcluded: cell.isExcluded,
-              confidence: cell.confidence,
-              section: currentSection,
-            });
+            return;
           }
+
+          // Regular coverage row
+          rowsToProcess.push({
+            label: row.label || 'Cobertura',
+            value: value === 'No informado' || value === 'N.C.' ? 'No incluido' : value,
+            deductible: cell.notes || 'No especificado',
+            isExcluded: cell.isExcluded,
+            confidence: cell.confidence,
+            section: currentSection,
+          });
         }
       });
 
@@ -624,6 +621,35 @@ export async function matrixRowsToComparisonReport(
   );
 
   const allParsedQuotes = intermediateQuotes.map((iq) => iq.parsedQuote);
+
+  // Extract annual premium from V2 financial rows. The V2 prompt uses labels like
+  // "Total prima", "Prima con IVA incluido", etc., so the legacy check for
+  // "TOTAL A PAGAR" alone leaves priceAnnual as 0.
+  const premiumRowLabels = [
+    'total a pagar',
+    'total prima',
+    'prima con iva incluido',
+    'prima total',
+    'prima',
+  ];
+  for (const row of matrixRows) {
+    if (row.type !== 'data' || row.sectionId !== FINANCIAL_SECTION_ID) continue;
+    const normalizedLabel = row.label.toLowerCase();
+    if (!premiumRowLabels.some((label) => normalizedLabel.includes(label))) continue;
+
+    for (let i = 0; i < insurerNames.length; i++) {
+      const cellIdx = indexMap[i];
+      const cell = row.cells[cellIdx];
+      if (!cell) continue;
+
+      const numericValue = parseColombianCurrency(cell.value);
+      if (numericValue !== null && numericValue > 0) {
+        intermediateQuotes[i].priceAnnual = numericValue;
+        intermediateQuotes[i].parsedQuote.priceAnnual = numericValue;
+        intermediateQuotes[i].priceMonthly = Math.round(numericValue / 12);
+      }
+    }
+  }
 
   // Second pass: compute scores and risk audits
   const quotes: UnifiedQuote[] = await Promise.all(

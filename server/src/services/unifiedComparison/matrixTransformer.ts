@@ -248,16 +248,6 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
       cells: { value: string | null; notFound?: boolean; confidence?: number; notes?: string }[];
     }[]
   >();
-  const extraRows: {
-    label: string;
-    cells: {
-      value: string | null;
-      notFound?: boolean;
-      confidence?: number;
-      isAmbiguous?: boolean;
-      notes?: string;
-    }[];
-  }[] = [];
 
   for (const row of result.rows) {
     const section =
@@ -279,13 +269,19 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
   }
 
   for (const row of result.extraRows) {
-    extraRows.push({
+    const section =
+      isFinancialRowLabel(row.label) || row.section === 'FINANCIAL'
+        ? FINANCIAL_SECTION_LABEL
+        : row.section || 'OTROS';
+    if (!sectionGroups.has(section)) {
+      sectionGroups.set(section, []);
+    }
+    sectionGroups.get(section)!.push({
       label: row.label,
       cells: row.cells.map((cell) => ({
         value: cell.value,
         notFound: cell.notFound,
         confidence: cell.confidence,
-        isAmbiguous: cell.isAmbiguous,
         notes: cell.rawText ?? formatDeductible(cell.deductible),
       })),
     });
@@ -320,29 +316,6 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
     });
 
     sectionIndex++;
-  }
-
-  // Extra rows in an 'OTROS' section at the end
-  if (extraRows.length > 0) {
-    matrix.push({
-      type: 'header',
-      id: `section_${sectionIndex}`,
-      label: 'OTROS',
-      sectionId: COVERAGE_SECTION_ID,
-      cells: emptyCells(numInsurers),
-    });
-
-    extraRows.forEach((row, rowIndex) => {
-      matrix.push({
-        type: 'data',
-        id: `section_${sectionIndex}_extra_${rowIndex}`,
-        label: row.label,
-        sectionId: COVERAGE_SECTION_ID,
-        cells: row.cells.map((cell) =>
-          cellFromFlatValueV2(cell.value, cell.notFound, cell.confidence, cell.notes)
-        ),
-      });
-    });
   }
 
   // Warnings

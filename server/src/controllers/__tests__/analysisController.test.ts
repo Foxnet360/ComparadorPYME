@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { matrixRowsToComparisonReport } from '../analysisController';
+import { FINANCIAL_SECTION_ID } from '../../services/unifiedComparison/matrixTransformer';
 import { MatrixRow } from '../../types';
 
 vi.mock('../../services/semanticMatcher', () => ({
@@ -125,7 +126,7 @@ describe('analysisController - matrixRowsToComparisonReport', () => {
         type: 'data',
         id: 'premium_total',
         label: 'TOTAL A PAGAR',
-        sectionId: 1,
+        sectionId: FINANCIAL_SECTION_ID,
         cells: [
           { value: '$ 6.000.000', isExcluded: false, isWinner: false, confidence: 0.75 },
           { value: '$ 5.000.000', isExcluded: false, isWinner: false, confidence: 0.95 },
@@ -197,7 +198,7 @@ describe('analysisController - matrixRowsToComparisonReport', () => {
         type: 'data',
         id: 'premium_total',
         label: 'TOTAL A PAGAR',
-        sectionId: 1,
+        sectionId: FINANCIAL_SECTION_ID,
         cells: [{ value: '$1.134.400,50', isExcluded: false, isWinner: false, confidence: 0.95 }],
       },
     ];
