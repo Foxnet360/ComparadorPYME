@@ -124,13 +124,13 @@ interface ParsedDeductibleComponents {
 const PATTERNS = {
   zero: /^(sin\s+deducible(?:\s+alguno)?|no\s+aplica(?:\s+deducible)?|sin\s+aplicaci[oó]n(?:\s+de\s+deducible)?|incluido|0\s*%|0|n\/a|na)$/i,
   percentage: /(\d+(?:[.,]\d+)?)\s*%/,
-  smmlv: /(\d+)\s*(?:SMMLV|SM)\b/i,
+  smmlv: /(\d+)\s*(?:S\.?M\.?M\.?L\.?V\.?|SM)\b/i,
   uvt: /(\d+)\s*(?:UVT)\b/i,
   fixed: /(?:\$?\s*)([\d.,]+)\s*(COP|USD)?/i,
   minClause:
-    /(?:m[ií]n(?:imo|o|\.|\b)?)(?:\s+de)?\s*(?:\$?\s*)(\d+(?:[.,]\d+)*)\s*(smmlv|sm|cop|pesos|uvt)?/i,
+    /(?:m[ií]n(?:imo|o|\.|\b)?)(?:\s+de)?\s*(?:\$?\s*)(\d+(?:[.,]\d+)*)\s*(s\.?m\.?m\.?l\.?v\.?|sm|cop|pesos|uvt)?/i,
   maxClause:
-    /(?:m[aá]x(?:imo|o|\.|\b)?|tope|l[ií]mite)(?:\s+de)?\s*(?:\$?\s*)(\d+(?:[.,]\d+)*)\s*(smmlv|sm|cop|pesos|uvt)?/i,
+    /(?:m[aá]x(?:imo|o|\.|\b)?|tope|l[ií]mite)(?:\s+de)?\s*(?:\$?\s*)(\d+(?:[.,]\d+)*)\s*(s\.?m\.?m\.?l\.?v\.?|sm|cop|pesos|uvt)?/i,
 };
 
 function inferCompoundOperator(
@@ -634,7 +634,8 @@ export const hybridDeductibleParser = {
       return buildEmptyResult(deductibleText || '');
     }
 
-    const text = deductibleText.trim();
+    const normalizedText = deductibleText.replace(/s\.m\.m\.l\.v\.?/gi, 'SMMLV');
+    const text = normalizedText.trim();
     const regexResult = parseSimple(text);
     if (regexResult) {
       return buildResult(text, regexResult, explicitCoverageName, 'regex');
@@ -675,7 +676,8 @@ export const hybridDeductibleParser = {
       return buildEmptyResult(deductibleText || '');
     }
 
-    const text = deductibleText.trim();
+    const normalizedText = deductibleText.replace(/s\.m\.m\.l\.v\.?/gi, 'SMMLV');
+    const text = normalizedText.trim();
     const domain = options?.domain ?? 'pyme';
 
     // 1. Resolve applicable coverage from explicit argument or graph rules

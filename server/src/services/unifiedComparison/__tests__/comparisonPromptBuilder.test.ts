@@ -98,4 +98,13 @@ describe('comparisonPromptBuilder.buildV2ComparisonPrompt', () => {
 
     expect(prompt).not.toContain('EXACTAMENTE estas filas');
   });
+
+  it('includes the COBERTURAS section and its canonical coverages', () => {
+    const prompt = buildV2Prompt();
+
+    expect(prompt).toContain('COBERTURAS');
+    expect(prompt).toContain('Amparo básico todo riesgo');
+    expect(prompt).toContain('Responsabilidad Civil Extracontractual (RCE)');
+    expect(prompt).toContain('RC en proceso civil');
+  });
 });

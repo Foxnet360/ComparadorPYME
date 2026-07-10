@@ -75,6 +75,17 @@ describe('deductibleParser - Unit Tests', () => {
       expect(result.normalized.minAmount).toBe(5 * getDomainConstants().smmlv);
     });
 
+    it('should parse dotted SMMLV formats to SMMLV', async () => {
+      const result1 = await deductibleParser.parse('5 S.M.M.L.V');
+      expect(result1.normalized.minAmount).toBe(5 * getDomainConstants().smmlv);
+
+      const result2 = await deductibleParser.parse('5 S.M.M.L.V.');
+      expect(result2.normalized.minAmount).toBe(5 * getDomainConstants().smmlv);
+
+      const result3 = await deductibleParser.parse('10 s.m.m.l.v.');
+      expect(result3.normalized.minAmount).toBe(10 * getDomainConstants().smmlv);
+    });
+
     it('should parse fixed amount', async () => {
       const result = await deductibleParser.parse('$500,000');
       expect(result.normalized.minAmount).toBe(500000);
