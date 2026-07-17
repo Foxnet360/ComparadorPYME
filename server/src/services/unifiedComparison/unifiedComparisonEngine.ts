@@ -52,6 +52,13 @@ const DEFAULT_CONFIG: ComparisonEngineConfig = {
 
 export interface CompareOptions {
   granularComparisonSchema?: boolean;
+  /**
+   * Slice flags propagated by the comparison engine adapter. The V1 schema
+   * guard forces both to false; the engine only honors them on the V2
+   * granular path (behavior wired in the graph/template slices).
+   */
+  graphEnabled?: boolean;
+  templateHintsEnabled?: boolean;
 }
 
 export class UnifiedComparisonEngine {

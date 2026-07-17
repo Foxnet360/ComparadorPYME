@@ -7,8 +7,18 @@
 
 import { randomUUID } from 'crypto';
 import { MatrixRow } from '../../types';
-import { unifiedComparisonEngine, UnifiedComparisonError } from './unifiedComparisonEngine';
-import { unifiedComparisonFlag } from './featureFlagService';
+import {
+  unifiedComparisonEngine,
+  UnifiedComparisonError,
+  CompareOptions,
+} from './unifiedComparisonEngine';
+import { unifiedComparisonFlag, hashUserId } from './featureFlagService';
+import {
+  featureFlags,
+  getUnifiedSliceRolloutPercentage,
+  UnifiedSliceRolloutKey,
+  FeatureFlags,
+} from '../../config/featureFlags';
 import { processQuotesBatch } from '../quoteProcessingService';
 import {
   flatResultToMatrixRows,
@@ -24,6 +34,9 @@ export interface ComparisonAdapterResult {
   fallbackReason?: string;
   correlationId: string;
   quoteMetadata?: any[];
+  /** Slice decisions applied to this result; always false on V1/fallback paths. */
+  graphEnabled?: boolean;
+  templateHintsEnabled?: boolean;
 }
 
 export class ComparisonEngineAdapter {
@@ -42,6 +55,15 @@ export class ComparisonEngineAdapter {
     const correlationId = `adapter-${Date.now()}-${randomUUID().slice(0, 8)}`;
     const flagEnabled = unifiedComparisonFlag.isEnabled(userId);
 
+    // V1 schema guard: slice flags only apply to the V2 granular path, so
+    // resolve the effective schema first and force both slices off on V1.
+    const v2Schema = granularOverride ?? unifiedComparisonFlag.isGranularComparisonSchemaEnabled();
+    const graphEnabled =
+      v2Schema &&
+      this.isSliceEnabled('useUnifiedGraphCanonicalization', 'graphCanonicalization', userId);
+    const templateHintsEnabled =
+      v2Schema && this.isSliceEnabled('useUnifiedTemplateHints', 'templateHints', userId);
+
     console.log(
       `🚩 [Adapter] Unified engine ${flagEnabled ? 'ENABLED' : 'DISABLED'} for user ${userId || 'anonymous'} [${correlationId}]`
     );
@@ -57,17 +79,21 @@ export class ComparisonEngineAdapter {
         schemaVersion: 1,
         fallbackReason: 'unified_disabled_by_flag',
         correlationId,
+        graphEnabled: false,
+        templateHintsEnabled: false,
       };
     }
 
     try {
-      console.log(`🚀 [Adapter] Using unified comparison engine [${correlationId}]`);
-      const result =
-        granularOverride !== undefined
-          ? await unifiedComparisonEngine.compare(pdfPaths, {
-              granularComparisonSchema: granularOverride,
-            })
-          : await unifiedComparisonEngine.compare(pdfPaths);
+      console.log(
+        `🚀 [Adapter] Using unified comparison engine — routing=unified, graphEnabled=${graphEnabled}, templateHintsEnabled=${templateHintsEnabled} [${correlationId}]`
+      );
+      const compareOptions: CompareOptions = {
+        graphEnabled,
+        templateHintsEnabled,
+        ...(granularOverride !== undefined ? { granularComparisonSchema: granularOverride } : {}),
+      };
+      const result = await unifiedComparisonEngine.compare(pdfPaths, compareOptions);
       const schemaVersion = resolveComparisonSchemaVersion(
         result,
         granularOverride ?? unifiedComparisonFlag.isGranularComparisonSchemaEnabled()
@@ -85,6 +111,8 @@ export class ComparisonEngineAdapter {
         correlationId,
         quoteMetadata:
           schemaVersion === 2 ? (result as FlatComparisonResultV2).quoteMetadata : undefined,
+        graphEnabled,
+        templateHintsEnabled,
       };
     } catch (error) {
       const reason =
@@ -109,8 +137,37 @@ export class ComparisonEngineAdapter {
         schemaVersion: 1,
         fallbackReason: reason,
         correlationId: fallbackCorrelationId,
+        graphEnabled: false,
+        templateHintsEnabled: false,
       };
     }
+  }
+
+  /**
+   * Enabled when the master boolean flag is on, or when the shared
+   * `hashUserId` bucket (same strategy as `UnifiedComparisonFeatureFlag`)
+   * falls inside the request-time rollout percentage. Anonymous users only
+   * enter fully rolled-out slices.
+   */
+  private isSliceEnabled(
+    flag: keyof FeatureFlags,
+    rollout: UnifiedSliceRolloutKey,
+    userId?: string
+  ): boolean {
+    if (featureFlags.isEnabled(flag)) {
+      return true;
+    }
+    const percentage = getUnifiedSliceRolloutPercentage(rollout);
+    if (percentage >= 100) {
+      return true;
+    }
+    if (percentage <= 0) {
+      return false;
+    }
+    if (!userId) {
+      return false;
+    }
+    return hashUserId(userId) < percentage;
   }
 
   /**
