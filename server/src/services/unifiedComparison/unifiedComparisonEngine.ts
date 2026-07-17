@@ -336,10 +336,7 @@ export class UnifiedComparisonEngine {
     try {
       // Add configurable timeout to prevent hanging; V2 granular schema with multiple
       // PDFs can legitimately take longer than the old 45-second default.
-      const TIMEOUT_MS = parseInt(
-        process.env.GEMINI_UNIFIED_TIMEOUT_MS || '120000',
-        10
-      );
+      const TIMEOUT_MS = parseInt(process.env.GEMINI_UNIFIED_TIMEOUT_MS || '120000', 10);
 
       const config: Record<string, unknown> = {
         thinkingConfig: {
