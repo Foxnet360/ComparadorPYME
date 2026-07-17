@@ -10,6 +10,22 @@ export interface RolloutConfig {
   enabledUsers?: string[]; // Specific user IDs always enabled
 }
 
+/**
+ * Deterministic hash of user ID for rollout bucketing (0-99). Shared by every
+ * percentage rollout (engine + graph/template slices) — callers MUST reuse it;
+ * divergent hashes would bucket the same user differently per flag.
+ */
+export function hashUserId(userId: string): number {
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    const char = userId.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  // Convert to positive percentage (0-99)
+  return Math.abs(hash) % 100;
+}
+
 class UnifiedComparisonFeatureFlag {
   private rolloutConfig: RolloutConfig;
 
@@ -55,7 +71,7 @@ class UnifiedComparisonFeatureFlag {
 
     // Percentage-based rollout using deterministic hash
     if (userId) {
-      const hash = this.hashUserId(userId);
+      const hash = hashUserId(userId);
       return hash < this.rolloutConfig.percentage;
     }
 
@@ -103,20 +119,6 @@ class UnifiedComparisonFeatureFlag {
   setEnabledUsers(userIds: string[]): void {
     this.rolloutConfig.enabledUsers = [...userIds];
     console.log(`🚩 [UnifiedComparison] Enabled users list updated (${userIds.length} users)`);
-  }
-
-  /**
-   * Deterministic hash of user ID for consistent rollout
-   */
-  private hashUserId(userId: string): number {
-    let hash = 0;
-    for (let i = 0; i < userId.length; i++) {
-      const char = userId.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash; // Convert to 32bit integer
-    }
-    // Convert to positive percentage (0-99)
-    return Math.abs(hash) % 100;
   }
 }
 

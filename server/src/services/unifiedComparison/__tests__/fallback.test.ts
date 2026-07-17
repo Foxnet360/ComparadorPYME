@@ -60,7 +60,10 @@ describe('Fallback Mechanism', () => {
 
     const result = await comparisonEngineAdapter.generateComparison(['fake1.pdf', 'fake2.pdf']);
 
-    expect(compareSpy).toHaveBeenCalledWith(['fake1.pdf', 'fake2.pdf']);
+    expect(compareSpy).toHaveBeenCalledWith(
+      ['fake1.pdf', 'fake2.pdf'],
+      expect.objectContaining({ graphEnabled: false, templateHintsEnabled: false })
+    );
     expect(batchSpy).toHaveBeenCalledWith(['fake1.pdf', 'fake2.pdf'], expect.any(Object));
     expect(result.engine).toBe('fallback');
     expect(result.fallbackReason).toBe('Simulated unified engine failure');

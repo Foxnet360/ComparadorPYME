@@ -31,6 +31,15 @@ export interface FeatureFlags {
   useUnifiedComparisonEngine: boolean;
   granularComparisonSchema: boolean;
 
+  // Unified graph canonicalization + template hint slices (master switches).
+  // Percentage rollouts are evaluated per request via the *_ROLLOUT env vars
+  // declared in UNIFIED_SLICE_ROLLOUT_ENV below.
+  useUnifiedGraphCanonicalization: boolean;
+  useUnifiedTemplateHints: boolean;
+  useUnifiedTemplateHintsBbva: boolean;
+  useUnifiedTemplateHintsSbs: boolean;
+  useUnifiedTemplateHintsMapfre: boolean;
+
   // Backward compatibility
   useLegacyCoverageMatcher: boolean;
   useLegacyDeductibleParser: boolean;
@@ -81,6 +90,15 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   // schemaVersion continue to render through the legacy path.
   granularComparisonSchema: true,
 
+  // Unified graph/template slices (disabled by default for safe rollout).
+  // Rollback: set the boolean env var to false and/or the matching *_ROLLOUT
+  // percentage to 0. No redeploy is required for rollout-only changes.
+  useUnifiedGraphCanonicalization: false,
+  useUnifiedTemplateHints: false,
+  useUnifiedTemplateHintsBbva: false,
+  useUnifiedTemplateHintsSbs: false,
+  useUnifiedTemplateHintsMapfre: false,
+
   // Backward compatibility flags (for gradual migration)
   useLegacyCoverageMatcher: false,
   useLegacyDeductibleParser: false,
@@ -110,6 +128,11 @@ export const PRODUCTION_ROLLOUT_FLAGS: FeatureFlags = {
   templateSbsV1: false,
   templateMapfreV1: false,
   graphLearningEnabled: false,
+  useUnifiedGraphCanonicalization: false,
+  useUnifiedTemplateHints: false,
+  useUnifiedTemplateHintsBbva: false,
+  useUnifiedTemplateHintsSbs: false,
+  useUnifiedTemplateHintsMapfre: false,
   useLegacyCoverageMatcher: false,
   useLegacyDeductibleParser: false,
   useLegacyChatOnlyRAG: false,
@@ -140,7 +163,44 @@ const ENV_FLAG_MAP: Record<string, keyof FeatureFlags> = {
   TEMPLATE_SBS_V1: 'templateSbsV1',
   TEMPLATE_MAPFRE_V1: 'templateMapfreV1',
   GRAPH_LEARNING_ENABLED: 'graphLearningEnabled',
+  USE_UNIFIED_GRAPH_CANONICALIZATION: 'useUnifiedGraphCanonicalization',
+  USE_UNIFIED_TEMPLATE_HINTS: 'useUnifiedTemplateHints',
+  USE_UNIFIED_TEMPLATE_HINTS_BBVA: 'useUnifiedTemplateHintsBbva',
+  USE_UNIFIED_TEMPLATE_HINTS_SBS: 'useUnifiedTemplateHintsSbs',
+  USE_UNIFIED_TEMPLATE_HINTS_MAPFRE: 'useUnifiedTemplateHintsMapfre',
 };
+
+/**
+ * Env var names for the request-time percentage rollouts (0-100) of the
+ * unified graph/template slices. Re-read on every evaluation so rollout
+ * changes take effect without a redeploy.
+ */
+export const UNIFIED_SLICE_ROLLOUT_ENV = {
+  graphCanonicalization: 'USE_UNIFIED_GRAPH_CANONICALIZATION_ROLLOUT',
+  templateHints: 'USE_UNIFIED_TEMPLATE_HINTS_ROLLOUT',
+  templateHintsBbva: 'USE_UNIFIED_TEMPLATE_HINTS_BBVA_ROLLOUT',
+  templateHintsSbs: 'USE_UNIFIED_TEMPLATE_HINTS_SBS_ROLLOUT',
+  templateHintsMapfre: 'USE_UNIFIED_TEMPLATE_HINTS_MAPFRE_ROLLOUT',
+} as const;
+
+export type UnifiedSliceRolloutKey = keyof typeof UNIFIED_SLICE_ROLLOUT_ENV;
+
+/** Parse a rollout env value to an integer clamped to 0-100 (default 0). */
+export function parseRolloutPercentage(raw: string | undefined): number {
+  if (raw === undefined) {
+    return 0;
+  }
+  const parsed = Number.parseInt(raw, 10);
+  if (Number.isNaN(parsed)) {
+    return 0;
+  }
+  return Math.min(100, Math.max(0, parsed));
+}
+
+/** Current rollout percentage for a slice, read from process.env at call time. */
+export function getUnifiedSliceRolloutPercentage(slice: UnifiedSliceRolloutKey): number {
+  return parseRolloutPercentage(process.env[UNIFIED_SLICE_ROLLOUT_ENV[slice]]);
+}
 
 export class FeatureFlagManager {
   private flags: FeatureFlags;
