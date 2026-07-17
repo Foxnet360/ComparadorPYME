@@ -78,10 +78,7 @@ const deductibleScore = (deductible: string): number => {
 
 export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes }) => {
   // Build a row for every coverage that has a deductible in at least one quote.
-  const deductibleRows = new Map<
-    string,
-    Array<{ quoteIdx: number; deductible: string }>
-  >();
+  const deductibleRows = new Map<string, Array<{ quoteIdx: number; deductible: string }>>();
 
   quotes.forEach((quote, quoteIdx) => {
     quote.coverages.forEach((coverage) => {
@@ -176,9 +173,7 @@ export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes }) =>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {sortedRows.map(([coverageName, entries]) => {
-                const validEntries = entries.filter(
-                  (e) => !isUnspecifiedDeductible(e.deductible)
-                );
+                const validEntries = entries.filter((e) => !isUnspecifiedDeductible(e.deductible));
                 const bestEntry =
                   validEntries.length > 0
                     ? validEntries.reduce((best, e) =>

@@ -131,7 +131,9 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
               </div>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className={`text-3xl font-bold ${hasPrices ? 'text-emerald-300' : 'text-indigo-200'}`}>
+              <span
+                className={`text-3xl font-bold ${hasPrices ? 'text-emerald-300' : 'text-indigo-200'}`}
+              >
                 {hasPrices ? `-${savingsPercent}%` : '-'}
               </span>
               <span className="text-indigo-200">vs más cara</span>

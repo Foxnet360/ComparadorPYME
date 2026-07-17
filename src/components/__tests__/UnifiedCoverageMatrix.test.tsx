@@ -144,7 +144,9 @@ describe('UnifiedCoverageMatrix', () => {
     renderWithProvider(<UnifiedCoverageMatrix quotes={baseQuotes} />);
 
     // The header appears once in the business section and once in the DEDUCIBLES section
-    expect(screen.getAllByText('AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL').length).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByText('AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL').length
+    ).toBeGreaterThanOrEqual(1);
   });
 
   it('shows a helpful empty state when matrix has no rows', () => {
@@ -349,7 +351,9 @@ describe('UnifiedCoverageMatrix', () => {
     );
 
     // V1 fallback should render the canonical category header from taxonomy, not the V2 row label
-    expect(screen.getAllByText('AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL').length).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByText('AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL').length
+    ).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText('Responsabilidad Civil (RCE)')).toBeNull();
   });
 
