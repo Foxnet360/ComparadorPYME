@@ -34,11 +34,11 @@ Chain strategy: pending
 
 ## Phase 2: Slice 1 — Graph Canonicalization
 
-- [ ] 2.1 RED: Add `flatTableParser.test.ts` cases for canonical metadata, raw label preservation, alias fallback, deductible `appliesTo`.
-- [ ] 2.2 GREEN: Add `canonicalName`, `canonicalId`, `canonicalSource`, `matchConfidence` to `FlatComparisonRowSchemaV2` and `appliesTo` to `StructuredDeductibleSchema` in `server/src/services/unifiedComparison/comparisonSchema.ts`.
-- [ ] 2.3 GREEN: Add `rawName` to `coverageGraphService.query`, rank `queryDeductible` by insurer, and invalidate cache on `learnCorrection`/`addEdge` in `server/src/services/coverageGraphService.ts`.
-- [ ] 2.4 GREEN: Hook `coverageGraphService.query`/`queryDeductible` into `flatTableParser.buildV2Result` after `normalizeAlias`.
-- [ ] 2.5 GREEN: Sort rows by `canonicalId` in `server/src/services/unifiedComparison/matrixTransformer.ts`.
+- [x] 2.1 RED: Add `flatTableParser.test.ts` cases for canonical metadata, raw label preservation, alias fallback, deductible `appliesTo`.
+- [x] 2.2 GREEN: Add `canonicalName`, `canonicalId`, `canonicalSource`, `matchConfidence` to `FlatComparisonRowSchemaV2` and `appliesTo` to `StructuredDeductibleSchema` in `server/src/services/unifiedComparison/comparisonSchema.ts`.
+- [x] 2.3 GREEN: Add `rawName` to `coverageGraphService.query`, rank `queryDeductible` by insurer, and invalidate cache on `learnCorrection`/`addEdge` in `server/src/services/coverageGraphService.ts`.
+- [x] 2.4 GREEN: Hook `coverageGraphService.query`/`queryDeductible` into `flatTableParser.buildV2Result` after `normalizeAlias`.
+- [x] 2.5 GREEN: Sort rows by `canonicalId` in `server/src/services/unifiedComparison/matrixTransformer.ts`.
 
 ## Phase 3: Slice 2 — Template-Aware Prompts
 
