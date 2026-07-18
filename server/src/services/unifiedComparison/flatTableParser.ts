@@ -13,6 +13,8 @@ import {
   type StructuredDeductible,
 } from './comparisonSchema';
 import { parseJsonWithRepair } from '../jsonRepair';
+import type { CoverageGraphService } from '../coverageGraphService';
+import type { GraphMapping } from '../../types/templateGraph';
 
 export const FLAT_ROW_LABELS = [
   'Bienes Asegurados',
@@ -37,6 +39,8 @@ export interface ParseOptions {
   processingTimeMs?: number;
   confidence?: number;
   needsHumanReview?: boolean;
+  graphEnabled?: boolean;
+  graphService?: CoverageGraphService;
 }
 
 export class FlatTableParseError extends Error {
@@ -333,6 +337,31 @@ const ALIAS_MAP: AliasEntry[] = [
   { aliases: ['observaciones'], canonical: 'Observaciones', section: SchemaSection.CONDICIONES },
   { aliases: ['exclusiones'], canonical: 'Exclusiones', section: SchemaSection.CONDICIONES },
 ];
+
+export function canonicalDisplayToId(canonical: string): string {
+  return normalizeLabel(canonical).replace(/\s+/g, '-');
+}
+
+const CANONICAL_ID_TO_NAME = new Map<string, string>();
+for (const entry of ALIAS_MAP) {
+  const id = canonicalDisplayToId(entry.canonical);
+  if (!CANONICAL_ID_TO_NAME.has(id)) {
+    CANONICAL_ID_TO_NAME.set(id, entry.canonical);
+  }
+}
+
+export const CANONICAL_COVERAGE_ORDER = Array.from(CANONICAL_ID_TO_NAME.keys());
+
+function findCanonicalDisplayForId(canonicalId: string): string | undefined {
+  return CANONICAL_ID_TO_NAME.get(canonicalId);
+}
+
+function titleCaseId(canonicalId: string): string {
+  return canonicalId
+    .split('-')
+    .map((word) => (word ? word[0].toUpperCase() + word.slice(1) : ''))
+    .join(' ');
+}
 
 export interface NormalizedAlias {
   canonical: string;
@@ -1053,12 +1082,14 @@ function buildResult(
   return result;
 }
 
-function buildV2Cell(
+async function buildV2Cell(
   insurer: string,
   rawValue: string | null | undefined,
   aliasQuality: number,
   isAmbiguous: boolean,
-  section?: string
+  section?: string,
+  graphEnabled?: boolean,
+  graphService?: CoverageGraphService
 ) {
   const raw = rawValue ?? '';
   let notFound = isEmptyValue(raw);
@@ -1078,6 +1109,13 @@ function buildV2Cell(
     }
 
     isAmbiguous = isAmbiguous || parsed.isAmbiguous;
+
+    if (graphEnabled && graphService && rawValue) {
+      const links = await graphService.queryDeductible(rawValue, { insurer });
+      if (links.length > 0) {
+        deductible = { ...deductible, appliesTo: [links[0].appliesTo] };
+      }
+    }
   }
 
   const cell = {
@@ -1169,38 +1207,102 @@ function parseJsonV2(raw: string): RawTable {
 // v2 result builder
 // ---------------------------------------------------------------------------
 
-function buildV2Result(
+async function resolveBestGraphMapping(
+  label: string,
+  insurers: string[],
+  graphService: CoverageGraphService
+): Promise<GraphMapping | undefined> {
+  const results = await Promise.all(
+    insurers.map((insurer) => graphService.query(label, { insurer, domain: 'pyme' }))
+  );
+
+  let best: GraphMapping | undefined;
+  for (const result of results) {
+    for (const mapping of result.mappings) {
+      if (mapping.confidence > 0.5 && (!best || mapping.confidence > best.confidence)) {
+        best = mapping;
+      }
+    }
+  }
+  return best;
+}
+
+async function buildV2Result(
   rawTable: RawTable,
   options: ParseOptions = {},
   warnings: string[] = []
-): FlatComparisonResultV2 {
+): Promise<FlatComparisonResultV2> {
   const insurers = rawTable.insurers.filter(Boolean);
   if (insurers.length === 0) {
     throw new FlatTableParseError('No insurers detected in the table', []);
   }
+
+  const graphEnabled = options.graphEnabled ?? false;
+  const graphService = options.graphService;
 
   const rows: FlatComparisonResultV2['rows'] = [];
   const extraRows: FlatComparisonResultV2['extraRows'] = [];
 
   for (const [label, values] of rawTable.rows.entries()) {
     const normalized = normalizeAlias(label);
+    const graphMapping =
+      graphEnabled && graphService
+        ? await resolveBestGraphMapping(label, insurers, graphService)
+        : undefined;
 
-    if (normalized) {
+    if (graphMapping) {
+      const canonicalId = graphMapping.canonicalId;
+      const canonicalName = findCanonicalDisplayForId(canonicalId) ?? titleCaseId(canonicalId);
+      const section = normalized?.section ?? sectionByKeyword(label);
+      rows.push({
+        label,
+        section,
+        canonicalName,
+        canonicalId,
+        canonicalSource: 'graph',
+        matchConfidence: graphMapping.confidence,
+        cells: await Promise.all(
+          insurers.map((insurer, index) =>
+            buildV2Cell(
+              insurer,
+              paddedOrNull(values, index),
+              normalized?.quality ?? 0.5,
+              false,
+              section,
+              graphEnabled,
+              graphService
+            )
+          )
+        ),
+      });
+    } else if (normalized) {
+      const canonicalId = canonicalDisplayToId(normalized.canonical);
       rows.push({
         label: normalized.canonical,
         section: normalized.section,
-        cells: insurers.map((insurer, index) =>
-          buildV2Cell(
-            insurer,
-            paddedOrNull(values, index),
-            normalized.quality,
-            false,
-            normalized.section
+        ...(graphEnabled
+          ? {
+              canonicalName: normalized.canonical,
+              canonicalId,
+              canonicalSource: 'alias' as const,
+              matchConfidence: normalized.quality,
+            }
+          : {}),
+        cells: await Promise.all(
+          insurers.map((insurer, index) =>
+            buildV2Cell(
+              insurer,
+              paddedOrNull(values, index),
+              normalized.quality,
+              false,
+              normalized.section,
+              graphEnabled,
+              graphService
+            )
           )
         ),
       });
     } else {
-      // Ambiguous or unmapped label: keep as extra row with isAmbiguous flag.
       const isAmbiguous = ALIAS_MAP.some((entry) =>
         entry.aliases.some(
           (alias) => normalizeLabel(label).includes(alias) || alias.includes(normalizeLabel(label))
@@ -1210,8 +1312,21 @@ function buildV2Result(
       extraRows.push({
         label,
         section: fallbackSection,
-        cells: insurers.map((insurer, index) =>
-          buildV2Cell(insurer, paddedOrNull(values, index), 0.5, isAmbiguous, fallbackSection)
+        ...(graphEnabled
+          ? { canonicalSource: 'uncanonicalized' as const, uncanonicalized: true }
+          : {}),
+        cells: await Promise.all(
+          insurers.map((insurer, index) =>
+            buildV2Cell(
+              insurer,
+              paddedOrNull(values, index),
+              0.5,
+              isAmbiguous,
+              fallbackSection,
+              graphEnabled,
+              graphService
+            )
+          )
         ),
       });
     }
@@ -1222,8 +1337,18 @@ function buildV2Result(
     extraRows.push({
       label,
       section: fallbackSection,
-      cells: insurers.map((insurer, index) =>
-        buildV2Cell(insurer, paddedOrNull(values, index), 0.5, false, fallbackSection)
+      cells: await Promise.all(
+        insurers.map((insurer, index) =>
+          buildV2Cell(
+            insurer,
+            paddedOrNull(values, index),
+            0.5,
+            false,
+            fallbackSection,
+            graphEnabled,
+            graphService
+          )
+        )
       ),
     });
   }
@@ -1291,7 +1416,7 @@ export class FlatTableParser {
     return buildResult(rawTable, options, warnings);
   }
 
-  parseV2(raw: string, options?: ParseOptions): FlatComparisonResultV2 {
+  async parseV2(raw: string, options?: ParseOptions): Promise<FlatComparisonResultV2> {
     const format = detectFormat(raw);
     if (format !== 'json') {
       throw new FlatTableParseError('v2 parser only supports JSON input', []);
@@ -1308,7 +1433,7 @@ export class FlatTableParser {
       ]);
     }
 
-    return buildV2Result(rawTable, options, warnings);
+    return await buildV2Result(rawTable, options, warnings);
   }
 }
 

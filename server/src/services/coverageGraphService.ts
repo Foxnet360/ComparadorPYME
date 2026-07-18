@@ -56,7 +56,10 @@ interface GraphFilterBuilder extends PromiseLike<{
 }
 
 export interface CoverageGraphService {
-  query(rawName: string, options?: GraphQueryOptions): Promise<GraphQueryResult>;
+  query(
+    rawName: string,
+    options?: GraphQueryOptions
+  ): Promise<GraphQueryResult & { rawName: string }>;
   queryDeductible(
     deductibleText: string,
     options?: GraphQueryOptions
@@ -425,8 +428,20 @@ export function createCoverageGraphService(
     };
   }
 
+  async function invalidateCache(
+    rawName: string,
+    insurer?: string,
+    domain?: string
+  ): Promise<void> {
+    const key = graphCacheKey(rawName, insurer ?? '', domain ?? 'pyme');
+    await cache.del(key);
+  }
+
   return {
-    async query(rawName: string, options: GraphQueryOptions = {}): Promise<GraphQueryResult> {
+    async query(
+      rawName: string,
+      options: GraphQueryOptions = {}
+    ): Promise<GraphQueryResult & { rawName: string }> {
       const domain = options.domain ?? 'pyme';
       const insurer = options.insurer ?? '';
       const key = graphCacheKey(rawName, insurer, domain);
@@ -444,7 +459,7 @@ export function createCoverageGraphService(
               mappingCount: parsed.mappings.length,
             });
             metrics.increment('coverageGraph.hit', { source: 'cache', domain });
-            return parsed as GraphQueryResult;
+            return { ...parsed, rawName } as GraphQueryResult & { rawName: string };
           }
         } catch {
           // Ignore malformed cache entries.
@@ -472,7 +487,7 @@ export function createCoverageGraphService(
         metrics.increment('coverageGraph.hit', { source: 'db', domain });
       }
 
-      return result;
+      return { ...result, rawName };
     },
 
     async queryDeductible(
@@ -537,7 +552,7 @@ export function createCoverageGraphService(
         throw new Error(`Failed to add graph edge: ${error.message}`);
       }
 
-      await this.invalidateCache(edge.from, edge.insurer, edge.domain);
+      await invalidateCache(edge.from, edge.insurer, edge.domain);
     },
 
     async addEdges(edges: GraphEdge[]): Promise<void> {
@@ -614,7 +629,7 @@ export function createCoverageGraphService(
         insurer: insurer || 'global',
       });
 
-      await this.invalidateCache(raw, insurer, domain);
+      await invalidateCache(raw, insurer, domain);
     },
 
     async propagate(): Promise<void> {
@@ -674,7 +689,7 @@ export function createCoverageGraphService(
         throw new Error(`Failed to update graph edge: ${error.message}`);
       }
 
-      await this.invalidateCache(edge.from, edge.insurer, edge.domain);
+      await invalidateCache(edge.from, edge.insurer, edge.domain);
     },
 
     async deleteEdge(from, to, type, insurer?, domain?): Promise<void> {
@@ -691,13 +706,10 @@ export function createCoverageGraphService(
         throw new Error(`Failed to delete graph edge: ${error.message}`);
       }
 
-      await this.invalidateCache(from, insurer, domain);
+      await invalidateCache(from, insurer, domain);
     },
 
-    async invalidateCache(rawName, insurer?, domain?): Promise<void> {
-      const key = graphCacheKey(rawName, insurer ?? '', domain ?? 'pyme');
-      await cache.del(key);
-    },
+    invalidateCache,
   };
 }
 

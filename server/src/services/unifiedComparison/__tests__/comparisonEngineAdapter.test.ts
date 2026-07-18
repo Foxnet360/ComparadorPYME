@@ -465,5 +465,21 @@ describe('ComparisonEngineAdapter', () => {
       expect(result.graphEnabled).toBe(false);
       expect(result.templateHintsEnabled).toBe(false);
     });
+
+    it('masks envelope slice flags to false when the resolved schema is V1 (REL-002)', async () => {
+      process.env[GRAPH_ROLLOUT_ENV] = '100';
+      // Engine returns a V2-shaped payload, but resolveComparisonSchemaVersion
+      // resolves it to V1 because the global granular flag is off.
+      featureFlags.updateFlag('granularComparisonSchema', false);
+      compareSpy.mockResolvedValue(makeFlatResult({ schemaVersion: 2 }));
+
+      const result = await comparisonEngineAdapter.generateComparison(['a.pdf'], {
+        userId: 'u-rel002',
+      });
+
+      expect(result.schemaVersion).toBe(1);
+      expect(result.graphEnabled).toBe(false);
+      expect(result.templateHintsEnabled).toBe(false);
+    });
   });
 });

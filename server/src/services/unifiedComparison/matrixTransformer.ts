@@ -11,6 +11,7 @@ import {
   StructuredDeductible,
 } from './comparisonSchema';
 import { ParsedQuote } from '../quoteParser';
+import { CANONICAL_COVERAGE_ORDER } from './flatTableParser';
 
 const HEADER_SECTION_ID = 0;
 const COVERAGE_SECTION_ID = 1;
@@ -208,6 +209,21 @@ function sectionSortIndex(section: string | undefined): number {
   return index === -1 ? Number.MAX_SAFE_INTEGER : index;
 }
 
+const CANONICAL_ORDER_INDEX = new Map<string, number>(
+  CANONICAL_COVERAGE_ORDER.map((id, index) => [id, index])
+);
+
+function canonicalSortIndex(canonicalId: string | undefined): number {
+  if (!canonicalId) return Number.MAX_SAFE_INTEGER;
+  return CANONICAL_ORDER_INDEX.get(canonicalId) ?? Number.MAX_SAFE_INTEGER;
+}
+
+function sortByCanonicalId<T extends { canonicalId?: string }>(rows: T[]): T[] {
+  return [...rows].sort(
+    (a, b) => canonicalSortIndex(a.canonicalId) - canonicalSortIndex(b.canonicalId)
+  );
+}
+
 function cellFromFlatValueV2(
   value: string | null,
   notFound?: boolean,
@@ -245,11 +261,12 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
     string,
     {
       label: string;
+      canonicalId?: string;
       cells: { value: string | null; notFound?: boolean; confidence?: number; notes?: string }[];
     }[]
   >();
 
-  for (const row of result.rows) {
+  for (const row of sortByCanonicalId(result.rows)) {
     const section =
       isFinancialRowLabel(row.label) || row.section === 'FINANCIAL'
         ? FINANCIAL_SECTION_LABEL
@@ -259,6 +276,7 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
     }
     sectionGroups.get(section)!.push({
       label: row.label,
+      canonicalId: row.canonicalId,
       cells: row.cells.map((cell) => ({
         value: cell.value,
         notFound: cell.notFound,
@@ -268,7 +286,7 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
     });
   }
 
-  for (const row of result.extraRows) {
+  for (const row of sortByCanonicalId(result.extraRows)) {
     const section =
       isFinancialRowLabel(row.label) || row.section === 'FINANCIAL'
         ? FINANCIAL_SECTION_LABEL
@@ -278,6 +296,7 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
     }
     sectionGroups.get(section)!.push({
       label: row.label,
+      canonicalId: row.canonicalId,
       cells: row.cells.map((cell) => ({
         value: cell.value,
         notFound: cell.notFound,

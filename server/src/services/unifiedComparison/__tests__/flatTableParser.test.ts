@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   flatTableParser,
   FlatTableParseError,
@@ -7,6 +7,7 @@ import {
   computeCellConfidence,
 } from '../flatTableParser';
 import { FlatComparisonSchema, FlatComparisonSchemaV2 } from '../comparisonSchema';
+import type { CoverageGraphService } from '../../coverageGraphService';
 
 const baseOptions = { pdfCount: 3, model: 'gemini-test' };
 
@@ -361,8 +362,8 @@ describe('computeCellConfidence', () => {
   });
 });
 
-describe('flatTableParser.parseV2', () => {
-  it('normalizes row labels and assigns sections for canonical labels', () => {
+describe('flatTableParser.parseV2', async () => {
+  it('normalizes row labels and assigns sections for canonical labels', async () => {
     const input = JSON.stringify({
       insurers: ['MAPFRE', 'CHUBB'],
       rows: [
@@ -383,7 +384,7 @@ describe('flatTableParser.parseV2', () => {
       ],
     });
 
-    const result = flatTableParser.parseV2(input, baseOptions);
+    const result = await flatTableParser.parseV2(input, baseOptions);
 
     expect(FlatComparisonSchemaV2.safeParse(result).success).toBe(true);
     expect(result.schemaVersion).toBe(2);
@@ -393,7 +394,7 @@ describe('flatTableParser.parseV2', () => {
     expect(result.rows[1].section).toBe('FINANCIAL');
   });
 
-  it('routes ambiguous labels to extraRows with isAmbiguous flag', () => {
+  it('routes ambiguous labels to extraRows with isAmbiguous flag', async () => {
     const input = JSON.stringify({
       insurers: ['MAPFRE'],
       rows: [
@@ -404,7 +405,7 @@ describe('flatTableParser.parseV2', () => {
       ],
     });
 
-    const result = flatTableParser.parseV2(input, baseOptions);
+    const result = await flatTableParser.parseV2(input, baseOptions);
 
     expect(result.rows).toHaveLength(0);
     expect(result.extraRows).toHaveLength(1);
@@ -412,7 +413,7 @@ describe('flatTableParser.parseV2', () => {
     expect(result.extraRows[0].cells[0].isAmbiguous).toBe(true);
   });
 
-  it('assigns derived confidence to each cell', () => {
+  it('assigns derived confidence to each cell', async () => {
     const input = JSON.stringify({
       insurers: ['MAPFRE', 'CHUBB'],
       rows: [
@@ -426,13 +427,13 @@ describe('flatTableParser.parseV2', () => {
       ],
     });
 
-    const result = flatTableParser.parseV2(input, baseOptions);
+    const result = await flatTableParser.parseV2(input, baseOptions);
 
     expect(result.rows[0].cells[0].confidence).toBeGreaterThan(0.7);
     expect(result.rows[0].cells[1].confidence).toBeLessThan(0.5);
   });
 
-  it('keeps unmapped rows as extraRows without isAmbiguous when no alias matches', () => {
+  it('keeps unmapped rows as extraRows without isAmbiguous when no alias matches', async () => {
     const input = JSON.stringify({
       insurers: ['MAPFRE'],
       rows: [
@@ -443,14 +444,14 @@ describe('flatTableParser.parseV2', () => {
       ],
     });
 
-    const result = flatTableParser.parseV2(input, baseOptions);
+    const result = await flatTableParser.parseV2(input, baseOptions);
 
     expect(result.extraRows).toHaveLength(1);
     expect(result.extraRows[0].label).toBe('Comentarios adicionales');
     expect(result.extraRows[0].cells[0].isAmbiguous).toBeUndefined();
   });
 
-  it('extracts structured deductible from percentage + minimum SMMLV', () => {
+  it('extracts structured deductible from percentage + minimum SMMLV', async () => {
     const input = JSON.stringify({
       insurers: ['MAPFRE'],
       rows: [
@@ -461,7 +462,7 @@ describe('flatTableParser.parseV2', () => {
       ],
     });
 
-    const result = flatTableParser.parseV2(input, baseOptions);
+    const result = await flatTableParser.parseV2(input, baseOptions);
 
     expect(result.rows).toHaveLength(1);
     expect(result.rows[0].section).toBe('DEDUCIBLES');
@@ -475,7 +476,7 @@ describe('flatTableParser.parseV2', () => {
     expect(result.rows[0].cells[0].isAmbiguous).toBeUndefined();
   });
 
-  it('extracts percentage-only deductible', () => {
+  it('extracts percentage-only deductible', async () => {
     const input = JSON.stringify({
       insurers: ['CHUBB'],
       rows: [
@@ -486,7 +487,7 @@ describe('flatTableParser.parseV2', () => {
       ],
     });
 
-    const result = flatTableParser.parseV2(input, baseOptions);
+    const result = await flatTableParser.parseV2(input, baseOptions);
 
     expect(result.rows[0].cells[0].deductible).toEqual({
       percentage: 5,
@@ -495,7 +496,7 @@ describe('flatTableParser.parseV2', () => {
     expect(result.rows[0].cells[0].isAmbiguous).toBeUndefined();
   });
 
-  it('extracts minimum-only deductible in SMMLV', () => {
+  it('extracts minimum-only deductible in SMMLV', async () => {
     const input = JSON.stringify({
       insurers: ['BBVA'],
       rows: [
@@ -506,7 +507,7 @@ describe('flatTableParser.parseV2', () => {
       ],
     });
 
-    const result = flatTableParser.parseV2(input, baseOptions);
+    const result = await flatTableParser.parseV2(input, baseOptions);
 
     expect(result.rows[0].cells[0].deductible).toEqual({
       minimum: 2,
@@ -516,7 +517,7 @@ describe('flatTableParser.parseV2', () => {
     expect(result.rows[0].cells[0].isAmbiguous).toBeUndefined();
   });
 
-  it('uses "Ver condiciones" fallback and flags ambiguous when deductible is unclear', () => {
+  it('uses "Ver condiciones" fallback and flags ambiguous when deductible is unclear', async () => {
     const input = JSON.stringify({
       insurers: ['AXA'],
       rows: [
@@ -527,14 +528,14 @@ describe('flatTableParser.parseV2', () => {
       ],
     });
 
-    const result = flatTableParser.parseV2(input, baseOptions);
+    const result = await flatTableParser.parseV2(input, baseOptions);
 
     expect(result.rows[0].cells[0].value).toBe('Ver condiciones');
     expect(result.rows[0].cells[0].deductible).toEqual({ type: 'see_conditions' });
     expect(result.rows[0].cells[0].isAmbiguous).toBe(true);
   });
 
-  it('treats No aplica as a non-ambiguous deductible', () => {
+  it('treats No aplica as a non-ambiguous deductible', async () => {
     const input = JSON.stringify({
       insurers: ['MAPFRE'],
       rows: [
@@ -545,14 +546,14 @@ describe('flatTableParser.parseV2', () => {
       ],
     });
 
-    const result = flatTableParser.parseV2(input, baseOptions);
+    const result = await flatTableParser.parseV2(input, baseOptions);
 
     expect(result.rows[0].cells[0].value).toBe('No aplica');
     expect(result.rows[0].cells[0].deductible).toEqual({ type: 'not_applicable' });
     expect(result.rows[0].cells[0].isAmbiguous).toBeUndefined();
   });
 
-  it('extracts quoteMetadata from JSON input', () => {
+  it('extracts quoteMetadata from JSON input', async () => {
     const input = JSON.stringify({
       insurers: ['MAPFRE', 'CHUBB'],
       quoteMetadata: [
@@ -592,7 +593,7 @@ describe('flatTableParser.parseV2', () => {
       ],
     });
 
-    const result = flatTableParser.parseV2(input, baseOptions);
+    const result = await flatTableParser.parseV2(input, baseOptions);
 
     expect(FlatComparisonSchemaV2.safeParse(result).success).toBe(true);
     expect(result.quoteMetadata).toBeDefined();
@@ -601,7 +602,7 @@ describe('flatTableParser.parseV2', () => {
     expect(result.quoteMetadata![1].ubicacionRiesgo).toBe('Medellin');
   });
 
-  it('classifies new business template sections properly', () => {
+  it('classifies new business template sections properly', async () => {
     const input = JSON.stringify({
       insurers: ['MAPFRE'],
       rows: [
@@ -624,7 +625,7 @@ describe('flatTableParser.parseV2', () => {
       ],
     });
 
-    const result = flatTableParser.parseV2(input, baseOptions);
+    const result = await flatTableParser.parseV2(input, baseOptions);
 
     const mueblesRow = result.rows.find((r) => r.label === 'Muebles y enseres');
     expect(mueblesRow).toBeDefined();
@@ -643,7 +644,7 @@ describe('flatTableParser.parseV2', () => {
     expect(gastosRow!.section).toBe('FINANCIAL');
   });
 
-  it('classifies new standard COBERTURAS section and coverages properly', () => {
+  it('classifies new standard COBERTURAS section and coverages properly', async () => {
     const input = JSON.stringify({
       insurers: ['MAPFRE'],
       rows: [
@@ -662,7 +663,7 @@ describe('flatTableParser.parseV2', () => {
       ],
     });
 
-    const result = flatTableParser.parseV2(input, baseOptions);
+    const result = await flatTableParser.parseV2(input, baseOptions);
 
     const amparoRow = result.rows.find((r) => r.label === 'Amparo básico todo riesgo');
     expect(amparoRow).toBeDefined();
@@ -677,5 +678,190 @@ describe('flatTableParser.parseV2', () => {
     const rcProcesoRow = result.rows.find((r) => r.label === 'RC en proceso civil');
     expect(rcProcesoRow).toBeDefined();
     expect(rcProcesoRow!.section).toBe('COBERTURAS');
+  });
+});
+
+describe('flatTableParser.parseV2 graph canonicalization', () => {
+  function makeGraphServiceStub(
+    overrides: Partial<
+      ReturnType<typeof import('../../coverageGraphService').createCoverageGraphService>
+    > = {}
+  ): CoverageGraphService {
+    return {
+      query: vi.fn(async (rawName) => ({ mappings: [], composite: false, rawName })),
+      queryDeductible: vi.fn(async () => []),
+      addEdge: vi.fn(async () => {}),
+      addEdges: vi.fn(async () => {}),
+      learnCorrection: vi.fn(async () => {}),
+      propagate: vi.fn(async () => {}),
+      listEdges: vi.fn(async () => []),
+      updateEdge: vi.fn(async () => {}),
+      deleteEdge: vi.fn(async () => {}),
+      invalidateCache: vi.fn(async () => {}),
+      ...overrides,
+    } as unknown as CoverageGraphService;
+  }
+
+  it('attaches graph canonical metadata and preserves the raw label', async () => {
+    const graphService = makeGraphServiceStub({
+      query: vi.fn(async (rawName, _options) => ({
+        rawName,
+        mappings: [
+          {
+            canonicalId: 'amparo-basico-todo-riesgo',
+            confidence: 0.92,
+            provenance: 'maps_to',
+          },
+        ],
+        composite: false,
+      })),
+    });
+
+    const input = JSON.stringify({
+      insurers: ['BBVA'],
+      rows: [
+        {
+          label: 'Daño Material Global',
+          cells: [{ insurer: 'BBVA', value: '$100M' }],
+        },
+      ],
+    });
+
+    const result = await flatTableParser.parseV2(input, {
+      ...baseOptions,
+      graphEnabled: true,
+      graphService,
+    });
+
+    expect(FlatComparisonSchemaV2.safeParse(result).success).toBe(true);
+    const row = result.rows[0];
+    expect(row.label).toBe('Daño Material Global');
+    expect(row.canonicalName).toBe('Amparo básico todo riesgo');
+    expect(row.canonicalId).toBe('amparo-basico-todo-riesgo');
+    expect(row.canonicalSource).toBe('graph');
+    expect(row.matchConfidence).toBe(0.92);
+    expect(row.cells[0].value).toBe('$100M');
+    expect(graphService.query).toHaveBeenCalledWith(
+      'Daño Material Global',
+      expect.objectContaining({ insurer: 'BBVA', domain: 'pyme' })
+    );
+  });
+
+  it('marks unknown labels as uncanonicalized and keeps the raw label', async () => {
+    const graphService = makeGraphServiceStub();
+
+    const input = JSON.stringify({
+      insurers: ['BBVA'],
+      rows: [
+        {
+          label: 'Cobertura Adicional Especial',
+          cells: [{ insurer: 'BBVA', value: 'Incluido' }],
+        },
+      ],
+    });
+
+    const result = await flatTableParser.parseV2(input, {
+      ...baseOptions,
+      graphEnabled: true,
+      graphService,
+    });
+
+    const row = result.extraRows[0];
+    expect(row.label).toBe('Cobertura Adicional Especial');
+    expect(row.canonicalName).toBeUndefined();
+    expect(row.canonicalSource).toBe('uncanonicalized');
+    expect(row.uncanonicalized).toBe(true);
+  });
+
+  it('falls back to alias normalization when the graph has no mapping', async () => {
+    const graphService = makeGraphServiceStub();
+
+    const input = JSON.stringify({
+      insurers: ['MAPFRE'],
+      rows: [
+        {
+          label: 'Valor Edificio',
+          cells: [{ insurer: 'MAPFRE', value: '$500M' }],
+        },
+      ],
+    });
+
+    const result = await flatTableParser.parseV2(input, {
+      ...baseOptions,
+      graphEnabled: true,
+      graphService,
+    });
+
+    const row = result.rows[0];
+    expect(row.label).toBe('Edificio');
+    expect(row.canonicalName).toBe('Edificio');
+    expect(row.canonicalId).toBe('edificio');
+    expect(row.canonicalSource).toBe('alias');
+  });
+
+  it('links deductible rows to canonical coverages via queryDeductible', async () => {
+    const graphService = makeGraphServiceStub({
+      queryDeductible: vi.fn(async (deductibleText, _options) => [
+        {
+          deductibleText,
+          appliesTo: 'Amparo básico todo riesgo',
+          confidence: 0.88,
+        },
+      ]),
+    });
+
+    const input = JSON.stringify({
+      insurers: ['BBVA'],
+      rows: [
+        {
+          label: 'Deducible Edificio',
+          cells: [{ insurer: 'BBVA', value: '10% mínimo 5 SMMLV - Amparo básico' }],
+        },
+      ],
+    });
+
+    const result = await flatTableParser.parseV2(input, {
+      ...baseOptions,
+      graphEnabled: true,
+      graphService,
+    });
+
+    const cell = result.rows[0].cells[0];
+    expect(cell.value).toBe('10% mínimo 5 SMMLV - Amparo básico');
+    expect(cell.deductible).toMatchObject({
+      percentage: 10,
+      minimum: 5,
+      currency: 'SMMLV',
+      appliesTo: ['Amparo básico todo riesgo'],
+    });
+    expect(graphService.queryDeductible).toHaveBeenCalledWith(
+      '10% mínimo 5 SMMLV - Amparo básico',
+      expect.objectContaining({ insurer: 'BBVA' })
+    );
+  });
+
+  it('skips graph queries when graphEnabled is false', async () => {
+    const graphService = makeGraphServiceStub();
+
+    const input = JSON.stringify({
+      insurers: ['BBVA'],
+      rows: [
+        {
+          label: 'Daño Material Global',
+          cells: [{ insurer: 'BBVA', value: '$100M' }],
+        },
+      ],
+    });
+
+    const result = await flatTableParser.parseV2(input, {
+      ...baseOptions,
+      graphEnabled: false,
+      graphService,
+    });
+
+    expect(result.rows).toHaveLength(0);
+    expect(result.extraRows[0].canonicalSource).toBeUndefined();
+    expect(graphService.query).not.toHaveBeenCalled();
+    expect(graphService.queryDeductible).not.toHaveBeenCalled();
   });
 });
