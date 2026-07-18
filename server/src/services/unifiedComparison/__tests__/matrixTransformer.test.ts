@@ -430,6 +430,43 @@ describe('flatResultToMatrixRowsV2', () => {
   it('verifies FINANCIAL_SECTION_ID is aligned with frontend expectation (100)', () => {
     expect(FINANCIAL_SECTION_ID).toBe(100);
   });
+
+  it('sorts v2 rows by canonicalId within each section while keeping raw labels visible', () => {
+    const result = makeFlatResultV2({
+      rows: [
+        {
+          label: 'Terremoto BBVA wording',
+          section: SchemaSection.COBERTURAS,
+          canonicalId: 'terremoto',
+          canonicalSource: 'graph',
+          cells: [{ insurer: 'BBVA', value: 'Incluido', confidence: 0.9 }],
+        },
+        {
+          label: 'RCE BBVA wording',
+          section: SchemaSection.COBERTURAS,
+          canonicalId: 'rce',
+          canonicalSource: 'graph',
+          cells: [{ insurer: 'BBVA', value: '$1M', confidence: 0.88 }],
+        },
+        {
+          label: 'Amparo básico BBVA wording',
+          section: SchemaSection.COBERTURAS,
+          canonicalId: 'amparo-basico-todo-riesgo',
+          canonicalSource: 'graph',
+          cells: [{ insurer: 'BBVA', value: '$100M', confidence: 0.92 }],
+        },
+      ],
+    });
+
+    const matrix = flatResultToMatrixRowsV2(result);
+    const sectionRows = matrix.filter((r) => r.type === 'data' && r.sectionId === 1);
+    const labels = sectionRows.map((r) => r.label);
+    expect(labels).toEqual([
+      'Amparo básico BBVA wording',
+      'Terremoto BBVA wording',
+      'RCE BBVA wording',
+    ]);
+  });
 });
 
 describe('quotesToMatrixRows', () => {

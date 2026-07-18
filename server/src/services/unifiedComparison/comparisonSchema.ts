@@ -52,6 +52,7 @@ export const StructuredDeductibleSchema = z.object({
       'see_conditions',
     ])
     .optional(),
+  appliesTo: z.array(z.string()).optional(),
 });
 
 export const FlatComparisonCellSchemaV2 = z.object({
@@ -72,6 +73,11 @@ export const FlatComparisonRowSchemaV1 = z.object({
 export const FlatComparisonRowSchemaV2 = z.object({
   label: z.string().min(1),
   section: z.nativeEnum(SchemaSection).optional(),
+  canonicalName: z.string().optional(),
+  canonicalId: z.string().optional(),
+  canonicalSource: z.enum(['graph', 'alias', 'uncanonicalized']).optional(),
+  matchConfidence: z.number().min(0).max(1).optional(),
+  uncanonicalized: z.boolean().optional(),
   cells: z.array(FlatComparisonCellSchemaV2),
 });
 

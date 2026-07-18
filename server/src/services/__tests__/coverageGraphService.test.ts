@@ -328,6 +328,33 @@ describe('coverageGraphService', () => {
       expect(fakeCache.setex).toHaveBeenCalledTimes(1);
     });
 
+    it('returns rawName on the result even when mappings are empty', async () => {
+      const result = await service.query('Cobertura Desconocida');
+      expect(result.rawName).toBe('Cobertura Desconocida');
+    });
+
+    it('returns rawName on the result when mappings exist', async () => {
+      fakeDb = makeFakeDb([
+        {
+          from_node: 'Daño Material Global',
+          to_node: 'amparo-basico-todo-riesgo',
+          edge_type: 'maps_to',
+          weight: 0.92,
+          insurer: 'BBVA',
+          correction_count: 0,
+          domain: 'pyme',
+        },
+      ]);
+      service = createCoverageGraphService({
+        db: fakeDb as unknown as DbArg,
+        cache: fakeCache as unknown as CacheArg,
+      });
+
+      const result = await service.query('Daño Material Global', { insurer: 'BBVA' });
+      expect(result.rawName).toBe('Daño Material Global');
+      expect(result.mappings[0].canonicalId).toBe('amparo-basico-todo-riesgo');
+    });
+
     it('filters by insurer when provided', async () => {
       fakeDb = makeFakeDb([
         {
@@ -498,6 +525,19 @@ describe('coverageGraphService', () => {
       expect(row.from_node).toBe('raw:foo');
       expect(row.to_node).toBe('cat:bar');
       expect(row.edge_type).toBe('maps_to');
+    });
+
+    it('invalidates the query cache after adding an edge', async () => {
+      const edge: GraphEdge = {
+        from: 'raw:foo',
+        to: 'cat:bar',
+        type: 'maps_to',
+        weight: 0.85,
+      };
+
+      await service.addEdge(edge);
+
+      expect(fakeCache.del).toHaveBeenCalled();
     });
 
     it('rejects invalid edge types', async () => {

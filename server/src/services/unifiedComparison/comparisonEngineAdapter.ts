@@ -111,8 +111,8 @@ export class ComparisonEngineAdapter {
         correlationId,
         quoteMetadata:
           schemaVersion === 2 ? (result as FlatComparisonResultV2).quoteMetadata : undefined,
-        graphEnabled,
-        templateHintsEnabled,
+        graphEnabled: schemaVersion === 2 ? graphEnabled : false,
+        templateHintsEnabled: schemaVersion === 2 ? templateHintsEnabled : false,
       };
     } catch (error) {
       const reason =

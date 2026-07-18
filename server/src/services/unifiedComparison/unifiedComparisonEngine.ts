@@ -9,6 +9,7 @@ import { comparisonPromptBuilder } from './comparisonPromptBuilder';
 import { FlatComparisonResult } from './comparisonSchema';
 import { flatTableParser } from './flatTableParser';
 import { unifiedComparisonFlag } from './featureFlagService';
+import { coverageGraphService } from '../coverageGraphService';
 import { getCachedUnifiedResult, setCachedUnifiedResult } from '../cache/redisCache';
 import crypto from 'crypto';
 import fs from 'fs';
@@ -147,7 +148,8 @@ export class UnifiedComparisonEngine {
         result,
         pdfPaths.length,
         correlationId,
-        granularEnabled
+        granularEnabled,
+        options?.graphEnabled
       );
 
       // 5. Add runtime metadata
@@ -393,22 +395,27 @@ export class UnifiedComparisonEngine {
     responseText: string,
     pdfCount: number,
     correlationId: string,
-    granularEnabled: boolean
+    granularEnabled: boolean,
+    graphEnabled?: boolean
   ): Promise<FlatComparisonResult> {
     let retries = 0;
     let lastError: string | null = null;
 
     while (retries <= this.config.maxRetries) {
       try {
-        const parser = granularEnabled
-          ? flatTableParser.parseV2.bind(flatTableParser)
-          : flatTableParser.parse.bind(flatTableParser);
-        const parsedResult = parser(responseText, {
+        const parseOptions = {
           pdfCount,
           model: this.config.model,
           confidence: 0,
           needsHumanReview: true,
-        });
+          ...(granularEnabled
+            ? { graphEnabled: graphEnabled ?? false, graphService: coverageGraphService }
+            : {}),
+        };
+
+        const parsedResult = granularEnabled
+          ? await flatTableParser.parseV2(responseText, parseOptions)
+          : flatTableParser.parse(responseText, parseOptions);
 
         return parsedResult;
       } catch (error) {
