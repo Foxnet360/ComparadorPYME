@@ -51,13 +51,13 @@ Chain strategy: pending
 
 ## Phase 4: Slice 3 — Learning Loop
 
-- [ ] 4.1 RED: Add `learningEngine.test.ts` and `coverageGraphService.test.ts` cases for correction routing and edge weight >=0.7.
-- [ ] 4.2 GREEN: Route `learningEngine.applyCorrection` to `coverageGraphService.learnCorrection` for `coverage_mapping` corrections.
-- [ ] 4.3 GREEN: Implement cache invalidation in `coverageGraphService` after `learnCorrection`/`addEdge`.
+- [x] 4.1 RED: Add `learningEngine.test.ts` and `coverageGraphService.test.ts` cases for correction routing and edge weight >=0.7.
+- [x] 4.2 GREEN: Route `learningEngine.applyCorrection` to `coverageGraphService.learnCorrection` for `coverage_mapping` corrections.
+- [x] 4.3 GREEN: Implement cache invalidation in `coverageGraphService` after `learnCorrection`/`addEdge`.
 
 ## Phase 5: Cross-Cutting Integration
 
-- [ ] 5.1 RED: Add `integration.test.ts` case for `/api/analyze` returning `canonicalName` with raw labels preserved.
-- [ ] 5.2 GREEN: Pass `graphEnabled`/`templateHintsEnabled` through `server/src/controllers/analysisController.ts` to `matrixRowsToComparisonReport`.
-- [ ] 5.3 GREEN: Extend golden-set evaluation to segment by `graphEnabled`/`templateHintsEnabled`.
-- [ ] 5.4 REFACTOR: Verify `npm test` and `npm run build` without running tests (disk full).
+- [x] 5.1 RED: Add `integration.test.ts` case for `/api/analyze` returning `canonicalName` with raw labels preserved.
+- [x] 5.2 GREEN: Pass `graphEnabled`/`templateHintsEnabled` through `server/src/controllers/analysisController.ts` to `matrixRowsToComparisonReport`.
+- [x] 5.3 GREEN: Extend golden-set evaluation to segment by `graphEnabled`/`templateHintsEnabled`.
+- [x] 5.4 REFACTOR: Verify `npm test` and `npm run build` without running tests (disk full).
