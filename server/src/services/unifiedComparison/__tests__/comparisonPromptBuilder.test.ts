@@ -1,12 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { comparisonPromptBuilder, PromptContext } from '../comparisonPromptBuilder';
 
-function buildV2Prompt(context: Partial<PromptContext> = {}) {
-  return comparisonPromptBuilder.buildV2ComparisonPrompt({
-    insurerCount: 2,
-    hasClauses: false,
-    ...context,
-  });
+function buildV2Prompt(context: Partial<PromptContext> = {}, addons?: string[]) {
+  return comparisonPromptBuilder.buildV2ComparisonPrompt(
+    {
+      insurerCount: 2,
+      hasClauses: false,
+      ...context,
+    },
+    addons
+  );
 }
 
 describe('comparisonPromptBuilder', () => {
@@ -99,12 +102,29 @@ describe('comparisonPromptBuilder.buildV2ComparisonPrompt', () => {
     expect(prompt).not.toContain('EXACTAMENTE estas filas');
   });
 
-  it('includes the COBERTURAS section and its canonical coverages', () => {
-    const prompt = buildV2Prompt();
+  it('appends insurer-specific template addons when provided', () => {
+    const prompt = buildV2Prompt({}, [
+      'BBVA: Extrae deducibles de la columna 3 de la tabla.',
+      'SBS: Usa los nombres de cobertura exactos del resumen SBS.',
+    ]);
 
-    expect(prompt).toContain('COBERTURAS');
-    expect(prompt).toContain('Amparo básico todo riesgo');
-    expect(prompt).toContain('Responsabilidad Civil Extracontractual (RCE)');
-    expect(prompt).toContain('RC en proceso civil');
+    expect(prompt).toContain('BBVA:');
+    expect(prompt).toContain('SBS:');
+    expect(prompt).toContain('Extrae deducibles de la columna 3');
+    expect(prompt.indexOf('BBVA:')).toBeGreaterThan(prompt.indexOf('filas agrupadas por sección'));
+  });
+
+  it('keeps the generic prompt when no addons are provided', () => {
+    const generic = buildV2Prompt();
+    const withEmptyAddons = buildV2Prompt({}, []);
+
+    expect(withEmptyAddons).toBe(generic);
+  });
+
+  it('does not inject addons for the flat v1 prompt', () => {
+    const prompt = comparisonPromptBuilder.buildComparisonPrompt({ insurerCount: 2 });
+
+    expect(prompt).not.toContain('BBVA:');
+    expect(prompt).not.toContain('template');
   });
 });

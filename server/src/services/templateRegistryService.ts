@@ -40,6 +40,8 @@ export interface TemplateMatchInput {
 export interface TemplateMatchResult {
   templateId: string | null;
   templateConfidence: number | null;
+  insurer: string | null;
+  promptAddon: string;
   template: TemplateRegistryEntry | null;
 }
 
@@ -181,7 +183,7 @@ function rowToEntry(row: Record<string, unknown>): TemplateRegistryEntry {
     fingerprints: row.fingerprints as TemplateRegistryEntry['fingerprints'],
     schema: row.schema as TemplateRegistryEntry['schema'],
     extractionHints: row.hints as TemplateRegistryEntry['extractionHints'],
-    promptAddon: row.prompt_addon as string,
+    promptAddon: (row.prompt_addon as string | null | undefined) ?? '',
   });
 }
 
@@ -329,7 +331,13 @@ export function createTemplateRegistryService(
         hasPages: (input.pages?.length ?? 0) > 0,
       });
       metrics.increment('templateRegistry.miss', { domain });
-      return { templateId: null, templateConfidence: null, template: null };
+      return {
+        templateId: null,
+        templateConfidence: null,
+        insurer: null,
+        promptAddon: '',
+        template: null,
+      };
     }
 
     logger.info('template_match', 'Template matched', {
@@ -346,6 +354,8 @@ export function createTemplateRegistryService(
     return {
       templateId: best.templateId,
       templateConfidence: bestScore,
+      insurer: best.insurer,
+      promptAddon: best.promptAddon,
       template: best,
     };
   }

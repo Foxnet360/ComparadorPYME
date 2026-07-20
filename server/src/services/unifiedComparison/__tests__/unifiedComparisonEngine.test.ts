@@ -7,6 +7,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { UnifiedComparisonEngine, UnifiedComparisonError } from '../unifiedComparisonEngine';
 import { featureFlags } from '../../../config/featureFlags';
 import type { FlatComparisonResult } from '../comparisonSchema';
+import type { PageTextItems, TemplateMatchResult } from '../../templateRegistryService';
+import type { TemplateHintMeasurementHarness } from '../templateHintMeasurement';
 
 const validFlatJson = JSON.stringify({
   insurers: ['MAPFRE', 'CHUBB'],
@@ -292,6 +294,331 @@ describe('UnifiedComparisonEngine (flat table)', () => {
 
     // If the cache key did not include the schema version, the second call would
     // hit the v2 cache and skip the Gemini call.
+    expect(mockGemini.models.generateContent).toHaveBeenCalledTimes(2);
+  });
+});
+
+function makeTextExtractor(
+  results: Record<string, { text: string; pageTextItems?: PageTextItems[] }>
+) {
+  return {
+    extractTextFromPdf: vi.fn(async (path: string) => {
+      const result = results[path];
+      if (!result) {
+        return { text: '', pageTextItems: [] };
+      }
+      return result;
+    }),
+  };
+}
+
+function makeTemplateMatcher(matches: Record<string, TemplateMatchResult>) {
+  return {
+    matchTemplate: vi.fn(
+      async (input: { text: string; pages?: PageTextItems[]; domain?: string }) => {
+        return (
+          matches[input.text] ?? {
+            templateId: null,
+            templateConfidence: null,
+            insurer: null,
+            promptAddon: '',
+            template: null,
+          }
+        );
+      }
+    ),
+  };
+}
+
+function makeMeasurementHarness(
+  disabledInsurers: Set<string> = new Set()
+): TemplateHintMeasurementHarness {
+  return {
+    recordObservation: vi.fn(async () => {}),
+    shouldDisable: vi.fn(async (insurer: string) => ({
+      disabled: disabledInsurers.has(insurer),
+      reason: disabledInsurers.has(insurer) ? ('token_increase' as const) : undefined,
+    })),
+    setBaseline: vi.fn(async () => {}),
+  };
+}
+
+describe('UnifiedComparisonEngine (template-aware prompts)', () => {
+  beforeEach(() => {
+    vi.stubEnv('GEMINI_API_KEY', 'test-api-key');
+    mockGemini = buildMockGemini([]);
+    featureFlags.updateFlag('granularComparisonSchema', true);
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.clearAllMocks();
+  });
+
+  it('injects a matched insurer addon into the v2 prompt', async () => {
+    mockGemini = buildMockGemini([validGranularJson]);
+    const textExtractor = makeTextExtractor({
+      'bbva-fake.pdf': { text: 'BBVA SEGUROS COBERTURAS' },
+    });
+    const templateMatcher = makeTemplateMatcher({
+      'BBVA SEGUROS COBERTURAS': {
+        templateId: 'bbva-pyme-v1',
+        templateConfidence: 95,
+        insurer: 'BBVA',
+        promptAddon: 'Extrae deducibles de la columna 3.',
+        template: null,
+      },
+    });
+    const measurementHarness = makeMeasurementHarness();
+
+    const engine = new UnifiedComparisonEngine(
+      { retryDelayMs: 0 },
+      { textExtractor, templateMatcher, measurementHarness }
+    );
+
+    await engine.compare(['bbva-fake.pdf'], {
+      granularComparisonSchema: true,
+      templateHintsEnabled: true,
+    });
+
+    const promptCall = mockGemini.models.generateContent.mock.calls[0][0];
+    const promptText = promptCall.contents[promptCall.contents.length - 1].text;
+    expect(promptText).toContain('BBVA:');
+    expect(promptText).toContain('Extrae deducibles de la columna 3.');
+  });
+
+  it('keeps the generic v2 prompt when no template matches', async () => {
+    mockGemini = buildMockGemini([validGranularJson]);
+    const textExtractor = makeTextExtractor({
+      'generic-fake.pdf': { text: 'Cotizacion generica sin marca' },
+    });
+    const templateMatcher = makeTemplateMatcher({});
+    const measurementHarness = makeMeasurementHarness();
+
+    const engine = new UnifiedComparisonEngine(
+      { retryDelayMs: 0 },
+      { textExtractor, templateMatcher, measurementHarness }
+    );
+
+    await engine.compare(['generic-fake.pdf'], {
+      granularComparisonSchema: true,
+      templateHintsEnabled: true,
+    });
+
+    const promptCall = mockGemini.models.generateContent.mock.calls[0][0];
+    const promptText = promptCall.contents[promptCall.contents.length - 1].text;
+    expect(promptText).not.toContain('BBVA:');
+    expect(promptText).not.toContain('SBS:');
+    expect(promptText).not.toContain('MAPFRE:');
+  });
+
+  it('injects addons for multiple insurers when multiple templates match', async () => {
+    mockGemini = buildMockGemini([validGranularJson]);
+    const textExtractor = makeTextExtractor({
+      'bbva-fake.pdf': { text: 'BBVA SEGUROS' },
+      'sbs-fake.pdf': { text: 'SEGUROS SBS' },
+    });
+    const templateMatcher = makeTemplateMatcher({
+      'BBVA SEGUROS': {
+        templateId: 'bbva-pyme-v1',
+        templateConfidence: 95,
+        insurer: 'BBVA',
+        promptAddon: 'BBVA addon',
+        template: null,
+      },
+      'SEGUROS SBS': {
+        templateId: 'sbs-pyme-v1',
+        templateConfidence: 95,
+        insurer: 'SBS',
+        promptAddon: 'SBS addon',
+        template: null,
+      },
+    });
+    const measurementHarness = makeMeasurementHarness();
+
+    const engine = new UnifiedComparisonEngine(
+      { retryDelayMs: 0 },
+      { textExtractor, templateMatcher, measurementHarness }
+    );
+
+    await engine.compare(['bbva-fake.pdf', 'sbs-fake.pdf'], {
+      granularComparisonSchema: true,
+      templateHintsEnabled: true,
+    });
+
+    const promptCall = mockGemini.models.generateContent.mock.calls[0][0];
+    const promptText = promptCall.contents[promptCall.contents.length - 1].text;
+    expect(promptText).toContain('BBVA:');
+    expect(promptText).toContain('SBS:');
+    expect(promptText).toContain('BBVA addon');
+    expect(promptText).toContain('SBS addon');
+  });
+
+  it('skips an insurer addon when the measurement harness has disabled it', async () => {
+    mockGemini = buildMockGemini([validGranularJson]);
+    const textExtractor = makeTextExtractor({
+      'bbva-disabled-fake.pdf': { text: 'BBVA SEGUROS' },
+    });
+    const templateMatcher = makeTemplateMatcher({
+      'BBVA SEGUROS': {
+        templateId: 'bbva-pyme-v1',
+        templateConfidence: 95,
+        insurer: 'BBVA',
+        promptAddon: 'BBVA addon',
+        template: null,
+      },
+    });
+    const measurementHarness = makeMeasurementHarness(new Set(['BBVA']));
+
+    const engine = new UnifiedComparisonEngine(
+      { retryDelayMs: 0 },
+      { textExtractor, templateMatcher, measurementHarness }
+    );
+
+    await engine.compare(['bbva-disabled-fake.pdf'], {
+      granularComparisonSchema: true,
+      templateHintsEnabled: true,
+    });
+
+    const promptCall = mockGemini.models.generateContent.mock.calls[0][0];
+    const promptText = promptCall.contents[promptCall.contents.length - 1].text;
+    expect(promptText).not.toContain('BBVA:');
+    expect(promptText).not.toContain('BBVA addon');
+    expect(measurementHarness.shouldDisable).toHaveBeenCalledWith('BBVA');
+  });
+
+  it('records an observation per insurer that uses hints', async () => {
+    mockGemini = buildMockGemini([validGranularJson]);
+    const textExtractor = makeTextExtractor({
+      'bbva-record-fake.pdf': { text: 'BBVA SEGUROS' },
+    });
+    const templateMatcher = makeTemplateMatcher({
+      'BBVA SEGUROS': {
+        templateId: 'bbva-pyme-v1',
+        templateConfidence: 95,
+        insurer: 'BBVA',
+        promptAddon: 'BBVA addon',
+        template: null,
+      },
+    });
+    const measurementHarness = makeMeasurementHarness();
+
+    const engine = new UnifiedComparisonEngine(
+      { retryDelayMs: 0 },
+      { textExtractor, templateMatcher, measurementHarness }
+    );
+
+    await engine.compare(['bbva-record-fake.pdf'], {
+      granularComparisonSchema: true,
+      templateHintsEnabled: true,
+    });
+
+    expect(measurementHarness.recordObservation).toHaveBeenCalledWith(
+      'BBVA',
+      expect.any(Number),
+      expect.any(Number)
+    );
+  });
+
+  it('does not run template matching when templateHintsEnabled is false', async () => {
+    mockGemini = buildMockGemini([validGranularJson]);
+    const textExtractor = makeTextExtractor({
+      'bbva-fake.pdf': { text: 'BBVA SEGUROS' },
+    });
+    const templateMatcher = makeTemplateMatcher({
+      'BBVA SEGUROS': {
+        templateId: 'bbva-pyme-v1',
+        templateConfidence: 95,
+        insurer: 'BBVA',
+        promptAddon: 'BBVA addon',
+        template: null,
+      },
+    });
+    const measurementHarness = makeMeasurementHarness();
+
+    const engine = new UnifiedComparisonEngine(
+      { retryDelayMs: 0 },
+      { textExtractor, templateMatcher, measurementHarness }
+    );
+
+    await engine.compare(['bbva-fake.pdf'], {
+      granularComparisonSchema: true,
+      templateHintsEnabled: false,
+    });
+
+    expect(templateMatcher.matchTemplate).not.toHaveBeenCalled();
+    const promptCall = mockGemini.models.generateContent.mock.calls[0][0];
+    const promptText = promptCall.contents[promptCall.contents.length - 1].text;
+    expect(promptText).not.toContain('BBVA:');
+  });
+
+  it('does not run template matching on the v1 schema path', async () => {
+    mockGemini = buildMockGemini([validFlatJson]);
+    const textExtractor = makeTextExtractor({
+      'bbva-fake.pdf': { text: 'BBVA SEGUROS' },
+    });
+    const templateMatcher = makeTemplateMatcher({
+      'BBVA SEGUROS': {
+        templateId: 'bbva-pyme-v1',
+        templateConfidence: 95,
+        insurer: 'BBVA',
+        promptAddon: 'BBVA addon',
+        template: null,
+      },
+    });
+    const measurementHarness = makeMeasurementHarness();
+
+    const engine = new UnifiedComparisonEngine(
+      { retryDelayMs: 0 },
+      { textExtractor, templateMatcher, measurementHarness }
+    );
+
+    await engine.compare(['bbva-fake.pdf'], {
+      granularComparisonSchema: false,
+      templateHintsEnabled: true,
+    });
+
+    expect(templateMatcher.matchTemplate).not.toHaveBeenCalled();
+    const promptCall = mockGemini.models.generateContent.mock.calls[0][0];
+    const promptText = promptCall.contents[promptCall.contents.length - 1].text;
+    expect(promptText).toContain('EXACTAMENTE estas filas');
+    expect(promptText).not.toContain('BBVA:');
+  });
+
+  it('isolates cache entries by effective slice flags', async () => {
+    mockGemini = buildMockGemini([validGranularJson, validGranularJson]);
+    const textExtractor = makeTextExtractor({
+      'shared-fake.pdf': { text: 'BBVA SEGUROS' },
+    });
+    const templateMatcher = makeTemplateMatcher({
+      'BBVA SEGUROS': {
+        templateId: 'bbva-pyme-v1',
+        templateConfidence: 95,
+        insurer: 'BBVA',
+        promptAddon: 'BBVA addon',
+        template: null,
+      },
+    });
+    const measurementHarness = makeMeasurementHarness();
+
+    const engine = new UnifiedComparisonEngine(
+      { retryDelayMs: 0 },
+      { textExtractor, templateMatcher, measurementHarness }
+    );
+
+    const withHints = await engine.compare(['shared-fake.pdf'], {
+      granularComparisonSchema: true,
+      templateHintsEnabled: true,
+    });
+    expect(withHints.metadata.fromCache).toBe(false);
+
+    const withoutHints = await engine.compare(['shared-fake.pdf'], {
+      granularComparisonSchema: true,
+      templateHintsEnabled: false,
+    });
+    expect(withoutHints.metadata.fromCache).toBe(false);
+
+    // Different flag states must not share a cache entry.
     expect(mockGemini.models.generateContent).toHaveBeenCalledTimes(2);
   });
 });

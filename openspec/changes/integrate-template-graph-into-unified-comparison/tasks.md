@@ -42,12 +42,12 @@ Chain strategy: pending
 
 ## Phase 3: Slice 2 — Template-Aware Prompts
 
-- [ ] 3.1 RED: Add `templateHintMeasurement.test.ts` cases for p95 >15% token/latency disable trigger.
-- [ ] 3.2 RED: Add `comparisonPromptBuilder.test.ts` and `unifiedComparisonEngine.test.ts` cases for addon injection and generic fallback.
-- [ ] 3.3 GREEN: Create `server/src/services/unifiedComparison/templateHintMeasurement.ts` with Redis-backed p95 harness.
-- [ ] 3.4 GREEN: Ensure `templateRegistryService.matchTemplate` returns `insurer` and non-undefined `promptAddon`.
-- [ ] 3.5 GREEN: Add `templateAddons?: string[]` to `comparisonPromptBuilder.buildV2ComparisonPrompt`.
-- [ ] 3.6 GREEN: Match templates and inject insurer addons in `server/src/services/unifiedComparison/unifiedComparisonEngine.ts`.
+- [x] 3.1 RED: Add `templateHintMeasurement.test.ts` cases for p95 >15% token/latency disable trigger.
+- [x] 3.2 RED: Add `comparisonPromptBuilder.test.ts` and `unifiedComparisonEngine.test.ts` cases for addon injection and generic fallback.
+- [x] 3.3 GREEN: Create `server/src/services/unifiedComparison/templateHintMeasurement.ts` with Redis-backed p95 harness.
+- [x] 3.4 GREEN: Ensure `templateRegistryService.matchTemplate` returns `insurer` and non-undefined `promptAddon`.
+- [x] 3.5 GREEN: Add `templateAddons?: string[]` to `comparisonPromptBuilder.buildV2ComparisonPrompt`.
+- [x] 3.6 GREEN: Match templates and inject insurer addons in `server/src/services/unifiedComparison/unifiedComparisonEngine.ts`.
 
 ## Phase 4: Slice 3 — Learning Loop
 

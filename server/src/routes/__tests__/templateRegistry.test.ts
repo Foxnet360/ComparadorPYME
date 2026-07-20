@@ -47,6 +47,8 @@ function createMockService() {
     matchTemplate: vi.fn(async () => ({
       templateId: null,
       templateConfidence: null,
+      insurer: null,
+      promptAddon: '',
       template: null,
     })),
     validatePayload: vi.fn(() => ({ valid: true })),

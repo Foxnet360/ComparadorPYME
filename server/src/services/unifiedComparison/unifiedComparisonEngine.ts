@@ -13,6 +13,17 @@ import { coverageGraphService } from '../coverageGraphService';
 import { getCachedUnifiedResult, setCachedUnifiedResult } from '../cache/redisCache';
 import crypto from 'crypto';
 import fs from 'fs';
+import { pdfExtractor } from '../pdfExtractor';
+import {
+  type TemplateMatchInput,
+  type TemplateMatchResult,
+  type PageTextItems,
+  templateRegistryService,
+} from '../templateRegistryService';
+import {
+  templateHintMeasurementHarness,
+  type TemplateHintMeasurementHarness,
+} from './templateHintMeasurement';
 
 export class UnifiedComparisonError extends Error {
   constructor(
@@ -62,21 +73,53 @@ export interface CompareOptions {
   templateHintsEnabled?: boolean;
 }
 
+export interface TextExtractor {
+  extractTextFromPdf(filePath: string): Promise<{ text: string; pageTextItems?: PageTextItems[] }>;
+}
+
+export interface TemplateMatcher {
+  matchTemplate(input: TemplateMatchInput): Promise<TemplateMatchResult>;
+}
+
+export interface UnifiedComparisonEngineDependencies {
+  textExtractor: TextExtractor;
+  templateMatcher: TemplateMatcher;
+  measurementHarness: TemplateHintMeasurementHarness;
+}
+
 export class UnifiedComparisonEngine {
   private config: ComparisonEngineConfig;
+  private deps: UnifiedComparisonEngineDependencies;
 
-  constructor(config: Partial<ComparisonEngineConfig> = {}) {
+  constructor(
+    config: Partial<ComparisonEngineConfig> = {},
+    dependencies: Partial<UnifiedComparisonEngineDependencies> = {}
+  ) {
     this.config = { ...DEFAULT_CONFIG, ...config };
+    this.deps = {
+      textExtractor: dependencies.textExtractor ?? pdfExtractor,
+      templateMatcher: dependencies.templateMatcher ?? templateRegistryService,
+      measurementHarness: dependencies.measurementHarness ?? templateHintMeasurementHarness,
+    };
   }
 
   /**
    * Generate a hash from file paths and their contents for caching.
    * The schema namespace is included so that v1 and v2 results do not share
-   * the same cache entry when the granular schema flag is toggled.
+   * the same cache entry when the granular schema flag is toggled. Slice flags
+   * (graph/template hints) are also mixed in so flag-blind cache entries cannot
+   * leak graph-enriched payloads to out-of-rollout users.
    */
-  private generateFileHash(pdfPaths: string[], schemaNamespace: string): string {
+  private generateFileHash(
+    pdfPaths: string[],
+    schemaNamespace: string,
+    graphEnabled: boolean,
+    templateHintsEnabled: boolean
+  ): string {
     const hash = crypto.createHash('md5');
     hash.update(schemaNamespace);
+    hash.update(graphEnabled ? 'g1' : 'g0');
+    hash.update(templateHintsEnabled ? 't1' : 't0');
     for (const path of pdfPaths.sort()) {
       try {
         const stats = fs.statSync(path);
@@ -100,16 +143,23 @@ export class UnifiedComparisonEngine {
     const granularEnabled =
       options?.granularComparisonSchema ??
       unifiedComparisonFlag.isGranularComparisonSchemaEnabled();
+    const graphEnabled = granularEnabled && (options?.graphEnabled ?? false);
+    const templateHintsEnabled = granularEnabled && (options?.templateHintsEnabled ?? false);
 
     console.log(
       `🔍 [UnifiedComparison] Starting comparison for ${pdfPaths.length} quotes [${correlationId}]`
     );
     console.log(
-      `🚩 [UnifiedComparison] granularComparisonSchema=${granularEnabled} [${correlationId}]`
+      `🚩 [UnifiedComparison] granularComparisonSchema=${granularEnabled} graphEnabled=${graphEnabled} templateHintsEnabled=${templateHintsEnabled} [${correlationId}]`
     );
 
     // Check cache first
-    const fileHash = this.generateFileHash(pdfPaths, granularEnabled ? 'v2' : 'v1');
+    const fileHash = this.generateFileHash(
+      pdfPaths,
+      granularEnabled ? 'v2' : 'v1',
+      graphEnabled,
+      templateHintsEnabled
+    );
     try {
       const cached = await getCachedUnifiedResult<FlatComparisonResult>(fileHash);
       if (cached) {
@@ -125,39 +175,72 @@ export class UnifiedComparisonEngine {
     }
 
     try {
-      // 1. Upload PDFs to Gemini
+      // 1. Match templates and collect insurer addons before the LLM call.
+      let templateAddons: string[] = [];
+      let matchedInsurers: string[] = [];
+      if (templateHintsEnabled) {
+        const matchResult = await this.matchTemplates(pdfPaths, correlationId);
+        templateAddons = matchResult.addons;
+        matchedInsurers = matchResult.insurers;
+        console.log(
+          `🧩 [UnifiedComparison] Template hints active: ${matchedInsurers.length} insurer(s) matched [${correlationId}]`
+        );
+      }
+
+      // 2. Upload PDFs to Gemini
       uploadedFiles = await this.uploadFiles(pdfPaths);
       console.log(
         `📤 [UnifiedComparison] Uploaded ${uploadedFiles.length} files [${correlationId}]`
       );
 
-      // 2. Build prompt
+      // 3. Build prompt
       const promptContext = {
         insurerCount: pdfPaths.length,
         hasClauses: false,
       };
       const prompt = granularEnabled
-        ? comparisonPromptBuilder.buildV2ComparisonPrompt(promptContext)
+        ? comparisonPromptBuilder.buildV2ComparisonPrompt(promptContext, templateAddons)
         : comparisonPromptBuilder.buildComparisonPrompt(promptContext);
 
-      // 3. Call Gemini with structured output
+      // 4. Call Gemini with structured output
+      const geminiStartTime = Date.now();
       const result = await this.callGemini(uploadedFiles, prompt, correlationId);
+      const geminiLatencyMs = Date.now() - geminiStartTime;
 
-      // 4. Parse and validate response using the appropriate parser
+      // 5. Parse and validate response using the appropriate parser
       const parsedResult = await this.parseAndValidateResult(
         result,
         pdfPaths.length,
         correlationId,
         granularEnabled,
-        options?.graphEnabled
+        graphEnabled
       );
 
-      // 5. Add runtime metadata
+      // 6. Add runtime metadata
       parsedResult.metadata.processingTimeMs = Date.now() - startTime;
       parsedResult.metadata.pdfCount = pdfPaths.length;
       parsedResult.metadata.fromCache = false;
 
-      // 6. Cache the result
+      // 7. Record per-insurer cost/latency observations for hints that were used.
+      if (templateHintsEnabled && matchedInsurers.length > 0) {
+        const tokenCount = this.estimatePromptTokens(prompt);
+        for (const insurer of matchedInsurers) {
+          try {
+            await this.deps.measurementHarness.recordObservation(
+              insurer,
+              tokenCount,
+              geminiLatencyMs
+            );
+          } catch (error) {
+            console.warn(
+              `⚠️ [UnifiedComparison] Failed to record template hint observation for ${insurer} [${correlationId}]:`,
+              error
+            );
+          }
+        }
+      }
+
+      // 8. Cache the result
       try {
         await setCachedUnifiedResult<FlatComparisonResult>(fileHash, parsedResult);
         console.log(
@@ -208,6 +291,82 @@ export class UnifiedComparisonEngine {
         }
       }
     }
+  }
+
+  /**
+   * Extract text from each PDF and match against the template registry.
+   * Returns a list of labeled insurer addons to append to the v2 prompt and
+   * the list of insurers whose hints were actually used (for measurement).
+   * Fail-open: extraction or matching errors are logged and do not block the
+   * request; the caller falls back to the generic prompt.
+   */
+  private async matchTemplates(
+    pdfPaths: string[],
+    correlationId: string
+  ): Promise<{ addons: string[]; insurers: string[] }> {
+    const addons: string[] = [];
+    const insurers: string[] = [];
+    const seenInsurers = new Set<string>();
+
+    for (const path of pdfPaths) {
+      let text: string;
+      let pages: PageTextItems[] | undefined;
+      try {
+        const extraction = await this.deps.textExtractor.extractTextFromPdf(path);
+        text = extraction.text;
+        pages = extraction.pageTextItems;
+      } catch (error) {
+        console.warn(
+          `⚠️ [UnifiedComparison] Failed to extract PDF text for template matching ${path} [${correlationId}]:`,
+          error instanceof Error ? error.message : String(error)
+        );
+        continue;
+      }
+
+      try {
+        const match = await this.deps.templateMatcher.matchTemplate({
+          text,
+          pages,
+          domain: 'pyme',
+        });
+        if (!match.insurer || !match.promptAddon) {
+          continue;
+        }
+
+        const normalizedInsurer = match.insurer.toUpperCase();
+        if (seenInsurers.has(normalizedInsurer)) {
+          continue;
+        }
+        seenInsurers.add(normalizedInsurer);
+
+        const disableCheck = await this.deps.measurementHarness.shouldDisable(normalizedInsurer);
+        if (disableCheck.disabled) {
+          console.log(
+            `🚫 [UnifiedComparison] Template hints disabled for ${normalizedInsurer} (${disableCheck.reason}) [${correlationId}]`
+          );
+          continue;
+        }
+
+        addons.push(`${match.insurer}:\n${match.promptAddon}`);
+        insurers.push(normalizedInsurer);
+      } catch (error) {
+        console.warn(
+          `⚠️ [UnifiedComparison] Template matching failed for ${path} [${correlationId}]:`,
+          error instanceof Error ? error.message : String(error)
+        );
+      }
+    }
+
+    return { addons, insurers };
+  }
+
+  /**
+   * Rough token estimation for prompt cost guardrails.
+   * Uses the same heuristic as chatService (chars / 4) so measurements are
+   * consistent with the rest of the codebase.
+   */
+  private estimatePromptTokens(prompt: string): number {
+    return Math.ceil(prompt.length / 4);
   }
 
   /**

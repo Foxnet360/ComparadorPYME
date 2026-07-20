@@ -121,13 +121,13 @@ ${context.hasClauses ? 'También se proporcionan clausulados para validación; �
    * add, or rename rows. The response must be JSON with insurers, rows, and
    * optional section metadata.
    */
-  buildV2ComparisonPrompt(context: PromptContext): string {
+  buildV2ComparisonPrompt(context: PromptContext, templateAddons?: string[]): string {
     const sectionList = GRANULAR_SECTIONS.map((section, sIdx) => {
       const rows = section.rows.map((row, rIdx) => `    ${rIdx + 1}. ${row}`).join('\n');
       return `  ${sIdx + 1}. ${section.section}:\n${rows}`;
     }).join('\n\n');
 
-    return `Eres un analista de seguros PYME en Colombia. He subido ${context.insurerCount} cotizaciones del mismo riesgo.
+    let prompt = `Eres un analista de seguros PYME en Colombia. He subido ${context.insurerCount} cotizaciones del mismo riesgo.
 
 Genera una tabla comparativa con UNA columna por aseguradora y filas agrupadas por sección. A continuación te sugiero filas granulares, pero PUEDES agregar o renombrar filas según lo que aparezca textualmente en cada cotización. No omitas una fila si la información existe en al menos una cotización.
 
@@ -177,6 +177,12 @@ Reglas Generales:
 }
 
 ${context.hasClauses ? 'También se proporcionan clausulados para validación; úsalos solo si una fila es ambigua, pero conserva el texto original de la cotización.' : ''}`;
+
+    if (templateAddons && templateAddons.length > 0) {
+      prompt += `\n\n--- Insurer-specific extraction hints ---\n\n${templateAddons.join('\n\n')}`;
+    }
+
+    return prompt;
   }
 
   /**

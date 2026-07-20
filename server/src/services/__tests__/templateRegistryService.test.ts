@@ -74,6 +74,8 @@ describe('templateRegistryService', () => {
       expect(result.templateId).toBe('bbva-pyme-v1');
       expect(result.templateConfidence).toBeGreaterThanOrEqual(90);
       expect(result.template?.insurer).toBe('BBVA');
+      expect(result.insurer).toBe('BBVA');
+      expect(result.promptAddon).toBeDefined();
     });
 
     it('detects the SBS template from text markers', async () => {
@@ -85,6 +87,8 @@ describe('templateRegistryService', () => {
       expect(result.templateId).toBe('sbs-pyme-v1');
       expect(result.templateConfidence).toBeGreaterThanOrEqual(90);
       expect(result.template?.insurer).toBe('SBS');
+      expect(result.insurer).toBe('SBS');
+      expect(result.promptAddon).toBeDefined();
     });
 
     it('detects the MAPFRE template from text markers', async () => {
@@ -96,6 +100,8 @@ describe('templateRegistryService', () => {
       expect(result.templateId).toBe('mapfre-pyme-v1');
       expect(result.templateConfidence).toBeGreaterThanOrEqual(90);
       expect(result.template?.insurer).toBe('MAPFRE');
+      expect(result.insurer).toBe('MAPFRE');
+      expect(result.promptAddon).toBeDefined();
     });
 
     it('returns null when no template matches', async () => {
@@ -107,6 +113,8 @@ describe('templateRegistryService', () => {
       expect(result.templateId).toBeNull();
       expect(result.templateConfidence).toBeNull();
       expect(result.template).toBeNull();
+      expect(result.insurer).toBeNull();
+      expect(result.promptAddon).toBe('');
     });
 
     it('uses layout markers to boost confidence', async () => {
