@@ -207,16 +207,22 @@ export const learningEngine = {
       // 1. Update thesaurus
       await this.updateThesaurus(correction);
 
-      // 2. Route coverage_mapping corrections directly to the graph, bypassing
-      // the legacy graphLearningEnabled flag gate. Other correction types still
-      // respect the flag inside updateGraph.
+      // 2. Route coverage_mapping corrections to the graph only when graph
+      // learning is explicitly enabled. This preserves the global kill-switch
+      // for the unauthenticated /api/analysis/correction endpoint.
       if (correction.correctionType === 'coverage_mapping') {
-        const raw = normalizeText(correction.rawName, true).replace(/\s+/g, ' ').trim();
-        const canonical = correction.userCorrection.trim();
-        const insurer = correction.insurerName || '';
-        if (raw && canonical) {
-          await coverageGraphService.learnCorrection(raw, canonical, insurer, 'pyme');
-          console.log(`🌐 [LearningEngine] Graph learned: "${raw}" → "${canonical}"`);
+        if (featureFlags.isEnabled('graphLearningEnabled')) {
+          const raw = normalizeText(correction.rawName, true).replace(/\s+/g, ' ').trim();
+          const canonical = correction.userCorrection.trim();
+          const insurer = correction.insurerName || '';
+          if (raw && canonical) {
+            await coverageGraphService.learnCorrection(raw, canonical, insurer, 'pyme');
+            console.log(`🌐 [LearningEngine] Graph learned: "${raw}" → "${canonical}"`);
+          }
+        } else {
+          console.log(
+            `🌐 [LearningEngine] Skipping graph learning for coverage_mapping because graphLearningEnabled is disabled`
+          );
         }
       }
 

@@ -32,7 +32,7 @@ vi.mock('../coverageGraphService', () => ({
 
 vi.mock('../../config/featureFlags', () => ({
   featureFlags: {
-    isEnabled: vi.fn(() => false),
+    isEnabled: vi.fn(() => true),
   },
 }));
 
@@ -104,7 +104,7 @@ describe('learningEngine embedding retrieval and fallback', () => {
 });
 
 describe('learningEngine - applyCorrection', () => {
-  it('routes coverage_mapping corrections directly to the graph even when graphLearningEnabled is false', async () => {
+  it('routes coverage_mapping corrections to the graph when graphLearningEnabled is true', async () => {
     const { coverageGraphService } = await import('../coverageGraphService');
 
     await learningEngine.applyCorrection({
