@@ -159,7 +159,7 @@ describe('learningEngine graph integration', () => {
     );
   });
 
-  it('skips graph update when graph learning flag is disabled', async () => {
+  it('writes learned graph edge for coverage_mapping correction even when graphLearningEnabled is false', async () => {
     mockIsEnabled.mockReturnValue(false);
 
     const correction: UserCorrection = {
@@ -172,7 +172,12 @@ describe('learningEngine graph integration', () => {
 
     await learningEngine.applyCorrection(correction);
 
-    expect(mockLearnCorrection).not.toHaveBeenCalled();
+    expect(mockLearnCorrection).toHaveBeenCalledWith(
+      'amparo basico xyz',
+      'incendio',
+      'SBS',
+      'pyme'
+    );
     expect(mockAddEdge).not.toHaveBeenCalled();
   });
 

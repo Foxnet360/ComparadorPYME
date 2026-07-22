@@ -475,6 +475,15 @@ describe('coverageGraphService', () => {
       expect(row.from_node).toBe('dano material global');
       expect(row.to_node).toBe('incendio');
       expect(row.correction_count).toBe(1);
+      expect(row.weight).toBeGreaterThanOrEqual(0.7);
+    });
+
+    it('invalidates both graph query and deductible caches after learning', async () => {
+      await service.learnCorrection('Daño Material Global', 'incendio');
+
+      const deletedKeys = fakeCache.del.mock.calls.map((call) => call[0]);
+      expect(deletedKeys.some((key) => key.startsWith('graph:query:'))).toBe(true);
+      expect(deletedKeys.some((key) => key.startsWith('graph:deductible:'))).toBe(true);
     });
 
     it('increments existing correction count and recalculates weight', async () => {
@@ -537,7 +546,9 @@ describe('coverageGraphService', () => {
 
       await service.addEdge(edge);
 
-      expect(fakeCache.del).toHaveBeenCalled();
+      const deletedKeys = fakeCache.del.mock.calls.map((call) => call[0]);
+      expect(deletedKeys.some((key) => key.startsWith('graph:query:'))).toBe(true);
+      expect(deletedKeys.some((key) => key.startsWith('graph:deductible:'))).toBe(true);
     });
 
     it('rejects invalid edge types', async () => {

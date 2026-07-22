@@ -433,8 +433,10 @@ export function createCoverageGraphService(
     insurer?: string,
     domain?: string
   ): Promise<void> {
-    const key = graphCacheKey(rawName, insurer ?? '', domain ?? 'pyme');
-    await cache.del(key);
+    const queryKey = graphCacheKey(rawName, insurer ?? '', domain ?? 'pyme');
+    const deductibleKey = deductibleCacheKey(rawName, insurer ?? '', domain ?? 'pyme');
+    await cache.del(queryKey);
+    await cache.del(deductibleKey);
   }
 
   return {
@@ -572,6 +574,10 @@ export function createCoverageGraphService(
 
       if (error) {
         throw new Error(`Failed to add graph edges: ${error.message}`);
+      }
+
+      for (const edge of edges) {
+        await invalidateCache(edge.from, edge.insurer, edge.domain);
       }
     },
 
