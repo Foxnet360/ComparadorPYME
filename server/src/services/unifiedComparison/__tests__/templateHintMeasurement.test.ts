@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   RedisTemplateHintMeasurementHarness,
+  createTemplateHintMeasurementHarness,
   type RedisClientLike,
 } from '../templateHintMeasurement';
 
@@ -84,6 +85,52 @@ describe('RedisTemplateHintMeasurementHarness', () => {
     expect(result.reason).toBeUndefined();
   });
 
+  it('does not disable on a single outlier with N=1', async () => {
+    await harness.setBaseline('BBVA', { tokens: 1000, latencyMs: 8000 });
+    await harness.recordObservation('BBVA', 9999, 99999);
+
+    const result = await harness.shouldDisable('BBVA');
+    expect(result.disabled).toBe(false);
+    expect(result.reason).toBeUndefined();
+  });
+
+  it('does not disable with fewer than 10 observations even if all are outliers', async () => {
+    await harness.setBaseline('BBVA', { tokens: 1000, latencyMs: 8000 });
+
+    for (let i = 0; i < 9; i++) {
+      await harness.recordObservation('BBVA', 1300 + i, 8000 + i);
+    }
+
+    const result = await harness.shouldDisable('BBVA');
+    expect(result.disabled).toBe(false);
+    expect(result.reason).toBeUndefined();
+  });
+
+  it('disables once the minimum sample size of 10 is reached', async () => {
+    await harness.setBaseline('BBVA', { tokens: 1000, latencyMs: 8000 });
+
+    for (let i = 0; i < 10; i++) {
+      await harness.recordObservation('BBVA', 1300 + i, 8000 + i);
+    }
+
+    const result = await harness.shouldDisable('BBVA');
+    expect(result.disabled).toBe(true);
+    expect(result.reason).toBe('token_increase');
+  });
+
+  it('does not treat the maximum observation as the p95 for small N', async () => {
+    await harness.setBaseline('BBVA', { tokens: 1000, latencyMs: 8000 });
+
+    for (let i = 0; i < 9; i++) {
+      await harness.recordObservation('BBVA', 1000, 8000 + i);
+    }
+    await harness.recordObservation('BBVA', 1200, 8010);
+
+    const result = await harness.shouldDisable('BBVA');
+    expect(result.disabled).toBe(false);
+    expect(result.reason).toBeUndefined();
+  });
+
   it('records observations in Redis', async () => {
     await harness.setBaseline('BBVA', { tokens: 1000, latencyMs: 8000 });
     await harness.recordObservation('BBVA', 1100, 8500);
@@ -133,7 +180,7 @@ describe('RedisTemplateHintMeasurementHarness', () => {
   it('caches the disable decision in memory for the configured TTL', async () => {
     await harness.setBaseline('BBVA', { tokens: 1000, latencyMs: 8000 });
     for (let i = 0; i < 20; i++) {
-      await harness.recordObservation('BBVA', 1300, 8000);
+      await harness.recordObservation('BBVA', 1300, 8000 + i);
     }
 
     const first = await harness.shouldDisable('BBVA');
@@ -144,6 +191,25 @@ describe('RedisTemplateHintMeasurementHarness', () => {
 
     expect(redis.hgetall).toHaveBeenCalledTimes(1);
     expect(redis.zrangebyscore).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-evaluates after setBaseline invalidates the cached disable decision', async () => {
+    await harness.setBaseline('BBVA', { tokens: 1000, latencyMs: 8000 });
+    for (let i = 0; i < 20; i++) {
+      await harness.recordObservation('BBVA', 1300, 8000 + i);
+    }
+
+    const first = await harness.shouldDisable('BBVA');
+    expect(first.disabled).toBe(true);
+
+    await harness.setBaseline('BBVA', { tokens: 2000, latencyMs: 8000 });
+
+    const second = await harness.shouldDisable('BBVA');
+    expect(second.disabled).toBe(false);
+    expect(second.reason).toBeUndefined();
+
+    expect(redis.hgetall).toHaveBeenCalledTimes(2);
+    expect(redis.zrangebyscore).toHaveBeenCalledTimes(2);
   });
 
   it('returns disabled=false when Redis is unavailable (fail-open)', async () => {
@@ -158,13 +224,25 @@ describe('RedisTemplateHintMeasurementHarness', () => {
     expect(result.disabled).toBe(false);
   });
 
+  it('uses the resilient redisCache wrapper as the default client', async () => {
+    const defaultHarness = createTemplateHintMeasurementHarness({ disableTtlMs: 60_000 });
+    await defaultHarness.setBaseline('BBVA', { tokens: 1000, latencyMs: 8000 });
+    for (let i = 0; i < 20; i++) {
+      await defaultHarness.recordObservation('BBVA', 1300, 8000 + i);
+    }
+
+    const result = await defaultHarness.shouldDisable('BBVA');
+    expect(result.disabled).toBe(true);
+    expect(result.reason).toBe('token_increase');
+  });
+
   it('isolates insurers so one insurer does not disable another', async () => {
     await harness.setBaseline('BBVA', { tokens: 1000, latencyMs: 8000 });
     await harness.setBaseline('SBS', { tokens: 1000, latencyMs: 8000 });
 
     for (let i = 0; i < 20; i++) {
-      await harness.recordObservation('BBVA', 1300, 8000);
-      await harness.recordObservation('SBS', 1000, 8000);
+      await harness.recordObservation('BBVA', 1300, 8000 + i);
+      await harness.recordObservation('SBS', 1000, 8000 + i);
     }
 
     const bbva = await harness.shouldDisable('BBVA');
@@ -179,7 +257,7 @@ describe('RedisTemplateHintMeasurementHarness', () => {
     await harness.setBaseline('BBVA', { tokens: 1000, latencyMs: 8000 });
 
     for (let i = 0; i < 20; i++) {
-      await harness.recordObservation('BBVA', 1300, 8000);
+      await harness.recordObservation('BBVA', 1300, 8000 + i);
     }
 
     const result = await harness.shouldDisable('BBVA');

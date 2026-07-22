@@ -73,17 +73,22 @@ setInterval(async () => {
 // ====== In-Memory Cache with TTL and LRU ======
 class MemoryCache {
   private cache = new Map<string, { value: string; expiresAt: number }>();
+  private hashes = new Map<string, Map<string, string>>();
+  private zsets = new Map<string, Array<{ score: number; member: string }>>();
+  private keyExpiresAt = new Map<string, number>();
   private maxSize = 10000;
   private accessOrder = new Map<string, number>(); // For LRU tracking
   private accessCounter = 0;
 
   get(key: string): string | null {
+    this.checkExpired(key);
     const item = this.cache.get(key);
     if (!item) return null;
 
     if (Date.now() > item.expiresAt) {
       this.cache.delete(key);
       this.accessOrder.delete(key);
+      this.keyExpiresAt.delete(key);
       return null;
     }
 
@@ -107,12 +112,89 @@ class MemoryCache {
 
   del(key: string): void {
     this.cache.delete(key);
+    this.hashes.delete(key);
+    this.zsets.delete(key);
     this.accessOrder.delete(key);
+    this.keyExpiresAt.delete(key);
   }
 
   keys(pattern: string): string[] {
     const regex = new RegExp(pattern.replace('*', '.*'));
     return Array.from(this.cache.keys()).filter((k) => regex.test(k));
+  }
+
+  hset(key: string, fields: Record<string, string | number>): number {
+    this.checkExpired(key);
+    if (!this.hashes.has(key)) this.hashes.set(key, new Map());
+    const h = this.hashes.get(key)!;
+    let added = 0;
+    for (const [field, value] of Object.entries(fields)) {
+      const strValue = String(value);
+      if (!h.has(field)) added++;
+      h.set(field, strValue);
+    }
+    this.accessCounter++;
+    this.accessOrder.set(key, this.accessCounter);
+    return added;
+  }
+
+  hgetall(key: string): Record<string, string> {
+    this.checkExpired(key);
+    const h = this.hashes.get(key);
+    if (!h) return {};
+    const result: Record<string, string> = {};
+    for (const [field, value] of h.entries()) {
+      result[field] = value;
+    }
+    this.accessCounter++;
+    this.accessOrder.set(key, this.accessCounter);
+    return result;
+  }
+
+  zadd(key: string, score: number, member: string): number {
+    this.checkExpired(key);
+    if (!this.zsets.has(key)) this.zsets.set(key, []);
+    const list = this.zsets.get(key)!;
+    const existing = list.find((item) => item.member === member);
+    if (existing) {
+      existing.score = score;
+      return 0;
+    }
+    list.push({ score, member });
+    this.accessCounter++;
+    this.accessOrder.set(key, this.accessCounter);
+    return 1;
+  }
+
+  zrangebyscore(key: string, min: number | string, max: number | string): string[] {
+    this.checkExpired(key);
+    const list = this.zsets.get(key) ?? [];
+    const minNum = Number(min);
+    const maxNum = Number(max);
+    return list
+      .filter((item) => item.score >= minNum && item.score <= maxNum)
+      .map((item) => item.member);
+  }
+
+  pexpire(key: string, milliseconds: number): number {
+    this.checkExpired(key);
+    this.keyExpiresAt.set(key, Date.now() + milliseconds);
+    this.accessCounter++;
+    this.accessOrder.set(key, this.accessCounter);
+    return 1;
+  }
+
+  private checkExpired(key: string): boolean {
+    const expiresAt = this.keyExpiresAt.get(key);
+    if (expiresAt && Date.now() > expiresAt) {
+      this.cache.delete(key);
+      this.hashes.delete(key);
+      this.zsets.delete(key);
+      this.accessOrder.delete(key);
+      this.keyExpiresAt.delete(key);
+      return true;
+    }
+    return false;
   }
 
   private evictLRU(): void {
@@ -141,6 +223,17 @@ class MemoryCache {
       if (now > item.expiresAt) {
         this.cache.delete(key);
         this.accessOrder.delete(key);
+        this.keyExpiresAt.delete(key);
+        cleaned++;
+      }
+    }
+    for (const [key, expiresAt] of this.keyExpiresAt.entries()) {
+      if (now > expiresAt) {
+        this.cache.delete(key);
+        this.hashes.delete(key);
+        this.zsets.delete(key);
+        this.accessOrder.delete(key);
+        this.keyExpiresAt.delete(key);
         cleaned++;
       }
     }
@@ -395,6 +488,69 @@ export async function getCacheKeys(pattern: string): Promise<string[]> {
     }
   }
   return memoryCache.keys(pattern);
+}
+
+// ====== Template Hint Measurement Cache Operations ======
+export async function hsetRedisCache(
+  key: string,
+  fields: Record<string, string | number>
+): Promise<number> {
+  if (redisAvailable) {
+    try {
+      return await redis.hset(key, fields);
+    } catch {
+      // Redis failed, fall back to memory
+    }
+  }
+  return memoryCache.hset(key, fields);
+}
+
+export async function hgetallRedisCache(key: string): Promise<Record<string, string>> {
+  if (redisAvailable) {
+    try {
+      return await redis.hgetall(key);
+    } catch {
+      // Redis failed, fall back to memory
+    }
+  }
+  return memoryCache.hgetall(key);
+}
+
+export async function zaddRedisCache(key: string, score: number, member: string): Promise<number> {
+  if (redisAvailable) {
+    try {
+      return await redis.zadd(key, score, member);
+    } catch {
+      // Redis failed, fall back to memory
+    }
+  }
+  return memoryCache.zadd(key, score, member);
+}
+
+export async function zrangebyscoreRedisCache(
+  key: string,
+  min: number | string,
+  max: number | string
+): Promise<string[]> {
+  if (redisAvailable) {
+    try {
+      return await redis.zrangebyscore(key, min, max);
+    } catch {
+      // Redis failed, fall back to memory
+    }
+  }
+  return memoryCache.zrangebyscore(key, min, max);
+}
+
+export async function pexpireRedisCache(key: string, milliseconds: number): Promise<number> {
+  if (redisAvailable) {
+    try {
+      return await redis.pexpire(key, milliseconds);
+    } catch {
+      // Redis failed, fall back to memory
+    }
+  }
+  return memoryCache.pexpire(key, milliseconds);
 }
 
 export function isRedisAvailable(): boolean {

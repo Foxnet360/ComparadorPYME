@@ -7,7 +7,13 @@
  * TTL. All Redis failures are fail-open: the harness never blocks a request.
  */
 
-import redis from '../cache/redisCache';
+import {
+  hsetRedisCache,
+  hgetallRedisCache,
+  zaddRedisCache,
+  zrangebyscoreRedisCache,
+  pexpireRedisCache,
+} from '../cache/redisCache';
 import {
   createStructuredLogger,
   globalMetrics,
@@ -54,9 +60,18 @@ interface DisableEntry {
 const DEFAULT_WINDOW_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_OBSERVATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const DEFAULT_DISABLE_TTL_MS = 60 * 60 * 1000;
+const MIN_SAMPLE_SIZE = 10;
 
 const BASELINE_KEY = (insurer: string) => `template_hint_baseline:${insurer.toUpperCase()}`;
 const OBSERVATIONS_KEY = (insurer: string) => `template_hint_obs:${insurer.toUpperCase()}`;
+
+const redisCacheClient: RedisClientLike = {
+  hset: hsetRedisCache,
+  hgetall: hgetallRedisCache,
+  zadd: zaddRedisCache,
+  zrangebyscore: zrangebyscoreRedisCache,
+  pexpire: pexpireRedisCache,
+};
 
 export class RedisTemplateHintMeasurementHarness implements TemplateHintMeasurementHarness {
   private redisClient: RedisClientLike;
@@ -68,7 +83,7 @@ export class RedisTemplateHintMeasurementHarness implements TemplateHintMeasurem
   private metrics: MetricCollector;
 
   constructor(options: RedisTemplateHintMeasurementHarnessOptions = {}) {
-    this.redisClient = options.redisClient ?? redis;
+    this.redisClient = options.redisClient ?? redisCacheClient;
     this.windowMs = options.windowMs ?? DEFAULT_WINDOW_MS;
     this.observationTtlMs = options.observationTtlMs ?? DEFAULT_OBSERVATION_TTL_MS;
     this.disableTtlMs = options.disableTtlMs ?? DEFAULT_DISABLE_TTL_MS;
@@ -77,14 +92,18 @@ export class RedisTemplateHintMeasurementHarness implements TemplateHintMeasurem
   }
 
   async setBaseline(insurer: string, baseline: Baseline): Promise<void> {
+    const normalizedInsurer = insurer.toUpperCase();
+    // A corrected baseline must re-enable hints immediately.
+    this.disableCache.delete(normalizedInsurer);
+
     try {
-      await this.redisClient.hset(BASELINE_KEY(insurer), {
+      await this.redisClient.hset(BASELINE_KEY(normalizedInsurer), {
         tokens: baseline.tokens,
         latencyMs: baseline.latencyMs,
       });
     } catch (error) {
       this.logger.warn('baseline_write_failed', 'Failed to write template hint baseline', {
-        insurer,
+        insurer: normalizedInsurer,
         error: error instanceof Error ? error.message : String(error),
       });
       // fail-open: do not block requests because baseline could not be stored
@@ -157,6 +176,10 @@ export class RedisTemplateHintMeasurementHarness implements TemplateHintMeasurem
       }
 
       if (tokenValues.length === 0 || latencyValues.length === 0) {
+        return { disabled: false };
+      }
+
+      if (tokenValues.length < MIN_SAMPLE_SIZE || latencyValues.length < MIN_SAMPLE_SIZE) {
         return { disabled: false };
       }
 
@@ -233,8 +256,19 @@ export class RedisTemplateHintMeasurementHarness implements TemplateHintMeasurem
 
   private percentile(values: number[], p: number): number {
     const sorted = [...values].sort((a, b) => a - b);
-    const index = Math.ceil(p * sorted.length) - 1;
-    return sorted[Math.max(0, index)];
+    if (sorted.length === 1) {
+      return sorted[0];
+    }
+
+    const rank = p * (sorted.length - 1);
+    const lowerIndex = Math.floor(rank);
+    const upperIndex = Math.ceil(rank);
+    const fraction = rank - lowerIndex;
+
+    const lower = sorted[lowerIndex];
+    const upper = sorted[upperIndex];
+
+    return lower + fraction * (upper - lower);
   }
 }
 
