@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { matrixRowsToComparisonReport } from '../analysisController';
+import { matrixRowsToComparisonReport, resolveAnalysisUserId } from '../analysisController';
 import { FINANCIAL_SECTION_ID } from '../../services/unifiedComparison/matrixTransformer';
 import { MatrixRow } from '../../types';
+import { AuthenticatedRequest } from '../../middleware/auth';
 
 vi.mock('../../services/semanticMatcher', () => ({
   semanticMatcher: {
@@ -317,5 +318,25 @@ describe('analysisController - matrixRowsToComparisonReport', () => {
     expect(quote.quoteAudit!.deductibleRisks.length).toBeGreaterThan(0);
     expect(quote.quoteAudit!.missingCoverages.length).toBeGreaterThan(0);
     expect(quote.quoteAudit!.summary).toContain('MAPFRE');
+  });
+});
+
+describe('analysisController - resolveAnalysisUserId', () => {
+  it('returns undefined for unauthenticated requests so anonymous traffic is not bucketed to hash 75', () => {
+    const req = { user: undefined, body: {} } as AuthenticatedRequest;
+
+    expect(resolveAnalysisUserId(req)).toBeUndefined();
+  });
+
+  it('returns the authenticated user id when present', () => {
+    const req = { user: { id: 'auth-user-123' }, body: {} } as AuthenticatedRequest;
+
+    expect(resolveAnalysisUserId(req)).toBe('auth-user-123');
+  });
+
+  it('ignores body userId on the optional-auth /api/analyze endpoint', () => {
+    const req = { user: undefined, body: { userId: 'body-user-123' } } as AuthenticatedRequest;
+
+    expect(resolveAnalysisUserId(req)).toBeUndefined();
   });
 });
