@@ -520,6 +520,81 @@ describe('UnifiedComparisonEngine (template-aware prompts)', () => {
     );
   });
 
+  it('resolves compare() even when recordObservation never settles', async () => {
+    mockGemini = buildMockGemini([validGranularJson]);
+    const textExtractor = makeTextExtractor({
+      'bbva-hanging-fake.pdf': { text: 'BBVA SEGUROS' },
+    });
+    const templateMatcher = makeTemplateMatcher({
+      'BBVA SEGUROS': {
+        templateId: 'bbva-pyme-v1',
+        templateConfidence: 95,
+        insurer: 'BBVA',
+        promptAddon: 'BBVA addon',
+        template: null,
+      },
+    });
+    const measurementHarness = makeMeasurementHarness();
+    measurementHarness.recordObservation = vi.fn(() => new Promise(() => {}));
+
+    const engine = new UnifiedComparisonEngine(
+      { retryDelayMs: 0 },
+      { textExtractor, templateMatcher, measurementHarness }
+    );
+
+    const result = await engine.compare(['bbva-hanging-fake.pdf'], {
+      granularComparisonSchema: true,
+      templateHintsEnabled: true,
+    });
+
+    expect(result.insurers).toEqual(['MAPFRE', 'CHUBB']);
+    expect(measurementHarness.recordObservation).toHaveBeenCalledWith(
+      'BBVA',
+      expect.any(Number),
+      expect.any(Number)
+    );
+  });
+
+  it('does not fail or delay compare() when recordObservation rejects', async () => {
+    mockGemini = buildMockGemini([validGranularJson]);
+    const textExtractor = makeTextExtractor({
+      'bbva-reject-fake.pdf': { text: 'BBVA SEGUROS' },
+    });
+    const templateMatcher = makeTemplateMatcher({
+      'BBVA SEGUROS': {
+        templateId: 'bbva-pyme-v1',
+        templateConfidence: 95,
+        insurer: 'BBVA',
+        promptAddon: 'BBVA addon',
+        template: null,
+      },
+    });
+    const measurementHarness = makeMeasurementHarness();
+    measurementHarness.recordObservation = vi.fn(async () => {
+      throw new Error('Redis unavailable');
+    });
+
+    const engine = new UnifiedComparisonEngine(
+      { retryDelayMs: 0 },
+      { textExtractor, templateMatcher, measurementHarness }
+    );
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const result = await engine.compare(['bbva-reject-fake.pdf'], {
+      granularComparisonSchema: true,
+      templateHintsEnabled: true,
+    });
+
+    expect(result.insurers).toEqual(['MAPFRE', 'CHUBB']);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to record template hint observation for BBVA'),
+      expect.anything()
+    );
+
+    warnSpy.mockRestore();
+  });
+
   it('does not run template matching when templateHintsEnabled is false', async () => {
     mockGemini = buildMockGemini([validGranularJson]);
     const textExtractor = makeTextExtractor({

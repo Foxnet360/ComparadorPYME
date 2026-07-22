@@ -222,21 +222,19 @@ export class UnifiedComparisonEngine {
       parsedResult.metadata.fromCache = false;
 
       // 7. Record per-insurer cost/latency observations for hints that were used.
+      // Fire-and-forget: the measurement harness is fail-open and must never
+      // block the response, even if Redis is slow or unavailable.
       if (templateHintsEnabled && matchedInsurers.length > 0) {
         const tokenCount = this.estimatePromptTokens(prompt);
         for (const insurer of matchedInsurers) {
-          try {
-            await this.deps.measurementHarness.recordObservation(
-              insurer,
-              tokenCount,
-              geminiLatencyMs
-            );
-          } catch (error) {
-            console.warn(
-              `⚠️ [UnifiedComparison] Failed to record template hint observation for ${insurer} [${correlationId}]:`,
-              error
-            );
-          }
+          this.deps.measurementHarness
+            .recordObservation(insurer, tokenCount, geminiLatencyMs)
+            .catch((error) => {
+              console.warn(
+                `⚠️ [UnifiedComparison] Failed to record template hint observation for ${insurer} [${correlationId}]:`,
+                error
+              );
+            });
         }
       }
 
