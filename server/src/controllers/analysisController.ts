@@ -126,12 +126,24 @@ interface UnifiedComparisonReport {
   schemaVersion?: 1 | 2;
 }
 
+/**
+ * Resolve the effective user id for /api/analyze.
+ *
+ * The endpoint uses optional authentication. Only an authenticated user's id
+ * is trusted for per-user feature-rollout bucketing; without it we intentionally
+ * return undefined so anonymous traffic is treated as MISSING rather than being
+ * collapsed into a shared 'anonymous' bucket (hashUserId('anonymous') === 75).
+ */
+export function resolveAnalysisUserId(req: AuthenticatedRequest): string | undefined {
+  return req.user?.id;
+}
+
 export const analysisController = {
   uploadAndAnalyze: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     const startTime = Date.now();
 
     try {
-      const userId = req.user?.id || req.body?.userId || 'anonymous';
+      const userId = resolveAnalysisUserId(req);
 
       const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
       const quoteFiles = files?.['quotes'] || [];

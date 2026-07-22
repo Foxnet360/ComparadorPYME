@@ -345,6 +345,20 @@ describe('ComparisonEngineAdapter', () => {
       expect(hintsOnly.templateHintsEnabled).toBe(true);
     });
 
+    it('excludes undefined userIds from partial rollouts so anonymous traffic only enters at 100%', async () => {
+      compareSpy.mockResolvedValue(makeFlatResult({ schemaVersion: 2 }));
+
+      for (const pct of [50, 75, 76]) {
+        process.env[GRAPH_ROLLOUT_ENV] = String(pct);
+        const result = await comparisonEngineAdapter.generateComparison(['a.pdf']);
+        expect(result.graphEnabled).toBe(false);
+      }
+
+      process.env[GRAPH_ROLLOUT_ENV] = '100';
+      const fullRollout = await comparisonEngineAdapter.generateComparison(['a.pdf']);
+      expect(fullRollout.graphEnabled).toBe(true);
+    });
+
     it('buckets slice rollout with the shared hashUserId (threshold flips at hash < pct)', async () => {
       const userId = 'slice-threshold-user';
       const bucket = hashUserId(userId);
