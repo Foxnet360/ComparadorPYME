@@ -160,6 +160,31 @@ describe('runEvaluation CLI', () => {
   it('throws for an unknown runner flag', async () => {
     await expect(main([tempDir, '--runner=unknown'])).rejects.toThrow('Unknown runner');
   });
+
+  it('segments the golden-set report by graphEnabled and templateHintsEnabled', async () => {
+    await writeFixture(tempDir, {
+      fixtureId: 'bbva-001',
+      insurer: 'BBVA',
+      templateId: 'bbva-pyme-v1',
+      fileName: 'bbva-001.pdf',
+      expectedCoverages: [
+        {
+          canonicalName: 'Incendio (Edificio y Contenidos)',
+          insuredAmount: 500000000,
+          deductible: '10%',
+        },
+      ],
+      annotatedBy: 'analyst-a',
+    });
+
+    const { report } = await main([tempDir, '--runner=echo']);
+
+    expect(report.perSlice).toBeDefined();
+    expect(report.perSlice?.baseline).toBeDefined();
+    expect(report.perSlice?.['graph+template']).toBeDefined();
+    expect(report.perSlice?.baseline.totalFixtures).toBe(1);
+    expect(report.perSlice?.['graph+template'].totalFixtures).toBe(1);
+  });
 });
 
 describe('createPipelineRunner', () => {

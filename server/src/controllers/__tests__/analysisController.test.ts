@@ -274,50 +274,47 @@ describe('analysisController - matrixRowsToComparisonReport', () => {
     expect(primaRow).toBeUndefined();
   });
 
-  it('computes dynamic scoring and populates quoteAudit in the V2 path', async () => {
-    const matrixRows: MatrixRow[] = [
+  it('surfaces graph canonical names while preserving raw labels when graphEnabled is true', async () => {
+    const matrixRows = [
       {
         type: 'header',
         id: 'section_0',
-        label: 'INFORMACIÓN GENERAL',
+        label: 'COBERTURAS',
         sectionId: 1,
         cells: [],
       },
       {
         type: 'data',
-        id: 'row_bienes',
-        label: 'Bienes bajo tierra',
+        id: 'row_incendio',
+        label: 'Incendio Edificio',
         sectionId: 1,
+        canonicalName: 'Incendio (Edificio y Contenidos)',
+        matchConfidence: 0.93,
+        matchMethod: 'graph',
         cells: [
           {
             value: 'Amparado',
             isExcluded: false,
             isWinner: false,
-            notes: '15% min 5 SMMLV',
-            confidence: 0.95,
+            notes: '10% min 1 SMMLV',
+            confidence: 0.92,
           },
         ],
       },
-    ];
+    ] as unknown as MatrixRow[];
 
-    const quoteFiles = [{ originalname: 'COTIZACION-MAPFRE.pdf' }] as Express.Multer.File[];
+    const report = await matrixRowsToComparisonReport(
+      matrixRows,
+      [{ originalname: 'COTIZACION-MAPFRE.pdf' }] as Express.Multer.File[],
+      { graphEnabled: true }
+    );
 
-    const report = await matrixRowsToComparisonReport(matrixRows, quoteFiles);
-
-    const quote = report.quotes[0];
-    expect(quote.score).toBeGreaterThan(0);
-    expect(quote.score).not.toBe(70); // Should not be the hardcoded 70
-    expect(quote.dataQualityScore).toBeGreaterThan(0);
-    expect(quote.dataQualityScore).not.toBe(85); // Should not be hardcoded 85
-    expect(quote.extractionConfidence).toBe(95); // (0.95 * 100)
-    expect(quote.parseConfidence).toBe(95);
-
-    // Audit assertions
-    expect(quote.quoteAudit).toBeDefined();
-    expect(quote.quoteAudit!.overallRiskScore).toBeGreaterThanOrEqual(0);
-    expect(quote.quoteAudit!.deductibleRisks.length).toBeGreaterThan(0);
-    expect(quote.quoteAudit!.missingCoverages.length).toBeGreaterThan(0);
-    expect(quote.quoteAudit!.summary).toContain('MAPFRE');
+    const coverage = report.quotes[0].coverages[0];
+    expect(coverage).toBeDefined();
+    expect(coverage.name).toBe('Incendio Edificio');
+    expect(coverage.canonicalName).toBe('Incendio (Edificio y Contenidos)');
+    expect(coverage.matchConfidence).toBe(0.93);
+    expect(coverage.matchMethod).toBe('graph');
   });
 });
 

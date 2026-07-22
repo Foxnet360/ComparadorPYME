@@ -171,10 +171,10 @@ export const analysisController = {
       }
 
       // Convert MatrixRow[] to ComparisonReport format
-      const comparisonResult = (await matrixRowsToComparisonReport(
-        matrixRows,
-        quoteFiles
-      )) as unknown as ComparisonResult;
+      const comparisonResult = (await matrixRowsToComparisonReport(matrixRows, quoteFiles, {
+        graphEnabled: adapterResult.graphEnabled,
+        templateHintsEnabled: adapterResult.templateHintsEnabled,
+      })) as unknown as ComparisonResult;
 
       comparisonResult.matrix = matrixRows;
       comparisonResult.quoteMetadata = adapterResult.quoteMetadata;
@@ -454,7 +454,8 @@ export function generateComparison(
  */
 export async function matrixRowsToComparisonReport(
   matrixRows: MatrixRow[],
-  quoteFiles: Express.Multer.File[]
+  quoteFiles: Express.Multer.File[],
+  options?: { graphEnabled?: boolean; templateHintsEnabled?: boolean }
 ): Promise<UnifiedComparisonReport> {
   // Get insurer names from quote files
   const insurerNames = quoteFiles.map((f) => {
@@ -535,10 +536,49 @@ export async function matrixRowsToComparisonReport(
 
       // Map rows to canonical coverages
       for (const r of rowsToProcess) {
-        const matchResult = await semanticMatcher.matchCoverage(r.label, 'pyme');
+        const row = matrixRows.find(
+          (matrixRow) => matrixRow.label === r.label && matrixRow.type === 'data'
+        );
+        const graphEnabled = options?.graphEnabled ?? false;
+        let graphMapping:
+          | {
+              canonicalName: string;
+              matchConfidence: number;
+              matchMethod: string | null;
+            }
+          | undefined =
+          graphEnabled && row?.canonicalName
+            ? {
+                canonicalName: row.canonicalName,
+                matchConfidence: row.matchConfidence ?? 0,
+                matchMethod: row.matchMethod ?? 'graph',
+              }
+            : undefined;
+
+        let categoryId: number | null = null;
+        if (graphMapping) {
+          const categoryMatch = await semanticMatcher.matchCoverage(
+            graphMapping.canonicalName,
+            'pyme'
+          );
+          categoryId = categoryMatch?.categoryId ?? null;
+        } else {
+          const matchResult = await semanticMatcher.matchCoverage(r.label, 'pyme');
+          categoryId = matchResult?.categoryId ?? null;
+          graphMapping ??= {
+            canonicalName: matchResult?.canonicalName ?? r.label,
+            matchConfidence: matchResult?.confidence ?? 0,
+            matchMethod: (matchResult?.method || null) as
+              | 'thesaurus'
+              | 'fuzzy'
+              | 'embedding'
+              | 'llm'
+              | null,
+          };
+        }
 
         // If unmapped, check if it's a financial/billing/metadata row to skip
-        const isUnmapped = !matchResult || matchResult.categoryId === null;
+        const isUnmapped = categoryId === null;
         if (isUnmapped) {
           const normalizedLabel = r.label
             .toLowerCase()
@@ -576,10 +616,10 @@ export async function matrixRowsToComparisonReport(
           valueSource: 'extracted' as const,
           confidence: r.confidence,
           section: r.section,
-          categoryId: matchResult?.categoryId ?? null,
-          canonicalName: matchResult?.canonicalName ?? r.label,
-          matchConfidence: matchResult?.confidence ?? 0,
-          matchMethod: (matchResult?.method || null) as
+          categoryId,
+          canonicalName: graphMapping.canonicalName,
+          matchConfidence: graphMapping.matchConfidence,
+          matchMethod: graphMapping.matchMethod as
             | 'thesaurus'
             | 'fuzzy'
             | 'embedding'
