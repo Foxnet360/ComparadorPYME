@@ -21,6 +21,7 @@ import quoteBasedAuditor from '../services/quoteBasedAuditor';
 
 import { AlertItem, AlertLevel, MatrixRow, QuoteAnalysis } from '../types';
 import { AuthenticatedRequest } from '../middleware/auth';
+import { InsuranceDomain, isInsuranceDomain } from '../types/domain';
 
 interface ComparisonResultQuote {
   insurerName: string;
@@ -75,6 +76,7 @@ interface ComparisonResult {
   matrix?: MatrixRow[];
   quoteMetadata?: any[];
   schemaVersion?: 1 | 2;
+  domain?: InsuranceDomain;
 }
 
 interface UnifiedQuote {
@@ -138,6 +140,35 @@ export function resolveAnalysisUserId(req: AuthenticatedRequest): string | undef
   return req.user?.id;
 }
 
+export interface AnalysisDomainResolution {
+  domain: InsuranceDomain;
+  error?: string;
+}
+
+/**
+ * Resolve and validate the `domain` parameter for /api/analyze.
+ *
+ * - Missing/empty/undefined → `pyme` (default, backward compatible).
+ * - `pyme` or `autos` → accepted as-is.
+ * - Anything else → validation error (HTTP 400).
+ */
+export function resolveAnalysisDomain(
+  rawDomain: unknown
+): AnalysisDomainResolution {
+  if (rawDomain === undefined || rawDomain === null || rawDomain === '') {
+    return { domain: 'pyme' };
+  }
+
+  if (isInsuranceDomain(rawDomain)) {
+    return { domain: rawDomain };
+  }
+
+  return {
+    domain: 'pyme',
+    error: `Invalid domain "${rawDomain}". Allowed values: pyme, autos.`,
+  };
+}
+
 export const analysisController = {
   uploadAndAnalyze: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     const startTime = Date.now();
@@ -153,11 +184,22 @@ export const analysisController = {
         return;
       }
 
+      const domainResolution = resolveAnalysisDomain(req.body?.domain);
+      if (domainResolution.error) {
+        res.status(400).json({ success: false, error: domainResolution.error });
+        return;
+      }
+      const domain = domainResolution.domain;
+
       console.log(`📄 Processing ${quoteFiles.length} quotes...`);
       console.log(`🔧 Pipeline: ${isMultimodalEnabled() ? 'Multimodal (V2)' : 'Legacy (V1)'}`);
+      console.log(`🌐 Domain: ${domain}`);
 
       const pdfPaths = quoteFiles.map((f) => f.path);
-      const adapterResult = await comparisonEngineAdapter.generateComparison(pdfPaths, userId);
+      const adapterResult = await comparisonEngineAdapter.generateComparison(pdfPaths, {
+        userId,
+        domain,
+      });
       const matrixRows = adapterResult.matrix;
 
       // Debug: Log matrix structure
@@ -179,6 +221,7 @@ export const analysisController = {
       comparisonResult.matrix = matrixRows;
       comparisonResult.quoteMetadata = adapterResult.quoteMetadata;
       comparisonResult.schemaVersion = adapterResult.schemaVersion;
+      comparisonResult.domain = domain;
 
       // Debug: Log result structure
       console.log(`📊 [Adapter Debug] Quotes generated: ${comparisonResult.quotes?.length || 0}`);

@@ -1,0 +1,168 @@
+{
+  "version": "1.0.0",
+  "domain": "autos",
+  "metadata": {
+    "region": "Colombia",
+    "currency": "COP",
+    "salaryReference": "SMMLV",
+    "salaryValue2024": 1423500,
+    "uvtValue2024": 42412,
+    "source": "SMMLV 2024: Ministerio de Trabajo de Colombia; UVT 2024: DIAN"
+  },
+  "categories": [
+    {
+      "id": 1,
+      "name": "Responsabilidad Civil Extracontractual Vehicular",
+      "section": "Responsabilidad Civil",
+      "isRequired": true,
+      "synonyms": [
+        "RCE vehicular",
+        "RC vehicular",
+        "Responsabilidad Civil Extracontractual",
+        "Daños a terceros",
+        "RC autos",
+        "Responsabilidad civil por daños a terceros"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Pérdida Total (hurto, daños, PT)",
+      "section": "Daños al Vehículo",
+      "isRequired": true,
+      "synonyms": [
+        "PT",
+        "Pérdida total",
+        "Hurto total",
+        "Daños totales",
+        "Pérdida total por hurto",
+        "Pérdida total por daños",
+        "Total loss"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Pérdida Parcial (colisión, PP)",
+      "section": "Daños al Vehículo",
+      "isRequired": true,
+      "synonyms": [
+        "PP",
+        "Pérdida parcial",
+        "Colisión",
+        "Daños parciales",
+        "Golpes",
+        "Choque",
+        "Partial loss"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Carro Taller / Vehículo de Reemplazo",
+      "section": "Asistencias y Servicios",
+      "isRequired": false,
+      "synonyms": [
+        "Carro taller",
+        "Vehículo de reemplazo",
+        "Auto de sustitución",
+        "Vehículo sustituto",
+        "Carro de reemplazo",
+        "Movilidad adicional"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Asistencia en Viaje / Carretera",
+      "section": "Asistencias y Servicios",
+      "isRequired": false,
+      "synonyms": [
+        "Asistencia en viaje",
+        "Asistencia en carretera",
+        "Auxilio mecánico",
+        "Grúa 24/7",
+        "Asistencia vial",
+        "Road assistance",
+        "Servicio de grúa"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Gastos de Transporte / Peajes / Grúa",
+      "section": "Asistencias y Servicios",
+      "isRequired": false,
+      "synonyms": [
+        "Gastos de transporte",
+        "Peajes",
+        "Grúa",
+        "Transporte del vehículo",
+        "Traslado del vehículo",
+        "Gastos de remolque"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Hurto de Partes y Accesorios",
+      "section": "Daños al Vehículo",
+      "isRequired": false,
+      "synonyms": [
+        "Hurto de partes",
+        "Hurto de accesorios",
+        "Robo de espejos",
+        "Robo de rines",
+        "Hurto de equipos",
+        "Pérdida parcial por hurto"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Eventos de la Naturaleza (granizo, inundación)",
+      "section": "Daños al Vehículo",
+      "isRequired": false,
+      "synonyms": [
+        "Granizo",
+        "Inundación",
+        "Eventos naturales",
+        "Fenómenos naturales",
+        "Desastres naturales",
+        "Callejón",
+        "Eventos de la naturaleza"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Conductor Adicional",
+      "section": "Coberturas de Personas",
+      "isRequired": false,
+      "synonyms": [
+        "Conductor adicional",
+        "Conductor ocasional",
+        "Conductor autorizado",
+        "Conductores adicionales"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "Menores de 25 Años",
+      "section": "Coberturas de Personas",
+      "isRequired": false,
+      "synonyms": [
+        "Menores de 25",
+        "Conductores menores de 25 años",
+        "Jóvenes conductores",
+        "Menores de 25 años"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "Deducibles (SMMLV / días de inmovilización / %)",
+      "section": "Deducibles",
+      "isRequired": true,
+      "synonyms": [
+        "Deducible SMMLV",
+        "Deducible días",
+        "Deducible porcentaje",
+        "Deducibles",
+        "Franquicia",
+        "Siniestro parcial"
+      ]
+    }
+  ]
+}
