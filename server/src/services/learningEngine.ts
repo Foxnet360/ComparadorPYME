@@ -207,18 +207,37 @@ export const learningEngine = {
       // 1. Update thesaurus
       await this.updateThesaurus(correction);
 
-      // 2. Update embeddings if significant
+      // 2. Route coverage_mapping corrections to the graph only when graph
+      // learning is explicitly enabled. This preserves the global kill-switch
+      // for the unauthenticated /api/analysis/correction endpoint.
+      if (correction.correctionType === 'coverage_mapping') {
+        if (featureFlags.isEnabled('graphLearningEnabled')) {
+          const raw = normalizeText(correction.rawName, true).replace(/\s+/g, ' ').trim();
+          const canonical = correction.userCorrection.trim();
+          const insurer = correction.insurerName || '';
+          if (raw && canonical) {
+            await coverageGraphService.learnCorrection(raw, canonical, insurer, 'pyme');
+            console.log(`🌐 [LearningEngine] Graph learned: "${raw}" → "${canonical}"`);
+          }
+        } else {
+          console.log(
+            `🌐 [LearningEngine] Skipping graph learning for coverage_mapping because graphLearningEnabled is disabled`
+          );
+        }
+      }
+
+      // 3. Update embeddings if significant
       if (correction.correctionType === 'coverage_mapping') {
         await this.updateEmbedding(correction);
       }
 
-      // 3. Invalidate cache
+      // 4. Invalidate cache
       await this.invalidateCache(correction);
 
-      // 4. Update ontology if needed
+      // 5. Update ontology if needed
       await this.updateOntology(correction);
 
-      // 5. Write graph edge if graph learning is enabled
+      // 6. Write graph edge for non-coverage types only when graph learning is enabled
       await this.updateGraph(correction);
     } catch (error) {
       console.error('❌ [LearningEngine] Failed to apply correction:', error);
@@ -347,11 +366,6 @@ export const learningEngine = {
 
     try {
       switch (correction.correctionType) {
-        case 'coverage_mapping':
-          await coverageGraphService.learnCorrection(raw, canonical, insurer, domain);
-          console.log(`🌐 [LearningEngine] Graph learned: "${raw}" → "${canonical}"`);
-          break;
-
         case 'deductible':
           await coverageGraphService.addEdge({
             from: raw,

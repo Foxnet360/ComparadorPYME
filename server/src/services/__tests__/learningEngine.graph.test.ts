@@ -159,8 +159,30 @@ describe('learningEngine graph integration', () => {
     );
   });
 
-  it('skips graph update when graph learning flag is disabled', async () => {
-    mockIsEnabled.mockReturnValue(false);
+  it('writes learned graph edge for coverage_mapping correction when graphLearningEnabled is true', async () => {
+    mockIsEnabled.mockImplementation((flag: string) => flag === 'graphLearningEnabled');
+
+    const correction: UserCorrection = {
+      rawName: 'AMPARO BASICO XYZ',
+      insurerName: 'SBS',
+      systemMapping: 'incendio',
+      userCorrection: 'incendio',
+      correctionType: 'coverage_mapping',
+    };
+
+    await learningEngine.applyCorrection(correction);
+
+    expect(mockLearnCorrection).toHaveBeenCalledWith(
+      'amparo basico xyz',
+      'incendio',
+      'SBS',
+      'pyme'
+    );
+    expect(mockAddEdge).not.toHaveBeenCalled();
+  });
+
+  it('skips graph learning for coverage_mapping correction when graphLearningEnabled is false', async () => {
+    mockIsEnabled.mockImplementation((flag: string) => flag !== 'graphLearningEnabled');
 
     const correction: UserCorrection = {
       rawName: 'AMPARO BASICO XYZ',

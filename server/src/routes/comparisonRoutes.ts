@@ -89,7 +89,10 @@ router.post('/unified', upload.array('quotes', 10), async (req, res) => {
     if (userId) {
       try {
         const clientName = req.body.clientName || 'Cliente';
-        const comparisonResult = await matrixRowsToComparisonReport(adapterResult.matrix, files);
+        const comparisonResult = await matrixRowsToComparisonReport(adapterResult.matrix, files, {
+          graphEnabled: adapterResult.graphEnabled,
+          templateHintsEnabled: adapterResult.templateHintsEnabled,
+        });
         const duration = Date.now() - startTime;
 
         const insertData = {

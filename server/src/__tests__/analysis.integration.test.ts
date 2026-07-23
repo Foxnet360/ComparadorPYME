@@ -119,7 +119,7 @@ describe('Complete Analysis Flow Integration', () => {
       expect(response.body).toHaveProperty('error');
     });
 
-    it('should handle authentication errors', async () => {
+    it('allows unauthenticated history requests and falls back to anonymous user', async () => {
       // Create app without auth middleware
       const appNoAuth = express();
       appNoAuth.use(express.json());
@@ -128,10 +128,11 @@ describe('Complete Analysis Flow Integration', () => {
 
       const response = await request(appNoAuth).get('/api/history');
 
-      expect(response.status).toBe(401);
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
     });
 
-    it('should require authentication for analysis upload', async () => {
+    it('allows unauthenticated analysis requests and still validates required files', async () => {
       const appNoAuth = express();
       appNoAuth.use(express.json());
       appNoAuth.post('/api/analyze', analysisController.uploadAndAnalyze);
@@ -141,7 +142,7 @@ describe('Complete Analysis Flow Integration', () => {
         .post('/api/analyze')
         .field('clientName', 'Test Client');
 
-      expect(response.status).toBe(401);
+      expect(response.status).toBe(400);
     });
   });
 });

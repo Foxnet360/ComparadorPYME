@@ -105,6 +105,7 @@ export interface RegressionItem {
 export interface EvaluationReport {
   aggregate: EvaluationMetrics;
   perInsurer: Record<string, EvaluationMetrics>;
+  perSlice?: Record<string, EvaluationMetrics>;
   fixtures: FixtureResult[];
   regressions: RegressionItem[];
   thresholds: EvaluationThresholds;

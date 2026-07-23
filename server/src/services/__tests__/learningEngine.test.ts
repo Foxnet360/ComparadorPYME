@@ -32,7 +32,7 @@ vi.mock('../coverageGraphService', () => ({
 
 vi.mock('../../config/featureFlags', () => ({
   featureFlags: {
-    isEnabled: vi.fn(() => false),
+    isEnabled: vi.fn(() => true),
   },
 }));
 
@@ -100,5 +100,26 @@ describe('learningEngine embedding retrieval and fallback', () => {
     expect(results).toHaveLength(1);
     expect(results[0].raw_name).toBe('Robo y Asalto');
     expect(embeddingService.cosineSimilarity).not.toHaveBeenCalled();
+  });
+});
+
+describe('learningEngine - applyCorrection', () => {
+  it('routes coverage_mapping corrections to the graph when graphLearningEnabled is true', async () => {
+    const { coverageGraphService } = await import('../coverageGraphService');
+
+    await learningEngine.applyCorrection({
+      rawName: 'Daño Material Global',
+      insurerName: 'BBVA',
+      systemMapping: 'incendio',
+      userCorrection: 'incendio',
+      correctionType: 'coverage_mapping',
+    });
+
+    expect(coverageGraphService.learnCorrection).toHaveBeenCalledWith(
+      'dano material global',
+      'incendio',
+      'BBVA',
+      'pyme'
+    );
   });
 });

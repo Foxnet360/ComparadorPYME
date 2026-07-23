@@ -261,7 +261,10 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
     string,
     {
       label: string;
+      canonicalName?: string;
       canonicalId?: string;
+      matchConfidence?: number;
+      matchMethod?: string | null;
       cells: { value: string | null; notFound?: boolean; confidence?: number; notes?: string }[];
     }[]
   >();
@@ -276,7 +279,10 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
     }
     sectionGroups.get(section)!.push({
       label: row.label,
+      canonicalName: row.canonicalName,
       canonicalId: row.canonicalId,
+      matchConfidence: row.matchConfidence,
+      matchMethod: row.canonicalSource ?? null,
       cells: row.cells.map((cell) => ({
         value: cell.value,
         notFound: cell.notFound,
@@ -296,7 +302,10 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
     }
     sectionGroups.get(section)!.push({
       label: row.label,
+      canonicalName: row.canonicalName,
       canonicalId: row.canonicalId,
+      matchConfidence: row.matchConfidence,
+      matchMethod: row.canonicalSource ?? null,
       cells: row.cells.map((cell) => ({
         value: cell.value,
         notFound: cell.notFound,
@@ -328,6 +337,10 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
         id: `section_${sectionIndex}_row_${rowIndex}`,
         label: row.label,
         sectionId: section === FINANCIAL_SECTION_LABEL ? FINANCIAL_SECTION_ID : COVERAGE_SECTION_ID,
+        canonicalName: row.canonicalName,
+        canonicalId: row.canonicalId,
+        matchConfidence: row.matchConfidence,
+        matchMethod: row.matchMethod,
         cells: row.cells.map((cell) =>
           cellFromFlatValueV2(cell.value, cell.notFound, cell.confidence, cell.notes)
         ),

@@ -109,7 +109,9 @@ function makeFakeMulterFile(filename: string): Express.Multer.File {
   } as Express.Multer.File;
 }
 
-export async function createPipelineRunner(): Promise<PipelineRunner> {
+export async function createPipelineRunner(
+  flags: { graphEnabled?: boolean; templateHintsEnabled?: boolean } = {}
+): Promise<PipelineRunner> {
   // Dynamic imports are used so the environment defaults above are set before
   // any module that transitively imports env.ts is loaded.
   const [
@@ -169,7 +171,9 @@ export async function createPipelineRunner(): Promise<PipelineRunner> {
       flag === 'semanticCoverageOntology' ||
       flag === 'templateBbvaV1' ||
       flag === 'templateSbsV1' ||
-      flag === 'templateMapfreV1';
+      flag === 'templateMapfreV1' ||
+      (flags.graphEnabled && flag === 'useUnifiedGraphCanonicalization') ||
+      (flags.templateHintsEnabled && flag === 'useUnifiedTemplateHints');
 
     embeddingService.generateEmbedding = async () => mockEmbedding;
     embeddingService.generateEmbeddingsBatch = async (texts: string[]) =>
@@ -273,6 +277,22 @@ export async function main(
     },
   });
 
+  // Segment accuracy by the two unified slice flags. The echo runner is
+  // flag-agnostic, but the pipeline runner toggles the mocked feature flags
+  // so future extraction logic can be evaluated under each configuration.
+  const sliceRunner =
+    runner === 'echo'
+      ? createEchoRunner()
+      : await createPipelineRunner({ graphEnabled: true, templateHintsEnabled: true });
+  const sliceReport = await runEvaluation(fixturesDir, sliceRunner, fs, {
+    thresholds: DEFAULT_THRESHOLDS,
+  });
+
+  const perSlice = {
+    baseline: report.aggregate,
+    'graph+template': sliceReport.aggregate,
+  };
+
   console.log('\n📊 Golden-set evaluation report');
   console.log(`   Runner: ${runner}`);
   console.log(`   Fixtures: ${report.aggregate.totalFixtures}`);
@@ -295,7 +315,10 @@ export async function main(
   }
 
   return {
-    report,
+    report: {
+      ...report,
+      perSlice,
+    },
     exitCode: report.regressions.length > 0 ? 1 : 0,
   };
 }

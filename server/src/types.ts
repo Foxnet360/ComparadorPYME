@@ -297,4 +297,8 @@ export interface MatrixRow {
   label: string;
   sectionId: number;
   cells: MatrixCell[];
+  canonicalName?: string;
+  canonicalId?: string;
+  matchConfidence?: number;
+  matchMethod?: string | null;
 }
