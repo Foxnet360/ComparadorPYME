@@ -75,8 +75,11 @@ DECLARE
   distinct_count BIGINT;
 BEGIN
   SELECT COUNT(*) INTO total_count FROM coverage_mappings;
-  SELECT COUNT(DISTINCT domain || ':' || COALESCE(insurer_name, '') || ':' || raw_name)
-    INTO distinct_count FROM coverage_mappings;
+  SELECT COUNT(*) INTO distinct_count
+    FROM (
+      SELECT DISTINCT domain, COALESCE(insurer_name, ''), raw_name
+      FROM coverage_mappings
+    ) t;
 
   IF total_count != distinct_count THEN
     RAISE EXCEPTION

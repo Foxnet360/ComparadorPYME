@@ -224,7 +224,8 @@ export class UnifiedComparisonEngine {
         pdfPaths.length,
         correlationId,
         granularEnabled,
-        graphEnabled
+        graphEnabled,
+        domain
       );
 
       // 6. Add runtime metadata
@@ -565,7 +566,8 @@ export class UnifiedComparisonEngine {
     pdfCount: number,
     correlationId: string,
     granularEnabled: boolean,
-    graphEnabled?: boolean
+    graphEnabled?: boolean,
+    domain: InsuranceDomain = 'pyme'
   ): Promise<FlatComparisonResult> {
     let retries = 0;
     let lastError: string | null = null;
@@ -577,6 +579,7 @@ export class UnifiedComparisonEngine {
           model: this.config.model,
           confidence: 0,
           needsHumanReview: true,
+          domain,
           ...(granularEnabled
             ? { graphEnabled: graphEnabled ?? false, graphService: coverageGraphService }
             : {}),

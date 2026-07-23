@@ -216,6 +216,7 @@ export const analysisController = {
       const comparisonResult = (await matrixRowsToComparisonReport(matrixRows, quoteFiles, {
         graphEnabled: adapterResult.graphEnabled,
         templateHintsEnabled: adapterResult.templateHintsEnabled,
+        domain,
       })) as unknown as ComparisonResult;
 
       comparisonResult.matrix = matrixRows;
@@ -498,8 +499,9 @@ export function generateComparison(
 export async function matrixRowsToComparisonReport(
   matrixRows: MatrixRow[],
   quoteFiles: Express.Multer.File[],
-  options?: { graphEnabled?: boolean; templateHintsEnabled?: boolean }
+  options?: { graphEnabled?: boolean; templateHintsEnabled?: boolean; domain?: InsuranceDomain }
 ): Promise<UnifiedComparisonReport> {
+  const domain = options?.domain ?? 'pyme';
   // Get insurer names from quote files
   const insurerNames = quoteFiles.map((f) => {
     const name = f.originalname.replace(/COTIZACION.*?-\s*/i, '').replace(/\.pdf$/i, '');
@@ -602,11 +604,11 @@ export async function matrixRowsToComparisonReport(
         if (graphMapping) {
           const categoryMatch = await semanticMatcher.matchCoverage(
             graphMapping.canonicalName,
-            'pyme'
+            domain
           );
           categoryId = categoryMatch?.categoryId ?? null;
         } else {
-          const matchResult = await semanticMatcher.matchCoverage(r.label, 'pyme');
+          const matchResult = await semanticMatcher.matchCoverage(r.label, domain);
           categoryId = matchResult?.categoryId ?? null;
           graphMapping ??= {
             canonicalName: matchResult?.canonicalName ?? r.label,

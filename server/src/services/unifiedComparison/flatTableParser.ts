@@ -15,6 +15,7 @@ import {
 import { parseJsonWithRepair } from '../jsonRepair';
 import type { CoverageGraphService } from '../coverageGraphService';
 import type { GraphMapping } from '../../types/templateGraph';
+import type { InsuranceDomain } from '../../types/domain';
 
 export const FLAT_ROW_LABELS = [
   'Bienes Asegurados',
@@ -41,6 +42,7 @@ export interface ParseOptions {
   needsHumanReview?: boolean;
   graphEnabled?: boolean;
   graphService?: CoverageGraphService;
+  domain?: InsuranceDomain;
 }
 
 export class FlatTableParseError extends Error {
@@ -1210,10 +1212,11 @@ function parseJsonV2(raw: string): RawTable {
 async function resolveBestGraphMapping(
   label: string,
   insurers: string[],
-  graphService: CoverageGraphService
+  graphService: CoverageGraphService,
+  domain: InsuranceDomain = 'pyme'
 ): Promise<GraphMapping | undefined> {
   const results = await Promise.all(
-    insurers.map((insurer) => graphService.query(label, { insurer, domain: 'pyme' }))
+    insurers.map((insurer) => graphService.query(label, { insurer, domain }))
   );
 
   let best: GraphMapping | undefined;
@@ -1247,7 +1250,7 @@ async function buildV2Result(
     const normalized = normalizeAlias(label);
     const graphMapping =
       graphEnabled && graphService
-        ? await resolveBestGraphMapping(label, insurers, graphService)
+        ? await resolveBestGraphMapping(label, insurers, graphService, options.domain ?? 'pyme')
         : undefined;
 
     if (graphMapping) {

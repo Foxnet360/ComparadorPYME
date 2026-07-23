@@ -747,6 +747,27 @@ describe('flatTableParser.parseV2 graph canonicalization', () => {
     );
   });
 
+  it('propagates the domain option to the coverage graph service', async () => {
+    const graphService = makeGraphServiceStub({
+      query: vi.fn(async (rawName, _options) => ({
+        rawName,
+        mappings: [{ canonicalId: 'amparo-basico-todo-riesgo', confidence: 0.92, provenance: 'maps_to' }],
+        composite: false,
+      })),
+    });
+    const input = JSON.stringify({
+      insurers: ['BBVA'],
+      rows: [{ label: 'Daño Material Global', cells: [{ insurer: 'BBVA', value: '$100M' }] }],
+    });
+
+    await flatTableParser.parseV2(input, { ...baseOptions, graphEnabled: true, graphService, domain: 'autos' });
+
+    expect(graphService.query).toHaveBeenCalledWith(
+      'Daño Material Global',
+      expect.objectContaining({ insurer: 'BBVA', domain: 'autos' })
+    );
+  });
+
   it('marks unknown labels as uncanonicalized and keeps the raw label', async () => {
     const graphService = makeGraphServiceStub();
 

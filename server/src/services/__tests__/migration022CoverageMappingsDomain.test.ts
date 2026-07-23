@@ -37,12 +37,13 @@ describe('migration 022_coverage_mappings_domain_scoped', () => {
     expect(sql).toContain('correction_count');
   });
 
-  it('validates uniqueness before applying the new index', () => {
+  it('validates uniqueness with a composite-row distinct check before applying the new index', () => {
     const sql = fs.readFileSync(migrationPath, 'utf-8').toLowerCase();
 
     expect(sql).toContain('count(*)');
-    expect(sql).toContain('count(distinct');
-    expect(sql).toMatch(/raise exception/);
+    expect(sql).toContain('select distinct');
+    expect(sql).toContain('raise exception');
+    expect(sql).not.toContain("|| ':' ||");
   });
 
   it('drops the old unique index', () => {

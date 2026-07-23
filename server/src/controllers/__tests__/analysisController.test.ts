@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { matrixRowsToComparisonReport, resolveAnalysisUserId } from '../analysisController';
 import { FINANCIAL_SECTION_ID } from '../../services/unifiedComparison/matrixTransformer';
+import { semanticMatcher } from '../../services/semanticMatcher';
 import { MatrixRow } from '../../types';
 import { AuthenticatedRequest } from '../../middleware/auth';
 
@@ -315,6 +316,21 @@ describe('analysisController - matrixRowsToComparisonReport', () => {
     expect(coverage.canonicalName).toBe('Incendio (Edificio y Contenidos)');
     expect(coverage.matchConfidence).toBe(0.93);
     expect(coverage.matchMethod).toBe('graph');
+  });
+
+  it('propagates the resolved domain to semanticMatcher.matchCoverage', async () => {
+    const matrixRows: MatrixRow[] = [{
+      type: 'data', id: 'domain_row', label: 'Domain Test Coverage', sectionId: 1,
+      cells: [{ value: 'Incluido', isExcluded: false, isWinner: false, confidence: 0.8 }],
+    }];
+    const quoteFiles = [{ originalname: 'COTIZACION-MAPFRE.pdf' }] as Express.Multer.File[];
+
+    await matrixRowsToComparisonReport(matrixRows, quoteFiles);
+    expect(semanticMatcher.matchCoverage).toHaveBeenCalledWith('Domain Test Coverage', 'pyme');
+
+    vi.mocked(semanticMatcher.matchCoverage).mockClear();
+    await matrixRowsToComparisonReport(matrixRows, quoteFiles, { domain: 'autos' });
+    expect(semanticMatcher.matchCoverage).toHaveBeenCalledWith('Domain Test Coverage', 'autos');
   });
 });
 
