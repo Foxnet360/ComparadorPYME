@@ -22,6 +22,14 @@
         "Daños a terceros",
         "RC autos",
         "Responsabilidad civil por daños a terceros"
+      ],
+      "aliases": [
+        "RCE vehicular",
+        "RC vehicular",
+        "Responsabilidad Civil Extracontractual",
+        "Daños a terceros",
+        "RC autos",
+        "Responsabilidad civil por daños a terceros"
       ]
     },
     {
@@ -30,6 +38,15 @@
       "section": "Daños al Vehículo",
       "isRequired": true,
       "synonyms": [
+        "PT",
+        "Pérdida total",
+        "Hurto total",
+        "Daños totales",
+        "Pérdida total por hurto",
+        "Pérdida total por daños",
+        "Total loss"
+      ],
+      "aliases": [
         "PT",
         "Pérdida total",
         "Hurto total",
@@ -52,6 +69,15 @@
         "Golpes",
         "Choque",
         "Partial loss"
+      ],
+      "aliases": [
+        "PP",
+        "Pérdida parcial",
+        "Colisión",
+        "Daños parciales",
+        "Golpes",
+        "Choque",
+        "Partial loss"
       ]
     },
     {
@@ -60,6 +86,14 @@
       "section": "Asistencias y Servicios",
       "isRequired": false,
       "synonyms": [
+        "Carro taller",
+        "Vehículo de reemplazo",
+        "Auto de sustitución",
+        "Vehículo sustituto",
+        "Carro de reemplazo",
+        "Movilidad adicional"
+      ],
+      "aliases": [
         "Carro taller",
         "Vehículo de reemplazo",
         "Auto de sustitución",
@@ -81,6 +115,15 @@
         "Asistencia vial",
         "Road assistance",
         "Servicio de grúa"
+      ],
+      "aliases": [
+        "Asistencia en viaje",
+        "Asistencia en carretera",
+        "Auxilio mecánico",
+        "Grúa 24/7",
+        "Asistencia vial",
+        "Road assistance",
+        "Servicio de grúa"
       ]
     },
     {
@@ -95,6 +138,14 @@
         "Transporte del vehículo",
         "Traslado del vehículo",
         "Gastos de remolque"
+      ],
+      "aliases": [
+        "Gastos de transporte",
+        "Peajes",
+        "Grúa",
+        "Transporte del vehículo",
+        "Traslado del vehículo",
+        "Gastos de remolque"
       ]
     },
     {
@@ -103,6 +154,14 @@
       "section": "Daños al Vehículo",
       "isRequired": false,
       "synonyms": [
+        "Hurto de partes",
+        "Hurto de accesorios",
+        "Robo de espejos",
+        "Robo de rines",
+        "Hurto de equipos",
+        "Pérdida parcial por hurto"
+      ],
+      "aliases": [
         "Hurto de partes",
         "Hurto de accesorios",
         "Robo de espejos",
@@ -124,6 +183,15 @@
         "Desastres naturales",
         "Callejón",
         "Eventos de la naturaleza"
+      ],
+      "aliases": [
+        "Granizo",
+        "Inundación",
+        "Eventos naturales",
+        "Fenómenos naturales",
+        "Desastres naturales",
+        "Callejón",
+        "Eventos de la naturaleza"
       ]
     },
     {
@@ -132,6 +200,12 @@
       "section": "Coberturas de Personas",
       "isRequired": false,
       "synonyms": [
+        "Conductor adicional",
+        "Conductor ocasional",
+        "Conductor autorizado",
+        "Conductores adicionales"
+      ],
+      "aliases": [
         "Conductor adicional",
         "Conductor ocasional",
         "Conductor autorizado",
@@ -148,6 +222,12 @@
         "Conductores menores de 25 años",
         "Jóvenes conductores",
         "Menores de 25 años"
+      ],
+      "aliases": [
+        "Menores de 25",
+        "Conductores menores de 25 años",
+        "Jóvenes conductores",
+        "Menores de 25 años"
       ]
     },
     {
@@ -156,6 +236,14 @@
       "section": "Deducibles",
       "isRequired": true,
       "synonyms": [
+        "Deducible SMMLV",
+        "Deducible días",
+        "Deducible porcentaje",
+        "Deducibles",
+        "Franquicia",
+        "Siniestro parcial"
+      ],
+      "aliases": [
         "Deducible SMMLV",
         "Deducible días",
         "Deducible porcentaje",

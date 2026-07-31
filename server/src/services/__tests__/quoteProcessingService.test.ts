@@ -153,7 +153,12 @@ describe('selectExtractionPrompt', () => {
 
     expect(usedTemplate).toBe(true);
     expect(prompt).toBe('TEMPLATE_PROMPT');
-    expect(mockBuildTemplatePrompt).toHaveBeenCalledWith('bbva-pyme-v1', template, layout.tables);
+    expect(mockBuildTemplatePrompt).toHaveBeenCalledWith(
+      'bbva-pyme-v1',
+      template,
+      layout.tables,
+      'pyme'
+    );
     expect(mockBuildPromptForFamily).not.toHaveBeenCalled();
   });
 
@@ -197,6 +202,7 @@ describe('selectExtractionPrompt', () => {
       pageCount: 3,
       hasTables: true,
       formatFamily: 'TABLE-DOUBLE',
+      domain: 'pyme',
     });
   });
 });

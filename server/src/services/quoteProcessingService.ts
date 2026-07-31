@@ -74,6 +74,8 @@ export interface ExtractionPromptContext {
   formatFamily?: string;
   logger?: StructuredLogger;
   metrics?: MetricCollector;
+  /** Active insurance domain for domain-aware prompt selection. */
+  domain?: string;
 }
 
 export interface GraphEnrichedCoverage {
@@ -104,7 +106,12 @@ export function selectExtractionPrompt(
     detection.templateId && template && !layoutResult.failed && layoutResult.tables.length > 0;
 
   if (templateMatches) {
-    const prompt = buildTemplatePrompt(detection.templateId!, template, layoutResult.tables);
+    const prompt = buildTemplatePrompt(
+      detection.templateId!,
+      template,
+      layoutResult.tables,
+      context.domain ?? 'pyme'
+    );
     logger.info('pipeline_path_taken', 'Selected template-aware extraction prompt', {
       path: 'template',
       templateId: detection.templateId,
@@ -125,6 +132,7 @@ export function selectExtractionPrompt(
     pageCount,
     hasTables: detection.hasTables,
     formatFamily: detection.family,
+    domain: context.domain ?? 'pyme',
   });
 
   logger.info('pipeline_path_taken', 'Selected generic extraction prompt', {
@@ -487,7 +495,11 @@ async function processQuoteMultimodalInternal(
       detectionResult,
       template,
       layoutResult,
-      { pageCount: extractionResult.metadata?.pageCount ?? 1, formatFamily: family }
+      {
+        pageCount: extractionResult.metadata?.pageCount ?? 1,
+        formatFamily: family,
+        domain,
+      }
     );
 
     if (usedTemplate && template) {
@@ -578,6 +590,7 @@ async function processQuoteMultimodalInternal(
           pageCount: extractionResult.metadata?.pageCount ?? 1,
           hasTables: detectionResult.hasTables,
           formatFamily: family,
+          domain,
         });
         try {
           const genericResult = await extractWithZodValidation<QuoteExtractionV2>(
