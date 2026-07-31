@@ -39,6 +39,7 @@ const App: React.FC = () => {
   const [showClauseAdmin, setShowClauseAdmin] = useState(false);
 
   // Analyzer State
+  const [domain, setDomain] = useState<'pyme' | 'autos'>('pyme');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [quoteFiles, setQuoteFiles] = useState<File[]>([]);
   const [clauseFiles, setClauseFiles] = useState<File[]>([]);
@@ -112,7 +113,8 @@ const App: React.FC = () => {
         clauseFiles,
         clientName,
         (msg) => setStatusMessage(msg),
-        clauseIdsToUse
+        clauseIdsToUse,
+        domain
       );
       // Save to history using selected Client and capture generated ID
       let savedId: string | undefined = undefined;
@@ -329,6 +331,8 @@ const App: React.FC = () => {
                         onRemoveFile={handleRemoveQuote}
                         variant="primary"
                         disabled={!selectedClient}
+                        domain={domain}
+                        onDomainChange={setDomain}
                       />
                     </div>
 
