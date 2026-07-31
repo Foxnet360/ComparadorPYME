@@ -18,7 +18,7 @@ import {
 } from './promptBuilder.base';
 import { promptStrategyFactory } from './unifiedComparison/promptStrategyFactory';
 
-export interface PromptContext extends BasePromptContext {}
+export type PromptContext = BasePromptContext;
 
 /**
  * Build a domain-aware extraction prompt for a format family.
