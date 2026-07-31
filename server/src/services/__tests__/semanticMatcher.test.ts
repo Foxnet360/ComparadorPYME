@@ -117,6 +117,18 @@ describe('semanticMatcher', () => {
       expect(result.method).toBe('thesaurus');
     });
 
+    it('should scope matches to the requested domain', async () => {
+      const pymeResult = await semanticMatcher.matchCoverage(
+        'Responsabilidad Civil Extracontractual'
+      );
+      const autosResult = await semanticMatcher.matchCoverage(
+        'Responsabilidad Civil Extracontractual',
+        'autos'
+      );
+
+      expect(pymeResult.canonicalName).toBe('Responsabilidad Civil (RCE)');
+      expect(autosResult.canonicalName).toBe('Responsabilidad Civil Extracontractual Vehicular');
+    });
     it('should prioritize longer partial matches for specificity', async () => {
       // "ROTURA DE VIDRIOS" should map to Vidrios Planos (cat 7) not Rotura de Maquinaria (cat 5)
       // because "vidrios" (7 chars) is more specific than "rotura" (6 chars)

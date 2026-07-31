@@ -165,7 +165,7 @@ function matchByThesaurus(
     }
 
     // Obtener sinónimos del thesaurus
-    const definition = thesaurusService.getCoberturaDefinition(category.name);
+    const definition = thesaurusService.getCoberturaDefinition(category.name, domain);
     if (definition) {
       const allTerms = [...definition.sinonimos, ...definition.terminos_busqueda];
 
@@ -233,7 +233,7 @@ function matchByFuzzy(coverageName: string, domain: string = 'pyme'): SemanticMa
     }
 
     // También buscar en sinónimos
-    const definition = thesaurusService.getCoberturaDefinition(category.name);
+    const definition = thesaurusService.getCoberturaDefinition(category.name, domain);
     if (definition) {
       const allTerms = [...definition.sinonimos, ...definition.terminos_busqueda];
 

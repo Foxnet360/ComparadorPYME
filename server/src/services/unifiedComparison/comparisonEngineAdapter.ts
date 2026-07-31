@@ -82,7 +82,12 @@ export class ComparisonEngineAdapter {
       console.log(
         `📦 [Adapter] Routing to legacy batch service (flag disabled) [${correlationId}]`
       );
-      const matrix = await this.runLegacyBatch(pdfPaths, 'unified_disabled_by_flag', correlationId);
+      const matrix = await this.runLegacyBatch(
+        pdfPaths,
+        'unified_disabled_by_flag',
+        correlationId,
+        domain
+      );
       return {
         matrix,
         engine: 'fallback',
@@ -142,7 +147,7 @@ export class ComparisonEngineAdapter {
         `🔄 [Adapter] routing=fallback, reason=${reason}, correlationId=${fallbackCorrelationId}`
       );
 
-      const matrix = await this.runLegacyBatch(pdfPaths, reason, fallbackCorrelationId);
+      const matrix = await this.runLegacyBatch(pdfPaths, reason, fallbackCorrelationId, domain);
 
       return {
         matrix,
@@ -223,12 +228,13 @@ export class ComparisonEngineAdapter {
   private async runLegacyBatch(
     pdfPaths: string[],
     reason: string,
-    correlationId: string
+    correlationId: string,
+    domain: InsuranceDomain = 'pyme'
   ): Promise<MatrixRow[]> {
     console.log(
-      `🔄 [Adapter] Falling back to legacy batch service [${correlationId}], reason=${reason}`
+      `🔄 [Adapter] Falling back to legacy batch service [${correlationId}], reason=${reason}, domain=${domain}`
     );
-    const quotes = await processQuotesBatch(pdfPaths, { concurrencyLimit: 2 });
+    const quotes = await processQuotesBatch(pdfPaths, { concurrencyLimit: 2, domain });
     return quotesToMatrixRows(quotes);
   }
 }
