@@ -8,16 +8,10 @@
  */
 
 import { loadDomainJson } from './domainBundleLoader';
-import {
-  InsuranceDomain,
-  DomainTaxonomy,
-  DomainTaxonomyRegistry,
-} from '../types/domain';
+import { InsuranceDomain, DomainTaxonomy, DomainTaxonomyRegistry } from '../types/domain';
 
 function warnUnknownDomain(value: unknown): void {
-  console.warn(
-    `[DomainTaxonomyRegistry] Unknown domain "${value}", falling back to "pyme"`
-  );
+  console.warn(`[DomainTaxonomyRegistry] Unknown domain "${value}", falling back to "pyme"`);
 }
 
 function resolveDomain(value: InsuranceDomain | string): InsuranceDomain {

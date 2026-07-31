@@ -1,17 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
-import {
-  domainTaxonomyRegistry,
-  resolveInsuranceDomain,
-} from '../domainTaxonomyRegistry';
+import { domainTaxonomyRegistry, resolveInsuranceDomain } from '../domainTaxonomyRegistry';
 
 describe('domainTaxonomyRegistry', () => {
   it('loads the 14 existing PYME categories unchanged', () => {
     const taxonomy = domainTaxonomyRegistry.getTaxonomy('pyme');
     expect(taxonomy.domain).toBe('pyme');
     expect(taxonomy.categories).toHaveLength(14);
-    expect(taxonomy.categories[0].name).toBe(
-      'Incendio (Edificio y Contenidos)'
-    );
+    expect(taxonomy.categories[0].name).toBe('Incendio (Edificio y Contenidos)');
   });
 
   it('returns the canonical PYME coverage names', () => {
@@ -26,13 +21,9 @@ describe('domainTaxonomyRegistry', () => {
     expect(taxonomy.categories.length).toBeGreaterThan(0);
 
     const names = taxonomy.categories.map((category) => category.name);
-    expect(names).toContain(
-      'Responsabilidad Civil Extracontractual Vehicular'
-    );
+    expect(names).toContain('Responsabilidad Civil Extracontractual Vehicular');
     expect(names).toContain('Pérdida Total (hurto, daños, PT)');
-    expect(names).toContain(
-      'Deducibles (SMMLV / días de inmovilización / %)'
-    );
+    expect(names).toContain('Deducibles (SMMLV / días de inmovilización / %)');
   });
 
   it('falls back to pyme for unknown domains and warns', () => {
@@ -41,9 +32,7 @@ describe('domainTaxonomyRegistry', () => {
     const taxonomy = domainTaxonomyRegistry.getTaxonomy('salud' as never);
 
     expect(taxonomy.domain).toBe('pyme');
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Unknown domain "salud"')
-    );
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Unknown domain "salud"'));
     warnSpy.mockRestore();
   });
 });
@@ -64,9 +53,7 @@ describe('resolveInsuranceDomain', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     expect(resolveInsuranceDomain('vida')).toBe('pyme');
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Unknown domain "vida"')
-    );
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Unknown domain "vida"'));
     warnSpy.mockRestore();
   });
 });

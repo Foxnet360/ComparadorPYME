@@ -2,10 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { Response } from 'express';
 import fs from 'fs';
 import path from 'path';
-import {
-  analysisController,
-  resolveAnalysisDomain,
-} from '../analysisController';
+import { analysisController, resolveAnalysisDomain } from '../analysisController';
 import type { AuthenticatedRequest } from '../../middleware/auth';
 
 vi.mock('../../services/unifiedComparison/comparisonEngineAdapter', () => ({

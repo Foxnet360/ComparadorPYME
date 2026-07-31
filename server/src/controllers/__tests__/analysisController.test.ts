@@ -319,10 +319,15 @@ describe('analysisController - matrixRowsToComparisonReport', () => {
   });
 
   it('propagates the resolved domain to semanticMatcher.matchCoverage', async () => {
-    const matrixRows: MatrixRow[] = [{
-      type: 'data', id: 'domain_row', label: 'Domain Test Coverage', sectionId: 1,
-      cells: [{ value: 'Incluido', isExcluded: false, isWinner: false, confidence: 0.8 }],
-    }];
+    const matrixRows: MatrixRow[] = [
+      {
+        type: 'data',
+        id: 'domain_row',
+        label: 'Domain Test Coverage',
+        sectionId: 1,
+        cells: [{ value: 'Incluido', isExcluded: false, isWinner: false, confidence: 0.8 }],
+      },
+    ];
     const quoteFiles = [{ originalname: 'COTIZACION-MAPFRE.pdf' }] as Express.Multer.File[];
 
     await matrixRowsToComparisonReport(matrixRows, quoteFiles);

@@ -2,20 +2,10 @@ import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 
-const migrationsDir = path.resolve(
-  __dirname,
-  '..',
-  '..',
-  '..',
-  'supabase',
-  'migrations'
-);
+const migrationsDir = path.resolve(__dirname, '..', '..', '..', 'supabase', 'migrations');
 
 describe('migration 022_coverage_mappings_domain_scoped', () => {
-  const migrationPath = path.join(
-    migrationsDir,
-    '022_coverage_mappings_domain_scoped.sql'
-  );
+  const migrationPath = path.join(migrationsDir, '022_coverage_mappings_domain_scoped.sql');
   const indexPath = path.join(
     migrationsDir,
     '022b_coverage_mappings_domain_index_concurrently.sql'

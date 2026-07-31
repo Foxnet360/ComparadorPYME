@@ -751,7 +751,9 @@ describe('flatTableParser.parseV2 graph canonicalization', () => {
     const graphService = makeGraphServiceStub({
       query: vi.fn(async (rawName, _options) => ({
         rawName,
-        mappings: [{ canonicalId: 'amparo-basico-todo-riesgo', confidence: 0.92, provenance: 'maps_to' }],
+        mappings: [
+          { canonicalId: 'amparo-basico-todo-riesgo', confidence: 0.92, provenance: 'maps_to' },
+        ],
         composite: false,
       })),
     });
@@ -760,7 +762,12 @@ describe('flatTableParser.parseV2 graph canonicalization', () => {
       rows: [{ label: 'Daño Material Global', cells: [{ insurer: 'BBVA', value: '$100M' }] }],
     });
 
-    await flatTableParser.parseV2(input, { ...baseOptions, graphEnabled: true, graphService, domain: 'autos' });
+    await flatTableParser.parseV2(input, {
+      ...baseOptions,
+      graphEnabled: true,
+      graphService,
+      domain: 'autos',
+    });
 
     expect(graphService.query).toHaveBeenCalledWith(
       'Daño Material Global',

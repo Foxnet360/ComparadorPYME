@@ -152,9 +152,7 @@ export interface AnalysisDomainResolution {
  * - `pyme` or `autos` → accepted as-is.
  * - Anything else → validation error (HTTP 400).
  */
-export function resolveAnalysisDomain(
-  rawDomain: unknown
-): AnalysisDomainResolution {
+export function resolveAnalysisDomain(rawDomain: unknown): AnalysisDomainResolution {
   if (rawDomain === undefined || rawDomain === null || rawDomain === '') {
     return { domain: 'pyme' };
   }
