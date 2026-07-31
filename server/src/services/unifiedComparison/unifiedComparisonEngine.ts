@@ -5,6 +5,7 @@
 
 import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { ComparisonEngineConfig, UnifiedComparisonResult } from '../../types/unifiedComparison';
+import { InsuranceDomain } from '../../types/domain';
 import { comparisonPromptBuilder } from './comparisonPromptBuilder';
 import { FlatComparisonResult } from './comparisonSchema';
 import { flatTableParser } from './flatTableParser';
@@ -71,6 +72,12 @@ export interface CompareOptions {
    */
   graphEnabled?: boolean;
   templateHintsEnabled?: boolean;
+  /**
+   * Active insurance domain. Defaults to `pyme` for backward compatibility.
+   * Included in the cache hash so autos and pyme results never share a cache
+   * entry.
+   */
+  domain?: InsuranceDomain;
 }
 
 export interface TextExtractor {
@@ -114,10 +121,12 @@ export class UnifiedComparisonEngine {
     pdfPaths: string[],
     schemaNamespace: string,
     graphEnabled: boolean,
-    templateHintsEnabled: boolean
+    templateHintsEnabled: boolean,
+    domain: InsuranceDomain
   ): string {
     const hash = crypto.createHash('md5');
     hash.update(schemaNamespace);
+    hash.update(domain);
     hash.update(graphEnabled ? 'g1' : 'g0');
     hash.update(templateHintsEnabled ? 't1' : 't0');
     for (const path of pdfPaths.sort()) {
@@ -145,9 +154,10 @@ export class UnifiedComparisonEngine {
       unifiedComparisonFlag.isGranularComparisonSchemaEnabled();
     const graphEnabled = granularEnabled && (options?.graphEnabled ?? false);
     const templateHintsEnabled = granularEnabled && (options?.templateHintsEnabled ?? false);
+    const domain: InsuranceDomain = options?.domain ?? 'pyme';
 
     console.log(
-      `🔍 [UnifiedComparison] Starting comparison for ${pdfPaths.length} quotes [${correlationId}]`
+      `🔍 [UnifiedComparison] Starting comparison for ${pdfPaths.length} quotes [${correlationId}] domain=${domain}`
     );
     console.log(
       `🚩 [UnifiedComparison] granularComparisonSchema=${granularEnabled} graphEnabled=${graphEnabled} templateHintsEnabled=${templateHintsEnabled} [${correlationId}]`
@@ -158,7 +168,8 @@ export class UnifiedComparisonEngine {
       pdfPaths,
       granularEnabled ? 'v2' : 'v1',
       graphEnabled,
-      templateHintsEnabled
+      templateHintsEnabled,
+      domain
     );
     try {
       const cached = await getCachedUnifiedResult<FlatComparisonResult>(fileHash);
@@ -179,7 +190,7 @@ export class UnifiedComparisonEngine {
       let templateAddons: string[] = [];
       let matchedInsurers: string[] = [];
       if (templateHintsEnabled) {
-        const matchResult = await this.matchTemplates(pdfPaths, correlationId);
+        const matchResult = await this.matchTemplates(pdfPaths, correlationId, domain);
         templateAddons = matchResult.addons;
         matchedInsurers = matchResult.insurers;
         console.log(
@@ -213,7 +224,8 @@ export class UnifiedComparisonEngine {
         pdfPaths.length,
         correlationId,
         granularEnabled,
-        graphEnabled
+        graphEnabled,
+        domain
       );
 
       // 6. Add runtime metadata
@@ -300,7 +312,8 @@ export class UnifiedComparisonEngine {
    */
   private async matchTemplates(
     pdfPaths: string[],
-    correlationId: string
+    correlationId: string,
+    domain: InsuranceDomain
   ): Promise<{ addons: string[]; insurers: string[] }> {
     const addons: string[] = [];
     const insurers: string[] = [];
@@ -325,7 +338,7 @@ export class UnifiedComparisonEngine {
         const match = await this.deps.templateMatcher.matchTemplate({
           text,
           pages,
-          domain: 'pyme',
+          domain,
         });
         if (!match.insurer || !match.promptAddon) {
           continue;
@@ -553,7 +566,8 @@ export class UnifiedComparisonEngine {
     pdfCount: number,
     correlationId: string,
     granularEnabled: boolean,
-    graphEnabled?: boolean
+    graphEnabled?: boolean,
+    domain: InsuranceDomain = 'pyme'
   ): Promise<FlatComparisonResult> {
     let retries = 0;
     let lastError: string | null = null;
@@ -565,6 +579,7 @@ export class UnifiedComparisonEngine {
           model: this.config.model,
           confidence: 0,
           needsHumanReview: true,
+          domain,
           ...(granularEnabled
             ? { graphEnabled: graphEnabled ?? false, graphService: coverageGraphService }
             : {}),

@@ -7,6 +7,7 @@
 
 import { randomUUID } from 'crypto';
 import { MatrixRow } from '../../types';
+import { InsuranceDomain } from '../../types/domain';
 import {
   unifiedComparisonEngine,
   UnifiedComparisonError,
@@ -37,6 +38,14 @@ export interface ComparisonAdapterResult {
   /** Slice decisions applied to this result; always false on V1/fallback paths. */
   graphEnabled?: boolean;
   templateHintsEnabled?: boolean;
+  /** Domain used to produce this comparison; always present for callers. */
+  domain?: InsuranceDomain;
+}
+
+export interface ComparisonAdapterOptions {
+  userId?: string;
+  domain?: InsuranceDomain;
+  granularComparisonSchema?: boolean;
 }
 
 export class ComparisonEngineAdapter {
@@ -47,10 +56,11 @@ export class ComparisonEngineAdapter {
    */
   async generateComparison(
     pdfPaths: string[],
-    options?: string | { userId?: string; granularComparisonSchema?: boolean }
+    options?: string | ComparisonAdapterOptions
   ): Promise<ComparisonAdapterResult> {
     const opts = typeof options === 'string' ? { userId: options } : options || {};
     const userId = opts.userId;
+    const domain: InsuranceDomain = opts.domain ?? 'pyme';
     const granularOverride = opts.granularComparisonSchema;
     const correlationId = `adapter-${Date.now()}-${randomUUID().slice(0, 8)}`;
     const flagEnabled = unifiedComparisonFlag.isEnabled(userId);
@@ -65,7 +75,7 @@ export class ComparisonEngineAdapter {
       v2Schema && this.isSliceEnabled('useUnifiedTemplateHints', 'templateHints', userId);
 
     console.log(
-      `🚩 [Adapter] Unified engine ${flagEnabled ? 'ENABLED' : 'DISABLED'} for user ${userId || 'anonymous'} [${correlationId}]`
+      `🚩 [Adapter] Unified engine ${flagEnabled ? 'ENABLED' : 'DISABLED'} for user ${userId || 'anonymous'} domain=${domain} [${correlationId}]`
     );
 
     if (!flagEnabled) {
@@ -81,6 +91,7 @@ export class ComparisonEngineAdapter {
         correlationId,
         graphEnabled: false,
         templateHintsEnabled: false,
+        domain,
       };
     }
 
@@ -91,6 +102,7 @@ export class ComparisonEngineAdapter {
       const compareOptions: CompareOptions = {
         graphEnabled,
         templateHintsEnabled,
+        domain,
         ...(granularOverride !== undefined ? { granularComparisonSchema: granularOverride } : {}),
       };
       const result = await unifiedComparisonEngine.compare(pdfPaths, compareOptions);
@@ -113,6 +125,7 @@ export class ComparisonEngineAdapter {
           schemaVersion === 2 ? (result as FlatComparisonResultV2).quoteMetadata : undefined,
         graphEnabled: schemaVersion === 2 ? graphEnabled : false,
         templateHintsEnabled: schemaVersion === 2 ? templateHintsEnabled : false,
+        domain,
       };
     } catch (error) {
       const reason =
@@ -139,6 +152,7 @@ export class ComparisonEngineAdapter {
         correlationId: fallbackCorrelationId,
         graphEnabled: false,
         templateHintsEnabled: false,
+        domain,
       };
     }
   }
