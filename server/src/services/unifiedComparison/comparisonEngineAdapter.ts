@@ -116,7 +116,9 @@ export class ComparisonEngineAdapter {
         granularOverride ?? unifiedComparisonFlag.isGranularComparisonSchemaEnabled()
       );
       const matrix =
-        schemaVersion === 2 ? flatResultToMatrixRowsV2(result) : flatResultToMatrixRows(result);
+        schemaVersion === 2
+          ? flatResultToMatrixRowsV2(result, domain)
+          : flatResultToMatrixRows(result, domain);
 
       console.log(
         `✅ [Adapter] Unified engine succeeded [${correlationId}] schemaVersion=${schemaVersion}`
@@ -235,7 +237,7 @@ export class ComparisonEngineAdapter {
       `🔄 [Adapter] Falling back to legacy batch service [${correlationId}], reason=${reason}, domain=${domain}`
     );
     const quotes = await processQuotesBatch(pdfPaths, { concurrencyLimit: 2, domain });
-    return quotesToMatrixRows(quotes);
+    return quotesToMatrixRows(quotes, domain);
   }
 }
 
