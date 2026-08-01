@@ -73,17 +73,13 @@ export const DomainSelector: React.FC<DomainSelectorProps> = ({
             >
               <div
                 className={`p-2 rounded-lg mr-3 flex-shrink-0 transition-colors ${
-                  isSelected
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-slate-100 text-slate-500'
+                  isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'
                 }`}
               >
                 <Icon size={20} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-sm leading-snug truncate">
-                  {option.label}
-                </div>
+                <div className="font-semibold text-sm leading-snug truncate">{option.label}</div>
                 <div
                   className={`text-xs truncate mt-0.5 ${
                     isSelected ? 'text-indigo-700 font-medium' : 'text-slate-500'

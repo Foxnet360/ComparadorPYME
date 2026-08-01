@@ -79,11 +79,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   return (
     <div className="w-full h-full flex flex-col space-y-4">
       {shouldDisplayDomainSelector && (
-        <DomainSelector
-          selectedDomain={domain}
-          onChange={handleDomainChange}
-          disabled={disabled}
-        />
+        <DomainSelector selectedDomain={domain} onChange={handleDomainChange} disabled={disabled} />
       )}
 
       <div
