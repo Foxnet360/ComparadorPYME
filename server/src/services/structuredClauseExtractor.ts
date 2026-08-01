@@ -286,13 +286,18 @@ export const structuredClauseExtractor = {
   },
 
   /**
-   * Search for structured clause by insurer and coverage
+   * Search for structured clause by insurer, coverage, and domain
    */
-  async searchClause(insurerName: string, coverageName?: string): Promise<StructuredClause | null> {
+  async searchClause(
+    insurerName: string,
+    coverageName?: string,
+    domain?: string
+  ): Promise<StructuredClause | null> {
     try {
       const { data, error } = await supabase.rpc('search_structured_clauses', {
         p_insurer_name: insurerName,
         p_coverage_name: coverageName,
+        p_domain: domain || null,
         match_count: 1,
       } as unknown as never);
 

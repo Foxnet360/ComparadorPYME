@@ -294,10 +294,10 @@ export const reconciliationService = {
 
     const results: ReconciliationResult[] = [];
 
-    // Fetch clause once per insurer (not per coverage)
+    // Fetch clause once per insurer and domain (not per coverage)
     let clause: StructuredClause | null = null;
     try {
-      clause = await structuredClauseExtractor.searchClause(insurerName);
+      clause = await structuredClauseExtractor.searchClause(insurerName, undefined, options.domain);
     } catch (err: unknown) {
       console.warn(
         `⚠️ [ReconciliationService] Clause search failed for ${insurerName}:`,

@@ -238,6 +238,7 @@ async function processFile(entry: ManifestEntry, state: SeedState): Promise<bool
       documentType: entry.documentType,
       productName: entry.productName,
       version: entry.version,
+      domain: (entry as { domain?: string }).domain || 'pyme',
       uploadedBy: 'seed-script',
     };
 
