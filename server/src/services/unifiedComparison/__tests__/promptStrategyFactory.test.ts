@@ -27,7 +27,7 @@ describe('promptStrategyFactory', () => {
   });
 
   it('falls back to pyme for unknown domains', () => {
-    const strategy = getStrategy('salud' as InsuranceDomain);
+    const strategy = getStrategy('cumplimiento' as InsuranceDomain);
     const prompt = strategy.buildPromptForFamily('TABLE-INTEGRATED');
     const baseline = buildPymePromptForFamily('TABLE-INTEGRATED');
     expect(prompt).toBe(baseline);
@@ -259,6 +259,30 @@ describe('vidaGrupoPromptStrategy', () => {
     expect(schema.properties).toHaveProperty('insurerName');
     expect(schema.properties).toHaveProperty('groupDetails');
     expect(schema.properties).toHaveProperty('suicideCoverage');
+    expect(schema.properties).toHaveProperty('rawCoverages');
+  });
+});
+
+describe('saludPromptStrategy', () => {
+  it('includes salud-specific extraction fields and regulatory compliance references', () => {
+    const strategy = getStrategy('salud');
+    const prompt = strategy.buildPromptForFamily('TABLE-INTEGRATED');
+
+    expect(prompt).toContain('PLANES VOLUNTARIOS DE SALUD');
+    expect(prompt).toContain('Res. 244/2019');
+    expect(prompt).toContain('Ley 1438');
+    expect(prompt).toContain('Oncolog');
+    expect(prompt).toContain('Maternidad');
+    expect(prompt).toContain('Portabilidad');
+  });
+
+  it('returns a structured JSON schema for salud extraction', () => {
+    const schema = getStrategy('salud').getResponseSchema();
+    expect(schema.type).toBe('object');
+    expect(schema.properties).toHaveProperty('insurerName');
+    expect(schema.properties).toHaveProperty('regulatoryCompliance');
+    expect(schema.properties).toHaveProperty('preexistingConditions');
+    expect(schema.properties).toHaveProperty('providerNetwork');
     expect(schema.properties).toHaveProperty('rawCoverages');
   });
 });

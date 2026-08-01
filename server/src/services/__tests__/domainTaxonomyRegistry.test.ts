@@ -50,13 +50,25 @@ describe('domainTaxonomyRegistry', () => {
     expect(names).toContain('Auxilio Educativo para Hijos');
   });
 
+  it('loads the salud taxonomy with 15 categories including Res. 244/2019 compliance', () => {
+    const taxonomy = domainTaxonomyRegistry.getTaxonomy('salud');
+    expect(taxonomy.domain).toBe('salud');
+    expect(taxonomy.categories).toHaveLength(15);
+
+    const names = taxonomy.categories.map((category) => category.name);
+    expect(names).toContain('Plan de Beneficios Base (Complemento o Sustitución del PBS)');
+    expect(names).toContain('Oncología (Tratamientos de Alto Costo)');
+    expect(names).toContain('Maternidad y Neonatología');
+    expect(names).toContain('Portabilidad y Carencias Regulatorias (Res. 244/2019 · Ley 1438)');
+  });
+
   it('falls back to pyme for unknown domains and warns', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const taxonomy = domainTaxonomyRegistry.getTaxonomy('salud' as never);
+    const taxonomy = domainTaxonomyRegistry.getTaxonomy('cumplimiento' as never);
 
     expect(taxonomy.domain).toBe('pyme');
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Unknown domain "salud"'));
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Unknown domain "cumplimiento"'));
     warnSpy.mockRestore();
   });
 });
@@ -68,11 +80,12 @@ describe('resolveInsuranceDomain', () => {
     expect(resolveInsuranceDomain('')).toBe('pyme');
   });
 
-  it('accepts pyme, autos, copropiedades, and vida_grupo', () => {
+  it('accepts pyme, autos, copropiedades, vida_grupo, and salud', () => {
     expect(resolveInsuranceDomain('pyme')).toBe('pyme');
     expect(resolveInsuranceDomain('autos')).toBe('autos');
     expect(resolveInsuranceDomain('copropiedades')).toBe('copropiedades');
     expect(resolveInsuranceDomain('vida_grupo')).toBe('vida_grupo');
+    expect(resolveInsuranceDomain('salud')).toBe('salud');
   });
 
   it('falls back to pyme for unknown values and warns', () => {

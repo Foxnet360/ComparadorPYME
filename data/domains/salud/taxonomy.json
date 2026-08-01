@@ -1,0 +1,262 @@
+{
+  "version": "1.0.0",
+  "domain": "salud",
+  "metadata": {
+    "region": "Colombia",
+    "currency": "COP",
+    "source": "Planes Voluntarios de Salud (PVS) — Res. 244/2019 MinSalud · Ley 1438/2011 · Circular 049/2013 SFC",
+    "regulatory": {
+      "framework": "Resolución 244 de 2019 (Ministerio de Salud y Protección Social)",
+      "portabilityLaw": "Ley 1438 de 2011, Artículo 13",
+      "supervisoryBody": "Superintendencia Financiera de Colombia (SFC)"
+    }
+  },
+  "categories": [
+    {
+      "id": "salud_01",
+      "name": "Plan de Beneficios Base (Complemento o Sustitución del PBS)",
+      "section": "ESTRUCTURA DEL PLAN",
+      "isRequired": true,
+      "synonyms": [
+        "plan de beneficios",
+        "plan complementario",
+        "plan sustitutivo",
+        "PBS",
+        "POS",
+        "cobertura base",
+        "plan básico",
+        "beneficios cubiertos"
+      ]
+    },
+    {
+      "id": "salud_02",
+      "name": "Hospitalización y Cirugía",
+      "section": "COBERTURAS HOSPITALARIAS",
+      "isRequired": true,
+      "synonyms": [
+        "hospitalización",
+        "internación",
+        "cirugía",
+        "procedimientos quirúrgicos",
+        "sala de operaciones",
+        "habitación privada",
+        "UCI",
+        "unidad de cuidados intensivos",
+        "días de hospitalización"
+      ]
+    },
+    {
+      "id": "salud_03",
+      "name": "Consulta Médica Especialista y Telemedicina",
+      "section": "COBERTURAS AMBULATORIAS",
+      "isRequired": true,
+      "synonyms": [
+        "consulta especialista",
+        "consulta médica",
+        "médico especialista",
+        "telemedicina",
+        "teleconsulta",
+        "consulta ambulatoria",
+        "copago consulta",
+        "red de médicos"
+      ]
+    },
+    {
+      "id": "salud_04",
+      "name": "Medicamentos (Ambulatorios y Hospitalarios)",
+      "section": "COBERTURAS AMBULATORIAS",
+      "isRequired": false,
+      "synonyms": [
+        "medicamentos",
+        "fármacos",
+        "drogas",
+        "medicación ambulatoria",
+        "medicación hospitalaria",
+        "cobertura farmacéutica",
+        "lista de medicamentos",
+        "formulario de medicamentos"
+      ]
+    },
+    {
+      "id": "salud_05",
+      "name": "Urgencias (Nacional e Internacional)",
+      "section": "COBERTURAS DE URGENCIAS",
+      "isRequired": true,
+      "synonyms": [
+        "urgencias",
+        "emergencias",
+        "urgencias nacionales",
+        "urgencias internacionales",
+        "sala de urgencias",
+        "atención de emergencia",
+        "internación urgente"
+      ]
+    },
+    {
+      "id": "salud_06",
+      "name": "Oncología (Tratamientos de Alto Costo)",
+      "section": "ENFERMEDADES DE ALTO COSTO",
+      "isRequired": false,
+      "synonyms": [
+        "oncología",
+        "cáncer",
+        "quimioterapia",
+        "radioterapia",
+        "inmunoterapia",
+        "tratamiento oncológico",
+        "diagnóstico de cáncer",
+        "enfermedades catastróficas",
+        "alto costo"
+      ]
+    },
+    {
+      "id": "salud_07",
+      "name": "Maternidad y Neonatología",
+      "section": "COBERTURAS ESPECIALES",
+      "isRequired": false,
+      "synonyms": [
+        "maternidad",
+        "embarazo",
+        "parto",
+        "neonatología",
+        "recién nacido",
+        "RN patológico",
+        "control prenatal",
+        "semanas de carencia maternidad",
+        "lactancia"
+      ]
+    },
+    {
+      "id": "salud_08",
+      "name": "Cobertura Internacional y Repatriación",
+      "section": "COBERTURAS DE VIAJE",
+      "isRequired": false,
+      "synonyms": [
+        "cobertura internacional",
+        "emergencia en el exterior",
+        "repatriación",
+        "evacuación médica",
+        "atención médica en el exterior",
+        "viaje internacional",
+        "asistencia viajes"
+      ]
+    },
+    {
+      "id": "salud_09",
+      "name": "Salud Mental y Psiquiatría",
+      "section": "COBERTURAS ESPECIALES",
+      "isRequired": false,
+      "synonyms": [
+        "salud mental",
+        "psiquiatría",
+        "psicología",
+        "internación psiquiátrica",
+        "terapia psicológica",
+        "sesiones de psicología",
+        "trastornos mentales",
+        "ansiedad",
+        "depresión"
+      ]
+    },
+    {
+      "id": "salud_10",
+      "name": "Odontología (Preventiva, Restaurativa y Ortodoncia)",
+      "section": "COBERTURAS COMPLEMENTARIAS",
+      "isRequired": false,
+      "synonyms": [
+        "odontología",
+        "dental",
+        "ortodoncia",
+        "prótesis dental",
+        "implantes",
+        "profilaxis",
+        "limpieza dental",
+        "endodoncia",
+        "exodoncia",
+        "cobertura dental"
+      ]
+    },
+    {
+      "id": "salud_11",
+      "name": "Optometría y Oftalmología",
+      "section": "COBERTURAS COMPLEMENTARIAS",
+      "isRequired": false,
+      "synonyms": [
+        "optometría",
+        "oftalmología",
+        "gafas",
+        "monturas",
+        "lentes de contacto",
+        "cirugía refractiva",
+        "LASIK",
+        "examen visual",
+        "auxilio óptico"
+      ]
+    },
+    {
+      "id": "salud_12",
+      "name": "Enfermedades Preexistentes (Declaración y Exclusiones)",
+      "section": "CONDICIONES DE ASEGURABILIDAD",
+      "isRequired": true,
+      "synonyms": [
+        "preexistencias",
+        "enfermedades preexistentes",
+        "condiciones previas",
+        "declaración de salud",
+        "exclusiones preexistentes",
+        "aceptación de preexistencias",
+        "cobertura preexistentes"
+      ]
+    },
+    {
+      "id": "salud_13",
+      "name": "Red de Prestadores (IPS, Clínicas y Cobertura Geográfica)",
+      "section": "RED ASISTENCIAL",
+      "isRequired": true,
+      "synonyms": [
+        "red de IPS",
+        "red de clínicas",
+        "red de prestadores",
+        "red propia",
+        "red complementaria",
+        "cobertura geográfica",
+        "hospitales disponibles",
+        "libre escogencia IPS"
+      ]
+    },
+    {
+      "id": "salud_14",
+      "name": "Copagos, Deducibles y Cuotas Moderadoras",
+      "section": "ESTRUCTURA DE COSTOS COMPARTIDOS",
+      "isRequired": true,
+      "synonyms": [
+        "copago",
+        "deducible",
+        "cuota moderadora",
+        "coaseguro",
+        "tope anual",
+        "desembolso de bolsillo",
+        "límite copago",
+        "franquicia"
+      ]
+    },
+    {
+      "id": "salud_15",
+      "name": "Portabilidad y Carencias Regulatorias (Res. 244/2019 · Ley 1438)",
+      "section": "CUMPLIMIENTO NORMATIVO",
+      "isRequired": true,
+      "synonyms": [
+        "portabilidad",
+        "período de carencia",
+        "carencia obligatoria",
+        "Resolución 244",
+        "PVS",
+        "plan voluntario de salud",
+        "portabilidad entre ciudades",
+        "cambio de aseguradora",
+        "continuidad cobertura",
+        "Ley 1438"
+      ]
+    }
+  ]
+}

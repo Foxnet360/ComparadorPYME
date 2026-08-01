@@ -1,7 +1,7 @@
 import React from 'react';
-import { Building2, Car, Building, Users } from 'lucide-react';
+import { Building2, Car, Building, Users, Stethoscope } from 'lucide-react';
 
-export type InsuranceDomain = 'pyme' | 'autos' | 'copropiedades' | 'vida_grupo';
+export type InsuranceDomain = 'pyme' | 'autos' | 'copropiedades' | 'vida_grupo' | 'salud';
 
 export interface DomainOption {
   id: InsuranceDomain;
@@ -41,6 +41,12 @@ const DOMAIN_OPTIONS: DomainOption[] = [
     label: 'Vida Grupo / Colectivo',
     sublabel: 'Pólizas colectivas de vida y amparos',
     icon: Users,
+  },
+  {
+    id: 'salud',
+    label: 'Salud / Medicina Prepagada',
+    sublabel: 'Planes voluntarios de salud (Res. 244/2019)',
+    icon: Stethoscope,
   },
 ];
 
