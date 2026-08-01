@@ -217,3 +217,26 @@ describe('autosPromptStrategy', () => {
     expect(prompt).toContain('AUTOS');
   });
 });
+
+describe('copropiedadesPromptStrategy', () => {
+  it('includes copropiedades-specific extraction fields and Ley 675 references', () => {
+    const strategy = getStrategy('copropiedades');
+    const prompt = strategy.buildPromptForFamily('TABLE-INTEGRATED');
+
+    expect(prompt).toContain('COPROPIEDADES');
+    expect(prompt).toContain('Ley 675');
+    expect(prompt).toContain('Incendio y Terremoto sobre Bienes Comunes');
+    expect(prompt).toContain('Responsabilidad Civil Extracontractual Áreas Comunes');
+    expect(prompt).toContain('RC Directores y Administradores');
+    expect(prompt).toContain('Equipo Eléctrico y Maquinaria');
+    expect(prompt).toContain('Daños por Agua');
+  });
+
+  it('returns a structured JSON schema for copropiedades extraction', () => {
+    const schema = getStrategy('copropiedades').getResponseSchema();
+    expect(schema.type).toBe('object');
+    expect(schema.properties).toHaveProperty('insurerName');
+    expect(schema.properties).toHaveProperty('ley675Compliance');
+    expect(schema.properties).toHaveProperty('rawCoverages');
+  });
+});

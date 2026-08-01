@@ -68,6 +68,7 @@ function getExpectedCoverages(domain: InsuranceDomain = 'pyme'): string[] {
 const MARKET_PRICE_BENCHMARKS: Record<InsuranceDomain, number> = {
   pyme: 8_500_000,
   autos: 2_500_000,
+  copropiedades: 15_000_000,
 };
 
 // Autos scoring thresholds (COP)

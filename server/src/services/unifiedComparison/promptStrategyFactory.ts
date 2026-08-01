@@ -3,6 +3,7 @@ import { TemplateRegistryEntry, LayoutTable } from '../../schemas/templateRegist
 import { InsuranceDomain } from '../../types/domain';
 import { pymePromptStrategy } from './pymePromptStrategy';
 import { autosPromptStrategy } from './autosPromptStrategy';
+import { copropiedadesPromptStrategy } from './copropiedadesPromptStrategy';
 
 export interface PromptContext {
   pageCount?: number;
@@ -25,6 +26,7 @@ export interface PromptStrategy {
 const PROMPT_STRATEGIES: Record<InsuranceDomain, PromptStrategy> = {
   pyme: pymePromptStrategy,
   autos: autosPromptStrategy,
+  copropiedades: copropiedadesPromptStrategy,
 };
 
 /**

@@ -15,7 +15,7 @@ function warnUnknownDomain(value: unknown): void {
 }
 
 function resolveDomain(value: InsuranceDomain | string): InsuranceDomain {
-  if (value === 'pyme' || value === 'autos') return value;
+  if (value === 'pyme' || value === 'autos' || value === 'copropiedades') return value;
   warnUnknownDomain(value);
   return 'pyme';
 }
@@ -34,7 +34,7 @@ export const domainTaxonomyRegistry: DomainTaxonomyRegistry = {
 };
 
 export function isInsuranceDomain(value: unknown): value is InsuranceDomain {
-  return value === 'pyme' || value === 'autos';
+  return value === 'pyme' || value === 'autos' || value === 'copropiedades';
 }
 
 export function resolveInsuranceDomain(value: unknown): InsuranceDomain {

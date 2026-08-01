@@ -317,11 +317,26 @@ export interface UserProfile {
 
 export interface Client {
   id: string;
-  name: string; // Razón Social
+  name: string; // Razón Social o Nombre del Edificio/Conjunto
   nit: string; // Identificación Tributaria
   contactPerson?: string;
   email?: string;
+  phone?: string;
   industry?: string;
+  // Georeferencing & Extended Copropiedad fields
+  address?: string;
+  city?: string;
+  department?: string;
+  latitude?: number;
+  longitude?: number;
+  seismicZone?: 'Alta' | 'Intermedia' | 'Baja';
+  buildingType?: 'Residencial' | 'Comercial' | 'Mixta';
+  towersCount?: number;
+  unitsCount?: number;
+  floorsCount?: number;
+  constructionYear?: number;
+  hasElevators?: boolean;
+  hasPowerPlant?: boolean;
 }
 
 export type QuoteStatus = 'DRAFT' | 'SENT' | 'SOLD' | 'LOST';

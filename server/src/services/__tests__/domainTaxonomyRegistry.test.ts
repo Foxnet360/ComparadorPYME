@@ -26,6 +26,18 @@ describe('domainTaxonomyRegistry', () => {
     expect(names).toContain('Deducibles (SMMLV / días de inmovilización / %)');
   });
 
+  it('loads the copropiedades taxonomy with 14 categories including Ley 675 obligations', () => {
+    const taxonomy = domainTaxonomyRegistry.getTaxonomy('copropiedades');
+    expect(taxonomy.domain).toBe('copropiedades');
+    expect(taxonomy.categories).toHaveLength(14);
+
+    const names = taxonomy.categories.map((category) => category.name);
+    expect(names).toContain('Incendio y Terremoto sobre Bienes Comunes');
+    expect(names).toContain('Responsabilidad Civil Extracontractual Áreas Comunes');
+    expect(names).toContain('RC Directores y Administradores (D&O Copropiedades)');
+    expect(names).toContain('Daños por Agua, Anegación e Inundación');
+  });
+
   it('falls back to pyme for unknown domains and warns', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -44,9 +56,10 @@ describe('resolveInsuranceDomain', () => {
     expect(resolveInsuranceDomain('')).toBe('pyme');
   });
 
-  it('accepts pyme and autos', () => {
+  it('accepts pyme, autos, and copropiedades', () => {
     expect(resolveInsuranceDomain('pyme')).toBe('pyme');
     expect(resolveInsuranceDomain('autos')).toBe('autos');
+    expect(resolveInsuranceDomain('copropiedades')).toBe('copropiedades');
   });
 
   it('falls back to pyme for unknown values and warns', () => {

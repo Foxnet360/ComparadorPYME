@@ -1,7 +1,7 @@
 import React from 'react';
-import { Building2, Car } from 'lucide-react';
+import { Building2, Car, Building } from 'lucide-react';
 
-export type InsuranceDomain = 'pyme' | 'autos';
+export type InsuranceDomain = 'pyme' | 'autos' | 'copropiedades';
 
 export interface DomainOption {
   id: InsuranceDomain;
@@ -29,6 +29,12 @@ const DOMAIN_OPTIONS: DomainOption[] = [
     label: 'Seguro de Autos',
     sublabel: 'Cotizaciones de vehículos y flotas',
     icon: Car,
+  },
+  {
+    id: 'copropiedades',
+    label: 'Copropiedades',
+    sublabel: 'Edificios, conjuntos y Ley 675',
+    icon: Building,
   },
 ];
 

@@ -5,7 +5,7 @@
  * `autos` is the first additional domain and is opt-in via the analyze contract.
  */
 
-export const INSURANCE_DOMAINS = ['pyme', 'autos'] as const;
+export const INSURANCE_DOMAINS = ['pyme', 'autos', 'copropiedades'] as const;
 
 export type InsuranceDomain = (typeof INSURANCE_DOMAINS)[number];
 
@@ -15,7 +15,7 @@ export interface CoverageCategory {
   name: string;
   section?: string;
   isRequired?: boolean;
-  /** Preferred synonym list for new taxonomies (e.g. autos). */
+  /** Preferred synonym list for new taxonomies (e.g. autos, copropiedades). */
   synonyms?: string[];
   /** Legacy alias list used by the existing PYME taxonomy. */
   aliases?: string[];
@@ -43,5 +43,5 @@ export interface DomainTaxonomyRegistry {
 }
 
 export function isInsuranceDomain(value: unknown): value is InsuranceDomain {
-  return value === 'pyme' || value === 'autos';
+  return value === 'pyme' || value === 'autos' || value === 'copropiedades';
 }

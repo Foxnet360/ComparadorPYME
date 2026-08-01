@@ -1,0 +1,282 @@
+{
+  "version": "1.0.0",
+  "domain": "copropiedades",
+  "metadata": {
+    "region": "Colombia",
+    "currency": "COP",
+    "salaryReference": "SMMLV",
+    "salaryValue2024": 1423500,
+    "uvtValue2024": 42412,
+    "source": "Ley 675 de 2001 (Régimen de Propiedad Horizontal en Colombia); SMMLV 2024"
+  },
+  "categories": [
+    {
+      "id": 1,
+      "name": "Incendio y Terremoto sobre Bienes Comunes",
+      "section": "Coberturas Obligatorias Ley 675",
+      "isRequired": true,
+      "synonyms": [
+        "Incendio y Terremoto",
+        "Incendio bienes comunes",
+        "Terremoto bienes comunes",
+        "Terremoto, temblor y erupción volcánica",
+        "Daño material edificación",
+        "Incendio y líneas aliadas copropiedades"
+      ],
+      "aliases": [
+        "Incendio y Terremoto",
+        "Incendio bienes comunes",
+        "Terremoto bienes comunes",
+        "Terremoto, temblor y erupción volcánica",
+        "Daño material edificación",
+        "Incendio y líneas aliadas copropiedades"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Responsabilidad Civil Extracontractual Áreas Comunes",
+      "section": "Coberturas Obligatorias Ley 675",
+      "isRequired": true,
+      "synonyms": [
+        "RCE copropiedades",
+        "RC áreas comunes",
+        "Responsabilidad civil extracontractual edificación",
+        "RCE predios, labores y operaciones",
+        "RC copropiedad horizontal"
+      ],
+      "aliases": [
+        "RCE copropiedades",
+        "RC áreas comunes",
+        "Responsabilidad civil extracontractual edificación",
+        "RCE predios, labores y operaciones",
+        "RC copropiedad horizontal"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "RC Directores y Administradores (D&O Copropiedades)",
+      "section": "Responsabilidad Civil",
+      "isRequired": false,
+      "synonyms": [
+        "RC administradores",
+        "RC consejo de administración",
+        "D&O copropiedades",
+        "Responsabilidad civil directores",
+        "RC gerencia y consejo"
+      ],
+      "aliases": [
+        "RC administradores",
+        "RC consejo de administración",
+        "D&O copropiedades",
+        "Responsabilidad civil directores",
+        "RC gerencia y consejo"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Equipo Eléctrico y Maquinaria",
+      "section": "Daño Material y Equipos",
+      "isRequired": false,
+      "synonyms": [
+        "Equipo eléctrico y electrónico",
+        "Rotura de maquinaria",
+        "Ascensores y plantas eléctricas",
+        "Equipos de subestación y bombas",
+        "Daños a maquinaria común"
+      ],
+      "aliases": [
+        "Equipo eléctrico y electrónico",
+        "Rotura de maquinaria",
+        "Ascensores y plantas eléctricas",
+        "Equipos de subestación y bombas",
+        "Daños a maquinaria común"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Sustracción y Hurto de Bienes Comunes",
+      "section": "Daño Material y Equipos",
+      "isRequired": false,
+      "synonyms": [
+        "Sustracción bienes comunes",
+        "Hurto de equipos comunes",
+        "Sustracción con o sin violencia",
+        "Robo bienes de la copropiedad"
+      ],
+      "aliases": [
+        "Sustracción bienes comunes",
+        "Hurto de equipos comunes",
+        "Sustracción con o sin violencia",
+        "Robo bienes de la copropiedad"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Rotura de Vidrios, Fachadas y Domos",
+      "section": "Daño Material y Equipos",
+      "isRequired": false,
+      "synonyms": [
+        "Rotura de vidrios",
+        "Vidrios y espejos",
+        "Domos y fachadas",
+        "Rotura de cristales en áreas comunes"
+      ],
+      "aliases": [
+        "Rotura de vidrios",
+        "Vidrios y espejos",
+        "Domos y fachadas",
+        "Rotura de cristales en áreas comunes"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Todo Riesgo Daño Material Copropiedades",
+      "section": "Daño Material y Equipos",
+      "isRequired": false,
+      "synonyms": [
+        "Todo riesgo bienes comunes",
+        "Daño material directo",
+        "Todo riesgo propiedad",
+        "Multiriesgo copropiedad"
+      ],
+      "aliases": [
+        "Todo riesgo bienes comunes",
+        "Daño material directo",
+        "Todo riesgo propiedad",
+        "Multiriesgo copropiedad"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Asistencia y Mantenimiento de Áreas Comunes",
+      "section": "Asistencias y Servicios",
+      "isRequired": false,
+      "synonyms": [
+        "Asistencia copropiedades",
+        "Asistencia express edificación",
+        "Cerrajería y plomería áreas comunes",
+        "Servicios de emergencia copropiedad"
+      ],
+      "aliases": [
+        "Asistencia copropiedades",
+        "Asistencia express edificación",
+        "Cerrajería y plomería áreas comunes",
+        "Servicios de emergencia copropiedad"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Daños por Agua, Anegación e Inundación",
+      "section": "Eventos Naturales y Agua",
+      "isRequired": false,
+      "synonyms": [
+        "Daños por agua",
+        "Anegación",
+        "Inundación",
+        "Rebosamiento de alcantarillado",
+        "Ruptura de tuberías matrices"
+      ],
+      "aliases": [
+        "Daños por agua",
+        "Anegación",
+        "Inundación",
+        "Rebosamiento de alcantarillado",
+        "Ruptura de tuberías matrices"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "Manejo e Infidelidad de Empleados",
+      "section": "Riesgos Financieros y Manejo",
+      "isRequired": false,
+      "synonyms": [
+        "Manejo global comercial",
+        "Infidelidad de empleados",
+        "Fraude de empleados",
+        "Manejo de fondos de la copropiedad"
+      ],
+      "aliases": [
+        "Manejo global comercial",
+        "Infidelidad de empleados",
+        "Fraude de empleados",
+        "Manejo de fondos de la copropiedad"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "AMIT, Terrorismo y Actos Malintencionados",
+      "section": "Eventos Especiales y AMIT",
+      "isRequired": false,
+      "synonyms": [
+        "AMIT",
+        "Actos malintencionados de terceros",
+        "Terrorismo",
+        "Asonada, motín y conmoción civil",
+        "Huelga y actos vandálicos"
+      ],
+      "aliases": [
+        "AMIT",
+        "Actos malintencionados de terceros",
+        "Terrorismo",
+        "Asonada, motín y conmoción civil",
+        "Huelga y actos vandálicos"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "Granizo, Vientos Fuertes y Tempestades",
+      "section": "Eventos Naturales y Agua",
+      "isRequired": false,
+      "synonyms": [
+        "Granizo",
+        "Vientos fuertes",
+        "Tempestad",
+        "Vientos huracanados",
+        "Granizad en fachadas y cubiertas"
+      ],
+      "aliases": [
+        "Granizo",
+        "Vientos fuertes",
+        "Tempestad",
+        "Vientos huracanados",
+        "Granizad en fachadas y cubiertas"
+      ]
+    },
+    {
+      "id": 13,
+      "name": "Remoción de Escombros y Gastos de Preservación",
+      "section": "Gastos Complementarios",
+      "isRequired": false,
+      "synonyms": [
+        "Remoción de escombros",
+        "Gastos de preservación de bienes",
+        "Demolición y limpieza",
+        "Honorarios de arquitectos e ingenieros"
+      ],
+      "aliases": [
+        "Remoción de escombros",
+        "Gastos de preservación de bienes",
+        "Demolición y limpieza",
+        "Honorarios de arquitectos e ingenieros"
+      ]
+    },
+    {
+      "id": 14,
+      "name": "Pérdida de Expensas y Cuotas de Administración",
+      "section": "Riesgos Financieros y Manejo",
+      "isRequired": false,
+      "synonyms": [
+        "Pérdida de cuotas de administración",
+        "Lucro cesante por expensas comunes",
+        "Canon de arrendamiento áreas comunes",
+        "Pérdida de ingresos por inhabilitación"
+      ],
+      "aliases": [
+        "Pérdida de cuotas de administración",
+        "Lucro cesante por expensas comunes",
+        "Canon de arrendamiento áreas comunes",
+        "Pérdida de ingresos por inhabilitación"
+      ]
+    }
+  ]
+}
