@@ -157,6 +157,36 @@ export const storageService = {
     return await storageService.getClients();
   },
 
+  updateClient: async (client: Client): Promise<Client[]> => {
+    await dbService.put('clients', client);
+    try {
+      const currentUser = storageService.getCurrentUser();
+      if (currentUser && client.id) {
+        await apiClient.fetch(`/clients/${client.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(client),
+        });
+      }
+    } catch (error) {
+      console.warn('⚠️ Updating client in backend failed. Updated in local IndexedDB.', error);
+    }
+    return await storageService.getClients();
+  },
+
+  deleteClient: async (clientId: string): Promise<Client[]> => {
+    await dbService.delete('clients', clientId);
+    try {
+      const currentUser = storageService.getCurrentUser();
+      if (currentUser) {
+        await apiClient.fetch(`/clients/${clientId}`, { method: 'DELETE' });
+      }
+    } catch (error) {
+      console.warn('⚠️ Deleting client from backend failed. Deleted from local IndexedDB.', error);
+    }
+    return await storageService.getClients();
+  },
+
   // --- HISTORY & STATS ---
   getHistory: async (): Promise<HistoryEntry[]> => {
     try {
@@ -165,6 +195,7 @@ export const storageService = {
       const cloudHistory: Array<{
         id: string;
         user_id?: string;
+        client_id?: string;
         created_at?: string;
         client_name?: string;
         analysis_result?: { quotes?: QuoteAnalysis[] };
@@ -182,6 +213,7 @@ export const storageService = {
         return {
           id: item.id,
           userId: item.user_id,
+          clientId: item.client_id,
           date: item.created_at
             ? item.created_at.split('T')[0]
             : new Date().toISOString().split('T')[0],
@@ -203,9 +235,19 @@ export const storageService = {
     return await dbService.getAll('history');
   },
 
+  getHistoryByClient: async (clientId: string, clientName?: string): Promise<HistoryEntry[]> => {
+    const allHistory = await storageService.getHistory();
+    return allHistory.filter(
+      (entry) =>
+        entry.clientId === clientId ||
+        (clientName && entry.clientName.toLowerCase() === clientName.toLowerCase())
+    );
+  },
+
   saveAnalysis: async (
     clientName: string,
-    report: ComparisonReport
+    report: ComparisonReport,
+    clientId?: string
   ): Promise<string | undefined> => {
     const currentUser = storageService.getCurrentUser();
     if (!currentUser) return undefined;
@@ -225,6 +267,7 @@ export const storageService = {
     const newEntry: HistoryEntry = {
       id,
       userId: currentUser.id,
+      clientId,
       date: new Date().toISOString().split('T')[0],
       clientName: clientName || 'Cliente Sin Nombre',
       insurers: insurers,

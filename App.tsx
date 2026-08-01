@@ -8,6 +8,7 @@ import {
   BookOpen,
   Activity,
   Library,
+  Users,
 } from 'lucide-react';
 import FileUploader from './components/FileUploader';
 import { AnalysisProvider } from './contexts/AnalysisContext';
@@ -28,8 +29,9 @@ const ChatBot = lazy(() => import('./components/ChatBot'));
 const TechnicalDashboard = lazy(() => import('./components/TechnicalDashboard'));
 const ClauseAdmin = lazy(() => import('./components/ClauseAdmin'));
 const ProfileScreen = lazy(() => import('./components/ProfileScreen'));
+const ClientManager = lazy(() => import('./components/ClientManager'));
 
-type ViewState = 'LANDING' | 'LOGIN' | 'REGISTER' | 'DASHBOARD' | 'ANALYZER' | 'REPORT';
+type ViewState = 'LANDING' | 'LOGIN' | 'REGISTER' | 'DASHBOARD' | 'ANALYZER' | 'REPORT' | 'CLIENTS';
 
 const App: React.FC = () => {
   // Auth State
@@ -119,7 +121,7 @@ const App: React.FC = () => {
       // Save to history using selected Client and capture generated ID
       let savedId: string | undefined = undefined;
       if (currentUser && selectedClient) {
-        savedId = await storageService.saveAnalysis(selectedClient.name, result);
+        savedId = await storageService.saveAnalysis(selectedClient.name, result, selectedClient.id);
       } else if (currentUser) {
         savedId = await storageService.saveAnalysis('Cliente Desconocido', result);
       }
@@ -239,6 +241,19 @@ const App: React.FC = () => {
               </button>
             )}
 
+            {/* Clientes & Auditorías Correlacionadas */}
+            <button
+              onClick={() => setCurrentView('CLIENTS')}
+              className={`p-2 rounded-full transition-colors ${
+                currentView === 'CLIENTS'
+                  ? 'bg-indigo-100 text-indigo-700 font-semibold'
+                  : 'text-slate-500 hover:bg-indigo-100 hover:text-indigo-600'
+              }`}
+              title="Gestión de Clientes y Auditorías"
+            >
+              <Users size={20} />
+            </button>
+
             {/* Clause Library Button (Admin) */}
             <button
               onClick={() => setShowClauseAdmin(true)}
@@ -274,6 +289,28 @@ const App: React.FC = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* VIEW: CLIENTS */}
+        {currentView === 'CLIENTS' && (
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+              </div>
+            }
+          >
+            <ClientManager
+              onSelectClientForAudit={(client) => {
+                setSelectedClient(client);
+                setCurrentView('ANALYZER');
+              }}
+              onViewReport={(rep) => {
+                setReport(rep);
+                setCurrentView('REPORT');
+              }}
+            />
+          </Suspense>
+        )}
+
         {/* VIEW: DASHBOARD */}
         {currentView === 'DASHBOARD' && (
           <Suspense
