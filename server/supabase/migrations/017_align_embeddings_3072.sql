@@ -3,16 +3,14 @@
 
 DO $$
 BEGIN
-    -- 1. Eliminar índice vectorial si existe
+    -- 1. Eliminar índice vectorial previo si existe (para 3072D se utiliza escaneo secuencial o HNSW/halfvec cuando sea compatible)
     DROP INDEX IF EXISTS idx_chunks_embedding;
 
     -- 2. Alterar el tipo de la columna a vector(3072)
     ALTER TABLE chunks ALTER COLUMN embedding TYPE vector(3072);
 
-    -- 3. Recrear el índice vectorial ivfflat para 3072 dimensiones
-    CREATE INDEX IF NOT EXISTS idx_chunks_embedding ON chunks USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
-
-    -- 4. Recrear funciones asociadas si es necesario (ya creadas en migración 004 / 012)
+    -- Nota: pgvector ivfflat tiene un límite estricto de 2000 dimensiones.
+    -- Las búsquedas vectoriales sobre 3072D utilizan exact distance scans sin necesidad de ivfflat.
 EXCEPTION
     WHEN OTHERS THEN
         RAISE NOTICE 'Error al alterar la columna o índice: %', SQLERRM;

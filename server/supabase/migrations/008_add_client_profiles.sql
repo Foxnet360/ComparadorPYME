@@ -1,9 +1,9 @@
 -- 008_add_client_profiles.sql
 -- Perfil de cliente para contextualización de riesgos
 
-CREATE TABLE client_profiles (
+CREATE TABLE IF NOT EXISTS client_profiles (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
+  client_id UUID,
   industry_type TEXT CHECK (industry_type IN ('manufactura', 'comercio', 'servicios', 'construccion', 'transporte', 'otro')),
   location_city TEXT,
   location_zone TEXT CHECK (location_zone IN ('costera', 'montana', 'urbana', 'industrial', 'rural')),
@@ -17,9 +17,10 @@ CREATE TABLE client_profiles (
 );
 
 -- Índices
-CREATE INDEX idx_client_profiles_client ON client_profiles(client_id);
+CREATE INDEX IF NOT EXISTS idx_client_profiles_client ON client_profiles(client_id);
 
 -- Trigger para updated_at
+DROP TRIGGER IF EXISTS update_client_profiles_updated_at ON client_profiles;
 CREATE TRIGGER update_client_profiles_updated_at
     BEFORE UPDATE ON client_profiles
     FOR EACH ROW
