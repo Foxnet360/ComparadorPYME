@@ -16,6 +16,7 @@ import { parseJsonWithRepair } from '../jsonRepair';
 import type { CoverageGraphService } from '../coverageGraphService';
 import type { GraphMapping } from '../../types/templateGraph';
 import type { InsuranceDomain } from '../../types/domain';
+import { domainTaxonomyRegistry } from '../domainTaxonomyRegistry';
 
 export const FLAT_ROW_LABELS = [
   'Bienes Asegurados',
@@ -82,7 +83,7 @@ interface AliasEntry {
   section: SchemaSection;
 }
 
-const ALIAS_MAP: AliasEntry[] = [
+const PYME_ALIAS_MAP: AliasEntry[] = [
   {
     aliases: ['bienes asegurados'],
     canonical: 'Bienes Asegurados',
@@ -340,12 +341,81 @@ const ALIAS_MAP: AliasEntry[] = [
   { aliases: ['exclusiones'], canonical: 'Exclusiones', section: SchemaSection.CONDICIONES },
 ];
 
+const DOMAIN_ALIAS_CACHE = new Map<InsuranceDomain, AliasEntry[]>();
+
+function mapTaxonomySectionToSchemaSection(section?: string): SchemaSection {
+  if (!section) return SchemaSection.COBERTURAS;
+  const normalized = normalizeLabel(section);
+  if (normalized.includes('deducible')) return SchemaSection.DEDUCIBLES;
+  if (
+    normalized.includes('sustraccion') ||
+    normalized.includes('robo') ||
+    normalized.includes('hurto')
+  )
+    return SchemaSection.SUSTRACCION;
+  if (
+    normalized.includes('condicion') ||
+    normalized.includes('observacion') ||
+    normalized.includes('exclusion')
+  )
+    return SchemaSection.CONDICIONES;
+  if (
+    normalized.includes('prima') ||
+    normalized.includes('pago') ||
+    normalized.includes('gasto') ||
+    normalized.includes('expedicion') ||
+    normalized.includes('iva') ||
+    normalized.includes('total')
+  )
+    return SchemaSection.FINANCIAL;
+  if (
+    normalized.includes('bien') ||
+    normalized.includes('edificio') ||
+    normalized.includes('contenido') ||
+    normalized.includes('mercancia') ||
+    normalized.includes('mueble') ||
+    normalized.includes('maquinaria') ||
+    normalized.includes('equipo')
+  )
+    return SchemaSection.BIENES_ASEGURADOS;
+  return SchemaSection.COBERTURAS;
+}
+
+function buildDomainAliasMap(domain: InsuranceDomain): AliasEntry[] {
+  if (domain === 'pyme') {
+    return PYME_ALIAS_MAP;
+  }
+
+  const taxonomy = domainTaxonomyRegistry.getTaxonomy(domain);
+  return taxonomy.categories.map((category) => {
+    const aliases = new Set<string>();
+    aliases.add(normalizeLabel(category.name));
+    (category.aliases || []).forEach((a) => aliases.add(normalizeLabel(a)));
+    (category.synonyms || []).forEach((s) => aliases.add(normalizeLabel(s)));
+
+    return {
+      aliases: Array.from(aliases).filter(Boolean),
+      canonical: category.name,
+      section: mapTaxonomySectionToSchemaSection(category.section),
+    };
+  });
+}
+
+function getAliasMap(domain: InsuranceDomain = 'pyme'): AliasEntry[] {
+  const cached = DOMAIN_ALIAS_CACHE.get(domain);
+  if (cached) return cached;
+
+  const map = buildDomainAliasMap(domain);
+  DOMAIN_ALIAS_CACHE.set(domain, map);
+  return map;
+}
+
 export function canonicalDisplayToId(canonical: string): string {
   return normalizeLabel(canonical).replace(/\s+/g, '-');
 }
 
 const CANONICAL_ID_TO_NAME = new Map<string, string>();
-for (const entry of ALIAS_MAP) {
+for (const entry of PYME_ALIAS_MAP) {
   const id = canonicalDisplayToId(entry.canonical);
   if (!CANONICAL_ID_TO_NAME.has(id)) {
     CANONICAL_ID_TO_NAME.set(id, entry.canonical);
@@ -353,6 +423,11 @@ for (const entry of ALIAS_MAP) {
 }
 
 export const CANONICAL_COVERAGE_ORDER = Array.from(CANONICAL_ID_TO_NAME.keys());
+
+export function getCanonicalCoverageOrder(domain: InsuranceDomain = 'pyme'): string[] {
+  if (domain === 'pyme') return CANONICAL_COVERAGE_ORDER;
+  return getAliasMap(domain).map((entry) => canonicalDisplayToId(entry.canonical));
+}
 
 function findCanonicalDisplayForId(canonicalId: string): string | undefined {
   return CANONICAL_ID_TO_NAME.get(canonicalId);
@@ -375,12 +450,16 @@ function exactMatchQuality(alias: string, normalized: string): number {
   return alias === normalized ? 1 : alias.length > normalized.length ? 0.5 : 0.7;
 }
 
-export function normalizeAlias(input: string): NormalizedAlias | undefined {
+export function normalizeAlias(
+  input: string,
+  domain: InsuranceDomain = 'pyme'
+): NormalizedAlias | undefined {
   const normalized = normalizeLabel(input);
   if (!normalized) return undefined;
 
+  const aliasMap = getAliasMap(domain);
   const matches: { entry: AliasEntry; matchedAlias: string; quality: number }[] = [];
-  for (const entry of ALIAS_MAP) {
+  for (const entry of aliasMap) {
     for (const rawAlias of entry.aliases) {
       const alias = normalizeLabel(rawAlias);
       if (normalized.includes(alias) || alias.includes(normalized)) {
@@ -1242,15 +1321,16 @@ async function buildV2Result(
 
   const graphEnabled = options.graphEnabled ?? false;
   const graphService = options.graphService;
+  const domain = options.domain ?? 'pyme';
 
   const rows: FlatComparisonResultV2['rows'] = [];
   const extraRows: FlatComparisonResultV2['extraRows'] = [];
 
   for (const [label, values] of rawTable.rows.entries()) {
-    const normalized = normalizeAlias(label);
+    const normalized = normalizeAlias(label, domain);
     const graphMapping =
       graphEnabled && graphService
-        ? await resolveBestGraphMapping(label, insurers, graphService, options.domain ?? 'pyme')
+        ? await resolveBestGraphMapping(label, insurers, graphService, domain)
         : undefined;
 
     if (graphMapping) {
@@ -1306,7 +1386,8 @@ async function buildV2Result(
         ),
       });
     } else {
-      const isAmbiguous = ALIAS_MAP.some((entry) =>
+      const aliasMap = getAliasMap(domain);
+      const isAmbiguous = aliasMap.some((entry) =>
         entry.aliases.some(
           (alias) => normalizeLabel(label).includes(alias) || alias.includes(normalizeLabel(label))
         )

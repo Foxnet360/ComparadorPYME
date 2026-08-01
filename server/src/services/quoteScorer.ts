@@ -12,6 +12,7 @@ import { CoverageExistenceResult } from './clauseCoverageValidator';
 import { hybridDeductibleParser } from './hybridDeductibleParser';
 import { featureFlags } from '../config/featureFlags';
 import { getCanonicalCoverageNames } from '../config/domainConstants';
+import { InsuranceDomain } from '../types/domain';
 
 export interface ScoreWeights {
   coverage: number;
@@ -56,13 +57,33 @@ const DEFAULT_WEIGHTS: ScoreWeights = {
   warranties: 0.1,
 };
 
-// Expected coverages for a typical PYME policy
-// Aligned with frontend PLANTILLA_ITEMS (14 canonical coverages)
-const EXPECTED_COVERAGES = getCanonicalCoverageNames().map((name) => name.toLowerCase());
+// Expected coverages are resolved per-domain so autos and future ramos use
+// their own taxonomy while pyme stays byte-identical.
+function getExpectedCoverages(domain: InsuranceDomain = 'pyme'): string[] {
+  return getCanonicalCoverageNames(domain).map((name) => name.toLowerCase());
+}
 
-// Market price benchmarks (in COP millions, annual)
+// Market price benchmarks (in COP, annual)
 // Used when no other quotes are available for comparison
-const MARKET_PRICE_BENCHMARK = 8500000; // ~8.5M COP annual
+const MARKET_PRICE_BENCHMARKS: Record<InsuranceDomain, number> = {
+  pyme: 8_500_000,
+  autos: 2_500_000,
+};
+
+// Autos scoring thresholds (COP)
+const AUTOS_RCE_ADEQUATE = 1_500_000_000;
+const AUTOS_RCE_LOW = 1_000_000_000;
+
+// Autos coverage modifiers (percentage points added to coverage score)
+const AUTOS_RCE_ADEQUATE_BONUS = 10;
+const AUTOS_RCE_LOW_PENALTY = -15;
+const AUTOS_RCE_MODERATE_PENALTY = -5;
+const AUTOS_CARRO_TALLER_BONUS = 5;
+const AUTOS_ASISTENCIA_BONUS = 5;
+
+// Autos deductible modifiers
+const AUTOS_DEDUCTIBLE_CLEAR_BONUS_HIGH = 5;
+const AUTOS_DEDUCTIBLE_CLEAR_BONUS_LOW = 2;
 
 export const quoteScorer = {
   /**
@@ -74,9 +95,12 @@ export const quoteScorer = {
     crossRefResults: CrossReferenceResult[],
     allQuotes: ParsedQuote[] = [],
     customWeights?: Partial<ScoreWeights>,
-    clauseValidation?: CoverageExistenceResult[]
+    clauseValidation?: CoverageExistenceResult[],
+    domain: InsuranceDomain = 'pyme'
   ): Promise<ScoringResult> | ScoringResult => {
-    console.log(`📊 [quoteScorer] Calculating score for ${quote.insurerName}...`);
+    console.log(
+      `📊 [quoteScorer] Calculating score for ${quote.insurerName} (domain=${domain})...`
+    );
 
     // Use variable comparison engine when enabled
     if (featureFlags.isEnabled('variableComparisonEngine') && allQuotes.length > 1) {
@@ -85,7 +109,8 @@ export const quoteScorer = {
         crossRefResults,
         allQuotes,
         customWeights,
-        clauseValidation
+        clauseValidation,
+        domain
       );
     }
 
@@ -93,10 +118,10 @@ export const quoteScorer = {
     normalizeWeights(weights);
 
     const breakdown: ScoreBreakdown = {
-      coverage: calculateCoverageScore(quote, clauseValidation),
-      deductibles: calculateDeductibleScore(crossRefResults),
+      coverage: calculateCoverageScore(quote, clauseValidation, domain),
+      deductibles: calculateDeductibleScore(crossRefResults, domain),
       exclusions: calculateExclusionScore(crossRefResults),
-      priceRatio: calculatePriceScore(quote, allQuotes),
+      priceRatio: calculatePriceScore(quote, allQuotes, domain),
       sublimits: calculateSubLimitScore(crossRefResults),
       warranties: calculateWarrantyScore(crossRefResults),
     };
@@ -148,7 +173,7 @@ export const quoteScorer = {
     const alertCounts = countAlerts(crossRefResults);
 
     // Calculate price rank
-    const { rank, average } = calculatePriceRank(quote, allQuotes);
+    const { rank, average } = calculatePriceRank(quote, allQuotes, domain);
 
     const result: ScoringResult = {
       totalScore: clamp(totalScore, 0, 100),
@@ -159,7 +184,7 @@ export const quoteScorer = {
       quotePriceRank: rank,
       marketPriceAverage: average,
       coverageCount: quote.coverages.length,
-      expectedCoverageCount: EXPECTED_COVERAGES.length,
+      expectedCoverageCount: getExpectedCoverages(domain).length,
       ...alertCounts,
     };
 
@@ -176,7 +201,8 @@ export const quoteScorer = {
     crossRefResults: CrossReferenceResult[],
     allQuotes: ParsedQuote[],
     customWeights?: Partial<ScoreWeights>,
-    _clauseValidation?: CoverageExistenceResult[]
+    _clauseValidation?: CoverageExistenceResult[],
+    domain: InsuranceDomain = 'pyme'
   ): Promise<ScoringResult> => {
     console.log(`📊 [quoteScorer] Calculating variable-based score for ${quote.insurerName}...`);
 
@@ -184,13 +210,18 @@ export const quoteScorer = {
     normalizeWeights(weights);
 
     // Calculate variable-based scores
-    const variableScores = await calculateVariableBasedScores(quote, allQuotes, crossRefResults);
+    const variableScores = await calculateVariableBasedScores(
+      quote,
+      allQuotes,
+      crossRefResults,
+      domain
+    );
 
     const breakdown: ScoreBreakdown = {
       coverage: variableScores.coverageScore,
       deductibles: variableScores.deductibleScore,
       exclusions: calculateExclusionScore(crossRefResults),
-      priceRatio: calculatePriceScore(quote, allQuotes),
+      priceRatio: calculatePriceScore(quote, allQuotes, domain),
       sublimits: calculateSubLimitScore(crossRefResults),
       warranties: calculateWarrantyScore(crossRefResults),
     };
@@ -219,7 +250,7 @@ export const quoteScorer = {
     );
 
     const alertCounts = countAlerts(crossRefResults);
-    const { rank, average } = calculatePriceRank(quote, allQuotes);
+    const { rank, average } = calculatePriceRank(quote, allQuotes, domain);
 
     const result: ScoringResult = {
       totalScore: clamp(totalScore, 0, 100),
@@ -230,7 +261,7 @@ export const quoteScorer = {
       quotePriceRank: rank,
       marketPriceAverage: average,
       coverageCount: quote.coverages.length,
-      expectedCoverageCount: EXPECTED_COVERAGES.length,
+      expectedCoverageCount: getExpectedCoverages(domain).length,
       ...alertCounts,
     };
 
@@ -275,26 +306,29 @@ export const quoteScorer = {
 
 function calculateCoverageScore(
   quote: ParsedQuote,
-  clauseValidation?: CoverageExistenceResult[]
+  clauseValidation?: CoverageExistenceResult[],
+  domain: InsuranceDomain = 'pyme'
 ): number {
   if (quote.coverages.length === 0) return 0;
+
+  const expectedCoverages = getExpectedCoverages(domain);
 
   // Count how many expected coverages are present
   const foundCoverages = new Set<string>();
   for (const coverage of quote.coverages) {
     const canonical = (coverage.canonicalName || coverage.name).toLowerCase();
-    for (const expected of EXPECTED_COVERAGES) {
+    for (const expected of expectedCoverages) {
       if (canonical.includes(expected) || expected.includes(canonical)) {
         foundCoverages.add(expected);
       }
     }
   }
 
-  const coverageRatio = foundCoverages.size / EXPECTED_COVERAGES.length;
+  const coverageRatio = foundCoverages.size / expectedCoverages.length;
   let score = coverageRatio * 100;
 
   // Bonus for extra coverages (up to 100)
-  const extraCoverages = Math.max(0, quote.coverages.length - EXPECTED_COVERAGES.length);
+  const extraCoverages = Math.max(0, quote.coverages.length - expectedCoverages.length);
   score = Math.min(100, score + extraCoverages * 3);
 
   // Apply clause validation penalties
@@ -311,10 +345,105 @@ function calculateCoverageScore(
     score -= mandatoryMissingCount * 10;
   }
 
+  // Autos-specific modifiers
+  if (domain === 'autos') {
+    score += calculateAutosCoverageModifiers(quote);
+  }
+
   return Math.round(clamp(score, 0, 100));
 }
 
-function calculateDeductibleScore(crossRefResults: CrossReferenceResult[]): number {
+/**
+ * Autos-specific coverage modifiers.
+ * - Reward adequate RCE limits (>= 1.5B COP).
+ * - Reward presence of Carro Taller and Asistencia en Viaje.
+ * - Penalize low RCE limits.
+ */
+function calculateAutosCoverageModifiers(quote: ParsedQuote): number {
+  let modifier = 0;
+
+  const rceCoverage = quote.coverages.find((c) => {
+    const canonical = (c.canonicalName || c.name).toLowerCase();
+    return canonical.includes('responsabilidad civil extracontractual vehicular');
+  });
+
+  if (rceCoverage) {
+    const rceValue = parseMonetaryValue(rceCoverage.value);
+    if (rceValue != null) {
+      if (rceValue >= AUTOS_RCE_ADEQUATE) {
+        modifier += AUTOS_RCE_ADEQUATE_BONUS;
+      } else if (rceValue < AUTOS_RCE_LOW) {
+        modifier += AUTOS_RCE_LOW_PENALTY;
+      } else {
+        modifier += AUTOS_RCE_MODERATE_PENALTY;
+      }
+    }
+  }
+
+  const hasCarroTaller = quote.coverages.some((c) => {
+    const canonical = (c.canonicalName || c.name).toLowerCase();
+    return canonical.includes('carro taller') || canonical.includes('vehiculo de reemplazo');
+  });
+  if (hasCarroTaller) modifier += AUTOS_CARRO_TALLER_BONUS;
+
+  const hasAsistencia = quote.coverages.some((c) => {
+    const canonical = (c.canonicalName || c.name).toLowerCase();
+    return (
+      canonical.includes('asistencia en viaje') || canonical.includes('asistencia en carretera')
+    );
+  });
+  if (hasAsistencia) modifier += AUTOS_ASISTENCIA_BONUS;
+
+  return modifier;
+}
+
+/**
+ * Parse a monetary string such as "1.500M", "2.000.000", "$1.5B" into COP.
+ * Returns null when the value cannot be parsed.
+ */
+function parseMonetaryValue(value: string): number | null {
+  if (!value) return null;
+  const normalized = value.toLowerCase().replace(/\$/g, '').replace(/\s/g, '').replace(/,/g, '.');
+
+  // Billones (B)
+  const billionsMatch = normalized.match(/([\d.]+)\s*b/);
+  if (billionsMatch) {
+    const num = parseFloat(billionsMatch[1]);
+    return isNaN(num) ? null : num * 1_000_000_000;
+  }
+
+  // Millones (M)
+  const millionsMatch = normalized.match(/([\d.]+)\s*m/);
+  if (millionsMatch) {
+    const num = parseFloat(millionsMatch[1]);
+    return isNaN(num) ? null : num * 1_000_000;
+  }
+
+  // Miles (K)
+  const thousandsMatch = normalized.match(/([\d.]+)\s*k/);
+  if (thousandsMatch) {
+    const num = parseFloat(thousandsMatch[1]);
+    return isNaN(num) ? null : num * 1_000;
+  }
+
+  // Plain number with optional thousands separators
+  const plainMatch = normalized.match(/([\d.]+)/);
+  if (plainMatch) {
+    const raw = plainMatch[1];
+    const num =
+      raw.includes('.') && raw.split('.').slice(-1)[0].length === 3
+        ? parseFloat(raw.replace(/\./g, ''))
+        : parseFloat(raw.replace(/\./g, '').replace(',', '.'));
+    return isNaN(num) ? null : num;
+  }
+
+  return null;
+}
+
+function calculateDeductibleScore(
+  crossRefResults: CrossReferenceResult[],
+  domain: InsuranceDomain = 'pyme'
+): number {
   if (crossRefResults.length === 0) return 60; // Neutral score when no RAG data available
 
   let totalScore = 0;
@@ -347,7 +476,45 @@ function calculateDeductibleScore(crossRefResults: CrossReferenceResult[]): numb
     }
   }
 
-  return count > 0 ? Math.round(totalScore / count) : 50;
+  const baseScore = count > 0 ? Math.round(totalScore / count) : 50;
+
+  if (domain === 'autos') {
+    return Math.round(clamp(baseScore + calculateAutosDeductibleBonus(crossRefResults), 0, 100));
+  }
+
+  return baseScore;
+}
+
+/**
+ * Autos-specific deductible bonus: reward quotes where all verified deductibles
+ * are expressed as clear percentages or fixed SMMLV amounts.
+ */
+function calculateAutosDeductibleBonus(crossRefResults: CrossReferenceResult[]): number {
+  if (crossRefResults.length === 0) return 0;
+
+  let clearCount = 0;
+  let verifiedCount = 0;
+
+  for (const result of crossRefResults) {
+    if (!result.isVerified) continue;
+    verifiedCount++;
+    const dedText = result.quoteData.deductible || '';
+    if (
+      /%/.test(dedText) ||
+      /smmlv|salarios?|smlv|ums/i.test(dedText) ||
+      /dias?\s*de\s*inmovilizacion/i.test(dedText)
+    ) {
+      clearCount++;
+    }
+  }
+
+  if (verifiedCount === 0) return 0;
+  const ratio = clearCount / verifiedCount;
+  return ratio >= 0.75
+    ? AUTOS_DEDUCTIBLE_CLEAR_BONUS_HIGH
+    : ratio >= 0.5
+      ? AUTOS_DEDUCTIBLE_CLEAR_BONUS_LOW
+      : 0;
 }
 
 function calculateExclusionScore(crossRefResults: CrossReferenceResult[]): number {
@@ -374,7 +541,11 @@ function calculateExclusionScore(crossRefResults: CrossReferenceResult[]): numbe
   return Math.round(clamp(score, 0, 100));
 }
 
-function calculatePriceScore(quote: ParsedQuote, allQuotes: ParsedQuote[]): number {
+function calculatePriceScore(
+  quote: ParsedQuote,
+  allQuotes: ParsedQuote[],
+  domain: InsuranceDomain = 'pyme'
+): number {
   if (quote.priceAnnual <= 0) return 50;
 
   let benchmark: number;
@@ -386,8 +557,8 @@ function calculatePriceScore(quote: ParsedQuote, allQuotes: ParsedQuote[]): numb
     benchmark = total / allQuotes.length;
     comparisonBasis = 'market';
   } else {
-    // Use fixed benchmark
-    benchmark = MARKET_PRICE_BENCHMARK;
+    // Use domain-specific benchmark
+    benchmark = MARKET_PRICE_BENCHMARKS[domain] ?? MARKET_PRICE_BENCHMARKS.pyme;
     comparisonBasis = 'benchmark';
   }
 
@@ -536,13 +707,14 @@ function countAlerts(crossRefResults: CrossReferenceResult[]): {
 
 function calculatePriceRank(
   quote: ParsedQuote,
-  allQuotes: ParsedQuote[]
+  allQuotes: ParsedQuote[],
+  domain: InsuranceDomain = 'pyme'
 ): {
   rank: number;
   average: number;
 } {
   if (allQuotes.length === 0 || quote.priceAnnual <= 0) {
-    return { rank: 0, average: MARKET_PRICE_BENCHMARK };
+    return { rank: 0, average: MARKET_PRICE_BENCHMARKS[domain] ?? MARKET_PRICE_BENCHMARKS.pyme };
   }
 
   const sorted = [...allQuotes].sort((a, b) => a.priceAnnual - b.priceAnnual);
@@ -571,12 +743,19 @@ function normalizeWeights(weights: ScoreWeights): void {
 async function calculateVariableBasedScores(
   quote: ParsedQuote,
   allQuotes: ParsedQuote[],
-  crossRefResults: CrossReferenceResult[]
+  crossRefResults: CrossReferenceResult[],
+  domain: InsuranceDomain = 'pyme'
 ): Promise<{ coverageScore: number; deductibleScore: number }> {
   // Coverage score: compare number and breadth of coverages
   const maxCoverages = Math.max(...allQuotes.map((q) => q.coverages.length));
-  const coverageScore =
+  let coverageScore =
     maxCoverages > 0 ? Math.round((quote.coverages.length / maxCoverages) * 100) : 50;
+
+  if (domain === 'autos') {
+    coverageScore = Math.round(
+      clamp(coverageScore + calculateAutosCoverageModifiers(quote), 0, 100)
+    );
+  }
 
   // Deductible score: compare deductibles using semantic parser
   let deductibleScore = 70; // Default neutral

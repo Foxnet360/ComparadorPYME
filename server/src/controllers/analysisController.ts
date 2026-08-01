@@ -749,7 +749,14 @@ export async function matrixRowsToComparisonReport(
   // Second pass: compute scores and risk audits
   const quotes: UnifiedQuote[] = await Promise.all(
     intermediateQuotes.map(async (iq) => {
-      const scoringResult = await quoteScorer.calculateScore(iq.parsedQuote, [], allParsedQuotes);
+      const scoringResult = await quoteScorer.calculateScore(
+        iq.parsedQuote,
+        [],
+        allParsedQuotes,
+        undefined,
+        undefined,
+        domain
+      );
 
       const audit = quoteBasedAuditor.auditQuote(
         {

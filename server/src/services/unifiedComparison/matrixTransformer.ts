@@ -9,9 +9,12 @@ import {
   FlatComparisonResult,
   FlatComparisonResultV2,
   StructuredDeductible,
+  SchemaSection,
 } from './comparisonSchema';
 import { ParsedQuote } from '../quoteParser';
-import { CANONICAL_COVERAGE_ORDER } from './flatTableParser';
+import { getCanonicalCoverageOrder } from './flatTableParser';
+import { InsuranceDomain } from '../../types/domain';
+import { domainTaxonomyRegistry } from '../domainTaxonomyRegistry';
 
 const HEADER_SECTION_ID = 0;
 const COVERAGE_SECTION_ID = 1;
@@ -19,16 +22,116 @@ export const FINANCIAL_SECTION_ID = 100;
 
 const FINANCIAL_SECTION_LABEL = 'PRIMAS Y COSTOS';
 
+function getDomainHeaderLabel(domain: InsuranceDomain = 'pyme'): string {
+  return domain === 'pyme' ? 'PYME' : domain.toUpperCase();
+}
+
+function mapTaxonomySectionToSchemaSection(section?: string): string {
+  if (!section) return SchemaSection.COBERTURAS;
+  const normalized = section
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  if (normalized.includes('deducible')) return SchemaSection.DEDUCIBLES;
+  if (
+    normalized.includes('sustraccion') ||
+    normalized.includes('robo') ||
+    normalized.includes('hurto')
+  )
+    return SchemaSection.SUSTRACCION;
+  if (
+    normalized.includes('condicion') ||
+    normalized.includes('observacion') ||
+    normalized.includes('exclusion')
+  )
+    return SchemaSection.CONDICIONES;
+  if (
+    normalized.includes('prima') ||
+    normalized.includes('pago') ||
+    normalized.includes('gasto') ||
+    normalized.includes('expedicion') ||
+    normalized.includes('iva') ||
+    normalized.includes('total')
+  )
+    return SchemaSection.FINANCIAL;
+  if (
+    normalized.includes('bien') ||
+    normalized.includes('edificio') ||
+    normalized.includes('contenido') ||
+    normalized.includes('mercancia') ||
+    normalized.includes('mueble') ||
+    normalized.includes('maquinaria') ||
+    normalized.includes('equipo')
+  )
+    return SchemaSection.BIENES_ASEGURADOS;
+  return SchemaSection.COBERTURAS;
+}
+
+function getSectionOrder(domain: InsuranceDomain = 'pyme'): string[] {
+  if (domain === 'pyme') {
+    return [
+      'INFORMACIÓN GENERAL',
+      'BIENES ASEGURADOS',
+      'COBERTURAS',
+      'SUSTRACCIÓN',
+      'DEDUCIBLES',
+      'CONDICIONES',
+      FINANCIAL_SECTION_LABEL,
+    ];
+  }
+
+  const taxonomy = domainTaxonomyRegistry.getTaxonomy(domain);
+  const sections: string[] = [];
+  for (const category of taxonomy.categories) {
+    const mapped = mapTaxonomySectionToSchemaSection(category.section);
+    if (!sections.includes(mapped)) {
+      sections.push(mapped);
+    }
+  }
+  if (!sections.includes(FINANCIAL_SECTION_LABEL)) {
+    sections.push(FINANCIAL_SECTION_LABEL);
+  }
+  return sections;
+}
+
 function isFinancialRowLabel(label: string): boolean {
   const normalized = label
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
+
+  // Common coverage terms that happen to contain financial substrings
+  // (e.g. "Pérdida Total" contains "total") must not be misclassified.
+  const coverageTerms = [
+    'perdida total',
+    'perdida parcial',
+    'hurto',
+    'robo',
+    'sustraccion',
+    'responsabilidad civil',
+    'rce',
+    'rc ',
+    'daño',
+    'incendio',
+    'terremoto',
+    'asistencia',
+    'carro taller',
+    'vehiculo de reemplazo',
+    'eventos de la naturaleza',
+    'granizo',
+    'inundacion',
+    'conductor adicional',
+    'menores de 25',
+    'hurto de partes',
+  ];
+  if (coverageTerms.some((term) => normalized.includes(term))) return false;
+
   return [
     'prima',
     'prima con iva',
     'prima neta',
     'total a pagar',
+    'total prima',
     'total',
     'pago',
     'forma de pago',
@@ -78,7 +181,10 @@ function cellFromFlatValue(value: string | null, notFound?: boolean) {
 /**
  * Convert a FlatComparisonResult from the unified engine into MatrixRow[].
  */
-export function flatResultToMatrixRows(result: FlatComparisonResult): MatrixRow[] {
+export function flatResultToMatrixRows(
+  result: FlatComparisonResult,
+  domain: InsuranceDomain = 'pyme'
+): MatrixRow[] {
   const numInsurers = result.insurers.length;
   const matrix: MatrixRow[] = [];
 
@@ -86,7 +192,7 @@ export function flatResultToMatrixRows(result: FlatComparisonResult): MatrixRow[
   matrix.push({
     type: 'header',
     id: 'client_info',
-    label: `Cotizaciones PYME - ${result.insurers.join(', ')}`,
+    label: `Cotizaciones ${getDomainHeaderLabel(domain)} - ${result.insurers.join(', ')}`,
     sectionId: HEADER_SECTION_ID,
     cells: emptyCells(numInsurers),
   });
@@ -193,34 +299,30 @@ export function flatResultToMatrixRows(result: FlatComparisonResult): MatrixRow[
 // v2 transformer: section-aware granular rows
 // ---------------------------------------------------------------------------
 
-const SECTION_ORDER = [
-  'INFORMACIÓN GENERAL',
-  'BIENES ASEGURADOS',
-  'COBERTURAS',
-  'SUSTRACCIÓN',
-  'DEDUCIBLES',
-  'CONDICIONES',
-  FINANCIAL_SECTION_LABEL,
-];
-
-function sectionSortIndex(section: string | undefined): number {
+function sectionSortIndex(section: string | undefined, domain: InsuranceDomain = 'pyme'): number {
   if (!section) return Number.MAX_SAFE_INTEGER;
-  const index = SECTION_ORDER.indexOf(section);
+  const index = getSectionOrder(domain).indexOf(section);
   return index === -1 ? Number.MAX_SAFE_INTEGER : index;
 }
 
-const CANONICAL_ORDER_INDEX = new Map<string, number>(
-  CANONICAL_COVERAGE_ORDER.map((id, index) => [id, index])
-);
-
-function canonicalSortIndex(canonicalId: string | undefined): number {
-  if (!canonicalId) return Number.MAX_SAFE_INTEGER;
-  return CANONICAL_ORDER_INDEX.get(canonicalId) ?? Number.MAX_SAFE_INTEGER;
+function getCanonicalOrderIndexMap(domain: InsuranceDomain = 'pyme'): Map<string, number> {
+  return new Map<string, number>(getCanonicalCoverageOrder(domain).map((id, index) => [id, index]));
 }
 
-function sortByCanonicalId<T extends { canonicalId?: string }>(rows: T[]): T[] {
+function canonicalSortIndex(
+  canonicalId: string | undefined,
+  domain: InsuranceDomain = 'pyme'
+): number {
+  if (!canonicalId) return Number.MAX_SAFE_INTEGER;
+  return getCanonicalOrderIndexMap(domain).get(canonicalId) ?? Number.MAX_SAFE_INTEGER;
+}
+
+function sortByCanonicalId<T extends { canonicalId?: string }>(
+  rows: T[],
+  domain: InsuranceDomain = 'pyme'
+): T[] {
   return [...rows].sort(
-    (a, b) => canonicalSortIndex(a.canonicalId) - canonicalSortIndex(b.canonicalId)
+    (a, b) => canonicalSortIndex(a.canonicalId, domain) - canonicalSortIndex(b.canonicalId, domain)
   );
 }
 
@@ -243,7 +345,10 @@ function cellFromFlatValueV2(
 /**
  * Convert a FlatComparisonResultV2 from the unified engine into section-aware MatrixRow[].
  */
-export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): MatrixRow[] {
+export function flatResultToMatrixRowsV2(
+  result: FlatComparisonResultV2,
+  domain: InsuranceDomain = 'pyme'
+): MatrixRow[] {
   const numInsurers = result.insurers.length;
   const matrix: MatrixRow[] = [];
 
@@ -251,7 +356,7 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
   matrix.push({
     type: 'header',
     id: 'client_info',
-    label: `Cotizaciones PYME - ${result.insurers.join(', ')}`,
+    label: `Cotizaciones ${getDomainHeaderLabel(domain)} - ${result.insurers.join(', ')}`,
     sectionId: HEADER_SECTION_ID,
     cells: emptyCells(numInsurers),
   });
@@ -269,7 +374,7 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
     }[]
   >();
 
-  for (const row of sortByCanonicalId(result.rows)) {
+  for (const row of sortByCanonicalId(result.rows, domain)) {
     const section =
       isFinancialRowLabel(row.label) || row.section === 'FINANCIAL'
         ? FINANCIAL_SECTION_LABEL
@@ -292,7 +397,7 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
     });
   }
 
-  for (const row of sortByCanonicalId(result.extraRows)) {
+  for (const row of sortByCanonicalId(result.extraRows, domain)) {
     const section =
       isFinancialRowLabel(row.label) || row.section === 'FINANCIAL'
         ? FINANCIAL_SECTION_LABEL
@@ -317,7 +422,7 @@ export function flatResultToMatrixRowsV2(result: FlatComparisonResultV2): Matrix
 
   // Sort sections canonically
   const sortedSections = Array.from(sectionGroups.entries()).sort(
-    (a, b) => sectionSortIndex(a[0]) - sectionSortIndex(b[0])
+    (a, b) => sectionSortIndex(a[0], domain) - sectionSortIndex(b[0], domain)
   );
 
   let sectionIndex = 0;
@@ -402,14 +507,17 @@ function cellFromQuoteCoverage(coverage: ParsedQuote['coverages'][number] | unde
 /**
  * Convert an array of ParsedQuote (legacy per-quote pipeline) into MatrixRow[].
  */
-export function quotesToMatrixRows(quotes: ParsedQuote[]): MatrixRow[] {
+export function quotesToMatrixRows(
+  quotes: ParsedQuote[],
+  domain: InsuranceDomain = 'pyme'
+): MatrixRow[] {
   const numInsurers = quotes.length;
   const matrix: MatrixRow[] = [];
 
   matrix.push({
     type: 'header',
     id: 'client_info',
-    label: `Cotizaciones PYME - ${quotes.map((q) => q.insurerName).join(', ')}`,
+    label: `Cotizaciones ${getDomainHeaderLabel(domain)} - ${quotes.map((q) => q.insurerName).join(', ')}`,
     sectionId: HEADER_SECTION_ID,
     cells: emptyCells(numInsurers),
   });
@@ -417,7 +525,7 @@ export function quotesToMatrixRows(quotes: ParsedQuote[]): MatrixRow[] {
   matrix.push({
     type: 'header',
     id: 'section_0',
-    label: 'COBERTURAS',
+    label: domain === 'pyme' ? 'COBERTURAS' : 'COBERTURAS',
     sectionId: COVERAGE_SECTION_ID,
     cells: emptyCells(numInsurers),
   });
