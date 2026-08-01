@@ -1,0 +1,241 @@
+{
+  "version": "1.0.0",
+  "domain": "cumplimiento",
+  "metadata": {
+    "region": "Colombia",
+    "currency": "COP",
+    "source": "Pólizas de Cumplimiento y Fianzas — Ley 80/1993 (Estatuto General de Contratación) · Decreto 1082/2015 (SECOP) · Ley 1150/2007 · Circular 050/2013 SFC",
+    "regulatory": {
+      "framework": "Ley 80 de 1993 — Estatuto General de Contratación Pública",
+      "supplementaryDecree": "Decreto 1082 de 2015 — Único Reglamentario del Sector de Planeación",
+      "procurementTransparency": "Ley 1150 de 2007 — Eficiencia y Transparencia en la Contratación",
+      "supervisoryBody": "Superintendencia Financiera de Colombia (SFC)"
+    }
+  },
+  "categories": [
+    {
+      "id": "cum_01",
+      "name": "Seriedad de Oferta",
+      "section": "GARANTÍAS PRECONTRACTUALES",
+      "isRequired": true,
+      "synonyms": [
+        "seriedad de oferta",
+        "garantía de oferta",
+        "bid bond",
+        "propuesta",
+        "licitación",
+        "concurso",
+        "valor de la oferta",
+        "sostenimiento de la oferta"
+      ]
+    },
+    {
+      "id": "cum_02",
+      "name": "Cumplimiento de Contrato",
+      "section": "GARANTÍAS DE EJECUCIÓN",
+      "isRequired": true,
+      "synonyms": [
+        "cumplimiento de contrato",
+        "performance bond",
+        "ejecución del contrato",
+        "obligaciones contractuales",
+        "incumplimiento",
+        "amparo de cumplimiento",
+        "garantía de ejecución"
+      ]
+    },
+    {
+      "id": "cum_03",
+      "name": "Estabilidad y Calidad de Obra",
+      "section": "GARANTÍAS POST-CONTRACTUALES",
+      "isRequired": false,
+      "synonyms": [
+        "estabilidad de obra",
+        "calidad de obra",
+        "estabilidad y calidad",
+        "vicios ocultos",
+        "defectos de construcción",
+        "post-entrega",
+        "garantía de obra",
+        "mantenimiento de obra"
+      ]
+    },
+    {
+      "id": "cum_04",
+      "name": "Correcta Inversión del Anticipo",
+      "section": "GARANTÍAS DE EJECUCIÓN",
+      "isRequired": false,
+      "synonyms": [
+        "anticipo",
+        "correcta inversión del anticipo",
+        "advance payment bond",
+        "inversión del anticipo",
+        "devolución de anticipo",
+        "manejo del anticipo",
+        "pago anticipado"
+      ]
+    },
+    {
+      "id": "cum_05",
+      "name": "Salarios, Prestaciones e Indemnizaciones Laborales",
+      "section": "GARANTÍAS DE EJECUCIÓN",
+      "isRequired": true,
+      "synonyms": [
+        "salarios",
+        "prestaciones sociales",
+        "indemnizaciones laborales",
+        "obligaciones laborales",
+        "parafiscales",
+        "seguridad social",
+        "labor bond",
+        "nómina",
+        "contratistas empleados"
+      ]
+    },
+    {
+      "id": "cum_06",
+      "name": "Pago de Daños a Terceros (RC Contractual)",
+      "section": "GARANTÍAS DE RESPONSABILIDAD",
+      "isRequired": false,
+      "synonyms": [
+        "pago de daños a terceros",
+        "responsabilidad civil contractual",
+        "RC contractual",
+        "daños a terceros",
+        "afectación a terceros",
+        "perjuicios a terceros",
+        "daños durante ejecución"
+      ]
+    },
+    {
+      "id": "cum_07",
+      "name": "Calidad del Bien o Servicio",
+      "section": "GARANTÍAS POST-CONTRACTUALES",
+      "isRequired": false,
+      "synonyms": [
+        "calidad del bien",
+        "calidad del servicio",
+        "garantía de calidad",
+        "producto defectuoso",
+        "servicio deficiente",
+        "post-entrega bienes",
+        "quality bond"
+      ]
+    },
+    {
+      "id": "cum_08",
+      "name": "Buen Manejo y Correcta Inversión de Bienes",
+      "section": "GARANTÍAS DE MANEJO",
+      "isRequired": false,
+      "synonyms": [
+        "buen manejo de bienes",
+        "correcta inversión de bienes",
+        "bienes entregados",
+        "manejo de recursos",
+        "custodia de bienes",
+        "administración de bienes",
+        "depósito bienes"
+      ]
+    },
+    {
+      "id": "cum_09",
+      "name": "Responsabilidad Civil Extracontractual (RC durante ejecución)",
+      "section": "GARANTÍAS DE RESPONSABILIDAD",
+      "isRequired": false,
+      "synonyms": [
+        "responsabilidad civil extracontractual",
+        "RCE",
+        "RC durante ejecución",
+        "daños extracontractuales",
+        "terceros afectados",
+        "daños a personas o bienes de terceros",
+        "liability insurance"
+      ]
+    },
+    {
+      "id": "cum_10",
+      "name": "Todo Riesgo Construcción / Montaje (TRC / TRM)",
+      "section": "COBERTURAS DE OBRA",
+      "isRequired": false,
+      "synonyms": [
+        "todo riesgo construcción",
+        "TRC",
+        "todo riesgo montaje",
+        "TRM",
+        "obra en construcción",
+        "equipos de construcción",
+        "daños a la obra",
+        "CAR insurance",
+        "constructor all risk"
+      ]
+    },
+    {
+      "id": "cum_11",
+      "name": "Manejo de Empleados (Fidelidad Colectiva)",
+      "section": "GARANTÍAS DE MANEJO",
+      "isRequired": false,
+      "synonyms": [
+        "manejo de empleados",
+        "fidelidad colectiva",
+        "deshonestidad de empleados",
+        "actos deshonestos",
+        "blanket bond",
+        "employee fidelity",
+        "hurto por empleados",
+        "fraude interno"
+      ]
+    },
+    {
+      "id": "cum_12",
+      "name": "Manejo Individual (Fidelidad / Forgery)",
+      "section": "GARANTÍAS DE MANEJO",
+      "isRequired": false,
+      "synonyms": [
+        "manejo individual",
+        "fidelidad individual",
+        "forgery",
+        "falsificación",
+        "empleado específico",
+        "tesorero",
+        "cajero",
+        "manejo de fondos individuales",
+        "individual fidelity bond"
+      ]
+    },
+    {
+      "id": "cum_13",
+      "name": "Vigencia, Plazo y Condiciones del Amparo",
+      "section": "CONDICIONES GENERALES",
+      "isRequired": true,
+      "synonyms": [
+        "vigencia",
+        "plazo",
+        "duración del amparo",
+        "prórroga automática",
+        "renovación",
+        "término del contrato",
+        "vencimiento",
+        "fecha inicio",
+        "fecha fin"
+      ]
+    },
+    {
+      "id": "cum_14",
+      "name": "Garantía Única de Cumplimiento (Contratación Estatal — Ley 80/1993 · Decreto 1082/2015)",
+      "section": "CUMPLIMIENTO NORMATIVO ESTATAL",
+      "isRequired": true,
+      "synonyms": [
+        "garantía única de cumplimiento",
+        "Ley 80",
+        "contratación estatal",
+        "entidad pública",
+        "SECOP",
+        "Decreto 1082",
+        "contrato estatal",
+        "póliza de cumplimiento estatal",
+        "amparo único",
+        "contratación pública colombiana"
+      ]
+    }
+  ]
+}

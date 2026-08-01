@@ -1,7 +1,13 @@
 import React from 'react';
-import { Building2, Car, Building, Users, Stethoscope } from 'lucide-react';
+import { Building2, Car, Building, Users, Stethoscope, Scale } from 'lucide-react';
 
-export type InsuranceDomain = 'pyme' | 'autos' | 'copropiedades' | 'vida_grupo' | 'salud';
+export type InsuranceDomain =
+  | 'pyme'
+  | 'autos'
+  | 'copropiedades'
+  | 'vida_grupo'
+  | 'salud'
+  | 'cumplimiento';
 
 export interface DomainOption {
   id: InsuranceDomain;
@@ -47,6 +53,12 @@ const DOMAIN_OPTIONS: DomainOption[] = [
     label: 'Salud / Medicina Prepagada',
     sublabel: 'Planes voluntarios de salud (Res. 244/2019)',
     icon: Stethoscope,
+  },
+  {
+    id: 'cumplimiento',
+    label: 'Cumplimiento y Fianzas',
+    sublabel: 'Garantías contractuales y estatales (Ley 80/1993)',
+    icon: Scale,
   },
 ];
 

@@ -27,7 +27,7 @@ describe('promptStrategyFactory', () => {
   });
 
   it('falls back to pyme for unknown domains', () => {
-    const strategy = getStrategy('cumplimiento' as InsuranceDomain);
+    const strategy = getStrategy('transporte' as InsuranceDomain);
     const prompt = strategy.buildPromptForFamily('TABLE-INTEGRATED');
     const baseline = buildPymePromptForFamily('TABLE-INTEGRATED');
     expect(prompt).toBe(baseline);
@@ -283,6 +283,30 @@ describe('saludPromptStrategy', () => {
     expect(schema.properties).toHaveProperty('regulatoryCompliance');
     expect(schema.properties).toHaveProperty('preexistingConditions');
     expect(schema.properties).toHaveProperty('providerNetwork');
+    expect(schema.properties).toHaveProperty('rawCoverages');
+  });
+});
+
+describe('cumplimientoPromptStrategy', () => {
+  it('includes cumplimiento-specific extraction fields and Ley 80/1993 references', () => {
+    const strategy = getStrategy('cumplimiento');
+    const prompt = strategy.buildPromptForFamily('TABLE-INTEGRATED');
+
+    expect(prompt).toContain('FIANZAS Y GARANTÍAS');
+    expect(prompt).toContain('Ley 80/1993');
+    expect(prompt).toContain('Decreto 1082/2015');
+    expect(prompt).toContain('Seriedad de Oferta');
+    expect(prompt).toContain('Anticipo');
+    expect(prompt).toContain('contratación estatal');
+  });
+
+  it('returns a structured JSON schema for cumplimiento extraction', () => {
+    const schema = getStrategy('cumplimiento').getResponseSchema();
+    expect(schema.type).toBe('object');
+    expect(schema.properties).toHaveProperty('insurerName');
+    expect(schema.properties).toHaveProperty('contractDetails');
+    expect(schema.properties).toHaveProperty('estatutoryCompliance');
+    expect(schema.properties).toHaveProperty('generalConditions');
     expect(schema.properties).toHaveProperty('rawCoverages');
   });
 });

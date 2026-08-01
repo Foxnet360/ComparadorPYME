@@ -62,13 +62,27 @@ describe('domainTaxonomyRegistry', () => {
     expect(names).toContain('Portabilidad y Carencias Regulatorias (Res. 244/2019 · Ley 1438)');
   });
 
+  it('loads the cumplimiento taxonomy with 14 categories including Ley 80/1993 obligations', () => {
+    const taxonomy = domainTaxonomyRegistry.getTaxonomy('cumplimiento');
+    expect(taxonomy.domain).toBe('cumplimiento');
+    expect(taxonomy.categories).toHaveLength(14);
+
+    const names = taxonomy.categories.map((category) => category.name);
+    expect(names).toContain('Seriedad de Oferta');
+    expect(names).toContain('Cumplimiento de Contrato');
+    expect(names).toContain('Salarios, Prestaciones e Indemnizaciones Laborales');
+    expect(names).toContain(
+      'Garantía Única de Cumplimiento (Contratación Estatal — Ley 80/1993 · Decreto 1082/2015)'
+    );
+  });
+
   it('falls back to pyme for unknown domains and warns', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const taxonomy = domainTaxonomyRegistry.getTaxonomy('cumplimiento' as never);
+    const taxonomy = domainTaxonomyRegistry.getTaxonomy('transporte' as never);
 
     expect(taxonomy.domain).toBe('pyme');
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Unknown domain "cumplimiento"'));
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Unknown domain "transporte"'));
     warnSpy.mockRestore();
   });
 });
@@ -80,12 +94,13 @@ describe('resolveInsuranceDomain', () => {
     expect(resolveInsuranceDomain('')).toBe('pyme');
   });
 
-  it('accepts pyme, autos, copropiedades, vida_grupo, and salud', () => {
+  it('accepts pyme, autos, copropiedades, vida_grupo, salud, and cumplimiento', () => {
     expect(resolveInsuranceDomain('pyme')).toBe('pyme');
     expect(resolveInsuranceDomain('autos')).toBe('autos');
     expect(resolveInsuranceDomain('copropiedades')).toBe('copropiedades');
     expect(resolveInsuranceDomain('vida_grupo')).toBe('vida_grupo');
     expect(resolveInsuranceDomain('salud')).toBe('salud');
+    expect(resolveInsuranceDomain('cumplimiento')).toBe('cumplimiento');
   });
 
   it('falls back to pyme for unknown values and warns', () => {

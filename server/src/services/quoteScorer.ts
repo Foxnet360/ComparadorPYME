@@ -71,6 +71,7 @@ const MARKET_PRICE_BENCHMARKS: Record<InsuranceDomain, number> = {
   copropiedades: 15_000_000,
   vida_grupo: 450_000,
   salud: 350_000,
+  cumplimiento: 5_000_000,
 };
 
 // Autos scoring thresholds (COP)
