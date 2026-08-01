@@ -65,8 +65,25 @@ WHERE cm.domain = s.domain
   AND cm.raw_name = s.raw_name
   AND cm.id NOT IN (SELECT id FROM to_delete);
 
+-- 2b. Delete duplicates. Fixed 2026-08-01: the original DELETE referenced the
+-- CTE `to_delete` outside its scope (a CTE only lives for the statement it is
+-- attached to), failing with `relation "to_delete" does not exist`. The DELETE
+-- now recomputes the ranked set in its own statement with identical ordering.
+WITH ranked AS (
+  SELECT
+    id,
+    ROW_NUMBER() OVER (
+      PARTITION BY domain, COALESCE(insurer_name, ''), raw_name
+      ORDER BY
+        user_corrected DESC,
+        correction_count DESC,
+        updated_at DESC,
+        id ASC
+    ) AS rn
+  FROM coverage_mappings
+)
 DELETE FROM coverage_mappings
-WHERE id IN (SELECT id FROM to_delete);
+WHERE id IN (SELECT id FROM ranked WHERE rn > 1);
 
 -- 3. Validate uniqueness before applying the new index.
 DO $$
