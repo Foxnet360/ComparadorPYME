@@ -240,3 +240,25 @@ describe('copropiedadesPromptStrategy', () => {
     expect(schema.properties).toHaveProperty('rawCoverages');
   });
 });
+
+describe('vidaGrupoPromptStrategy', () => {
+  it('includes vida_grupo-specific extraction fields and suicide/age rules', () => {
+    const strategy = getStrategy('vida_grupo');
+    const prompt = strategy.buildPromptForFamily('TABLE-INTEGRATED');
+
+    expect(prompt).toContain('VIDA GRUPO');
+    expect(prompt).toContain('Amparo Básico por Muerte');
+    expect(prompt).toContain('Incapacidad Total y Permanente');
+    expect(prompt).toContain('Cobertura de Suicidio');
+    expect(prompt).toContain('Auxilio Educativo');
+  });
+
+  it('returns a structured JSON schema for vida_grupo extraction', () => {
+    const schema = getStrategy('vida_grupo').getResponseSchema();
+    expect(schema.type).toBe('object');
+    expect(schema.properties).toHaveProperty('insurerName');
+    expect(schema.properties).toHaveProperty('groupDetails');
+    expect(schema.properties).toHaveProperty('suicideCoverage');
+    expect(schema.properties).toHaveProperty('rawCoverages');
+  });
+});

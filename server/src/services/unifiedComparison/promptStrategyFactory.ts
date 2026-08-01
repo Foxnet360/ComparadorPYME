@@ -4,6 +4,7 @@ import { InsuranceDomain } from '../../types/domain';
 import { pymePromptStrategy } from './pymePromptStrategy';
 import { autosPromptStrategy } from './autosPromptStrategy';
 import { copropiedadesPromptStrategy } from './copropiedadesPromptStrategy';
+import { vidaGrupoPromptStrategy } from './vidaGrupoPromptStrategy';
 
 export interface PromptContext {
   pageCount?: number;
@@ -27,6 +28,7 @@ const PROMPT_STRATEGIES: Record<InsuranceDomain, PromptStrategy> = {
   pyme: pymePromptStrategy,
   autos: autosPromptStrategy,
   copropiedades: copropiedadesPromptStrategy,
+  vida_grupo: vidaGrupoPromptStrategy,
 };
 
 /**

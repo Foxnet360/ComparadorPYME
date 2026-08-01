@@ -38,6 +38,18 @@ describe('domainTaxonomyRegistry', () => {
     expect(names).toContain('Daños por Agua, Anegación e Inundación');
   });
 
+  it('loads the vida_grupo taxonomy with 14 categories', () => {
+    const taxonomy = domainTaxonomyRegistry.getTaxonomy('vida_grupo');
+    expect(taxonomy.domain).toBe('vida_grupo');
+    expect(taxonomy.categories).toHaveLength(14);
+
+    const names = taxonomy.categories.map((category) => category.name);
+    expect(names).toContain('Amparo Básico por Muerte (Cualquier Causa)');
+    expect(names).toContain('Incapacidad Total y Permanente (ITP)');
+    expect(names).toContain('Cobertura de Suicidio (Carencia / Día 1)');
+    expect(names).toContain('Auxilio Educativo para Hijos');
+  });
+
   it('falls back to pyme for unknown domains and warns', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -56,10 +68,11 @@ describe('resolveInsuranceDomain', () => {
     expect(resolveInsuranceDomain('')).toBe('pyme');
   });
 
-  it('accepts pyme, autos, and copropiedades', () => {
+  it('accepts pyme, autos, copropiedades, and vida_grupo', () => {
     expect(resolveInsuranceDomain('pyme')).toBe('pyme');
     expect(resolveInsuranceDomain('autos')).toBe('autos');
     expect(resolveInsuranceDomain('copropiedades')).toBe('copropiedades');
+    expect(resolveInsuranceDomain('vida_grupo')).toBe('vida_grupo');
   });
 
   it('falls back to pyme for unknown values and warns', () => {

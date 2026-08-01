@@ -1,0 +1,278 @@
+{
+  "version": "1.0.0",
+  "domain": "vida_grupo",
+  "metadata": {
+    "region": "Colombia",
+    "currency": "COP",
+    "salaryReference": "SMMLV",
+    "salaryValue2024": 1423500,
+    "uvtValue2024": 42412,
+    "source": "Superintendencia Financiera de Colombia; Pólizas Colectivas de Vida Grupo"
+  },
+  "categories": [
+    {
+      "id": 1,
+      "name": "Amparo Básico por Muerte (Cualquier Causa)",
+      "section": "Coberturas Principales",
+      "isRequired": true,
+      "synonyms": [
+        "Muerte por cualquier causa",
+        "Amparo básico de vida",
+        "Vida grupo",
+        "Fallecimiento",
+        "Muerte natural o accidental",
+        "Capital básico asegurado"
+      ],
+      "aliases": [
+        "Muerte por cualquier causa",
+        "Amparo básico de vida",
+        "Vida grupo",
+        "Fallecimiento",
+        "Muerte natural o accidental",
+        "Capital básico asegurado"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Incapacidad Total y Permanente (ITP)",
+      "section": "Coberturas Principales",
+      "isRequired": true,
+      "synonyms": [
+        "ITP",
+        "Incapacidad total y permanente",
+        "Invalidéz por enfermedad o accidente",
+        "Pérdida de capacidad laboral 50% o más",
+        "Anticipo por incapacidad permanente"
+      ],
+      "aliases": [
+        "ITP",
+        "Incapacidad total y permanente",
+        "Invalidéz por enfermedad o accidente",
+        "Pérdida de capacidad laboral 50% o más",
+        "Anticipo por incapacidad permanente"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Muerte Accidental y Desmembración (MAyD)",
+      "section": "Accidentes e Incapacidad",
+      "isRequired": false,
+      "synonyms": [
+        "MAyD",
+        "Muerte accidental",
+        "Desmembración",
+        "Indemnización adicional por accidente",
+        "Pérdida de miembros o visión por accidente"
+      ],
+      "aliases": [
+        "MAyD",
+        "Muerte accidental",
+        "Desmembración",
+        "Indemnización adicional por accidente",
+        "Pérdida de miembros o visión por accidente"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Enfermedades Graves",
+      "section": "Salud y Enfermedades",
+      "isRequired": false,
+      "synonyms": [
+        "Enfermedades de alto costo",
+        "Anticipo por cáncer, infarto o derrame",
+        "Amparo adicional enfermedades graves",
+        "Enfermedades catastróficas"
+      ],
+      "aliases": [
+        "Enfermedades de alto costo",
+        "Anticipo por cáncer, infarto o derrame",
+        "Amparo adicional enfermedades graves",
+        "Enfermedades catastróficas"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Auxilio Funerario / Gastos de Sepelio",
+      "section": "Auxilios y Beneficios",
+      "isRequired": false,
+      "synonyms": [
+        "Auxilio funerario",
+        "Gastos exequiales",
+        "Servicios exequiales",
+        "Auxilio para sepelio",
+        "Gastos de entierro"
+      ],
+      "aliases": [
+        "Auxilio funerario",
+        "Gastos exequiales",
+        "Servicios exequiales",
+        "Auxilio para sepelio",
+        "Gastos de entierro"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Renta Diaria por Hospitalización / Incapacidad",
+      "section": "Salud y Enfermedades",
+      "isRequired": false,
+      "synonyms": [
+        "Renta por hospitalización",
+        "Renta diaria por incapacidad temporal",
+        "Auxilio diario de hospitalización",
+        "Subsidio por estancia hospitalaria"
+      ],
+      "aliases": [
+        "Renta por hospitalización",
+        "Renta diaria por incapacidad temporal",
+        "Auxilio diario de hospitalización",
+        "Subsidio por estancia hospitalaria"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Exoneración de Pago de Primas por Incapacidad",
+      "section": "Accidentes e Incapacidad",
+      "isRequired": false,
+      "synonyms": [
+        "Exoneración de primas",
+        "Liberación de pago de primas",
+        "Exención de prima por invalidez",
+        "Perdón de primas por incapacidad"
+      ],
+      "aliases": [
+        "Exoneración de primas",
+        "Liberación de pago de primas",
+        "Exención de prima por invalidez",
+        "Perdón de primas por incapacidad"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Condiciones de Ingreso y Permanencia",
+      "section": "Condiciones Especiales",
+      "isRequired": false,
+      "synonyms": [
+        "Edad de ingreso",
+        "Edad límite de permanencia",
+        "Requisitos de asegurabilidad",
+        "Declaración de salud",
+        "Carencias y preexistencias"
+      ],
+      "aliases": [
+        "Edad de ingreso",
+        "Edad límite de permanencia",
+        "Requisitos de asegurabilidad",
+        "Declaración de salud",
+        "Carencias y preexistencias"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Cobertura de Suicidio (Carencia / Día 1)",
+      "section": "Condiciones Especiales",
+      "isRequired": false,
+      "synonyms": [
+        "Suicidio desde el primer día",
+        "Carencia para suicidio",
+        "Amparo de suicidio",
+        "Suicidio sin período de espera"
+      ],
+      "aliases": [
+        "Suicidio desde el primer día",
+        "Carencia para suicidio",
+        "Amparo de suicidio",
+        "Suicidio sin período de espera"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "Auxilio Educativo para Hijos",
+      "section": "Auxilios y Beneficios",
+      "isRequired": false,
+      "synonyms": [
+        "Beca educativa para beneficiarios",
+        "Auxilio de educación",
+        "Seguro educacional por orfandad",
+        "Renta de estudios para hijos"
+      ],
+      "aliases": [
+        "Beca educativa para beneficiarios",
+        "Auxilio de educación",
+        "Seguro educacional por orfandad",
+        "Renta de estudios para hijos"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "Auxilio de Canasta / Mantenimiento Familiar",
+      "section": "Auxilios y Beneficios",
+      "isRequired": false,
+      "synonyms": [
+        "Renta de canasta familiar",
+        "Auxilio de canasta mensual",
+        "Sostenimiento familiar post-mortem",
+        "Subsidio alimentario para beneficiarios"
+      ],
+      "aliases": [
+        "Renta de canasta familiar",
+        "Auxilio de canasta mensual",
+        "Sostenimiento familiar post-mortem",
+        "Subsidio alimentario para beneficiarios"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "Anticipo por Enfermedad Terminal",
+      "section": "Salud y Enfermedades",
+      "isRequired": false,
+      "synonyms": [
+        "Anticipo enfermedad terminal",
+        "Adelanto por fase terminal",
+        "Pago anticipado por expectativa de vida limitada",
+        "Amparo de estado terminal"
+      ],
+      "aliases": [
+        "Anticipo enfermedad terminal",
+        "Adelanto por fase terminal",
+        "Pago anticipado por expectativa de vida limitada",
+        "Amparo de estado terminal"
+      ]
+    },
+    {
+      "id": 13,
+      "name": "Doble Indemnización por Accidente de Tránsito",
+      "section": "Accidentes e Incapacidad",
+      "isRequired": false,
+      "synonyms": [
+        "Doble indemnización accidente vehicular",
+        "Accidente en transporte público",
+        "Muerte accidental en tránsito",
+        "Doble capital por accidente automovilístico"
+      ],
+      "aliases": [
+        "Doble indemnización accidente vehicular",
+        "Accidente en transporte público",
+        "Muerte accidental en tránsito",
+        "Doble capital por accidente automovilístico"
+      ]
+    },
+    {
+      "id": 14,
+      "name": "Auxilio por Hijos con Enfermedades Congénitas",
+      "section": "Auxilios y Beneficios",
+      "isRequired": false,
+      "synonyms": [
+        "Nacimiento con enfermedad congénita",
+        "Auxilio hijos con malformación",
+        "Cobertura de alteración congénita",
+        "Subsidio por malformación al nacer"
+      ],
+      "aliases": [
+        "Nacimiento con enfermedad congénita",
+        "Auxilio hijos con malformación",
+        "Cobertura de alteración congénita",
+        "Subsidio por malformación al nacer"
+      ]
+    }
+  ]
+}
