@@ -27,7 +27,7 @@ describe('promptStrategyFactory', () => {
   });
 
   it('falls back to pyme for unknown domains', () => {
-    const strategy = getStrategy('transporte' as InsuranceDomain);
+    const strategy = getStrategy('hogar' as InsuranceDomain);
     const prompt = strategy.buildPromptForFamily('TABLE-INTEGRATED');
     const baseline = buildPymePromptForFamily('TABLE-INTEGRATED');
     expect(prompt).toBe(baseline);
@@ -307,6 +307,29 @@ describe('cumplimientoPromptStrategy', () => {
     expect(schema.properties).toHaveProperty('contractDetails');
     expect(schema.properties).toHaveProperty('estatutoryCompliance');
     expect(schema.properties).toHaveProperty('generalConditions');
+    expect(schema.properties).toHaveProperty('rawCoverages');
+  });
+});
+
+describe('transportePromptStrategy', () => {
+  it('includes transporte-specific extraction fields and Incoterms 2020 references', () => {
+    const strategy = getStrategy('transporte');
+    const prompt = strategy.buildPromptForFamily('TABLE-INTEGRATED');
+
+    expect(prompt).toContain('TRANSPORTE DE MERCANCÍAS');
+    expect(prompt).toContain('Incoterms 2020');
+    expect(prompt).toContain('Decreto 1079/2015');
+    expect(prompt).toContain('Robo y Hurto');
+    expect(prompt).toContain('Avería Gruesa');
+  });
+
+  it('returns a structured JSON schema for transporte extraction', () => {
+    const schema = getStrategy('transporte').getResponseSchema();
+    expect(schema.type).toBe('object');
+    expect(schema.properties).toHaveProperty('insurerName');
+    expect(schema.properties).toHaveProperty('transportDetails');
+    expect(schema.properties).toHaveProperty('iccClauses');
+    expect(schema.properties).toHaveProperty('regulatoryCompliance');
     expect(schema.properties).toHaveProperty('rawCoverages');
   });
 });

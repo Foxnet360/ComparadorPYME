@@ -5,7 +5,7 @@
  * `autos` is the first additional domain and is opt-in via the analyze contract.
  */
 
-export const INSURANCE_DOMAINS = ['pyme', 'autos', 'copropiedades', 'vida_grupo', 'salud', 'cumplimiento'] as const;
+export const INSURANCE_DOMAINS = ['pyme', 'autos', 'copropiedades', 'vida_grupo', 'salud', 'cumplimiento', 'transporte'] as const;
 
 export type InsuranceDomain = (typeof INSURANCE_DOMAINS)[number];
 
@@ -49,6 +49,7 @@ export function isInsuranceDomain(value: unknown): value is InsuranceDomain {
     value === 'copropiedades' ||
     value === 'vida_grupo' ||
     value === 'salud' ||
-    value === 'cumplimiento'
+    value === 'cumplimiento' ||
+    value === 'transporte'
   );
 }

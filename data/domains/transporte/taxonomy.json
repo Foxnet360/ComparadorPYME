@@ -1,0 +1,255 @@
+{
+  "version": "1.0.0",
+  "domain": "transporte",
+  "metadata": {
+    "region": "Colombia",
+    "currency": "COP",
+    "source": "Seguros de Transporte de Mercancías — Decreto 1079/2015 (Transporte Terrestre) · Código de Comercio (Arts. 1117–1124) · Incoterms 2020 ICC · Código IMDG (carga peligrosa) · Convención CMR (transporte internacional)",
+    "regulatory": {
+      "framework": "Decreto 1079 de 2015 — Único Reglamentario del Sector Transporte",
+      "commercialCode": "Código de Comercio — Libro V (Transporte) Arts. 1117–1124",
+      "incoterms": "Incoterms 2020 — Cámara de Comercio Internacional (ICC)",
+      "hazardousCargo": "Código IMDG — Mercancías Peligrosas Marítimas",
+      "supervisoryBody": "Superintendencia de Puertos y Transporte (SuperTransporte)"
+    }
+  },
+  "categories": [
+    {
+      "id": "tra_01",
+      "name": "Daño Material a la Carga (Todo Riesgo / Named Perils)",
+      "section": "COBERTURAS PRINCIPALES",
+      "isRequired": true,
+      "synonyms": [
+        "daño material",
+        "todo riesgo",
+        "riesgos nominados",
+        "named perils",
+        "daños físicos a la carga",
+        "avería de la mercancía",
+        "deterioro de carga",
+        "daño en tránsito"
+      ]
+    },
+    {
+      "id": "tra_02",
+      "name": "Pérdida Total de la Carga (Hurto, Extravío, Siniestro Total)",
+      "section": "COBERTURAS PRINCIPALES",
+      "isRequired": true,
+      "synonyms": [
+        "pérdida total",
+        "hurto total",
+        "extravío",
+        "desaparición de carga",
+        "siniestro total",
+        "pérdida completa",
+        "total loss",
+        "no entrega"
+      ]
+    },
+    {
+      "id": "tra_03",
+      "name": "Avería Particular y Avería Gruesa (Marítima)",
+      "section": "COBERTURAS MARÍTIMAS",
+      "isRequired": false,
+      "synonyms": [
+        "avería particular",
+        "avería gruesa",
+        "general average",
+        "particular average",
+        "contribución de avería gruesa",
+        "salvamento marítimo",
+        "contribución de salvamento",
+        "sacrificio deliberado"
+      ]
+    },
+    {
+      "id": "tra_04",
+      "name": "Responsabilidad Civil del Transportador",
+      "section": "COBERTURAS DE RESPONSABILIDAD",
+      "isRequired": true,
+      "synonyms": [
+        "responsabilidad civil del transportador",
+        "RC del transportador",
+        "responsabilidad del operador",
+        "liability del transportista",
+        "responsabilidad legal",
+        "carrier liability",
+        "daños al remitente",
+        "responsabilidad contractual del transporte"
+      ]
+    },
+    {
+      "id": "tra_05",
+      "name": "Robo y Hurto (Con y Sin Violencia)",
+      "section": "COBERTURAS PRINCIPALES",
+      "isRequired": true,
+      "synonyms": [
+        "robo",
+        "hurto",
+        "hurto con violencia",
+        "hurto sin violencia",
+        "asalto",
+        "piratería terrestre",
+        "robo parcial",
+        "hurto calificado"
+      ]
+    },
+    {
+      "id": "tra_06",
+      "name": "Refrigeración y Carga Perecedera (Cadena de Frío)",
+      "section": "COBERTURAS ESPECIALES",
+      "isRequired": false,
+      "synonyms": [
+        "refrigeración",
+        "cadena de frío",
+        "carga perecedera",
+        "alimentos perecederos",
+        "falla de refrigeración",
+        "temperatura controlada",
+        "cold chain",
+        "carga congelada"
+      ]
+    },
+    {
+      "id": "tra_07",
+      "name": "Carga a Granel y Carga Peligrosa (ADR / IMDG / IATA)",
+      "section": "COBERTURAS ESPECIALES",
+      "isRequired": false,
+      "synonyms": [
+        "carga a granel",
+        "carga peligrosa",
+        "mercancías peligrosas",
+        "ADR",
+        "IMDG",
+        "IATA",
+        "materiales peligrosos",
+        "hazmat",
+        "químicos",
+        "explosivos",
+        "inflamables"
+      ]
+    },
+    {
+      "id": "tra_08",
+      "name": "Transporte Multimodal (Terrestre, Aéreo y Marítimo)",
+      "section": "MODALIDADES DE TRANSPORTE",
+      "isRequired": false,
+      "synonyms": [
+        "transporte multimodal",
+        "transporte terrestre",
+        "transporte aéreo",
+        "transporte marítimo",
+        "transporte fluvial",
+        "combinado de modos",
+        "multimodal",
+        "intermodal",
+        "flete terrestre",
+        "flete aéreo",
+        "flete marítimo"
+      ]
+    },
+    {
+      "id": "tra_09",
+      "name": "Cobertura de Fletes e Impuestos según Incoterm (CIF / FOB / DAP / DDP)",
+      "section": "VALOR ASEGURADO",
+      "isRequired": true,
+      "synonyms": [
+        "fletes",
+        "impuestos",
+        "Incoterm",
+        "CIF",
+        "FOB",
+        "DAP",
+        "DDP",
+        "valor asegurado",
+        "valor de la carga",
+        "precio de venta",
+        "valor comercial",
+        "margen de beneficio"
+      ]
+    },
+    {
+      "id": "tra_10",
+      "name": "Daño o Pérdida del Contenedor / Embalaje",
+      "section": "COBERTURAS COMPLEMENTARIAS",
+      "isRequired": false,
+      "synonyms": [
+        "contenedor",
+        "embalaje",
+        "daño al contenedor",
+        "pérdida del contenedor",
+        "packaging",
+        "daño al embalaje",
+        "pallets",
+        "cajas",
+        "container damage"
+      ]
+    },
+    {
+      "id": "tra_11",
+      "name": "Demora en la Entrega y Lucro Cesante",
+      "section": "COBERTURAS CONSECUENCIALES",
+      "isRequired": false,
+      "synonyms": [
+        "demora en la entrega",
+        "retraso",
+        "lucro cesante",
+        "pérdida de mercado",
+        "delay",
+        "pérdidas consecuenciales",
+        "daño emergente",
+        "penalidades por demora"
+      ]
+    },
+    {
+      "id": "tra_12",
+      "name": "Deducibles y Franquicias",
+      "section": "CONDICIONES DE LA COBERTURA",
+      "isRequired": true,
+      "synonyms": [
+        "deducible",
+        "franquicia",
+        "coaseguro",
+        "deducible por siniestro",
+        "deducible mínimo",
+        "deducible porcentual",
+        "exceso de pérdida",
+        "retention"
+      ]
+    },
+    {
+      "id": "tra_13",
+      "name": "Vigencia y Tipo de Póliza (Flotante / Por Viaje / Abierta)",
+      "section": "CONDICIONES GENERALES",
+      "isRequired": true,
+      "synonyms": [
+        "vigencia",
+        "póliza flotante",
+        "póliza por viaje",
+        "póliza abierta",
+        "cobertura automática",
+        "periodo de seguros",
+        "declaración de embarque",
+        "blanket policy",
+        "open cover"
+      ]
+    },
+    {
+      "id": "tra_14",
+      "name": "Marco Normativo (Decreto 1079/2015 · Código de Comercio · Incoterms 2020)",
+      "section": "CUMPLIMIENTO NORMATIVO",
+      "isRequired": true,
+      "synonyms": [
+        "Decreto 1079",
+        "Código de Comercio",
+        "Incoterms 2020",
+        "normatividad transporte",
+        "SuperTransporte",
+        "regulación colombiana de transporte",
+        "Ley 336/1996",
+        "ICC cargo clauses",
+        "cláusulas de carga ICC"
+      ]
+    }
+  ]
+}

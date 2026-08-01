@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, Car, Building, Users, Stethoscope, Scale } from 'lucide-react';
+import { Building2, Car, Building, Users, Stethoscope, Scale, Truck } from 'lucide-react';
 
 export type InsuranceDomain =
   | 'pyme'
@@ -7,7 +7,8 @@ export type InsuranceDomain =
   | 'copropiedades'
   | 'vida_grupo'
   | 'salud'
-  | 'cumplimiento';
+  | 'cumplimiento'
+  | 'transporte';
 
 export interface DomainOption {
   id: InsuranceDomain;
@@ -59,6 +60,12 @@ const DOMAIN_OPTIONS: DomainOption[] = [
     label: 'Cumplimiento y Fianzas',
     sublabel: 'Garantías contractuales y estatales (Ley 80/1993)',
     icon: Scale,
+  },
+  {
+    id: 'transporte',
+    label: 'Transporte de Mercancías',
+    sublabel: 'Fletes terrestres, aéreos y marítimos (Incoterms 2020)',
+    icon: Truck,
   },
 ];
 

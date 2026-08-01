@@ -76,13 +76,27 @@ describe('domainTaxonomyRegistry', () => {
     );
   });
 
+  it('loads the transporte taxonomy with 14 categories including Incoterms 2020', () => {
+    const taxonomy = domainTaxonomyRegistry.getTaxonomy('transporte');
+    expect(taxonomy.domain).toBe('transporte');
+    expect(taxonomy.categories).toHaveLength(14);
+
+    const names = taxonomy.categories.map((category) => category.name);
+    expect(names).toContain('Daño Material a la Carga (Todo Riesgo / Named Perils)');
+    expect(names).toContain('Robo y Hurto (Con y Sin Violencia)');
+    expect(names).toContain('Responsabilidad Civil del Transportador');
+    expect(names).toContain(
+      'Marco Normativo (Decreto 1079/2015 · Código de Comercio · Incoterms 2020)'
+    );
+  });
+
   it('falls back to pyme for unknown domains and warns', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const taxonomy = domainTaxonomyRegistry.getTaxonomy('transporte' as never);
+    const taxonomy = domainTaxonomyRegistry.getTaxonomy('hogar' as never);
 
     expect(taxonomy.domain).toBe('pyme');
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Unknown domain "transporte"'));
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Unknown domain "hogar"'));
     warnSpy.mockRestore();
   });
 });
@@ -94,13 +108,14 @@ describe('resolveInsuranceDomain', () => {
     expect(resolveInsuranceDomain('')).toBe('pyme');
   });
 
-  it('accepts pyme, autos, copropiedades, vida_grupo, salud, and cumplimiento', () => {
+  it('accepts all registered domains including transporte', () => {
     expect(resolveInsuranceDomain('pyme')).toBe('pyme');
     expect(resolveInsuranceDomain('autos')).toBe('autos');
     expect(resolveInsuranceDomain('copropiedades')).toBe('copropiedades');
     expect(resolveInsuranceDomain('vida_grupo')).toBe('vida_grupo');
     expect(resolveInsuranceDomain('salud')).toBe('salud');
     expect(resolveInsuranceDomain('cumplimiento')).toBe('cumplimiento');
+    expect(resolveInsuranceDomain('transporte')).toBe('transporte');
   });
 
   it('falls back to pyme for unknown values and warns', () => {

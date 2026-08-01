@@ -7,6 +7,7 @@ import { copropiedadesPromptStrategy } from './copropiedadesPromptStrategy';
 import { vidaGrupoPromptStrategy } from './vidaGrupoPromptStrategy';
 import { saludPromptStrategy } from './saludPromptStrategy';
 import { cumplimientoPromptStrategy } from './cumplimientoPromptStrategy';
+import { transportePromptStrategy } from './transportePromptStrategy';
 
 export interface PromptContext {
   pageCount?: number;
@@ -33,6 +34,7 @@ const PROMPT_STRATEGIES: Record<InsuranceDomain, PromptStrategy> = {
   vida_grupo: vidaGrupoPromptStrategy,
   salud: saludPromptStrategy,
   cumplimiento: cumplimientoPromptStrategy,
+  transporte: transportePromptStrategy,
 };
 
 /**
