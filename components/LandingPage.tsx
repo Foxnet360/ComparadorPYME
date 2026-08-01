@@ -278,7 +278,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
           <p className="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-8">
             Compatible con documentos de
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-70">
+          <div className="flex flex-wrap justify-center items-center gap-6 md:gap-12 opacity-75">
             <span className="text-xl font-bold text-slate-600 hover:text-indigo-600 transition-colors">
               Allianz
             </span>
@@ -289,10 +289,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
               SURA
             </span>
             <span className="text-xl font-bold text-slate-600 hover:text-indigo-600 transition-colors">
-              Chubb
+              AXA COLPATRIA
             </span>
             <span className="text-xl font-bold text-slate-600 hover:text-indigo-600 transition-colors">
-              AXA COLPATRIA
+              SBS
+            </span>
+            <span className="text-xl font-bold text-slate-600 hover:text-indigo-600 transition-colors">
+              BBVA
+            </span>
+            <span className="text-xl font-bold text-slate-600 hover:text-indigo-600 transition-colors">
+              Seguros Bolívar
+            </span>
+            <span className="text-xl font-bold text-slate-600 hover:text-indigo-600 transition-colors">
+              Chubb
             </span>
             <span className="text-xl font-bold text-slate-600 hover:text-indigo-600 transition-colors">
               Zurich
@@ -715,7 +724,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
 
           <div className="border-t border-slate-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-sm text-slate-500">
-              © 2024 Comparador Seguros CSA. Todos los derechos reservados.
+              © 2026 Comparador Seguros CSA. Todos los derechos reservados.
             </p>
             <div className="flex items-center space-x-2 mt-4 md:mt-0">
               <span className="text-xs text-slate-600">Hecho con</span>
