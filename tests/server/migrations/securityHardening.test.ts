@@ -17,8 +17,12 @@ describe('PR1 security-hardening migrations', () => {
   it('1.1 migration 023 enables RLS on template_registry and coverage_graph_edges without policies', () => {
     const sql = readMigration('023_rls_template_and_graph.sql');
 
-    expect(sql).toContain('ALTER TABLE IF EXISTS public.template_registry ENABLE ROW LEVEL SECURITY');
-    expect(sql).toContain('ALTER TABLE IF EXISTS public.coverage_graph_edges ENABLE ROW LEVEL SECURITY');
+    expect(sql).toContain(
+      'ALTER TABLE IF EXISTS public.template_registry ENABLE ROW LEVEL SECURITY'
+    );
+    expect(sql).toContain(
+      'ALTER TABLE IF EXISTS public.coverage_graph_edges ENABLE ROW LEVEL SECURITY'
+    );
     expect(sql).not.toMatch(/CREATE\s+POLICY.*template_registry/i);
     expect(sql).not.toMatch(/CREATE\s+POLICY.*coverage_graph_edges/i);
   });
@@ -59,7 +63,9 @@ describe('PR1 security-hardening migrations', () => {
     const sql = readMigration('025_document_insurer_view_invoker.sql');
 
     expect(sql).toContain('DROP VIEW IF EXISTS public.document_insurer_view');
-    expect(sql).toMatch(/CREATE\s+(OR REPLACE\s+)?VIEW\s+public\.document_insurer_view\s+WITH\s*\(\s*security_invoker\s*=\s*true\s*\)/i);
+    expect(sql).toMatch(
+      /CREATE\s+(OR REPLACE\s+)?VIEW\s+public\.document_insurer_view\s+WITH\s*\(\s*security_invoker\s*=\s*true\s*\)/i
+    );
     expect(sql).toContain('FROM public.documents d');
     expect(sql).toContain('JOIN public.insurers i ON d.insurer_id = i.id');
   });
