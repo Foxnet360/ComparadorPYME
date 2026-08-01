@@ -717,7 +717,7 @@ export const coverageOntology = {
     };
 
     // Save and cache the result
-    await this.saveMapping(mapping);
+    await this.saveMapping(mapping, d);
     await setCachedCoverageMapping(rawName, mapping, insurerName);
 
     return mapping;
@@ -780,8 +780,10 @@ export const coverageOntology = {
   /**
    * Save mapping to database for learning with fallback
    */
-  async saveMapping(mapping: CoverageMapping): Promise<void> {
+  async saveMapping(mapping: CoverageMapping, domain?: string): Promise<void> {
     try {
+      const d = domain || 'pyme';
+
       // Intento 1: Guardar con las nuevas columnas de alta certeza
       const { error } = await supabase.from('coverage_mappings').upsert(
         {
@@ -792,6 +794,7 @@ export const coverageOntology = {
           confidence: mapping.confidence,
           is_composite: mapping.isComposite,
           components: mapping.components || null,
+          domain: d,
           raw_text_snippet: mapping.rawTextSnippet || null,
           ai_justification: mapping.justification || null,
           page_number: mapping.pageNumber || null,
@@ -820,6 +823,7 @@ export const coverageOntology = {
             confidence: mapping.confidence,
             is_composite: mapping.isComposite,
             components: mapping.components || null,
+            domain: d,
             last_used_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           } as unknown as never,
@@ -838,7 +842,7 @@ export const coverageOntology = {
           throw fallbackError;
         }
       }
-      console.log(`🌳 [Ontology DB] Saved mapping for "${mapping.rawName}"`);
+      console.log(`🌳 [Ontology DB] Saved mapping for "${mapping.rawName}" (${d})`);
     } catch (error: unknown) {
       // Silenciar error de duplicado - no es crítico
       if ((error as { code?: string }).code === '23505') {

@@ -43,14 +43,17 @@ vi.mock('../coverageOntology', () => ({
 }));
 
 describe('learningEngine embedding retrieval and fallback', () => {
+  const createQueryBuilder = (data: unknown) => {
+    const builder: Record<string, unknown> = {};
+    builder.eq = () => builder;
+    builder.limit = () => Promise.resolve({ data, error: null });
+    return builder;
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockFrom.mockReturnValue({
-      select: () => ({
-        eq: () => ({
-          limit: () => Promise.resolve({ data: [], error: null }),
-        }),
-      }),
+      select: () => createQueryBuilder([]),
     });
   });
 
@@ -60,11 +63,7 @@ describe('learningEngine embedding retrieval and fallback', () => {
     ];
 
     mockFrom.mockReturnValue({
-      select: () => ({
-        eq: () => ({
-          limit: () => Promise.resolve({ data: mockDbCorrections, error: null }),
-        }),
-      }),
+      select: () => createQueryBuilder(mockDbCorrections),
     });
 
     vi.mocked(embeddingService.generateEmbedding).mockResolvedValue([0.1, 0.2, 0.3]);
@@ -86,11 +85,7 @@ describe('learningEngine embedding retrieval and fallback', () => {
     ];
 
     mockFrom.mockReturnValue({
-      select: () => ({
-        eq: () => ({
-          limit: () => Promise.resolve({ data: mockDbCorrections, error: null }),
-        }),
-      }),
+      select: () => createQueryBuilder(mockDbCorrections),
     });
 
     vi.mocked(embeddingService.generateEmbedding).mockResolvedValue([0.1, 0.2, 0.3]);

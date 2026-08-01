@@ -7,6 +7,7 @@ import { handleSupabaseError } from '../config/database';
 import { geminiService } from './gemini';
 import { featureFlags } from '../config/featureFlags';
 import { structuredClauseExtractor } from './structuredClauseExtractor';
+import { InsuranceDomain } from '../types/domain';
 
 export interface DocumentMetadata {
   insurerName: string;
@@ -15,6 +16,7 @@ export interface DocumentMetadata {
   version?: string;
   productName?: string;
   uploadedBy?: string;
+  domain?: InsuranceDomain;
 }
 
 export interface IndexingResult {
@@ -205,7 +207,10 @@ export class DocumentIndexingService {
         content: chunk.content,
         content_normalized: chunk.contentNormalized,
         embedding: `[${chunk.embedding.join(',')}]`,
-        metadata: chunk.metadata,
+        metadata: {
+          ...chunk.metadata,
+          ...(metadata.domain ? { domain: metadata.domain } : {}),
+        },
         coverage_tags: chunk.coverageTags,
         section_type: chunk.sectionType,
       }));
@@ -264,7 +269,11 @@ export class DocumentIndexingService {
 
           const structured = await Promise.race([extractionPromise, timeoutPromise]);
 
-          await structuredClauseExtractor.storeStructuredClause(structured, documentId, 'pyme');
+          await structuredClauseExtractor.storeStructuredClause(
+            structured,
+            documentId,
+            metadata.domain || 'pyme'
+          );
           console.log(
             `✅ [DocumentIndexingService] Structured clause extracted and stored for document ${documentId}`
           );

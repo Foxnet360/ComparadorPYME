@@ -5,6 +5,7 @@ import { coverageGraphService } from './coverageGraphService';
 import { featureFlags } from '../config/featureFlags';
 import { normalizeText } from '../utils/textUtils';
 import { GraphEdgeType } from '../schemas/templateRegistrySchema';
+import { InsuranceDomain } from '../types/domain';
 
 export interface UserCorrection {
   id?: string;
@@ -15,6 +16,7 @@ export interface UserCorrection {
   correctionType: 'coverage_mapping' | 'deductible' | 'exclusion' | 'value';
   quoteId?: string;
   createdAt?: Date;
+  domain?: InsuranceDomain;
   // High certainty columns
   rawTextSnippet?: string;
   aiJustification?: string;
@@ -75,12 +77,16 @@ export const learningEngine = {
   /**
    * Realiza una búsqueda vectorial en memoria de las 3 correcciones de usuario anteriores más similares
    */
-  async getSimilarCorrections(rawName: string): Promise<Array<Record<string, unknown>>> {
+  async getSimilarCorrections(
+    rawName: string,
+    domain: InsuranceDomain = 'pyme'
+  ): Promise<Array<Record<string, unknown>>> {
     try {
       const { data: corrections, error } = await supabase
         .from('coverage_mappings')
         .select('*')
         .eq('user_corrected', true)
+        .eq('domain', domain)
         .limit(50);
 
       if (error || !corrections || corrections.length === 0) return [];
@@ -125,6 +131,7 @@ export const learningEngine = {
    */
   async saveCorrection(correction: UserCorrection): Promise<string> {
     try {
+      const domain = correction.domain || 'pyme';
       let data, error;
 
       let embedding: number[] | null = null;
@@ -146,6 +153,7 @@ export const learningEngine = {
           canonical_name: correction.userCorrection,
           user_corrected: true,
           correction_count: 1,
+          domain,
           embedding: embedding || null,
           raw_text_snippet: correction.rawTextSnippet || null,
           ai_justification: correction.aiJustification || null,
@@ -173,6 +181,7 @@ export const learningEngine = {
             canonical_name: correction.userCorrection,
             user_corrected: true,
             correction_count: 1,
+            domain,
             embedding: embedding || null,
             updated_at: new Date().toISOString(),
           } as unknown as never)
@@ -186,7 +195,7 @@ export const learningEngine = {
       if (error) throw error;
 
       console.log(
-        `✅ [LearningEngine] Saved correction: "${correction.rawName}" → "${correction.userCorrection}"`
+        `✅ [LearningEngine] Saved correction: "${correction.rawName}" → "${correction.userCorrection}" (${domain})`
       );
 
       // Trigger async updates
@@ -204,6 +213,8 @@ export const learningEngine = {
    */
   async applyCorrection(correction: UserCorrection): Promise<void> {
     try {
+      const domain = correction.domain || 'pyme';
+
       // 1. Update thesaurus
       await this.updateThesaurus(correction);
 
@@ -216,8 +227,8 @@ export const learningEngine = {
           const canonical = correction.userCorrection.trim();
           const insurer = correction.insurerName || '';
           if (raw && canonical) {
-            await coverageGraphService.learnCorrection(raw, canonical, insurer, 'pyme');
-            console.log(`🌐 [LearningEngine] Graph learned: "${raw}" → "${canonical}"`);
+            await coverageGraphService.learnCorrection(raw, canonical, insurer, domain);
+            console.log(`🌐 [LearningEngine] Graph learned: "${raw}" → "${canonical}" (${domain})`);
           }
         } else {
           console.log(
@@ -238,7 +249,7 @@ export const learningEngine = {
       await this.updateOntology(correction);
 
       // 6. Write graph edge for non-coverage types only when graph learning is enabled
-      await this.updateGraph(correction);
+      await this.updateGraph(correction, domain);
     } catch (error) {
       console.error('❌ [LearningEngine] Failed to apply correction:', error);
     }
@@ -328,21 +339,25 @@ export const learningEngine = {
   async updateOntology(correction: UserCorrection): Promise<void> {
     try {
       const { default: coverageOntology } = await import('./coverageOntology');
+      const domain = correction.domain || 'pyme';
       // Save mapping to ontology
-      await coverageOntology.saveMapping({
-        rawName: correction.rawName,
-        insurerName: correction.insurerName,
-        groups: [
-          {
-            groupId: correction.userCorrection,
-            confidence: 0.95, // High confidence for user-corrected mappings
-          },
-        ],
-        isComposite: false,
-        confidence: 0.95,
-      });
+      await coverageOntology.saveMapping(
+        {
+          rawName: correction.rawName,
+          insurerName: correction.insurerName,
+          groups: [
+            {
+              groupId: correction.userCorrection,
+              confidence: 0.95, // High confidence for user-corrected mappings
+            },
+          ],
+          isComposite: false,
+          confidence: 0.95,
+        },
+        domain
+      );
 
-      console.log(`🌳 [LearningEngine] Updated ontology for "${correction.rawName}"`);
+      console.log(`🌳 [LearningEngine] Updated ontology for "${correction.rawName}" (${domain})`);
     } catch (error) {
       console.error('❌ [LearningEngine] Ontology update failed:', error);
     }
@@ -351,7 +366,7 @@ export const learningEngine = {
   /**
    * Update coverage semantic graph with learned correction edges
    */
-  async updateGraph(correction: UserCorrection, domain: string = 'pyme'): Promise<void> {
+  async updateGraph(correction: UserCorrection, domain: InsuranceDomain = 'pyme'): Promise<void> {
     if (!featureFlags.isEnabled('graphLearningEnabled')) {
       return;
     }
@@ -359,6 +374,7 @@ export const learningEngine = {
     const raw = normalizeText(correction.rawName, true).replace(/\s+/g, ' ').trim();
     const canonical = correction.userCorrection.trim();
     const insurer = correction.insurerName || '';
+    const d = correction.domain || domain;
 
     if (!raw || !canonical) {
       return;
@@ -373,7 +389,7 @@ export const learningEngine = {
             type: 'deductible_for' as GraphEdgeType,
             weight: 0.9,
             insurer,
-            domain,
+            domain: d,
           });
           console.log(`🌐 [LearningEngine] Graph deductible rule: "${raw}" → "${canonical}"`);
           break;
@@ -385,7 +401,7 @@ export const learningEngine = {
             type: 'excludes' as GraphEdgeType,
             weight: 0.9,
             insurer,
-            domain,
+            domain: d,
           });
           console.log(`🌐 [LearningEngine] Graph exclusion rule: "${raw}" → "${canonical}"`);
           break;
@@ -404,13 +420,14 @@ export const learningEngine = {
   /**
    * Get learning metrics
    */
-  async getMetrics(): Promise<LearningMetrics> {
+  async getMetrics(domain: InsuranceDomain = 'pyme'): Promise<LearningMetrics> {
     try {
       // Get total corrections
       const { count: totalCorrections, error: countError } = await supabase
         .from('coverage_mappings')
         .select('*', { count: 'exact', head: true })
-        .eq('user_corrected', true);
+        .eq('user_corrected', true)
+        .eq('domain', domain);
 
       if (countError) throw countError;
 
@@ -418,7 +435,8 @@ export const learningEngine = {
       const { data: typeData, error: typeError } = await supabase
         .from('coverage_mappings')
         .select('canonical_name')
-        .eq('user_corrected', true);
+        .eq('user_corrected', true)
+        .eq('domain', domain);
 
       if (typeError) throw typeError;
 
@@ -433,13 +451,14 @@ export const learningEngine = {
         .from('coverage_mappings')
         .select('raw_name, correction_count')
         .eq('user_corrected', true)
+        .eq('domain', domain)
         .order('correction_count', { ascending: false })
         .limit(10);
 
       if (topError) throw topError;
 
       // Calculate accuracy trend (simplified)
-      const accuracyTrend = await this.calculateAccuracyTrend();
+      const accuracyTrend = await this.calculateAccuracyTrend(domain);
 
       return {
         totalCorrections: totalCorrections || 0,
@@ -465,13 +484,16 @@ export const learningEngine = {
   /**
    * Calculate accuracy trend over time
    */
-  async calculateAccuracyTrend(): Promise<Array<{ date: string; accuracy: number }>> {
+  async calculateAccuracyTrend(
+    domain: InsuranceDomain = 'pyme'
+  ): Promise<Array<{ date: string; accuracy: number }>> {
     try {
       // Get corrections grouped by week
       const { data, error } = await supabase
         .from('coverage_mappings')
         .select('created_at, correction_count')
         .eq('user_corrected', true)
+        .eq('domain', domain)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -507,7 +529,7 @@ export const learningEngine = {
   /**
    * Generate monthly report
    */
-  async generateMonthlyReport(): Promise<{
+  async generateMonthlyReport(domain: InsuranceDomain = 'pyme'): Promise<{
     month: string;
     metrics: LearningMetrics;
     improvements: string[];
@@ -515,7 +537,7 @@ export const learningEngine = {
     const now = new Date();
     const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-    const metrics = await this.getMetrics();
+    const metrics = await this.getMetrics(domain);
 
     const improvements: string[] = [];
 
@@ -549,7 +571,7 @@ export const learningEngine = {
   /**
    * Batch process corrections for embedding retraining
    */
-  async batchRetrainEmbeddings(): Promise<{
+  async batchRetrainEmbeddings(domain: InsuranceDomain = 'pyme'): Promise<{
     processed: number;
     errors: number;
   }> {
@@ -559,6 +581,7 @@ export const learningEngine = {
         .from('coverage_mappings')
         .select('*')
         .eq('user_corrected', true)
+        .eq('domain', domain)
         .order('correction_count', { ascending: false })
         .limit(100);
 
@@ -575,6 +598,7 @@ export const learningEngine = {
             systemMapping: mapping.canonical_name as string,
             userCorrection: mapping.canonical_name as string,
             correctionType: 'coverage_mapping',
+            domain: (mapping.domain as InsuranceDomain) || domain,
           });
           processed++;
         } catch (error) {
