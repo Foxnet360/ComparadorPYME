@@ -97,7 +97,12 @@ export const storageService = {
     if (currentUser) {
       try {
         const response = await apiClient.fetch('/clients');
-        const cloudClients: Client[] = await response.json();
+        const rawData = await response.json();
+        const cloudClients: Client[] = Array.isArray(rawData)
+          ? rawData
+          : Array.isArray(rawData?.data)
+          ? rawData.data
+          : [];
 
         // Sync and cache cloud clients to local IndexedDB
         for (const client of cloudClients) {
@@ -156,13 +161,14 @@ export const storageService = {
   getHistory: async (): Promise<HistoryEntry[]> => {
     try {
       const response = await apiClient.fetch('/history');
+      const rawData = await response.json();
       const cloudHistory: Array<{
         id: string;
         user_id?: string;
         created_at?: string;
         client_name?: string;
         analysis_result?: { quotes?: QuoteAnalysis[] };
-      }> = await response.json();
+      }> = Array.isArray(rawData) ? rawData : Array.isArray(rawData?.data) ? rawData.data : [];
 
       // Transform backend data (snake_case) to frontend format (camelCase)
       const transformedHistory: HistoryEntry[] = cloudHistory.map((item) => {

@@ -1,4 +1,4 @@
-import { openDB, DBSchema } from 'idb';
+import { openDB, DBSchema, IDBPDatabase } from 'idb';
 import { UserProfile, Client, HistoryEntry } from '../types';
 
 interface CSADB extends DBSchema {
@@ -20,8 +20,18 @@ interface CSADB extends DBSchema {
 const DB_NAME = 'csa-comparator-db';
 const DB_VERSION = 1;
 
-export const dbService = {
-  dbPromise: openDB<CSADB>(DB_NAME, DB_VERSION, {
+let dbInstance: IDBPDatabase<CSADB> | null = null;
+
+async function getDb(): Promise<IDBPDatabase<CSADB>> {
+  if (dbInstance) {
+    try {
+      if (dbInstance.name) return dbInstance;
+    } catch {
+      dbInstance = null;
+    }
+  }
+
+  dbInstance = await openDB<CSADB>(DB_NAME, DB_VERSION, {
     upgrade(db) {
       if (!db.objectStoreNames.contains('users')) {
         db.createObjectStore('users', { keyPath: 'id' });
@@ -34,40 +44,82 @@ export const dbService = {
         historyStore.createIndex('by-user', 'userId');
       }
     },
-  }),
+    terminated() {
+      dbInstance = null;
+    },
+  });
 
+  return dbInstance;
+}
+
+export const dbService = {
   // Generic Helpers
   async getAll<StoreName extends keyof CSADB>(
     storeName: StoreName
   ): Promise<CSADB[StoreName]['value'][]> {
-    const db = await this.dbPromise;
-    return db.getAll(storeName);
+    try {
+      const db = await getDb();
+      return await db.getAll(storeName);
+    } catch (err) {
+      console.warn(`[IndexedDB] Retry getAll on store ${String(storeName)} due to connection reset`, err);
+      dbInstance = null;
+      const db = await getDb();
+      return await db.getAll(storeName);
+    }
   },
 
   async get<StoreName extends keyof CSADB>(
     storeName: StoreName,
     key: string
   ): Promise<CSADB[StoreName]['value'] | undefined> {
-    const db = await this.dbPromise;
-    return db.get(storeName, key);
+    try {
+      const db = await getDb();
+      return await db.get(storeName, key);
+    } catch (err) {
+      console.warn(`[IndexedDB] Retry get on store ${String(storeName)} due to connection reset`, err);
+      dbInstance = null;
+      const db = await getDb();
+      return await db.get(storeName, key);
+    }
   },
 
   async put<StoreName extends keyof CSADB>(
     storeName: StoreName,
     value: CSADB[StoreName]['value']
   ): Promise<string> {
-    const db = await this.dbPromise;
-    return db.put(storeName, value);
+    try {
+      const db = await getDb();
+      return await db.put(storeName, value);
+    } catch (err) {
+      console.warn(`[IndexedDB] Retry put on store ${String(storeName)} due to connection reset`, err);
+      dbInstance = null;
+      const db = await getDb();
+      return await db.put(storeName, value);
+    }
   },
 
   async delete<StoreName extends keyof CSADB>(storeName: StoreName, key: string): Promise<void> {
-    const db = await this.dbPromise;
-    return db.delete(storeName, key);
+    try {
+      const db = await getDb();
+      return await db.delete(storeName, key);
+    } catch (err) {
+      console.warn(`[IndexedDB] Retry delete on store ${String(storeName)} due to connection reset`, err);
+      dbInstance = null;
+      const db = await getDb();
+      return await db.delete(storeName, key);
+    }
   },
 
   // Specific Logic for History by User
   async getHistoryByUser(userId: string): Promise<HistoryEntry[]> {
-    const db = await this.dbPromise;
-    return db.getAllFromIndex('history', 'by-user', userId);
+    try {
+      const db = await getDb();
+      return await db.getAllFromIndex('history', 'by-user', userId);
+    } catch (err) {
+      console.warn(`[IndexedDB] Retry getHistoryByUser due to connection reset`, err);
+      dbInstance = null;
+      const db = await getDb();
+      return await db.getAllFromIndex('history', 'by-user', userId);
+    }
   },
 };
