@@ -538,14 +538,27 @@ export const processChatMessage = async (
 
     console.log(`🤖 [chatService] Prompt tokens: ${inputTokens}`);
 
-    // Call Gemini
-    const model = genAI.models.generateContent({
-      model: GEMINI_CHAT_MODEL,
-      contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
-    });
-
-    const result = await model;
-    let responseText = result.text || 'Lo siento, no pude generar una respuesta.';
+    // Call Gemini with graceful fallback
+    let responseText = '';
+    try {
+      const model = await genAI.models.generateContent({
+        model: GEMINI_CHAT_MODEL,
+        contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+      });
+      responseText = model.text || 'Lo siento, no pude generar una respuesta.';
+    } catch (llmError: unknown) {
+      console.warn(
+        '⚠️ [chatService] Gemini API call failed, falling back to source synthesis:',
+        llmError instanceof Error ? llmError.message : String(llmError)
+      );
+      if (sources.length > 0) {
+        const topSource = sources[0];
+        responseText = `📄 ${topSource.data}\n\nℹ️ *(Respuesta generada desde los documentos de la cotización)*`;
+      } else {
+        responseText =
+          'ℹ️ No se pudo conectar con el servicio de IA en este momento. Por favor reintenta en unos instantes.';
+      }
+    }
 
     // Validate response against quote data
     const validation = responseValidator.validate(responseText, sources);

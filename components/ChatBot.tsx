@@ -8,7 +8,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, Minimize2, Loader2, BookOpen, Lightbulb } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { ChatMessage, ComparisonReport } from '../types';
-import { API_BASE_URL } from '../services/apiConfig';
+import { apiClient } from '../services/apiClient';
 
 interface ChatBotProps {
   reportContext?: ComparisonReport;
@@ -30,17 +30,25 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    scrollToBottom();
   }, [messages, isOpen]);
 
   // Load thread when report context changes or chat opens
   useEffect(() => {
-    if (isOpen && reportContext?.id) {
-      loadThread(reportContext.id);
-      loadSuggestions();
+    if (isOpen) {
+      inputRef.current?.focus();
+      if (reportContext?.id) {
+        loadThread(reportContext.id);
+        loadSuggestions();
+      }
     }
   }, [isOpen, reportContext?.id]);
 
@@ -58,8 +66,8 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
       const user = localStorage.getItem('seguro_app_user');
       const userId = user ? JSON.parse(user)?.id : 'anonymous';
 
-      const response = await fetch(
-        `${API_BASE_URL}/chat/threads/report/${reportId}?userId=${userId}`
+      const response = await apiClient.fetch(
+        `/chat/threads/report/${reportId}?userId=${userId}`
       );
 
       if (response.ok) {
@@ -96,7 +104,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
     if (!reportContext) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/chat/suggestions`, {
+      const response = await apiClient.fetch('/chat/suggestions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reportContext }),
@@ -131,7 +139,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
       const user = localStorage.getItem('seguro_app_user');
       const userId = user ? JSON.parse(user)?.id : 'anonymous';
 
-      const response = await fetch(`${API_BASE_URL}/chat`, {
+      const response = await apiClient.fetch('/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
