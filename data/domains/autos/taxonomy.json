@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "domain": "autos",
   "metadata": {
     "region": "Colombia",
@@ -7,7 +7,8 @@
     "salaryReference": "SMMLV",
     "salaryValue2024": 1423500,
     "uvtValue2024": 42412,
-    "source": "SMMLV 2024: Ministerio de Trabajo de Colombia; UVT 2024: DIAN"
+    "source": "SMMLV 2024: Ministerio de Trabajo de Colombia; UVT 2024: DIAN",
+    "changelog": "v2.0.0: Agregadas SOAT (auto_12), PTD/FNAC (auto_13) y Accesorios/Lujos/Blindaje (auto_14)."
   },
   "categories": [
     {
@@ -250,6 +251,54 @@
         "Deducibles",
         "Franquicia",
         "Siniestro parcial"
+      ]
+    },
+    {
+      "id": "auto_12",
+      "name": "SOAT / Seguro Obligatorio de Accidentes de Tránsito",
+      "section": "COBERTURAS OBLIGATORIAS",
+      "isRequired": true,
+      "synonyms": [
+        "SOAT",
+        "seguro obligatorio",
+        "accidentes de tránsito",
+        "lesiones personales obligatorio",
+        "seguro obligatorio vehicular",
+        "SOAT vigente"
+      ]
+    },
+    {
+      "id": "auto_13",
+      "name": "Pérdida Total por Definición (PTD / FNAC)",
+      "section": "PÉRDIDA TOTAL",
+      "isRequired": false,
+      "synonyms": [
+        "pérdida total por definición",
+        "PTD",
+        "FNAC",
+        "no constituye pérdida total",
+        "definición de pérdida total",
+        "porcentaje de pérdida total",
+        "75% del valor",
+        "80% del valor asegurado"
+      ]
+    },
+    {
+      "id": "auto_14",
+      "name": "Accesorios, Lujos y Blindaje",
+      "section": "COBERTURAS ESPECIALES",
+      "isRequired": false,
+      "synonyms": [
+        "accesorios",
+        "lujos",
+        "blindaje",
+        "equipo adicional",
+        "sistema de sonido",
+        "llantas especiales",
+        "rines",
+        "tracción 4x4",
+        "equipo de seguimiento GPS",
+        "modificaciones al vehículo"
       ]
     }
   ]

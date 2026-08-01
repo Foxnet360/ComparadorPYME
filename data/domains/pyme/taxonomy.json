@@ -1,188 +1,144 @@
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "domain": "pyme",
   "metadata": {
     "region": "Colombia",
     "currency": "COP",
-    "salaryReference": "SMMLV",
-    "salaryValue2024": 1423500,
-    "uvtValue2024": 42412,
-    "source": "SMMLV 2024: Ministerio de Trabajo de Colombia (Resolución 0000 de 2024); UVT 2024: DIAN (Unidad de Valor Tributario para el año gravable 2024)"
+    "source": "Pólizas Multiriesgo PYME — Circular 050/2013 SFC · Condicionados FASECOLDA · Normas ISO 31000",
+    "regulatory": {
+      "framework": "Circular Externa 050 de 2013 — Superintendencia Financiera de Colombia",
+      "industryBody": "FASECOLDA — Federación de Aseguradores Colombianos"
+    },
+    "changelog": "v2.0.0: Agregadas Daños por Agua (tra_15) y RC por Productos (tra_16). HMACC separado en HMA y AMIT para scoring independiente."
   },
   "categories": [
     {
       "id": 1,
       "name": "Incendio (Edificio y Contenidos)",
-      "aliases": [
-        "Incendio",
-        "Edificio",
-        "Contenidos",
-        "Inmuebles",
-        "Todo riesgo daños materiales",
-        "Daños Materiales",
-        "Amparo Básico",
-        "Daños por Agua",
-        "Anegación",
-        "Inundación",
-        "Huracan, vientos fuertes, granizo, impacto y humo",
-        "Vientos Fuertes",
-        "Granizo",
-        "Impacto",
-        "Humo",
-        "Daño Físico"
-      ]
+      "section": "DAÑOS MATERIALES",
+      "isRequired": true,
+      "aliases": ["incendio", "rayo", "explosión", "edificio", "contenidos", "estructura", "instalaciones", "fuego"],
+      "synonyms": ["incendio", "rayo", "explosión", "edificio", "contenidos", "estructura", "instalaciones", "fuego", "daños por incendio", "amparo básico"]
     },
     {
       "id": 2,
       "name": "Lucro Cesante",
-      "aliases": [
-        "Lucro Cesante",
-        "Pérdida de Beneficios",
-        "Interrupción de Negocio",
-        "Gastos por Parálisis",
-        "Interrupción",
-        "Lucro cesante por daños materiales"
-      ]
+      "section": "PÉRDIDAS CONSECUENCIALES",
+      "isRequired": false,
+      "aliases": ["lucro cesante", "pérdida de ingresos", "interrupción de negocio", "pérdida de beneficios"],
+      "synonyms": ["lucro cesante", "pérdida de ingresos", "interrupción de negocio", "pérdida de beneficios", "renta por interrupción", "business interruption"]
     },
     {
       "id": 3,
       "name": "Sustracción / Hurto",
-      "aliases": [
-        "Sustracción",
-        "Hurto",
-        "Robo",
-        "Hurto Calificado",
-        "Hurto Simple",
-        "Sustracción con Violencia",
-        "Sustracción sin Violencia",
-        "Saqueo",
-        "Hurto calificado",
-        "Sustracción con violencia",
-        "Sustracción sin violencia"
-      ]
+      "section": "DAÑOS MATERIALES",
+      "isRequired": false,
+      "aliases": ["sustracción", "hurto", "robo", "theft"],
+      "synonyms": ["sustracción", "hurto", "robo", "hurto calificado", "hurto simple", "robo con fuerza", "robo a mano armada", "theft"]
     },
     {
       "id": 4,
       "name": "Equipo Eléctrico y Electrónico",
-      "aliases": [
-        "Equipo Eléctrico",
-        "Electrónico",
-        "EEE",
-        "Equipo Eléctrico y Electrónico",
-        "Computadores",
-        "Servidores",
-        "Daño Interno",
-        "Cobertura Fuera de Predios",
-        "Vehículos propios y no propios",
-        "Responsabilidad profesional por pérdida de datos – Cyber"
-      ]
+      "section": "DAÑOS MATERIALES",
+      "isRequired": false,
+      "aliases": ["equipo eléctrico", "equipo electrónico", "cortocircuito", "daño eléctrico", "sobretensión"],
+      "synonyms": ["equipo eléctrico", "equipo electrónico", "cortocircuito", "daño eléctrico", "sobretensión", "daño por corriente", "EEE", "bienes electrónicos"]
     },
     {
       "id": 5,
       "name": "Rotura de Maquinaria",
-      "aliases": [
-        "Rotura de Maquinaria",
-        "Rotura",
-        "Daño Interno de Maquinaria",
-        "Máquinas",
-        "Rotura de maquinaria"
-      ]
+      "section": "DAÑOS MATERIALES",
+      "isRequired": false,
+      "aliases": ["rotura de maquinaria", "daño a maquinaria", "falla mecánica", "avería de máquina"],
+      "synonyms": ["rotura de maquinaria", "daño a maquinaria", "falla mecánica", "avería de máquina", "machinery breakdown", "equipo industrial"]
     },
     {
       "id": 6,
-      "name": "Responsabilidad Civil (RCE)",
-      "aliases": [
-        "RCE",
-        "Responsabilidad Civil Extracontractual",
-        "Daño a Terceros",
-        "PLO",
-        "Predios, labores y operaciones",
-        "Predios, labores y operaciones (PLO)",
-        "Responsabilidad Civil Productos",
-        "RC Cruzada",
-        "Parqueaderos",
-        "Contratistas o subcontratistas",
-        "Vehículos propios y no propios",
-        "Amparo básico daños y perjuicios a terceros",
-        "Responsabilidad civil patronal",
-        "Accidentes personales"
-      ]
+      "name": "Responsabilidad Civil Extracontractual (RCE)",
+      "section": "RESPONSABILIDAD CIVIL",
+      "isRequired": true,
+      "aliases": ["responsabilidad civil", "RCE", "daños a terceros"],
+      "synonyms": ["responsabilidad civil", "RCE", "daños a terceros", "responsabilidad civil extracontractual", "RC general", "perjuicios a terceros", "daños a personas o bienes de terceros"]
     },
     {
       "id": 7,
-      "name": "Vidrios Planos",
-      "aliases": ["Vidrios", "Placas", "Cristales", "Vidrios Planos", "Vidrios planos"]
+      "name": "Daños por Agua, Anegación e Inundación",
+      "section": "DAÑOS MATERIALES",
+      "isRequired": false,
+      "aliases": ["daños por agua", "anegación", "inundación", "agua", "filtraciones", "goteras"],
+      "synonyms": ["daños por agua", "anegación", "inundación", "filtraciones", "goteras", "tubería rota", "agua lluvia", "desbordamiento", "humedad", "derrame de agua"]
     },
     {
       "id": 8,
-      "name": "Manejo Global / Infidelidad",
-      "aliases": [
-        "Manejo",
-        "Infidelidad",
-        "Fraude de Empleados",
-        "Manejo Global",
-        "Manejo Global Comercial",
-        "Manejo global comercial",
-        "Fraude Empleados"
-      ]
+      "name": "Vidrios Planos",
+      "section": "DAÑOS MATERIALES",
+      "isRequired": false,
+      "aliases": ["vidrios planos", "cristales", "vitrina", "ventanas"],
+      "synonyms": ["vidrios planos", "cristales", "vitrina", "ventanas", "rotura de vidrios", "glass", "fachadas de vidrio"]
     },
     {
       "id": 9,
-      "name": "Transporte de Mercancías",
-      "aliases": [
-        "Transporte de Mercancías",
-        "Tránsito de Mercancías",
-        "Transporte",
-        "Transporte de mercancias"
-      ]
+      "name": "Manejo Global / Infidelidad de Empleados",
+      "section": "RESPONSABILIDAD CIVIL",
+      "isRequired": false,
+      "aliases": ["manejo global", "infidelidad", "deshonestidad de empleados", "fidelidad"],
+      "synonyms": ["manejo global", "infidelidad", "deshonestidad de empleados", "fidelidad", "fraude interno", "hurto por empleados", "blanket bond", "manejo de empleados"]
     },
     {
       "id": 10,
-      "name": "Transporte de Valores",
-      "aliases": [
-        "Transporte de Valores",
-        "Dinero en Tránsito",
-        "Valores en Tránsito",
-        "Dinero Local",
-        "Transporte de valores"
-      ]
+      "name": "Transporte de Mercancías",
+      "section": "TRANSPORTE",
+      "isRequired": false,
+      "aliases": ["transporte de mercancías", "transporte de bienes", "carga en tránsito"],
+      "synonyms": ["transporte de mercancías", "transporte de bienes", "carga en tránsito", "mercancía transportada", "flete", "envío"]
     },
     {
       "id": 11,
-      "name": "Asistencia PYME",
-      "aliases": ["Asistencia", "Servicios PYME", "Servicios de asistencia", "Asistencia pyme"]
+      "name": "Transporte de Valores",
+      "section": "TRANSPORTE",
+      "isRequired": false,
+      "aliases": ["transporte de valores", "valores en tránsito", "dinero en tránsito"],
+      "synonyms": ["transporte de valores", "valores en tránsito", "dinero en tránsito", "efectivo transportado", "armored transport"]
     },
     {
       "id": 12,
-      "name": "Asistencia Legal",
-      "aliases": ["Legal", "Asesoría Legal", "Asistencia Jurídica", "Asistencia legal"]
+      "name": "Asistencia PYME y Legal",
+      "section": "SERVICIOS Y ASISTENCIAS",
+      "isRequired": false,
+      "aliases": ["asistencia pyme", "asistencia legal", "asistencia jurídica", "asistencia técnica"],
+      "synonyms": ["asistencia pyme", "asistencia legal", "asistencia jurídica", "asistencia técnica", "asesoría legal", "defensa legal", "asistencia al comercio"]
     },
     {
       "id": 13,
-      "name": "Huelga, Motín, Asonada (HMACC)",
-      "aliases": [
-        "HMACC",
-        "Asonada",
-        "Motín",
-        "Huelga",
-        "Huelga, Motín, Asonada",
-        "Huelga, Motín, Asonada (HMACC)",
-        "Actos mal intencionados de terceros"
-      ]
+      "name": "Terrorismo, AMIT y Actos Malintencionados",
+      "section": "RIESGOS POLÍTICOS Y CATASTRÓFICOS",
+      "isRequired": false,
+      "aliases": ["terrorismo", "AMIT", "actos malintencionados", "sabotaje", "vandalismo"],
+      "synonyms": ["terrorismo", "AMIT", "actos malintencionados de terceros", "sabotaje", "vandalismo", "acto terrorista", "daños intencionales"]
     },
     {
       "id": 14,
+      "name": "Huelga, Motín y Asonada (HMA / HMACC)",
+      "section": "RIESGOS POLÍTICOS Y CATASTRÓFICOS",
+      "isRequired": false,
+      "aliases": ["huelga", "motín", "asonada", "HMACC", "HMA", "disturbios civiles"],
+      "synonyms": ["huelga", "motín", "asonada", "HMACC", "HMA", "disturbios civiles", "conmoción civil", "paro cívico"]
+    },
+    {
+      "id": 15,
       "name": "Terremoto y Eventos Catastróficos",
-      "aliases": [
-        "Terremoto",
-        "Sismo",
-        "Catastróficos",
-        "Erupción",
-        "Terremoto y Eventos Catastróficos",
-        "Terremoto, maremoto o tsunami, temblor o erupción volcánica",
-        "Terremoto y eventos catastrificos",
-        "Terremoto y eventos catastróficos"
-      ]
+      "section": "RIESGOS POLÍTICOS Y CATASTRÓFICOS",
+      "isRequired": false,
+      "aliases": ["terremoto", "temblor", "erupción volcánica", "catástrofe", "eventos sísmicos"],
+      "synonyms": ["terremoto", "temblor", "erupción volcánica", "catástrofe", "eventos sísmicos", "fenómenos naturales", "maremoto", "sismo"]
+    },
+    {
+      "id": 16,
+      "name": "Responsabilidad Civil por Productos (RC Productos)",
+      "section": "RESPONSABILIDAD CIVIL",
+      "isRequired": false,
+      "aliases": ["RC por productos", "responsabilidad civil productos", "productos defectuosos", "defectos de fabricación"],
+      "synonyms": ["RC por productos", "responsabilidad civil productos", "productos defectuosos", "defectos de fabricación", "product liability", "daños causados por productos", "garantía de producto"]
     }
   ]
 }

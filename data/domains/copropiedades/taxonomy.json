@@ -1,281 +1,229 @@
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "domain": "copropiedades",
   "metadata": {
     "region": "Colombia",
     "currency": "COP",
-    "salaryReference": "SMMLV",
-    "salaryValue2024": 1423500,
-    "uvtValue2024": 42412,
-    "source": "Ley 675 de 2001 (Régimen de Propiedad Horizontal en Colombia); SMMLV 2024"
+    "source": "Pólizas de Copropiedades — Ley 675/2001 (Propiedad Horizontal) · NSR-10 (Zonas Sísmicas) · Circular 050/2013 SFC",
+    "regulatory": {
+      "framework": "Ley 675 de 2001 — Régimen de Propiedad Horizontal",
+      "seismicCode": "NSR-10 — Reglamento Colombiano de Construcción Sismo Resistente",
+      "supervisoryBody": "Superintendencia Financiera de Colombia (SFC)"
+    },
+    "changelog": "v2.0.0: Cat. 1 dividida en Incendio (cop_01) y Terremoto (cop_02) separados. Agregada RC Patronal (cop_05)."
   },
   "categories": [
     {
-      "id": 1,
-      "name": "Incendio y Terremoto sobre Bienes Comunes",
-      "section": "Coberturas Obligatorias Ley 675",
+      "id": "cop_01",
+      "name": "Incendio, Rayo y Explosión sobre Bienes Comunes",
+      "section": "COBERTURAS OBLIGATORIAS LEY 675",
       "isRequired": true,
       "synonyms": [
-        "Incendio y Terremoto",
-        "Incendio bienes comunes",
-        "Terremoto bienes comunes",
-        "Terremoto, temblor y erupción volcánica",
-        "Daño material edificación",
-        "Incendio y líneas aliadas copropiedades"
-      ],
-      "aliases": [
-        "Incendio y Terremoto",
-        "Incendio bienes comunes",
-        "Terremoto bienes comunes",
-        "Terremoto, temblor y erupción volcánica",
-        "Daño material edificación",
-        "Incendio y líneas aliadas copropiedades"
+        "incendio bienes comunes",
+        "rayo",
+        "explosión",
+        "fuego áreas comunes",
+        "incendio copropiedad",
+        "incendio zonas comunes",
+        "amparo básico incendio"
       ]
     },
     {
-      "id": 2,
+      "id": "cop_02",
+      "name": "Terremoto, Temblor y Erupción Volcánica sobre Bienes Comunes",
+      "section": "COBERTURAS OBLIGATORIAS LEY 675",
+      "isRequired": true,
+      "synonyms": [
+        "terremoto bienes comunes",
+        "temblor",
+        "erupción volcánica",
+        "sismo copropiedad",
+        "amparo terremoto",
+        "NSR-10",
+        "zona sísmica"
+      ]
+    },
+    {
+      "id": "cop_03",
       "name": "Responsabilidad Civil Extracontractual Áreas Comunes",
-      "section": "Coberturas Obligatorias Ley 675",
+      "section": "COBERTURAS OBLIGATORIAS LEY 675",
       "isRequired": true,
       "synonyms": [
-        "RCE copropiedades",
         "RC áreas comunes",
-        "Responsabilidad civil extracontractual edificación",
-        "RCE predios, labores y operaciones",
-        "RC copropiedad horizontal"
-      ],
-      "aliases": [
-        "RCE copropiedades",
-        "RC áreas comunes",
-        "Responsabilidad civil extracontractual edificación",
-        "RCE predios, labores y operaciones",
-        "RC copropiedad horizontal"
+        "responsabilidad civil copropiedad",
+        "daños a residentes",
+        "RCE zonas comunes",
+        "responsabilidad administración"
       ]
     },
     {
-      "id": 3,
+      "id": "cop_04",
       "name": "RC Directores y Administradores (D&O Copropiedades)",
-      "section": "Responsabilidad Civil",
+      "section": "RESPONSABILIDAD PROFESIONAL",
       "isRequired": false,
       "synonyms": [
-        "RC administradores",
-        "RC consejo de administración",
         "D&O copropiedades",
-        "Responsabilidad civil directores",
-        "RC gerencia y consejo"
-      ],
-      "aliases": [
-        "RC administradores",
+        "RC administrador",
+        "responsabilidad directores",
         "RC consejo de administración",
-        "D&O copropiedades",
-        "Responsabilidad civil directores",
-        "RC gerencia y consejo"
+        "directors and officers"
       ]
     },
     {
-      "id": 4,
-      "name": "Equipo Eléctrico y Maquinaria",
-      "section": "Daño Material y Equipos",
+      "id": "cop_05",
+      "name": "Responsabilidad Civil Patronal (Empleados de Zonas Comunes)",
+      "section": "RESPONSABILIDAD CIVIL",
       "isRequired": false,
       "synonyms": [
-        "Equipo eléctrico y electrónico",
-        "Rotura de maquinaria",
-        "Ascensores y plantas eléctricas",
-        "Equipos de subestación y bombas",
-        "Daños a maquinaria común"
-      ],
-      "aliases": [
-        "Equipo eléctrico y electrónico",
-        "Rotura de maquinaria",
-        "Ascensores y plantas eléctricas",
-        "Equipos de subestación y bombas",
-        "Daños a maquinaria común"
+        "RC patronal",
+        "accidente de trabajo empleados",
+        "responsabilidad empleador copropiedad",
+        "portero",
+        "vigilante",
+        "aseador",
+        "empleados zonas comunes",
+        "employer liability"
       ]
     },
     {
-      "id": 5,
+      "id": "cop_06",
+      "name": "Equipo Eléctrico y Maquinaria de Zonas Comunes",
+      "section": "DAÑOS MATERIALES",
+      "isRequired": false,
+      "synonyms": [
+        "equipo eléctrico zonas comunes",
+        "ascensores",
+        "planta eléctrica",
+        "bombas de agua",
+        "equipos HVAC",
+        "cortocircuito maquinaria"
+      ]
+    },
+    {
+      "id": "cop_07",
       "name": "Sustracción y Hurto de Bienes Comunes",
-      "section": "Daño Material y Equipos",
+      "section": "DAÑOS MATERIALES",
       "isRequired": false,
       "synonyms": [
-        "Sustracción bienes comunes",
-        "Hurto de equipos comunes",
-        "Sustracción con o sin violencia",
-        "Robo bienes de la copropiedad"
-      ],
-      "aliases": [
-        "Sustracción bienes comunes",
-        "Hurto de equipos comunes",
-        "Sustracción con o sin violencia",
-        "Robo bienes de la copropiedad"
+        "hurto zonas comunes",
+        "sustracción bienes comunes",
+        "robo copropiedad",
+        "hurto equipos comunes"
       ]
     },
     {
-      "id": 6,
+      "id": "cop_08",
       "name": "Rotura de Vidrios, Fachadas y Domos",
-      "section": "Daño Material y Equipos",
+      "section": "DAÑOS MATERIALES",
       "isRequired": false,
       "synonyms": [
-        "Rotura de vidrios",
-        "Vidrios y espejos",
-        "Domos y fachadas",
-        "Rotura de cristales en áreas comunes"
-      ],
-      "aliases": [
-        "Rotura de vidrios",
-        "Vidrios y espejos",
-        "Domos y fachadas",
-        "Rotura de cristales en áreas comunes"
+        "vidrios planos",
+        "fachadas",
+        "domos",
+        "cristales zonas comunes",
+        "rotura vidrios copropiedad"
       ]
     },
     {
-      "id": 7,
+      "id": "cop_09",
       "name": "Todo Riesgo Daño Material Copropiedades",
-      "section": "Daño Material y Equipos",
+      "section": "DAÑOS MATERIALES",
       "isRequired": false,
       "synonyms": [
-        "Todo riesgo bienes comunes",
-        "Daño material directo",
-        "Todo riesgo propiedad",
-        "Multiriesgo copropiedad"
-      ],
-      "aliases": [
-        "Todo riesgo bienes comunes",
-        "Daño material directo",
-        "Todo riesgo propiedad",
-        "Multiriesgo copropiedad"
+        "todo riesgo copropiedad",
+        "daño material zonas comunes",
+        "pérdida o daño físico",
+        "all risk copropiedad"
       ]
     },
     {
-      "id": 8,
-      "name": "Asistencia y Mantenimiento de Áreas Comunes",
-      "section": "Asistencias y Servicios",
+      "id": "cop_10",
+      "name": "Daños por Agua, Anegación e Inundación en Áreas Comunes",
+      "section": "DAÑOS MATERIALES",
       "isRequired": false,
       "synonyms": [
-        "Asistencia copropiedades",
-        "Asistencia express edificación",
-        "Cerrajería y plomería áreas comunes",
-        "Servicios de emergencia copropiedad"
-      ],
-      "aliases": [
-        "Asistencia copropiedades",
-        "Asistencia express edificación",
-        "Cerrajería y plomería áreas comunes",
-        "Servicios de emergencia copropiedad"
+        "daños por agua copropiedad",
+        "anegación",
+        "inundación zonas comunes",
+        "filtración",
+        "tubería rota",
+        "daños por humedad"
       ]
     },
     {
-      "id": 9,
-      "name": "Daños por Agua, Anegación e Inundación",
-      "section": "Eventos Naturales y Agua",
-      "isRequired": false,
-      "synonyms": [
-        "Daños por agua",
-        "Anegación",
-        "Inundación",
-        "Rebosamiento de alcantarillado",
-        "Ruptura de tuberías matrices"
-      ],
-      "aliases": [
-        "Daños por agua",
-        "Anegación",
-        "Inundación",
-        "Rebosamiento de alcantarillado",
-        "Ruptura de tuberías matrices"
-      ]
-    },
-    {
-      "id": 10,
+      "id": "cop_11",
       "name": "Manejo e Infidelidad de Empleados",
-      "section": "Riesgos Financieros y Manejo",
+      "section": "RESPONSABILIDAD CIVIL",
       "isRequired": false,
       "synonyms": [
-        "Manejo global comercial",
-        "Infidelidad de empleados",
-        "Fraude de empleados",
-        "Manejo de fondos de la copropiedad"
-      ],
-      "aliases": [
-        "Manejo global comercial",
-        "Infidelidad de empleados",
-        "Fraude de empleados",
-        "Manejo de fondos de la copropiedad"
+        "infidelidad empleados copropiedad",
+        "manejo empleados",
+        "deshonestidad empleados",
+        "fraude administrador"
       ]
     },
     {
-      "id": 11,
+      "id": "cop_12",
       "name": "AMIT, Terrorismo y Actos Malintencionados",
-      "section": "Eventos Especiales y AMIT",
+      "section": "RIESGOS ESPECIALES",
       "isRequired": false,
       "synonyms": [
-        "AMIT",
-        "Actos malintencionados de terceros",
-        "Terrorismo",
-        "Asonada, motín y conmoción civil",
-        "Huelga y actos vandálicos"
-      ],
-      "aliases": [
-        "AMIT",
-        "Actos malintencionados de terceros",
-        "Terrorismo",
-        "Asonada, motín y conmoción civil",
-        "Huelga y actos vandálicos"
+        "AMIT copropiedad",
+        "terrorismo edificio",
+        "actos malintencionados",
+        "vandalismo zonas comunes",
+        "sabotaje"
       ]
     },
     {
-      "id": 12,
+      "id": "cop_13",
       "name": "Granizo, Vientos Fuertes y Tempestades",
-      "section": "Eventos Naturales y Agua",
+      "section": "FENÓMENOS NATURALES",
       "isRequired": false,
       "synonyms": [
-        "Granizo",
-        "Vientos fuertes",
-        "Tempestad",
-        "Vientos huracanados",
-        "Granizad en fachadas y cubiertas"
-      ],
-      "aliases": [
-        "Granizo",
-        "Vientos fuertes",
-        "Tempestad",
-        "Vientos huracanados",
-        "Granizad en fachadas y cubiertas"
+        "granizo",
+        "vientos fuertes",
+        "tempestad",
+        "vendaval",
+        "lluvia con granizo",
+        "tormenta"
       ]
     },
     {
-      "id": 13,
+      "id": "cop_14",
       "name": "Remoción de Escombros y Gastos de Preservación",
-      "section": "Gastos Complementarios",
+      "section": "GASTOS COMPLEMENTARIOS",
       "isRequired": false,
       "synonyms": [
-        "Remoción de escombros",
-        "Gastos de preservación de bienes",
-        "Demolición y limpieza",
-        "Honorarios de arquitectos e ingenieros"
-      ],
-      "aliases": [
-        "Remoción de escombros",
-        "Gastos de preservación de bienes",
-        "Demolición y limpieza",
-        "Honorarios de arquitectos e ingenieros"
+        "remoción de escombros",
+        "gastos de preservación",
+        "demolición",
+        "gastos adicionales siniestro"
       ]
     },
     {
-      "id": 14,
+      "id": "cop_15",
       "name": "Pérdida de Expensas y Cuotas de Administración",
-      "section": "Riesgos Financieros y Manejo",
+      "section": "PÉRDIDAS CONSECUENCIALES",
       "isRequired": false,
       "synonyms": [
-        "Pérdida de cuotas de administración",
-        "Lucro cesante por expensas comunes",
-        "Canon de arrendamiento áreas comunes",
-        "Pérdida de ingresos por inhabilitación"
-      ],
-      "aliases": [
-        "Pérdida de cuotas de administración",
-        "Lucro cesante por expensas comunes",
-        "Canon de arrendamiento áreas comunes",
-        "Pérdida de ingresos por inhabilitación"
+        "pérdida de expensas",
+        "cuotas de administración",
+        "ingresos por cuotas",
+        "flujo de caja copropiedad",
+        "administración"
+      ]
+    },
+    {
+      "id": "cop_16",
+      "name": "Asistencia y Mantenimiento de Áreas Comunes",
+      "section": "SERVICIOS Y ASISTENCIAS",
+      "isRequired": false,
+      "synonyms": [
+        "asistencia mantenimiento",
+        "mantenimiento zonas comunes",
+        "asistencia técnica copropiedad",
+        "reparaciones urgentes"
       ]
     }
   ]

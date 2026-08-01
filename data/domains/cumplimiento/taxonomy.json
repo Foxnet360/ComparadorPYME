@@ -1,10 +1,11 @@
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "domain": "cumplimiento",
   "metadata": {
     "region": "Colombia",
     "currency": "COP",
     "source": "Pólizas de Cumplimiento y Fianzas — Ley 80/1993 (Estatuto General de Contratación) · Decreto 1082/2015 (SECOP) · Ley 1150/2007 · Circular 050/2013 SFC",
+    "changelog": "v2.0.0: Agregada Garantía de Mantenimiento (cum_15) — diferente a Estabilidad de Obra, cubre obligaciones de mantenimiento post-entrega.",
     "regulatory": {
       "framework": "Ley 80 de 1993 — Estatuto General de Contratación Pública",
       "supplementaryDecree": "Decreto 1082 de 2015 — Único Reglamentario del Sector de Planeación",
@@ -235,6 +236,21 @@
         "póliza de cumplimiento estatal",
         "amparo único",
         "contratación pública colombiana"
+      ]
+    },
+    {
+      "id": "cum_15",
+      "name": "Garantía de Mantenimiento (Post-Obra / Post-Contrato)",
+      "section": "GARANTÍAS POST-CONTRACTUALES",
+      "isRequired": false,
+      "synonyms": [
+        "garantía de mantenimiento",
+        "mantenimiento post-obra",
+        "post-entrega",
+        "mantenimiento correctivo",
+        "mantenimiento preventivo contractual",
+        "garantía de servicio post-contrato",
+        "maintenance bond"
       ]
     }
   ]

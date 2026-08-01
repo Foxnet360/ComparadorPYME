@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "domain": "vida_grupo",
   "metadata": {
     "region": "Colombia",
@@ -7,7 +7,8 @@
     "salaryReference": "SMMLV",
     "salaryValue2024": 1423500,
     "uvtValue2024": 42412,
-    "source": "Superintendencia Financiera de Colombia; Pólizas Colectivas de Vida Grupo"
+    "source": "Superintendencia Financiera de Colombia; Pólizas Colectivas de Vida Grupo",
+    "changelog": "v2.0.0: Agregadas IPP (vg_15) — incapacidad parcial < 50% de invalidez — y Renta por Desempleo Involuntario (vg_16)."
   },
   "categories": [
     {
@@ -272,6 +273,36 @@
         "Auxilio hijos con malformación",
         "Cobertura de alteración congénita",
         "Subsidio por malformación al nacer"
+      ]
+    },
+    {
+      "id": "vg_15",
+      "name": "Incapacidad Parcial Permanente (IPP)",
+      "section": "COBERTURAS DE INCAPACIDAD",
+      "isRequired": false,
+      "synonyms": [
+        "incapacidad parcial permanente",
+        "IPP",
+        "invalidez parcial",
+        "pérdida parcial de capacidad laboral",
+        "porcentaje de invalidez menor 50%",
+        "dictamen de IPP",
+        "pérdida anatómica parcial"
+      ]
+    },
+    {
+      "id": "vg_16",
+      "name": "Renta por Desempleo Involuntario",
+      "section": "COBERTURAS COMPLEMENTARIAS",
+      "isRequired": false,
+      "synonyms": [
+        "desempleo involuntario",
+        "renta por desempleo",
+        "pérdida de empleo",
+        "desvinculación laboral",
+        "amparo desempleo",
+        "renta mensual desempleo",
+        "protección ante desempleo"
       ]
     }
   ]

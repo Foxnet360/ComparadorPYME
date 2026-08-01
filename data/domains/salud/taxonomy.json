@@ -1,10 +1,11 @@
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "domain": "salud",
   "metadata": {
     "region": "Colombia",
     "currency": "COP",
     "source": "Planes Voluntarios de Salud (PVS) — Res. 244/2019 MinSalud · Ley 1438/2011 · Circular 049/2013 SFC",
+    "changelog": "v2.0.0: Agregadas Hospitalización Domiciliaria (salud_16) y Medicina Preventiva/Bienestar (salud_17).",
     "regulatory": {
       "framework": "Resolución 244 de 2019 (Ministerio de Salud y Protección Social)",
       "portabilityLaw": "Ley 1438 de 2011, Artículo 13",
@@ -256,6 +257,41 @@
         "cambio de aseguradora",
         "continuidad cobertura",
         "Ley 1438"
+      ]
+    },
+    {
+      "id": "salud_16",
+      "name": "Hospitalización Domiciliaria y Atención en Casa",
+      "section": "COBERTURAS HOSPITALARIAS",
+      "isRequired": false,
+      "synonyms": [
+        "hospitalización domiciliaria",
+        "atención en casa",
+        "home care",
+        "internación domiciliaria",
+        "enfermería domiciliaria",
+        "equipos médicos en casa",
+        "cuidado en el hogar",
+        "hospital en casa"
+      ]
+    },
+    {
+      "id": "salud_17",
+      "name": "Medicina Preventiva, Vacunación y Programas de Bienestar",
+      "section": "COBERTURAS PREVENTIVAS",
+      "isRequired": false,
+      "synonyms": [
+        "medicina preventiva",
+        "vacunación",
+        "bienestar",
+        "wellness",
+        "chequeo médico",
+        "examen ejecutivo",
+        "tamizaje",
+        "prevención de enfermedades",
+        "programas de salud",
+        "control médico anual",
+        "vacunas adultos"
       ]
     }
   ]
