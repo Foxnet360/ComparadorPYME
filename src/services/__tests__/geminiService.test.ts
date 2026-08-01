@@ -32,10 +32,26 @@ describe('analyzeQuotesWithGemini', () => {
     expect(callArgs[0]).toBe('/analyze');
     expect(callArgs[1].method).toBe('POST');
     expect(body.get('clientName')).toBe('Cliente A');
+    expect(body.get('domain')).toBe('pyme');
     expect(body.get('userId')).toBeNull();
     expect(body.get('userEmail')).toBeNull();
     expect(body.get('quotes')).toBeTruthy();
     expect(body.get('clauses')).toBeTruthy();
+  });
+
+  it('sends custom domain in FormData when provided', async () => {
+    const quoteFiles = [createFile('quote1.pdf')];
+
+    vi.mocked(apiClient.fetch).mockResolvedValue({
+      json: vi.fn().mockResolvedValue({ quotes: [] }),
+    } as unknown as Response);
+
+    await analyzeQuotesWithGemini(quoteFiles, [], 'Cliente Domain', undefined, undefined, 'autos');
+
+    const callArgs = vi.mocked(apiClient.fetch).mock.calls[0];
+    const body = callArgs[1].body as FormData;
+
+    expect(body.get('domain')).toBe('autos');
   });
 
   it('sends clauseIds when provided instead of clause files', async () => {

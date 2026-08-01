@@ -1,5 +1,6 @@
-import React, { useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Upload, FileText, X, BookOpen } from 'lucide-react';
+import DomainSelector, { InsuranceDomain } from './DomainSelector';
 
 interface FileUploaderProps {
   files: File[];
@@ -10,6 +11,9 @@ interface FileUploaderProps {
   description?: string;
   variant?: 'primary' | 'secondary';
   icon?: React.ReactNode;
+  domain?: InsuranceDomain;
+  onDomainChange?: (domain: InsuranceDomain) => void;
+  showDomainSelector?: boolean;
 }
 
 const FileUploader: React.FC<FileUploaderProps> = ({
@@ -21,7 +25,25 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   description = 'Arrastra y suelta documentos aquí',
   variant = 'primary',
   icon,
+  domain: propDomain,
+  onDomainChange,
+  showDomainSelector,
 }) => {
+  const [domain, setDomain] = useState<InsuranceDomain>(propDomain || 'pyme');
+
+  useEffect(() => {
+    if (propDomain !== undefined) {
+      setDomain(propDomain);
+    }
+  }, [propDomain]);
+
+  const handleDomainChange = (newDomain: InsuranceDomain) => {
+    setDomain(newDomain);
+    if (onDomainChange) {
+      onDomainChange(newDomain);
+    }
+  };
+
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
@@ -52,8 +74,14 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   const iconColor = isPrimary ? 'text-indigo-600' : 'text-slate-600';
   const iconBg = isPrimary ? 'bg-indigo-100' : 'bg-slate-100';
 
+  const shouldDisplayDomainSelector = showDomainSelector ?? isPrimary;
+
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="w-full h-full flex flex-col space-y-4">
+      {shouldDisplayDomainSelector && (
+        <DomainSelector selectedDomain={domain} onChange={handleDomainChange} disabled={disabled} />
+      )}
+
       <div
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
@@ -88,7 +116,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         <div className="mt-4 space-y-2 max-h-[150px] overflow-y-auto pr-1 scrollbar-thin">
           {files.map((file, idx) => (
             <div
-              key={idx}
+              key={`${file.name}-${idx}`}
               className="flex items-center justify-between p-2 bg-white border border-slate-200 rounded-lg shadow-sm"
             >
               <div className="flex items-center space-x-2 overflow-hidden">

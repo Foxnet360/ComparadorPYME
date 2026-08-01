@@ -29,7 +29,14 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'unit-frontend',
-          include: ['src/**/*.test.tsx', 'src/**/*.test.ts', 'hooks/**/*.test.ts'],
+          include: [
+            'src/**/*.test.tsx',
+            'src/**/*.test.ts',
+            'hooks/**/*.test.ts',
+            'components/**/*.test.tsx',
+            'components/**/*.test.ts',
+            'components/__tests__/**/*.test.tsx',
+          ],
           exclude: ['node_modules/**', 'dist/**'],
           environment: 'jsdom',
           globals: true,
