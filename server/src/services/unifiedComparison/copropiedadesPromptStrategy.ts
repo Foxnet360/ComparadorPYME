@@ -2,34 +2,36 @@ import { FormatFamily } from '../formatDetector';
 import { TemplateRegistryEntry, LayoutTable } from '../../schemas/templateRegistrySchema';
 import { PromptStrategy, PromptContext } from './promptStrategyFactory';
 
-const COPROPIEDADES_BASE_PROMPT = `Eres un extractor experto de cotizaciones de seguros para COPROPIEDADES (Póliza Multiriesgo de Propiedad Horizontal bajo Ley 675 de 2001 en Colombia).
+const COPROPIEDADES_BASE_PROMPT = `Eres un extractor experto de cotizaciones de seguros para COPROPIEDADES (Póliza Multiriesgo de Propiedad Horizontal bajo Ley 675 de 2001 y norma sismo resistente NSR-10 en Colombia).
 
-Extrae la información de las cotizaciones de copropiedades con estas secciones:
-1. DATOS DE LA PÓLIZA / COPROPIEDAD: aseguradora, nombre del producto, nombre de la copropiedad/edificio, dirección, ciudad, número de unidades/aptos (si visible).
-2. PRIMA: netPremium, fees/gastos, taxes/IVA, otherCharges, totalPayable, currency, periodicity.
-3. COBERTURAS PRINCIPALES:
-   - Incendio y Terremoto sobre Bienes Comunes (Ley 675 - Cobertura Obligatoria) – límite/valor asegurado edificación.
-   - Responsabilidad Civil Extracontractual Áreas Comunes (Ley 675 - Cobertura Obligatoria) – límite RCE.
-   - RC Directores y Administradores (D&O Copropiedades) – límite.
-   - Equipo Eléctrico y Maquinaria (Ascensores, Plantas, Subestaciones, Bombas) – límite.
-   - Sustracción y Hurto de Bienes Comunes – límite.
-   - Rotura de Vidrios, Fachadas y Domos – límite.
-   - Todo Riesgo Daño Material Copropiedades – límite.
-   - Asistencia y Mantenimiento de Áreas Comunes – condiciones.
-   - Daños por Agua, Anegación e Inundación – límite.
-   - Manejo e Infidelidad de Empleados – límite.
-   - AMIT, Terrorismo y Actos Malintencionados – límite.
-   - Granizo, Vientos Fuertes y Tempestades – límite.
-   - Remoción de Escombros y Gastos de Preservación – límite.
-   - Pérdida de Expensas y Cuotas de Administración – límite.
-4. DEDUCIBLES: expresar cada deducible con su tipo (% del valor asegurado, % de la pérdida, SMMLV, valor fijo) y su monto. NO omitir deducibles de Terremoto ni de Maquinaria/Ascensores.
-5. NOTAS: condiciones especiales, cumplimiento Ley 675, exclusiones.
+Extrae la información de las cotizaciones de copropiedades considerando las siguientes secciones y marco normativo colombiano:
+1. DATOS DE LA PÓLIZA / COPROPIEDAD: aseguradora, nombre del producto, nombre de la copropiedad/edificio, dirección, ciudad, número de unidades/aptos (si es visible).
+2. PRIMA: netPremium, fees/gastos de expedición, taxes/IVA (19%), otherCharges, totalPayable, currency ("COP"), periodicity ("ANUAL").
+3. MARCO NORMATIVO Y COBERTURAS PRINCIPALES:
+   - Incendio, Rayo y Explosión sobre Bienes Comunes (Ley 675 de 2001 - Cobertura Obligatoria por Valor de Reposición) – límite/valor asegurado edificación.
+   - Terremoto, Temblor y Erupción Volcánica sobre Bienes Comunes (Ley 675 y NSR-10 - Cobertura Obligatoria) – límite y deducible especial de sismo.
+   - Responsabilidad Civil Extracontractual Áreas Comunes (Ley 675 de 2001 - Cobertura Obligatoria) – límite RCE.
+   - RC Directores y Administradores (D&O Copropiedades) – límite de responsabilidad para el Consejo de Administración y Administrador.
+   - Responsabilidad Civil Patronal – amparo para empleados directos o contratistas de áreas comunes (portería, aseo, mantenimiento).
+   - Equipo Eléctrico y Maquinaria de Zonas Comunes (Ascensores, Plantas Eléctricas, Subestaciones, Bombas de Agua, Equipos HVAC) – límite y deducible.
+   - Sustracción y Hurto de Bienes Comunes – límite de hurto calificado y simple.
+   - Rotura de Vidrios, Fachadas y Domos – límite de cristales.
+   - Todo Riesgo Daño Material Copropiedades – límite amparo básico.
+   - Asistencia y Mantenimiento de Áreas Comunes – servicios 24/7 y plomería/cerrajería urgente.
+   - Daños por Agua, Anegación e Inundación – límite y deducible.
+   - Manejo e Infidelidad de Empleados – límite por actos deshonestos del administrador o tesorero.
+   - AMIT, Terrorismo y Actos Malintencionados – límite amparo especial.
+   - Granizo, Vientos Fuertes y Tempestades – límite por eventos naturales.
+   - Remoción de Escombros y Gastos de Preservación – límite complementario.
+   - Pérdida de Expensas y Cuotas de Administración – límite por interrupción de ingresos de la copropiedad.
+4. DEDUCIBLES: expresar cada deducible con su unidad original colombiana (% del valor asegurado, % de la pérdida, SMMLV - Salario Mínimo Mensual Legal Vigente, o valor fijo en COP). NO omitir deducibles de Terremoto ni de Ascensores/Maquinaria.
+5. CUMPLIMIENTO LEY 675: verificar y registrar explícitamente si el plan ampara las coberturas obligatorias exigidas por la Ley 675 de 2001.
 
-REGLAS CRÍTICAS:
+REGLAS CRÍTICAS DE EXTRACCIÓN:
 - NO inventes coberturas, valores ni deducibles.
 - Si un campo no aparece en la cotización, usa null o "NO ESPECIFICADO".
 - Para cada cobertura incluye rawTextSnippet (texto exacto de 50-150 caracteres) y pageNumber (página donde aparece).
-- Pon especial atención a los deducibles de Terremoto (ej. % sobre valor asegurado vs % de la pérdida con mínimo en SMMLV).`;
+- Pon especial atención a los deducibles de Terremoto (ej. 2% sobre valor asegurado con mínimo en SMMLV).`;
 
 const COPROPIEDADES_FORMAT_INSTRUCTIONS = `FORMATO DE SALIDA (JSON):
 {
@@ -53,16 +55,26 @@ const COPROPIEDADES_FORMAT_INSTRUCTIONS = `FORMATO DE SALIDA (JSON):
   "ley675Compliance": {
     "incendioTerremotoIncluded": true,
     "rceAreasComunesIncluded": true,
-    "notes": "Cumple coberturas obligatorias Ley 675"
+    "notes": "Cumple coberturas obligatorias Ley 675 de 2001"
   },
   "rawCoverages": [
     {
       "section": "COBERTURAS OBLIGATORIAS LEY 675",
-      "rawName": "Incendio y Terremoto sobre Bienes Comunes",
+      "rawName": "Incendio, Rayo y Explosión sobre Bienes Comunes",
       "insuredAmount": 15000000000,
-      "deductible": "2% valor asegurado",
+      "deductible": "No aplica",
       "premium": null,
-      "notes": "",
+      "notes": "Valor de reposición a nuevo según Ley 675",
+      "rawTextSnippet": "...",
+      "pageNumber": 1
+    },
+    {
+      "section": "COBERTURAS OBLIGATORIAS LEY 675",
+      "rawName": "Terremoto, Temblor y Erupción Volcánica sobre Bienes Comunes",
+      "insuredAmount": 15000000000,
+      "deductible": "2% valor asegurado, mínimo 5 SMMLV",
+      "premium": null,
+      "notes": "Cumple norma sismo resistente NSR-10",
       "rawTextSnippet": "...",
       "pageNumber": 1
     }
@@ -73,7 +85,7 @@ const COPROPIEDADES_FORMAT_INSTRUCTIONS = `FORMATO DE SALIDA (JSON):
       "value": 2,
       "unit": "% valor asegurado",
       "minimum": "5 SMMLV",
-      "notes": ""
+      "notes": "2% del valor asegurado de la edificación"
     }
   ],
   "specialConditions": [],
@@ -82,7 +94,7 @@ const COPROPIEDADES_FORMAT_INSTRUCTIONS = `FORMATO DE SALIDA (JSON):
 
 const COPROPIEDADES_RESPONSE_SCHEMA: Record<string, unknown> = {
   type: 'object',
-  description: 'Copropiedades quote extraction schema under Ley 675',
+  description: 'Copropiedades quote extraction schema under Ley 675 and NSR-10',
   additionalProperties: true,
   properties: {
     insurerName: { type: 'string' },
@@ -166,7 +178,23 @@ function buildCopropiedadesPrompt(contextNote?: string): string {
     prompt += `\n\nCONTEXTO ADICIONAL:\n${contextNote}`;
   }
 
-  prompt += `\n\n### GROUNDING RULES (REQUIRED)
+  prompt += `\n\n### REGLAS DE FORMATO COLOMBIA (ESTÁNDAR DE EXTRACCIÓN OBLIGATORIO)
+
+1. MONEDA Y VALORES MONETARIOS:
+   - "currency": "COP" (Pesos Colombianos).
+   - Todos los valores monetarios numéricos (netPremium, fees, taxes, totalPayable, insuredAmount) deben ser números enteros o flotantes puros en JS sin puntos de miles, comas ni símbolos "$" (ejemplo: 18000000 para $18.000.000 COP).
+
+2. PORCENTAJES Y DEDUCIBLES:
+   - En campos de deducibles o notas con porcentaje, conservar la notación porcentual explícita con "%" (ejemplo: "2%", "2% valor asegurado").
+   - Preservar las unidades colombianas de deducibles: SMMLV (Salario Mínimo Mensual Legal Vigente), % del valor asegurado, % de la pérdida, o valor fijo en COP.
+
+3. ORTOGRAFÍA Y TILDES (ESPAÑOL COLOMBIA):
+   - Todos los textos de coberturas ("rawName"), secciones ("section"), notas y condiciones deben mantener la ortografía formal en español colombiano con sus tildes correspondientes (ejemplo: "Incendio, Rayo y Explosión sobre Bienes Comunes", "Terremoto, Temblor y Erupción Volcánica sobre Bienes Comunes", "Responsabilidad Civil Extracontractual Áreas Comunes", "RC Directores y Administradores", "Equipo Eléctrico y Maquinaria").
+
+4. MARCO NORMATIVO COLOMBIANO:
+   - Registrar la base normativa de propiedad horizontal en Colombia (Ley 675 de 2001, Reglamento NSR-10, Circular Externa 050/2013 SFC).
+
+### GROUNDING RULES (REQUIRED)
 
 For every coverage row you emit:
 1. rawTextSnippet MUST be a contiguous substring of 50-150 characters copied verbatim from the PDF.
@@ -177,7 +205,7 @@ For every coverage row you emit:
 ### ANTI-HALLUCINATION RULES
 
 - If a field is not present in the document, use "NO ESPECIFICADO" (for text) or null/0 (for numbers).
-- Verify explicitly whether mandatory Ley 675 coverages (Incendio/Terremoto & RCE) are included.
+- Verify explicitly whether mandatory Ley 675 coverages (Incendio, Terremoto & RCE) are included.
 - Premium totalPayable must match a visible total in the PDF.
 
 INSTRUCCIONES FINALES:

@@ -2,35 +2,36 @@ import { FormatFamily } from '../formatDetector';
 import { TemplateRegistryEntry, LayoutTable } from '../../schemas/templateRegistrySchema';
 import { PromptStrategy, PromptContext } from './promptStrategyFactory';
 
-const CUMPLIMIENTO_BASE_PROMPT = `Eres un extractor experto de PÓLIZAS DE CUMPLIMIENTO, FIANZAS Y GARANTÍAS en Colombia.
+const CUMPLIMIENTO_BASE_PROMPT = `Eres un extractor experto de PÓLIZAS DE CUMPLIMIENTO, FIANZAS Y GARANTÍAS CONTRACTUALES en Colombia bajo el Estatuto General de Contratación Pública (Ley 80 de 1993), el Decreto 1082 de 2015 (SECOP) y la reglamentación de la Superintendencia Financiera de Colombia (SFC).
 
-Extrae la información de las pólizas de cumplimiento con estas secciones:
-1. DATOS DE LA PÓLIZA: aseguradora, nombre del producto, tipo (cumplimiento / manejo / TRC), tomador/afianzado, beneficiario, contrato garantizado.
-2. PRIMA: netPremium, fees/gastos de expedición, taxes/IVA, totalPayable, currency, periodicity.
+Extrae la información de las pólizas de cumplimiento considerando las siguientes secciones y marco normativo colombiano:
+1. DATOS DE LA PÓLIZA Y DEL CONTRATO: aseguradora, nombre del producto, tipo de póliza ("CUMPLIMIENTO", "MANEJO", "TRC", "MIXTA"), tomador/afianzado (contratista), beneficiario (entidad pública o contratante privado), objeto y número del contrato garantizado, valor total del contrato en COP.
+2. PRIMA: netPremium, fees/gastos de expedición, taxes/IVA (19%), totalPayable, currency ("COP"), periodicity ("ANUAL" o "POR_VIGENCIA_DE_CONTRATO").
 3. GARANTÍAS PRECONTRACTUALES:
-   - Seriedad de Oferta — valor asegurado y porcentaje sobre el valor de la oferta.
-4. GARANTÍAS DE EJECUCIÓN (amparos del contrato vigente):
-   - Cumplimiento de Contrato — suma asegurada, % sobre valor del contrato.
-   - Correcta Inversión del Anticipo — suma asegurada equivalente al anticipo.
-   - Salarios, Prestaciones e Indemnizaciones Laborales — suma asegurada.
+   - Seriedad de Oferta: suma asegurada y % sobre el valor de la propuesta u oferta (mínimo 10% según Decreto 1082/2015).
+4. GARANTÍAS DE EJECUCIÓN (Amparos del contrato vigente):
+   - Cumplimiento del Contrato: suma asegurada y % sobre el valor total del contrato (típicamente 10% a 20%).
+   - Correcta Inversión del Anticipo: suma asegurada equivalente al 100% del valor del anticipo otorgado.
+   - Salarios, Prestaciones Sociales e Indemnizaciones Laborales: suma asegurada y % sobre valor del contrato (típicamente 5% a 15%).
 5. GARANTÍAS POST-CONTRACTUALES:
-   - Estabilidad y Calidad de Obra — suma asegurada y plazo post-entrega.
-   - Calidad del Bien o Servicio — suma asegurada.
+   - Estabilidad y Calidad de la Obra: suma asegurada, % y término de vigencia post-entrega (ej. 5 años post-acta de entrega).
+   - Calidad del Bien o Servicio: suma asegurada y vigencia post-entrega de bienes o servicios.
+   - Garantía de Mantenimiento (Post-Obra / Post-Contrato): amparo de obligaciones de mantenimiento preventivo y correctivo.
 6. GARANTÍAS DE RESPONSABILIDAD:
-   - Pago de Daños a Terceros (RC Contractual) — suma asegurada.
-   - Responsabilidad Civil Extracontractual (RCE) durante ejecución — suma asegurada.
-7. GARANTÍAS DE MANEJO:
-   - Buen Manejo y Correcta Inversión de Bienes — suma asegurada.
-   - Manejo de Empleados (Fidelidad Colectiva) — suma asegurada, número de empleados amparados.
-   - Manejo Individual (Fidelidad / Forgery) — nombre del cargo, suma asegurada.
-8. COBERTURAS DE OBRA (si aplica TRC/TRM):
-   - Todo Riesgo Construcción / Montaje — suma asegurada de la obra, equipos.
-9. CONDICIONES GENERALES:
-   - Vigencia, Plazo y Condiciones del Amparo — fechas inicio/fin, prórroga automática, condiciones de renovación.
-10. CUMPLIMIENTO NORMATIVO ESTATAL (Ley 80/1993 · Decreto 1082/2015):
-    - Garantía Única de Cumplimiento: ¿la póliza ampara contrato estatal bajo Ley 80? ¿está expedida a favor de entidad pública? ¿cumple los porcentajes mínimos exigidos por el Decreto 1082/2015?
+   - Pago de Daños a Terceros (RC Contractual): suma asegurada para responder por daños causados durante la ejecución.
+   - Responsabilidad Civil Extracontractual (RCE) durante ejecución: suma asegurada RCE.
+7. GARANTÍAS DE MANEJO Y FIDELIDAD:
+   - Buen Manejo y Correcta Inversión de Bienes: suma asegurada por bienes entregados al contratista.
+   - Manejo de Empleados (Fidelidad Colectiva): suma asegurada por actos deshonestos del personal.
+   - Manejo Individual (Fidelidad / Forgery): cargo específico y suma asegurada.
+8. COBERTURAS DE OBRA (si aplica TRC / TRM):
+   - Todo Riesgo Construcción / Montaje: suma asegurada de la obra y equipos.
+9. CONDICIONES GENERALES Y VIGENCIA:
+   - Vigencia, Plazo y Condiciones del Amparo: fechas inicio/fin por cada amparo, condiciones de prórroga automática o suspensión.
+10. CUMPLIMIENTO NORMATIVO ESTATAL (Ley 80 de 1993 · Decreto 1082 de 2015 · Ley 1150 de 2007):
+    - Garantía Única de Cumplimiento: ¿la póliza ampara contrato estatal bajo Ley 80? ¿está expedida a favor de entidad pública en el SECOP? ¿cumple los porcentajes mínimos exigidos por el Decreto 1082/2015?
 
-REGLAS CRÍTICAS:
+REGLAS CRÍTICAS DE EXTRACCIÓN:
 - NO inventes amparos, valores ni porcentajes de cobertura.
 - Si un campo no aparece en la póliza, usa null o "NO ESPECIFICADO".
 - Para cada amparo incluye rawTextSnippet (texto exacto de 50-150 caracteres) y pageNumber (página donde aparece).
@@ -61,7 +62,7 @@ const CUMPLIMIENTO_FORMAT_INSTRUCTIONS = `FORMATO DE SALIDA (JSON):
     "decreto1082_2015": true,
     "isPublicEntityBeneficiary": true,
     "minimumPercentagesMet": true,
-    "notes": "Póliza expedida a favor de entidad estatal bajo Ley 80/1993"
+    "notes": "Póliza de Garantía Única expedida a favor de entidad estatal bajo Ley 80/1993 y Decreto 1082/2015 en SECOP"
   },
   "rawCoverages": [
     {
@@ -71,14 +72,25 @@ const CUMPLIMIENTO_FORMAT_INSTRUCTIONS = `FORMATO DE SALIDA (JSON):
       "percentageOfContract": "10%",
       "validityStart": "2024-01-01",
       "validityEnd": "2025-01-01",
-      "notes": "",
+      "notes": "Ampara el cumplimiento oportuno del objeto contractual",
+      "rawTextSnippet": "...",
+      "pageNumber": 1
+    },
+    {
+      "section": "GARANTÍAS DE EJECUCIÓN",
+      "rawName": "Correcta Inversión del Anticipo",
+      "insuredAmount": 100000000,
+      "percentageOfContract": "100%",
+      "validityStart": "2024-01-01",
+      "validityEnd": "2025-01-01",
+      "notes": "100% del valor pactado como anticipo",
       "rawTextSnippet": "...",
       "pageNumber": 1
     }
   ],
   "generalConditions": {
     "hasAutomaticRenewal": false,
-    "renewalConditions": "",
+    "renewalConditions": "Sujeto a adición o prórroga del contrato principal",
     "cancellationNoticeDays": 30
   },
   "specialConditions": [],
@@ -87,7 +99,7 @@ const CUMPLIMIENTO_FORMAT_INSTRUCTIONS = `FORMATO DE SALIDA (JSON):
 
 const CUMPLIMIENTO_RESPONSE_SCHEMA: Record<string, unknown> = {
   type: 'object',
-  description: 'Cumplimiento / Fianzas quote extraction schema',
+  description: 'Cumplimiento / Fianzas quote extraction schema under Ley 80/1993 and Decreto 1082/2015',
   additionalProperties: true,
   properties: {
     insurerName: { type: 'string' },
@@ -169,7 +181,23 @@ function buildCumplimientoPrompt(contextNote?: string): string {
     prompt += `\n\nCONTEXTO ADICIONAL:\n${contextNote}`;
   }
 
-  prompt += `\n\n### GROUNDING RULES (REQUIRED)
+  prompt += `\n\n### REGLAS DE FORMATO COLOMBIA (ESTÁNDAR DE EXTRACCIÓN OBLIGATORIO)
+
+1. MONEDA Y VALORES MONETARIOS:
+   - "currency": "COP" (Pesos Colombianos).
+   - Todos los valores monetarios numéricos (contractValue, netPremium, fees, taxes, totalPayable, insuredAmount) deben ser números enteros o flotantes puros en JS sin puntos de miles, comas ni símbolos "$" (ejemplo: 500000000 para $500.000.000 COP).
+
+2. PORCENTAJES SOBRE EL CONTRATO Y DEDUCIBLES:
+   - En campos "percentageOfContract" o notas con porcentaje, conservar la notación porcentual explícita con "%" (ejemplo: "10%", "100%", "10% del valor del contrato").
+   - Preservar las unidades colombianas de amparos o deducibles: SMMLV (Salario Mínimo Mensual Legal Vigente), % del valor del contrato, % del anticipo, o valor fijo en COP.
+
+3. ORTOGRAFÍA Y TILDES (ESPAÑOL COLOMBIA):
+   - Todos los textos de coberturas ("rawName"), secciones ("section"), notas y condiciones deben mantener la ortografía formal en español colombiano con sus tildes correspondientes (ejemplo: "Seriedad de Oferta", "Cumplimiento de Contrato", "Correcta Inversión del Anticipo", "Salarios, Prestaciones e Indemnizaciones Laborales", "Estabilidad y Calidad de Obra", "Garantía Única de Cumplimiento").
+
+4. MARCO NORMATIVO COLOMBIANO (CONTRATACIÓN ESTATAL):
+   - Registrar explícitamente el cumplimiento del Estatuto General de Contratación Pública (Ley 80 de 1993) y del Decreto 1082 de 2015 (SECOP) para amparos ante entidades estatales en contratación pública colombiana.
+
+### GROUNDING RULES (REQUIRED)
 
 For every coverage row you emit:
 1. rawTextSnippet MUST be a contiguous substring of 50-150 characters copied verbatim from the PDF.

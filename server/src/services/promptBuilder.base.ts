@@ -453,7 +453,23 @@ export function buildPromptForFamily(family: FormatFamily, context?: PromptConte
     }
   }
 
-  prompt += `\n\n### GROUNDING RULES (REQUIRED)
+  prompt += `\n\n### REGLAS DE FORMATO COLOMBIA (ESTÁNDAR DE EXTRACCIÓN OBLIGATORIO)
+
+1. MONEDA Y VALORES MONETARIOS:
+   - "currency": "COP" (Pesos Colombianos).
+   - Todos los valores monetarios numéricos (prima neta, impuestos/IVA, prima total, sumas aseguradas, valores de deducibles fijos) deben ser números enteros o flotantes puros en JS sin puntos de miles, comas ni símbolos "$" (ejemplo: 15000000 para $15.000.000 COP).
+
+2. PORCENTAJES Y DEDUCIBLES:
+   - En campos de texto de deducibles o notas con porcentaje, conservar la notación porcentual explícita con "%" (ejemplo: "10%", "5,00% del siniestro").
+   - Preservar las unidades colombianas de deducibles: SMMLV (Salario Mínimo Mensual Legal Vigente), % del siniestro, % del valor asegurado, o "No aplica" / "Ver clausulado".
+
+3. ORTOGRAFÍA Y TILDES (ESPAÑOL COLOMBIA):
+   - Todos los nombres de coberturas ("rawName"), secciones ("section"), notas, condiciones y exclusiones deben mantener la ortografía formal en español colombiano con sus tildes correspondientes (ejemplo: "Responsabilidad Civil Extracontractual", "Pérdida Total", "Incendio y Riesgos Aliados", "Daños por Agua", "Equipo Eléctrico y Electrónico").
+
+4. MARCO NORMATIVO COLOMBIANO:
+   - Extraer explícitamente las referencias normativas colombianas aplicables a pólizas PYME (Circular Externa 050 de 2013 SFC, Código de Comercio Arts. 1036-1162, IVA 19% Estatuto Tributario).
+
+### GROUNDING RULES (REQUIRED)
 
 For every coverage row you emit:
 1. rawTextSnippet MUST be a contiguous substring of 50-150 characters copied verbatim from the PDF.

@@ -2,33 +2,36 @@ import { FormatFamily } from '../formatDetector';
 import { TemplateRegistryEntry, LayoutTable } from '../../schemas/templateRegistrySchema';
 import { PromptStrategy, PromptContext } from './promptStrategyFactory';
 
-const TRANSPORTE_BASE_PROMPT = `Eres un extractor experto de SEGUROS DE TRANSPORTE DE MERCANCÍAS Y FLETES en Colombia.
+const TRANSPORTE_BASE_PROMPT = `Eres un extractor experto de SEGUROS DE TRANSPORTE DE MERCANCÍAS Y FLETES en Colombia bajo regulación del Decreto 1079 de 2015 (Sector Transporte), el Código de Comercio (Libro V, Arts. 1117–1124) y la reglamentación de la Superintendencia Financiera de Colombia (SFC).
 
-Extrae la información de las pólizas/cotizaciones de transporte con estas secciones:
-1. DATOS DE LA PÓLIZA: aseguradora, nombre del producto, tipo de póliza (flotante / por viaje / abierta), tomador, ruta (origen–destino), modo de transporte (terrestre/aéreo/marítimo/multimodal).
-2. PRIMA: netPremium, fees/gastos, taxes/IVA, totalPayable, currency, periodicity, tasaPorMil (tasa aplicada por mil sobre el valor asegurado si aparece).
+Extrae la información de las pólizas/cotizaciones de transporte considerando las siguientes secciones y marco normativo colombiano e internacional:
+1. DATOS DE LA PÓLIZA: aseguradora, nombre del producto, tipo de póliza ("FLOTANTE", "POR_VIAJE", "ABIERTA"), tomador/remitente, ruta (origen–destino), modo de transporte ("TERRESTRE", "MARITIMO", "AEREO", "MULTIMODAL").
+2. PRIMA: netPremium, fees/gastos de expedición, taxes/IVA (19%), totalPayable, currency ("COP"), periodicity ("POR_VIAJE", "MENSUAL", "ANUAL"), tasaPorMil (tasa aplicada por mil sobre el valor asegurado si aparece explícitamente).
 3. COBERTURAS PRINCIPALES:
-   - Daño Material a la Carga (Todo Riesgo o Named Perils): alcance, mercancías cubiertas.
-   - Pérdida Total (hurto, extravío, siniestro total): condiciones.
-   - Robo y Hurto (con y sin violencia): suma asegurada, condiciones de seguridad exigidas.
-   - Responsabilidad Civil del Transportador: suma asegurada, base legal (Código de Comercio / Decreto 1079/2015).
-4. COBERTURAS MARÍTIMAS (si aplica):
-   - Avería Particular y Avería Gruesa: términos cubiertos, cláusulas ICC (A/B/C).
-5. COBERTURAS ESPECIALES:
-   - Refrigeración y Carga Perecedera: temperatura controlada, falla de cadena de frío.
-   - Carga a Granel o Peligrosa: clase ADR/IMDG/IATA, restricciones.
+   - Daño Material a la Carga (Todo Riesgo o Named Perils): alcance de la cobertura y mercancías aseguradas.
+   - Pérdida Total (hurto total, extravío, siniestro total): condiciones y causales.
+   - Robo Parcial, Pillaje y Saqueo de la Carga: amparo de pérdidas parciales por hurto en tránsito.
+   - Robo y Hurto (con y sin violencia): suma asegurada y condiciones de seguridad requeridas (ej. escolta, GPS, horarios de viaje).
+   - Responsabilidad Civil del Transportador: suma asegurada y base legal (Código de Comercio Arts. 1117-1124 / Decreto 1079 de 2015).
+4. COBERTURAS MARÍTIMAS Y CLÁUSULAS INTERNACIONALES:
+   - Avería Particular y Avería Gruesa (General Average): términos cubiertos y contribución de salvamento.
+   - Cláusulas de Carga del Instituto de Londres (ICC - Institute Cargo Clauses A, B o C): especificar si es Cláusula A (Todo Riesgo), B o C.
+   - Cláusula de Abandono y Pérdida Total Constructiva (CTL): condiciones para aviso de abandono en transporte marítimo.
+5. COBERTURAS ESPECIALES Y DE MERCANCÍA:
+   - Refrigeración y Carga Perecedera: temperatura controlada y falla de la cadena de frío.
+   - Carga a Granel o Carga Peligrosa: clase ADR / IMDG / IATA, autorizaciones y restricciones de transporte.
 6. COBERTURAS COMPLEMENTARIAS:
-   - Daño o Pérdida del Contenedor / Embalaje: suma asegurada.
-   - Demora en la Entrega y Lucro Cesante: límite y condiciones.
+   - Daño o Pérdida del Contenedor / Embalaje: suma asegurada para contenedores y empaques.
+   - Demora en la Entrega y Lucro Cesante: límites y condiciones por retrasos.
 7. VALOR ASEGURADO E INCOTERM:
-   - Cobertura de Fletes e Impuestos según Incoterm (CIF / FOB / DAP / DDP): valor asegurado declarado, porcentaje de sobre-valor (ej. 110% del valor CIF).
-8. CONDICIONES DE LA COBERTURA:
-   - Deducibles y Franquicias: valor o porcentaje por tipo de siniestro.
-   - Vigencia y Tipo de Póliza: fechas, modalidad (por viaje, flotante, abierta), declaraciones de embarque.
+   - Cobertura de Fletes e Impuestos según Incoterm (CIF, FOB, DAP, DDP - Incoterms 2020): valor asegurado declarado y porcentaje de sobre-valor (ej. 110% del valor CIF para cubrir fletes e impuestos de importación).
+8. CONDICIONES Y DEDUCIBLES:
+   - Deducibles y Franquicias: valor o porcentaje por tipo de siniestro (% del valor asegurado, % de la pérdida, SMMLV o COP).
+   - Vigencia y Tipo de Póliza: fechas de vigencia, modalidad (por viaje, flotante, abierta), declaraciones de embarque requeridas.
 9. CUMPLIMIENTO NORMATIVO:
-   - Marco Normativo (Decreto 1079/2015 · Código de Comercio · Incoterms 2020): ¿la póliza hace referencia explícita a normas colombianas o cláusulas ICC?
+   - Marco Normativo (Decreto 1079/2015 · Código de Comercio · Incoterms 2020 · Cláusulas ICC): verificar si la póliza hace referencia explícita a la normatividad colombiana de transporte y reglas internacionales ICC.
 
-REGLAS CRÍTICAS:
+REGLAS CRÍTICAS DE EXTRACCIÓN:
 - NO inventes coberturas, rutas, tasas ni valores asegurados.
 - Si un campo no aparece en la póliza, usa null o "NO ESPECIFICADO".
 - Para cada cobertura incluye rawTextSnippet (texto exacto de 50-150 caracteres) y pageNumber (página donde aparece).
@@ -61,21 +64,31 @@ const TRANSPORTE_FORMAT_INSTRUCTIONS = `FORMATO DE SALIDA (JSON):
   },
   "iccClauses": {
     "clause": "A | B | C | NO_APLICA",
-    "notes": "Cláusula A — Todo Riesgo"
+    "notes": "Cláusula A — Todo Riesgo del Instituto de Londres"
   },
   "regulatoryCompliance": {
     "decreto1079_2015": true,
     "codigoDeComercio": true,
     "incoterms2020": true,
-    "notes": ""
+    "notes": "Póliza ajustada a regulación de transporte terrestre y marítimo en Colombia"
   },
   "rawCoverages": [
     {
       "section": "COBERTURAS PRINCIPALES",
-      "rawName": "Daño Material a la Carga — Todo Riesgo",
+      "rawName": "Daño Material a la Carga (Todo Riesgo / Named Perils)",
       "insuredAmount": 150000000,
       "deductible": "1% del valor asegurado, mínimo 1 SMMLV",
       "conditions": "",
+      "notes": "Ampara pérdidas y daños físicos a la mercancía durante el trayecto",
+      "rawTextSnippet": "...",
+      "pageNumber": 1
+    },
+    {
+      "section": "COBERTURAS PRINCIPALES",
+      "rawName": "Robo y Hurto (Con y Sin Violencia)",
+      "insuredAmount": 150000000,
+      "deductible": "10% del siniestro",
+      "conditions": "Requiere dispositivo GPS activo y vehículo en parqueadero autorizado",
       "notes": "",
       "rawTextSnippet": "...",
       "pageNumber": 1
@@ -87,7 +100,7 @@ const TRANSPORTE_FORMAT_INSTRUCTIONS = `FORMATO DE SALIDA (JSON):
 
 const TRANSPORTE_RESPONSE_SCHEMA: Record<string, unknown> = {
   type: 'object',
-  description: 'Transporte de Mercancías quote extraction schema',
+  description: 'Transporte de Mercancías quote extraction schema under Decreto 1079/2015 and Incoterms 2020',
   additionalProperties: true,
   properties: {
     insurerName: { type: 'string' },
@@ -170,7 +183,24 @@ function buildTransportePrompt(contextNote?: string): string {
     prompt += `\n\nCONTEXTO ADICIONAL:\n${contextNote}`;
   }
 
-  prompt += `\n\n### GROUNDING RULES (REQUIRED)
+  prompt += `\n\n### REGLAS DE FORMATO COLOMBIA (ESTÁNDAR DE EXTRACCIÓN OBLIGATORIO)
+
+1. MONEDA Y VALORES MONETARIOS:
+   - "currency": "COP" (Pesos Colombianos).
+   - Todos los valores monetarios numéricos (insuredValue, netPremium, fees, taxes, totalPayable, insuredAmount) deben ser números enteros o flotantes puros en JS sin puntos de miles, comas ni símbolos "$" (ejemplo: 150000000 para $150.000.000 COP).
+
+2. PORCENTAJES, TASAS E INCOTERMS:
+   - En campos "insuredValuePercentage", deducibles o notas con porcentaje, conservar la notación porcentual explícita con "%" (ejemplo: "110%", "1% del valor asegurado").
+   - Para "tasaPorMil", registrar el número de tasa aplicado por mil si aparece explícitamente (ejemplo: 10.0 para 10 por mil).
+   - Preservar las unidades colombianas de deducibles: SMMLV (Salario Mínimo Mensual Legal Vigente), % del valor asegurado, % de la pérdida, o valor fijo en COP.
+
+3. ORTOGRAFÍA Y TILDES (ESPAÑOL COLOMBIA):
+   - Todos los textos de coberturas ("rawName"), secciones ("section"), notas y condiciones deben mantener la ortografía formal en español colombiano con sus tildes correspondientes (ejemplo: "Daño Material a la Carga (Todo Riesgo / Named Perils)", "Pérdida Total de la Carga", "Responsabilidad Civil del Transportador", "Robo y Hurto (Con y Sin Violencia)", "Avería Particular y Avería Gruesa (Marítima)").
+
+4. MARCO NORMATIVO COLOMBIANO E INTERNACIONAL:
+   - Registrar explícitamente la normatividad de transporte en Colombia (Decreto 1079 de 2015, Código de Comercio Libro V Arts. 1117-1124), reglas Incoterms 2020 y Cláusulas ICC (A, B o C) cuando aparezcan en la póliza.
+
+### GROUNDING RULES (REQUIRED)
 
 For every coverage row you emit:
 1. rawTextSnippet MUST be a contiguous substring of 50-150 characters copied verbatim from the PDF.

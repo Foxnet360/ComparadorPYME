@@ -2,29 +2,35 @@ import { FormatFamily } from '../formatDetector';
 import { TemplateRegistryEntry, LayoutTable } from '../../schemas/templateRegistrySchema';
 import { PromptStrategy, PromptContext } from './promptStrategyFactory';
 
-const VIDA_GRUPO_BASE_PROMPT = `Eres un extractor experto de cotizaciones de seguros de VIDA GRUPO / VIDA COLECTIVO en Colombia.
+const VIDA_GRUPO_BASE_PROMPT = `Eres un extractor experto de cotizaciones de seguros de VIDA GRUPO / VIDA COLECTIVO en Colombia bajo la regulación de la Superintendencia Financiera de Colombia (SFC) y el Código de Comercio.
 
-Extrae la información de las cotizaciones de vida grupo con estas secciones:
-1. DATOS DE LA PÓLIZA / COLECTIVO: aseguradora, nombre del producto, empresa/tomador, número de asegurados (si visible), ciudad.
-2. PRIMA: netPremium, fees/gastos, taxes/IVA, totalPayable, currency, periodicity (mensual o anual por persona / total colectivo).
-3. COBERTURAS PRINCIPALES:
-   - Amparo Básico por Muerte (Cualquier Causa) – capital asegurado por persona.
-   - Incapacidad Total y Permanente (ITP) – capital y % de invalidez (50%+).
-   - Muerte Accidental y Desmembración (MAyD) – capital adicional.
-   - Enfermedades Graves – anticipo o suma asegurada.
-   - Auxilio Funerario / Gastos de Sepelio – valor del auxilio.
-   - Renta Diaria por Hospitalización / Incapacidad – monto diario y días máximo.
-   - Exoneración de Pago de Primas por Incapacidad – condiciones.
-   - Cobertura de Suicidio – amparo desde día 1 o meses de carencia.
-   - Auxilio Educativo para Hijos – suma asegurada.
-   - Auxilio de Canasta / Mantenimiento Familiar – monto mensual y meses.
-   - Anticipo por Enfermedad Terminal – % de anticipo.
-   - Doble Indemnización por Accidente de Tránsito – capital adicional.
-   - Auxilio por Hijos con Enfermedades Congénitas – valor del auxilio.
-4. CONDICIONES ESPECIALES Y EDADES: edad máxima de ingreso, edad límite de permanencia, carencias, exámenes médicos requeridos.
-5. NOTAS: exclusiones, reglas de asegurabilidad.
+Extrae la información de las cotizaciones de vida grupo considerando las siguientes secciones y marco normativo colombiano:
+1. DATOS DE LA PÓLIZA / COLECTIVO: aseguradora, nombre del producto, empresa/tomador, número de asegurados, ciudad.
+2. PRIMA: netPremium, fees/gastos de expedición, taxes/IVA (0% exento en seguro de vida según Estatuto Tributario Art. 427), totalPayable, currency ("COP"), periodicity ("MENSUAL_POR_PERSONA", "ANUAL_POR_PERSONA" o "TOTAL_COLECTIVO").
+3. MARCO NORMATIVO Y COBERTURAS PRINCIPALES:
+   - Amparo Básico por Muerte (Cualquier Causa - Art. 1151 C.Co.): capital asegurado por persona en COP.
+   - Incapacidad Total y Permanente (ITP - Pérdida de capacidad laboral ≥ 50% según dictamen Junta de Calificación de Invalidez Ley 100/1993): capital o % de anticipo.
+   - Incapacidad Parcial Permanente (IPP - Pérdida de capacidad laboral < 50%): porcentaje o tabla de pérdidas anatómicas.
+   - Muerte Accidental y Desmembración (MAyD): capital adicional en COP.
+   - Enfermedades Graves: anticipo o suma asegurada independiente (cáncer, infarto, ACV, insuficiencia renal, etc.).
+   - Auxilio Funerario / Gastos de Sepelio: valor del auxilio en COP, SMMLV o UVT.
+   - Renta Diaria por Hospitalización / Incapacidad: monto diario en COP y días máximo.
+   - Exoneración de Pago de Primas por Incapacidad: amparo de no cobro de primas tras declaración de invalidez.
+   - Cobertura de Suicidio (Art. 1158 Código de Comercio): amparo desde el día 1 de vigencia vs. periodo de carencia (1 año).
+   - Auxilio Educativo para Hijos: suma asegurada o mensualidad escolar amparada.
+   - Auxilio de Canasta / Mantenimiento Familiar: monto mensual en COP y número de meses.
+   - Anticipo por Enfermedad Terminal: % de anticipo del amparo básico (ej. 50%).
+   - Doble Indemnización por Accidente de Tránsito: capital adicional.
+   - Auxilio por Hijos con Enfermedades Congénitas: valor del auxilio.
+   - Renta por Desempleo Involuntario: mensualidad amparada por desvinculación laboral.
+4. CONDICIONES ESPECIALES Y EDADES DE ASEGURABILIDAD:
+   - Edad máxima de ingreso (ej. 60 o 65 años).
+   - Edad límite de permanencia (ej. 70 o 75 años).
+   - Periodos de carencia por amparo voluntario.
+   - Exámenes médicos / declaración de asegurabilidad según valor asegurado acumulado.
+5. NOTAS Y EXCLUSIONES: deportes de alto riesgo, actos de guerra, exclusiones legales.
 
-REGLAS CRÍTICAS:
+REGLAS CRÍTICAS DE EXTRACCIÓN:
 - NO inventes coberturas, valores ni edades de permanencia.
 - Si un campo no aparece en la cotización, usa null o "NO ESPECIFICADO".
 - Para cada cobertura incluye rawTextSnippet (texto exacto de 50-150 caracteres) y pageNumber (página donde aparece).
@@ -49,7 +55,7 @@ const VIDA_GRUPO_FORMAT_INSTRUCTIONS = `FORMATO DE SALIDA (JSON):
   },
   "suicideCoverage": {
     "hasWaitingPeriod": false,
-    "notes": "Cubierto desde el primer día de vigencia"
+    "notes": "Cubierto desde el primer día de vigencia según Art. 1158 C.Co."
   },
   "rawCoverages": [
     {
@@ -58,7 +64,17 @@ const VIDA_GRUPO_FORMAT_INSTRUCTIONS = `FORMATO DE SALIDA (JSON):
       "insuredAmount": 50000000,
       "deductible": "No aplica",
       "premium": null,
-      "notes": "",
+      "notes": "Cubre fallecimiento por cualquier causa",
+      "rawTextSnippet": "...",
+      "pageNumber": 1
+    },
+    {
+      "section": "COBERTURAS PRINCIPALES",
+      "rawName": "Incapacidad Total y Permanente (ITP)",
+      "insuredAmount": 50000000,
+      "deductible": "No aplica",
+      "premium": null,
+      "notes": "Pérdida de capacidad laboral mayor o igual al 50%",
       "rawTextSnippet": "...",
       "pageNumber": 1
     }
@@ -72,7 +88,7 @@ const VIDA_GRUPO_FORMAT_INSTRUCTIONS = `FORMATO DE SALIDA (JSON):
 
 const VIDA_GRUPO_RESPONSE_SCHEMA: Record<string, unknown> = {
   type: 'object',
-  description: 'Vida Grupo quote extraction schema',
+  description: 'Vida Grupo quote extraction schema compliant with Colombian insurance laws',
   additionalProperties: true,
   properties: {
     insurerName: { type: 'string' },
@@ -138,7 +154,24 @@ function buildVidaGrupoPrompt(contextNote?: string): string {
     prompt += `\n\nCONTEXTO ADICIONAL:\n${contextNote}`;
   }
 
-  prompt += `\n\n### GROUNDING RULES (REQUIRED)
+  prompt += `\n\n### REGLAS DE FORMATO COLOMBIA (ESTÁNDAR DE EXTRACCIÓN OBLIGATORIO)
+
+1. MONEDA Y VALORES MONETARIOS:
+   - "currency": "COP" (Pesos Colombianos).
+   - Todos los valores monetarios numéricos (netPremium, totalPayable, insuredAmount, auxilios fijos) deben ser números enteros o flotantes puros en JS sin puntos de miles, comas ni símbolos "$" (ejemplo: 50000000 para $50.000.000 COP).
+   - Tener en cuenta que el seguro de vida está exento de IVA en Colombia (taxes = 0).
+
+2. PORCENTAJES Y VALORES DE AUXILIOS:
+   - En campos de notas o descripciones con porcentaje, conservar la notación porcentual explícita con "%" (ejemplo: "50%", "100% de la suma asegurada").
+   - Preservar las unidades colombianas de auxilios: COP, SMMLV (Salario Mínimo Mensual Legal Vigente), o UVT (Unidad de Valor Tributario).
+
+3. ORTOGRAFÍA Y TILDES (ESPAÑOL COLOMBIA):
+   - Todos los textos de coberturas ("rawName"), secciones ("section"), notas y condiciones deben mantener la ortografía formal en español colombiano con sus tildes correspondientes (ejemplo: "Amparo Básico por Muerte", "Incapacidad Total y Permanente", "Auxilio Funerario", "Cobertura de Suicidio", "Auxilio Educativo para Hijos").
+
+4. MARCO NORMATIVO COLOMBIANO:
+   - Registrar la base legal del seguro de vida en Colombia (Código de Comercio Arts. 1151-1162, Dictamen de Invalidez Ley 100/1993, Circular Externa 050/2013 SFC).
+
+### GROUNDING RULES (REQUIRED)
 
 For every coverage row you emit:
 1. rawTextSnippet MUST be a contiguous substring of 50-150 characters copied verbatim from the PDF.

@@ -2,29 +2,30 @@ import { FormatFamily } from '../formatDetector';
 import { TemplateRegistryEntry, LayoutTable } from '../../schemas/templateRegistrySchema';
 import { PromptStrategy, PromptContext } from './promptStrategyFactory';
 
-const AUTOS_BASE_PROMPT = `Eres un extractor experto de cotizaciones de seguros de AUTOS colombianos.
+const AUTOS_BASE_PROMPT = `Eres un extractor experto de cotizaciones de seguros de AUTOS colombianos bajo regulación de la Superintendencia Financiera de Colombia (SFC) y FASECOLDA.
 
-Extrae la información de las cotizaciones de vehículos con estas secciones:
-1. DATOS DE LA PÓLIZA / VEHÍCULO: aseguradora, nombre del producto, placa (si visible), modelo, uso del vehículo, ciudad de circulación.
-2. PRIMA: netPremium, fees/gastos, taxes/IVA, otherCharges, totalPayable, currency, periodicity.
-3. COBERTURAS PRINCIPALES:
-   - Responsabilidad Civil Extracontractual Vehicular (RCE) – límite en COP.
-   - Pérdida Total (hurto, daños, PT) – límite y condiciones.
-   - Pérdida Parcial (colisión, PP) – límite y condiciones.
-   - Carro Taller / Vehículo de Reemplazo – días / condiciones.
-   - Asistencia en Viaje / Carretera – 24/7, servicios incluidos.
-   - Gastos de Transporte / Peajes / Grúa – límites.
-   - Hurto de Partes y Accesorios – límites.
-   - Eventos de la Naturaleza (granizo, inundación) – condiciones.
-   - Conductor Adicional / Menores de 25 Años – condiciones.
-4. DEDUCIBLES: expresar cada deducible con su tipo (% del siniestro, SMMLV, días de inmovilización, valor fijo) y su monto. NO omitir deducibles.
-5. NOTAS: condiciones especiales, exclusiones, cláusulas adicionales.
+Extrae la información de las cotizaciones de vehículos considerando las siguientes secciones y marco normativo colombiano:
+1. DATOS DE LA PÓLIZA / VEHÍCULO: aseguradora, nombre del producto, placa (si es visible), modelo/año, uso del vehículo (particular, público, comercial), ciudad de circulación.
+2. PRIMA: netPremium, fees/gastos de expedición, taxes/IVA (19%), otherCharges, totalPayable, currency ("COP"), periodicity ("ANUAL" o "MENSUAL").
+3. MARCO NORMATIVO Y COBERTURAS PRINCIPALES:
+   - SOAT (Seguro Obligatorio de Accidentes de Tránsito - Decreto 780/2016, Ley 2161/2021): vigencia y estado.
+   - Responsabilidad Civil Extracontractual Vehicular (RCE - Código de Comercio Art. 1127): límite en COP (Daños a Bienes de Terceros, Muerte/Lesiones a 1 Persona, Muerte/Lesiones a 2 o más Personas).
+   - Pérdida Total por Daños o Hurto (PTD / FNAC): condición de constitución de pérdida total (75% u 80% del valor comercial en lista FASECOLDA).
+   - Pérdida Parcial por Daños o Hurto (PP): límite, repuestos y taller concesionario.
+   - Carro Taller / Vehículo de Reemplazo: días de cobertura (ej: 10, 15, 30 días) y tipo de vehículo.
+   - Asistencia en Viaje / Carretera: 24/7, servicio de grúa, auxilio mecánico, cerrajería, conductor elegido.
+   - Gastos de Transporte / Peajes / Grúa: límites de reembolso.
+   - Hurto de Partes y Accesorios: límite de accesorios, lujos o blindaje.
+   - Eventos de la Naturaleza: granizo, terremoto, inundación, vendaval.
+   - Conductor Adicional / Menores de 25 Años: recargos, deducibles agravados o condiciones de cobertura.
+4. DEDUCIBLES: expresar cada deducible con su unidad original colombiana (% del siniestro, SMMLV - Salario Mínimo Mensual Legal Vigente, días de inmovilización, o valor fijo en COP). NO omitir deducibles.
+5. NOTAS Y CONDICIONES: cláusulas de inspección, accesorios asegurados, exclusiones.
 
-REGLAS CRÍTICAS:
+REGLAS CRÍTICAS DE EXTRACCIÓN:
 - NO inventes coberturas, valores ni deducibles.
 - Si un campo no aparece en la cotización, usa null o "NO ESPECIFICADO".
 - Para cada cobertura incluye rawTextSnippet (texto exacto de 50-150 caracteres) y pageNumber (página donde aparece).
-- Los deducibles de autos pueden ser: porcentaje (%), SMMLV, días de inmovilización o valor fijo; conserva la unidad original.
+- Los deducibles de autos pueden ser: porcentaje (%), SMMLV, días de inmovilización o valor fijo en COP; conserva la unidad original.
 - No uses los nombres canónicos de PYME (Incendio, Terremoto, etc.).`;
 
 const AUTOS_FORMAT_INSTRUCTIONS = `FORMATO DE SALIDA (JSON):
@@ -48,19 +49,19 @@ const AUTOS_FORMAT_INSTRUCTIONS = `FORMATO DE SALIDA (JSON):
   },
   "rceLimit": 1200000000,
   "ptPpDetails": {
-    "perdidaTotal": "Valor asegurado del vehículo",
-    "perdidaParcial": "Valor asegurado del vehículo"
+    "perdidaTotal": "80% del valor comercial FASECOLDA",
+    "perdidaParcial": "Valor comercial del vehículo"
   },
   "carroTaller": "20 días / vehículo de reemplazo",
-  "asistenciaViaje": "24/7, grúa, auxilio mecánico",
+  "asistenciaViaje": "24/7, grúa, auxilio mecánico, conductor elegido",
   "rawCoverages": [
     {
       "section": "COBERTURAS",
-      "rawName": "Responsabilidad Civil Extracontractual",
+      "rawName": "Responsabilidad Civil Extracontractual Vehicular",
       "insuredAmount": 1200000000,
       "deductible": "No aplica",
       "premium": null,
-      "notes": "",
+      "notes": "Amparo de daños a terceros y lesiones corporales",
       "rawTextSnippet": "...",
       "pageNumber": 1
     }
@@ -71,13 +72,13 @@ const AUTOS_FORMAT_INSTRUCTIONS = `FORMATO DE SALIDA (JSON):
       "value": 10,
       "unit": "%",
       "minimum": "2 SMMLV",
-      "notes": ""
+      "notes": "10% del valor del siniestro, mínimo 2 SMMLV"
     },
     {
       "appliesTo": "Carro Taller",
       "value": 5,
       "unit": "días",
-      "notes": ""
+      "notes": "Deducible de 5 días de inmovilización"
     }
   ],
   "specialConditions": [],
@@ -86,7 +87,7 @@ const AUTOS_FORMAT_INSTRUCTIONS = `FORMATO DE SALIDA (JSON):
 
 const AUTOS_RESPONSE_SCHEMA: Record<string, unknown> = {
   type: 'object',
-  description: 'Autos quote extraction schema (looser than PYME)',
+  description: 'Autos quote extraction schema compliant with Colombian insurance standards',
   additionalProperties: true,
   properties: {
     insurerName: { type: 'string' },
@@ -164,7 +165,23 @@ function buildAutosPrompt(contextNote?: string): string {
     prompt += `\n\nCONTEXTO ADICIONAL:\n${contextNote}`;
   }
 
-  prompt += `\n\n### GROUNDING RULES (REQUIRED)
+  prompt += `\n\n### REGLAS DE FORMATO COLOMBIA (ESTÁNDAR DE EXTRACCIÓN OBLIGATORIO)
+
+1. MONEDA Y VALORES MONETARIOS:
+   - "currency": "COP" (Pesos Colombianos).
+   - Todos los valores monetarios numéricos (netPremium, fees, taxes, totalPayable, rceLimit, insuredAmount) deben ser números enteros o flotantes puros en JS sin puntos de miles, comas ni símbolos "$" (ejemplo: 3025000 para $3.025.000 COP).
+
+2. PORCENTAJES Y DEDUCIBLES:
+   - En campos de deducibles o notas con porcentaje, conservar la notación porcentual explícita con "%" (ejemplo: "10%", "10% del siniestro").
+   - Preservar las unidades colombianas de deducibles: SMMLV (Salario Mínimo Mensual Legal Vigente), % del siniestro, días de inmovilización, o valor fijo en COP.
+
+3. ORTOGRAFÍA Y TILDES (ESPAÑOL COLOMBIA):
+   - Todos los textos de coberturas ("rawName"), secciones ("section"), notas y condiciones deben mantener la ortografía formal en español colombiano con sus tildes correspondientes (ejemplo: "Responsabilidad Civil Extracontractual Vehicular", "Pérdida Total", "Pérdida Parcial", "Vehículo de Reemplazo", "Asistencia en Viaje").
+
+4. MARCO NORMATIVO COLOMBIANO:
+   - Registrar la base normativa de seguros de autos en Colombia cuando aparezca en el documento (SOAT Decreto 780/2016, Código de Comercio Art. 1127, Circular Externa 050/2013 SFC, condicionado FASECOLDA).
+
+### GROUNDING RULES (REQUIRED)
 
 For every coverage row you emit:
 1. rawTextSnippet MUST be a contiguous substring of 50-150 characters copied verbatim from the PDF.

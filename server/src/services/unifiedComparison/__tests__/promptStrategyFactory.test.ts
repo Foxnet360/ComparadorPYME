@@ -225,7 +225,8 @@ describe('copropiedadesPromptStrategy', () => {
 
     expect(prompt).toContain('COPROPIEDADES');
     expect(prompt).toContain('Ley 675');
-    expect(prompt).toContain('Incendio y Terremoto sobre Bienes Comunes');
+    expect(prompt).toContain('Incendio, Rayo y Explosión sobre Bienes Comunes');
+    expect(prompt).toContain('Terremoto, Temblor y Erupción Volcánica sobre Bienes Comunes');
     expect(prompt).toContain('Responsabilidad Civil Extracontractual Áreas Comunes');
     expect(prompt).toContain('RC Directores y Administradores');
     expect(prompt).toContain('Equipo Eléctrico y Maquinaria');
@@ -333,3 +334,27 @@ describe('transportePromptStrategy', () => {
     expect(schema.properties).toHaveProperty('rawCoverages');
   });
 });
+
+describe('colombianFormatAndNormativeRules', () => {
+  const allDomains: InsuranceDomain[] = [
+    'pyme',
+    'autos',
+    'copropiedades',
+    'vida_grupo',
+    'salud',
+    'cumplimiento',
+    'transporte',
+  ];
+
+  it('includes Colombian format rules (COP, SMMLV, tildes, pure numbers) across all domain strategies', () => {
+    for (const domain of allDomains) {
+      const strategy = getStrategy(domain);
+      const prompt = strategy.buildPromptForFamily('TABLE-INTEGRATED');
+
+      expect(prompt).toContain('REGLAS DE FORMATO COLOMBIA');
+      expect(prompt).toContain('COP');
+      expect(prompt).toContain('SMMLV');
+    }
+  });
+});
+
