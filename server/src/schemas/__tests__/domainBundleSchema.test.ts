@@ -72,6 +72,21 @@ describe('domainBundleSchema', () => {
       expect(result.success).toBe(true);
     });
 
+    it('accepts metadata without salaryReference and with custom fields', () => {
+      const pymeTaxonomy = {
+        version: '2.0.0',
+        domain: 'pyme',
+        metadata: {
+          region: 'Colombia',
+          currency: 'COP',
+          source: 'Circular 050/2013 SFC',
+        },
+        categories: [{ id: 1, name: 'Incendio', aliases: ['Fuego'] }],
+      };
+      const result = validateTaxonomyBundle(pymeTaxonomy);
+      expect(result.success).toBe(true);
+    });
+
     it('assertTaxonomyBundle returns parsed data', () => {
       const data = assertTaxonomyBundle(validTaxonomy);
       expect(data.categories[0].id).toBe(1);

@@ -74,12 +74,18 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   const iconColor = isPrimary ? 'text-indigo-600' : 'text-slate-600';
   const iconBg = isPrimary ? 'bg-indigo-100' : 'bg-slate-100';
 
-  const shouldDisplayDomainSelector = showDomainSelector ?? isPrimary;
+  const shouldDisplayDomainSelector = showDomainSelector ?? false;
 
   return (
     <div className="w-full h-full flex flex-col space-y-4">
       {shouldDisplayDomainSelector && (
         <DomainSelector selectedDomain={domain} onChange={handleDomainChange} disabled={disabled} />
+      )}
+
+      {disabled && isPrimary && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-center space-x-2 animate-in fade-in">
+          <span className="font-medium">⚠️ Selecciona o crea un cliente arriba para habilitar la carga de cotizaciones.</span>
+        </div>
       )}
 
       <div

@@ -48,6 +48,7 @@ export interface ScoringBreakdown {
 }
 
 export interface QuoteAnalysis {
+  id?: string;
   insurerName: string;
   policyName: string;
   priceMonthly: number;

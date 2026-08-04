@@ -148,11 +148,11 @@ function buildThesaurusData(
 
   const metadata = taxonomy.metadata
     ? {
-        region: taxonomy.metadata.region,
-        currency: taxonomy.metadata.currency,
-        salary_reference: taxonomy.metadata.salaryReference,
-        salary_value_2024: taxonomy.metadata.salaryValue2024,
-        uvt_value_2024: taxonomy.metadata.uvtValue2024,
+        region: taxonomy.metadata.region ?? legacy.metadata.region,
+        currency: taxonomy.metadata.currency ?? legacy.metadata.currency,
+        salary_reference: taxonomy.metadata.salaryReference ?? legacy.metadata.salary_reference,
+        salary_value_2024: taxonomy.metadata.salaryValue2024 ?? legacy.metadata.salary_value_2024,
+        uvt_value_2024: taxonomy.metadata.uvtValue2024 ?? legacy.metadata.uvt_value_2024,
       }
     : legacy.metadata;
 

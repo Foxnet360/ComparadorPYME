@@ -49,9 +49,43 @@ import { useCellNotes } from '../contexts/AnalysisContext';
 
 interface ComparisonReportProps {
   report: ReportType;
+  onUpdateReport?: (updatedReport: ReportType) => void;
 }
 
-const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
+const ComparisonReport: React.FC<ComparisonReportProps> = ({ report: initialReport, onUpdateReport }) => {
+  const [report, setReport] = useState<ReportType>(initialReport);
+
+  React.useEffect(() => {
+    setReport(initialReport);
+  }, [initialReport]);
+
+  const handleApplyCorrection = (quoteId: string, correction: { field: string; originalValue: string; correctedValue: string }) => {
+    setReport((prev) => {
+      const updatedQuotes = prev.quotes.map((q) => {
+        if (q.id !== quoteId && q.insurerName !== quoteId) return q;
+        const updatedQuote = { ...q };
+
+        if (correction.field.startsWith('coverage_')) {
+          const covName = correction.field.replace(/^coverage_/, '');
+          updatedQuote.coverages = (updatedQuote.coverages || []).map((cov) =>
+            cov.name === covName ? { ...cov, value: correction.correctedValue } : cov
+          );
+        } else if (correction.field === 'deductible') {
+          updatedQuote.deductibles = correction.correctedValue;
+        } else if (correction.field === 'price_annual') {
+          updatedQuote.priceAnnual = Number(correction.correctedValue) || updatedQuote.priceAnnual;
+        } else if (correction.field === 'price_monthly') {
+          updatedQuote.priceMonthly = Number(correction.correctedValue) || updatedQuote.priceMonthly;
+        }
+        return updatedQuote;
+      });
+
+      const nextReport = { ...prev, quotes: updatedQuotes };
+      if (onUpdateReport) onUpdateReport(nextReport);
+      return nextReport;
+    });
+  };
+
   const [activeTab, setActiveTab] = useState<
     'resumen' | 'coberturas' | 'deducibles' | 'auditoria' | 'analisis-avanzado'
   >('resumen');
@@ -196,8 +230,15 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
       {/* Header Actions */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200 relative">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Dashboard de Análisis</h2>
-          <p className="text-sm text-slate-500">Vista técnica detallada para auditores.</p>
+          <div className="flex items-center space-x-2">
+            <h2 className="text-2xl font-bold text-slate-800">Dashboard de Análisis</h2>
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${
+              report.domain === 'autos' ? 'bg-blue-100 text-blue-800' : 'bg-indigo-100 text-indigo-800'
+            }`}>
+              Ramo: {report.domain === 'autos' ? 'Autos' : 'PYME'}
+            </span>
+          </div>
+          <p className="text-sm text-slate-500">Vista técnica detallada para auditores de seguros.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -479,12 +520,7 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report }) => {
                     <CorrectionUI
                       quote={q}
                       onCorrection={(correction) => {
-                        console.log('Correction submitted:', {
-                          insurer: q.insurerName,
-                          ...correction,
-                        });
-                        // TODO: Send to learning engine API
-                        alert(`Corrección guardada para ${q.insurerName}: ${correction.field}`);
+                        handleApplyCorrection(q.id || q.insurerName, correction);
                       }}
                     />
                   )}

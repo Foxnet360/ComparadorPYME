@@ -7,7 +7,7 @@ import { z } from 'zod';
 export const TaxonomyCategorySchema = z.object({
   id: z.number().int().positive(),
   name: z.string().min(1),
-  aliases: z.array(z.string().min(1)),
+  aliases: z.array(z.string().min(1)).optional().default([]),
 });
 
 export const TaxonomyBundleSchema = z.object({
@@ -15,12 +15,13 @@ export const TaxonomyBundleSchema = z.object({
   domain: z.string(),
   metadata: z
     .object({
-      region: z.string(),
-      currency: z.string(),
-      salaryReference: z.string(),
-      salaryValue2024: z.number().positive(),
-      uvtValue2024: z.number().positive(),
+      region: z.string().optional(),
+      currency: z.string().optional(),
+      salaryReference: z.string().optional(),
+      salaryValue2024: z.number().positive().optional(),
+      uvtValue2024: z.number().positive().optional(),
     })
+    .passthrough()
     .optional(),
   categories: z.array(TaxonomyCategorySchema).min(1),
 });
