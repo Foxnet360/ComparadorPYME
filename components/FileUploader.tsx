@@ -74,7 +74,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   const iconColor = isPrimary ? 'text-indigo-600' : 'text-slate-600';
   const iconBg = isPrimary ? 'bg-indigo-100' : 'bg-slate-100';
 
-  const shouldDisplayDomainSelector = showDomainSelector ?? false;
+  const shouldDisplayDomainSelector = showDomainSelector ?? isPrimary;
 
   return (
     <div className="w-full h-full flex flex-col space-y-4">
@@ -87,7 +87,6 @@ const FileUploader: React.FC<FileUploaderProps> = ({
           <span className="font-medium">⚠️ Selecciona o crea un cliente arriba para habilitar la carga de cotizaciones.</span>
         </div>
       )}
-
       <div
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
