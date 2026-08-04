@@ -50,11 +50,13 @@ export async function saveAnalysisHistory(data: Record<string, unknown>): Promis
 }
 
 export async function getAnalysisHistoryByUser(userId: string): Promise<AnalysisHistoryRecord[]> {
-  const { data, error } = await supabase
-    .from('analysis_history')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+  let query = supabase.from('analysis_history').select('*');
+
+  if (userId && userId !== 'all') {
+    query = query.or(`user_id.eq.${userId},user_id.eq.anonymous,user_id.is.null`);
+  }
+
+  const { data, error } = await query.order('created_at', { ascending: false });
 
   if (error) {
     handleDbError(error, 'Failed to fetch analysis history');

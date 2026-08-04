@@ -39,10 +39,7 @@ export const apiClient = {
     });
 
     if (response.status === 401) {
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
-      }
-      return Promise.reject(new Error('Sesión expirada. Por favor inicia sesión nuevamente.'));
+      throw new Error('Sesión expirada. Por favor inicia sesión nuevamente.');
     }
 
     if (!response.ok) {

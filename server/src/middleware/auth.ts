@@ -17,7 +17,7 @@ export interface AuthenticatedRequest extends Request {
   };
 }
 
-const SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_SECRET || '';
+const getJwtSecret = (): string => process.env.SUPABASE_JWT_SECRET || '';
 
 export const authMiddleware = (
   req: AuthenticatedRequest,
@@ -37,10 +37,12 @@ export const authMiddleware = (
       throw new AuthenticationError('Authentication required');
     }
 
+    const jwtSecret = getJwtSecret();
+
     // If JWT secret is configured, verify the token
-    if (SUPABASE_JWT_SECRET) {
+    if (jwtSecret) {
       try {
-        const decoded = jwt.verify(token, SUPABASE_JWT_SECRET) as unknown as JwtUserPayload;
+        const decoded = jwt.verify(token, jwtSecret) as unknown as JwtUserPayload;
         req.user = {
           id: (decoded.sub || decoded.id) as string,
           email: decoded.email,
@@ -79,9 +81,11 @@ export const optionalAuthMiddleware = (
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
 
-      if (SUPABASE_JWT_SECRET) {
+      const jwtSecret = getJwtSecret();
+
+      if (jwtSecret) {
         try {
-          const decoded = jwt.verify(token, SUPABASE_JWT_SECRET) as unknown as JwtUserPayload;
+          const decoded = jwt.verify(token, jwtSecret) as unknown as JwtUserPayload;
           req.user = {
             id: (decoded.sub || decoded.id) as string,
             email: decoded.email,

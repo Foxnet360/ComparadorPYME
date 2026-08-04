@@ -101,8 +101,8 @@ export const storageService = {
         const cloudClients: Client[] = Array.isArray(rawData)
           ? rawData
           : Array.isArray(rawData?.data)
-          ? rawData.data
-          : [];
+            ? rawData.data
+            : [];
 
         // Sync and cache cloud clients to local IndexedDB
         for (const client of cloudClients) {
@@ -189,8 +189,11 @@ export const storageService = {
 
   // --- HISTORY & STATS ---
   getHistory: async (): Promise<HistoryEntry[]> => {
+    let cloudTransformed: HistoryEntry[] = [];
     try {
-      const response = await apiClient.fetch('/history');
+      const currentUser = storageService.getCurrentUser();
+      const queryParam = currentUser?.id ? `?userId=${encodeURIComponent(currentUser.id)}` : '';
+      const response = await apiClient.fetch(`/history${queryParam}`);
       const rawData = await response.json();
       const cloudHistory: Array<{
         id: string;
@@ -202,7 +205,7 @@ export const storageService = {
       }> = Array.isArray(rawData) ? rawData : Array.isArray(rawData?.data) ? rawData.data : [];
 
       // Transform backend data (snake_case) to frontend format (camelCase)
-      const transformedHistory: HistoryEntry[] = cloudHistory.map((item) => {
+      cloudTransformed = cloudHistory.map((item) => {
         const analysisResult = item.analysis_result || {};
         const quotes = analysisResult.quotes || [];
         const bestQuote =
@@ -225,14 +228,22 @@ export const storageService = {
           fullReport: analysisResult as ComparisonReport,
         };
       });
-
-      return transformedHistory;
     } catch (e) {
-      console.warn('Backend Unreachable, falling back to local storage', e);
+      console.warn('Backend history unreachable, falling back to local storage', e);
     }
 
-    // Fallback: Local Storage (IndexedDB)
-    return await dbService.getAll('history');
+    // Merge cloud and local IndexedDB storage, preventing duplicate IDs
+    const rawLocal = await dbService.getAll('history');
+    const localHistory = Array.isArray(rawLocal) ? rawLocal : [];
+    const cloudIds = new Set(cloudTransformed.map((item) => item.id));
+    const merged = [...cloudTransformed];
+    for (const localItem of localHistory) {
+      if (!cloudIds.has(localItem.id)) {
+        merged.push(localItem);
+      }
+    }
+
+    return merged.sort((a, b) => (b.date > a.date ? 1 : -1));
   },
 
   getHistoryByClient: async (clientId: string, clientName?: string): Promise<HistoryEntry[]> => {

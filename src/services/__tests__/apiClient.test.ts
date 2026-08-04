@@ -161,7 +161,7 @@ describe('apiClient', () => {
       expect(init.headers).not.toHaveProperty('Content-Type');
     });
 
-    it('redirects to /login on 401 and rejects with session error', async () => {
+    it('rejects with session error on 401 status', async () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: { session: mockSession('bearer-token') },
         error: null,
@@ -173,7 +173,6 @@ describe('apiClient', () => {
       await expect(apiClient.fetch('/history')).rejects.toThrow(
         'Sesión expirada. Por favor inicia sesión nuevamente.'
       );
-      expect(globalThis.location.href).toBe('/login');
     });
 
     it('throws Error with server message on non-OK response', async () => {
