@@ -82,13 +82,13 @@ Sistema de análisis y comparación de cotizaciones de seguros usando IA (Gemini
 
 ### 1. Instalar dependencias
 
-```bash
-# Frontend
-npm install
+El proyecto usa un único `package.json` en la raíz para frontend y backend:
 
-# Backend
-cd server && npm install
+```bash
+npm install
 ```
+
+> Nota: `server/package.json` fue eliminado porque el backend comparte dependencias con el frontend y se despliega como monolito en Railway.
 
 ### 2. Configurar variables de entorno
 
