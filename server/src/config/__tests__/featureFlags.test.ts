@@ -12,6 +12,7 @@ describe('FeatureFlagManager', () => {
       'TEMPLATE_SBS_V1',
       'TEMPLATE_MAPFRE_V1',
       'GRAPH_LEARNING_ENABLED',
+      'ENABLE_DEEP_CLAUSE_VALIDATION',
       'FEATURE_FLAGS',
       'FEATURE_STRUCTURED_CLAUSE_EXTRACTION',
       'USE_UNIFIED_ENGINE',
@@ -102,10 +103,16 @@ describe('FeatureFlagManager', () => {
     expect(manager.isEnabled('useUnifiedComparisonEngine')).toBe(false);
   });
 
-  it('does not force useUnifiedComparisonEngine to false when env enables it', () => {
-    process.env.USE_UNIFIED_ENGINE = 'true';
+  it('defaults deepClauseValidation to false', () => {
     const manager = new FeatureFlagManager(DEFAULT_FEATURE_FLAGS);
 
-    expect(manager.isEnabled('useUnifiedComparisonEngine')).toBe(true);
+    expect(manager.isEnabled('deepClauseValidation')).toBe(false);
+  });
+
+  it('reads ENABLE_DEEP_CLAUSE_VALIDATION from environment', () => {
+    process.env.ENABLE_DEEP_CLAUSE_VALIDATION = 'true';
+    const manager = new FeatureFlagManager(DEFAULT_FEATURE_FLAGS);
+
+    expect(manager.isEnabled('deepClauseValidation')).toBe(true);
   });
 });

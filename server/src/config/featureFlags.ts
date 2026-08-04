@@ -44,6 +44,9 @@ export interface FeatureFlags {
   useLegacyCoverageMatcher: boolean;
   useLegacyDeductibleParser: boolean;
   useLegacyChatOnlyRAG: boolean;
+
+  // Deep clause validation (disabled by default until fully implemented)
+  deepClauseValidation: boolean;
 }
 
 // Check if Redis is configured
@@ -103,6 +106,13 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   useLegacyCoverageMatcher: false,
   useLegacyDeductibleParser: false,
   useLegacyChatOnlyRAG: false,
+
+  // Deep clause validation (disabled by default until fully implemented).
+  // - ENABLE_DEEP_CLAUSE_VALIDATION=true enables the experimental
+  //   POST /api/comparison/:id/deep-mode endpoint.
+  // - ENABLE_DEEP_CLAUSE_VALIDATION=false (default) returns a clear error
+  //   to callers because the full flow is not yet wired end-to-end.
+  deepClauseValidation: false,
 };
 
 // Development configuration - for testing
@@ -110,6 +120,7 @@ export const DEVELOPMENT_FLAGS: FeatureFlags = {
   ...DEFAULT_FEATURE_FLAGS,
   learningEngine: false, // Disable in dev to avoid side effects
   granularComparisonSchema: true, // Keep disabled by default until verified
+  deepClauseValidation: false, // Not ready for general use even in dev
 };
 
 // Production rollout configuration - gradual activation
@@ -137,6 +148,7 @@ export const PRODUCTION_ROLLOUT_FLAGS: FeatureFlags = {
   useLegacyDeductibleParser: false,
   useLegacyChatOnlyRAG: false,
   granularComparisonSchema: true,
+  deepClauseValidation: false,
 };
 
 // Maps recognized env var names to FeatureFlags keys. Fixes the old key
@@ -168,6 +180,7 @@ const ENV_FLAG_MAP: Record<string, keyof FeatureFlags> = {
   USE_UNIFIED_TEMPLATE_HINTS_BBVA: 'useUnifiedTemplateHintsBbva',
   USE_UNIFIED_TEMPLATE_HINTS_SBS: 'useUnifiedTemplateHintsSbs',
   USE_UNIFIED_TEMPLATE_HINTS_MAPFRE: 'useUnifiedTemplateHintsMapfre',
+  ENABLE_DEEP_CLAUSE_VALIDATION: 'deepClauseValidation',
 };
 
 /**

@@ -10,6 +10,7 @@ import path from 'path';
 import fs from 'fs';
 import { comparisonEngineAdapter } from '../services/unifiedComparison/comparisonEngineAdapter';
 import { unifiedComparisonFlag } from '../services/unifiedComparison/featureFlagService';
+import { featureFlags } from '../config/featureFlags';
 import { saveAnalysisHistory } from '../repositories/analysisRepository';
 import { matrixRowsToComparisonReport } from '../controllers/analysisController';
 
@@ -170,6 +171,15 @@ router.post('/:id/deep-mode', upload.array('clauses', 5), async (req, res) => {
 
   try {
     console.log(`🌐 [API] POST /api/comparison/${id}/deep-mode [${correlationId}]`);
+
+    // Deep clause validation is disabled by default until fully implemented
+    if (!featureFlags.isEnabled('deepClauseValidation')) {
+      return res.status(400).json({
+        error: 'Deep mode validation is not enabled',
+        message:
+          'The deep clause validation feature is experimental and disabled. Set ENABLE_DEEP_CLAUSE_VALIDATION=true to enable it once the implementation is complete.',
+      });
+    }
 
     // Validate request
     if (!req.files || (req.files as Express.Multer.File[]).length === 0) {
