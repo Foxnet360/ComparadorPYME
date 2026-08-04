@@ -61,7 +61,10 @@ export const dbService = {
       const db = await getDb();
       return await db.getAll(storeName);
     } catch (err) {
-      console.warn(`[IndexedDB] Retry getAll on store ${String(storeName)} due to connection reset`, err);
+      console.warn(
+        `[IndexedDB] Retry getAll on store ${String(storeName)} due to connection reset`,
+        err
+      );
       dbInstance = null;
       const db = await getDb();
       return await db.getAll(storeName);
@@ -76,7 +79,10 @@ export const dbService = {
       const db = await getDb();
       return await db.get(storeName, key);
     } catch (err) {
-      console.warn(`[IndexedDB] Retry get on store ${String(storeName)} due to connection reset`, err);
+      console.warn(
+        `[IndexedDB] Retry get on store ${String(storeName)} due to connection reset`,
+        err
+      );
       dbInstance = null;
       const db = await getDb();
       return await db.get(storeName, key);
@@ -91,7 +97,10 @@ export const dbService = {
       const db = await getDb();
       return await db.put(storeName, value);
     } catch (err) {
-      console.warn(`[IndexedDB] Retry put on store ${String(storeName)} due to connection reset`, err);
+      console.warn(
+        `[IndexedDB] Retry put on store ${String(storeName)} due to connection reset`,
+        err
+      );
       dbInstance = null;
       const db = await getDb();
       return await db.put(storeName, value);
@@ -103,7 +112,10 @@ export const dbService = {
       const db = await getDb();
       return await db.delete(storeName, key);
     } catch (err) {
-      console.warn(`[IndexedDB] Retry delete on store ${String(storeName)} due to connection reset`, err);
+      console.warn(
+        `[IndexedDB] Retry delete on store ${String(storeName)} due to connection reset`,
+        err
+      );
       dbInstance = null;
       const db = await getDb();
       return await db.delete(storeName, key);

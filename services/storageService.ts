@@ -101,8 +101,8 @@ export const storageService = {
         const cloudClients: Client[] = Array.isArray(rawData)
           ? rawData
           : Array.isArray(rawData?.data)
-          ? rawData.data
-          : [];
+            ? rawData.data
+            : [];
 
         // Sync and cache cloud clients to local IndexedDB
         for (const client of cloudClients) {

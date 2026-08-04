@@ -75,9 +75,7 @@ const SKIPPED_DIRS = new Set([
 ]);
 
 function isDeletionTarget(relPath: string): boolean {
-  return PR2_DELETIONS.some(
-    (target) => relPath === target || relPath.startsWith(`${target}/`)
-  );
+  return PR2_DELETIONS.some((target) => relPath === target || relPath.startsWith(`${target}/`));
 }
 
 function walkDir(dir: string, callback: (filePath: string) => void): void {

@@ -361,7 +361,9 @@ const App: React.FC = () => {
                     />
                   </div>
                   <div className="flex items-center space-x-2 bg-slate-100 p-1.5 rounded-xl self-start md:self-auto border border-slate-200">
-                    <span className="text-xs font-semibold text-slate-500 uppercase px-2">Ramo:</span>
+                    <span className="text-xs font-semibold text-slate-500 uppercase px-2">
+                      Ramo:
+                    </span>
                     <button
                       type="button"
                       onClick={() => setDomain('pyme')}

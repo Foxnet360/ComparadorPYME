@@ -84,7 +84,9 @@ const FileUploader: React.FC<FileUploaderProps> = ({
 
       {disabled && isPrimary && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-center space-x-2 animate-in fade-in">
-          <span className="font-medium">⚠️ Selecciona o crea un cliente arriba para habilitar la carga de cotizaciones.</span>
+          <span className="font-medium">
+            ⚠️ Selecciona o crea un cliente arriba para habilitar la carga de cotizaciones.
+          </span>
         </div>
       )}
       <div

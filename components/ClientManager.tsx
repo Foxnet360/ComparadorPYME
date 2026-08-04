@@ -27,7 +27,10 @@ interface ClientManagerProps {
   onViewReport?: (report: ComparisonReport) => void;
 }
 
-const CITY_SEISMIC_ZONES: Record<string, { dept: string; zone: 'Alta' | 'Intermedia' | 'Baja'; lat: number; lng: number }> = {
+const CITY_SEISMIC_ZONES: Record<
+  string,
+  { dept: string; zone: 'Alta' | 'Intermedia' | 'Baja'; lat: number; lng: number }
+> = {
   Bogotá: { dept: 'Cundinamarca', zone: 'Intermedia', lat: 4.6097, lng: -74.0817 },
   Medellín: { dept: 'Antioquia', zone: 'Alta', lat: 6.2442, lng: -75.5812 },
   Cali: { dept: 'Valle del Cauca', zone: 'Alta', lat: 3.4516, lng: -76.532 },
@@ -217,7 +220,8 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
             Gestión de Clientes y Auditorías Correlacionadas
           </h2>
           <p className="text-sm text-slate-500 mt-1">
-            Administra copropiedades, georreferenciación y el historial completo de auditorías comparativas de cotizaciones.
+            Administra copropiedades, georreferenciación y el historial completo de auditorías
+            comparativas de cotizaciones.
           </p>
         </div>
 
@@ -236,7 +240,10 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
         <div className="lg:col-span-4 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col h-[700px]">
           <div className="p-4 border-b border-slate-100 bg-slate-50 space-y-3">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                size={16}
+              />
               <input
                 type="text"
                 placeholder="Buscar por cliente, NIT o ciudad..."
@@ -269,8 +276,8 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
                           client.seismicZone === 'Alta'
                             ? 'bg-rose-100 text-rose-700'
                             : client.seismicZone === 'Intermedia'
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-emerald-100 text-emerald-800'
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-emerald-100 text-emerald-800'
                         }`}
                       >
                         {client.seismicZone}
@@ -364,10 +371,13 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
                   </div>
 
                   <div>
-                    <span className="font-bold text-slate-500 uppercase block mb-1">Coordenadas / NSR-10</span>
+                    <span className="font-bold text-slate-500 uppercase block mb-1">
+                      Coordenadas / NSR-10
+                    </span>
                     {selectedClient.latitude && selectedClient.longitude ? (
                       <span className="font-mono text-slate-800 font-semibold block">
-                        {selectedClient.latitude.toFixed(4)}°, {selectedClient.longitude.toFixed(4)}°
+                        {selectedClient.latitude.toFixed(4)}°, {selectedClient.longitude.toFixed(4)}
+                        °
                       </span>
                     ) : (
                       <span className="text-slate-400">Sin coordenadas</span>
@@ -380,9 +390,14 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
                   </div>
 
                   <div>
-                    <span className="font-bold text-slate-500 uppercase block mb-1">Estructura del Inmueble</span>
+                    <span className="font-bold text-slate-500 uppercase block mb-1">
+                      Estructura del Inmueble
+                    </span>
                     <span className="block">
-                      Tipo: <strong className="text-slate-800">{selectedClient.buildingType || 'Residencial'}</strong>
+                      Tipo:{' '}
+                      <strong className="text-slate-800">
+                        {selectedClient.buildingType || 'Residencial'}
+                      </strong>
                     </span>
                     <span className="block mt-0.5">
                       Torres: <strong>{selectedClient.towersCount || 1}</strong> • Unidades:{' '}
@@ -427,10 +442,17 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
                             </span>
                           </div>
                           <div className="text-xs text-slate-500 flex flex-wrap items-center gap-x-3 gap-y-1">
-                            <span>Aseguradoras: <strong>{audit.insurers.join(', ')}</strong></span>
-                            <span>• Mejor opción: <strong className="text-emerald-700">{audit.bestOption}</strong></span>
+                            <span>
+                              Aseguradoras: <strong>{audit.insurers.join(', ')}</strong>
+                            </span>
+                            <span>
+                              • Mejor opción:{' '}
+                              <strong className="text-emerald-700">{audit.bestOption}</strong>
+                            </span>
                             {audit.premiumValue > 0 && (
-                              <span>• Prima: <strong>{formatCOP(audit.premiumValue)}</strong></span>
+                              <span>
+                                • Prima: <strong>{formatCOP(audit.premiumValue)}</strong>
+                              </span>
                             )}
                           </div>
                         </div>
@@ -453,7 +475,8 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
                       No hay auditorías registradas para este cliente
                     </div>
                     <p className="text-xs text-slate-500 max-w-md mx-auto">
-                      Iniciá un nuevo análisis comparativo para vincular automáticamente los reportes y recomendaciones a esta copropiedad.
+                      Iniciá un nuevo análisis comparativo para vincular automáticamente los
+                      reportes y recomendaciones a esta copropiedad.
                     </p>
                     {onSelectClientForAudit && (
                       <button
@@ -470,9 +493,12 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
           ) : (
             <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center text-slate-400 space-y-3 shadow-sm">
               <Building size={48} className="mx-auto text-slate-300" />
-              <div className="text-base font-semibold text-slate-600">Selecciona o crea un cliente</div>
+              <div className="text-base font-semibold text-slate-600">
+                Selecciona o crea un cliente
+              </div>
               <p className="text-xs text-slate-500">
-                Selecciona un cliente de la lista para ver su perfil georreferenciado y las auditorías correlacionadas.
+                Selecciona un cliente de la lista para ver su perfil georreferenciado y las
+                auditorías correlacionadas.
               </p>
             </div>
           )}
@@ -485,16 +511,26 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden animate-in zoom-in-95 duration-200 my-auto">
             <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
               <h3 className="font-bold text-lg text-slate-800">
-                {editingClient ? 'Editar Cliente / Copropiedad' : 'Registrar Nuevo Cliente / Copropiedad'}
+                {editingClient
+                  ? 'Editar Cliente / Copropiedad'
+                  : 'Registrar Nuevo Cliente / Copropiedad'}
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-1">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleSaveClient} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto scrollbar-thin">
+            <form
+              onSubmit={handleSaveClient}
+              className="p-6 space-y-5 max-h-[80vh] overflow-y-auto scrollbar-thin"
+            >
               <div>
-                <h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-3">Información General</h4>
+                <h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-3">
+                  Información General
+                </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
@@ -523,17 +559,23 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Administrador / Contacto</label>
+                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+                      Administrador / Contacto
+                    </label>
                     <input
                       type="text"
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
                       value={clientForm.contactPerson}
-                      onChange={(e) => setClientForm({ ...clientForm, contactPerson: e.target.value })}
+                      onChange={(e) =>
+                        setClientForm({ ...clientForm, contactPerson: e.target.value })
+                      }
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Correo Electrónico</label>
+                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+                      Correo Electrónico
+                    </label>
                     <input
                       type="email"
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
@@ -545,10 +587,14 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
               </div>
 
               <div className="pt-3 border-t border-slate-100">
-                <h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-3">Ubicación Georreferenciada</h4>
+                <h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-3">
+                  Ubicación Georreferenciada
+                </h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Ciudad</label>
+                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+                      Ciudad
+                    </label>
                     <select
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white"
                       value={clientForm.city}
@@ -563,7 +609,9 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Departamento</label>
+                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+                      Departamento
+                    </label>
                     <input
                       type="text"
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-slate-50"
@@ -573,11 +621,15 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Zona Sísmica (NSR-10)</label>
+                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+                      Zona Sísmica (NSR-10)
+                    </label>
                     <select
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white font-semibold"
                       value={clientForm.seismicZone}
-                      onChange={(e) => setClientForm({ ...clientForm, seismicZone: e.target.value as any })}
+                      onChange={(e) =>
+                        setClientForm({ ...clientForm, seismicZone: e.target.value as any })
+                      }
                     >
                       <option value="Alta">Alta</option>
                       <option value="Intermedia">Intermedia</option>
@@ -588,7 +640,9 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Dirección Completa</label>
+                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+                      Dirección Completa
+                    </label>
                     <input
                       type="text"
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
@@ -599,23 +653,31 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Latitud</label>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                        Latitud
+                      </label>
                       <input
                         type="number"
                         step="0.0001"
                         className="w-full px-2 py-2 border border-slate-300 rounded-lg text-xs font-mono"
                         value={clientForm.latitude}
-                        onChange={(e) => setClientForm({ ...clientForm, latitude: parseFloat(e.target.value) })}
+                        onChange={(e) =>
+                          setClientForm({ ...clientForm, latitude: parseFloat(e.target.value) })
+                        }
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Longitud</label>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                        Longitud
+                      </label>
                       <input
                         type="number"
                         step="0.0001"
                         className="w-full px-2 py-2 border border-slate-300 rounded-lg text-xs font-mono"
                         value={clientForm.longitude}
-                        onChange={(e) => setClientForm({ ...clientForm, longitude: parseFloat(e.target.value) })}
+                        onChange={(e) =>
+                          setClientForm({ ...clientForm, longitude: parseFloat(e.target.value) })
+                        }
                       />
                     </div>
                   </div>
