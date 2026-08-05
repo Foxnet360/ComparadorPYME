@@ -47,6 +47,9 @@ export interface FeatureFlags {
 
   // Deep clause validation (disabled by default until fully implemented)
   deepClauseValidation: boolean;
+
+  // Gemini context caching for large document analysis (>32k tokens)
+  enableGeminiContextCaching: boolean;
 }
 
 // Check if Redis is configured
@@ -113,6 +116,9 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   // - ENABLE_DEEP_CLAUSE_VALIDATION=false (default) returns a clear error
   //   to callers because the full flow is not yet wired end-to-end.
   deepClauseValidation: false,
+
+  // Gemini context caching: default false unless ENABLE_GEMINI_CONTEXT_CACHING=true
+  enableGeminiContextCaching: process.env.ENABLE_GEMINI_CONTEXT_CACHING === 'true',
 };
 
 // Development configuration - for testing
@@ -181,6 +187,7 @@ const ENV_FLAG_MAP: Record<string, keyof FeatureFlags> = {
   USE_UNIFIED_TEMPLATE_HINTS_SBS: 'useUnifiedTemplateHintsSbs',
   USE_UNIFIED_TEMPLATE_HINTS_MAPFRE: 'useUnifiedTemplateHintsMapfre',
   ENABLE_DEEP_CLAUSE_VALIDATION: 'deepClauseValidation',
+  ENABLE_GEMINI_CONTEXT_CACHING: 'enableGeminiContextCaching',
 };
 
 /**

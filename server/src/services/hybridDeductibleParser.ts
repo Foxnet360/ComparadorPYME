@@ -128,9 +128,9 @@ const PATTERNS = {
   uvt: /(\d+)\s*(?:UVT)\b/i,
   fixed: /(?:\$?\s*)([\d.,]+)\s*(COP|USD)?/i,
   minClause:
-    /(?:m[ií]n(?:imo|o|\.|\b)?)(?:\s+de)?\s*(?:\$?\s*)(\d+(?:[.,]\d+)*)\s*(s\.?m\.?m\.?l\.?v\.?|sm|cop|pesos|uvt)?/i,
+    /(?:m[ií]n(?:imo|o|\.|\b)?|con\s+m[ií]nimo(?:\s+de)?)(?:\s+de)?\s*(?:\$?\s*)(\d+(?:[.,]\d+)*)\s*(s\.?m\.?m\.?l\.?v\.?|sm|cop|pesos|uvt)?/i,
   maxClause:
-    /(?:m[aá]x(?:imo|o|\.|\b)?|tope|l[ií]mite)(?:\s+de)?\s*(?:\$?\s*)(\d+(?:[.,]\d+)*)\s*(s\.?m\.?m\.?l\.?v\.?|sm|cop|pesos|uvt)?/i,
+    /(?:m[aá]x(?:imo|o|\.|\b)?|tope|l[ií]mite|con\s+m[aá]ximo(?:\s+de)?)(?:\s+de)?\s*(?:\$?\s*)(\d+(?:[.,]\d+)*)\s*(s\.?m\.?m\.?l\.?v\.?|sm|cop|pesos|uvt)?/i,
 };
 
 function inferCompoundOperator(
@@ -752,39 +752,47 @@ export const hybridDeductibleParser = {
     }
 
     // 4. LLM fallback
-    telemetry.llmFallbacks++;
-    console.log(`🤖 [HybridDeductibleParser] LLM fallback for "${text.substring(0, 40)}..."`);
-    const llmResult = await parseWithLLM(text);
-    const normalized = computeNormalized({
-      components: llmResult.components,
-      compoundOperator: llmResult.compoundOperator ?? 'none',
-    });
-    const result: HybridDeductibleResult = {
-      ...llmResult,
-      rawText: text,
-      normalized,
-      benchmark: evaluateBenchmark(resolvedCoverage, normalized),
-      appliesTo,
-      parseMethod: 'llm',
-    };
+    try {
+      telemetry.llmFallbacks++;
+      console.log(`🤖 [HybridDeductibleParser] LLM fallback for "${text.substring(0, 40)}..."`);
+      const llmResult = await parseWithLLM(text);
+      const normalized = computeNormalized({
+        components: llmResult.components,
+        compoundOperator: llmResult.compoundOperator ?? 'none',
+      });
+      const result: HybridDeductibleResult = {
+        ...llmResult,
+        rawText: text,
+        normalized,
+        benchmark: evaluateBenchmark(resolvedCoverage, normalized),
+        appliesTo,
+        parseMethod: 'llm',
+      };
 
-    // 5. Cache fallback results
-    await setCachedDeductibleV2(text, {
-      components: llmResult.components,
-      compoundOperator: llmResult.compoundOperator ?? 'none',
-      isZero: llmResult.isZero,
-      hasMinimum: llmResult.hasMinimum,
-      hasMaximum: llmResult.hasMaximum,
-      isComposite: llmResult.isComposite,
-    }).catch(() => {});
+      // 5. Cache fallback results
+      await setCachedDeductibleV2(text, {
+        components: llmResult.components,
+        compoundOperator: llmResult.compoundOperator ?? 'none',
+        isZero: llmResult.isZero,
+        hasMinimum: llmResult.hasMinimum,
+        hasMaximum: llmResult.hasMaximum,
+        isComposite: llmResult.isComposite,
+      }).catch(() => {});
 
-    // Periodic telemetry log (every 10 operations)
-    const total = telemetry.cacheHits + telemetry.regexHits + telemetry.llmFallbacks;
-    if (total % 10 === 0) {
-      logTelemetry();
+      // Periodic telemetry log (every 10 operations)
+      const total = telemetry.cacheHits + telemetry.regexHits + telemetry.llmFallbacks;
+      if (total % 10 === 0) {
+        logTelemetry();
+      }
+
+      return result;
+    } catch (err: unknown) {
+      console.warn(
+        `⚠️ [HybridDeductibleParser] LLM fallback failed for "${text.substring(0, 40)}...", returning unparsed text result:`,
+        err
+      );
+      return buildEmptyResult(text);
     }
-
-    return result;
   },
 
   getStats(): TelemetryCounters {

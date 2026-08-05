@@ -215,7 +215,7 @@ async function mapRawToCanonicalWithInsurer(
       if (graphResult.mappings.length > 0) {
         const best = graphResult.mappings[0];
         const confidence = Math.round(best.confidence * 100);
-        if (confidence >= 50) {
+        if (confidence >= 70) {
           let canonicalName = best.canonicalId;
           // Graph may return numeric category ids; resolve to canonical name
           const numericId = parseInt(best.canonicalId, 10);
@@ -375,7 +375,7 @@ export async function mapRawToCanonicalBatch(
           if (graphResult.mappings.length > 0) {
             const best = graphResult.mappings[0];
             const confidence = Math.round(best.confidence * 100);
-            if (confidence >= 50) {
+            if (confidence >= 70) {
               let canonicalName = best.canonicalId;
               const numericId = parseInt(best.canonicalId, 10);
               if (!Number.isNaN(numericId) && numericId > 0) {
@@ -478,6 +478,13 @@ async function mapWithOntology(
 
     // Get best match
     const best = mapping.groups[0];
+    if (best.confidence < 0.7) {
+      console.log(
+        `ℹ️ [CoverageNormalizer] Ontology confidence (${best.confidence.toFixed(2)}) below 0.70 threshold, falling back to thesaurus/fuzzy`
+      );
+      return null;
+    }
+
     const node = coverageOntology.getNodeById(best.groupId);
 
     if (!node) {

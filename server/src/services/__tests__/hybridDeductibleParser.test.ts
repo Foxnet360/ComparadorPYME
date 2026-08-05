@@ -446,4 +446,28 @@ describe('hybridDeductibleParser', () => {
       expect(getHybridParserStats().cacheHits).toBe(0);
     });
   });
+
+  // ========================================================================
+  // Phase 2: Enhanced composite patterns & defensive fallback
+  // ========================================================================
+
+  describe('Phase 2 enhancements', () => {
+    it('should parse percentage with min clause SMMLV correctly', async () => {
+      mockGetCachedDeductibleV2.mockResolvedValue(null);
+
+      const result = await hybridDeductibleParser.parse('10% PERD CON MINIMO DE 2 SMMLV');
+      expect(result.parseMethod).toBe('regex');
+      expect(result.hasMinimum).toBe(true);
+      expect(result.components.length).toBeGreaterThan(0);
+    });
+
+    it('should return safe unparsed fallback when LLM throws error', async () => {
+      mockGetCachedDeductibleV2.mockResolvedValue(null);
+      mockExtractDeductible.mockRejectedValue(new Error('LLM Service Unavailable'));
+
+      const result = await hybridDeductibleParser.parse('Deducible complejo no reconocible');
+      expect(result.rawText).toBe('Deducible complejo no reconocible');
+      expect(result.components).toBeDefined();
+    });
+  });
 });

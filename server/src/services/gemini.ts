@@ -3,6 +3,7 @@ import { z } from 'zod';
 const SchemaType = Type;
 
 import { ClauseDocument } from '../types';
+import { featureFlags } from '../config/featureFlags';
 import { preprocessText } from './textPreprocessor';
 import { parseJsonWithRepair } from './jsonRepair';
 import { extractAndValidatePremium } from './premiumExtractor';
@@ -104,7 +105,7 @@ export const QuoteExtractionSchemaV2 = {
           rawTextSnippet: {
             type: SchemaType.STRING,
             description:
-              'Exact contiguous text snippet (50-150 chars) from the PDF where this coverage appears. Must be verifiable in the native text.',
+              'Exact contiguous text snippet (50-300 chars) from the PDF where this coverage, sub-limit or clause appears. Must be verifiable in native text.',
             nullable: false,
           },
           pageNumber: {
@@ -451,6 +452,33 @@ export const geminiService = {
         `⚠️ [Gemini] Failed to delete file ${fileName}:`,
         error instanceof Error ? error.message : error
       );
+    }
+  },
+
+  getOrCreateContextCache: async (params: {
+    contents: unknown[];
+    model?: string;
+    ttlSeconds?: number;
+  }): Promise<string | null> => {
+    if (!featureFlags.isEnabled('enableGeminiContextCaching')) {
+      return null;
+    }
+    try {
+      const ai = getGenAI();
+      const model = params.model || process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+      const cacheConfig = {
+        model,
+        contents: params.contents as any,
+        ttl: `${params.ttlSeconds || 3600}s`,
+      };
+      const cache = await (ai.caches as any).create(cacheConfig);
+      console.log(`⚡ [GeminiService] Created context cache handle: ${cache.name}`);
+      return cache.name || null;
+    } catch (error: unknown) {
+      console.warn(
+        `⚠️ [GeminiService] Context cache creation failed, using fallback: ${error instanceof Error ? error.message : String(error)}`
+      );
+      return null;
     }
   },
 

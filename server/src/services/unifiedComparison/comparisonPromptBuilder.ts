@@ -144,6 +144,7 @@ Reglas Generales:
 - Copia los valores textualmente como aparecen en cada cotización.
 - No agrupes, no normalices a coberturas canónicas y no inventes datos.
 - Si una fila no aparece en una cotización, usa "No informado".
+- Para rawText y evidencias de resalte, incluye el snippet continuo exacto de entre 50 y 300 caracteres sin truncar cláusulas de deducibles ni sublímites.
 - Además, para cada cotización, extrae los siguientes metadatos de cabecera: Cliente, Tipo de Seguro, Ubicación del Riesgo, Año Construcción, Pisos, Aliado, Actividad/Ocupación, Documento, Vigencia.
 - Responde únicamente con JSON válido que cumpla este schema:
 {
