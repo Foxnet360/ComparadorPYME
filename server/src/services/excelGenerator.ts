@@ -8,6 +8,16 @@ interface ClientInfo {
   location?: string;
 }
 
+export interface BrokerInfo {
+  name?: string;
+  intermediaryName?: string;
+  registrationNumber?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  city?: string;
+}
+
 export function formatRatioCell(val: string | number): { value: string | number; numFmt?: string } {
   if (typeof val === 'string') {
     const pct = parseFloat(val.replace(/[^0-9,.]/g, '').replace(',', '.')) / 100;
@@ -24,11 +34,12 @@ export function formatRatioCell(val: string | number): { value: string | number;
 export async function generateExcelBuffer(
   quotes: QuoteAnalysis[],
   clientInfo?: ClientInfo,
-  cellNotes?: Record<string, string>
+  cellNotes?: Record<string, string>,
+  brokerInfo?: BrokerInfo
 ): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'Agente Comparador CSA';
-  workbook.lastModifiedBy = 'Agente Comparador CSA';
+  workbook.creator = brokerInfo?.intermediaryName || 'Agente Comparador CSA';
+  workbook.lastModifiedBy = brokerInfo?.name || 'Agente Comparador CSA';
   workbook.created = new Date();
   workbook.modified = new Date();
 
@@ -37,9 +48,9 @@ export async function generateExcelBuffer(
   const hasNotes = cellNotes && Object.keys(cellNotes).length > 0;
 
   // Parse Client Info
-  const clientName = clientInfo?.name || 'LEIDY MIREYA GARCIA GUEPENDO (LASERHOME)';
-  const clientActivity = clientInfo?.activity || 'Centro de Belleza y/o Estetica (CIIU 9602)';
-  const clientLocation = clientInfo?.location || 'Diagonal 76A Bis 55A-19, Bogota D.C.';
+  const clientName = clientInfo?.name || 'Cliente';
+  const clientActivity = clientInfo?.activity || 'Comercial / PYME';
+  const clientLocation = clientInfo?.location || 'Bogotá D.C.';
 
   // Find max asset value from Incendio coverages
   const assetValues = quotes.map((q) => {
@@ -55,7 +66,7 @@ export async function generateExcelBuffer(
     maxAsset > 0
       ? '$' +
         maxAsset.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
-      : '$119.600.000';
+      : 'No especificado';
 
   // -------------------------------------------------------------
   // Sheet 1: Portada
@@ -72,13 +83,13 @@ export async function generateExcelBuffer(
   // Title Block
   portada.mergeCells('B2:D2');
   const titleCell = portada.getCell('B2');
-  titleCell.value = 'COMPARATIVA DE COTIZACIONES DE SEGUROS PYME';
+  titleCell.value = 'COMPARATIVA DE COTIZACIONES DE SEGUROS';
   titleCell.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF0066CC' } };
   titleCell.alignment = { vertical: 'middle', horizontal: 'left' };
 
   portada.mergeCells('B3:D3');
   const subtitleCell = portada.getCell('B3');
-  subtitleCell.value = `${clientName.toUpperCase()} | Bogotá D.C.`;
+  subtitleCell.value = `${clientName.toUpperCase()} | ${clientLocation}`;
   subtitleCell.font = { name: 'Calibri', size: 11, italic: true, color: { argb: 'FF555555' } };
   subtitleCell.alignment = { vertical: 'middle', horizontal: 'left' };
 
@@ -112,37 +123,56 @@ export async function generateExcelBuffer(
     12
   );
 
-  // File Content / Navigability Guide Section
-  portada.getCell('B15').value = 'CONTENIDO DEL ARCHIVO';
+  // Broker / Intermediary Info Section
+  portada.getCell('B15').value = 'INFORMACIÓN DEL INTERMEDIARIO / ALIADO';
   portada.getCell('B15').font = {
+    name: 'Calibri',
+    size: 12,
+    bold: true,
+    color: { argb: 'FF0066CC' },
+  };
+
+  addInfoRow('Correduría / Agencia:', brokerInfo?.intermediaryName || 'Agencia Aliada', 17);
+  addInfoRow('Asesor Responsable:', brokerInfo?.name || 'Asesor de Seguros', 18);
+  addInfoRow('Nº Matrícula / Registro:', brokerInfo?.registrationNumber || 'No especificado', 19);
+  addInfoRow(
+    'Contacto:',
+    [brokerInfo?.phone, brokerInfo?.email, brokerInfo?.city].filter(Boolean).join(' | ') ||
+      'No especificado',
+    20
+  );
+
+  // File Content / Navigability Guide Section
+  portada.getCell('B23').value = 'CONTENIDO DEL ARCHIVO';
+  portada.getCell('B23').font = {
     name: 'Calibri',
     size: 12,
     bold: true,
     color: { argb: 'FF333333' },
   };
 
-  portada.getCell('B17').value = 'Hoja';
-  portada.getCell('B17').font = {
+  portada.getCell('B25').value = 'Hoja';
+  portada.getCell('B25').font = {
     name: 'Calibri',
     size: 11,
     bold: true,
     color: { argb: 'FFFFFFFF' },
   };
-  portada.getCell('B17').fill = {
+  portada.getCell('B25').fill = {
     type: 'pattern',
     pattern: 'solid',
     fgColor: { argb: 'FF333333' },
   };
-  portada.getCell('B17').alignment = { horizontal: 'center' };
+  portada.getCell('B25').alignment = { horizontal: 'center' };
 
-  portada.getCell('D17').value = 'Descripción';
-  portada.getCell('D17').font = {
+  portada.getCell('D25').value = 'Descripción';
+  portada.getCell('D25').font = {
     name: 'Calibri',
     size: 11,
     bold: true,
     color: { argb: 'FFFFFFFF' },
   };
-  portada.getCell('D17').fill = {
+  portada.getCell('D25').fill = {
     type: 'pattern',
     pattern: 'solid',
     fgColor: { argb: 'FF333333' },
@@ -169,16 +199,16 @@ export async function generateExcelBuffer(
     };
   };
 
-  addNavRow('Portada', 'Resumen ejecutivo y guía de navegación rápida', 18);
+  addNavRow('Portada', 'Resumen ejecutivo y datos del aliado intermediario', 26);
   addNavRow(
     'Coberturas y Deducibles',
     'Tabla comparativa principal de amparos canónicos y amparos exclusivos',
-    19
+    27
   );
   addNavRow(
     'Primas y Costos',
     'Resumen matemático de primas netas, gastos, IVA y totales a pagar',
-    20
+    28
   );
 
   // -------------------------------------------------------------

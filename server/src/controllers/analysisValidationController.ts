@@ -329,10 +329,19 @@ export const exportAnalysisExcel = async (
       location: 'Bogotá D.C.',
     };
 
-    // Get cell notes from request body (if provided by frontend)
+    // Get cell notes and brokerInfo from request body or user session
     const cellNotes = req.body?.cellNotes as Record<string, string> | undefined;
+    const brokerInfo = req.body?.brokerInfo || {
+      name: req.user?.name,
+      intermediaryName: req.user?.intermediaryName,
+      registrationNumber: req.user?.registrationNumber,
+      phone: req.user?.agentDetails?.phone,
+      email: req.user?.email,
+      address: req.user?.address || req.user?.agentDetails?.address,
+      city: req.user?.city || req.user?.agentDetails?.city,
+    };
 
-    const buffer = await generateExcelBuffer(quotes, clientInfo, cellNotes);
+    const buffer = await generateExcelBuffer(quotes, clientInfo, cellNotes, brokerInfo);
 
     res.setHeader(
       'Content-Type',

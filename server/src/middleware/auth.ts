@@ -14,6 +14,20 @@ export interface AuthenticatedRequest extends Request {
     id: string;
     email?: string;
     role?: string;
+    name?: string;
+    intermediaryName?: string;
+    registrationNumber?: string;
+    address?: string;
+    city?: string;
+    agentDetails?: {
+      phone?: string;
+      field?: string;
+      bio?: string;
+      registrationNumber?: string;
+      address?: string;
+      city?: string;
+      logoUrl?: string;
+    };
   };
 }
 

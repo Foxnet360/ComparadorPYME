@@ -9,6 +9,10 @@ import {
   Loader2,
   X,
   ShieldCheck,
+  Award,
+  MapPin,
+  Image as ImageIcon,
+  Upload,
 } from 'lucide-react';
 import { storageService } from '../services/storageService';
 import { UserProfile } from '../types';
@@ -24,10 +28,14 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
     name: '',
     email: '',
     intermediaryName: '',
+    registrationNumber: '',
     phone: '',
     field: '',
+    address: '',
+    city: '',
     bio: '',
     avatarUrl: '',
+    logoUrl: '',
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -40,16 +48,36 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
         name: currentUser.name || '',
         email: currentUser.email || '',
         intermediaryName: currentUser.intermediaryName || '',
+        registrationNumber:
+          currentUser.registrationNumber || currentUser.agentDetails?.registrationNumber || '',
         phone: currentUser.agentDetails?.phone || '',
         field: currentUser.agentDetails?.field || '',
+        address: currentUser.address || currentUser.agentDetails?.address || '',
+        city: currentUser.city || currentUser.agentDetails?.city || '',
         bio: currentUser.agentDetails?.bio || '',
         avatarUrl: currentUser.avatarUrl || '',
+        logoUrl: currentUser.logoUrl || currentUser.agentDetails?.logoUrl || '',
       });
     }
   }, [currentUser]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        setErrorMsg('El logo no debe superar los 2MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({ ...prev, logoUrl: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -62,21 +90,29 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
       const updatedUser: UserProfile = {
         ...currentUser,
         name: formData.name,
-        // Email usually shouldn't be changed easily in real apps, but we allow here for simplicity or block it logic
         intermediaryName: formData.intermediaryName,
-        avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name)}&background=4f46e5&color=fff`,
+        registrationNumber: formData.registrationNumber,
+        address: formData.address,
+        city: formData.city,
+        logoUrl: formData.logoUrl,
+        avatarUrl:
+          formData.avatarUrl ||
+          `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name)}&background=4f46e5&color=fff`,
         agentDetails: {
           phone: formData.phone,
           field: formData.field,
           bio: formData.bio,
+          registrationNumber: formData.registrationNumber,
+          address: formData.address,
+          city: formData.city,
+          logoUrl: formData.logoUrl,
         },
       };
 
       await storageService.updateProfile(updatedUser);
       onUpdateProfile(updatedUser);
-      setSuccessMsg('Perfil actualizado correctamente.');
+      setSuccessMsg('Perfil del Aliado actualizado correctamente.');
 
-      // Close after short delay
       setTimeout(() => {
         onClose();
       }, 1500);
@@ -110,7 +146,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
           {/* Header */}
           <div className="bg-indigo-600 px-4 py-4 sm:px-6 flex justify-between items-center">
             <h3 className="text-lg leading-6 font-medium text-white flex items-center">
-              <User className="mr-2 h-5 w-5" /> Mi Perfil Profesional
+              <User className="mr-2 h-5 w-5" /> Perfil de Aliado / Intermediario
             </h3>
             <button
               onClick={onClose}
@@ -121,38 +157,68 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
           </div>
 
           <form onSubmit={handleUpdate}>
-            <div className="px-4 py-5 sm:p-6 space-y-6">
-              {/* Avatar & Basic Info */}
-              <div className="flex items-center space-x-6">
-                <div className="flex-shrink-0">
+            <div className="px-4 py-5 sm:p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+              {/* Asesor & Logo Section */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                {/* Asesor Info */}
+                <div className="flex items-center space-x-4">
                   <img
-                    className="h-20 w-20 rounded-full bg-slate-200"
+                    className="h-16 w-16 rounded-full bg-slate-200 border border-slate-300 flex-shrink-0"
                     src={formData.avatarUrl || currentUser.avatarUrl}
                     alt="Avatar"
                   />
+                  <div className="flex-1 min-w-0">
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                      Asesor Responsable
+                    </label>
+                    <input
+                      name="name"
+                      type="text"
+                      value={formData.name}
+                      onChange={handleChange}
+                      placeholder="Nombre del corredor"
+                      className="block w-full border border-slate-300 rounded-md shadow-sm p-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-slate-700">
-                    Nombre Completo
-                  </label>
-                  <input
-                    name="name"
-                    type="text"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  />
-                  <p className="mt-1 text-xs text-slate-500">
-                    Este nombre aparecerá en tus informes.
-                  </p>
+
+                {/* Intermediary Logo Picker */}
+                <div className="flex items-center space-x-4">
+                  <div className="h-16 w-24 bg-white border border-slate-300 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0 p-1">
+                    {formData.logoUrl ? (
+                      <img
+                        src={formData.logoUrl}
+                        alt="Logo Aliado"
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    ) : (
+                      <ImageIcon className="w-8 h-8 text-slate-300" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                      Logo del Aliado (PDF/Excel)
+                    </label>
+                    <label className="cursor-pointer inline-flex items-center px-3 py-1.5 border border-slate-300 rounded-md text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 transition-colors">
+                      <Upload className="w-3.5 h-3.5 mr-1.5 text-indigo-600" />
+                      Subir Logo
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
-                {/* Intermediary */}
+              {/* Form Grid */}
+              <div className="grid grid-cols-1 gap-y-5 gap-x-4 sm:grid-cols-2">
+                {/* Intermediary Name */}
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-slate-700">
-                    Compañía / Agencia (Intermediario)
+                    Compañía / Agencia de Seguros (Aliado)
                   </label>
                   <div className="mt-1 relative rounded-md shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -163,6 +229,27 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
                       type="text"
                       value={formData.intermediaryName}
                       onChange={handleChange}
+                      placeholder="Ej. Correval Seguros Ltda."
+                      className="pl-9 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Registration Number */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Nº Matrícula / Registro
+                  </label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Award className="h-4 w-4 text-slate-400" />
+                    </div>
+                    <input
+                      name="registrationNumber"
+                      type="text"
+                      value={formData.registrationNumber}
+                      onChange={handleChange}
+                      placeholder="Ej. Superfinanciera Reg. 9042"
                       className="pl-9 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     />
                   </div>
@@ -171,7 +258,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
                 {/* Phone */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700">
-                    Teléfono / Celular
+                    Teléfono de Contacto
                   </label>
                   <div className="mt-1 relative rounded-md shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -182,12 +269,53 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
                       type="tel"
                       value={formData.phone}
                       onChange={handleChange}
+                      placeholder="+57 (601) 234-5678"
                       className="pl-9 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     />
                   </div>
                 </div>
 
-                {/* Field */}
+                {/* Address */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Dirección Comercial
+                  </label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <MapPin className="h-4 w-4 text-slate-400" />
+                    </div>
+                    <input
+                      name="address"
+                      type="text"
+                      value={formData.address}
+                      onChange={handleChange}
+                      placeholder="Calle 100 # 19-61 Off 502"
+                      className="pl-9 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* City */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Ciudad / Ubicación
+                  </label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <MapPin className="h-4 w-4 text-slate-400" />
+                    </div>
+                    <input
+                      name="city"
+                      type="text"
+                      value={formData.city}
+                      onChange={handleChange}
+                      placeholder="Bogotá D.C."
+                      className="pl-9 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Specialty Field */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700">
                     Ramo / Especialidad
@@ -201,13 +329,14 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
                       type="text"
                       value={formData.field}
                       onChange={handleChange}
+                      placeholder="Ej. Copropiedades, Cumplimiento, Pyme"
                       className="pl-9 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     />
                   </div>
                 </div>
 
                 {/* Email (Read Only) */}
-                <div className="sm:col-span-2">
+                <div>
                   <label className="block text-sm font-medium text-slate-700">
                     Correo Electrónico (Solo Lectura)
                   </label>
@@ -257,13 +386,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-70"
+                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-70 font-semibold"
               >
                 {isLoading ? (
                   <Loader2 className="animate-spin h-5 w-5" />
                 ) : (
                   <>
-                    <Save className="mr-2 h-4 w-4" /> Guardar Cambios
+                    <Save className="mr-2 h-4 w-4" /> Guardar Perfil del Aliado
                   </>
                 )}
               </button>

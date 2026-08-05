@@ -29,6 +29,7 @@ import {
 } from 'recharts';
 import { DISCLAIMER_TEXT } from '../constants';
 import { generatePDF } from '../services/pdfService';
+import { storageService } from '../services/storageService';
 
 import { AuditSection } from './AuditSection';
 import { UnifiedCoverageMatrix } from './UnifiedCoverageMatrix';
@@ -52,14 +53,20 @@ interface ComparisonReportProps {
   onUpdateReport?: (updatedReport: ReportType) => void;
 }
 
-const ComparisonReport: React.FC<ComparisonReportProps> = ({ report: initialReport, onUpdateReport }) => {
+const ComparisonReport: React.FC<ComparisonReportProps> = ({
+  report: initialReport,
+  onUpdateReport,
+}) => {
   const [report, setReport] = useState<ReportType>(initialReport);
 
   React.useEffect(() => {
     setReport(initialReport);
   }, [initialReport]);
 
-  const handleApplyCorrection = (quoteId: string, correction: { field: string; originalValue: string; correctedValue: string }) => {
+  const handleApplyCorrection = (
+    quoteId: string,
+    correction: { field: string; originalValue: string; correctedValue: string }
+  ) => {
     setReport((prev) => {
       const updatedQuotes = prev.quotes.map((q) => {
         if (q.id !== quoteId && q.insurerName !== quoteId) return q;
@@ -75,7 +82,8 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report: initialRepo
         } else if (correction.field === 'price_annual') {
           updatedQuote.priceAnnual = Number(correction.correctedValue) || updatedQuote.priceAnnual;
         } else if (correction.field === 'price_monthly') {
-          updatedQuote.priceMonthly = Number(correction.correctedValue) || updatedQuote.priceMonthly;
+          updatedQuote.priceMonthly =
+            Number(correction.correctedValue) || updatedQuote.priceMonthly;
         }
         return updatedQuote;
       });
@@ -232,13 +240,19 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report: initialRepo
         <div>
           <div className="flex items-center space-x-2">
             <h2 className="text-2xl font-bold text-slate-800">Dashboard de Análisis</h2>
-            <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${
-              report.domain === 'autos' ? 'bg-blue-100 text-blue-800' : 'bg-indigo-100 text-indigo-800'
-            }`}>
+            <span
+              className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${
+                report.domain === 'autos'
+                  ? 'bg-blue-100 text-blue-800'
+                  : 'bg-indigo-100 text-indigo-800'
+              }`}
+            >
               Ramo: {report.domain === 'autos' ? 'Autos' : 'PYME'}
             </span>
           </div>
-          <p className="text-sm text-slate-500">Vista técnica detallada para auditores de seguros.</p>
+          <p className="text-sm text-slate-500">
+            Vista técnica detallada para auditores de seguros.
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -324,12 +338,28 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({ report: initialRepo
               <div className="pt-2">
                 <button
                   onClick={() => {
+                    const user = storageService.getCurrentUser();
+                    const brokerInfo = user
+                      ? {
+                          name: user.name,
+                          intermediaryName: user.intermediaryName,
+                          registrationNumber:
+                            user.registrationNumber || user.agentDetails?.registrationNumber,
+                          phone: user.agentDetails?.phone,
+                          email: user.email,
+                          address: user.address || user.agentDetails?.address,
+                          city: user.city || user.agentDetails?.city,
+                          logoUrl: user.logoUrl || user.agentDetails?.logoUrl,
+                        }
+                      : undefined;
+
                     generatePDF(
                       report,
                       {
                         customTitle: pdfOptions.title,
-                        logoBase64: pdfOptions.logo,
+                        logoBase64: brokerInfo?.logoUrl || pdfOptions.logo,
                         primaryColor: pdfOptions.color,
+                        brokerInfo,
                       },
                       cellNotes
                     );

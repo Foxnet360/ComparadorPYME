@@ -308,11 +308,19 @@ export interface UserProfile {
   role: 'TECHNICAL' | 'ADMIN';
   avatarUrl?: string;
   intermediaryName?: string;
+  registrationNumber?: string;
+  address?: string;
+  city?: string;
+  logoUrl?: string;
   password?: string; // Stored locally
   agentDetails?: {
     phone: string;
     field: string; // Ramo
     bio?: string;
+    registrationNumber?: string;
+    address?: string;
+    city?: string;
+    logoUrl?: string;
   };
 }
 

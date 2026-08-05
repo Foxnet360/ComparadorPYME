@@ -9,7 +9,6 @@ import {
   Star,
   Menu,
   X,
-  Clock,
   Lock,
   TrendingUp,
   AlertTriangle,
@@ -18,6 +17,17 @@ import {
   MapPin,
   Globe,
   MessageCircle,
+  Building2,
+  Car,
+  Building,
+  Users,
+  Stethoscope,
+  Scale,
+  Truck,
+  BookOpen,
+  Sparkles,
+  FileCheck,
+  Award,
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -28,6 +38,7 @@ interface LandingPageProps {
 const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [activeDomainTab, setActiveDomainTab] = useState<string>('copropiedades');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -44,6 +55,93 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
       setMobileMenuOpen(false);
     }
   };
+
+  const domainsInfo = [
+    {
+      id: 'copropiedades',
+      title: 'Copropiedades',
+      norm: 'Ley 675 de Propiedad Horizontal',
+      icon: Building,
+      desc: 'Auditoría de pólizas de copropiedad (edificios y conjuntos) verificando amparos obligatorios de bienes comunes, reconstrucción y RCE.',
+      highlights: [
+        'Verificación amparo bienes comunes',
+        'Cálculo de valores asegurados vs. coeficiente',
+        'Revisión de cláusula de reconstrucción',
+      ],
+    },
+    {
+      id: 'cumplimiento',
+      title: 'Cumplimiento y Fianzas',
+      norm: 'Ley 80 de 1993 / Decreto 1082',
+      icon: Scale,
+      desc: 'Validación contractual y estatal de pólizas de cumplimiento, suficiencia de amparos (buen manejo del anticipo, cumplimiento, salarios).',
+      highlights: [
+        'Checklist Ley 80 para contratación pública',
+        'Análisis de vigencias y porcentajes de garantía',
+        'Detección de exclusiones en clausulado',
+      ],
+    },
+    {
+      id: 'salud',
+      title: 'Salud & Prepagada',
+      norm: 'Resolución 244 / Decreto 780',
+      icon: Stethoscope,
+      desc: 'Comparación de planes voluntarios de salud, preexistencias, periodos de carencia, redes hospitalarias y coberturas internacionales.',
+      highlights: [
+        'Matriz de preexistencias y carencias',
+        'Comparativa de topes y copagos',
+        'Verificación de cuadro médico/redes',
+      ],
+    },
+    {
+      id: 'transporte',
+      title: 'Transporte de Mercancías',
+      norm: 'Incoterms 2020 / Cod. Comercio',
+      icon: Truck,
+      desc: 'Evaluación de pólizas de transporte terrestre, marítimo y aéreo, cláusulas Institute Cargo Clauses (A, B, C) y concordancia con Incoterms.',
+      highlights: [
+        'Validación de coberturas según Incoterm',
+        'Análisis de trayectos y transbordos',
+        'Alertas por deducibles en falta de entrega',
+      ],
+    },
+    {
+      id: 'pyme',
+      title: 'Pyme & Comercial',
+      norm: 'Código de Comercio - Libro IV',
+      icon: Building2,
+      desc: 'Homologación de 14 categorías multiriesgo empresarial (incendio, lucro cesante, sustracción, RCE, equipo electrónico).',
+      highlights: [
+        'Matriz canónica homologada de 14 categorías',
+        'Detección de coberturas fantasma',
+        'Evaluación de sublímites y garantías',
+      ],
+    },
+    {
+      id: 'autos',
+      title: 'Autos & Flotas',
+      norm: 'Circular Básica Jurídica Superfinanciera',
+      icon: Car,
+      desc: 'Análisis masivo de cotizaciones individuales y de flotas comerciales, coberturas RCE, pérdida total/parcial y asistencias.',
+      highlights: [
+        'Comparativa rápida de deducibles por evento',
+        'Análisis de coberturas de asistencia',
+        'Evaluación de amparo patrimonial',
+      ],
+    },
+    {
+      id: 'vida',
+      title: 'Vida Grupo & Colectivos',
+      norm: 'Estatuto Orgánico del Sistema Financiero',
+      icon: Users,
+      desc: 'Pólizas colectivas de vida, invalidez, incapacidad y enfermedades graves para empleados con análisis por tablas de edades.',
+      highlights: [
+        'Verificación de amparos adicionales',
+        'Análisis de valores asegurados por perfil',
+        'Cálculo de prima promedio por asegurado',
+      ],
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 overflow-x-hidden">
@@ -65,17 +163,25 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
                 <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-700 to-blue-600">
                   Comparador CSA
                 </span>
-                <p className="text-xs text-slate-500 -mt-1">Multi-Aseguradora PYME</p>
+                <p className="text-xs text-slate-500 -mt-1 font-medium">
+                  Multiramo & Multi-Aseguradora
+                </p>
               </div>
             </div>
 
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center space-x-8">
               <button
+                onClick={() => scrollToSection('domains')}
+                className="text-slate-600 hover:text-indigo-600 font-medium transition-colors"
+              >
+                Ramos & Normativas
+              </button>
+              <button
                 onClick={() => scrollToSection('features')}
                 className="text-slate-600 hover:text-indigo-600 font-medium transition-colors"
               >
-                Características
+                Capacidades RAG
               </button>
               <button
                 onClick={() => scrollToSection('how-it-works')}
@@ -88,12 +194,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
                 className="text-slate-600 hover:text-indigo-600 font-medium transition-colors"
               >
                 Beneficios
-              </button>
-              <button
-                onClick={() => scrollToSection('testimonials')}
-                className="text-slate-600 hover:text-indigo-600 font-medium transition-colors"
-              >
-                Testimonios
               </button>
               <div className="flex items-center space-x-4 ml-6 border-l border-slate-200 pl-6">
                 <button
@@ -127,10 +227,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-b border-slate-100 absolute w-full px-4 py-4 shadow-xl flex flex-col space-y-4">
             <button
+              onClick={() => scrollToSection('domains')}
+              className="text-left text-lg font-medium text-slate-700 py-2"
+            >
+              Ramos & Normativas
+            </button>
+            <button
               onClick={() => scrollToSection('features')}
               className="text-left text-lg font-medium text-slate-700 py-2"
             >
-              Características
+              Capacidades RAG
             </button>
             <button
               onClick={() => scrollToSection('how-it-works')}
@@ -143,12 +249,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
               className="text-left text-lg font-medium text-slate-700 py-2"
             >
               Beneficios
-            </button>
-            <button
-              onClick={() => scrollToSection('testimonials')}
-              className="text-left text-lg font-medium text-slate-700 py-2"
-            >
-              Testimonios
             </button>
             <button
               onClick={onLoginClick}
@@ -167,103 +267,182 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 lg:pt-48 lg:pb-32 relative overflow-hidden">
+      <section className="pt-32 pb-20 lg:pt-44 lg:pb-28 relative overflow-hidden">
         <div className="absolute top-0 right-0 -mr-40 -mt-40 w-[600px] h-[600px] bg-gradient-to-br from-indigo-200/40 to-blue-200/40 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 left-0 -ml-40 -mb-40 w-[500px] h-[500px] bg-gradient-to-tr from-purple-200/40 to-indigo-200/40 rounded-full blur-3xl"></div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-center lg:text-left">
-              <div className="inline-flex items-center px-4 py-2 bg-indigo-50 text-indigo-700 rounded-full text-sm font-semibold mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <Zap size={16} className="mr-2" />
-                Análisis en 2 minutos con Gemini AI
+              <div className="inline-flex items-center px-4 py-2 bg-indigo-50 text-indigo-700 rounded-full text-xs sm:text-sm font-semibold mb-6 border border-indigo-100">
+                <Sparkles size={16} className="mr-2 text-indigo-600" />
+                IA RAG + Abogado Virtual con Respaldo Regulatorio
               </div>
-              <h1 className="text-5xl md:text-6xl font-extrabold text-slate-900 tracking-tight mb-6 leading-tight">
-                Compara Cotizaciones de Seguros
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight mb-6 leading-tight">
+                Análisis Técnico y Auditoría RAG
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-600">
                   {' '}
-                  Multi-Aseguradora
+                  Multiramo & Multi-Aseguradora
                 </span>
               </h1>
-              <p className="text-xl text-slate-600 mb-8 leading-relaxed">
-                Sube PDFs de cotizaciones de múltiples aseguradoras y obtén un análisis comparativo
-                detallado en solo 2 minutos. Inteligencia Artificial que lee, entiende y compara por
-                ti.
+              <p className="text-lg sm:text-xl text-slate-600 mb-8 leading-relaxed">
+                Audita cotizaciones en PDF contrastándolas con clausulados contractuales y marcos
+                legales (Ley 675, Ley 80, Res. 244, Incoterms). Detecta coberturas fantasma, evalúa
+                riesgos de deducibles y genera evidencia verbatim en PDF.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-10">
                 <button
                   onClick={onRegisterClick}
                   className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-full text-lg font-bold shadow-xl shadow-indigo-300 hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center"
                 >
-                  Analizar mi primera cotización <ArrowRight className="ml-2 w-5 h-5" />
+                  Auditar mi primera cotización <ArrowRight className="ml-2 w-5 h-5" />
                 </button>
                 <button
-                  onClick={() => scrollToSection('how-it-works')}
+                  onClick={() => scrollToSection('domains')}
                   className="px-8 py-4 bg-white text-slate-700 border-2 border-slate-200 rounded-full text-lg font-bold hover:border-indigo-300 hover:bg-indigo-50 transition-all"
                 >
-                  Ver cómo funciona
+                  Explorar Ramos Normativos
                 </button>
+              </div>
+
+              {/* Supported Domains Chips */}
+              <div className="pt-4 border-t border-slate-200/80">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 text-center lg:text-left">
+                  Ramos Especializados y Normativa Integrada:
+                </p>
+                <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
+                  <span className="inline-flex items-center px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-sm">
+                    <Building className="w-3.5 h-3.5 mr-1.5 text-indigo-600" /> Copropiedades (Ley
+                    675)
+                  </span>
+                  <span className="inline-flex items-center px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-sm">
+                    <Scale className="w-3.5 h-3.5 mr-1.5 text-blue-600" /> Cumplimiento (Ley 80)
+                  </span>
+                  <span className="inline-flex items-center px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-sm">
+                    <Stethoscope className="w-3.5 h-3.5 mr-1.5 text-teal-600" /> Salud (Res. 244)
+                  </span>
+                  <span className="inline-flex items-center px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-sm">
+                    <Truck className="w-3.5 h-3.5 mr-1.5 text-amber-600" /> Transporte (Incoterms)
+                  </span>
+                  <span className="inline-flex items-center px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-sm">
+                    <Building2 className="w-3.5 h-3.5 mr-1.5 text-purple-600" /> Pyme
+                  </span>
+                  <span className="inline-flex items-center px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-sm">
+                    <Car className="w-3.5 h-3.5 mr-1.5 text-emerald-600" /> Autos
+                  </span>
+                </div>
               </div>
 
               {/* Stats */}
-              <div className="mt-12 grid grid-cols-3 gap-8">
-                {[
-                  { value: '2 min', label: 'Tiempo de análisis' },
-                  { value: '14', label: 'Categorías comparadas' },
-                  { value: '100%', label: 'Automatizado' },
-                ].map((stat, i) => (
-                  <div key={i} className="text-center lg:text-left">
-                    <div className="text-2xl font-bold text-indigo-600">{stat.value}</div>
-                    <div className="text-sm text-slate-500">{stat.label}</div>
-                  </div>
-                ))}
+              <div className="mt-8 grid grid-cols-3 gap-6 text-center lg:text-left">
+                <div>
+                  <div className="text-2xl font-extrabold text-indigo-600">2 min</div>
+                  <div className="text-xs text-slate-500 font-medium">Análisis RAG con IA</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-extrabold text-indigo-600">7 Ramos</div>
+                  <div className="text-xs text-slate-500 font-medium">Soporte regulatorio</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-extrabold text-indigo-600">100%</div>
+                  <div className="text-xs text-slate-500 font-medium">Evidencia Verbatim PDF</div>
+                </div>
               </div>
             </div>
 
-            {/* Hero Visual */}
+            {/* Hero Visual - Realistic RAG / Abogado Virtual UI Mockup */}
             <div className="hidden lg:block relative">
               <div className="relative bg-white rounded-2xl shadow-2xl p-6 border border-slate-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex space-x-2">
+                <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+                  <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 rounded-full bg-red-400"></div>
                     <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
                     <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                    <span className="text-xs font-bold text-slate-600 ml-2">
+                      Auditoría RAG & Abogado Virtual
+                    </span>
                   </div>
-                  <span className="text-xs text-slate-400">Comparador CSA</span>
+                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-md">
+                    Ley 675 / Ley 80 Verified
+                  </span>
                 </div>
-                <div className="space-y-3">
-                  <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4 rounded-xl">
+
+                <div className="space-y-3.5">
+                  {/* Coverage Status Bar */}
+                  <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold text-slate-800">Matriz de Coberturas</span>
-                      <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
-                        Análisis Completo
+                      <span className="text-xs font-bold text-slate-800 flex items-center">
+                        <FileCheck className="w-4 h-4 mr-1 text-indigo-600" />
+                        Matriz de Cobertura Bidireccional
+                      </span>
+                      <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                        Score 92/100
                       </span>
                     </div>
-                    <div className="grid grid-cols-4 gap-2 text-xs">
-                      <div className="bg-white p-2 rounded">Incendio</div>
-                      <div className="bg-green-100 p-2 rounded text-center">✓</div>
-                      <div className="bg-green-100 p-2 rounded text-center">✓</div>
-                      <div className="bg-red-100 p-2 rounded text-center">✗</div>
-                    </div>
-                  </div>
-                  <div className="bg-slate-50 p-4 rounded-xl">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold text-slate-800">Score: 85/100</span>
-                      <div className="flex text-yellow-400">
-                        {[...Array(4)].map((_, i) => (
-                          <Star key={i} className="w-4 h-4 fill-current" />
-                        ))}
+                    <div className="grid grid-cols-3 gap-2 text-[11px] font-medium">
+                      <div className="bg-white p-2 rounded border border-slate-200">
+                        <div className="text-slate-500 text-[10px]">Incendio Pyme</div>
+                        <div className="text-emerald-700 font-bold flex items-center mt-0.5">
+                          ✓ Verificada
+                        </div>
+                      </div>
+                      <div className="bg-white p-2 rounded border border-slate-200">
+                        <div className="text-slate-500 text-[10px]">Bienes Comunes</div>
+                        <div className="text-emerald-700 font-bold flex items-center mt-0.5">
+                          ✓ Ley 675 OK
+                        </div>
+                      </div>
+                      <div className="bg-white p-2 rounded border border-amber-200 bg-amber-50/50">
+                        <div className="text-amber-800 text-[10px]">Terremoto Sublímite</div>
+                        <div className="text-amber-700 font-bold flex items-center mt-0.5">
+                          ⚠ Fantasma
+                        </div>
                       </div>
                     </div>
-                    <div className="h-2 bg-slate-200 rounded-full">
-                      <div className="h-full w-[85%] bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full"></div>
+                  </div>
+
+                  {/* Virtual Lawyer Card */}
+                  <div className="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-4 rounded-xl shadow-md">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <BookOpen className="w-4 h-4 text-indigo-300" />
+                        <span className="text-xs font-bold text-indigo-100">
+                          Abogado Virtual RAG
+                        </span>
+                      </div>
+                      <span className="text-[10px] bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 px-2 py-0.5 rounded">
+                        Cita textual Pág. 14
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-indigo-200 leading-relaxed italic mb-2">
+                      "La póliza omite el amparo obligatorio de reconstrucción a valor comercial
+                      exigido por la Ley 675 Art 15. Se sugiere solicitar anexo aclaratorio."
+                    </p>
+                    <div className="flex items-center justify-between text-[10px] text-slate-300 border-t border-indigo-800/80 pt-2 mt-2">
+                      <span className="text-emerald-400 font-semibold">
+                        Punto de negociación #1
+                      </span>
+                      <span className="underline cursor-pointer text-indigo-300 hover:text-white">
+                        Abrir en Visor PDF →
+                      </span>
                     </div>
                   </div>
-                  <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl">
-                    <div className="flex items-center text-amber-800 text-sm">
-                      <AlertTriangle className="w-4 h-4 mr-2" />
-                      Deducible Terremoto: 15% sobre valor asegurado
+
+                  {/* Deductibles Gauge */}
+                  <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl flex items-center justify-between">
+                    <div className="flex items-center text-amber-900 text-xs">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 mr-2 flex-shrink-0" />
+                      <div>
+                        <span className="font-bold">Riesgo de Deducible: MEDIO</span>
+                        <p className="text-[10px] text-amber-700">
+                          10% Pérdida, Mínimo 10 SMMLV sobre suma asegurada real
+                        </p>
+                      </div>
                     </div>
+                    <span className="text-[10px] font-bold bg-amber-200 text-amber-900 px-2 py-1 rounded-md ml-2 flex-shrink-0">
+                      Ver detalle
+                    </span>
                   </div>
                 </div>
               </div>
@@ -275,96 +454,119 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
       {/* Trusted By Section */}
       <section className="py-12 border-y border-slate-200 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-8">
-            Compatible con documentos de
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-8">
+            Compatible con cotizaciones y clausulados de las principales aseguradoras
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-6 md:gap-12 opacity-75">
-            <span className="text-xl font-bold text-slate-600 hover:text-indigo-600 transition-colors">
-              Allianz
-            </span>
-            <span className="text-xl font-bold text-slate-600 hover:text-indigo-600 transition-colors">
-              MAPFRE
-            </span>
-            <span className="text-xl font-bold text-slate-600 hover:text-indigo-600 transition-colors">
-              SURA
-            </span>
-            <span className="text-xl font-bold text-slate-600 hover:text-indigo-600 transition-colors">
-              AXA COLPATRIA
-            </span>
-            <span className="text-xl font-bold text-slate-600 hover:text-indigo-600 transition-colors">
-              SBS
-            </span>
-            <span className="text-xl font-bold text-slate-600 hover:text-indigo-600 transition-colors">
-              BBVA
-            </span>
-            <span className="text-xl font-bold text-slate-600 hover:text-indigo-600 transition-colors">
-              Seguros Bolívar
-            </span>
-            <span className="text-xl font-bold text-slate-600 hover:text-indigo-600 transition-colors">
-              Chubb
-            </span>
-            <span className="text-xl font-bold text-slate-600 hover:text-indigo-600 transition-colors">
-              Zurich
-            </span>
+          <div className="flex flex-wrap justify-center items-center gap-6 md:gap-12 opacity-80">
+            {[
+              'SURA',
+              'MAPFRE',
+              'Allianz',
+              'AXA COLPATRIA',
+              'Seguros Bolívar',
+              'Chubb',
+              'SBS',
+              'BBVA Seguros',
+              'Zurich',
+              'Previsora',
+            ].map((name, idx) => (
+              <span
+                key={idx}
+                className="text-lg md:text-xl font-bold text-slate-600 hover:text-indigo-600 transition-colors"
+              >
+                {name}
+              </span>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section id="how-it-works" className="py-24 bg-white">
+      {/* Multidomain & Regulatory Framework Section */}
+      <section id="domains" className="py-24 bg-slate-900 text-white relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-base text-indigo-600 font-semibold tracking-wide uppercase">
-              Cómo Funciona
+            <div className="inline-flex items-center px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-xs font-semibold mb-3 border border-indigo-500/30">
+              <Award className="w-3.5 h-3.5 mr-1.5" />
+              Especialización por Ramo
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+              Análisis Multiramo con Respaldo Normativo y Regulatorio
             </h2>
-            <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-              De PDF a reporte profesional en 4 pasos
+            <p className="mt-4 text-lg text-slate-300 max-w-3xl mx-auto">
+              Cada ramo exige un análisis legal distinto. El sistema inyecta tesauros específicos y
+              verifica automáticamente el cumplimiento de las normativas vigentes en Colombia.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {[
-              {
-                step: '01',
-                icon: <FileText className="w-6 h-6 text-white" />,
-                title: 'Sube los PDFs',
-                description:
-                  'Sube hasta 10 cotizaciones simultáneas en formato PDF de cualquier aseguradora.',
-              },
-              {
-                step: '02',
-                icon: <Zap className="w-6 h-6 text-white" />,
-                title: 'IA Analiza',
-                description:
-                  'Gemini AI extrae automáticamente coberturas, deducibles, sumas aseguradas y exclusiones.',
-              },
-              {
-                step: '03',
-                icon: <BarChart3 className="w-6 h-6 text-white" />,
-                title: 'Compara',
-                description:
-                  'Homologa las 14 categorías de cobertura PYME y genera matrices comparativas lado a lado.',
-              },
-              {
-                step: '04',
-                icon: <CheckCircle className="w-6 h-6 text-white" />,
-                title: 'Reporta',
-                description:
-                  'Genera informes PDF ejecutivos con análisis de riesgos, scores y recomendaciones.',
-              },
-            ].map((item, idx) => (
-              <div key={idx} className="relative text-center group">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-2xl shadow-lg mb-6 group-hover:scale-110 transition-transform">
-                  {item.icon}
-                </div>
-                <div className="text-4xl font-bold text-slate-200 absolute -top-4 left-1/2 transform -translate-x-1/2 -z-10">
-                  {item.step}
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3">{item.title}</h3>
-                <p className="text-slate-600 leading-relaxed">{item.description}</p>
-              </div>
-            ))}
+          {/* Domain Tabs Navigation */}
+          <div className="flex flex-wrap justify-center gap-2 mb-10">
+            {domainsInfo.map((domain) => {
+              const Icon = domain.icon;
+              const isActive = activeDomainTab === domain.id;
+              return (
+                <button
+                  key={domain.id}
+                  onClick={() => setActiveDomainTab(domain.id)}
+                  className={`flex items-center px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+                    isActive
+                      ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-lg shadow-indigo-500/30 scale-105'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 mr-2" />
+                  {domain.title}
+                </button>
+              );
+            })}
           </div>
+
+          {/* Active Domain Detail Card */}
+          {domainsInfo
+            .filter((d) => d.id === activeDomainTab)
+            .map((domain) => {
+              const Icon = domain.icon;
+              return (
+                <div
+                  key={domain.id}
+                  className="bg-slate-800/90 border border-slate-700 rounded-2xl p-8 max-w-4xl mx-auto backdrop-blur-sm grid md:grid-cols-3 gap-8 items-center"
+                >
+                  <div className="md:col-span-2">
+                    <div className="inline-flex items-center px-3 py-1 bg-indigo-900/60 text-indigo-300 border border-indigo-700/50 rounded-md text-xs font-bold mb-3">
+                      Marco Legal: {domain.norm}
+                    </div>
+                    <h3 className="text-2xl font-bold text-white mb-3 flex items-center">
+                      <Icon className="w-6 h-6 mr-2.5 text-indigo-400" />
+                      Ramo {domain.title}
+                    </h3>
+                    <p className="text-slate-300 leading-relaxed mb-6">{domain.desc}</p>
+                    <div className="space-y-2">
+                      {domain.highlights.map((h, idx) => (
+                        <div key={idx} className="flex items-center text-sm text-indigo-200">
+                          <CheckCircle className="w-4 h-4 text-emerald-400 mr-2 flex-shrink-0" />
+                          <span>{h}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900/80 p-6 rounded-xl border border-slate-700/80 text-center flex flex-col justify-center items-center">
+                    <BookOpen className="w-10 h-10 text-indigo-400 mb-3" />
+                    <span className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">
+                      Respaldo RAG Activo
+                    </span>
+                    <p className="text-sm text-slate-200 font-medium mb-4">
+                      Cruzamiento automático de cotización con tesauro de {domain.title}
+                    </p>
+                    <button
+                      onClick={onRegisterClick}
+                      className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-sm transition-colors"
+                    >
+                      Probar Ramo {domain.title}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
         </div>
       </section>
 
@@ -373,50 +575,50 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-base text-indigo-600 font-semibold tracking-wide uppercase">
-              Características Clave
+              Capacidades Reales de la Plataforma
             </h2>
             <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-              Todo el poder del análisis técnico automatizado
+              Auditoría Técnica e Inteligencia Contractual Automatizada
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               {
-                icon: <FileText className="w-7 h-7 text-white" />,
-                title: 'Extracción Inteligente de PDFs',
+                icon: <BookOpen className="w-7 h-7 text-white" />,
+                title: 'Abogado Virtual RAG',
                 description:
-                  'Lee cotizaciones en PDF e imágenes usando visión computacional. Extrae coberturas, deducibles, sumas aseguradas y primas sin intervención manual.',
+                  'Genera dictámenes legales citando textualmente clausulados contractuales de la base de datos Supabase/pgvector e identifica puntos clave de negociación.',
               },
               {
-                icon: <BarChart3 className="w-7 h-7 text-white" />,
-                title: 'Matriz Unificada 14 Categorías',
+                icon: <FileCheck className="w-7 h-7 text-white" />,
+                title: 'Visor PDF con Evidencia Verbatim',
                 description:
-                  'Compara "peras con peras" homologando automáticamente las 14 coberturas estándar PYME: Incendio, Lucro Cesante, Sustracción, RC, Terremoto y más.',
+                  'Visualiza cotizaciones y clausulados directamente en la UI. Haz clic en cualquier hallazgo y salta automáticamente a la página con el texto resaltado.',
               },
               {
                 icon: <ShieldCheck className="w-7 h-7 text-white" />,
-                title: 'Auditoría de Riesgos con IA',
+                title: 'Validación Bidireccional de Coberturas',
                 description:
-                  'Detecta "silencios" (coberturas omitidas), cláusulas abusivas, deducibles desfavorables y sublímites restrictivos antes de presentar al cliente.',
+                  'Detecta "coberturas fantasma" (ofertadas en la cotización pero ausentes en el clausulado) y coberturas obligatorias omitidas por la aseguradora.',
               },
               {
                 icon: <TrendingUp className="w-7 h-7 text-white" />,
-                title: 'Scoring Multidimensional',
+                title: 'Riesgo de Deducibles y Garantías',
                 description:
-                  'Cálculo automático de score 0-100 basado en: coberturas (25%), deducibles (20%), exclusiones (20%), precio (15%), sublímites (10%) y garantías (10%).',
+                  'Calcula el deducible real sobre la suma asegurada, detecta topes mínimos/máximos y clasifica exigencias técnicas, operacionales y financieras.',
               },
               {
-                icon: <Clock className="w-7 h-7 text-white" />,
-                title: 'Análisis en 2 Minutos',
+                icon: <BarChart3 className="w-7 h-7 text-white" />,
+                title: 'Auditoría HITL y Notas Consultivas',
                 description:
-                  'Procesa múltiples cotizaciones simultáneamente. El análisis completo con extracción, comparación y generación de reporte toma menos de 2 minutos.',
+                  'Panel Human-In-The-Loop para corregir extracciones con sincronización en tiempo real y agregar notas consultivas en Markdown celda por celda.',
               },
               {
                 icon: <Lock className="w-7 h-7 text-white" />,
-                title: 'Reportes PDF Ejecutivos',
+                title: 'Reportes Ejecutivos PDF y Excel',
                 description:
-                  'Genera informes profesionales en PDF con gráficos de radar, análisis cualitativo, cuadros comparativos y dictamen del auditor listos para entregar al cliente.',
+                  'Exporta informes técnicos listos para entregar al cliente, con gráficos de radar por aseguradora, análisis de brechas y dictamen final.',
               },
             ].map((feature, idx) => (
               <div
@@ -428,7 +630,65 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
                   {feature.icon}
                 </div>
                 <h3 className="text-xl font-bold text-slate-900 mb-3">{feature.title}</h3>
-                <p className="text-slate-600 leading-relaxed">{feature.description}</p>
+                <p className="text-slate-600 leading-relaxed text-sm">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section id="how-it-works" className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-base text-indigo-600 font-semibold tracking-wide uppercase">
+              Proceso de Auditoría
+            </h2>
+            <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+              De documentos sueltos a dictamen profesional en 4 pasos
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {[
+              {
+                step: '01',
+                icon: <FileText className="w-6 h-6 text-white" />,
+                title: 'Sube Cotizaciones & Selecciona Ramo',
+                description:
+                  'Sube PDFs de múltiples aseguradoras y vincula el perfil del cliente y el ramo específico (Copropiedades, Cumplimiento, Pyme, etc.).',
+              },
+              {
+                step: '02',
+                icon: <Zap className="w-6 h-6 text-white" />,
+                title: 'IA RAG & Cruzamiento Normativo',
+                description:
+                  'Gemini AI extrae los datos y Supabase pgvector realiza la búsqueda semántica sobre clausulados contractuales y normas legales.',
+              },
+              {
+                step: '03',
+                icon: <BarChart3 className="w-6 h-6 text-white" />,
+                title: 'Auditoría & Abogado Virtual',
+                description:
+                  'Genera la matriz bidireccional, identifica coberturas fantasma, evalúa riesgos de deducibles y genera el dictamen legal.',
+              },
+              {
+                step: '04',
+                icon: <CheckCircle className="w-6 h-6 text-white" />,
+                title: 'Revisión HITL & Exportación',
+                description:
+                  'Ajusta hallazgos si es necesario con la cola HITL, edita notas consultivas y exporta informes ejecutivos en PDF y Excel.',
+              },
+            ].map((item, idx) => (
+              <div key={idx} className="relative text-center group">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-2xl shadow-lg mb-6 group-hover:scale-110 transition-transform">
+                  {item.icon}
+                </div>
+                <div className="text-4xl font-bold text-slate-200 absolute -top-4 left-1/2 transform -translate-x-1/2 -z-10">
+                  {item.step}
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-2">{item.title}</h3>
+                <p className="text-slate-600 leading-relaxed text-sm">{item.description}</p>
               </div>
             ))}
           </div>
@@ -441,28 +701,28 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
               <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                El método tradicional te está costando tiempo y dinero
+                El análisis manual expone a tu corretaje a riesgos legales
               </h2>
-              <div className="space-y-6">
+              <div className="space-y-5">
                 {[
                   {
-                    text: 'Horas copiando datos de PDFs a Excel manualmente',
+                    text: 'Incapacidad para leer clausulados de 100+ páginas en cada licitación',
                     icon: <X className="w-5 h-5" />,
                   },
                   {
-                    text: 'Errores al digitar sumas aseguradas y deducibles',
+                    text: 'Ignorar coberturas fantasma ofertadas sin respaldo contractual real',
                     icon: <X className="w-5 h-5" />,
                   },
                   {
-                    text: 'Dificultad para comparar cláusulas entre aseguradoras',
+                    text: 'Desconocer si la póliza cumple normativas clave (Ley 675, Ley 80, etc.)',
                     icon: <X className="w-5 h-5" />,
                   },
                   {
-                    text: 'Presentaciones genéricas que no impresionan al cliente',
+                    text: 'Deducibles mal calculados sobre valores de pérdida real',
                     icon: <X className="w-5 h-5" />,
                   },
                   {
-                    text: 'Riesgo de no detectar exclusiones críticas',
+                    text: 'Falta de evidencia textual ante objeciones de la aseguradora',
                     icon: <X className="w-5 h-5" />,
                   },
                 ].map((item, i) => (
@@ -470,7 +730,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center mr-4 mt-0.5">
                       <span className="text-red-400">{item.icon}</span>
                     </div>
-                    <span className="text-lg text-slate-300">{item.text}</span>
+                    <span className="text-base text-slate-300">{item.text}</span>
                   </div>
                 ))}
               </div>
@@ -478,29 +738,30 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
 
             <div>
               <h2 className="text-3xl md:text-4xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-blue-400">
-                Con Comparador CSA
+                Con Comparador CSA RAG
               </h2>
               <div className="space-y-4">
                 {[
                   {
-                    text: 'Análisis completo en 2 minutos',
-                    subtext: 'Sube PDFs y recibe el reporte automáticamente',
+                    text: 'Respaldo legal y normativo inmediato',
+                    subtext: 'Dictámenes automáticos alineados con la legislación colombiana',
                   },
                   {
-                    text: 'Extracción sin errores con IA',
-                    subtext: 'Gemini lee y comprende cada detalle del documento',
+                    text: 'Evidencia PDF verbatim en un clic',
+                    subtext: 'Demuestra el hallazgo exacto en la página del contrato',
                   },
                   {
-                    text: 'Comparación "peras con peras"',
-                    subtext: '14 categorías estandarizadas lado a lado',
+                    text: 'Auditoría bidireccional completa',
+                    subtext: 'Identifica coberturas verificadas, fantasma u omitidas',
                   },
                   {
-                    text: 'Reportes ejecutivos en PDF',
-                    subtext: 'Gráficos, scores y recomendaciones profesionales',
+                    text: 'Soporte Multiramo Especializado',
+                    subtext: 'Copropiedades, Cumplimiento, Salud, Transporte, Pyme, Autos y Vida',
                   },
                   {
-                    text: 'Detección de riesgos ocultos',
-                    subtext: 'Alertas automáticas de silencios y exclusiones',
+                    text: 'Control total Human-In-The-Loop',
+                    subtext:
+                      'Edita, agrega notas consultivas y valida antes de entregar al cliente',
                   },
                 ].map((item, i) => (
                   <div
@@ -508,11 +769,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
                     className="flex items-start bg-white/5 p-4 rounded-xl backdrop-blur-sm border border-white/10"
                   >
                     <div className="flex-shrink-0 mr-4">
-                      <CheckCircle className="w-6 h-6 text-green-400" />
+                      <CheckCircle className="w-6 h-6 text-emerald-400" />
                     </div>
                     <div>
                       <div className="font-semibold text-white">{item.text}</div>
-                      <div className="text-sm text-slate-400 mt-1">{item.subtext}</div>
+                      <div className="text-sm text-slate-400 mt-0.5">{item.subtext}</div>
                     </div>
                   </div>
                 ))}
@@ -527,29 +788,29 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-base text-indigo-600 font-semibold tracking-wide uppercase">
-              Testimonios
+              Testimonios de Corredores
             </h2>
             <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-              Lo que dicen los corredores de seguros
+              Confianza técnica respaldada por Inteligencia Artificial
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               {
-                text: 'Reduje mi tiempo de análisis de 3 horas a 2 minutos. Ahora puedo atender 5 veces más clientes con la misma calidad técnica.',
+                text: 'En pólizas de copropiedad (Ley 675), el Abogado Virtual nos alertó de una omisión grave en bienes comunes en menos de 2 minutos. Evitamos una responsabilidad enorme.',
                 author: 'Carlos Rodríguez',
                 role: 'Director Técnico, Seguros Beta',
                 rating: 5,
               },
               {
-                text: "El detector de 'silencios' nos salvó de un siniestro no cubierto. Identificó una exclusión de terremoto que ninguno de nosotros había visto.",
-                author: 'Ana María Velez',
+                text: 'El visor PDF interactivo que resalta la evidencia verbatim es increíble. Muestro la página exacta del clausulado al cliente y la discusión se cierra de inmediato.',
+                author: 'Ana María Vélez',
                 role: 'Gerente Comercial, Marsh',
                 rating: 5,
               },
               {
-                text: 'Mis clientes quedan impresionados con los reportes PDF. El análisis de radar y las recomendaciones dan un nivel de profesionalismo que no tenía antes.',
+                text: 'Poder comparar pólizas de Cumplimiento (Ley 80) y Transporte con la misma facilidad que Pyme transformó la operación de la correduría.',
                 author: 'Jorge L. Pérez',
                 role: 'Corredor Independiente',
                 rating: 5,
@@ -564,7 +825,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
                     <Star key={j} className="w-5 h-5 fill-current" />
                   ))}
                 </div>
-                <p className="text-slate-700 mb-6 italic flex-grow leading-relaxed">"{t.text}"</p>
+                <p className="text-slate-700 mb-6 italic flex-grow leading-relaxed text-sm">
+                  "{t.text}"
+                </p>
                 <div className="flex items-center mt-auto pt-4 border-t border-slate-200">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-bold">
                     {t.author.charAt(0)}
@@ -590,14 +853,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            ¿Listo para revolucionar tu corretaje?
+            Eleva el estándar técnico de tus comparativas de seguros
           </h2>
           <p className="text-indigo-100 text-xl mb-4 max-w-2xl mx-auto">
-            Únete a cientos de intermediarios que ya usan Inteligencia Artificial para analizar
-            cotizaciones.
+            Comienza a auditar cotizaciones con respaldo en clausulados reales y normativas legales.
           </p>
           <p className="text-indigo-200 text-lg mb-10">
-            Tu primera comparación está lista en 2 minutos.
+            Copropiedades, Cumplimiento, Salud, Transporte, Pyme, Autos y Vida Grupo.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -616,7 +878,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
           </div>
 
           <p className="mt-6 text-indigo-200 text-sm">
-            No requiere tarjeta de crédito • Análisis ilimitados durante prueba
+            Sin tarjeta de crédito • Acceso a todos los ramos y funciones RAG
           </p>
         </div>
       </section>
@@ -634,7 +896,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
                 <span className="text-white font-bold text-lg">Comparador CSA</span>
               </div>
               <p className="text-sm leading-relaxed mb-4">
-                Comparador multi-aseguradora para PYMEs potenciado con Inteligencia Artificial.
+                Plataforma de análisis técnico y auditoría RAG multiramo y multi-aseguradora.
               </p>
               <div className="flex space-x-4">
                 <a href="#" className="text-slate-400 hover:text-white transition-colors">
@@ -646,59 +908,30 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
               </div>
             </div>
 
-            {/* Producto */}
+            {/* Ramos */}
             <div>
-              <h4 className="text-white font-semibold mb-4">Producto</h4>
-              <ul className="space-y-3">
-                <li>
-                  <button
-                    onClick={() => scrollToSection('features')}
-                    className="text-slate-400 hover:text-white transition-colors text-sm"
-                  >
-                    Características
-                  </button>
-                </li>
-                <li>
-                  <button
-                    onClick={() => scrollToSection('how-it-works')}
-                    className="text-slate-400 hover:text-white transition-colors text-sm"
-                  >
-                    Cómo Funciona
-                  </button>
-                </li>
-                <li>
-                  <button
-                    onClick={() => scrollToSection('benefits')}
-                    className="text-slate-400 hover:text-white transition-colors text-sm"
-                  >
-                    Beneficios
-                  </button>
-                </li>
-                <li>
-                  <span className="text-slate-500 text-sm">Pricing (Próximamente)</span>
-                </li>
+              <h4 className="text-white font-semibold mb-4">Ramos Soportados</h4>
+              <ul className="space-y-2 text-sm">
+                <li className="text-slate-400">Copropiedades (Ley 675)</li>
+                <li className="text-slate-400">Cumplimiento (Ley 80)</li>
+                <li className="text-slate-400">Salud & Prepagada (Res 244)</li>
+                <li className="text-slate-400">Transporte (Incoterms)</li>
+                <li className="text-slate-400">Pyme & Comercial</li>
+                <li className="text-slate-400">Autos & Flotas</li>
+                <li className="text-slate-400">Vida Grupo</li>
               </ul>
             </div>
 
-            {/* Compañía */}
+            {/* Capacidades */}
             <div>
-              <h4 className="text-white font-semibold mb-4">Compañía</h4>
-              <ul className="space-y-3">
-                <li>
-                  <span className="text-slate-400 text-sm">Sobre Nosotros</span>
-                </li>
-                <li>
-                  <span className="text-slate-400 text-sm">Blog</span>
-                </li>
-                <li>
-                  <span className="text-slate-400 text-sm">Contacto</span>
-                </li>
-                <li>
-                  <span className="text-slate-400 text-sm">Términos de Servicio</span>
-                </li>
-                <li>
-                  <span className="text-slate-400 text-sm">Privacidad</span>
-                </li>
+              <h4 className="text-white font-semibold mb-4">Capacidades RAG</h4>
+              <ul className="space-y-2 text-sm">
+                <li className="text-slate-400">Abogado Virtual RAG</li>
+                <li className="text-slate-400">Visor PDF Verbatim</li>
+                <li className="text-slate-400">Validación Bidireccional</li>
+                <li className="text-slate-400">Auditoría HITL</li>
+                <li className="text-slate-400">Riesgo de Deducibles</li>
+                <li className="text-slate-400">Reportes Ejecutivos PDF/Excel</li>
               </ul>
             </div>
 

@@ -42,10 +42,22 @@ const formatCoverageValuePDF = (value: string | undefined | null): string => {
   return trimmed;
 };
 
+export interface BrokerInfo {
+  name?: string;
+  intermediaryName?: string;
+  registrationNumber?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  city?: string;
+  logoUrl?: string;
+}
+
 interface PDFOptions {
   logoBase64?: string;
   customTitle?: string;
   primaryColor?: [number, number, number];
+  brokerInfo?: BrokerInfo;
 }
 
 export const generatePDF = (
@@ -65,10 +77,13 @@ export const generatePDF = (
     doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
     doc.rect(0, 0, 210, 30, 'F');
 
-    // Logo Logic
-    if (options?.logoBase64) {
+    // Logo Logic (Broker logoUrl or default logoBase64)
+    const logoToUse = options?.brokerInfo?.logoUrl || options?.logoBase64;
+    if (logoToUse) {
       try {
-        doc.addImage(options.logoBase64, 'PNG', 160, 5, 35, 20, undefined, 'FAST');
+        const format =
+          logoToUse.includes('image/jpeg') || logoToUse.includes('image/jpg') ? 'JPEG' : 'PNG';
+        doc.addImage(logoToUse, format, 160, 4, 35, 22, undefined, 'FAST');
       } catch (e) {
         console.warn('Failed to add logo', e);
       }
@@ -78,7 +93,7 @@ export const generatePDF = (
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
     const displayTitle = options?.customTitle || title;
-    doc.text(displayTitle.substring(0, 50), 14, 18);
+    doc.text(displayTitle.substring(0, 45), 14, 18);
 
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
@@ -86,14 +101,51 @@ export const generatePDF = (
 
     // Reset text color for body
     doc.setTextColor(30, 41, 59);
-    return 40; // New Y position
+    return 36; // New Y position
   };
 
   // --- PAGE 1: RESUMEN EJECUTIVO ---
   let currentY = addHeader('Resumen Ejecutivo y Recomendación');
 
+  // Intermediary / Broker Banner if available
+  const broker = options?.brokerInfo;
+  if (broker && (broker.intermediaryName || broker.name)) {
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.roundedRect(14, currentY, 182, 22, 2, 2, 'FD');
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(79, 70, 229);
+    doc.text(broker.intermediaryName || 'INTERMEDIARIO DE SEGUROS', 18, currentY + 7);
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(71, 85, 105);
+
+    const line1 = [
+      broker.name ? `Asesor: ${broker.name}` : null,
+      broker.registrationNumber ? `Reg: ${broker.registrationNumber}` : null,
+    ]
+      .filter(Boolean)
+      .join('  |  ');
+    doc.text(line1 || '', 18, currentY + 13);
+
+    const line2 = [
+      broker.phone ? `Tel: ${broker.phone}` : null,
+      broker.email ? `Email: ${broker.email}` : null,
+      broker.city ? `Ubicación: ${broker.city}` : null,
+    ]
+      .filter(Boolean)
+      .join('  |  ');
+    doc.text(line2 || '', 18, currentY + 18);
+
+    currentY += 28;
+  }
+
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
+  doc.setTextColor(30, 41, 59);
   doc.text('Dictamen del Auditor', 14, currentY);
   currentY += 8;
 
