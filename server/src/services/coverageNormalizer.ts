@@ -132,7 +132,7 @@ export async function mapRawToCanonical(
   canonicalName: string | null;
   confidence: number;
   graphConfidence: number | null;
-  method: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'ontology' | 'graph' | null;
+  method: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'ontology' | 'graph' | 'derived' | null;
 }> {
   return mapRawToCanonicalWithInsurer(rawName, domain, insurer);
 }
@@ -145,7 +145,7 @@ async function mapRawToCanonicalWithInsurer(
   canonicalName: string | null;
   confidence: number;
   graphConfidence: number | null;
-  method: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'ontology' | 'graph' | null;
+  method: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'ontology' | 'graph' | 'derived' | null;
 }> {
   if (!rawName || rawName.trim().length === 0) {
     return { canonicalName: null, confidence: 0, graphConfidence: null, method: null };
@@ -236,7 +236,13 @@ async function mapRawToCanonicalWithInsurer(
     }
   }
 
-  return { canonicalName: null, confidence: 0, graphConfidence: null, method: null };
+  // Fail-safe fallback: preserve raw coverage name so no extracted coverage is ever dropped
+  return {
+    canonicalName: rawName.trim(),
+    confidence: 60,
+    graphConfidence: null,
+    method: 'derived',
+  };
 }
 
 /**
@@ -252,7 +258,16 @@ export async function mapRawToCanonicalBatch(
     canonicalName: string | null;
     confidence: number;
     graphConfidence: number | null;
-    method: 'exact' | 'fuzzy' | 'embedding' | 'llm' | 'ontology' | 'thesaurus' | 'graph' | null;
+    method:
+      | 'exact'
+      | 'fuzzy'
+      | 'embedding'
+      | 'llm'
+      | 'ontology'
+      | 'thesaurus'
+      | 'graph'
+      | 'derived'
+      | null;
   }>
 > {
   const startTime = Date.now();
@@ -284,6 +299,7 @@ export async function mapRawToCanonicalBatch(
       | 'ontology'
       | 'thesaurus'
       | 'graph'
+      | 'derived'
       | null,
   }));
 

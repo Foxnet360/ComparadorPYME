@@ -141,10 +141,11 @@ Reglas de Negocio para Secciones:
 5. FINANCIAL: Extrae Prima con IVA incluido, Gastos de expedición, IVA, Total prima, y Forma de pago.
 
 Reglas Generales:
+- REGLA CRÍTICA DE COMPLETITUD: DEBES EXTRAER EL 100% DE LAS COBERTURAS, BIENES, DEDUCIBLES Y CONDICIONES PRESENTES EN LAS COTIZACIONES. NO OMITAS NINGUNA FILA POR RESUMEN O LÍMITE DE ESPACIO. SI EXISTEN 30 O 40 AMPAROS, GENERA LAS 30 O 40 FILAS EN EL JSON.
 - Copia los valores textualmente como aparecen en cada cotización.
 - No agrupes, no normalices a coberturas canónicas y no inventes datos.
 - Si una fila no aparece en una cotización, usa "No informado".
-- Para rawText y evidencias de resalte, incluye el snippet continuo exacto de entre 50 y 300 caracteres sin truncar cláusulas de deducibles ni sublímites.
+- Para rawText (evidencia), incluye un snippet breve (máx. 100 caracteres) SOLO cuando exista información o cobertura. No incluyas textos extensos en celdas sin amparo.
 - Además, para cada cotización, extrae los siguientes metadatos de cabecera: Cliente, Tipo de Seguro, Ubicación del Riesgo, Año Construcción, Pisos, Aliado, Actividad/Ocupación, Documento, Vigencia.
 - Responde únicamente con JSON válido que cumpla este schema:
 {

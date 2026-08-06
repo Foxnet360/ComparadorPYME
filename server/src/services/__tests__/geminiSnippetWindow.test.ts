@@ -9,9 +9,9 @@ describe('Phase 1: Snippet Window Expansion', () => {
     expect(rawTextSnippetProp.description).toContain('50-300');
   });
 
-  it('should include 50-300 character snippet rule in ComparisonPromptBuilder', () => {
+  it('should include critical extraction completeness rule in ComparisonPromptBuilder', () => {
     const builder = new ComparisonPromptBuilder();
     const prompt = builder.buildV2ComparisonPrompt({ insurerCount: 2 });
-    expect(prompt).toContain('50 y 300 caracteres');
+    expect(prompt).toContain('REGLA CRÍTICA DE COMPLETITUD');
   });
 });
