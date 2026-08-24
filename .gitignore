@@ -48,3 +48,6 @@ coverage/
 # Local example files (not tracked)
 Ejemplos/
 
+# CodeGraph index
+.codegraph/
+
