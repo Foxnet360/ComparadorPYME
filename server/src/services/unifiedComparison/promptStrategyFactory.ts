@@ -35,6 +35,7 @@ const PROMPT_STRATEGIES: Record<InsuranceDomain, PromptStrategy> = {
   salud: saludPromptStrategy,
   cumplimiento: cumplimientoPromptStrategy,
   transporte: transportePromptStrategy,
+  hogar: pymePromptStrategy,
 };
 
 /**
