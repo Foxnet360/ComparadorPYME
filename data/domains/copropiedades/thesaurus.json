@@ -1,0 +1,191 @@
+{
+  "version": "2.0.0",
+  "domain": "copropiedades",
+  "entries": [
+    {
+      "canonicalName": "Incendio, Rayo y Explosión sobre Bienes Comunes",
+      "variants": [
+        "Incendio (Edificio y Contenidos)",
+        "Amparo Básico Incendio",
+        "Incendio y Rayo",
+        "Incendio y Líneas Aliadas (ILA)",
+        "Edificios y Áreas Comunes",
+        "Incendio copropiedad",
+        "Incendio zonas comunes",
+        "Todo Riesgo Incendio"
+      ],
+      "category": "COBERTURAS OBLIGATORIAS LEY 675"
+    },
+    {
+      "canonicalName": "Terremoto, Temblor y Erupción Volcánica sobre Bienes Comunes",
+      "variants": [
+        "Terremoto",
+        "Terremoto y Eventos Catastróficos",
+        "Terremoto, Temblor y Erupción (TTEV)",
+        "Terremoto bienes comunes",
+        "Sismo copropiedad",
+        "TTEV"
+      ],
+      "category": "COBERTURAS OBLIGATORIAS LEY 675"
+    },
+    {
+      "canonicalName": "Responsabilidad Civil Extracontractual Áreas Comunes",
+      "variants": [
+        "Responsabilidad Civil Extracontractual (RCE)",
+        "RCE",
+        "RC áreas comunes",
+        "Responsabilidad civil copropiedad",
+        "RCE zonas comunes",
+        "RC en proceso civil",
+        "Gastos de Defensa RCE"
+      ],
+      "category": "COBERTURAS OBLIGATORIAS LEY 675"
+    },
+    {
+      "canonicalName": "RC Directores y Administradores (D&O Copropiedades)",
+      "variants": [
+        "D&O",
+        "D&O copropiedades",
+        "RC administrador",
+        "Responsabilidad directores",
+        "RC consejo de administración",
+        "Directors and Officers"
+      ],
+      "category": "RESPONSABILIDAD PROFESIONAL"
+    },
+    {
+      "canonicalName": "Responsabilidad Civil Patronal (Empleados de Zonas Comunes)",
+      "variants": [
+        "RC Patronal",
+        "Accidente de trabajo empleados",
+        "Responsabilidad empleador copropiedad",
+        "RC Patronal Porteros y Vigilantes",
+        "Employer Liability"
+      ],
+      "category": "RESPONSABILIDAD CIVIL"
+    },
+    {
+      "canonicalName": "Equipo Eléctrico y Maquinaria de Zonas Comunes",
+      "variants": [
+        "Equipo Eléctrico y Electrónico",
+        "Rotura de Maquinaria",
+        "Maquinaria y equipo",
+        "Ascensores",
+        "Planta eléctrica",
+        "Bombas de agua",
+        "Equipo eléctrico zonas comunes",
+        "Equipos eléctricos y electrónicos"
+      ],
+      "category": "DAÑOS MATERIALES"
+    },
+    {
+      "canonicalName": "Sustracción y Hurto de Bienes Comunes",
+      "variants": [
+        "Sustracción / Hurto",
+        "Sustracción con Violencia",
+        "Hurto zonas comunes",
+        "Sustracción bienes comunes",
+        "Robo copropiedad",
+        "Títulos valores y dinero en efectivo"
+      ],
+      "category": "DAÑOS MATERIALES"
+    },
+    {
+      "canonicalName": "Rotura de Vidrios, Fachadas y Domos",
+      "variants": [
+        "Vidrios",
+        "Vidrios Planos",
+        "Rotura de vidrios copropiedad",
+        "Fachadas y domos",
+        "Cristales zonas comunes"
+      ],
+      "category": "DAÑOS MATERIALES"
+    },
+    {
+      "canonicalName": "Todo Riesgo Daño Material Copropiedades",
+      "variants": [
+        "Todo Riesgo Incendio",
+        "Todo riesgo copropiedad",
+        "Daño material zonas comunes",
+        "All risk copropiedad",
+        "Pérdida o daño físico"
+      ],
+      "category": "DAÑOS MATERIALES"
+    },
+    {
+      "canonicalName": "Daños por Agua, Anegación e Inundación en Áreas Comunes",
+      "variants": [
+        "Daños por Agua, Anegación e Inundación",
+        "Daños por agua / Anegación",
+        "Anegación / Cobertura Extendida",
+        "Inundación zonas comunes",
+        "Filtración y rotura de tubería"
+      ],
+      "category": "DAÑOS MATERIALES"
+    },
+    {
+      "canonicalName": "Manejo e Infidelidad de Empleados",
+      "variants": [
+        "Manejo Global / Infidelidad de Empleados",
+        "Manejo global / Infidelidad",
+        "Infidelidad empleados copropiedad",
+        "Manejo empleados",
+        "Deshonestidad empleados"
+      ],
+      "category": "RESPONSABILIDAD CIVIL"
+    },
+    {
+      "canonicalName": "AMIT, Terrorismo y Actos Malintencionados",
+      "variants": [
+        "HMACC-AMIT",
+        "Huelga, Motín y Asonada (HMA / HMACC)",
+        "AMIT copropiedad",
+        "Terrorismo y actos malintencionados",
+        "Vandalismo zonas comunes",
+        "Sabotaje"
+      ],
+      "category": "RIESGOS ESPECIALES"
+    },
+    {
+      "canonicalName": "Granizo, Vientos Fuertes y Tempestades",
+      "variants": [
+        "Granizo",
+        "Vientos fuertes",
+        "Tempestad y vendaval",
+        "Tormenta y huracán"
+      ],
+      "category": "FENÓMENOS NATURALES"
+    },
+    {
+      "canonicalName": "Remoción de Escombros y Gastos de Preservación",
+      "variants": [
+        "Remoción de Escombros",
+        "Gastos de preservación",
+        "Demolición y limpieza",
+        "Gastos adicionales por siniestro"
+      ],
+      "category": "GASTOS COMPLEMENTARIOS"
+    },
+    {
+      "canonicalName": "Pérdida de Expensas y Cuotas de Administración",
+      "variants": [
+        "Lucro Cesante",
+        "Pérdida de expensas",
+        "Cuotas de administración",
+        "Pérdida de cánones de arrendamiento",
+        "Flujo de caja copropiedad"
+      ],
+      "category": "PÉRDIDAS CONSECUENCIALES"
+    },
+    {
+      "canonicalName": "Asistencia y Mantenimiento de Áreas Comunes",
+      "variants": [
+        "Asistencia y mantenimiento",
+        "Asistencia copropiedades",
+        "Mantenimiento zonas comunes",
+        "Plomería, cerrajería y electricidad urgente"
+      ],
+      "category": "SERVICIOS Y ASISTENCIAS"
+    }
+  ]
+}

@@ -15,6 +15,7 @@ import { getBatch, setBatch } from './cache/embeddingCacheService';
 import { assertTaxonomyBundle } from '../schemas/domainBundleSchema';
 import { loadDomainJson } from './domainBundleLoader';
 import { coverageGraphService } from './coverageGraphService';
+import { acronymExpander } from './normalization/acronymExpander';
 
 export interface SemanticMatchResult {
   categoryId: number | string | null;
@@ -497,8 +498,13 @@ export const semanticMatcher = {
       };
     }
 
+    const effectiveName = acronymExpander.expand(coverageName);
+    if (effectiveName !== coverageName) {
+      console.log(`💡 [SemanticMatcher] Expanded acronym: "${coverageName}" → "${effectiveName}"`);
+    }
+
     // Capa 1: Thesaurus exacto
-    const thesaurusResult = matchByThesaurus(coverageName, d);
+    const thesaurusResult = matchByThesaurus(effectiveName, d);
     if (thesaurusResult) {
       console.log(
         `✅ [SemanticMatcher] Thesaurus match: ${thesaurusResult.canonicalName} (${thesaurusResult.confidence})`
@@ -507,7 +513,7 @@ export const semanticMatcher = {
     }
 
     // Capa 2: Fuzzy
-    const fuzzyResult = matchByFuzzy(coverageName, d);
+    const fuzzyResult = matchByFuzzy(effectiveName, d);
     if (fuzzyResult) {
       console.log(
         `✅ [SemanticMatcher] Fuzzy match: ${fuzzyResult.canonicalName} (${fuzzyResult.confidence})`
@@ -516,7 +522,7 @@ export const semanticMatcher = {
     }
 
     // Capa 3: Embedding
-    const embeddingResult = await matchByEmbedding(coverageName, d);
+    const embeddingResult = await matchByEmbedding(effectiveName, d);
     if (embeddingResult) {
       console.log(
         `✅ [SemanticMatcher] Embedding match: ${embeddingResult.canonicalName} (${embeddingResult.confidence})`
@@ -525,7 +531,7 @@ export const semanticMatcher = {
     }
 
     // Capa 4: LLM Fallback
-    const llmResult = await matchByLLM(coverageName, d);
+    const llmResult = await matchByLLM(effectiveName, d);
     if (llmResult) {
       console.log(
         `✅ [SemanticMatcher] LLM match: ${llmResult.canonicalName} (${llmResult.confidence})`
@@ -536,7 +542,7 @@ export const semanticMatcher = {
     // Capa 5: Coverage semantic graph fallback
     if (featureFlags.isEnabled('useTemplateGraphPipeline')) {
       try {
-        const graphResult = await coverageGraphService.query(coverageName, { domain: d });
+        const graphResult = await coverageGraphService.query(effectiveName, { domain: d });
         if (graphResult.mappings.length > 0) {
           const best = graphResult.mappings[0];
           if (best.confidence >= 0.5) {
