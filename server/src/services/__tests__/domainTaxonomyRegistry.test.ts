@@ -103,13 +103,28 @@ describe('domainTaxonomyRegistry', () => {
     expect(names).toContain('Cláusula de Abandono y Pérdida Total Constructiva (Marítima)');
   });
 
+  it('loads the hogar taxonomy (v2) with 17 categories including Ley 675 and Ley 1796 regulations', () => {
+    const taxonomy = domainTaxonomyRegistry.getTaxonomy('hogar');
+    expect(taxonomy.domain).toBe('hogar');
+    expect(taxonomy.categories).toHaveLength(17);
+
+    const names = taxonomy.categories.map((category) => category.name);
+    expect(names).toContain('Incendio, Rayo y Explosión (Edificio y Contenidos)');
+    expect(names).toContain('Terremoto, Temblor y Erupción Volcánica');
+    expect(names).toContain('Responsabilidad Civil Extracontractual Hogar y Familiar (RCE Hogar)');
+    expect(names).toContain(
+      'Marco Normativo y Coordinación con Propiedad Horizontal (Ley 675/2001 · Ley 1796/2016 · Código de Comercio)'
+    );
+    expect(names).toContain('Asistencia Domiciliaria de Emergencia 24/7 (Servicios en Especie)');
+  });
+
   it('falls back to pyme for unknown domains and warns', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const taxonomy = domainTaxonomyRegistry.getTaxonomy('hogar' as never);
+    const taxonomy = domainTaxonomyRegistry.getTaxonomy('mascotas' as never);
 
     expect(taxonomy.domain).toBe('pyme');
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Unknown domain "hogar"'));
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Unknown domain "mascotas"'));
     warnSpy.mockRestore();
   });
 });
@@ -121,7 +136,7 @@ describe('resolveInsuranceDomain', () => {
     expect(resolveInsuranceDomain('')).toBe('pyme');
   });
 
-  it('accepts all registered domains including transporte', () => {
+  it('accepts all registered domains including transporte and hogar', () => {
     expect(resolveInsuranceDomain('pyme')).toBe('pyme');
     expect(resolveInsuranceDomain('autos')).toBe('autos');
     expect(resolveInsuranceDomain('copropiedades')).toBe('copropiedades');
@@ -129,6 +144,7 @@ describe('resolveInsuranceDomain', () => {
     expect(resolveInsuranceDomain('salud')).toBe('salud');
     expect(resolveInsuranceDomain('cumplimiento')).toBe('cumplimiento');
     expect(resolveInsuranceDomain('transporte')).toBe('transporte');
+    expect(resolveInsuranceDomain('hogar')).toBe('hogar');
   });
 
   it('falls back to pyme for unknown values and warns', () => {

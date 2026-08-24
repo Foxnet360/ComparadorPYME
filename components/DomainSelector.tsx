@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, Car, Building, Users, Stethoscope, Scale, Truck } from 'lucide-react';
+import { Building2, Car, Building, Users, Stethoscope, Scale, Truck, Home } from 'lucide-react';
 
 export type InsuranceDomain =
   | 'pyme'
@@ -8,7 +8,8 @@ export type InsuranceDomain =
   | 'vida_grupo'
   | 'salud'
   | 'cumplimiento'
-  | 'transporte';
+  | 'transporte'
+  | 'hogar';
 
 export interface DomainOption {
   id: InsuranceDomain;
@@ -66,6 +67,12 @@ const DOMAIN_OPTIONS: DomainOption[] = [
     label: 'Transporte de Mercancías',
     sublabel: 'Fletes terrestres, aéreos y marítimos (Incoterms 2020)',
     icon: Truck,
+  },
+  {
+    id: 'hogar',
+    label: 'Seguro de Hogar',
+    sublabel: 'Vivienda, contenidos, RCE y reglamentación (Ley 675 / Ley 1796)',
+    icon: Home,
   },
 ];
 

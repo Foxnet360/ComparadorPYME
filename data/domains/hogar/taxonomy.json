@@ -1,0 +1,384 @@
+{
+  "version": "2.0.0",
+  "domain": "hogar",
+  "metadata": {
+    "region": "Colombia",
+    "currency": "COP",
+    "salaryReference": "SMMLV",
+    "salaryValue2024": 1423500,
+    "uvtValue2024": 42412,
+    "source": "Pólizas Multirriesgo Hogar / Vivienda — Ley 675/2001 · Ley 1796/2016 · Código de Comercio · Reglamentación Sismo SFC",
+    "regulatory": {
+      "framework": "Ley 675 de 2001 (Propiedad Horizontal) · Ley 1796 de 2016 (Vivienda Segura)",
+      "commercialCode": "Código de Comercio — Arts. 1079, 1089, 1102 (Principio Indemnizatorio e Infraseguro)",
+      "seismicCode": "Guías Técnicas y Tarifación de Sismo — Superintendencia Financiera de Colombia (SFC)",
+      "supervisoryBody": "Superintendencia Financiera de Colombia (SFC)"
+    },
+    "changelog": "v2.0.0: Creación inicial del dominio Hogar con 17 categorías canónicas e integración de marco regulatorio colombiano."
+  },
+  "categories": [
+    {
+      "id": 1,
+      "name": "Incendio, Rayo y Explosión (Edificio y Contenidos)",
+      "section": "COBERTURAS BÁSICAS DE LA VIVIENDA",
+      "isRequired": true,
+      "synonyms": [
+        "Incendio",
+        "Incendio y Rayo",
+        "Explosión",
+        "Incendio Edificio",
+        "Incendio Contenidos",
+        "Amparo Básico Hogar",
+        "Incendio y Aliados Hogar",
+        "Fuego y Explosión"
+      ],
+      "aliases": [
+        "Incendio",
+        "Incendio y Rayo",
+        "Explosión",
+        "Incendio Edificio",
+        "Incendio Contenidos",
+        "Amparo Básico Hogar"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Terremoto, Temblor y Erupción Volcánica",
+      "section": "EVENTOS DE LA NATURALEZA",
+      "isRequired": true,
+      "synonyms": [
+        "Terremoto",
+        "Temblor",
+        "Erupción Volcánica",
+        "Sismo",
+        "Terremoto Hogar",
+        "Terremoto Edificio",
+        "Terremoto Contenidos",
+        "Sismo Vivienda"
+      ],
+      "aliases": [
+        "Terremoto",
+        "Temblor",
+        "Erupción Volcánica",
+        "Sismo",
+        "Terremoto Hogar"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Daños por Agua, Anegación e Inundación",
+      "section": "EVENTOS DE LA NATURALEZA Y AGUA",
+      "isRequired": true,
+      "synonyms": [
+        "Daños por agua",
+        "Anegación",
+        "Inundación",
+        "Fuga de agua",
+        "Rotura de tuberías",
+        "Desbordamiento",
+        "Filtraciones accesorias",
+        "Agua accidental"
+      ],
+      "aliases": [
+        "Daños por agua",
+        "Anegación",
+        "Inundación",
+        "Fuga de agua",
+        "Rotura de tuberías"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Granizo, Vientos Fuertes y Tempestades",
+      "section": "EVENTOS DE LA NATURALEZA",
+      "isRequired": false,
+      "synonyms": [
+        "Granizo",
+        "Vientos fuertes",
+        "Vendaval",
+        "Tempestad",
+        "Tornados",
+        "Tifón",
+        "Huracán",
+        "Viento y Granizo"
+      ],
+      "aliases": [
+        "Granizo",
+        "Vientos fuertes",
+        "Vendaval",
+        "Tempestad",
+        "Tornados"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Sustracción y Hurto Calificado dentro del Predio",
+      "section": "HURTO Y SUSTRACCIÓN",
+      "isRequired": true,
+      "synonyms": [
+        "Hurto dentro del predio",
+        "Sustracción con violencia",
+        "Robo en hogar",
+        "Hurto en vivienda",
+        "Hurto de contenidos",
+        "Sustracción de enseres",
+        "Robo a mano armada en vivienda"
+      ],
+      "aliases": [
+        "Hurto dentro del predio",
+        "Sustracción con violencia",
+        "Robo en hogar",
+        "Hurto en vivienda",
+        "Hurto de contenidos"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Sustracción y Hurto fuera del Predio (Bienes Personales)",
+      "section": "HURTO Y SUSTRACCIÓN",
+      "isRequired": false,
+      "synonyms": [
+        "Hurto fuera del predio",
+        "Bienes fuera del hogar",
+        "Hurto de celular",
+        "Hurto de portátil",
+        "Hurto de bicicleta",
+        "Efectos personales fuera de casa",
+        "Objetos personales fuera del predio"
+      ],
+      "aliases": [
+        "Hurto fuera del predio",
+        "Bienes fuera del hogar",
+        "Hurto de celular",
+        "Hurto de portátil",
+        "Hurto de bicicleta"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Daño Eléctrico, Electrónico y Sobretensión",
+      "section": "EQUIPOS Y ENSERES",
+      "isRequired": false,
+      "synonyms": [
+        "Daño eléctrico",
+        "Sobretensión",
+        "Equipos electrónicos",
+        "Daños en electrodomésticos",
+        "Cortocircuito",
+        "Sobrecarga eléctrica",
+        "Equipos del hogar"
+      ],
+      "aliases": [
+        "Daño eléctrico",
+        "Sobretensión",
+        "Equipos electrónicos",
+        "Daños en electrodomésticos",
+        "Cortocircuito"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Responsabilidad Civil Extracontractual Hogar y Familiar (RCE Hogar)",
+      "section": "RESPONSABILIDAD CIVIL",
+      "isRequired": true,
+      "synonyms": [
+        "RC Hogar",
+        "RCE Familiar",
+        "RC Predios",
+        "Responsabilidad Civil Extracontractual",
+        "Daños a terceros por agua",
+        "Daños a vecinos",
+        "RC Cabeza de Familia",
+        "Mascotas RCE"
+      ],
+      "aliases": [
+        "RC Hogar",
+        "RCE Familiar",
+        "RC Predios",
+        "Responsabilidad Civil Extracontractual",
+        "Daños a terceros"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Responsabilidad Civil Empleados Domésticos / Patronal Hogar",
+      "section": "RESPONSABILIDAD CIVIL",
+      "isRequired": false,
+      "synonyms": [
+        "RC Patronal Hogar",
+        "RC Empleados Domésticos",
+        "Accidente laboral servicio doméstico",
+        "RC niñera",
+        "RC empleada del servicio",
+        "Patronal vivienda"
+      ],
+      "aliases": [
+        "RC Patronal Hogar",
+        "RC Empleados Domésticos",
+        "Accidente laboral servicio doméstico"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "Asistencia Domiciliaria de Emergencia 24/7 (Servicios en Especie)",
+      "section": "ASISTENCIAS Y SERVICIOS",
+      "isRequired": true,
+      "synonyms": [
+        "Asistencia domiciliaria",
+        "Plomería de emergencia",
+        "Cerrajería 24/7",
+        "Electricista de emergencia",
+        "Vidrios y cristalería de emergencia",
+        "Asistencia en casa",
+        "Servicios domiciliarios"
+      ],
+      "aliases": [
+        "Asistencia domiciliaria",
+        "Plomería de emergencia",
+        "Cerrajería 24/7",
+        "Electricista de emergencia"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "Inhabitabilidad, Arrendamiento Temporal y Gastos de Hotel",
+      "section": "GASTOS ADICIONALES POR SINIESTRO",
+      "isRequired": false,
+      "synonyms": [
+        "Arrendamiento temporal",
+        "Gastos de hotel",
+        "Inhabitabilidad del inmueble",
+        "Alojamiento temporal por siniestro",
+        "Pérdida de cánones de arrendamiento",
+        "Gastos de mudanza"
+      ],
+      "aliases": [
+        "Arrendamiento temporal",
+        "Gastos de hotel",
+        "Inhabitabilidad del inmueble",
+        "Alojamiento temporal"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "HMCE (Huelga, Motín, Conmoción Civil) y AMIT (Actos Malintencionados)",
+      "section": "COBERTURAS ESPECIALES",
+      "isRequired": false,
+      "synonyms": [
+        "HMCE",
+        "AMIT",
+        "Actos malintencionados",
+        "Huelga y motín",
+        "Conmoción civil",
+        "Vandalismo",
+        "Terrorismo hogar"
+      ],
+      "aliases": [
+        "HMCE",
+        "AMIT",
+        "Actos malintencionados",
+        "Huelga y motín",
+        "Conmoción civil"
+      ]
+    },
+    {
+      "id": 13,
+      "name": "Remoción de Escombros y Preservación de Bienes",
+      "section": "GASTOS ADICIONALES POR SINIESTRO",
+      "isRequired": false,
+      "synonyms": [
+        "Remoción de escombros",
+        "Limpieza y desmonte",
+        "Preservación de bienes",
+        "Gastos para aminorar el siniestro",
+        "Honorarios de ingenieros y arquitectos"
+      ],
+      "aliases": [
+        "Remoción de escombros",
+        "Limpieza y desmonte",
+        "Preservación de bienes"
+      ]
+    },
+    {
+      "id": 14,
+      "name": "Rotura Accidental de Cristales, Vidrios y Loza Sanitaria",
+      "section": "DAÑOS MATERIALES",
+      "isRequired": false,
+      "synonyms": [
+        "Rotura de vidrios",
+        "Cristales y espejos",
+        "Loza sanitaria",
+        "Vidrios fijos",
+        "Cristales fijos del predio"
+      ],
+      "aliases": [
+        "Rotura de vidrios",
+        "Cristales y espejos",
+        "Loza sanitaria"
+      ]
+    },
+    {
+      "id": 15,
+      "name": "Objetos de Valor, Joyas, Arte y Colecciones Declaradas",
+      "section": "COBERTURAS ESPECIALES",
+      "isRequired": false,
+      "synonyms": [
+        "Objetos de valor",
+        "Joyas y relojes",
+        "Obras de arte",
+        "Colecciones",
+        "Bienes de alto valor declarados",
+        "Joyas dentro de caja fuerte"
+      ],
+      "aliases": [
+        "Objetos de valor",
+        "Joyas y relojes",
+        "Obras de arte"
+      ]
+    },
+    {
+      "id": 16,
+      "name": "Marco Normativo y Coordinación con Propiedad Horizontal (Ley 675/2001 · Ley 1796/2016 · Código de Comercio)",
+      "section": "MARCO REGULATORIO Y COORDINACIÓN",
+      "isRequired": false,
+      "synonyms": [
+        "Ley 675",
+        "Propiedad horizontal en exceso",
+        "Ley de vivienda segura",
+        "Ley 1796",
+        "Colapso de edificación",
+        "Infraseguro Art 1102",
+        "Principio indemnizatorio",
+        "Coordinación de seguro matriz"
+      ],
+      "aliases": [
+        "Ley 675",
+        "Propiedad horizontal en exceso",
+        "Ley de vivienda segura",
+        "Ley 1796",
+        "Colapso de edificación"
+      ]
+    },
+    {
+      "id": 17,
+      "name": "Deducibles de Hogar (Mínimos en SMMLV, % de pérdida y reglamentación sismo SFC)",
+      "section": "CONDICIONADO ECONÓMICO",
+      "isRequired": true,
+      "synonyms": [
+        "Deducibles de hogar",
+        "Deducible terremoto",
+        "Deducible hurto",
+        "Deducible agua",
+        "Porcentaje de pérdida",
+        "Deducible en SMMLV",
+        "Deducible sismo SFC"
+      ],
+      "aliases": [
+        "Deducibles de hogar",
+        "Deducible terremoto",
+        "Deducible hurto",
+        "Deducible agua"
+      ]
+    }
+  ]
+}

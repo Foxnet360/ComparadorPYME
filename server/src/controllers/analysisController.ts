@@ -163,7 +163,7 @@ export function resolveAnalysisDomain(rawDomain: unknown): AnalysisDomainResolut
 
   return {
     domain: 'pyme',
-    error: `Invalid domain "${rawDomain}". Allowed values: pyme, autos, copropiedades, vida_grupo, salud, cumplimiento, transporte.`,
+    error: `Invalid domain "${rawDomain}". Allowed values: pyme, autos, copropiedades, vida_grupo, salud, cumplimiento, transporte, hogar.`,
   };
 }
 
