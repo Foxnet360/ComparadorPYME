@@ -12,7 +12,7 @@ interface CoverageItem {
   value: string;
   deductible?: string;
   canonicalName?: string;
-  categoryId?: number | null;
+  categoryId?: number | string | null;
   matchConfidence?: number;
   matchMethod?: string | null;
 }

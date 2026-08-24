@@ -14,7 +14,7 @@ export interface CoverageItem {
   deductible?: string;
   // Legacy semantic matching fields (kept for backward compatibility)
   canonicalName?: string;
-  categoryId?: number | null;
+  categoryId?: number | string | null;
   matchConfidence?: number;
   matchMethod?: 'thesaurus' | 'fuzzy' | 'embedding' | 'llm' | null;
   // New fluid architecture fields

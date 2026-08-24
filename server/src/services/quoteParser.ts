@@ -19,7 +19,7 @@ export interface ParsedCoverage {
   deductible: string;
   confidence: number;
   // Semantic matching fields
-  categoryId?: number | null;
+  categoryId?: number | string | null;
   matchConfidence?: number;
   matchMethod?: 'thesaurus' | 'fuzzy' | 'embedding' | 'llm' | 'graph' | null;
   // Value source tracking (anti-hallucination)

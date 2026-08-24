@@ -34,7 +34,7 @@ interface ComparisonResultQuote {
     value: string;
     deductible: string;
     canonicalName?: string;
-    categoryId?: number | null;
+    categoryId?: number | string | null;
     matchConfidence?: number;
     matchMethod?: string | null;
   }>;
@@ -598,7 +598,7 @@ export async function matrixRowsToComparisonReport(
               }
             : undefined;
 
-        let categoryId: number | null = null;
+        let categoryId: number | string | null = null;
         if (graphMapping) {
           const categoryMatch = await semanticMatcher.matchCoverage(
             graphMapping.canonicalName,
