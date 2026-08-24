@@ -17,14 +17,14 @@ import { loadDomainJson } from './domainBundleLoader';
 import { coverageGraphService } from './coverageGraphService';
 
 export interface SemanticMatchResult {
-  categoryId: number | null;
+  categoryId: number | string | null;
   canonicalName: string | null;
   confidence: number;
   method: 'thesaurus' | 'fuzzy' | 'embedding' | 'llm' | 'graph' | null;
 }
 
 export interface ProbabilisticMatch {
-  categoryId: number | null;
+  categoryId: number | string | null;
   canonicalName: string;
   confidence: number;
   method: string;
@@ -37,9 +37,9 @@ export interface ProbabilisticMatchResult {
   rawName: string;
 }
 
-const canonicalCategoriesCache = new Map<string, Array<{ id: number; name: string }>>();
+const canonicalCategoriesCache = new Map<string, Array<{ id: number | string; name: string }>>();
 
-function loadCanonicalCategories(domain: string = 'pyme'): Array<{ id: number; name: string }> {
+function loadCanonicalCategories(domain: string = 'pyme'): Array<{ id: number | string; name: string }> {
   if (canonicalCategoriesCache.has(domain)) {
     return canonicalCategoriesCache.get(domain)!;
   }
@@ -61,7 +61,7 @@ export const CONFIDENCE_THRESHOLDS = {
 
 // Cache de embeddings para evitar regeneración
 const embeddingCache = new Map<string, number[]>();
-const categoryEmbeddingsCache = new Map<string, Map<number, number[]>>();
+const categoryEmbeddingsCache = new Map<string, Map<number | string, number[]>>();
 const categoryEmbeddingsInitialized = new Map<string, boolean>();
 
 /**
@@ -76,7 +76,7 @@ async function initializeCategoryEmbeddings(domain: string = 'pyme'): Promise<vo
     console.log(
       `🚀 [SemanticMatcher] Pre-calculating embeddings for ${categories.length} canonical categories (domain: ${domain})...`
     );
-    const cache = new Map<number, number[]>();
+    const cache = new Map<number | string, number[]>();
     const categoryTexts = categories.map((c) => c.name);
     const categoryEmbeddings = await embeddingService.generateEmbeddingsBatch(categoryTexts);
 
@@ -541,7 +541,7 @@ export const semanticMatcher = {
           const best = graphResult.mappings[0];
           if (best.confidence >= 0.5) {
             const categories = loadCanonicalCategories(d);
-            let categoryId: number | null = null;
+            let categoryId: number | string | null = null;
             let canonicalName = best.canonicalId;
 
             const numericId = parseInt(best.canonicalId, 10);
@@ -654,7 +654,7 @@ export const semanticMatcher = {
   /**
    * Obtiene el nombre canónico de una categoría por ID
    */
-  getCategoryName: (categoryId: number, domain?: string): string | null => {
+  getCategoryName: (categoryId: number | string, domain?: string): string | null => {
     const categories = loadCanonicalCategories(domain ?? 'pyme');
     const category = categories.find((c) => c.id === categoryId);
     return category?.name || null;
