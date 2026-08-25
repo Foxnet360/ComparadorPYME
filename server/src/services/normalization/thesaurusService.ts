@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { assertTaxonomyBundle, TaxonomyBundle } from '../../schemas/domainBundleSchema';
-import { loadDomainJson } from '../domainBundleLoader';
+import { loadDomainJson, hasDomainSpecificFile } from '../domainBundleLoader';
 
 function resolveLegacyThesaurusPath(): string {
   const candidates = [
