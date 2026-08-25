@@ -671,25 +671,29 @@ export async function matrixRowsToComparisonReport(
         });
       }
 
+      const realConfidences = coverages.map((c) => {
+        const matchConf = Math.round((c.matchConfidence ?? 0.85) * 100);
+        const hasVal = c.value !== undefined && c.value !== null && c.value > 0 ? 10 : 0;
+        const hasDed = c.deductible && c.deductible.trim().length > 0 ? 5 : 0;
+        return Math.min(100, matchConf + hasVal + hasDed);
+      });
+
       const avgCellConfidence =
-        cellConfidences.length > 0
-          ? Math.round(
-              (cellConfidences.reduce((sum, val) => sum + val, 0) / cellConfidences.length) * 100
-            )
-          : 85;
+        realConfidences.length > 0
+          ? Math.round(realConfidences.reduce((sum, val) => sum + val, 0) / realConfidences.length)
+          : 90;
 
       const parsedQuote: ParsedQuote = {
         insurerName,
         policyName: 'Cotización PYME',
         priceAnnual,
         currency: 'COP',
-        coverages: coverages.map((c) => ({
+        coverages: coverages.map((c, idx) => ({
           name: c.name,
           canonicalName: c.canonicalName || c.name,
           value: c.value,
           deductible: c.deductible,
-          confidence:
-            c.confidence !== undefined ? Math.round(c.confidence * 100) : avgCellConfidence,
+          confidence: realConfidences[idx] ?? avgCellConfidence,
           categoryId: typeof c.categoryId === 'number' ? c.categoryId : null,
           matchConfidence: c.matchConfidence,
           matchMethod: c.matchMethod,
