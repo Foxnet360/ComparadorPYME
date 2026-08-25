@@ -415,9 +415,14 @@ const App: React.FC = () => {
             {/* Config & Upload Section */}
             {status === AppStatus.IDLE && (
               <div className="max-w-5xl mx-auto animate-in zoom-in-95 duration-500 space-y-6">
-                {/* 1. Client & Domain Selection (Top Bar) */}
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col md:flex-row md:items-start gap-4">
-                  <div className="flex-[2]">
+                {/* 1. Selection of Domain and Client */}
+                <div className="space-y-4">
+                  <DomainSelector
+                    selectedDomain={domain}
+                    onChange={(newDomain: InsuranceDomain) => setDomain(newDomain)}
+                  />
+
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                     <ClientSelector
                       selectedClient={selectedClient}
                       onSelectClient={(client) => {
@@ -427,12 +432,6 @@ const App: React.FC = () => {
                       isOpen={clientSelectorOpen}
                       onOpenChange={setClientSelectorOpen}
                       activeDomain={domain}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-[260px]">
-                    <DomainSelector
-                      selectedDomain={domain}
-                      onChange={(newDomain: InsuranceDomain) => setDomain(newDomain)}
                     />
                   </div>
                 </div>

@@ -29,6 +29,42 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
     }
   };
 
+  const handleQuickDemoLogin = (role: 'super_admin' | 'ally_admin' | 'ally_technical') => {
+    let demoUser: UserProfile;
+    if (role === 'super_admin') {
+      demoUser = {
+        id: 'user-super-1',
+        name: 'Administrador General (Super Admin)',
+        email: 'superadmin@comparadorcsa.com',
+        intermediaryName: 'Plataforma Global CSA',
+        role: 'super_admin',
+      } as unknown as UserProfile;
+    } else if (role === 'ally_admin') {
+      demoUser = {
+        id: 'user-admin-1',
+        name: 'Roberto Silva (Director Correduría)',
+        email: 'roberto.silva@andina.com',
+        intermediaryName: 'Correduría Andina de Seguros S.A.',
+        role: 'ally_admin',
+        allyId: 'ally-100',
+        allyName: 'Correduría Andina de Seguros S.A.',
+      } as unknown as UserProfile;
+    } else {
+      demoUser = {
+        id: 'user-tech-1',
+        name: 'Carlos Mendoza (Técnico Senior)',
+        email: 'carlos.mendoza@andina.com',
+        intermediaryName: 'Correduría Andina de Seguros S.A.',
+        role: 'ally_technical',
+        allyId: 'ally-100',
+        allyName: 'Correduría Andina de Seguros S.A.',
+      } as unknown as UserProfile;
+    }
+
+    authService.saveSession(demoUser);
+    onLoginSuccess(demoUser);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -138,6 +174,41 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
               <span className="text-xs text-slate-400">
                 Versión Beta - Acceso con email verificado
               </span>
+            </div>
+
+            {/* Quick Demo Access Bar for Role Testing */}
+            <div className="mt-6 pt-6 border-t border-slate-200 space-y-2.5">
+              <div className="text-xs font-bold text-slate-500 uppercase tracking-wider text-center">
+                ⚡ Acceso Rápido de Prueba por Rol (1-Clic)
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemoLogin('super_admin')}
+                  className="w-full py-2.5 px-3 bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 rounded-xl text-xs font-bold transition-all flex items-center justify-between shadow-xs"
+                >
+                  <span>👑 Super Administrador Global</span>
+                  <span className="text-[10px] bg-purple-200 text-purple-800 px-2 py-0.5 rounded-md font-extrabold">Probar Rol</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemoLogin('ally_admin')}
+                  className="w-full py-2.5 px-3 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-xl text-xs font-bold transition-all flex items-center justify-between shadow-xs"
+                >
+                  <span>👔 Admin de Aliado (Director Correduría)</span>
+                  <span className="text-[10px] bg-blue-200 text-blue-800 px-2 py-0.5 rounded-md font-extrabold">Probar Rol</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemoLogin('ally_technical')}
+                  className="w-full py-2.5 px-3 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-xl text-xs font-bold transition-all flex items-center justify-between shadow-xs"
+                >
+                  <span>👷 Analista Técnico de Seguros</span>
+                  <span className="text-[10px] bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-md font-extrabold">Probar Rol</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

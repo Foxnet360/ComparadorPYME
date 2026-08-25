@@ -89,14 +89,21 @@ export const DomainSelector: React.FC<DomainSelectorProps> = ({
     : DOMAIN_OPTIONS;
 
   return (
-    <div className={`w-full ${className}`}>
-      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
-        Ramo de Seguro
-      </label>
+    <div className={`w-full bg-white p-5 rounded-2xl border border-slate-200 shadow-sm ${className}`}>
+      <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
+        <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center">
+          <span className="w-2 h-2 rounded-full bg-indigo-600 mr-2"></span>
+          Seleccionar Ramo de Seguro a Comparar (8 Ramos Soportados)
+        </label>
+        <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
+          Ramo Activo: {DOMAIN_OPTIONS.find((d) => d.id === selectedDomain)?.label || 'PYME'}
+        </span>
+      </div>
+
       <div
         role="radiogroup"
         aria-label="Seleccionar ramo de seguro"
-        className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+        className="grid grid-cols-2 sm:grid-cols-4 gap-3"
       >
         {visibleOptions.map((option) => {
           const isSelected = selectedDomain === option.id;
@@ -111,32 +118,35 @@ export const DomainSelector: React.FC<DomainSelectorProps> = ({
               aria-label={option.label}
               disabled={disabled}
               onClick={() => !disabled && onChange(option.id)}
-              className={`flex items-center p-3.5 rounded-xl border-2 transition-all duration-200 text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 ${
+              className={`flex flex-col p-3 rounded-xl border-2 transition-all duration-200 text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
                 isSelected
-                  ? 'border-indigo-600 bg-indigo-50/70 text-indigo-950 shadow-sm'
-                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                  ? 'border-indigo-600 bg-indigo-50/90 text-indigo-950 shadow-md ring-1 ring-indigo-500'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300 hover:bg-slate-50/80'
               } ${
                 disabled
                   ? 'opacity-50 cursor-not-allowed pointer-events-none border-slate-200 bg-slate-50 text-slate-400'
                   : ''
               }`}
             >
-              <div
-                className={`p-2 rounded-lg mr-3 flex-shrink-0 transition-colors ${
-                  isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'
-                }`}
-              >
-                <Icon size={20} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-sm leading-snug truncate">{option.label}</div>
+              <div className="flex items-center justify-between w-full mb-2">
                 <div
-                  className={`text-xs truncate mt-0.5 ${
-                    isSelected ? 'text-indigo-700 font-medium' : 'text-slate-500'
+                  className={`p-2 rounded-lg transition-colors ${
+                    isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
                   }`}
                 >
-                  {option.sublabel}
+                  <Icon size={18} />
                 </div>
+                {isSelected && (
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                )}
+              </div>
+              <div className="font-bold text-xs leading-snug truncate">{option.label}</div>
+              <div
+                className={`text-[11px] truncate mt-0.5 ${
+                  isSelected ? 'text-indigo-700 font-semibold' : 'text-slate-500'
+                }`}
+              >
+                {option.sublabel}
               </div>
             </button>
           );

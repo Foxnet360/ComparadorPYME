@@ -580,133 +580,203 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
                 </div>
               </div>
 
-              {/* Sección 3: Datos Físicos de la Copropiedad */}
-              <div className="pt-3 border-t border-slate-100">
-                <h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-3 flex items-center">
-                  <Building size={15} className="mr-1.5 text-indigo-600" />
-                  Datos Físicos e Infraestructura
-                </h4>
+              {/* Sección 3: Datos Específicos según Ramo Seleccionado */}
+              {activeDomain === 'copropiedades' && (
+                <div className="pt-3 border-t border-slate-100">
+                  <h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-3 flex items-center">
+                    <Building size={15} className="mr-1.5 text-indigo-600" />
+                    Datos Físicos e Infraestructura (Copropiedad)
+                  </h4>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                      Tipo Copropiedad
-                    </label>
-                    <select
-                      className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs bg-white"
-                      value={newClient.buildingType}
-                      onChange={(e) =>
-                        setNewClient({ ...newClient, buildingType: e.target.value as any })
-                      }
-                    >
-                      <option value="Residencial">Residencial</option>
-                      <option value="Comercial">Comercial</option>
-                      <option value="Mixta">Mixta</option>
-                    </select>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Tipo Copropiedad
+                      </label>
+                      <select
+                        className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs bg-white"
+                        value={newClient.buildingType}
+                        onChange={(e) =>
+                          setNewClient({ ...newClient, buildingType: e.target.value as any })
+                        }
+                      >
+                        <option value="Residencial">Residencial</option>
+                        <option value="Comercial">Comercial</option>
+                        <option value="Mixta">Mixta</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        No. Torres/Bloques
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
+                        value={newClient.towersCount}
+                        onChange={(e) =>
+                          setNewClient({ ...newClient, towersCount: parseInt(e.target.value) || 1 })
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        No. Unidades / Aptos
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
+                        value={newClient.unitsCount}
+                        onChange={(e) =>
+                          setNewClient({ ...newClient, unitsCount: parseInt(e.target.value) || 1 })
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Pisos por Torre
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
+                        value={newClient.floorsCount}
+                        onChange={(e) =>
+                          setNewClient({ ...newClient, floorsCount: parseInt(e.target.value) || 1 })
+                        }
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                      No. Torres/Bloques
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
-                      value={newClient.towersCount}
-                      onChange={(e) =>
-                        setNewClient({ ...newClient, towersCount: parseInt(e.target.value) || 1 })
-                      }
-                    />
-                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Año Construcción
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="Ej. 2018"
+                        className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
+                        value={newClient.constructionYear}
+                        onChange={(e) =>
+                          setNewClient({
+                            ...newClient,
+                            constructionYear: parseInt(e.target.value) || 2020,
+                          })
+                        }
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                      No. Unidades / Aptos
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
-                      value={newClient.unitsCount}
-                      onChange={(e) =>
-                        setNewClient({ ...newClient, unitsCount: parseInt(e.target.value) || 1 })
-                      }
-                    />
-                  </div>
+                    <div className="flex items-center space-x-2 pt-5">
+                      <input
+                        type="checkbox"
+                        id="hasElevators"
+                        className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                        checked={newClient.hasElevators}
+                        onChange={(e) =>
+                          setNewClient({ ...newClient, hasElevators: e.target.checked })
+                        }
+                      />
+                      <label htmlFor="hasElevators" className="text-xs text-slate-700 font-medium">
+                        Tiene Ascensores
+                      </label>
+                    </div>
 
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                      Pisos por Torre
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
-                      value={newClient.floorsCount}
-                      onChange={(e) =>
-                        setNewClient({ ...newClient, floorsCount: parseInt(e.target.value) || 1 })
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-3">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                      Año Construcción
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="Ej. 2018"
-                      className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
-                      value={newClient.constructionYear}
-                      onChange={(e) =>
-                        setNewClient({
-                          ...newClient,
-                          constructionYear: parseInt(e.target.value) || 2020,
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center space-x-2 pt-5">
-                    <input
-                      type="checkbox"
-                      id="hasElevators"
-                      className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
-                      checked={newClient.hasElevators}
-                      onChange={(e) =>
-                        setNewClient({ ...newClient, hasElevators: e.target.checked })
-                      }
-                    />
-                    <label
-                      htmlFor="hasElevators"
-                      className="text-xs font-semibold text-slate-700 cursor-pointer"
-                    >
-                      Tiene Ascensores
-                    </label>
-                  </div>
-
-                  <div className="flex items-center space-x-2 pt-5">
-                    <input
-                      type="checkbox"
-                      id="hasPowerPlant"
-                      className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
-                      checked={newClient.hasPowerPlant}
-                      onChange={(e) =>
-                        setNewClient({ ...newClient, hasPowerPlant: e.target.checked })
-                      }
-                    />
-                    <label
-                      htmlFor="hasPowerPlant"
-                      className="text-xs font-semibold text-slate-700 cursor-pointer"
-                    >
-                      Tiene Planta Eléctrica
-                    </label>
+                    <div className="flex items-center space-x-2 pt-5">
+                      <input
+                        type="checkbox"
+                        id="hasPowerPlant"
+                        className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                        checked={newClient.hasPowerPlant}
+                        onChange={(e) =>
+                          setNewClient({ ...newClient, hasPowerPlant: e.target.checked })
+                        }
+                      />
+                      <label htmlFor="hasPowerPlant" className="text-xs text-slate-700 font-medium">
+                        Planta Eléctrica Total
+                      </label>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* Ramo: PYME / Daños Materiales */}
+              {(activeDomain === 'pyme' || activeDomain === 'danos_materiales') && (
+                <div className="pt-3 border-t border-slate-100">
+                  <h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-3 flex items-center">
+                    <Building2 size={15} className="mr-1.5 text-indigo-600" />
+                    Parámetros Operativos del Negocio (PYME / Comercial)
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Activos Fijos ($ COP)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. $ 1.200.000.000"
+                        className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Número de Empleados
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="Ej. 25"
+                        className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Protección Incendio
+                      </label>
+                      <select className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs bg-white">
+                        <option value="extintores">Extintores + Gabinetes</option>
+                        <option value="rociadores">Rociadores Automáticos</option>
+                        <option value="basica">Básica (Extintores)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Ramo: Transporte de Mercancías */}
+              {activeDomain === 'transporte' && (
+                <div className="pt-3 border-t border-slate-100">
+                  <h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-3 flex items-center">
+                    <Compass size={15} className="mr-1.5 text-indigo-600" />
+                    Perfil de Despachos y Transporte
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Tipo de Carga Principal
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. Mercancía General / Alimentos"
+                        className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Despacho Máximo por Viaje ($ COP)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. $ 300.000.000"
+                        className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="pt-4 border-t border-slate-100 flex justify-end space-x-3">
                 <button
