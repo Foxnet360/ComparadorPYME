@@ -147,11 +147,8 @@ function validateEnv(): EnvConfig {
     }
   }
 
-function sanitizeGeminiModelName(modelName?: string): string {
-  if (!modelName) return 'gemini-2.5-flash';
-  if (modelName.includes('gemini-3') || modelName.includes('gemini-3.5') || modelName.includes('gemini-3.6')) {
-    return 'gemini-2.5-flash';
-  }
+function sanitizeGeminiModelName(modelName?: string, defaultModel = 'gemini-3.7-flash'): string {
+  if (!modelName) return defaultModel;
   return modelName;
 }
 
@@ -164,9 +161,9 @@ function sanitizeGeminiModelName(modelName?: string): string {
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || '',
     SUPABASE_JWT_SECRET: process.env.SUPABASE_JWT_SECRET || '',
     GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
-    GEMINI_MODEL: sanitizeGeminiModelName(process.env.GEMINI_MODEL),
-    GEMINI_CHAT_MODEL: sanitizeGeminiModelName(process.env.GEMINI_CHAT_MODEL || 'gemini-2.5-flash-lite'),
-    GEMINI_CLAUSE_MODEL: sanitizeGeminiModelName(process.env.GEMINI_CLAUSE_MODEL),
+    GEMINI_MODEL: sanitizeGeminiModelName(process.env.GEMINI_MODEL, 'gemini-3.7-flash'),
+    GEMINI_CHAT_MODEL: sanitizeGeminiModelName(process.env.GEMINI_CHAT_MODEL, 'gemini-3.7-flash'),
+    GEMINI_CLAUSE_MODEL: sanitizeGeminiModelName(process.env.GEMINI_CLAUSE_MODEL, 'gemini-3.7-flash'),
     GEMINI_EMBEDDING_MODEL: process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-2',
 
     REGION: process.env.REGION || 'CO',

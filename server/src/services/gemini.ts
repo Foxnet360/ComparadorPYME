@@ -506,7 +506,7 @@ export const geminiService = {
       console.log(`✅ [Gemini] File ready: ${uploadedFile.name}`);
 
       const ai = getGenAI();
-      const extractionModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+      const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.7-flash';
 
       let retries = 0;
       const maxRetries = 3;
@@ -514,14 +514,14 @@ export const geminiService = {
       while (true) {
         try {
           console.log(
-            `🤖 [Gemini] Using model: ${extractionModel} for PDF extraction (attempt ${retries + 1})`
+            `🤖 [Gemini] Using model: ${extractionModel} (High Reasoning) for PDF extraction (attempt ${retries + 1})`
           );
 
           let finalPrompt = prompt;
           if (extractedText && extractedText.trim().length > 0) {
             finalPrompt += `\n\n=== TEXTO EXTRAÍDO NATIVAMENTE (REFERENCIA DE ALTA FIDELIDAD) ===\n`;
             finalPrompt += `Utiliza el siguiente texto extraído del PDF como referencia exacta de caracteres para nombres de coberturas, sumas aseguradas y deducibles. Evita perder detalles en la maquetación visual:\n\n`;
-            finalPrompt += `${extractedText.slice(0, 120000)}`; // Gemini 2.5 soporta contextos inmensos de forma nativa
+            finalPrompt += `${extractedText.slice(0, 120000)}`;
           }
 
           const result = await ai.models.generateContent({
@@ -537,9 +537,12 @@ export const geminiService = {
             ],
             config: {
               temperature: 0.1,
-              maxOutputTokens: 32768,
+              maxOutputTokens: 65536,
               responseMimeType: 'application/json',
               responseSchema: QuoteExtractionSchemaV2 as unknown,
+              thinkingConfig: {
+                thinkingLevel: (process.env.GEMINI_THINKING_LEVEL || 'high') as any,
+              },
             },
           });
 

@@ -55,10 +55,10 @@ interface GeminiFile {
   state?: string;
 }
 
-// Default configuration following Gemini 3.5 best practices
+// Default configuration following Gemini 3.7 Flash best practices (High reasoning)
 const DEFAULT_CONFIG: ComparisonEngineConfig = {
-  model: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
-  thinkingLevel: 'MEDIUM',
+  model: process.env.GEMINI_MODEL || 'gemini-3.7-flash',
+  thinkingLevel: (process.env.GEMINI_THINKING_LEVEL?.toUpperCase() as any) || 'HIGH',
   responseMimeType: 'application/json',
   responseSchema: {},
   maxRetries: 2,
