@@ -673,7 +673,8 @@ export async function matrixRowsToComparisonReport(
 
       const realConfidences = coverages.map((c) => {
         const matchConf = Math.round((c.matchConfidence ?? 0.85) * 100);
-        const hasVal = c.value !== undefined && c.value !== null && c.value > 0 ? 10 : 0;
+        const hasVal =
+          c.value !== undefined && c.value !== null && String(c.value).trim().length > 0 ? 10 : 0;
         const hasDed = c.deductible && c.deductible.trim().length > 0 ? 5 : 0;
         return Math.min(100, matchConf + hasVal + hasDed);
       });
