@@ -15,10 +15,10 @@ export interface PremiumExtractionResult {
 }
 
 const PREMIUM_PATTERNS = [
-  // Multi-line matching for headers followed by numbers (e.g. PRIMA ANUAL INCLUIDO IVA \n $ 466.138)
-  /prima\s+anual\s+incluido\s+iva[\s\S]{0,120}?(?:\$\s*)?(\d[\d.,]+)/i,
-  /total\s+a\s+pagar[\s\S]{0,120}?(?:\$\s*)?(\d[\d.,]+)/i,
-  /total\s+prima[\s\S]{0,120}?(?:\$\s*)?(\d[\d.,]+)/i,
+  // Line-bounded block matching (up to 4 lines down within the same text block)
+  /prima\s+anual\s+incluido\s+iva(?:[^\n]*\n){0,4}[^\n]*?(?:\$\s*)?(\d[\d.,]+)/i,
+  /total\s+a\s+pagar(?:[^\n]*\n){0,4}[^\n]*?(?:\$\s*)?(\d[\d.,]+)/i,
+  /total\s+prima(?:[^\n]*\n){0,4}[^\n]*?(?:\$\s*)?(\d[\d.,]+)/i,
   /prima\s+(?:anual|total|neta)[:\s]*(?:\$\s*)?(\d[\d.,]+)/i,
   /prima[:\s]+(?:\$\s*)?(\d[\d.,]+)/i,
   /valor\s+total(?:\s+\w+){0,5}[:\s]*(?:\$\s*)?(\d[\d.,]+)/i,

@@ -668,14 +668,32 @@ async function processQuoteMultimodalInternal(
     console.log(`   🔄 Phase 4: Normalizing coverages... (domain: ${domain})`);
     const insurerName = extracted.insurerName || detectedInsurer;
 
+    // Generic token overlap helper to detect client name leaks in coverage items
+    const isClientNameLeak = (covName: string, cliName: string): boolean => {
+      if (!covName || !cliName || cliName.length < 5) return false;
+      const covNorm = covName.toLowerCase().trim();
+      const cliNorm = cliName.toLowerCase().trim();
+
+      if (covNorm === cliNorm) return true;
+
+      const stopWords = new Set(['de', 'del', 'las', 'los', 'san', 'santa', 'edificio', 'conjunto', 'y', 'la', 'el']);
+      const clientTokens = cliNorm.split(/\s+/).filter((t) => t.length >= 3 && !stopWords.has(t));
+      const covTokens = new Set(covNorm.split(/\s+/).filter((t) => t.length >= 3));
+
+      if (clientTokens.length < 2) return false;
+
+      const matchCount = clientTokens.filter((t) => covTokens.has(t)).length;
+      return matchCount / clientTokens.length >= 0.7;
+    };
+
     // Filter rawCoverages: remove items matching the client's name or pure numbers/page numbers
     const clientNameNorm = ((extracted as any).clientInfo?.name || (extracted as any).cliente || '').toLowerCase().trim();
     if (extracted.rawCoverages && Array.isArray(extracted.rawCoverages)) {
       extracted.rawCoverages = extracted.rawCoverages.filter((cov: any) => {
         const nameNorm = (cov.rawName || cov.name || '').toLowerCase().trim();
         if (!nameNorm) return false;
-        // Filter out if coverage name matches client name (e.g. "AMPARO DE JESUS ALARCON DE PEREZ")
-        if (clientNameNorm && clientNameNorm.length > 5 && (nameNorm === clientNameNorm || (clientNameNorm.includes(nameNorm) && nameNorm.startsWith('amparo de jesus')))) {
+        // Generic token overlap check (eliminates client name leaks without hardcoded strings)
+        if (clientNameNorm && isClientNameLeak(nameNorm, clientNameNorm)) {
           console.log(`   🛡️ [Sanitizer] Filtered out client name from coverages: "${cov.rawName || cov.name}"`);
           return false;
         }

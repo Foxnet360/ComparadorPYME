@@ -194,6 +194,9 @@ function validateEnv(): EnvConfig {
 
 export const env = validateEnv();
 
+// Centralized Cache Invalidation Key
+export const CACHE_SCHEMA_VERSION = process.env.CACHE_SCHEMA_VERSION || 'v4_cache_invalidation_v2';
+
 // Also export individual values for convenience
 export const {
   PORT,

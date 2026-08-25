@@ -26,6 +26,8 @@ import {
   type TemplateHintMeasurementHarness,
 } from './templateHintMeasurement';
 
+import { CACHE_SCHEMA_VERSION } from '../../config/env';
+
 export class UnifiedComparisonError extends Error {
   constructor(
     public readonly reason: string,
@@ -125,7 +127,7 @@ export class UnifiedComparisonEngine {
     domain: InsuranceDomain
   ): string {
     const hash = crypto.createHash('md5');
-    hash.update('v4_cache_invalidation_v2'); // Invalidate stale Redis cache entries
+    hash.update(CACHE_SCHEMA_VERSION); // Invalidate stale Redis cache entries
     hash.update(schemaNamespace);
     hash.update(domain);
     hash.update(graphEnabled ? 'g1' : 'g0');

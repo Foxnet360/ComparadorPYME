@@ -246,6 +246,12 @@ export interface ComparisonReport {
   matrix?: MatrixRow[]; // Synced backend rows
   quoteMetadata?: QuoteMetadata[]; // Extracted risk details
   schemaVersion?: 1 | 2; // 2 = V2 granular schema, 1 or missing = legacy V1
+  domain?: string;
+  clientInfo?: {
+    name?: string;
+    activity?: string;
+    location?: string;
+  };
 }
 
 export interface ChatMessage {

@@ -26,6 +26,8 @@ export interface AnalysisHistoryRecord {
   quote_document_ids?: string[] | null;
   clause_document_ids?: string[] | null;
   created_at?: string;
+  domain?: string;
+  metadata?: Record<string, unknown>;
   // Unified comparison fields
   engine_type?: 'legacy' | 'unified' | 'fallback';
   processing_time_ms?: number;
