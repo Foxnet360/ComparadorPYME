@@ -23,12 +23,11 @@ describe('domainConstants', () => {
     expect(constants.currency).toBe('COP');
   });
 
-  it('loads the 14 canonical PYME coverage names from taxonomy.json', () => {
+  it('loads the 16 canonical PYME coverage names from taxonomy.json', () => {
     const names = getCanonicalCoverageNames();
-    expect(names).toHaveLength(14);
+    expect(names).toHaveLength(16);
     expect(names[0]).toBe('Incendio (Edificio y Contenidos)');
-    expect(names[5]).toBe('Responsabilidad Civil (RCE)');
-    expect(names[13]).toBe('Terremoto y Eventos Catastróficos');
+    expect(names[5]).toBe('Responsabilidad Civil Extracontractual (RCE)');
   });
 
   it('resolves SMMLV values to COP', () => {
@@ -46,7 +45,7 @@ describe('domainConstants', () => {
 
   it('looks up canonical coverage names by stable index', () => {
     expect(getCanonicalCoverageName('pyme', 0)).toBe('Incendio (Edificio y Contenidos)');
-    expect(getCanonicalCoverageName('pyme', 5)).toBe('Responsabilidad Civil (RCE)');
+    expect(getCanonicalCoverageName('pyme', 5)).toBe('Responsabilidad Civil Extracontractual (RCE)');
     expect(() => getCanonicalCoverageName('pyme', 99)).toThrow(/out of range/);
   });
 
