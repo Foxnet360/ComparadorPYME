@@ -29,6 +29,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
     password: '',
     confirmPassword: '',
     intermediaryName: '',
+    nit: '',
     phone: '',
     field: '',
     bio: '',
@@ -61,7 +62,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
     }
 
     try {
-      const result = await authService.signUp(formData.email, formData.password, formData.name);
+      const result = await authService.signUp(formData.email, formData.password, formData.name, {
+        role: 'ally_admin',
+        intermediaryName: formData.intermediaryName,
+        nit: formData.nit,
+        phone: formData.phone,
+      });
       setSuccessMessage(result.message);
     } catch (err: unknown) {
       console.error(err);
@@ -145,23 +151,45 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
                 Detalles Profesionales
               </h3>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700">
-                  Intermediario (Agencia/Aseguradora)
-                </label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Building className="h-5 w-5 text-slate-400" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Compañía Aliada / Intermediario
+                  </label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Building className="h-5 w-5 text-slate-400" />
+                    </div>
+                    <input
+                      name="intermediaryName"
+                      type="text"
+                      required
+                      value={formData.intermediaryName}
+                      onChange={handleChange}
+                      className="pl-10 focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-slate-300 rounded-lg p-2.5 border"
+                      placeholder="Seguros Global Ltda."
+                    />
                   </div>
-                  <input
-                    name="intermediaryName"
-                    type="text"
-                    required
-                    value={formData.intermediaryName}
-                    onChange={handleChange}
-                    className="pl-10 focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-slate-300 rounded-lg p-2.5 border"
-                    placeholder="Seguros Global Ltda."
-                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">
+                    NIT de la Empresa
+                  </label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <ShieldCheck className="h-5 w-5 text-slate-400" />
+                    </div>
+                    <input
+                      name="nit"
+                      type="text"
+                      required
+                      value={formData.nit}
+                      onChange={handleChange}
+                      className="pl-10 focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-slate-300 rounded-lg p-2.5 border"
+                      placeholder="900.123.456-7"
+                    />
+                  </div>
                 </div>
               </div>
 

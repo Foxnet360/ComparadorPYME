@@ -14,19 +14,29 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 export const authService = {
-  // Registro de usuario
+  // Registro de usuario (Administrador de Aliado / Intermediario por defecto)
   signUp: async (
     email: string,
     password: string,
-    name: string
+    name: string,
+    metadata?: {
+      intermediaryName?: string;
+      nit?: string;
+      phone?: string;
+      role?: 'super_admin' | 'ally_admin' | 'ally_technical';
+    }
   ): Promise<{ user: User | null; message: string }> => {
+    const role = metadata?.role || 'ally_admin';
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
-          name: name,
-          role: 'USER',
+          name,
+          role,
+          intermediary_name: metadata?.intermediaryName || '',
+          nit: metadata?.nit || '',
+          phone: metadata?.phone || '',
         },
       },
     });
@@ -37,7 +47,7 @@ export const authService = {
 
     return {
       user: data.user,
-      message: '¡Registro exitoso! Ya puedes iniciar sesión con tu cuenta.',
+      message: '¡Registro exitoso de Compañía Aliada! Ya puedes iniciar sesión con tu cuenta de Administrador.',
     };
   },
 
@@ -60,7 +70,7 @@ export const authService = {
       id: data.user.id,
       email: data.user.email || '',
       name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Usuario',
-      role: data.user.user_metadata?.role || 'USER',
+      role: data.user.user_metadata?.role || 'ally_admin',
       avatarUrl:
         data.user.user_metadata?.avatar_url ||
         `https://ui-avatars.com/api/?name=${encodeURIComponent(data.user.user_metadata?.name || 'Usuario')}&background=4f46e5&color=fff`,
