@@ -9,6 +9,7 @@ import {
   Activity,
   Library,
   Users,
+  BarChart3,
 } from 'lucide-react';
 import FileUploader from './components/FileUploader';
 import DomainSelector, { InsuranceDomain } from './components/DomainSelector';
@@ -31,8 +32,9 @@ const TechnicalDashboard = lazy(() => import('./components/TechnicalDashboard'))
 const ClauseAdmin = lazy(() => import('./components/ClauseAdmin'));
 const ProfileScreen = lazy(() => import('./components/ProfileScreen'));
 const ClientManager = lazy(() => import('./components/ClientManager'));
+const ExecutiveAnalytics = lazy(() => import('./components/ExecutiveAnalytics'));
 
-type ViewState = 'LANDING' | 'LOGIN' | 'REGISTER' | 'DASHBOARD' | 'ANALYZER' | 'REPORT' | 'CLIENTS';
+type ViewState = 'LANDING' | 'LOGIN' | 'REGISTER' | 'DASHBOARD' | 'ANALYZER' | 'REPORT' | 'CLIENTS' | 'ANALYTICS';
 
 const App: React.FC = () => {
   // Auth State
@@ -263,6 +265,19 @@ const App: React.FC = () => {
               <Users size={20} />
             </button>
 
+            {/* Analítica Ejecutiva (RBAC) */}
+            <button
+              onClick={() => setCurrentView('ANALYTICS')}
+              className={`p-2 rounded-full transition-colors ${
+                currentView === 'ANALYTICS'
+                  ? 'bg-indigo-100 text-indigo-700 font-semibold'
+                  : 'text-slate-500 hover:bg-indigo-100 hover:text-indigo-600'
+              }`}
+              title="Analítica Ejecutiva (KPIs)"
+            >
+              <BarChart3 size={20} />
+            </button>
+
             {/* Clause Library Button (Admin) */}
             <button
               onClick={() => setShowClauseAdmin(true)}
@@ -332,6 +347,21 @@ const App: React.FC = () => {
             <TechnicalDashboard
               onNewAnalysis={() => setCurrentView('ANALYZER')}
               onViewReport={handleViewExistingReport}
+            />
+          </Suspense>
+        )}
+
+        {/* VIEW: ANALYTICS (RBAC) */}
+        {currentView === 'ANALYTICS' && (
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+              </div>
+            }
+          >
+            <ExecutiveAnalytics
+              onBackToDashboard={() => setCurrentView('DASHBOARD')}
             />
           </Suspense>
         )}

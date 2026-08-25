@@ -438,3 +438,53 @@ export interface MatrixRow {
   sectionId: number;
   cells: MatrixCell[];
 }
+
+// --- RBAC & EXECUTIVE ANALYTICS TYPES ---
+
+export type UserRole = 'super_admin' | 'ally_admin' | 'ally_technical';
+
+export interface Ally {
+  id: string;
+  name: string;
+  nit?: string;
+  createdAt?: string;
+}
+
+export interface ExtendedUserProfile extends UserProfile {
+  role: UserRole;
+  allyId?: string;
+  allyName?: string;
+}
+
+export interface AnalystPerformance {
+  analystId: string;
+  analystName: string;
+  totalComparisons: number;
+  soldCount: number;
+  conversionRate: number;
+  totalPremium: number;
+  avgTimeMinutes: number;
+  topDomain: string;
+}
+
+export interface ExecutiveAnalyticsData {
+  role: UserRole;
+  allyId?: string;
+  allyName?: string;
+  totalComparisons: number;
+  soldCount: number;
+  conversionRate: number;
+  totalPremium: number;
+  activeProspects: number;
+  avgProcessTimeMinutes: number;
+  domainDistribution: Array<{ domainId: string; domainName: string; count: number; percentage: number }>;
+  insurerDistribution: Array<{ insurerName: string; count: number; percentage: number }>;
+  analystPerformance?: AnalystPerformance[];
+  aiBenchmarks?: {
+    overallAccuracy: number;
+    thesaurusExactRate: number;
+    fuzzyMatchRate: number;
+    embeddingMatchRate: number;
+    avgApiLatencyMs: number;
+  };
+}
