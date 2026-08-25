@@ -1,17 +1,19 @@
 -- =====================================================
--- MIGRACIÓN COMPLETA: Agente Comparador PYME
--- Dimensión: 768 (compatible con índice ivfflat)
--- Copia TODO este contenido y pégalo en:
--- https://supabase.com/dashboard/project/nubiecwypgfekhvaffxm/sql/new
+-- CANONICAL INITIAL SCHEMA: Agente Comparador PYME (CSA)
+-- Single Consolidated Baseline Migration
+-- Vector Dimension: 3072 (Gemini 2.5 / 3 embeddings)
+-- PostgreSQL 15+ / Supabase
 -- =====================================================
 
--- 1. HABILITAR EXTENSIONES
+-- 1. EXTENSIONS
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS vector;
 
--- 2. TABLA: ASEGURADORAS
-CREATE TABLE IF NOT EXISTS insurers (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+-- 2. TABLES
+
+-- 2.1 Insurers
+CREATE TABLE IF NOT EXISTS public.insurers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT UNIQUE NOT NULL,
     nit TEXT,
     contact_email TEXT,
@@ -19,12 +21,13 @@ CREATE TABLE IF NOT EXISTS insurers (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 3. TABLA: DOCUMENTOS
-CREATE TABLE IF NOT EXISTS documents (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    insurer_id UUID REFERENCES insurers(id) ON DELETE CASCADE,
+-- 2.2 Documents
+CREATE TABLE IF NOT EXISTS public.documents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    insurer_id UUID REFERENCES public.insurers(id) ON DELETE CASCADE,
     document_name TEXT NOT NULL,
     document_type TEXT CHECK (document_type IN ('CLAUSULADO_GENERAL', 'CLAUSULADO_PARTICULAR', 'COTIZACION')),
+    product_name TEXT,
     version TEXT,
     total_pages INTEGER,
     storage_path TEXT NOT NULL,
@@ -36,10 +39,10 @@ CREATE TABLE IF NOT EXISTS documents (
     UNIQUE(insurer_id, document_name, document_type)
 );
 
--- 4. TABLA: IMÁGENES DE PÁGINAS
-CREATE TABLE IF NOT EXISTS page_images (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
+-- 2.3 Page Images
+CREATE TABLE IF NOT EXISTS public.page_images (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_id UUID REFERENCES public.documents(id) ON DELETE CASCADE,
     page_number INTEGER NOT NULL,
     storage_url TEXT NOT NULL,
     storage_path TEXT NOT NULL,
@@ -50,23 +53,76 @@ CREATE TABLE IF NOT EXISTS page_images (
     UNIQUE(document_id, page_number)
 );
 
--- 5. TABLA: CHUNKS VECTORIALES (768 dimensiones para compatibilidad con ivfflat)
-CREATE TABLE IF NOT EXISTS chunks (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
+-- 2.4 Vector Chunks (Quotations & General RAG)
+CREATE TABLE IF NOT EXISTS public.chunks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_id UUID REFERENCES public.documents(id) ON DELETE CASCADE,
     page_number INTEGER NOT NULL,
     content TEXT NOT NULL,
     content_normalized TEXT,
-    embedding vector(768),
+    embedding vector(3072),
     metadata JSONB DEFAULT '{}',
     coverage_tags TEXT[],
     section_type TEXT CHECK (section_type IN ('COBERTURA', 'EXCLUSION', 'DEDUCIBLE', 'CONDICION', 'GENERAL')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 6. TABLA: HISTORIAL DE ANÁLISIS
-CREATE TABLE IF NOT EXISTS analysis_history (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+-- 2.5 Clause Versions
+CREATE TABLE IF NOT EXISTS public.clause_versions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_id UUID REFERENCES public.documents(id) ON DELETE CASCADE,
+    insurer_name TEXT NOT NULL,
+    product_name TEXT NOT NULL,
+    version_tag TEXT NOT NULL,
+    effective_date DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 2.6 Clause Chunks (Clause RAG Indexing)
+CREATE TABLE IF NOT EXISTS public.clause_chunks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_id UUID REFERENCES public.documents(id) ON DELETE CASCADE,
+    clause_version_id UUID REFERENCES public.clause_versions(id) ON DELETE CASCADE,
+    chunk_index INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    embedding vector(3072),
+    insurer_name TEXT NOT NULL,
+    coverage_type TEXT,
+    semantic_tags TEXT[],
+    product_name TEXT,
+    domain TEXT DEFAULT 'pyme',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 2.7 Structured Clauses (Gemini JSON Extractions)
+CREATE TABLE IF NOT EXISTS public.structured_clauses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_id UUID REFERENCES public.documents(id) ON DELETE SET NULL,
+    insurer_name TEXT NOT NULL,
+    product_name TEXT,
+    document_type TEXT,
+    extracted_data JSONB NOT NULL,
+    raw_text TEXT,
+    page_count INTEGER,
+    domain TEXT DEFAULT 'pyme',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 2.8 Clause Coverages
+CREATE TABLE IF NOT EXISTS public.clause_coverages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    clause_version_id UUID REFERENCES public.clause_versions(id) ON DELETE CASCADE,
+    coverage_name TEXT NOT NULL,
+    coverage_type TEXT,
+    limit_amount NUMERIC,
+    deductible_text TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 2.9 Analysis History
+CREATE TABLE IF NOT EXISTS public.analysis_history (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id TEXT,
     client_name TEXT NOT NULL,
     quote_document_ids UUID[],
@@ -74,257 +130,349 @@ CREATE TABLE IF NOT EXISTS analysis_history (
     analysis_result JSONB NOT NULL,
     recommendation TEXT,
     total_score INTEGER,
+    correlation_id TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 7. ÍNDICES (usando ivfflat con 768 dimensiones máximo)
-CREATE INDEX IF NOT EXISTS idx_chunks_embedding ON chunks USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
-CREATE INDEX IF NOT EXISTS idx_chunks_document ON chunks(document_id);
-CREATE INDEX IF NOT EXISTS idx_chunks_coverage ON chunks USING GIN(coverage_tags);
-CREATE INDEX IF NOT EXISTS idx_chunks_section ON chunks(section_type);
-CREATE INDEX IF NOT EXISTS idx_page_images_document ON page_images(document_id);
-CREATE INDEX IF NOT EXISTS idx_documents_insurer ON documents(insurer_id);
-CREATE INDEX IF NOT EXISTS idx_documents_active ON documents(is_active) WHERE is_active = true;
-CREATE INDEX IF NOT EXISTS idx_analysis_history_user ON analysis_history(user_id);
+-- 2.10 Contextual Risk Analysis
+CREATE TABLE IF NOT EXISTS public.contextual_risk_analysis (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    analysis_history_id UUID REFERENCES public.analysis_history(id) ON DELETE CASCADE,
+    coverage_name TEXT NOT NULL,
+    risk_type TEXT NOT NULL,
+    risk_level TEXT NOT NULL,
+    explanation TEXT,
+    mitigation_suggestion TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
--- 8. TRIGGER PARA UPDATED_AT
-CREATE OR REPLACE FUNCTION update_updated_at_column()
+-- 2.11 Client Profiles
+CREATE TABLE IF NOT EXISTS public.client_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id TEXT,
+    client_name TEXT NOT NULL,
+    primary_activity TEXT,
+    annual_revenue BIGINT,
+    employee_count INTEGER,
+    building_type TEXT,
+    has_single_supplier BOOLEAN,
+    raw_client_data JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 2.12 Chat System (Threads & Messages)
+CREATE TABLE IF NOT EXISTS public.chat_threads (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id TEXT NOT NULL,
+    title TEXT NOT NULL DEFAULT 'Nueva Consulta',
+    report_id UUID REFERENCES public.analysis_history(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.chat_messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    thread_id UUID NOT NULL REFERENCES public.chat_threads(id) ON DELETE CASCADE,
+    role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
+    content TEXT NOT NULL,
+    sources JSONB,
+    confidence_score DOUBLE PRECISION,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 2.13 Coverage Mappings & Graph
+CREATE TABLE IF NOT EXISTS public.coverage_mappings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    raw_name TEXT NOT NULL,
+    insurer_name TEXT,
+    canonical_name TEXT NOT NULL,
+    semantic_tags TEXT[],
+    confidence DOUBLE PRECISION DEFAULT 1.0,
+    is_composite BOOLEAN DEFAULT false,
+    components TEXT[],
+    user_corrected BOOLEAN DEFAULT false,
+    correction_count INTEGER DEFAULT 0,
+    raw_text_snippet TEXT,
+    ai_justification TEXT,
+    page_number INTEGER,
+    needs_human_review BOOLEAN DEFAULT false,
+    embedding vector(3072),
+    domain TEXT DEFAULT 'pyme',
+    last_used_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.coverage_graph_edges (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    from_node TEXT NOT NULL,
+    to_node TEXT NOT NULL,
+    edge_type TEXT NOT NULL,
+    weight DOUBLE PRECISION DEFAULT 1.0,
+    insurer TEXT,
+    correction_count INTEGER DEFAULT 0,
+    domain TEXT DEFAULT 'pyme',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 2.14 Coverage Embeddings Cache & Benchmarks
+CREATE TABLE IF NOT EXISTS public.coverage_embeddings_cache (
+    id SERIAL PRIMARY KEY,
+    coverage_name TEXT NOT NULL,
+    embedding JSONB NOT NULL,
+    model TEXT NOT NULL,
+    dimensions INTEGER NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.deductible_benchmarks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    coverage_type TEXT NOT NULL,
+    benchmark_name TEXT NOT NULL,
+    benchmark_data JSONB NOT NULL,
+    market_region TEXT DEFAULT 'CO',
+    effective_date DATE,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 2.15 Template Registry
+CREATE TABLE IF NOT EXISTS public.template_registry (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    template_id TEXT NOT NULL,
+    insurer TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    version INTEGER DEFAULT 1,
+    fingerprints JSONB NOT NULL,
+    schema JSONB NOT NULL,
+    hints JSONB DEFAULT '{}',
+    prompt_addon TEXT DEFAULT '',
+    is_active BOOLEAN DEFAULT true,
+    domain TEXT DEFAULT 'pyme',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 2.16 Telemetry & Error Logging
+CREATE TABLE IF NOT EXISTS public.analysis_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    analysis_id TEXT,
+    duration_ms INTEGER NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('success', 'error')),
+    error_type TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.unified_engine_errors (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    correlation_id TEXT,
+    category TEXT NOT NULL,
+    error_code TEXT,
+    error_message TEXT NOT NULL,
+    stack_trace TEXT,
+    metadata JSONB,
+    resolved BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 3. VIEWS
+CREATE OR REPLACE VIEW public.document_insurer_view
+WITH (security_invoker = true)
+AS
+SELECT 
+    d.id AS document_id,
+    d.document_name,
+    d.document_type,
+    d.version,
+    d.total_pages,
+    d.storage_path,
+    d.file_hash,
+    d.is_active,
+    d.uploaded_by,
+    d.created_at,
+    d.updated_at,
+    d.product_name,
+    i.name AS insurer_name
+FROM public.documents d
+LEFT JOIN public.insurers i ON d.insurer_id = i.id;
+
+-- 4. INDEXES
+CREATE INDEX IF NOT EXISTS idx_chunks_document_type ON public.chunks(document_id, section_type);
+CREATE INDEX IF NOT EXISTS idx_chunks_coverage_tags ON public.chunks USING GIN(coverage_tags);
+CREATE INDEX IF NOT EXISTS idx_clause_chunks_document ON public.clause_chunks(document_id);
+CREATE INDEX IF NOT EXISTS idx_clause_chunks_version ON public.clause_chunks(clause_version_id);
+CREATE INDEX IF NOT EXISTS idx_clause_chunks_coverage ON public.clause_chunks(coverage_type);
+CREATE INDEX IF NOT EXISTS idx_structured_clauses_insurer ON public.structured_clauses(insurer_name);
+CREATE INDEX IF NOT EXISTS idx_structured_clauses_document ON public.structured_clauses(document_id);
+CREATE INDEX IF NOT EXISTS idx_page_images_document ON public.page_images(document_id);
+CREATE INDEX IF NOT EXISTS idx_documents_insurer ON public.documents(insurer_id);
+CREATE INDEX IF NOT EXISTS idx_documents_active ON public.documents(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_analysis_history_user_id ON public.analysis_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_analysis_history_correlation ON public.analysis_history(correlation_id);
+CREATE INDEX IF NOT EXISTS idx_chat_threads_user ON public.chat_threads(user_id);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_thread ON public.chat_messages(thread_id);
+CREATE INDEX IF NOT EXISTS idx_coverage_mappings_raw ON public.coverage_mappings(raw_name);
+CREATE INDEX IF NOT EXISTS idx_coverage_mappings_canonical ON public.coverage_mappings(canonical_name);
+CREATE INDEX IF NOT EXISTS idx_coverage_graph_from ON public.coverage_graph_edges(from_node);
+CREATE INDEX IF NOT EXISTS idx_coverage_graph_to ON public.coverage_graph_edges(to_node);
+CREATE INDEX IF NOT EXISTS idx_analysis_logs_status ON public.analysis_logs(status);
+CREATE INDEX IF NOT EXISTS idx_unified_engine_errors_category ON public.unified_engine_errors(category);
+
+-- 5. FUNCTIONS & TRIGGERS
+
+-- 5.1 Trigger updated_at
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ LANGUAGE plpgsql SET search_path = public, pg_temp;
 
-DROP TRIGGER IF EXISTS update_documents_updated_at ON documents;
-CREATE TRIGGER update_documents_updated_at 
-    BEFORE UPDATE ON documents 
-    FOR EACH ROW 
-    EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_documents_updated_at BEFORE UPDATE ON public.documents FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_structured_clauses_updated_at BEFORE UPDATE ON public.structured_clauses FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_client_profiles_updated_at BEFORE UPDATE ON public.client_profiles FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_coverage_mappings_updated_at BEFORE UPDATE ON public.coverage_mappings FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE TRIGGER update_template_registry_updated_at BEFORE UPDATE ON public.template_registry FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
--- 9. FUNCIÓN: BÚSQUEDA POR COBERTURA
-CREATE OR REPLACE FUNCTION search_chunks_by_coverage(
-    p_embedding vector(768),
-    p_insurer_id UUID,
-    p_coverage_tag TEXT DEFAULT NULL,
-    p_match_count INTEGER DEFAULT 5
+-- 5.2 RAG Search RPC Functions
+CREATE OR REPLACE FUNCTION public.match_chunks_unified(
+    query_embedding vector(3072),
+    match_count INT DEFAULT 5,
+    filter_insurer_id UUID DEFAULT NULL,
+    filter_coverage TEXT DEFAULT NULL,
+    filter_document_id UUID DEFAULT NULL
 )
-RETURNS TABLE(
+RETURNS TABLE (
     id UUID,
-    content TEXT,
-    page_number INTEGER,
     document_id UUID,
-    document_type TEXT,
-    document_name TEXT,
-    similarity FLOAT
-) AS $$
+    page_number INT,
+    content TEXT,
+    similarity FLOAT,
+    metadata JSONB,
+    coverage_tags TEXT[]
+)
+LANGUAGE plpgsql SET search_path = public, pg_temp
+AS $$
 BEGIN
     RETURN QUERY
     SELECT 
         c.id,
-        c.content,
-        c.page_number,
         c.document_id,
-        d.document_type,
-        d.document_name,
-        1 - (c.embedding <=> p_embedding) AS similarity
-    FROM chunks c
-    JOIN documents d ON c.document_id = d.id
-    WHERE d.insurer_id = p_insurer_id
-      AND d.is_active = true
-      AND (p_coverage_tag IS NULL OR p_coverage_tag = ANY(c.coverage_tags))
-    ORDER BY c.embedding <=> p_embedding
-    LIMIT p_match_count;
+        c.page_number,
+        c.content,
+        (1 - (c.embedding <=> query_embedding))::FLOAT AS similarity,
+        c.metadata,
+        c.coverage_tags
+    FROM public.chunks c
+    JOIN public.documents d ON c.document_id = d.id
+    WHERE d.is_active = true
+      AND (filter_insurer_id IS NULL OR d.insurer_id = filter_insurer_id)
+      AND (filter_document_id IS NULL OR c.document_id = filter_document_id)
+      AND (filter_coverage IS NULL OR filter_coverage = ANY(c.coverage_tags))
+    ORDER BY c.embedding <=> query_embedding
+    LIMIT match_count;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
--- 10. FUNCIÓN: BÚSQUEDA AVANZADA
-CREATE OR REPLACE FUNCTION search_chunks_advanced(
-    p_embedding vector(768),
-    p_insurer_id UUID,
-    p_coverage_tags TEXT[] DEFAULT NULL,
-    p_section_types TEXT[] DEFAULT NULL,
-    p_document_types TEXT[] DEFAULT NULL,
-    p_match_count INTEGER DEFAULT 5,
-    p_min_similarity FLOAT DEFAULT 0.7
+CREATE OR REPLACE FUNCTION public.search_structured_clauses(
+    p_insurer_name TEXT DEFAULT NULL,
+    p_coverage_name TEXT DEFAULT NULL,
+    p_field_type TEXT DEFAULT NULL,
+    match_count INT DEFAULT 10,
+    p_domain TEXT DEFAULT NULL
 )
-RETURNS TABLE(
+RETURNS TABLE (
     id UUID,
-    content TEXT,
-    page_number INTEGER,
-    document_id UUID,
-    document_name TEXT,
+    insurer_name TEXT,
+    product_name TEXT,
     document_type TEXT,
-    section_type TEXT,
-    coverage_tags TEXT[],
-    similarity FLOAT
-) AS $$
+    coverage_data JSONB,
+    page_number INT,
+    relevance FLOAT
+)
+LANGUAGE plpgsql SET search_path = public, pg_temp
+AS $$
 BEGIN
     RETURN QUERY
     SELECT 
-        c.id,
-        c.content,
-        c.page_number,
-        c.document_id,
-        d.document_name,
-        d.document_type,
-        c.section_type,
-        c.coverage_tags,
-        1 - (c.embedding <=> p_embedding) AS similarity
-    FROM chunks c
-    JOIN documents d ON c.document_id = d.id
-    WHERE d.insurer_id = p_insurer_id
-      AND d.is_active = true
-      AND 1 - (c.embedding <=> p_embedding) >= p_min_similarity
-      AND (p_coverage_tags IS NULL OR c.coverage_tags && p_coverage_tags)
-      AND (p_section_types IS NULL OR c.section_type = ANY(p_section_types))
-      AND (p_document_types IS NULL OR d.document_type = ANY(p_document_types))
-    ORDER BY c.embedding <=> p_embedding
-    LIMIT p_match_count;
+        sc.id,
+        sc.insurer_name,
+        sc.product_name,
+        sc.document_type,
+        jsonb_path_query_array(
+            sc.extracted_data, 
+            '$.coverages ? (@.name like_regex $coverage_name flag "i")',
+            jsonb_build_object('coverage_name', COALESCE(p_coverage_name, '.*'))
+        ) AS coverage_data,
+        (sc.extracted_data->>'sourcePage')::INT AS page_number,
+        CASE 
+            WHEN p_coverage_name IS NOT NULL AND sc.extracted_data::TEXT ILIKE '%' || p_coverage_name || '%' THEN 1.0
+            ELSE 0.5
+        END::FLOAT AS relevance
+    FROM public.structured_clauses sc
+    WHERE (p_insurer_name IS NULL OR sc.insurer_name = p_insurer_name)
+      AND (p_domain IS NULL OR sc.domain = p_domain)
+      AND (p_coverage_name IS NULL OR sc.extracted_data::TEXT ILIKE '%' || p_coverage_name || '%')
+      AND (p_field_type IS NULL OR sc.extracted_data->p_field_type IS NOT NULL)
+    ORDER BY relevance DESC, sc.created_at DESC
+    LIMIT match_count;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
--- 11. FUNCIÓN: VALIDAR COTIZACIÓN VS CLAUSULADO
-CREATE OR REPLACE FUNCTION validate_quote_coverage(
-    p_quote_document_id UUID,
-    p_clause_document_id UUID,
-    p_coverage_tag TEXT,
-    p_match_count INTEGER DEFAULT 3
-)
-RETURNS TABLE(
-    quote_chunk_id UUID,
-    quote_content TEXT,
-    quote_page INTEGER,
-    clause_chunk_id UUID,
-    clause_content TEXT,
-    clause_page INTEGER,
-    similarity FLOAT
-) AS $$
-DECLARE
-    v_quote_embedding vector(768);
-BEGIN
-    SELECT embedding INTO v_quote_embedding
-    FROM chunks
-    WHERE document_id = p_quote_document_id
-      AND p_coverage_tag = ANY(coverage_tags)
-    ORDER BY created_at DESC
-    LIMIT 1;
-    
-    IF v_quote_embedding IS NULL THEN
-        RETURN;
-    END IF;
-    
-    RETURN QUERY
-    SELECT 
-        qc.id as quote_chunk_id,
-        qc.content as quote_content,
-        qc.page_number as quote_page,
-        cc.id as clause_chunk_id,
-        cc.content as clause_content,
-        cc.page_number as clause_page,
-        1 - (cc.embedding <=> v_quote_embedding) as similarity
-    FROM chunks cc
-    WHERE cc.document_id = p_clause_document_id
-      AND p_coverage_tag = ANY(cc.coverage_tags)
-    ORDER BY cc.embedding <=> v_quote_embedding
-    LIMIT p_match_count;
-END;
-$$ LANGUAGE plpgsql;
+-- 6. ROW LEVEL SECURITY (RLS) & POLICIES
+ALTER TABLE public.insurers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.page_images ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.chunks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.clause_versions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.clause_chunks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.structured_clauses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.clause_coverages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.analysis_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.contextual_risk_analysis ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.client_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.chat_threads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.coverage_mappings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.coverage_graph_edges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.coverage_embeddings_cache ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.deductible_benchmarks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.template_registry ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.analysis_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.unified_engine_errors ENABLE ROW LEVEL SECURITY;
 
--- 12. FUNCIÓN: OBTENER CHUNKS CON IMÁGENES
-CREATE OR REPLACE FUNCTION get_chunks_with_images(
-    p_chunk_ids UUID[]
-)
-RETURNS TABLE(
-    chunk_id UUID,
-    content TEXT,
-    page_number INTEGER,
-    document_id UUID,
-    document_name TEXT,
-    image_url TEXT,
-    image_path TEXT
-) AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        c.id as chunk_id,
-        c.content,
-        c.page_number,
-        c.document_id,
-        d.document_name,
-        pi.storage_url as image_url,
-        pi.storage_path as image_path
-    FROM chunks c
-    JOIN documents d ON c.document_id = d.id
-    LEFT JOIN page_images pi ON c.document_id = pi.document_id AND c.page_number = pi.page_number
-    WHERE c.id = ANY(p_chunk_ids);
-END;
-$$ LANGUAGE plpgsql;
+-- Read policies for reference tables
+CREATE POLICY "Public read insurers" ON public.insurers FOR SELECT USING (true);
+CREATE POLICY "Public read documents" ON public.documents FOR SELECT USING (true);
+CREATE POLICY "Public read page_images" ON public.page_images FOR SELECT USING (true);
+CREATE POLICY "Public read chunks" ON public.chunks FOR SELECT USING (true);
+CREATE POLICY "Public read clause_versions" ON public.clause_versions FOR SELECT USING (true);
+CREATE POLICY "Public read clause_chunks" ON public.clause_chunks FOR SELECT USING (true);
+CREATE POLICY "Public read structured_clauses" ON public.structured_clauses FOR SELECT USING (true);
+CREATE POLICY "Public read clause_coverages" ON public.clause_coverages FOR SELECT USING (true);
+CREATE POLICY "Public read coverage_mappings" ON public.coverage_mappings FOR SELECT USING (true);
+CREATE POLICY "Public read coverage_graph_edges" ON public.coverage_graph_edges FOR SELECT USING (true);
+CREATE POLICY "Public read template_registry" ON public.template_registry FOR SELECT USING (true);
 
--- 13. FUNCIÓN: LISTAR DOCUMENTOS
-CREATE OR REPLACE FUNCTION list_documents_by_insurer(
-    p_insurer_id UUID,
-    p_document_type TEXT DEFAULT NULL
-)
-RETURNS TABLE(
-    document_id UUID,
-    document_name TEXT,
-    document_type TEXT,
-    version TEXT,
-    total_pages INTEGER,
-    chunk_count BIGINT,
-    is_active BOOLEAN,
-    created_at TIMESTAMP WITH TIME ZONE
-) AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        d.id as document_id,
-        d.document_name,
-        d.document_type,
-        d.version,
-        d.total_pages,
-        COUNT(c.id) as chunk_count,
-        d.is_active,
-        d.created_at
-    FROM documents d
-    LEFT JOIN chunks c ON d.id = c.document_id
-    WHERE d.insurer_id = p_insurer_id
-      AND (p_document_type IS NULL OR d.document_type = p_document_type)
-    GROUP BY d.id, d.document_name, d.document_type, d.version, d.total_pages, d.is_active, d.created_at
-    ORDER BY d.created_at DESC;
-END;
-$$ LANGUAGE plpgsql;
+-- User-scoped policies (InitPlan subqueries)
+CREATE POLICY "Users can view own analysis history" ON public.analysis_history FOR SELECT USING (user_id = ((SELECT auth.uid())::text) OR user_id = (SELECT current_setting('app.current_user_id', true)));
+CREATE POLICY "Users can insert own analysis history" ON public.analysis_history FOR INSERT WITH CHECK (user_id = ((SELECT auth.uid())::text) OR user_id = (SELECT current_setting('app.current_user_id', true)));
 
--- 14. FUNCIÓN: ELIMINAR DOCUMENTO
-CREATE OR REPLACE FUNCTION delete_document_complete(
-    p_document_id UUID
-)
-RETURNS BOOLEAN AS $$
-DECLARE
-    v_insurer_id UUID;
-    v_storage_path TEXT;
-BEGIN
-    SELECT insurer_id, storage_path INTO v_insurer_id, v_storage_path
-    FROM documents WHERE id = p_document_id;
-    
-    IF v_insurer_id IS NULL THEN
-        RETURN false;
-    END IF;
-    
-    DELETE FROM documents WHERE id = p_document_id;
-    
-    RETURN true;
-END;
-$$ LANGUAGE plpgsql;
+CREATE POLICY "Users can select own client profiles" ON public.client_profiles FOR SELECT USING (user_id = ((SELECT auth.uid())::text) OR user_id = (SELECT current_setting('app.current_user_id', true)));
+CREATE POLICY "Users can insert own client profiles" ON public.client_profiles FOR INSERT WITH CHECK (user_id = ((SELECT auth.uid())::text) OR user_id = (SELECT current_setting('app.current_user_id', true)));
+CREATE POLICY "Users can update own client profiles" ON public.client_profiles FOR UPDATE USING (user_id = ((SELECT auth.uid())::text) OR user_id = (SELECT current_setting('app.current_user_id', true))) WITH CHECK (user_id = ((SELECT auth.uid())::text) OR user_id = (SELECT current_setting('app.current_user_id', true)));
+CREATE POLICY "Users can delete own client profiles" ON public.client_profiles FOR DELETE USING (user_id = ((SELECT auth.uid())::text) OR user_id = (SELECT current_setting('app.current_user_id', true)));
 
--- =====================================================
--- VERIFICACIÓN: Insertar aseguradora de prueba
--- =====================================================
-INSERT INTO insurers (name, nit) 
-VALUES ('Aseguradora de Prueba', '123456789')
-ON CONFLICT (name) DO NOTHING;
+CREATE POLICY "Users can select own chat threads" ON public.chat_threads FOR SELECT USING (user_id = ((SELECT auth.uid())::text) OR user_id = (SELECT current_setting('app.current_user_id', true)));
+CREATE POLICY "Users can insert own chat threads" ON public.chat_threads FOR INSERT WITH CHECK (user_id = ((SELECT auth.uid())::text) OR user_id = (SELECT current_setting('app.current_user_id', true)));
+CREATE POLICY "Users can update own chat threads" ON public.chat_threads FOR UPDATE USING (user_id = ((SELECT auth.uid())::text) OR user_id = (SELECT current_setting('app.current_user_id', true))) WITH CHECK (user_id = ((SELECT auth.uid())::text) OR user_id = (SELECT current_setting('app.current_user_id', true)));
+CREATE POLICY "Users can delete own chat threads" ON public.chat_threads FOR DELETE USING (user_id = ((SELECT auth.uid())::text) OR user_id = (SELECT current_setting('app.current_user_id', true)));
 
--- Mostrar resultados
-SELECT 'Tablas creadas exitosamente' as status;
-SELECT COUNT(*) as total_aseguradoras FROM insurers;
+CREATE POLICY "Users can select own chat messages" ON public.chat_messages FOR SELECT USING (EXISTS (SELECT 1 FROM public.chat_threads WHERE chat_threads.id = chat_messages.thread_id AND (chat_threads.user_id = ((SELECT auth.uid())::text) OR chat_threads.user_id = (SELECT current_setting('app.current_user_id', true)))));
+CREATE POLICY "Users can insert own chat messages" ON public.chat_messages FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM public.chat_threads WHERE chat_threads.id = chat_messages.thread_id AND (chat_threads.user_id = ((SELECT auth.uid())::text) OR chat_threads.user_id = (SELECT current_setting('app.current_user_id', true)))));
+CREATE POLICY "Users can update own chat messages" ON public.chat_messages FOR UPDATE USING (EXISTS (SELECT 1 FROM public.chat_threads WHERE chat_threads.id = chat_messages.thread_id AND (chat_threads.user_id = ((SELECT auth.uid())::text) OR chat_threads.user_id = (SELECT current_setting('app.current_user_id', true)))));
+CREATE POLICY "Users can delete own chat messages" ON public.chat_messages FOR DELETE USING (EXISTS (SELECT 1 FROM public.chat_threads WHERE chat_threads.id = chat_messages.thread_id AND (chat_threads.user_id = ((SELECT auth.uid())::text) OR chat_threads.user_id = (SELECT current_setting('app.current_user_id', true)))));
