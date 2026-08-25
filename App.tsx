@@ -360,31 +360,6 @@ const App: React.FC = () => {
                       onSelectClient={setSelectedClient}
                     />
                   </div>
-                  <div className="flex items-center space-x-2 bg-slate-100 p-1.5 rounded-xl self-start md:self-auto border border-slate-200">
-                    <span className="text-xs font-semibold text-slate-500 uppercase px-2">Ramo:</span>
-                    <button
-                      type="button"
-                      onClick={() => setDomain('pyme')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                        domain === 'pyme'
-                          ? 'bg-indigo-600 text-white shadow-sm'
-                          : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      Seguros PYME
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDomain('autos')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                        domain === 'autos'
-                          ? 'bg-indigo-600 text-white shadow-sm'
-                          : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      Seguros Autos
-                    </button>
-                  </div>
                 </div>
 
                 {/* 2. File Uploaders */}
