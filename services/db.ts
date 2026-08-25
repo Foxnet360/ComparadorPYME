@@ -98,6 +98,18 @@ export const dbService = {
     }
   },
 
+  async clear<StoreName extends keyof CSADB>(storeName: StoreName): Promise<void> {
+    try {
+      const db = await getDb();
+      return await db.clear(storeName);
+    } catch (err) {
+      console.warn(`[IndexedDB] Retry clear on store ${String(storeName)} due to connection reset`, err);
+      dbInstance = null;
+      const db = await getDb();
+      return await db.clear(storeName);
+    }
+  },
+
   async delete<StoreName extends keyof CSADB>(storeName: StoreName, key: string): Promise<void> {
     try {
       const db = await getDb();

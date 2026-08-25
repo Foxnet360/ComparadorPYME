@@ -190,60 +190,69 @@ export const storageService = {
   // --- HISTORY & STATS ---
   getHistory: async (): Promise<HistoryEntry[]> => {
     let cloudTransformed: HistoryEntry[] = [];
+    let backendReachable = false;
     try {
       const currentUser = storageService.getCurrentUser();
       const queryParam = currentUser?.id ? `?userId=${encodeURIComponent(currentUser.id)}` : '';
       const response = await apiClient.fetch(`/history${queryParam}`);
-      const rawData = await response.json();
-      const cloudHistory: Array<{
-        id: string;
-        user_id?: string;
-        client_id?: string;
-        created_at?: string;
-        client_name?: string;
-        analysis_result?: { quotes?: QuoteAnalysis[] };
-      }> = Array.isArray(rawData) ? rawData : Array.isArray(rawData?.data) ? rawData.data : [];
+      if (response.ok !== false) {
+        backendReachable = true;
+        const rawData = await response.json();
+        const cloudHistory: Array<{
+          id: string;
+          user_id?: string;
+          client_id?: string;
+          created_at?: string;
+          client_name?: string;
+          analysis_result?: { quotes?: QuoteAnalysis[] };
+        }> = Array.isArray(rawData) ? rawData : Array.isArray(rawData?.data) ? rawData.data : [];
 
-      // Transform backend data (snake_case) to frontend format (camelCase)
-      cloudTransformed = cloudHistory.map((item) => {
-        const analysisResult = item.analysis_result || {};
-        const quotes = analysisResult.quotes || [];
-        const bestQuote =
-          quotes.length > 0
-            ? quotes.reduce((prev, curr) => (prev.score > curr.score ? prev : curr))
-            : null;
+        // Transform backend data (snake_case) to frontend format (camelCase)
+        cloudTransformed = cloudHistory.map((item) => {
+          const analysisResult = item.analysis_result || {};
+          const quotes = analysisResult.quotes || [];
+          const bestQuote =
+            quotes.length > 0
+              ? quotes.reduce((prev, curr) => (prev.score > curr.score ? prev : curr))
+              : null;
 
-        return {
-          id: item.id,
-          userId: item.user_id,
-          clientId: item.client_id,
-          date: item.created_at
-            ? item.created_at.split('T')[0]
-            : new Date().toISOString().split('T')[0],
-          clientName: item.client_name || 'Cliente Sin Nombre',
-          insurers: quotes.map((q) => q.insurerName || 'Desconocido'),
-          bestOption: bestQuote?.insurerName || 'N/A',
-          premiumValue: bestQuote?.priceAnnual || 0,
-          status: 'SENT', // Default status - could be stored in DB in future
-          fullReport: analysisResult as ComparisonReport,
-        };
-      });
+          return {
+            id: item.id,
+            userId: item.user_id,
+            clientId: item.client_id,
+            date: item.created_at
+              ? item.created_at.split('T')[0]
+              : new Date().toISOString().split('T')[0],
+            clientName: item.client_name || 'Cliente Sin Nombre',
+            insurers: quotes.map((q) => q.insurerName || 'Desconocido'),
+            bestOption: bestQuote?.insurerName || 'N/A',
+            premiumValue: bestQuote?.priceAnnual || 0,
+            status: 'SENT', // Default status - could be stored in DB in future
+            fullReport: analysisResult as ComparisonReport,
+          };
+        });
+      }
     } catch (e) {
       console.warn('Backend history unreachable, falling back to local storage', e);
     }
 
-    // Merge cloud and local IndexedDB storage, preventing duplicate IDs
-    const rawLocal = await dbService.getAll('history');
-    const localHistory = Array.isArray(rawLocal) ? rawLocal : [];
-    const cloudIds = new Set(cloudTransformed.map((item) => item.id));
-    const merged = [...cloudTransformed];
-    for (const localItem of localHistory) {
-      if (!cloudIds.has(localItem.id)) {
-        merged.push(localItem);
+    if (backendReachable) {
+      // Backend is authoritative. Sync local IndexedDB storage to clear old deleted entries.
+      try {
+        await dbService.clear('history');
+        for (const item of cloudTransformed) {
+          await dbService.put('history', item);
+        }
+      } catch (err) {
+        console.warn('Failed to sync IndexedDB history cache', err);
       }
+      return cloudTransformed.sort((a, b) => (b.date > a.date ? 1 : -1));
     }
 
-    return merged.sort((a, b) => (b.date > a.date ? 1 : -1));
+    // Fallback to local IndexedDB storage when backend is unreachable
+    const rawLocal = await dbService.getAll('history');
+    const localHistory = Array.isArray(rawLocal) ? rawLocal : [];
+    return localHistory.sort((a, b) => (b.date > a.date ? 1 : -1));
   },
 
   getHistoryByClient: async (clientId: string, clientName?: string): Promise<HistoryEntry[]> => {
