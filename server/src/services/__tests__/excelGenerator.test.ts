@@ -251,7 +251,7 @@ describe('excelGenerator', () => {
               matchConfidence: 0.95,
             },
             {
-              name: 'Asistencia VIP',
+              name: 'Servicio VIP Exclusivo',
               value: 'Incluido',
               deductible: 'No aplica',
               categoryId: null,
@@ -271,7 +271,7 @@ describe('excelGenerator', () => {
       let exclusiveCell: ExcelJS.Cell | undefined;
       coveragesSheet!.eachRow((row) => {
         const cellA = row.getCell(1);
-        if (cellA.value === 'Asistencia VIP') {
+        if (cellA.value === 'Servicio VIP Exclusivo') {
           exclusiveCell = row.getCell(2);
         }
       });
@@ -325,7 +325,7 @@ describe('excelGenerator', () => {
       let foundHeader = false;
       coveragesSheet!.eachRow((row) => {
         const cellA = row.getCell(1);
-        if (cellA.value === 'AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL') {
+        if (cellA.value === 'BIENES ASEGURADOS') {
           foundHeader = true;
         }
       });
@@ -344,7 +344,7 @@ describe('excelGenerator', () => {
       let confidenceCell: ExcelJS.Cell | undefined;
       coveragesSheet!.eachRow((row) => {
         const cellA = row.getCell(1);
-        if (cellA.value === 'Valor Asegurado' && !confidenceCell) {
+        if (cellA.value === 'Incendio (Edificio y Contenidos)' && !confidenceCell) {
           confidenceCell = row.getCell(2); // First insurer column
         }
       });
