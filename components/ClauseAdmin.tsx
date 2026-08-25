@@ -438,19 +438,6 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose }) => {
               </table>
             </div>
           )}
-                            className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-md transition-colors text-xs"
-                            title="Eliminar documento"
-                          >
-                            🗑️ Eliminar
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
 
           {/* Stats */}
           <div className="mt-6 text-sm text-slate-500 bg-slate-50 p-3 rounded-lg flex justify-between">
