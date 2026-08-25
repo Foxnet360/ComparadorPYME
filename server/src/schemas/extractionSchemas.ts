@@ -70,6 +70,28 @@ export const GeneralDeductibleSchema = passthrough({
   deductibleText: z.string().min(1),
 });
 
+export const CoinsuranceSchema = passthrough({
+  percentageSelf: z.number().min(0).max(100),
+  percentagePartner: z.number().min(0).max(100).nullish(),
+  partnerName: z.string().nullish(),
+  notes: z.string().nullish(),
+});
+
+export const DemeritClauseSchema = passthrough({
+  applies: z.boolean().default(false),
+  annualDepreciationRate: z.number().nullish(),
+  maxDepreciation: z.number().nullish(),
+  ageThresholdYears: z.number().nullish(),
+  notes: z.string().nullish(),
+});
+
+export const AssistanceItemSchema = passthrough({
+  name: z.string().min(1),
+  eventCap: z.number().nullish(),
+  amountCap: z.string().nullish(),
+  details: z.string().nullish(),
+});
+
 // -----------------------------------------------------------------------------
 // Quote extraction schemas
 // -----------------------------------------------------------------------------
@@ -84,6 +106,9 @@ export const QuoteExtractionSchemaV2 = passthrough({
   rawCoverages: z.array(RawCoverageSchema).min(1),
   subLimits: z.array(SubLimitSchema).nullish(),
   generalDeductibles: z.array(GeneralDeductibleSchema).nullish(),
+  coinsurance: CoinsuranceSchema.nullish(),
+  demeritClause: DemeritClauseSchema.nullish(),
+  assistances: z.array(AssistanceItemSchema).nullish(),
   specialConditions: z.array(z.string()).nullish(),
   exclusions: z.array(z.string()).nullish(),
   warranties: z.array(z.string()).nullish(),
