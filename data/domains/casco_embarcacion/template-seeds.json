@@ -1,0 +1,15 @@
+{
+  "domain": "casco_embarcacion",
+  "seeds": [
+    {
+      "insurer": "Sura",
+      "templateName": "Póliza de Casco y Maquinaria Marítima Sura",
+      "patterns": ["Casco y Maquinaria", "DIMAR", "Institute Time Clauses"]
+    },
+    {
+      "insurer": "Allianz",
+      "templateName": "Póliza Marítima de Embarcaciones Allianz",
+      "patterns": ["Casco Marítimo", "Allianz", "Collision Liability"]
+    }
+  ]
+}

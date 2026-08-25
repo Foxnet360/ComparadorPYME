@@ -1,0 +1,12 @@
+{
+  "domain": "equipo_maquinaria",
+  "exclusions": [
+    "Desgaste natural y paulatino por uso normal",
+    "Falta de mantenimiento preventivo según manual de fabricante",
+    "Deterioro por corrosión o cavitación no accidental"
+  ],
+  "dependencies": {
+    "eqm_05": ["eqm_01", "eqm_02"],
+    "eqm_06": ["eqm_01", "eqm_02"]
+  }
+}

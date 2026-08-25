@@ -1,0 +1,15 @@
+{
+  "domain": "equipo_maquinaria",
+  "seeds": [
+    {
+      "insurer": "Sura",
+      "templateName": "Póliza de Maquinaria y Equipo Contratista Sura",
+      "patterns": ["Maquinaria y Equipo", "Rotura de Maquinaria", "Seguros Sura"]
+    },
+    {
+      "insurer": "Bolívar",
+      "templateName": "Póliza Todo Riesgo Equipo Pesado Seguros Bolívar",
+      "patterns": ["Equipo Contratista", "Seguros Bolívar", "Maquinaria Amarilla"]
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "domain": "casco_embarcacion",
+  "version": "1.0.0",
+  "mappings": [
+    {
+      "canonicalId": "cas_01",
+      "canonicalName": "Pérdida Total o Parcial de Casco y Maquinaria (Institute Time Clauses)",
+      "variants": [
+        "casco y maquinaria",
+        "daños materiales al casco",
+        "institute time clauses - hulls",
+        "pérdida total del buque",
+        "daño en estructura naval"
+      ]
+    },
+    {
+      "canonicalId": "cas_02",
+      "canonicalName": "Avería Gruesa y Gastos de Salvamento Marítimo",
+      "variants": [
+        "avería gruesa",
+        "gastos de salvamento náutico",
+        "general average contribution",
+        "salvage costs",
+        "asistencia en alta mar"
+      ]
+    },
+    {
+      "canonicalId": "cas_03",
+      "canonicalName": "Responsabilidad Civil por Abordaje (Collision Liability 3/4th o 4/4ths)",
+      "variants": [
+        "responsabilidad civil por abordaje",
+        "collision liability",
+        "daños a otros buques",
+        "colisión náutica"
+      ]
+    },
+    {
+      "canonicalId": "cas_04",
+      "canonicalName": "Protección e Indemnización (P&I - Contaminación y Tripulación)",
+      "variants": [
+        "P&I club",
+        "protection and indemnity",
+        "contaminación por búnker / hidrocarburos",
+        "remoción de restos náufragos",
+        "responsabilidad patronal tripulación"
+      ]
+    },
+    {
+      "canonicalId": "cas_05",
+      "canonicalName": "Riesgos de Guerra, Piratería y Huelgas Marítimas",
+      "variants": [
+        "piratería marítima",
+        "guerra naval",
+        "institute war clauses",
+        "huelga portuaria"
+      ]
+    },
+    {
+      "canonicalId": "cas_06",
+      "canonicalName": "Remolque y Asistencia Náutica de Emergencia",
+      "variants": [
+        "gastos de remolcador",
+        "asistencia en el mar",
+        "remolque náutico de emergencia"
+      ]
+    },
+    {
+      "canonicalId": "cas_07",
+      "canonicalName": "Cobertura de Motores Fuera de Borda y Maquinaria Auxiliar",
+      "variants": [
+        "motores fuera de borda",
+        "motor marino auxiliar",
+        "radar sonar náutico"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "domain": "equipo_maquinaria",
+  "name": "Maquinaria y Equipo Contratista",
+  "scoringWeights": {
+    "coverage": 0.45,
+    "deductible": 0.30,
+    "price": 0.25
+  }
+}

@@ -23,7 +23,9 @@ function resolveDomain(value: InsuranceDomain | string): InsuranceDomain {
     value === 'salud' ||
     value === 'cumplimiento' ||
     value === 'transporte' ||
-    value === 'hogar'
+    value === 'hogar' ||
+    value === 'equipo_maquinaria' ||
+    value === 'casco_embarcacion'
   )
     return value;
   warnUnknownDomain(value);
@@ -52,7 +54,9 @@ export function isInsuranceDomain(value: unknown): value is InsuranceDomain {
     value === 'salud' ||
     value === 'cumplimiento' ||
     value === 'transporte' ||
-    value === 'hogar'
+    value === 'hogar' ||
+    value === 'equipo_maquinaria' ||
+    value === 'casco_embarcacion'
   );
 }
 

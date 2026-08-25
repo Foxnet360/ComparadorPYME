@@ -1,0 +1,115 @@
+{
+  "version": "1.0.0",
+  "domain": "casco_embarcacion",
+  "metadata": {
+    "region": "Colombia",
+    "currency": "COP",
+    "source": "Seguros de Casco y Maquinaria Marítima — Código de Comercio (Arts. 1703–1772) · Reglamentación DIMAR · Cláusulas Institute Time Clauses (Hulls - ITCH) · Convenios OMI (SOLAS / MARPOL / STCW)",
+    "changelog": "v1.0.0: Creación inicial del ramo Casco y Maquinaria Marítima / Embarcaciones.",
+    "regulatory": {
+      "framework": "Código de Comercio — Libro V (De la Navegación y Comercio Marítimo Arts. 1703–1772)",
+      "maritimeAuthority": "DIMAR — Dirección General Marítima de Colombia",
+      "londonClauses": "Institute Time Clauses - Hulls 1.10.83 (ITCH) / Institute War and Strikes Clauses",
+      "supervisoryBody": "Superintendencia Financiera de Colombia (SFC)"
+    }
+  },
+  "categories": [
+    {
+      "id": "cas_01",
+      "name": "Pérdida Total o Parcial de Casco y Maquinaria (Institute Time Clauses)",
+      "section": "COBERTURAS PRINCIPALES",
+      "isRequired": true,
+      "synonyms": [
+        "casco y maquinaria",
+        "pérdida total del casco",
+        "daños materiales al casco",
+        "institute time clauses hulls",
+        "itch",
+        "avería del casco",
+        "siniestro de embarcación",
+        "pérdida parcial casco"
+      ]
+    },
+    {
+      "id": "cas_02",
+      "name": "Avería Gruesa y Gastos de Salvamento Marítimo",
+      "section": "COBERTURAS PRINCIPALES",
+      "isRequired": true,
+      "synonyms": [
+        "avería gruesa marítima",
+        "gastos de salvamento",
+        "general average",
+        "salvage charges",
+        "asistencia en el mar",
+        "contribución de avería gruesa"
+      ]
+    },
+    {
+      "id": "cas_03",
+      "name": "Responsabilidad Civil por Abordaje (Collision Liability 3/4th o 4/4ths)",
+      "section": "COBERTURAS PRINCIPALES",
+      "isRequired": true,
+      "synonyms": [
+        "responsabilidad por abordaje",
+        "collision liability",
+        "3/4th collision liability",
+        "4/4ths collision liability",
+        "colisión entre naves",
+        "daños a otros buques por choque"
+      ]
+    },
+    {
+      "id": "cas_04",
+      "name": "Protección e Indemnización (P&I - Contaminación y Tripulación)",
+      "section": "COBERTURAS MARÍTIMAS AVANZADAS",
+      "isRequired": false,
+      "synonyms": [
+        "protection and indemnity",
+        "p&i",
+        "contaminación marina",
+        "responsabilidad por hidrocarburos",
+        "lesiones a tripulantes",
+        "remoción de restos náufragos",
+        "wreck removal"
+      ]
+    },
+    {
+      "id": "cas_05",
+      "name": "Riesgos de Guerra, Piratería y Huelgas Marítimas",
+      "section": "COBERTURAS MARÍTIMAS AVANZADAS",
+      "isRequired": false,
+      "synonyms": [
+        "guerra marítima",
+        "piratería",
+        "institute war and strikes clauses",
+        "huelgas en puertos",
+        "apoderamiento de embarcación",
+        "incautación náutica"
+      ]
+    },
+    {
+      "id": "cas_06",
+      "name": "Remolque y Asistencia Náutica de Emergencia",
+      "section": "COBERTURAS COMPLEMENTARIAS",
+      "isRequired": false,
+      "synonyms": [
+        "remolque marítimo",
+        "asistencia náutica",
+        "gastos de remolcador",
+        "auxilio en alta mar"
+      ]
+    },
+    {
+      "id": "cas_07",
+      "name": "Cobertura de Motores Fuera de Borda y Maquinaria Auxiliar",
+      "section": "COBERTURAS COMPLEMENTARIAS",
+      "isRequired": false,
+      "synonyms": [
+        "motores fuera de borda",
+        "maquinaria auxiliar",
+        "generadores marinos",
+        "equipos de navegación radar / sonar"
+      ]
+    }
+  ]
+}

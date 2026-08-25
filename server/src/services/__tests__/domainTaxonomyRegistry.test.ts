@@ -136,7 +136,7 @@ describe('resolveInsuranceDomain', () => {
     expect(resolveInsuranceDomain('')).toBe('pyme');
   });
 
-  it('accepts all registered domains including transporte and hogar', () => {
+  it('accepts all registered domains including equipo_maquinaria and casco_embarcacion', () => {
     expect(resolveInsuranceDomain('pyme')).toBe('pyme');
     expect(resolveInsuranceDomain('autos')).toBe('autos');
     expect(resolveInsuranceDomain('copropiedades')).toBe('copropiedades');
@@ -145,6 +145,8 @@ describe('resolveInsuranceDomain', () => {
     expect(resolveInsuranceDomain('cumplimiento')).toBe('cumplimiento');
     expect(resolveInsuranceDomain('transporte')).toBe('transporte');
     expect(resolveInsuranceDomain('hogar')).toBe('hogar');
+    expect(resolveInsuranceDomain('equipo_maquinaria')).toBe('equipo_maquinaria');
+    expect(resolveInsuranceDomain('casco_embarcacion')).toBe('casco_embarcacion');
   });
 
   it('falls back to pyme for unknown values and warns', () => {

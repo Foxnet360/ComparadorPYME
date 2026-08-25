@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, Car, Building, Users, Stethoscope, Scale, Truck, Home } from 'lucide-react';
+import { Building2, Car, Building, Users, Stethoscope, Scale, Truck, Home, Cog, Anchor } from 'lucide-react';
 
 export type InsuranceDomain =
   | 'pyme'
@@ -9,7 +9,9 @@ export type InsuranceDomain =
   | 'salud'
   | 'cumplimiento'
   | 'transporte'
-  | 'hogar';
+  | 'hogar'
+  | 'equipo_maquinaria'
+  | 'casco_embarcacion';
 
 export interface DomainOption {
   id: InsuranceDomain;
@@ -75,6 +77,18 @@ const DOMAIN_OPTIONS: DomainOption[] = [
     sublabel: 'Vivienda, contenidos, RCE y reglamentación (Ley 675 / Ley 1796)',
     icon: Home,
   },
+  {
+    id: 'equipo_maquinaria',
+    label: 'Maquinaria y Equipo',
+    sublabel: 'Rotura de maquinaria, equipo amarillo y contratista (C.Co 1083)',
+    icon: Cog,
+  },
+  {
+    id: 'casco_embarcacion',
+    label: 'Casco Embarcación',
+    sublabel: 'Navegación marítima, fluvial, DIMAR e Institute Time Clauses',
+    icon: Anchor,
+  },
 ];
 
 export const DomainSelector: React.FC<DomainSelectorProps> = ({
@@ -93,7 +107,7 @@ export const DomainSelector: React.FC<DomainSelectorProps> = ({
       <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
         <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center">
           <span className="w-2 h-2 rounded-full bg-indigo-600 mr-2"></span>
-          Seleccionar Ramo de Seguro a Comparar (8 Ramos Soportados)
+          Seleccionar Ramo de Seguro a Comparar (10 Ramos Soportados)
         </label>
         <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
           Ramo Activo: {DOMAIN_OPTIONS.find((d) => d.id === selectedDomain)?.label || 'PYME'}
@@ -103,7 +117,7 @@ export const DomainSelector: React.FC<DomainSelectorProps> = ({
       <div
         role="radiogroup"
         aria-label="Seleccionar ramo de seguro"
-        className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+        className="grid grid-cols-2 sm:grid-cols-5 gap-3"
       >
         {visibleOptions.map((option) => {
           const isSelected = selectedDomain === option.id;

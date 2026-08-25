@@ -1,0 +1,78 @@
+{
+  "domain": "equipo_maquinaria",
+  "version": "1.0.0",
+  "mappings": [
+    {
+      "canonicalId": "eqm_01",
+      "canonicalName": "Daño Físico Accidental a Maquinaria y Equipo",
+      "variants": [
+        "daño físico accidental",
+        "daños materiales por causa externa",
+        "todo riesgo maquinaria",
+        "amparo básico maquinaria",
+        "daño accidental"
+      ]
+    },
+    {
+      "canonicalId": "eqm_02",
+      "canonicalName": "Rotura Mecánica e Implosión / Falla Eléctrica",
+      "variants": [
+        "rotura de maquinaria",
+        "falla interna",
+        "implosión",
+        "avería mecánica",
+        "corto circuito en motores",
+        "sobretensión en maquinaria"
+      ]
+    },
+    {
+      "canonicalId": "eqm_03",
+      "canonicalName": "Sustracción, Robo Calificado y Hurtos",
+      "variants": [
+        "sustracción",
+        "hurto de maquinaria amarilla",
+        "robo de equipo de construcción",
+        "robo calificado",
+        "sustracción con violencia"
+      ]
+    },
+    {
+      "canonicalId": "eqm_04",
+      "canonicalName": "Responsabilidad Civil Extracontractual por Operación",
+      "variants": [
+        "RCE operación maquinaria",
+        "daños a terceros por grúa / excavadora",
+        "responsabilidad civil extracontractual",
+        "RCE maquinaria"
+      ]
+    },
+    {
+      "canonicalId": "eqm_05",
+      "canonicalName": "Gastos Extraordinarios y Fletes Aéreos de Repuestos",
+      "variants": [
+        "flete aéreo de repuestos",
+        "gastos de aceleración de reparación",
+        "horas extras de mecánicos",
+        "fletes express"
+      ]
+    },
+    {
+      "canonicalId": "eqm_06",
+      "canonicalName": "Pérdida de Beneficios por Paralización (Lucro Cesante)",
+      "variants": [
+        "lucro cesante paralización",
+        "pérdida de utilidades por avería de máquina",
+        "interrupción de producción"
+      ]
+    },
+    {
+      "canonicalId": "eqm_07",
+      "canonicalName": "Tránsito y Movilización Terrestre de Maquinaria",
+      "variants": [
+        "movilización entre frentes de obra",
+        "tránsito terrestre de equipos",
+        "traslado en cama baja"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,112 @@
+{
+  "version": "1.0.0",
+  "domain": "equipo_maquinaria",
+  "metadata": {
+    "region": "Colombia",
+    "currency": "COP",
+    "source": "Seguros de Maquinaria y Equipo Contratista — Código de Comercio (Arts. 1083–1112) · Circular Básica Jurídica Superfinanciera · Normas de Seguridad Industrial en Construcción (Resolución 2400/1979)",
+    "changelog": "v1.0.0: Creación inicial del ramo Maquinaria y Equipo Contratista / Rotura de Maquinaria.",
+    "regulatory": {
+      "framework": "Código de Comercio — Libro IV (De los Seguros de Daños Patrimoniales Arts. 1083–1112)",
+      "supervisoryBody": "Superintendencia Financiera de Colombia (SFC)",
+      "safetyNorms": "Resolución 2400 de 1979 — Estatuto de Seguridad Industrial"
+    }
+  },
+  "categories": [
+    {
+      "id": "eqm_01",
+      "name": "Daño Físico Accidental a Maquinaria y Equipo",
+      "section": "COBERTURAS PRINCIPALES",
+      "isRequired": true,
+      "synonyms": [
+        "daño físico accidental",
+        "daño material a maquinaria",
+        "todo riesgo equipo contratista",
+        "daños accidentales equipo pesado",
+        "destrucción accidental",
+        "daños por causa externa",
+        "daño físico"
+      ]
+    },
+    {
+      "id": "eqm_02",
+      "name": "Rotura Mecánica e Implosión / Falla Eléctrica",
+      "section": "COBERTURAS PRINCIPALES",
+      "isRequired": true,
+      "synonyms": [
+        "rotura de maquinaria",
+        "falla mecánica",
+        "falla eléctrica",
+        "implosión de caldera",
+        "avería mecánica",
+        "desgaste prematuro por falla",
+        "rotura interna"
+      ]
+    },
+    {
+      "id": "eqm_03",
+      "name": "Sustracción, Robo Calificado y Hurtos",
+      "section": "COBERTURAS PRINCIPALES",
+      "isRequired": true,
+      "synonyms": [
+        "sustracción",
+        "robo calificado",
+        "hurto de maquinaria",
+        "robo de equipo pesado",
+        "sustracción con violencia",
+        "hurto agravado"
+      ]
+    },
+    {
+      "id": "eqm_04",
+      "name": "Responsabilidad Civil Extracontractual por Operación",
+      "section": "COBERTURAS COMPLEMENTARIAS",
+      "isRequired": false,
+      "synonyms": [
+        "responsabilidad civil operación",
+        "RCE maquinaria",
+        "daños a terceros por maquinaria",
+        "lesiones a terceros por equipo",
+        "RCE maquinaria amarilla"
+      ]
+    },
+    {
+      "id": "eqm_05",
+      "name": "Gastos Extraordinarios y Fletes Aéreos de Repuestos",
+      "section": "COBERTURAS COMPLEMENTARIAS",
+      "isRequired": false,
+      "synonyms": [
+        "gastos extraordinarios",
+        "flete aéreo repuestos",
+        "trabajo nocturno repuestos",
+        "trabajo en días festivos",
+        "fletes express"
+      ]
+    },
+    {
+      "id": "eqm_06",
+      "name": "Pérdida de Beneficios por Paralización (Lucro Cesante)",
+      "section": "COBERTURAS COMPLEMENTARIAS",
+      "isRequired": false,
+      "synonyms": [
+        "pérdida de beneficios",
+        "lucro cesante por paralización",
+        "paralización de obra",
+        "interrupción de negocio maquinaria",
+        "business interruption"
+      ]
+    },
+    {
+      "id": "eqm_07",
+      "name": "Tránsito y Movilización Terrestre de Maquinaria",
+      "section": "COBERTURAS COMPLEMENTARIAS",
+      "isRequired": false,
+      "synonyms": [
+        "tránsito de maquinaria",
+        "movilización terrestre",
+        "traslado entre obras",
+        "transporte de equipo pesado"
+      ]
+    }
+  ]
+}

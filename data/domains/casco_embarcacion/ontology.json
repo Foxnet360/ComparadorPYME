@@ -1,0 +1,12 @@
+{
+  "domain": "casco_embarcacion",
+  "exclusions": [
+    "Navegación fuera de aguas permitidas por patente de la DIMAR",
+    "Falta de certificado de navegabilidad o clasificación de clase náutica vigente",
+    "Deterioro por corrosión galvánica o faltante de ánodos de sacrificio"
+  ],
+  "dependencies": {
+    "cas_02": ["cas_01"],
+    "cas_04": ["cas_01"]
+  }
+}

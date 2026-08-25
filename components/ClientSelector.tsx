@@ -968,6 +968,101 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
                 </div>
               )}
 
+              {/* Ramo: Maquinaria y Equipo */}
+              {activeDomain === 'equipo_maquinaria' && (
+                <div className="pt-3 border-t border-slate-100">
+                  <h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-3 flex items-center">
+                    <Building2 size={15} className="mr-1.5 text-indigo-600" />
+                    Especificaciones Técnicas de Maquinaria y Equipo (C.Co Art. 1083)
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Valor Reposición a Nuevo ($ COP)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. $ 850.000.000"
+                        className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Marca / Modelo / Año
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. Caterpillar 320D / 2022"
+                        className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Mantenimiento Preventivo Certificado
+                      </label>
+                      <select className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs bg-white">
+                        <option value="si">Sí (Bitácora de Marca)</option>
+                        <option value="parcial">Parcial (Taller Propio)</option>
+                        <option value="no">No</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Ramo: Casco Embarcación */}
+              {activeDomain === 'casco_embarcacion' && (
+                <div className="pt-3 border-t border-slate-100">
+                  <h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-3 flex items-center">
+                    <Building2 size={15} className="mr-1.5 text-indigo-600" />
+                    Ficha Náutica y Registro DIMAR (C.Co Art. 1703)
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Matrícula / Patente DIMAR
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. CP-05-1234-B"
+                        className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Tipo de Navegación
+                      </label>
+                      <select className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs bg-white">
+                        <option value="cabotaje">Cabotaje Nacional</option>
+                        <option value="fluvial">Fluvial / Ríos</option>
+                        <option value="alta_mar">Alta Mar / Internacional</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Tonelaje Bruto (TRB)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="Ej. 180 TRB"
+                        className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Material del Casco
+                      </label>
+                      <select className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs bg-white">
+                        <option value="acero">Acero Naval</option>
+                        <option value="fibra">Fibra de Vidrio</option>
+                        <option value="aluminio">Aluminio</option>
+                        <option value="madera">Madera / Compuesto</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="pt-4 border-t border-slate-100 flex justify-end space-x-3">
                 <button
                   type="button"

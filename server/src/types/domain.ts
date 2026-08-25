@@ -14,6 +14,8 @@ export const INSURANCE_DOMAINS = [
   'cumplimiento',
   'transporte',
   'hogar',
+  'equipo_maquinaria',
+  'casco_embarcacion',
 ] as const;
 
 export type InsuranceDomain = (typeof INSURANCE_DOMAINS)[number];
