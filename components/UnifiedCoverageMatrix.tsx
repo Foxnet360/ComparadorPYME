@@ -1067,7 +1067,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
       const response = await apiClient.fetch(`/analysis/${analysisId}/export`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cellNotes: exportNotes, domain: domain || 'pyme', quotes }),
+        body: JSON.stringify({ cellNotes: exportNotes, domain: domain || 'pyme', quotes, matrix: rows }),
       });
 
       const blob = await response.blob();

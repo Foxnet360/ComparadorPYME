@@ -366,7 +366,11 @@ export const exportAnalysisExcel = async (
       city: req.user?.city || req.user?.agentDetails?.city,
     };
 
-    const reportData = analysis?.analysis_result || req.body?.report;
+    const reportData = {
+      ...(typeof analysis?.analysis_result === 'object' && analysis?.analysis_result ? analysis.analysis_result : {}),
+      ...(typeof req.body?.report === 'object' && req.body?.report ? req.body.report : {}),
+      matrix: req.body?.matrix || (analysis?.analysis_result as any)?.matrix || (analysis?.analysis_result as any)?.rows,
+    };
     const buffer = await generateExcelBuffer(quotes, clientInfo, cellNotes, brokerInfo, domain, reportData);
 
     res.setHeader(

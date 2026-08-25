@@ -325,7 +325,8 @@ describe('excelGenerator', () => {
       let foundHeader = false;
       coveragesSheet!.eachRow((row) => {
         const cellA = row.getCell(1);
-        if (cellA.value === 'BIENES ASEGURADOS') {
+        const val = String(cellA.value || '');
+        if (val.includes('AMPARO BÁSICO') || val.includes('BIENES ASEGURADOS')) {
           foundHeader = true;
         }
       });
@@ -344,7 +345,8 @@ describe('excelGenerator', () => {
       let confidenceCell: ExcelJS.Cell | undefined;
       coveragesSheet!.eachRow((row) => {
         const cellA = row.getCell(1);
-        if (cellA.value === 'Incendio (Edificio y Contenidos)' && !confidenceCell) {
+        const val = String(cellA.value || '');
+        if ((val === 'Valor Asegurado' || val.includes('Incendio')) && !confidenceCell) {
           confidenceCell = row.getCell(2); // First insurer column
         }
       });

@@ -1,6 +1,6 @@
 import * as ExcelJS from 'exceljs';
-import { QuoteAnalysis } from '../types';
-import { parseNumericValue, formatMatrixValue, enrichSmmlvDeductible, isExcludedValue } from './matrixTransformer';
+import { QuoteAnalysis, MatrixRow, MatrixCell } from '../types';
+import { transformQuotesToMatrix, parseNumericValue, formatMatrixValue, enrichSmmlvDeductible, isExcludedValue } from './matrixTransformer';
 
 interface ClientInfo {
   name?: string;
@@ -31,57 +31,6 @@ export function formatRatioCell(val: string | number): { value: string | number;
   }
 }
 
-// Levenshtein similarity helper for robust coverage matching
-function localLevenshteinDistance(str1: string, str2: string): number {
-  const matrix: number[][] = [];
-  for (let i = 0; i <= str1.length; i++) matrix[i] = [i];
-  for (let j = 0; j <= str2.length; j++) matrix[0][j] = j;
-  for (let i = 1; i <= str1.length; i++) {
-    for (let j = 1; j <= str2.length; j++) {
-      const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
-      matrix[i][j] = Math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost);
-    }
-  }
-  return matrix[str1.length][str2.length];
-}
-
-function calculateSimilarity(str1: string, str2: string): number {
-  const n1 = str1.toLowerCase().trim();
-  const n2 = str2.toLowerCase().trim();
-  if (n1 === n2) return 1.0;
-  if (n1.includes(n2) || n2.includes(n1)) {
-    const ratio = Math.min(n1.length, n2.length) / Math.max(n1.length, n2.length);
-    return 0.7 + ratio * 0.2;
-  }
-  const maxLen = Math.max(n1.length, n2.length);
-  if (maxLen === 0) return 1.0;
-  return 1 - localLevenshteinDistance(n1, n2) / maxLen;
-}
-
-function isBillingOrPaymentNoise(name: string): boolean {
-  const lower = name.toLowerCase();
-  return (
-    lower.includes('forma de pago') ||
-    lower.includes('prima ') ||
-    lower.includes('prima_') ||
-    lower.includes('iva') ||
-    lower.includes('gastos de expedición') ||
-    lower.includes('gastos de expedicion') ||
-    lower.includes('comisión') ||
-    lower.includes('comision') ||
-    lower.includes('cuota') ||
-    lower.includes('financiación') ||
-    lower.includes('financiacion') ||
-    lower.includes('pago fraccionado') ||
-    lower.includes('intermediario') ||
-    lower.includes('costo') ||
-    lower.includes('valor aseg') ||
-    lower.includes('vigencia') ||
-    lower.includes('producto') ||
-    lower.includes('respaldo')
-  );
-}
-
 export async function generateExcelBuffer(
   quotes: QuoteAnalysis[],
   clientInfo?: ClientInfo,
@@ -98,6 +47,12 @@ export async function generateExcelBuffer(
 
   const hasNotes = cellNotes && Object.keys(cellNotes).length > 0;
   const FONT_NAME = 'Segoe UI';
+
+  // Obtain ground-truth matrix rows from reportData or build using matrixTransformer
+  const matrix: MatrixRow[] =
+    reportData?.matrix && Array.isArray(reportData.matrix) && reportData.matrix.length > 0
+      ? reportData.matrix
+      : transformQuotesToMatrix(quotes, domain);
 
   // Client Info
   const clientName = clientInfo?.name || 'Cliente';
@@ -149,7 +104,7 @@ export async function generateExcelBuffer(
   );
 
   // -------------------------------------------------------------
-  // Pestaña 1: Portada y Resumen General
+  // Pestaña 1: Portada y Resumen General (Look & Feel Ejecutivo)
   // -------------------------------------------------------------
   const portada = workbook.addWorksheet('Portada y Resumen General');
   portada.views = [{ showGridLines: false }];
@@ -161,14 +116,14 @@ export async function generateExcelBuffer(
   portada.getColumn(5).width = 18;
   portada.getColumn(6).width = 18;
 
-  // Title Banner
+  // Banner Principal
   portada.mergeCells('B2:F2');
   const titleCell = portada.getCell('B2');
   titleCell.value = 'COMPARATIVA Y AUDITORÍA TÉCNICA DE SEGUROS';
   titleCell.font = { name: FONT_NAME, size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
   titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
   titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
-  portada.getRow(2).height = 36;
+  portada.getRow(2).height = 38;
 
   portada.mergeCells('B3:F3');
   const subtitleCell = portada.getCell('B3');
@@ -176,7 +131,7 @@ export async function generateExcelBuffer(
   subtitleCell.font = { name: FONT_NAME, size: 10, italic: true, color: { argb: 'FF475569' } };
   subtitleCell.alignment = { vertical: 'middle', horizontal: 'center' };
 
-  // BLOQUE SOMBREADO: RESUMEN EJECUTIVO (PÁRRAFO DE RECOMENDACIÓN)
+  // BLOQUE SOMBREADO: RESUMEN EJECUTIVO
   portada.mergeCells('B5:F5');
   const execHeaderCell = portada.getCell('B5');
   execHeaderCell.value = '📌 RESUMEN EJECUTIVO Y DICTAMEN DE RECOMENDACIÓN';
@@ -196,7 +151,7 @@ export async function generateExcelBuffer(
     bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
   };
 
-  // Helper Row Adder
+  // Ficha de Datos
   const addInfoRow = (label: string, value: string, rowIdx: number) => {
     const cellA = portada.getCell(`B${rowIdx}`);
     cellA.value = label;
@@ -208,7 +163,6 @@ export async function generateExcelBuffer(
     cellB.font = { name: FONT_NAME, size: 10, color: { argb: 'FF1E293B' } };
   };
 
-  // Datos del Cliente
   portada.getCell('B10').value = 'DATOS DEL ASEGURADO (CLIENTE)';
   portada.getCell('B10').font = { name: FONT_NAME, size: 11, bold: true, color: { argb: 'FF1E3A8A' } };
   addInfoRow('Asegurado:', clientName, 11);
@@ -216,7 +170,6 @@ export async function generateExcelBuffer(
   addInfoRow('Ubicación del Riesgo:', clientLocation, 13);
   addInfoRow('Valor Total Bienes:', totalAssetValueStr, 14);
 
-  // Intermediario / Aliado
   portada.getCell('B16').value = 'DATOS DEL INTERMEDIARIO / ALIADO TÉCNICO';
   portada.getCell('B16').font = { name: FONT_NAME, size: 11, bold: true, color: { argb: 'FF1E3A8A' } };
   addInfoRow('Corredoría / Agencia:', brokerInfo?.intermediaryName || 'Agencia Aliada', 17);
@@ -228,7 +181,7 @@ export async function generateExcelBuffer(
   portada.getCell('B22').value = 'SCORECARD COMPARATIVO DE AUDITORÍA (0 - 100)';
   portada.getCell('B22').font = { name: FONT_NAME, size: 11, bold: true, color: { argb: 'FF1E3A8A' } };
 
-  portada.getRow(23).height = 24;
+  portada.getRow(23).height = 26;
   const colAHeader = portada.getCell('B23');
   colAHeader.value = 'DIMENSIÓN DE EVALUACIÓN';
   colAHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -255,7 +208,7 @@ export async function generateExcelBuffer(
 
   dimensions.forEach((dim, rIdx) => {
     const rowNum = 24 + rIdx;
-    portada.getRow(rowNum).height = 20;
+    portada.getRow(rowNum).height = 22;
 
     const isTotal = dim.key === 'total';
     const labelCell = portada.getCell(`B${rowNum}`);
@@ -277,13 +230,16 @@ export async function generateExcelBuffer(
       cellVal.font = { name: FONT_NAME, size: 10, bold: isTotal, color: { argb: 'FF1E293B' } };
       cellVal.alignment = { horizontal: 'center' };
 
-      // Relleno condicional suave según el puntaje
+      // Pastel RAG Status Highlight
       if (scoreVal >= 80) {
-        cellVal.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
+        cellVal.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDEF7EC' } }; // Emerald 100
+        cellVal.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF03543F' } }; // Emerald 800
       } else if (scoreVal >= 60) {
-        cellVal.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF3C7' } };
+        cellVal.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF08A' } }; // Yellow 200
+        cellVal.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF713F12' } }; // Yellow 900
       } else {
-        cellVal.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } };
+        cellVal.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE8E8' } }; // Red 100
+        cellVal.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF9B1C1C' } }; // Red 800
       }
     });
   });
@@ -312,14 +268,14 @@ export async function generateExcelBuffer(
   });
 
   // -------------------------------------------------------------
-  // Pestaña 2: Matriz Coberturas
+  // Pestaña 2: Matriz Coberturas (Direct Matrix Data Rendering)
   // -------------------------------------------------------------
   const coveragesSheet = workbook.addWorksheet('Matriz Coberturas');
   coveragesSheet.views = [{ showGridLines: false }];
 
-  coveragesSheet.getColumn(1).width = 44;
+  coveragesSheet.getColumn(1).width = 45;
   for (let i = 0; i < quotes.length; i++) {
-    coveragesSheet.getColumn(i + 2).width = 34;
+    coveragesSheet.getColumn(i + 2).width = 35;
   }
 
   coveragesSheet.mergeCells(1, 1, 2, quotes.length + 1 + (hasNotes ? 1 : 0));
@@ -328,7 +284,7 @@ export async function generateExcelBuffer(
   covTitle.font = { name: FONT_NAME, size: 14, bold: true, color: { argb: 'FF1E3A8A' } };
   covTitle.alignment = { vertical: 'middle', horizontal: 'left' };
 
-  coveragesSheet.getRow(4).height = 26;
+  coveragesSheet.getRow(4).height = 28;
   const mainLabelHeader = coveragesSheet.getCell(4, 1);
   mainLabelHeader.value = 'COBERTURA / CONCEPTO CANÓNICO';
   mainLabelHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -351,188 +307,93 @@ export async function generateExcelBuffer(
     coveragesSheet.getColumn(quotes.length + 2).width = 40;
   }
 
-  // Canonical Coverage Categories
-  const CANONICAL_CATEGORIES = [
-    { section: 'BIENES ASEGURADOS', name: 'Incendio (Edificio y Contenidos)', keywords: ['incendio', 'edificio', 'bienes', 'amparo básico', 'daño material'] },
-    { section: 'BIENES ASEGURADOS', name: 'Terremoto y Eventos Catastróficos', keywords: ['terremoto', 'temblor', 'erupcion', 'volcan'] },
-    { section: 'BIENES ASEGURADOS', name: 'Equipo Eléctrico y Electrónico', keywords: ['equipo eléctrico', 'equipo electronico', 'daño interno'] },
-    { section: 'BIENES ASEGURADOS', name: 'Rotura de Maquinaria', keywords: ['rotura de maquinaria', 'maquinaria'] },
-    { section: 'BIENES ASEGURADOS', name: 'Transporte de Mercancías', keywords: ['transporte', 'mercancías', 'mercancias'] },
-    { section: 'BIENES ASEGURADOS', name: 'Vidrios Planos', keywords: ['vidrio'] },
-    { section: 'COBERTURAS', name: 'Terrorismo, AMIT y Actos Malintencionados', keywords: ['terrorismo', 'amit', 'hmacc', 'huelga', 'motin', 'asonada'] },
-    { section: 'COBERTURAS', name: 'Lucro Cesante / Pérdida de Ingresos', keywords: ['lucro cesante', 'pérdida de ingresos', 'canones'] },
-    { section: 'COBERTURAS', name: 'Responsabilidad Civil Extracontractual (RCE)', keywords: ['responsabilidad civil', 'rce', 'rc '] },
-    { section: 'COBERTURAS', name: 'Manejo Global / Infidelidad de Empleados', keywords: ['manejo', 'infidelidad'] },
-    { section: 'COBERTURAS', name: 'Daños por Agua, Anegación e Inundación', keywords: ['agua', 'anegacion', 'anegación', 'inundacion'] },
-    { section: 'COBERTURAS', name: 'Asistencia PYME y Legal', keywords: ['asistencia'] },
-    { section: 'SUSTRACCIÓN', name: 'Sustracción / Hurto', keywords: ['sustracción', 'sustraccion', 'hurto', 'robo'] },
-  ];
+  // Filter matrix rows for coverages tab (exclude standalone deductible section rows & financial rows)
+  const coverageMatrixRows = matrix.filter(
+    (row) =>
+      row.sectionId < 100 &&
+      !row.id.includes('_row_deductible') &&
+      !row.id.startsWith('deductible_') &&
+      row.id !== 'section_group_deductibles'
+  );
 
   let currentCovRow = 5;
-  let currentSection = '';
-
-  CANONICAL_CATEGORIES.forEach((cat) => {
-    if (cat.section !== currentSection) {
-      currentSection = cat.section;
+  for (const row of coverageMatrixRows) {
+    if (row.type === 'header') {
       coveragesSheet.mergeCells(currentCovRow, 1, currentCovRow, quotes.length + 1 + (hasNotes ? 1 : 0));
       const secCell = coveragesSheet.getCell(currentCovRow, 1);
-      secCell.value = currentSection;
+      secCell.value = row.label;
       secCell.font = { name: FONT_NAME, size: 11, bold: true, color: { argb: 'FF1E3A8A' } };
-      secCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE6F0FA' } };
+      secCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
       currentCovRow++;
-    }
-
-    coveragesSheet.getRow(currentCovRow).height = 22;
-    const labelCell = coveragesSheet.getCell(currentCovRow, 1);
-    labelCell.value = cat.name;
-    labelCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF475569' } };
-    labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
-
-    const rowValues: { text: string; num: number; isExcluded: boolean }[] = [];
-
-    quotes.forEach((q, qIdx) => {
-      const xlCell = coveragesSheet.getCell(currentCovRow, qIdx + 2);
-      const cov = (q.coverages || []).find((c) => {
-        const cName = (c.name || '').toLowerCase();
-        const cCanon = (c.canonicalName || '').toLowerCase();
-        return (
-          cCanon === cat.name.toLowerCase() ||
-          cName === cat.name.toLowerCase() ||
-          calculateSimilarity(cName, cat.name) >= 0.70 ||
-          cat.keywords.some((kw) => cName.includes(kw) || cCanon.includes(kw))
-        );
-      });
-
-      if (cov) {
-        const valStr = cov.value || 'Amparada';
-        const numericVal = parseNumericValue(valStr);
-        const excluded = isExcludedValue(valStr);
-
-        rowValues.push({ text: valStr, num: numericVal, isExcluded: excluded });
-
-        if (excluded) {
-          xlCell.value = 'No incluida';
-          xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } };
-          xlCell.font = { name: FONT_NAME, size: 10, italic: true, color: { argb: 'FF991B1B' } };
-        } else if (numericVal > 0) {
-          xlCell.value = numericVal;
-          xlCell.numFmt = '$#,##0';
-          xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
-          xlCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF065F46' } };
-        } else {
-          xlCell.value = formatMatrixValue(valStr);
-          xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
-          xlCell.font = { name: FONT_NAME, size: 10, color: { argb: 'FF065F46' } };
-        }
-
-        const firstCitation = cov.citations?.[0];
-        if (firstCitation?.page) {
-          xlCell.note = `Fuente original: PDF cotización, Página ${firstCitation.page}`;
-        }
-        if (cov.matchConfidence !== undefined && cov.matchConfidence !== null) {
-          const confidenceText = `Confianza: ${(cov.matchConfidence * 100).toFixed(0)}%`;
-          xlCell.note = xlCell.note ? `${xlCell.note}\n${confidenceText}` : confidenceText;
-        }
-      } else {
-        rowValues.push({ text: 'No incluida', num: 0, isExcluded: true });
-        xlCell.value = 'No incluida';
-        xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } };
-        xlCell.font = { name: FONT_NAME, size: 10, italic: true, color: { argb: 'FF991B1B' } };
-      }
-
-      xlCell.alignment = { horizontal: 'center', wrapText: true };
-      xlCell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
-    });
-
-    // Winner Highlight
-    const maxNum = Math.max(...rowValues.map((v) => v.num));
-    if (maxNum > 0) {
-      quotes.forEach((_, qIdx) => {
-        if (rowValues[qIdx].num === maxNum && !rowValues[qIdx].isExcluded) {
-          const xlCell = coveragesSheet.getCell(currentCovRow, qIdx + 2);
-          xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDF2E9' } };
-          xlCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF92400E' } };
-        }
-      });
-    }
-
-    currentCovRow++;
-  });
-
-  // Exclusive / Additional Coverages
-  const exclusiveGroups: Array<{ name: string; items: Array<{ qIdx: number; cov: any }> }> = [];
-  quotes.forEach((q, qIdx) => {
-    (q.coverages || []).forEach((c) => {
-      const cName = (c.name || c.canonicalName || '').trim();
-      if (!cName || isBillingOrPaymentNoise(cName)) return;
-
-      const isCanonical = CANONICAL_CATEGORIES.some(
-        (cat) =>
-          cat.keywords.some((kw) => cName.toLowerCase().includes(kw)) ||
-          calculateSimilarity(cName, cat.name) >= 0.70
-      );
-
-      if (!isCanonical) {
-        let group = exclusiveGroups.find((g) => calculateSimilarity(g.name, cName) >= 0.70);
-        if (group) {
-          group.items.push({ qIdx, cov: c });
-        } else {
-          exclusiveGroups.push({ name: cName, items: [{ qIdx, cov: c }] });
-        }
-      }
-    });
-  });
-
-  if (exclusiveGroups.length > 0) {
-    coveragesSheet.mergeCells(currentCovRow, 1, currentCovRow, quotes.length + 1 + (hasNotes ? 1 : 0));
-    const exHeader = coveragesSheet.getCell(currentCovRow, 1);
-    exHeader.value = 'AMPAROS EXCLUSIVOS Y VENTAJAS COMPETITIVAS';
-    exHeader.font = { name: FONT_NAME, size: 11, bold: true, color: { argb: 'FF1E3A8A' } };
-    exHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE6F0FA' } };
-    currentCovRow++;
-
-    exclusiveGroups.forEach((group) => {
+    } else if (row.type === 'spacer') {
+      coveragesSheet.getRow(currentCovRow).height = 8;
+      currentCovRow++;
+    } else {
       coveragesSheet.getRow(currentCovRow).height = 22;
       const labelCell = coveragesSheet.getCell(currentCovRow, 1);
-      labelCell.value = group.name;
+      labelCell.value = row.label;
       labelCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF475569' } };
       labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
 
-      quotes.forEach((_, qIdx) => {
-        const xlCell = coveragesSheet.getCell(currentCovRow, qIdx + 2);
-        const match = group.items.find((it) => it.qIdx === qIdx);
+      row.cells.forEach((cell: MatrixCell, idx: number) => {
+        const xlCell = coveragesSheet.getCell(currentCovRow, idx + 2);
+        const valStr = cell.value || '';
+        const excluded = cell.isExcluded || isExcludedValue(valStr);
+        const numericVal = parseNumericValue(valStr);
+        const isWinner = cell.isWinner;
 
-        if (match) {
-          const valStr = match.cov.value || 'Incluido';
-          const numericVal = parseNumericValue(valStr);
-          if (numericVal > 0) {
-            xlCell.value = numericVal;
-            xlCell.numFmt = '$#,##0';
-          } else {
-            xlCell.value = valStr;
-          }
-          xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
-          xlCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF065F46' } };
-        } else {
+        if (excluded) {
           xlCell.value = 'No incluida';
-          xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } };
-          xlCell.font = { name: FONT_NAME, size: 10, italic: true, color: { argb: 'FF991B1B' } };
+          xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE8E8' } }; // Soft red pastel
+          xlCell.font = { name: FONT_NAME, size: 10, italic: true, color: { argb: 'FF9B1C1C' } };
+        } else if (numericVal > 0) {
+          xlCell.value = numericVal;
+          xlCell.numFmt = '$#,##0';
+          xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDEF7EC' } }; // Soft green pastel
+          xlCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF03543F' } };
+        } else {
+          xlCell.value = formatMatrixValue(valStr);
+          xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDEF7EC' } }; // Soft green pastel
+          xlCell.font = { name: FONT_NAME, size: 10, color: { argb: 'FF03543F' } };
         }
 
-        xlCell.alignment = { horizontal: 'center' };
+        if (isWinner && !excluded) {
+          xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF3C7' } }; // Soft Amber pastel
+          xlCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF92400E' } };
+        }
+
+        xlCell.alignment = { horizontal: 'center', wrapText: true };
         xlCell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
+
+        if (cell.pageNumber) {
+          xlCell.note = `Fuente original: PDF cotización, Página ${cell.pageNumber}`;
+        }
+        if (cell.confidence !== undefined && cell.confidence !== null) {
+          const confText = `Confianza: ${(cell.confidence * 100).toFixed(0)}%`;
+          xlCell.note = xlCell.note ? `${xlCell.note}\n${confText}` : confText;
+        }
       });
+
+      if (hasNotes) {
+        const cellId = `coverage-${row.id}`;
+        const note = cellNotes?.[cellId];
+        const notesCell = coveragesSheet.getCell(currentCovRow, quotes.length + 2);
+        notesCell.value = note || '';
+        notesCell.font = { name: FONT_NAME, size: 9, color: { argb: 'FF7C3AED' }, italic: true };
+        if (note) notesCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3E8FF' } };
+      }
+
       currentCovRow++;
-    });
+    }
   }
 
   // -------------------------------------------------------------
-  // Pestaña 3: Matriz Deducibles
+  // Pestaña 3: Matriz Deducibles (Consolidated Deductible Matrix)
   // -------------------------------------------------------------
   const deductiblesSheet = workbook.addWorksheet('Matriz Deducibles');
   deductiblesSheet.views = [{ showGridLines: false }];
 
-  deductiblesSheet.getColumn(1).width = 44;
+  deductiblesSheet.getColumn(1).width = 45;
   for (let i = 0; i < quotes.length; i++) {
     deductiblesSheet.getColumn(i + 2).width = 38;
   }
@@ -542,7 +403,7 @@ export async function generateExcelBuffer(
   dedTitle.value = 'MATRIZ CONSOLIDADA DE DEDUCIBLES Y RETENCIÓN DE RIESGO';
   dedTitle.font = { name: FONT_NAME, size: 14, bold: true, color: { argb: 'FF1E3A8A' } };
 
-  deductiblesSheet.getRow(4).height = 26;
+  deductiblesSheet.getRow(4).height = 28;
   const dedLabelHeader = deductiblesSheet.getCell(4, 1);
   dedLabelHeader.value = 'AMPARO / COBERTURA';
   dedLabelHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -556,47 +417,93 @@ export async function generateExcelBuffer(
     insHeader.alignment = { horizontal: 'center' };
   });
 
+  // Filter matrix for deductible rows or build from matrix
+  const deductibleMatrixRows = matrix.filter(
+    (row) =>
+      row.id.includes('_row_deductible') ||
+      row.id.startsWith('deductible_') ||
+      row.id === 'section_group_deductibles'
+  );
+
   let currentDedRow = 5;
 
-  CANONICAL_CATEGORIES.forEach((cat) => {
-    deductiblesSheet.getRow(currentDedRow).height = 24;
-    const labelCell = deductiblesSheet.getCell(currentDedRow, 1);
-    labelCell.value = cat.name;
-    labelCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF475569' } };
-    labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+  if (deductibleMatrixRows.length > 0) {
+    for (const row of deductibleMatrixRows) {
+      if (row.type === 'header') {
+        deductiblesSheet.mergeCells(currentDedRow, 1, currentDedRow, quotes.length + 1);
+        const cell = deductiblesSheet.getCell(currentDedRow, 1);
+        cell.value = row.label;
+        cell.font = { name: FONT_NAME, size: 11, bold: true, color: { argb: 'FF1E3A8A' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+        currentDedRow++;
+      } else if (row.type === 'spacer') {
+        deductiblesSheet.getRow(currentDedRow).height = 8;
+        currentDedRow++;
+      } else {
+        deductiblesSheet.getRow(currentDedRow).height = 24;
+        const labelCell = deductiblesSheet.getCell(currentDedRow, 1);
+        labelCell.value = row.label;
+        labelCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF475569' } };
+        labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
 
-    quotes.forEach((q, qIdx) => {
-      const xlCell = deductiblesSheet.getCell(currentDedRow, qIdx + 2);
-      const cov = (q.coverages || []).find((c) => {
-        const cName = (c.name || '').toLowerCase();
-        const cCanon = (c.canonicalName || '').toLowerCase();
-        return (
-          cCanon === cat.name.toLowerCase() ||
-          cName === cat.name.toLowerCase() ||
-          calculateSimilarity(cName, cat.name) >= 0.70 ||
-          cat.keywords.some((kw) => cName.includes(kw) || cCanon.includes(kw))
-        );
-      });
+        row.cells.forEach((cell: MatrixCell, idx: number) => {
+          const xlCell = deductiblesSheet.getCell(currentDedRow, idx + 2);
+          const rawDed = cell.value || 'Sin deducible';
+          const enrichedDed = enrichSmmlvDeductible(rawDed);
+          const isNoAplica =
+            enrichedDed.toLowerCase().includes('no aplica') ||
+            enrichedDed.toLowerCase().includes('sin deducible');
 
-      const rawDed = cov?.deductible || q.deductibles || 'Sin deducible';
-      const enrichedDed = enrichSmmlvDeductible(rawDed);
-      const isNoAplica =
-        enrichedDed.toLowerCase().includes('no aplica') ||
-        enrichedDed.toLowerCase().includes('sin deducible');
+          xlCell.value = enrichedDed;
+          xlCell.font = { name: FONT_NAME, size: 10, color: { argb: 'FF1E293B' } };
 
-      xlCell.value = enrichedDed;
-      xlCell.font = { name: FONT_NAME, size: 10, color: { argb: 'FF1E293B' } };
+          if (isNoAplica) {
+            xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDEF7EC' } };
+            xlCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF03543F' } };
+          }
 
-      if (isNoAplica) {
-        xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
-        xlCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF065F46' } };
+          xlCell.alignment = { horizontal: 'center', wrapText: true };
+          xlCell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
+        });
+        currentDedRow++;
       }
+    }
+  } else {
+    // Fallback: iterate quotes coverages for deductibles
+    const coverageNames = Array.from(
+      new Set(quotes.flatMap((q) => (q.coverages || []).map((c) => c.name)))
+    );
 
-      xlCell.alignment = { horizontal: 'center', wrapText: true };
-      xlCell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
+    coverageNames.forEach((covName) => {
+      deductiblesSheet.getRow(currentDedRow).height = 24;
+      const labelCell = deductiblesSheet.getCell(currentDedRow, 1);
+      labelCell.value = covName;
+      labelCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF475569' } };
+      labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+
+      quotes.forEach((q, qIdx) => {
+        const xlCell = deductiblesSheet.getCell(currentDedRow, qIdx + 2);
+        const cov = (q.coverages || []).find((c) => c.name === covName);
+        const rawDed = cov?.deductible || 'Sin deducible';
+        const enrichedDed = enrichSmmlvDeductible(rawDed);
+        const isNoAplica =
+          enrichedDed.toLowerCase().includes('no aplica') ||
+          enrichedDed.toLowerCase().includes('sin deducible');
+
+        xlCell.value = enrichedDed;
+        xlCell.font = { name: FONT_NAME, size: 10, color: { argb: 'FF1E293B' } };
+
+        if (isNoAplica) {
+          xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDEF7EC' } };
+          xlCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF03543F' } };
+        }
+
+        xlCell.alignment = { horizontal: 'center', wrapText: true };
+        xlCell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
+      });
+      currentDedRow++;
     });
-    currentDedRow++;
-  });
+  }
 
   // -------------------------------------------------------------
   // Pestaña 4: Primas y Costos (CON FÓRMULAS NATIVAS E INDICADOR GRÁFICO VISUAL)
@@ -614,7 +521,7 @@ export async function generateExcelBuffer(
   finTitle.value = 'EVALUACIÓN FINANCIERA DE PRIMAS Y COSTOS COMPARATIVOS';
   finTitle.font = { name: FONT_NAME, size: 14, bold: true, color: { argb: 'FF1E3A8A' } };
 
-  financialsSheet.getRow(4).height = 26;
+  financialsSheet.getRow(4).height = 28;
   const finLabelHeader = financialsSheet.getCell(4, 1);
   finLabelHeader.value = 'CONCEPTO FINANCIERO';
   finLabelHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -663,7 +570,7 @@ export async function generateExcelBuffer(
       xlCell.alignment = { horizontal: 'center' };
 
       if (res.isWinner) {
-        xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDF2E9' } };
+        xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF3C7' } };
         xlCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF92400E' } };
       }
     });
@@ -741,14 +648,14 @@ export async function generateExcelBuffer(
       xlCell.value = `${barChars} (+${diffPct.toFixed(1)}%)`;
 
       if (p === minNet) {
-        xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
-        xlCell.font = { name: FONT_NAME, size: 9, bold: true, color: { argb: 'FF065F46' } };
+        xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDEF7EC' } };
+        xlCell.font = { name: FONT_NAME, size: 9, bold: true, color: { argb: 'FF03543F' } };
       } else if (p === maxNet) {
-        xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } };
-        xlCell.font = { name: FONT_NAME, size: 9, bold: true, color: { argb: 'FF991B1B' } };
+        xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE8E8' } };
+        xlCell.font = { name: FONT_NAME, size: 9, bold: true, color: { argb: 'FF9B1C1C' } };
       } else {
-        xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF3C7' } };
-        xlCell.font = { name: FONT_NAME, size: 9, bold: true, color: { argb: 'FF92400E' } };
+        xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF08A' } };
+        xlCell.font = { name: FONT_NAME, size: 9, bold: true, color: { argb: 'FF713F12' } };
       }
     } else {
       xlCell.value = 'N/A';
@@ -773,8 +680,8 @@ export async function generateExcelBuffer(
   riskTitle.value = 'AUDITORÍA DE RIESGOS, CALIFICACIÓN TÉCNICA Y CONDICIONADOS';
   riskTitle.font = { name: FONT_NAME, size: 14, bold: true, color: { argb: 'FF1E3A8A' } };
 
-  // Section 1: Scorecard de Calificación Técnica (1 a 10)
-  riskSheet.getRow(4).height = 24;
+  // Scorecard de Calificación Técnica (1 a 10)
+  riskSheet.getRow(4).height = 28;
   const scoreHeaders = ['Aseguradora', 'Perfil de Riesgo', 'Calificación (1 - 10)', 'Fortaleza Principal', 'Riesgo / Debilidad Principal'];
   scoreHeaders.forEach((h, idx) => {
     const cell = riskSheet.getCell(4, idx + 1);
@@ -792,30 +699,30 @@ export async function generateExcelBuffer(
     riskSheet.getCell(rowNum, 1).value = q.insurerName;
     riskSheet.getCell(rowNum, 2).value = ratingScore >= 8 ? 'Riesgo Bajo / Óptimo' : ratingScore >= 6 ? 'Riesgo Moderado' : 'Riesgo Alto';
 
-    // Columna Calificación con Gradient Scale
+    // Columna Calificación con Gradient Scale RAG
     const gradeCell = riskSheet.getCell(rowNum, 3);
     gradeCell.value = `${ratingScore} / 10`;
     gradeCell.font = { name: FONT_NAME, size: 10, bold: true };
     gradeCell.alignment = { horizontal: 'center' };
 
     if (ratingScore >= 8) {
-      gradeCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
-      gradeCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF065F46' } };
+      gradeCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDEF7EC' } };
+      gradeCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF03543F' } };
     } else if (ratingScore >= 6) {
-      gradeCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF3C7' } };
-      gradeCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF92400E' } };
+      gradeCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF08A' } };
+      gradeCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF713F12' } };
     } else {
-      gradeCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } };
-      gradeCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF991B1B' } };
+      gradeCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE8E8' } };
+      gradeCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF9B1C1C' } };
     }
 
     riskSheet.getCell(rowNum, 4).value = q.technicalAnalysis || 'Alta cobertura canónica y estabilidad financiera';
     riskSheet.getCell(rowNum, 5).value = q.clientAnalysis || 'Revisar sublímites específicos e insumos de deducibles';
   });
 
-  // Section 2: Alertas Auditadas
+  // Tabla de Alertas Auditadas
   let rRowIdx = 7 + quotes.length;
-  riskSheet.getRow(rRowIdx).height = 24;
+  riskSheet.getRow(rRowIdx).height = 28;
   const alertHeaders = ['Nivel Severidad', 'Aseguradora', 'Hallazgo / Cobertura', 'Detalle de Alerta', 'Referencia Clausulado'];
   alertHeaders.forEach((h, idx) => {
     const cell = riskSheet.getCell(rRowIdx, idx + 1);
@@ -838,14 +745,14 @@ export async function generateExcelBuffer(
       levelCell.alignment = { horizontal: 'center' };
 
       if (alert.level === 'CRITICAL') {
-        levelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } };
-        levelCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF991B1B' } };
+        levelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE8E8' } };
+        levelCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF9B1C1C' } };
       } else if (alert.level === 'WARNING') {
-        levelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF3C7' } };
-        levelCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF92400E' } };
+        levelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF08A' } };
+        levelCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF713F12' } };
       } else {
-        levelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
-        levelCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF065F46' } };
+        levelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDEF7EC' } };
+        levelCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF03543F' } };
       }
 
       riskSheet.getCell(rRowIdx, 2).value = q.insurerName;

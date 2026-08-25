@@ -891,6 +891,7 @@ export async function matrixRowsToComparisonReport(
 
   return {
     quotes,
+    matrix: matrixRows,
     recommendation: bestQuote
       ? `Mejor opción: ${bestQuote.insurerName} con score de ${bestQuote.score}/100. Análisis generado por el Motor Unificado de Comparación.`
       : 'No se pudieron analizar las cotizaciones',
