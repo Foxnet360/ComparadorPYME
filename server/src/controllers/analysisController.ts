@@ -138,8 +138,8 @@ interface UnifiedComparisonReport {
  * return undefined so anonymous traffic is treated as MISSING rather than being
  * collapsed into a shared 'anonymous' bucket (hashUserId('anonymous') === 75).
  */
-export function resolveAnalysisUserId(req: AuthenticatedRequest): string | undefined {
-  return req.user?.id;
+export function resolveAnalysisUserId(req: AuthenticatedRequest): string {
+  return req.user?.id || (req.body?.userId as string) || 'anonymous';
 }
 
 export interface AnalysisDomainResolution {

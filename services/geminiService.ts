@@ -6,12 +6,16 @@ export const analyzeQuotesWithGemini = async (
   clauseFiles: File[],
   clientName: string,
   onStatusUpdate?: (status: string) => void,
-  clauseIds?: string[], // NEW: Support for clause IDs from library
-  domain: 'pyme' | 'autos' = 'pyme'
+  clauseIds?: string[],
+  domain: string = 'pyme',
+  userId?: string
 ): Promise<ComparisonReport> => {
   const formData = new FormData();
   formData.append('clientName', clientName);
   formData.append('domain', domain);
+  if (userId) {
+    formData.append('userId', userId);
+  }
 
   if (onStatusUpdate) onStatusUpdate('Preparando archivos para envío...');
 

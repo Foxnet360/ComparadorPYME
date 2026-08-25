@@ -121,15 +121,11 @@ const App: React.FC = () => {
         clientName,
         (msg) => setStatusMessage(msg),
         clauseIdsToUse,
-        domain
+        domain,
+        currentUser?.id
       );
-      // Save to history using selected Client and capture generated ID
-      let savedId: string | undefined = undefined;
-      if (currentUser && selectedClient) {
-        savedId = await storageService.saveAnalysis(selectedClient.name, result, selectedClient.id);
-      } else if (currentUser) {
-        savedId = await storageService.saveAnalysis('Cliente Desconocido', result);
-      }
+      // Save to history unconditionally and capture generated ID
+      const savedId = await storageService.saveAnalysis(clientName, result, selectedClient?.id);
 
       if (savedId) {
         result.id = savedId;

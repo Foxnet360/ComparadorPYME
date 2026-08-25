@@ -270,7 +270,7 @@ export const storageService = {
     clientId?: string
   ): Promise<string | undefined> => {
     const currentUser = storageService.getCurrentUser();
-    if (!currentUser) return undefined;
+    const effectiveUserId = currentUser?.id || 'guest';
 
     if (!report || !report.quotes || !Array.isArray(report.quotes) || report.quotes.length === 0) {
       console.warn('Cannot save analysis: Invalid report structure', report);
@@ -286,7 +286,7 @@ export const storageService = {
 
     const newEntry: HistoryEntry = {
       id,
-      userId: currentUser.id,
+      userId: effectiveUserId,
       clientId,
       date: new Date().toISOString().split('T')[0],
       clientName: clientName || 'Cliente Sin Nombre',
