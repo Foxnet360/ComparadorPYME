@@ -15,20 +15,18 @@ export interface PremiumExtractionResult {
 }
 
 const PREMIUM_PATTERNS = [
-  // "prima anual" or "prima total" or "prima neta" followed by number
+  // Multi-line matching for headers followed by numbers (e.g. PRIMA ANUAL INCLUIDO IVA \n $ 466.138)
+  /prima\s+anual\s+incluido\s+iva[\s\S]{0,120}?(?:\$\s*)?(\d[\d.,]+)/i,
+  /total\s+a\s+pagar[\s\S]{0,120}?(?:\$\s*)?(\d[\d.,]+)/i,
+  /total\s+prima[\s\S]{0,120}?(?:\$\s*)?(\d[\d.,]+)/i,
   /prima\s+(?:anual|total|neta)[:\s]*(?:\$\s*)?(\d[\d.,]+)/i,
-  // "prima" followed by number
   /prima[:\s]+(?:\$\s*)?(\d[\d.,]+)/i,
-  // "total a pagar" followed by number
-  /total\s+a\s+pagar[:\s]*(?:\$\s*)?(\d[\d.,]+)/i,
-  // "valor total" followed by number (with optional text in between)
   /valor\s+total(?:\s+\w+){0,5}[:\s]*(?:\$\s*)?(\d[\d.,]+)/i,
-  // Generic number with currency context
   /(?:\$\s*)?(\d[\d.,]+)\s*(?:COP|USD)/i,
 ];
 
-// Valid premium range for Colombian PYME insurance
-const MIN_PREMIUM = 100000; // 100K COP
+// Valid premium range for Colombian insurance (supporting Hogar from 10K COP up to 500M)
+const MIN_PREMIUM = 10000; // 10K COP
 const MAX_PREMIUM = 500000000; // 500M COP
 
 /**
@@ -43,19 +41,15 @@ export function extractPremiumWithRegex(text: string): PremiumExtractionResult |
   for (const pattern of PREMIUM_PATTERNS) {
     const match = normalizedText.match(pattern);
     if (match && match[1]) {
-      // After normalization, numbers are in format 1234567.89
-      // Just remove any remaining commas and parse
       const rawValue = match[1].replace(/,/g, '');
       const value = parseFloat(rawValue);
 
-      if (!isNaN(value) && value > 0) {
-        const isValidRange = value >= MIN_PREMIUM && value <= MAX_PREMIUM;
-
+      if (!isNaN(value) && value >= MIN_PREMIUM && value <= MAX_PREMIUM) {
         return {
           priceAnnual: Math.round(value),
           currency: 'COP',
           source: 'regex_fallback',
-          confidence: isValidRange ? 75 : 50, // Lower confidence if outside normal range
+          confidence: 85,
         };
       }
     }
@@ -172,17 +166,49 @@ export interface RawCoveragePremium {
 /**
  * Extract premium breakdown with all components
  */
-export function extractPremiumBreakdown(data: { premium?: unknown }): PremiumBreakdown {
+export function extractPremiumBreakdown(data: any): PremiumBreakdown {
+  if (!data) {
+    return {
+      netPremium: 0,
+      fees: 0,
+      taxes: 0,
+      otherCharges: 0,
+      totalPayable: 0,
+      currency: 'COP',
+      periodicity: 'ANUAL',
+    };
+  }
+
   const premium = (data.premium || {}) as Partial<PremiumBreakdown>;
 
+  let net = premium.netPremium || data.netPremium || 0;
+  let fees = premium.fees || data.fees || 0;
+  let taxes = premium.taxes || data.taxes || 0;
+  let otherCharges = premium.otherCharges || data.otherCharges || 0;
+  let total =
+    premium.totalPayable ||
+    data.totalPayable ||
+    data.priceAnnual ||
+    data.priceMonthly ||
+    data.price ||
+    0;
+
+  if (total === 0 && net > 0) {
+    total = Math.round(net * 1.19);
+  }
+  if (net === 0 && total > 0) {
+    net = Math.round(total / 1.19);
+    taxes = total - net;
+  }
+
   return {
-    netPremium: premium.netPremium || 0,
-    fees: premium.fees || 0,
-    taxes: premium.taxes || 0,
-    otherCharges: premium.otherCharges || 0,
-    totalPayable: premium.totalPayable || 0,
-    currency: premium.currency || 'COP',
-    periodicity: premium.periodicity || 'ANUAL',
+    netPremium: net,
+    fees,
+    taxes,
+    otherCharges,
+    totalPayable: total,
+    currency: premium.currency || data.currency || 'COP',
+    periodicity: premium.periodicity || data.periodicity || 'ANUAL',
   };
 }
 
