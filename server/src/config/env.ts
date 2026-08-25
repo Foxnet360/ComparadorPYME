@@ -51,7 +51,11 @@ export interface EnvConfig {
 const requiredVars = ['GEMINI_API_KEY', 'SUPABASE_URL', 'SUPABASE_ANON_KEY'];
 
 interface TaxonomyMetadata {
+  salaryValue2026?: number;
+  salaryValue2025?: number;
   salaryValue2024?: number;
+  uvtValue2026?: number;
+  uvtValue2025?: number;
   uvtValue2024?: number;
   source?: string;
 }
@@ -63,13 +67,10 @@ function isWithinDrift(a: number, b: number, threshold = 0.01): boolean {
 }
 
 /**
- * Compare runtime env SMMLV/UVT values with the offline taxonomy metadata.
- * Warns when the drift exceeds 1%. Throws only when both env and taxonomy are
- * missing, which should never happen because env has documented defaults.
+ * Validates consistency between environment variables and taxonomy metadata
  */
-export function checkEnvTaxonomyConsistency(config: EnvConfig): void {
+function checkEnvTaxonomyConsistency(config: EnvConfig): void {
   let metadata: TaxonomyMetadata | undefined;
-
   try {
     const taxonomy = loadDomainJson<{ metadata: TaxonomyMetadata }>('pyme', 'taxonomy.json');
     metadata = taxonomy.metadata;
@@ -80,34 +81,36 @@ export function checkEnvTaxonomyConsistency(config: EnvConfig): void {
 
   const envSmmlv = process.env.SMMLV_VALUE;
   const envUvt = process.env.UVT_VALUE;
+  const targetSalary = metadata?.salaryValue2026 || metadata?.salaryValue2025 || metadata?.salaryValue2024;
+  const targetUvt = metadata?.uvtValue2026 || metadata?.uvtValue2025 || metadata?.uvtValue2024;
 
-  if (!envSmmlv && metadata?.salaryValue2024) {
+  if (!envSmmlv && targetSalary) {
     logger.warn(
-      `⚠️ SMMLV_VALUE not set; using taxonomy metadata ${metadata.salaryValue2024}. Source: ${metadata.source || 'unknown'}`
+      `⚠️ SMMLV_VALUE not set; using taxonomy metadata ${targetSalary}. Source: ${metadata?.source || 'unknown'}`
     );
   }
-  if (!envUvt && metadata?.uvtValue2024) {
+  if (!envUvt && targetUvt) {
     logger.warn(
-      `⚠️ UVT_VALUE not set; using taxonomy metadata ${metadata.uvtValue2024}. Source: ${metadata.source || 'unknown'}`
+      `⚠️ UVT_VALUE not set; using taxonomy metadata ${targetUvt}. Source: ${metadata?.source || 'unknown'}`
     );
   }
 
-  if (!envSmmlv && !metadata?.salaryValue2024) {
+  if (!envSmmlv && !targetSalary) {
     throw new Error('SMMLV_VALUE is not configured and taxonomy metadata is missing');
   }
-  if (!envUvt && !metadata?.uvtValue2024) {
+  if (!envUvt && !targetUvt) {
     throw new Error('UVT_VALUE is not configured and taxonomy metadata is missing');
   }
 
-  if (metadata?.salaryValue2024 && !isWithinDrift(config.SMMLV_VALUE, metadata.salaryValue2024)) {
+  if (targetSalary && !isWithinDrift(config.SMMLV_VALUE, targetSalary)) {
     logger.warn(
-      `⚠️ SMMLV_VALUE (${config.SMMLV_VALUE}) differs from taxonomy metadata (${metadata.salaryValue2024}) by more than 1%. Source: ${metadata.source || 'unknown'}`
+      `⚠️ SMMLV_VALUE (${config.SMMLV_VALUE}) differs from taxonomy metadata (${targetSalary}) by more than 1%. Source: ${metadata?.source || 'unknown'}`
     );
   }
 
-  if (metadata?.uvtValue2024 && !isWithinDrift(config.UVT_VALUE, metadata.uvtValue2024)) {
+  if (targetUvt && !isWithinDrift(config.UVT_VALUE, targetUvt)) {
     logger.warn(
-      `⚠️ UVT_VALUE (${config.UVT_VALUE}) differs from taxonomy metadata (${metadata.uvtValue2024}) by more than 1%. Source: ${metadata.source || 'unknown'}`
+      `⚠️ UVT_VALUE (${config.UVT_VALUE}) differs from taxonomy metadata (${targetUvt}) by more than 1%. Source: ${metadata?.source || 'unknown'}`
     );
   }
 }
@@ -159,8 +162,8 @@ function validateEnv(): EnvConfig {
     GEMINI_EMBEDDING_MODEL: process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-2',
 
     REGION: process.env.REGION || 'CO',
-    SMMLV_VALUE: parseInt(process.env.SMMLV_VALUE || '1423500', 10),
-    UVT_VALUE: parseInt(process.env.UVT_VALUE || '42412', 10),
+    SMMLV_VALUE: parseInt(process.env.SMMLV_VALUE || '1750905', 10),
+    UVT_VALUE: parseInt(process.env.UVT_VALUE || '52374', 10),
     CURRENCY: process.env.CURRENCY || 'COP',
 
     CLAUSE_PAGES_BUCKET: process.env.CLAUSE_PAGES_BUCKET || 'clause-pages',
