@@ -366,7 +366,8 @@ export const exportAnalysisExcel = async (
       city: req.user?.city || req.user?.agentDetails?.city,
     };
 
-    const buffer = await generateExcelBuffer(quotes, clientInfo, cellNotes, brokerInfo, domain);
+    const reportData = analysis?.analysis_result || req.body?.report;
+    const buffer = await generateExcelBuffer(quotes, clientInfo, cellNotes, brokerInfo, domain, reportData);
 
     res.setHeader(
       'Content-Type',

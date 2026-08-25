@@ -127,16 +127,18 @@ describe('excelGenerator', () => {
       expect(buffer.length).toBeGreaterThan(0);
     });
 
-    it('should generate a workbook with three worksheets', async () => {
+    it('should generate a workbook with five worksheets', async () => {
       const buffer = await generateExcelBuffer(mockQuotes);
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer);
 
-      expect(workbook.worksheets.length).toBe(3);
+      expect(workbook.worksheets.length).toBe(5);
       expect(workbook.worksheets.map((w) => w.name)).toEqual([
-        'Portada',
-        'Coberturas y Deducibles',
+        'Portada y Resumen General',
+        'Matriz Coberturas',
+        'Matriz Deducibles',
         'Primas y Costos',
+        'Análisis de Riesgos',
       ]);
     });
 
@@ -158,8 +160,13 @@ describe('excelGenerator', () => {
       });
 
       expect(ratioCell).toBeDefined();
-      expect(ratioCell!.value).toBeGreaterThan(0);
-      expect(ratioCell!.numFmt).toBe('0.00%');
+      const val = ratioCell!.value;
+      if (typeof val === 'object' && val !== null && 'formula' in val) {
+        expect((val as any).formula).toContain('/119600000');
+      } else {
+        expect(val as number).toBeGreaterThan(0);
+        expect(ratioCell!.numFmt).toBe('0.00%');
+      }
     });
 
     it('should include notes column when cellNotes are provided', async () => {
@@ -170,7 +177,7 @@ describe('excelGenerator', () => {
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer);
 
-      const coveragesSheet = workbook.getWorksheet('Coberturas y Deducibles');
+      const coveragesSheet = workbook.getWorksheet('Matriz Coberturas');
       expect(coveragesSheet).toBeDefined();
 
       // With notes, there should be an extra column
@@ -184,7 +191,7 @@ describe('excelGenerator', () => {
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer);
 
-      const coveragesSheet = workbook.getWorksheet('Coberturas y Deducibles');
+      const coveragesSheet = workbook.getWorksheet('Matriz Coberturas');
       expect(coveragesSheet).toBeDefined();
 
       // Without notes, there should be no extra column
@@ -198,7 +205,7 @@ describe('excelGenerator', () => {
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer);
 
-      const coveragesSheet = workbook.getWorksheet('Coberturas y Deducibles');
+      const coveragesSheet = workbook.getWorksheet('Matriz Coberturas');
       expect(coveragesSheet).toBeDefined();
 
       let exclusiveCell: ExcelJS.Cell | undefined;
@@ -210,7 +217,8 @@ describe('excelGenerator', () => {
       });
 
       expect(exclusiveCell).toBeDefined();
-      expect(exclusiveCell!.value).toBe('$50.000.000');
+      expect(exclusiveCell!.value).toBe(50000000);
+      expect(exclusiveCell!.numFmt).toBe('$#,##0');
     });
 
     it('should preserve non-numeric exclusive coverage values', async () => {
@@ -257,7 +265,7 @@ describe('excelGenerator', () => {
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer);
 
-      const coveragesSheet = workbook.getWorksheet('Coberturas y Deducibles');
+      const coveragesSheet = workbook.getWorksheet('Matriz Coberturas');
       expect(coveragesSheet).toBeDefined();
 
       let exclusiveCell: ExcelJS.Cell | undefined;
@@ -311,7 +319,7 @@ describe('excelGenerator', () => {
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer);
 
-      const coveragesSheet = workbook.getWorksheet('Coberturas y Deducibles');
+      const coveragesSheet = workbook.getWorksheet('Matriz Coberturas');
       expect(coveragesSheet).toBeDefined();
 
       let foundHeader = false;
@@ -330,7 +338,7 @@ describe('excelGenerator', () => {
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer);
 
-      const coveragesSheet = workbook.getWorksheet('Coberturas y Deducibles');
+      const coveragesSheet = workbook.getWorksheet('Matriz Coberturas');
       expect(coveragesSheet).toBeDefined();
 
       let confidenceCell: ExcelJS.Cell | undefined;
