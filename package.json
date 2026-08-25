@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "npm run build:frontend && npm run build:backend",
     "build:frontend": "vite build",
-    "build:backend": "cd server && ../node_modules/.bin/tsc -p tsconfig.json && mkdir -p dist/data && (cp -r src/data/* dist/data/ 2>/dev/null || true) && (cp -r ../data dist/data 2>/dev/null || true)",
+    "build:backend": "cd server && npx tsc && mkdir -p dist/data && (cp -r src/data/* dist/data/ 2>/dev/null || true) && (cp -r ../data dist/data 2>/dev/null || true)",
     "preview": "vite preview",
     "start": "node index.js",
     "server:dev": "cd server && ts-node --transpile-only src/index.ts",
