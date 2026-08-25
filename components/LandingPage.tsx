@@ -28,6 +28,7 @@ import {
   Sparkles,
   FileCheck,
   Award,
+  Briefcase,
 } from 'lucide-react';
 
 interface LandingPageProps {
