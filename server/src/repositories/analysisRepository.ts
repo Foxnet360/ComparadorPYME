@@ -71,6 +71,9 @@ export async function getAnalysisById(id: string): Promise<AnalysisHistoryRecord
   const { data, error } = await supabase.from('analysis_history').select('*').eq('id', id).single();
 
   if (error) {
+    if (error.code === 'PGRST116') {
+      return null;
+    }
     handleDbError(error, 'Failed to fetch analysis by id');
   }
 

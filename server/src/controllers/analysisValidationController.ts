@@ -306,37 +306,33 @@ export const exportAnalysisExcel = async (
 
   try {
     const analysis = await getAnalysisById(id);
-    if (!analysis) {
-      res.status(404).json({ error: `Analysis with id ${id} not found` });
-      return;
-    }
 
     // Ownership check: when a userId is present and the analysis has an owner, enforce it.
-    if (userId && analysis.user_id && analysis.user_id !== userId) {
+    if (userId && analysis && analysis.user_id && analysis.user_id !== userId) {
       res.status(403).json({ error: 'Forbidden: analysis does not belong to current user' });
       return;
     }
 
-    const quotes = analysis.analysis_result?.quotes || [];
-    if (quotes.length === 0) {
-      res.status(404).json({ error: `No quotes found in analysis ${id}` });
+    const quotes = analysis?.analysis_result?.quotes || req.body?.quotes || [];
+    if (!quotes || quotes.length === 0) {
+      res.status(404).json({ error: `Analysis with id ${id} not found and no quotes provided` });
       return;
     }
 
     const domain = (
       (req.query?.domain as string) ||
       req.body?.domain ||
-      (analysis as any).domain ||
-      (analysis.analysis_result as any)?.domain ||
-      ((analysis as any).metadata as any)?.domain ||
+      ((analysis as any)?.domain) ||
+      ((analysis as any)?.analysis_result as any)?.domain ||
+      ((analysis as any)?.metadata as any)?.domain ||
       'pyme'
     ).toLowerCase().trim();
 
     const rawClientName =
       (req.query?.clientName as string) ||
       req.body?.clientName ||
-      analysis.client_name ||
-      (analysis.analysis_result as any)?.clientInfo?.name ||
+      analysis?.client_name ||
+      ((analysis as any)?.analysis_result as any)?.clientInfo?.name ||
       'Cliente';
 
     const defaultActivity =
@@ -353,7 +349,7 @@ export const exportAnalysisExcel = async (
       activity:
         (req.query?.clientActivity as string) ||
         req.body?.clientActivity ||
-        (analysis.analysis_result as any)?.clientInfo?.activity ||
+        ((analysis as any)?.analysis_result as any)?.clientInfo?.activity ||
         defaultActivity,
       location: 'Bogotá D.C.',
     };
