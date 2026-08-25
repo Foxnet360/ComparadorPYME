@@ -81,7 +81,7 @@ export const CATEGORY_CONFIGS: CategoryConfig[] = [
   },
   {
     id: 6,
-    canonicalName: 'Responsabilidad Civil (RCE)',
+    canonicalName: 'Responsabilidad Civil Extracontractual (RCE)',
     headerLabel: 'RESPONSABILIDAD CIVIL EXTRACONTRACTUAL (RCE)',
     rows: [
       { label: 'Valor Asegurado', field: 'value' },
@@ -173,8 +173,7 @@ export function formatMatrixValue(val: string | undefined | null): string {
   if (!val) return 'No informado';
   if (isExcludedValue(val)) return val;
 
-  // Only format values that are simple numeric representations.
-  // This preserves text like "Incluido", "No aplica", deductibles, etc.
+  // Preserves text like "Incluido", "No aplica", deductibles, etc.
   if (!/^[\s$.,\d]+$/.test(val)) return val;
 
   const numericVal = parseNumericValue(val);
@@ -185,9 +184,6 @@ export function formatMatrixValue(val: string | undefined | null): string {
 
 export function getCategoryConfigsForDomain(domain: string = 'pyme'): CategoryConfig[] {
   const d = (domain || 'pyme').toLowerCase();
-  if (d === 'pyme') {
-    return CATEGORY_CONFIGS;
-  }
 
   try {
     const { hasDomainSpecificFile, loadDomainJson } = require('./domainBundleLoader');
@@ -196,7 +192,7 @@ export function getCategoryConfigsForDomain(domain: string = 'pyme'): CategoryCo
 
       if (taxonomy && Array.isArray(taxonomy.categories) && taxonomy.categories.length > 0) {
         return taxonomy.categories.map((cat: any, idx: number) => ({
-          id: typeof cat.id === 'number' ? cat.id : idx + 1,
+          id: cat.id,
           canonicalName: cat.name,
           headerLabel: String(cat.section || cat.name).toUpperCase(),
           rows: [
@@ -219,15 +215,14 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[], domain: string 
   const numQuotes = quotes.length;
   const activeCategoryConfigs = getCategoryConfigsForDomain(domain);
 
-  // 1. Process Canonical Categories
+  let catIdx = 1;
   for (const config of activeCategoryConfigs) {
-    // Check if at least one quote has this coverage configured (avoiding empty sections if all NC, but for strictness we include all 14)
-    // Add Header
+    const secId = typeof config.id === 'number' ? config.id : catIdx++;
     matrix.push({
       type: 'header',
-      id: `section_${config.id}`,
+      id: `section_${secId}`,
       label: config.headerLabel,
-      sectionId: config.id,
+      sectionId: secId,
       cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false })),
     });
 
@@ -240,12 +235,12 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[], domain: string 
         // Match coverage item semantically or by categoryId
         const cov = quote.coverages.find(
           (c) =>
-            (c.categoryId === config.id ||
-              c.canonicalName === config.canonicalName ||
-              c.name === config.canonicalName) &&
+            (String(c.categoryId) === String(config.id) ||
+              (c.canonicalName && c.canonicalName.toLowerCase() === config.canonicalName.toLowerCase()) ||
+              (c.name && c.name.toLowerCase() === config.canonicalName.toLowerCase())) &&
             (c.matchConfidence === undefined ||
               c.matchConfidence === null ||
-              c.matchConfidence >= 0.65)
+              c.matchConfidence >= 0.5)
         );
 
         if (cov) {
@@ -253,7 +248,8 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[], domain: string 
           if (rowConfig.field === 'value') {
             cellValue = formatMatrixValue(cov.value || 'No incluida');
           } else if (rowConfig.field === 'deductible') {
-            cellValue = cov.deductible || 'No aplica';
+            const rawDed = cov.deductible;
+            cellValue = rawDed && rawDed !== cov.value ? rawDed : 'Según amparo principal';
           } else {
             cellValue =
               cov.description ||

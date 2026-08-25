@@ -59,16 +59,28 @@ export async function generateExcelBuffer(
   const clientActivity = clientInfo?.activity && clientInfo.activity !== 'Centro de Belleza y/o Estetica (CIIU 9602)' ? clientInfo.activity : defaultActivity;
   const clientLocation = clientInfo?.location || 'Bogotá D.C.';
 
-  // Find max asset value from Incendio coverages
-  const assetValues = quotes.map((q) => {
-    const incendio = q.coverages.find(
-      (c) =>
-        c.name.toLowerCase().includes('incendio') ||
-        c.canonicalName?.toLowerCase().includes('incendio')
-    );
-    return parseNumericValue(incendio?.value);
+  // Find max asset value from property / building coverages
+  const assetValues: number[] = [];
+  quotes.forEach((q) => {
+    q.coverages.forEach((c) => {
+      const name = (c.name || '').toLowerCase();
+      const canonical = (c.canonicalName || '').toLowerCase();
+      if (
+        name.includes('incendio') ||
+        name.includes('edificio') ||
+        name.includes('bienes') ||
+        name.includes('daño material') ||
+        name.includes('amparo básico') ||
+        canonical.includes('incendio') ||
+        canonical.includes('edificio') ||
+        canonical.includes('daño material')
+      ) {
+        const val = parseNumericValue(c.value);
+        if (val > 0) assetValues.push(val);
+      }
+    });
   });
-  const maxAsset = Math.max(...assetValues);
+  const maxAsset = assetValues.length > 0 ? Math.max(...assetValues) : 0;
   const totalAssetValueStr =
     maxAsset > 0
       ? '$' +
