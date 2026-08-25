@@ -33,8 +33,9 @@ const ClauseAdmin = lazy(() => import('./components/ClauseAdmin'));
 const ProfileScreen = lazy(() => import('./components/ProfileScreen'));
 const ClientManager = lazy(() => import('./components/ClientManager'));
 const ExecutiveAnalytics = lazy(() => import('./components/ExecutiveAnalytics'));
+const UserManagement = lazy(() => import('./components/UserManagement'));
 
-type ViewState = 'LANDING' | 'LOGIN' | 'REGISTER' | 'DASHBOARD' | 'ANALYZER' | 'REPORT' | 'CLIENTS' | 'ANALYTICS';
+type ViewState = 'LANDING' | 'LOGIN' | 'REGISTER' | 'DASHBOARD' | 'ANALYZER' | 'REPORT' | 'CLIENTS' | 'ANALYTICS' | 'USERS';
 
 const App: React.FC = () => {
   // Auth State
@@ -278,6 +279,19 @@ const App: React.FC = () => {
               <BarChart3 size={20} />
             </button>
 
+            {/* Gestión de Usuarios & Aliados (RBAC) */}
+            <button
+              onClick={() => setCurrentView('USERS')}
+              className={`p-2 rounded-full transition-colors ${
+                currentView === 'USERS'
+                  ? 'bg-indigo-100 text-indigo-700 font-semibold'
+                  : 'text-slate-500 hover:bg-indigo-100 hover:text-indigo-600'
+              }`}
+              title="Gestión de Usuarios y Aliados (RBAC)"
+            >
+              <ShieldCheck size={20} />
+            </button>
+
             {/* Clause Library Button (Admin) */}
             <button
               onClick={() => setShowClauseAdmin(true)}
@@ -362,6 +376,23 @@ const App: React.FC = () => {
           >
             <ExecutiveAnalytics
               onBackToDashboard={() => setCurrentView('DASHBOARD')}
+            />
+          </Suspense>
+        )}
+
+        {/* VIEW: USERS (RBAC Management) */}
+        {currentView === 'USERS' && (
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+              </div>
+            }
+          >
+            <UserManagement
+              currentUserRole={(currentUser as any)?.role || 'super_admin'}
+              currentAllyId={(currentUser as any)?.allyId || 'ally-100'}
+              onClose={() => setCurrentView('DASHBOARD')}
             />
           </Suspense>
         )}

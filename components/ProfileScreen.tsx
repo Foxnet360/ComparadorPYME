@@ -158,6 +158,30 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
 
           <form onSubmit={handleUpdate}>
             <div className="px-4 py-5 sm:p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+              {/* Role & Hierarchy Badge Banner */}
+              <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3.5 flex items-center justify-between shadow-xs">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-indigo-600 text-white rounded-lg">
+                    <ShieldCheck className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-indigo-900 uppercase tracking-wider">
+                      Rol de Sistema Asignado
+                    </div>
+                    <div className="text-sm font-extrabold text-indigo-700">
+                      {(currentUser as any).role === 'super_admin'
+                        ? 'SUPER ADMINISTRADOR PLATAFORMA'
+                        : (currentUser as any).role === 'ally_admin'
+                          ? 'ADMINISTRADOR DE ALIADO (DIRECTOR TÉCNICO)'
+                          : 'TÉCNICO ANALISTA DE SEGURIDAD'}
+                    </div>
+                  </div>
+                </div>
+                <span className="px-3 py-1 bg-indigo-600 text-white rounded-full text-xs font-bold uppercase tracking-wider">
+                  {(currentUser as any).allyName || formData.intermediaryName || 'Aliado CSA'}
+                </span>
+              </div>
+
               {/* Asesor & Logo Section */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
                 {/* Asesor Info */}

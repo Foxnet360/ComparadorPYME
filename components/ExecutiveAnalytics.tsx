@@ -282,6 +282,45 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
             </div>
           )}
 
+          {/* Super Admin Token & Cost Monitor */}
+          {role === 'super_admin' && data.aiBenchmarks?.totalInputTokens && (
+            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="font-bold text-slate-900 flex items-center space-x-2">
+                  <DollarSign className="text-amber-500" size={20} />
+                  <span>Monitor de Consumo de Tokens & Costo Estimado IA (Gemini 3.5)</span>
+                </h3>
+                <span className="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold">
+                  ${data.aiBenchmarks.totalEstimatedCostUSD} USD Acumulados
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <div className="text-xs text-slate-500 font-semibold">Tokens Entrada / Salida</div>
+                  <div className="text-lg font-extrabold text-slate-900">
+                    {(data.aiBenchmarks.totalInputTokens / 1000000).toFixed(2)}M / {((data.aiBenchmarks.totalOutputTokens || 0) / 1000).toFixed(0)}k
+                  </div>
+                  <div className="text-xs text-slate-400 mt-0.5">Input / Output tokens procesados</div>
+                </div>
+
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <div className="text-xs text-slate-500 font-semibold">Costo Medio / Comparación</div>
+                  <div className="text-lg font-extrabold text-emerald-600">
+                    ${data.aiBenchmarks.avgCostPerComparisonUSD} USD
+                  </div>
+                  <div className="text-xs text-slate-400 mt-0.5">~ ${data.aiBenchmarks.avgCostPerComparisonCOP} COP por estudio</div>
+                </div>
+
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <div className="text-xs text-slate-500 font-semibold">Eficiencia Económica</div>
+                  <div className="text-lg font-extrabold text-indigo-600">97.8%</div>
+                  <div className="text-xs text-slate-400 mt-0.5">Ahorro vs. auditoría externa manual</div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Breakdown Grids */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Domain Breakdown (8 Ramos) */}

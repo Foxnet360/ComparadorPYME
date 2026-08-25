@@ -275,6 +275,36 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
               </span>
             )}
           </div>
+
+          {selectedClient.domainDetails && (
+            <div className="pt-1.5 border-t border-slate-200/60 flex flex-wrap gap-1.5 text-[11px] font-semibold text-slate-700">
+              {selectedClient.domainDetails.commercialAssetsValue && (
+                <span className="bg-indigo-100/70 text-indigo-800 px-2 py-0.5 rounded-md">
+                  Activos Fijos: ${selectedClient.domainDetails.commercialAssetsValue.toLocaleString()} COP
+                </span>
+              )}
+              {selectedClient.domainDetails.employeeCount && (
+                <span className="bg-slate-200/80 text-slate-800 px-2 py-0.5 rounded-md">
+                  Empleados: {selectedClient.domainDetails.employeeCount}
+                </span>
+              )}
+              {selectedClient.domainDetails.transitCargoType && (
+                <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md">
+                  Carga: {selectedClient.domainDetails.transitCargoType}
+                </span>
+              )}
+              {selectedClient.domainDetails.fireProtectionSystem && (
+                <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md">
+                  Incendio: {selectedClient.domainDetails.fireProtectionSystem}
+                </span>
+              )}
+              {selectedClient.domainDetails.machineryReplacementValue && (
+                <span className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md">
+                  Maquinaria: ${selectedClient.domainDetails.machineryReplacementValue.toLocaleString()} COP
+                </span>
+              )}
+            </div>
+          )}
         </div>
       )}
 

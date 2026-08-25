@@ -95,6 +95,16 @@ export const analyticsService = {
         fuzzyMatchRate: 11.5,
         embeddingMatchRate: 4.3,
         avgApiLatencyMs: 145,
+        totalInputTokens: 1485000,
+        totalOutputTokens: 342000,
+        avgCostPerComparisonUSD: 0.082,
+        avgCostPerComparisonCOP: 330,
+        totalEstimatedCostUSD: 14.85,
+        allyTokenBreakdown: [
+          { allyName: 'Correduría Andina de Seguros S.A.', inputTokens: 680000, outputTokens: 155000, estimatedCostUSD: 6.80 },
+          { allyName: 'Alianza Corredores PYME Ltda.', inputTokens: 490000, outputTokens: 112000, estimatedCostUSD: 4.90 },
+          { allyName: 'Seguros Estratégicos del Caribe', inputTokens: 315000, outputTokens: 75000, estimatedCostUSD: 3.15 },
+        ],
       };
     }
 

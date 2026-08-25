@@ -352,6 +352,20 @@ export interface Client {
   constructionYear?: number;
   hasElevators?: boolean;
   hasPowerPlant?: boolean;
+  // Domain-specific Rich Attributes (enrichment for AI analysis)
+  domainDetails?: {
+    commercialAssetsValue?: number;
+    employeeCount?: number;
+    activitySector?: string;
+    fireProtectionSystem?: string;
+    securityGuard247?: boolean;
+    constructionType?: string;
+    transitCargoType?: string;
+    maxDispatchValue?: number;
+    frequentRoutes?: string;
+    machineryReplacementValue?: number;
+    hasPreventiveMaintenance?: boolean;
+  };
 }
 
 export type QuoteStatus = 'DRAFT' | 'SENT' | 'SOLD' | 'LOST';
@@ -486,5 +500,11 @@ export interface ExecutiveAnalyticsData {
     fuzzyMatchRate: number;
     embeddingMatchRate: number;
     avgApiLatencyMs: number;
+    totalInputTokens?: number;
+    totalOutputTokens?: number;
+    avgCostPerComparisonUSD?: number;
+    avgCostPerComparisonCOP?: number;
+    totalEstimatedCostUSD?: number;
+    allyTokenBreakdown?: Array<{ allyName: string; inputTokens: number; outputTokens: number; estimatedCostUSD: number }>;
   };
 }
