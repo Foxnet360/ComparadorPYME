@@ -12,6 +12,7 @@ import { coverageOntology, CoverageMapping } from './coverageOntology';
 import { featureFlags } from '../config/featureFlags';
 import { pdfExtractor } from './pdfExtractor';
 import { coverageGraphService } from './coverageGraphService';
+import { hasDomainSpecificFile } from './domainBundleLoader';
 
 export type CoverageStatus = 'present' | 'missing' | 'excluded';
 
@@ -153,8 +154,9 @@ async function mapRawToCanonicalWithInsurer(
 
   const d = domain ?? 'pyme';
 
-  // Semantic ontology mode (new architecture)
+  // Semantic ontology mode (only when domain has a dedicated ontology.json)
   if (
+    hasDomainSpecificFile(d, 'ontology.json') &&
     featureFlags.isEnabled('semanticCoverageOntology') &&
     !featureFlags.isEnabled('useLegacyCoverageMatcher')
   ) {
@@ -726,8 +728,9 @@ export async function buildCanonicalCoverages(
   insurerName?: string
 ): Promise<NormalizationResult> {
   const d = domain ?? 'pyme';
-  // Ontology mode (fluid architecture)
+  // Ontology mode (fluid architecture - only if domain has dedicated ontology.json)
   if (
+    hasDomainSpecificFile(d, 'ontology.json') &&
     featureFlags.isEnabled('semanticCoverageOntology') &&
     !featureFlags.isEnabled('useLegacyCoverageMatcher')
   ) {

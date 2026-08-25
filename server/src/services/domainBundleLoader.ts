@@ -25,6 +25,14 @@ export function resolveDomainBundlePath(domain: string, filename: string): strin
 }
 
 /**
+ * Retorna true si el dominio solicitado contiene explícitamente el archivo especificado
+ * (sin aplicar fallback a pyme).
+ */
+export function hasDomainSpecificFile(domain: string, filename: string): boolean {
+  return resolveDomainBundlePath(domain, filename) !== null;
+}
+
+/**
  * Carga y parsea un archivo JSON del bundle de un dominio.
  * Si el archivo no existe para el dominio solicitado, hace fallback al dominio "pyme".
  * Si tampoco existe para "pyme", lanza un error claro.

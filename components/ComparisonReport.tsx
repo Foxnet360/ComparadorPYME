@@ -244,10 +244,33 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
               className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${
                 report.domain === 'autos'
                   ? 'bg-blue-100 text-blue-800'
+                  : report.domain === 'copropiedades'
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : report.domain === 'cumplimiento'
+                  ? 'bg-amber-100 text-amber-800'
+                  : report.domain === 'transporte'
+                  ? 'bg-purple-100 text-purple-800'
+                  : report.domain === 'salud'
+                  ? 'bg-rose-100 text-rose-800'
+                  : report.domain === 'vida_grupo'
+                  ? 'bg-teal-100 text-teal-800'
+                  : report.domain === 'hogar'
+                  ? 'bg-cyan-100 text-cyan-800'
                   : 'bg-indigo-100 text-indigo-800'
               }`}
             >
-              Ramo: {report.domain === 'autos' ? 'Autos' : 'PYME'}
+              Ramo: {
+                {
+                  pyme: 'PYME',
+                  copropiedades: 'Copropiedades',
+                  autos: 'Autos',
+                  cumplimiento: 'Cumplimiento',
+                  transporte: 'Transporte',
+                  salud: 'Salud',
+                  vida_grupo: 'Vida Grupo',
+                  hogar: 'Hogar',
+                }[report.domain || 'pyme'] || (report.domain ? String(report.domain).toUpperCase() : 'PYME')
+              }
             </span>
           </div>
           <p className="text-sm text-slate-500">
