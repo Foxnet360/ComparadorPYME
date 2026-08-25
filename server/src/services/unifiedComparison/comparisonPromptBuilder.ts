@@ -145,7 +145,7 @@ Reglas Generales:
 - Copia los valores textualmente como aparecen en cada cotización.
 - No agrupes, no normalices a coberturas canónicas y no inventes datos.
 - Si una fila no aparece en una cotización, usa "No informado".
-- Para rawText (evidencia), incluye un snippet breve (máx. 100 caracteres) SOLO cuando exista información o cobertura. No incluyas textos extensos en celdas sin amparo.
+- Para rawText (evidencia), incluye un snippet breve (50-300 caracteres) SOLO cuando exista información o cobertura. No incluyas textos extensos en celdas sin amparo.
 - Además, para cada cotización, extrae los siguientes metadatos de cabecera: Cliente, Tipo de Seguro, Ubicación del Riesgo, Año Construcción, Pisos, Aliado, Actividad/Ocupación, Documento, Vigencia.
 - Responde únicamente con JSON válido que cumpla este schema:
 {

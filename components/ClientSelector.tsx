@@ -21,10 +21,15 @@ interface ClientSelectorProps {
   onSelectClient: (client: Client) => void;
   disabled?: boolean;
   activeDomain?: string;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 // Preset Colombian cities with seismic risk zones according to NSR-10
-const CITY_SEISMIC_ZONES: Record<string, { dept: string; zone: 'Alta' | 'Intermedia' | 'Baja'; lat: number; lng: number }> = {
+const CITY_SEISMIC_ZONES: Record<
+  string,
+  { dept: string; zone: 'Alta' | 'Intermedia' | 'Baja'; lat: number; lng: number }
+> = {
   Bogotá: { dept: 'Cundinamarca', zone: 'Intermedia', lat: 4.6097, lng: -74.0817 },
   Medellín: { dept: 'Antioquia', zone: 'Alta', lat: 6.2442, lng: -75.5812 },
   Cali: { dept: 'Valle del Cauca', zone: 'Alta', lat: 3.4516, lng: -76.532 },
@@ -44,10 +49,21 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
   onSelectClient,
   disabled,
   activeDomain = 'pyme',
+  isOpen: controlledIsOpen,
+  onOpenChange,
 }) => {
   const [clients, setClients] = useState<Client[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+
+  const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalOpen;
+  const setIsOpen = (open: boolean) => {
+    if (onOpenChange) {
+      onOpenChange(open);
+    } else {
+      setInternalOpen(open);
+    }
+  };
 
   // Modal State for new client / copropiedad
   const [showModal, setShowModal] = useState(false);
@@ -115,7 +131,9 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
       contactPerson: newClient.contactPerson,
       email: newClient.email,
       phone: newClient.phone,
-      industry: newClient.industry || (activeDomain === 'copropiedades' ? 'Copropiedad Horizontal' : 'Comercial'),
+      industry:
+        newClient.industry ||
+        (activeDomain === 'copropiedades' ? 'Copropiedad Horizontal' : 'Comercial'),
       address: newClient.address,
       city: newClient.city,
       department: newClient.department,
@@ -159,7 +177,9 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
   return (
     <div className="w-full relative">
       <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center justify-between">
-        <span>{activeDomain === 'copropiedades' ? 'Copropiedad / Edificio' : 'Cliente / Prospecto'}</span>
+        <span>
+          {activeDomain === 'copropiedades' ? 'Copropiedad / Edificio' : 'Cliente / Prospecto'}
+        </span>
         {selectedClient && selectedClient.city && (
           <span className="text-xs font-normal text-indigo-600 flex items-center">
             <MapPin size={12} className="mr-1" /> {selectedClient.city}, {selectedClient.department}
@@ -170,7 +190,9 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
       {/* Selector Trigger */}
       <div
         className={`bg-white border rounded-xl p-3 flex items-center justify-between cursor-pointer transition-all ${
-          disabled ? 'opacity-60 cursor-not-allowed border-slate-200' : 'border-slate-300 hover:border-indigo-500 hover:shadow-sm'
+          disabled
+            ? 'opacity-60 cursor-not-allowed border-slate-200'
+            : 'border-slate-300 hover:border-indigo-500 hover:shadow-sm'
         }`}
         onClick={() => !disabled && setIsOpen(!isOpen)}
       >
@@ -184,11 +206,16 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
             <span
               className={`font-medium truncate ${selectedClient ? 'text-slate-800' : 'text-slate-500'}`}
             >
-              {selectedClient ? selectedClient.name : activeDomain === 'copropiedades' ? 'Seleccionar Copropiedad...' : 'Seleccionar Cliente...'}
+              {selectedClient
+                ? selectedClient.name
+                : activeDomain === 'copropiedades'
+                  ? 'Seleccionar Copropiedad...'
+                  : 'Seleccionar Cliente...'}
             </span>
             {selectedClient && (
               <span className="text-xs text-slate-400">
-                NIT: {selectedClient.nit} {selectedClient.address ? `• ${selectedClient.address}` : ''}
+                NIT: {selectedClient.nit}{' '}
+                {selectedClient.address ? `• ${selectedClient.address}` : ''}
               </span>
             )}
           </div>
@@ -211,8 +238,8 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
                   selectedClient.seismicZone === 'Alta'
                     ? 'bg-rose-100 text-rose-700 border border-rose-200'
                     : selectedClient.seismicZone === 'Intermedia'
-                    ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                    : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                      ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                      : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                 }`}
               >
                 Riesgo Sísmico NSR-10: {selectedClient.seismicZone}
@@ -228,16 +255,24 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
               </span>
             )}
             {selectedClient.buildingType && (
-              <span>• Tipo: <strong className="text-slate-800">{selectedClient.buildingType}</strong></span>
+              <span>
+                • Tipo: <strong className="text-slate-800">{selectedClient.buildingType}</strong>
+              </span>
             )}
             {selectedClient.towersCount !== undefined && (
-              <span>• Torres: <strong className="text-slate-800">{selectedClient.towersCount}</strong></span>
+              <span>
+                • Torres: <strong className="text-slate-800">{selectedClient.towersCount}</strong>
+              </span>
             )}
             {selectedClient.unitsCount !== undefined && (
-              <span>• Unidades: <strong className="text-slate-800">{selectedClient.unitsCount}</strong></span>
+              <span>
+                • Unidades: <strong className="text-slate-800">{selectedClient.unitsCount}</strong>
+              </span>
             )}
             {selectedClient.floorsCount !== undefined && (
-              <span>• Pisos: <strong className="text-slate-800">{selectedClient.floorsCount}</strong></span>
+              <span>
+                • Pisos: <strong className="text-slate-800">{selectedClient.floorsCount}</strong>
+              </span>
             )}
           </div>
         </div>
@@ -324,7 +359,9 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
             <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
               <div>
                 <h3 className="font-bold text-lg text-slate-800">
-                  {activeDomain === 'copropiedades' ? 'Registrar Datos de Copropiedad y Georreferenciación' : 'Registrar Nuevo Cliente'}
+                  {activeDomain === 'copropiedades'
+                    ? 'Registrar Datos de Copropiedad y Georreferenciación'
+                    : 'Registrar Nuevo Cliente'}
                 </h3>
                 <p className="text-xs text-slate-500">
                   Ingresá la información del cliente, geolocalización y datos físicos del inmueble.
@@ -338,7 +375,10 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleCreateClient} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto scrollbar-thin">
+            <form
+              onSubmit={handleCreateClient}
+              className="p-6 space-y-5 max-h-[80vh] overflow-y-auto scrollbar-thin"
+            >
               {/* Sección 1: Datos Principales / Cliente */}
               <div>
                 <h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-3 flex items-center">
@@ -353,7 +393,11 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
                     <input
                       required
                       type="text"
-                      placeholder={activeDomain === 'copropiedades' ? 'Ej. C.R. Torres del Parque' : 'Ej. Empresa S.A.S.'}
+                      placeholder={
+                        activeDomain === 'copropiedades'
+                          ? 'Ej. C.R. Torres del Parque'
+                          : 'Ej. Empresa S.A.S.'
+                      }
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
                       value={newClient.name}
                       onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
@@ -383,7 +427,9 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
                       placeholder="Nombre del Administrador"
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
                       value={newClient.contactPerson}
-                      onChange={(e) => setNewClient({ ...newClient, contactPerson: e.target.value })}
+                      onChange={(e) =>
+                        setNewClient({ ...newClient, contactPerson: e.target.value })
+                      }
                     />
                   </div>
 
@@ -446,7 +492,9 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
                     <select
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white font-semibold"
                       value={newClient.seismicZone}
-                      onChange={(e) => setNewClient({ ...newClient, seismicZone: e.target.value as any })}
+                      onChange={(e) =>
+                        setNewClient({ ...newClient, seismicZone: e.target.value as any })
+                      }
                     >
                       <option value="Alta">Alta (Riesgo elevado)</option>
                       <option value="Intermedia">Intermedia (Riesgo moderado)</option>
@@ -471,23 +519,31 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Latitud</label>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                        Latitud
+                      </label>
                       <input
                         type="number"
                         step="0.0001"
                         className="w-full px-2 py-2 border border-slate-300 rounded-lg text-xs font-mono"
                         value={newClient.latitude}
-                        onChange={(e) => setNewClient({ ...newClient, latitude: parseFloat(e.target.value) })}
+                        onChange={(e) =>
+                          setNewClient({ ...newClient, latitude: parseFloat(e.target.value) })
+                        }
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Longitud</label>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                        Longitud
+                      </label>
                       <input
                         type="number"
                         step="0.0001"
                         className="w-full px-2 py-2 border border-slate-300 rounded-lg text-xs font-mono"
                         value={newClient.longitude}
-                        onChange={(e) => setNewClient({ ...newClient, longitude: parseFloat(e.target.value) })}
+                        onChange={(e) =>
+                          setNewClient({ ...newClient, longitude: parseFloat(e.target.value) })
+                        }
                       />
                     </div>
                   </div>
@@ -503,11 +559,15 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Tipo Copropiedad</label>
+                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                      Tipo Copropiedad
+                    </label>
                     <select
                       className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs bg-white"
                       value={newClient.buildingType}
-                      onChange={(e) => setNewClient({ ...newClient, buildingType: e.target.value as any })}
+                      onChange={(e) =>
+                        setNewClient({ ...newClient, buildingType: e.target.value as any })
+                      }
                     >
                       <option value="Residencial">Residencial</option>
                       <option value="Comercial">Comercial</option>
@@ -516,48 +576,67 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">No. Torres/Bloques</label>
+                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                      No. Torres/Bloques
+                    </label>
                     <input
                       type="number"
                       min="1"
                       className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
                       value={newClient.towersCount}
-                      onChange={(e) => setNewClient({ ...newClient, towersCount: parseInt(e.target.value) || 1 })}
+                      onChange={(e) =>
+                        setNewClient({ ...newClient, towersCount: parseInt(e.target.value) || 1 })
+                      }
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">No. Unidades / Aptos</label>
+                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                      No. Unidades / Aptos
+                    </label>
                     <input
                       type="number"
                       min="1"
                       className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
                       value={newClient.unitsCount}
-                      onChange={(e) => setNewClient({ ...newClient, unitsCount: parseInt(e.target.value) || 1 })}
+                      onChange={(e) =>
+                        setNewClient({ ...newClient, unitsCount: parseInt(e.target.value) || 1 })
+                      }
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Pisos por Torre</label>
+                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                      Pisos por Torre
+                    </label>
                     <input
                       type="number"
                       min="1"
                       className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
                       value={newClient.floorsCount}
-                      onChange={(e) => setNewClient({ ...newClient, floorsCount: parseInt(e.target.value) || 1 })}
+                      onChange={(e) =>
+                        setNewClient({ ...newClient, floorsCount: parseInt(e.target.value) || 1 })
+                      }
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Año Construcción</label>
+                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                      Año Construcción
+                    </label>
                     <input
                       type="number"
                       placeholder="Ej. 2018"
                       className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
                       value={newClient.constructionYear}
-                      onChange={(e) => setNewClient({ ...newClient, constructionYear: parseInt(e.target.value) || 2020 })}
+                      onChange={(e) =>
+                        setNewClient({
+                          ...newClient,
+                          constructionYear: parseInt(e.target.value) || 2020,
+                        })
+                      }
                     />
                   </div>
 
@@ -567,9 +646,14 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
                       id="hasElevators"
                       className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
                       checked={newClient.hasElevators}
-                      onChange={(e) => setNewClient({ ...newClient, hasElevators: e.target.checked })}
+                      onChange={(e) =>
+                        setNewClient({ ...newClient, hasElevators: e.target.checked })
+                      }
                     />
-                    <label htmlFor="hasElevators" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                    <label
+                      htmlFor="hasElevators"
+                      className="text-xs font-semibold text-slate-700 cursor-pointer"
+                    >
                       Tiene Ascensores
                     </label>
                   </div>
@@ -580,9 +664,14 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
                       id="hasPowerPlant"
                       className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
                       checked={newClient.hasPowerPlant}
-                      onChange={(e) => setNewClient({ ...newClient, hasPowerPlant: e.target.checked })}
+                      onChange={(e) =>
+                        setNewClient({ ...newClient, hasPowerPlant: e.target.checked })
+                      }
                     />
-                    <label htmlFor="hasPowerPlant" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                    <label
+                      htmlFor="hasPowerPlant"
+                      className="text-xs font-semibold text-slate-700 cursor-pointer"
+                    >
                       Tiene Planta Eléctrica
                     </label>
                   </div>

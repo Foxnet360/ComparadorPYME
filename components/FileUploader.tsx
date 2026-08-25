@@ -14,6 +14,7 @@ interface FileUploaderProps {
   domain?: InsuranceDomain;
   onDomainChange?: (domain: InsuranceDomain) => void;
   showDomainSelector?: boolean;
+  onFocusClientSelection?: () => void;
 }
 
 const FileUploader: React.FC<FileUploaderProps> = ({
@@ -28,6 +29,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   domain: propDomain,
   onDomainChange,
   showDomainSelector,
+  onFocusClientSelection,
 }) => {
   const [domain, setDomain] = useState<InsuranceDomain>(propDomain || 'pyme');
 
@@ -74,7 +76,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   const iconColor = isPrimary ? 'text-indigo-600' : 'text-slate-600';
   const iconBg = isPrimary ? 'bg-indigo-100' : 'bg-slate-100';
 
-  const shouldDisplayDomainSelector = showDomainSelector ?? isPrimary;
+  const shouldDisplayDomainSelector = showDomainSelector ?? false;
 
   return (
     <div className="w-full h-full flex flex-col space-y-4">
@@ -83,9 +85,18 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       )}
 
       {disabled && isPrimary && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-center space-x-2 animate-in fade-in">
-          <span className="font-medium">⚠️ Selecciona o crea un cliente arriba para habilitar la carga de cotizaciones.</span>
-        </div>
+        <button
+          type="button"
+          onClick={onFocusClientSelection}
+          className="w-full text-left bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-center space-x-2 animate-in fade-in hover:bg-amber-100 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400"
+        >
+          <span className="font-medium">
+            ⚠️ Selecciona o crea un cliente arriba para habilitar la carga de cotizaciones.
+          </span>
+          <span className="ml-auto font-semibold text-amber-700 underline whitespace-nowrap">
+            Seleccionar cliente →
+          </span>
+        </button>
       )}
       <div
         onDragOver={(e) => e.preventDefault()}

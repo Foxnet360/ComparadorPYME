@@ -23,6 +23,7 @@ export interface DomainSelectorProps {
   onChange: (domain: InsuranceDomain) => void;
   disabled?: boolean;
   className?: string;
+  allowedDomains?: InsuranceDomain[];
 }
 
 const DOMAIN_OPTIONS: DomainOption[] = [
@@ -81,7 +82,12 @@ export const DomainSelector: React.FC<DomainSelectorProps> = ({
   onChange,
   disabled = false,
   className = '',
+  allowedDomains,
 }) => {
+  const visibleOptions = allowedDomains
+    ? DOMAIN_OPTIONS.filter((option) => allowedDomains.includes(option.id))
+    : DOMAIN_OPTIONS;
+
   return (
     <div className={`w-full ${className}`}>
       <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
@@ -92,7 +98,7 @@ export const DomainSelector: React.FC<DomainSelectorProps> = ({
         aria-label="Seleccionar ramo de seguro"
         className="grid grid-cols-1 sm:grid-cols-2 gap-3"
       >
-        {DOMAIN_OPTIONS.map((option) => {
+        {visibleOptions.map((option) => {
           const isSelected = selectedDomain === option.id;
           const Icon = option.icon;
 

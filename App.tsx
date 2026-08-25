@@ -11,6 +11,7 @@ import {
   Users,
 } from 'lucide-react';
 import FileUploader from './components/FileUploader';
+import DomainSelector, { InsuranceDomain } from './components/DomainSelector';
 import { AnalysisProvider } from './contexts/AnalysisContext';
 import LoginScreen from './components/LoginScreen';
 import ClientSelector from './components/ClientSelector';
@@ -43,6 +44,7 @@ const App: React.FC = () => {
   // Analyzer State
   const [domain, setDomain] = useState<'pyme' | 'autos'>('pyme');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [clientSelectorOpen, setClientSelectorOpen] = useState(false);
   const [quoteFiles, setQuoteFiles] = useState<File[]>([]);
   const [clauseFiles, setClauseFiles] = useState<File[]>([]);
   const [clauseMode, setClauseMode] = useState<'library' | 'upload'>('library');
@@ -353,11 +355,29 @@ const App: React.FC = () => {
             {status === AppStatus.IDLE && (
               <div className="max-w-5xl mx-auto animate-in zoom-in-95 duration-500 space-y-6">
                 {/* 1. Client & Domain Selection (Top Bar) */}
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div className="flex-1">
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col md:flex-row md:items-start gap-4">
+                  <div className="flex-[2]">
                     <ClientSelector
                       selectedClient={selectedClient}
-                      onSelectClient={setSelectedClient}
+                      onSelectClient={(client) => {
+                        setSelectedClient(client);
+                        setDomain('pyme');
+                        setClientSelectorOpen(false);
+                      }}
+                      isOpen={clientSelectorOpen}
+                      onOpenChange={setClientSelectorOpen}
+                      activeDomain={domain}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-[260px]">
+                    <DomainSelector
+                      selectedDomain={domain}
+                      onChange={(newDomain: InsuranceDomain) => {
+                        if (newDomain === 'pyme' || newDomain === 'autos') {
+                          setDomain(newDomain);
+                        }
+                      }}
+                      allowedDomains={['pyme', 'autos']}
                     />
                   </div>
                 </div>
@@ -377,8 +397,7 @@ const App: React.FC = () => {
                         onRemoveFile={handleRemoveQuote}
                         variant="primary"
                         disabled={!selectedClient}
-                        domain={domain}
-                        onDomainChange={setDomain}
+                        onFocusClientSelection={() => setClientSelectorOpen(true)}
                       />
                     </div>
 
