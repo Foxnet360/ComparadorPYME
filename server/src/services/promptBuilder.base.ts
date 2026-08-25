@@ -36,7 +36,8 @@ REGLAS CRÍTICAS:
 5. IMPORTANTE: Si no encuentras deducible en ninguna página, usa "No aplica" para servicios (Asistencia PYME, Legal) o busca en cláusulas
 6. EXTRAER primas por cobertura si aparecen (algunas cotizaciones las muestran)
 7. La sección "RESPONSABILIDAD CIVIL" tiene sub-límites que van en subLimits
-8. Los valores "INCLUIDO" son coberturas sin suma asegurada numérica`,
+8. Los valores "INCLUIDO" son coberturas sin suma asegurada numérica
+9. DEDUCIBLES POR SUB-AMPARO: Cada sub-límite extraído en subLimits DEBE capturar su deducible particular si aparece en el PDF. Si no especifica deducible propio, usar "Según amparo principal" o null.`,
     formatInstructions: `FORMATO DE SALIDA:
 {
   "insurerName": "nombre exacto",
