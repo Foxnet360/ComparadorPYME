@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenAI } from '@google/genai';
+import WebSocket from 'ws';
 
 interface ServiceHealth {
   status: 'ok' | 'error';
@@ -94,7 +95,10 @@ async function checkSupabase(): Promise<ServiceHealth> {
       return { status: 'error', latency: 0, message: 'Supabase credentials not configured' };
     }
 
-    const supabase = createClient(url, key);
+    const supabase = createClient(url, key, {
+      auth: { persistSession: false },
+      realtime: { transport: WebSocket as any },
+    });
     const { error } = await supabase.rpc('select 1');
 
     if (error) {
