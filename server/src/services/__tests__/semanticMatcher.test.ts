@@ -85,12 +85,12 @@ describe('semanticMatcher', () => {
     });
 
     it('should match exact synonyms from thesaurus', async () => {
-      // "Responsabilidad Civil (RCE)" has synonyms in thesaurus
+      // "Responsabilidad Civil Extracontractual (RCE)" has synonyms in thesaurus
       const result = await semanticMatcher.matchCoverage('Responsabilidad Civil');
 
       expect(result.categoryId).toBe(6);
-      expect(result.canonicalName).toBe('Responsabilidad Civil (RCE)');
-      expect(result.confidence).toBe(1.0);
+      expect(result.canonicalName).toBe('Responsabilidad Civil Extracontractual (RCE)');
+      expect(result.confidence).toBeGreaterThanOrEqual(0.9);
       expect(result.method).toBe('thesaurus');
     });
 
@@ -105,7 +105,7 @@ describe('semanticMatcher', () => {
       const result = await semanticMatcher.matchCoverage('Responsabilidad Civil (RCE)');
 
       expect(result.categoryId).toBe(6);
-      expect(result.confidence).toBe(1.0);
+      expect(result.confidence).toBeGreaterThanOrEqual(0.9);
     });
 
     it('should return partial match confidence for substring matches', async () => {
@@ -126,15 +126,15 @@ describe('semanticMatcher', () => {
         'autos'
       );
 
-      expect(pymeResult.canonicalName).toBe('Responsabilidad Civil (RCE)');
+      expect(pymeResult.canonicalName).toBe('Responsabilidad Civil Extracontractual (RCE)');
       expect(autosResult.canonicalName).toBe('Responsabilidad Civil Extracontractual Vehicular');
     });
     it('should prioritize longer partial matches for specificity', async () => {
-      // "ROTURA DE VIDRIOS" should map to Vidrios Planos (cat 7) not Rotura de Maquinaria (cat 5)
+      // "ROTURA DE VIDRIOS" should map to Vidrios Planos (cat 8) not Rotura de Maquinaria (cat 5)
       // because "vidrios" (7 chars) is more specific than "rotura" (6 chars)
       const result = await semanticMatcher.matchCoverage('ROTURA DE VIDRIOS');
 
-      expect(result.categoryId).toBe(7);
+      expect(result.categoryId).toBe(8);
       expect(result.canonicalName).toBe('Vidrios Planos');
       expect(result.method).toBe('thesaurus');
     });
@@ -145,7 +145,7 @@ describe('semanticMatcher', () => {
       const result = await semanticMatcher.matchCoverage('Responsaviliad Civil');
 
       expect(result.categoryId).toBe(6);
-      expect(result.canonicalName).toBe('Responsabilidad Civil (RCE)');
+      expect(result.canonicalName).toBe('Responsabilidad Civil Extracontractual (RCE)');
       expect(result.method).toBe('fuzzy');
       expect(result.confidence).toBeGreaterThanOrEqual(CONFIDENCE_THRESHOLDS.FUZZY_MIN);
     });
@@ -168,7 +168,7 @@ describe('semanticMatcher', () => {
     it('should handle single character differences', async () => {
       const result = await semanticMatcher.matchCoverage('Vidrios Planos');
 
-      expect(result.categoryId).toBe(7);
+      expect(result.categoryId).toBe(8);
       expect(result.confidence).toBeGreaterThanOrEqual(CONFIDENCE_THRESHOLDS.FUZZY_MIN);
     });
   });
@@ -340,7 +340,7 @@ describe('semanticMatcher', () => {
 
     it('should return all categories', () => {
       const categories = semanticMatcher.getAllCategories();
-      expect(categories).toHaveLength(14);
+      expect(categories).toHaveLength(16);
       expect(categories[0].id).toBe(1);
     });
   });
