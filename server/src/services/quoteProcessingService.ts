@@ -667,6 +667,27 @@ async function processQuoteMultimodalInternal(
     // Phase 4: Normalize coverages
     console.log(`   🔄 Phase 4: Normalizing coverages... (domain: ${domain})`);
     const insurerName = extracted.insurerName || detectedInsurer;
+
+    // Filter rawCoverages: remove items matching the client's name or pure numbers/page numbers
+    const clientNameNorm = ((extracted as any).clientInfo?.name || (extracted as any).cliente || '').toLowerCase().trim();
+    if (extracted.rawCoverages && Array.isArray(extracted.rawCoverages)) {
+      extracted.rawCoverages = extracted.rawCoverages.filter((cov: any) => {
+        const nameNorm = (cov.rawName || cov.name || '').toLowerCase().trim();
+        if (!nameNorm) return false;
+        // Filter out if coverage name matches client name (e.g. "AMPARO DE JESUS ALARCON DE PEREZ")
+        if (clientNameNorm && clientNameNorm.length > 5 && (nameNorm === clientNameNorm || (clientNameNorm.includes(nameNorm) && nameNorm.startsWith('amparo de jesus')))) {
+          console.log(`   🛡️ [Sanitizer] Filtered out client name from coverages: "${cov.rawName || cov.name}"`);
+          return false;
+        }
+        // Filter out if coverage name is just a page number like "Pag. 202" or number "101"
+        if (/^(pag|pág|página|\d+)\s*\d*$/i.test(nameNorm)) {
+          console.log(`   🛡️ [Sanitizer] Filtered out page number label: "${cov.rawName || cov.name}"`);
+          return false;
+        }
+        return true;
+      });
+    }
+
     const normalizationResult = await buildCanonicalCoverages(
       extracted.rawCoverages || [],
       extracted.insuredAssets || [],

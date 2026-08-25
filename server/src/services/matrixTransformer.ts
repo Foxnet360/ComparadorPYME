@@ -169,6 +169,23 @@ export function formatCurrency(num: number): string {
   return '$' + num.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
+const SMMLV_2026 = Number(process.env.SMMLV_VALUE) || 1750905;
+
+export function enrichSmmlvDeductible(text: string | undefined | null): string {
+  if (!text) return 'Según amparo principal';
+  if (text.includes('($')) return text; // Already enriched
+
+  return text.replace(/(\d+(?:\.\d+)?)\s*(?:S\.?M\.?M\.?L\.?V\.?|salarios?\s+mínimos?|smmlv)/gi, (match, numStr) => {
+    const num = parseFloat(numStr);
+    if (!isNaN(num) && num > 0) {
+      const copVal = Math.round(num * SMMLV_2026);
+      const formattedCop = '$' + copVal.toLocaleString('es-CO');
+      return `${match} (${formattedCop} COP)`;
+    }
+    return match;
+  });
+}
+
 export function formatMatrixValue(val: string | undefined | null): string {
   if (!val) return 'No informado';
   if (isExcludedValue(val)) return val;
@@ -249,7 +266,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[], domain: string 
             cellValue = formatMatrixValue(cov.value || 'No incluida');
           } else if (rowConfig.field === 'deductible') {
             const rawDed = cov.deductible;
-            cellValue = rawDed && rawDed !== cov.value ? rawDed : 'Según amparo principal';
+            cellValue = rawDed && rawDed !== cov.value ? enrichSmmlvDeductible(rawDed) : 'Según amparo principal';
           } else {
             cellValue =
               cov.description ||
