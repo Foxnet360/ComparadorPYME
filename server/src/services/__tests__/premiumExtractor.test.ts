@@ -122,7 +122,7 @@ describe('premiumExtractor', () => {
     });
 
     it('should flag suspect premium', () => {
-      const text = 'prima: 50.000 COP'; // Below minimum
+      const text = 'prima: 50.000 COP'; // Below 100K COP suspect threshold
       const result = extractAndValidatePremium(0, text);
 
       expect(result.priceAnnual).toBe(50000);

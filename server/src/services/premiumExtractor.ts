@@ -27,6 +27,7 @@ const PREMIUM_PATTERNS = [
 
 // Valid premium range for Colombian insurance (supporting Hogar from 10K COP up to 500M)
 const MIN_PREMIUM = 10000; // 10K COP
+const SUSPECT_PREMIUM_MIN = 100000; // 100K COP threshold for suspect review flag
 const MAX_PREMIUM = 500000000; // 500M COP
 
 /**
@@ -49,7 +50,7 @@ export function extractPremiumWithRegex(text: string): PremiumExtractionResult |
           priceAnnual: Math.round(value),
           currency: 'COP',
           source: 'regex_fallback',
-          confidence: 85,
+          confidence: value < SUSPECT_PREMIUM_MIN ? 50 : 85,
         };
       }
     }
@@ -63,7 +64,7 @@ export function extractPremiumWithRegex(text: string): PremiumExtractionResult |
  */
 export function validatePremium(value: number): { valid: boolean; suspect: boolean } {
   if (value <= 0) return { valid: false, suspect: false };
-  if (value < MIN_PREMIUM || value > MAX_PREMIUM) return { valid: true, suspect: true };
+  if (value < SUSPECT_PREMIUM_MIN || value > MAX_PREMIUM) return { valid: true, suspect: true };
   return { valid: true, suspect: false };
 }
 
