@@ -55,10 +55,10 @@ interface GeminiFile {
   state?: string;
 }
 
-// Default configuration following Gemini 3.7 Flash best practices (High reasoning)
+// Default configuration following Gemini 3.7 Flash best practices for JSON schema extraction
 const DEFAULT_CONFIG: ComparisonEngineConfig = {
   model: process.env.GEMINI_MODEL || 'gemini-3.7-flash',
-  thinkingLevel: (process.env.GEMINI_THINKING_LEVEL?.toUpperCase() as any) || 'HIGH',
+  thinkingLevel: (process.env.GEMINI_THINKING_LEVEL?.toUpperCase() as any) || 'LOW',
   responseMimeType: 'application/json',
   responseSchema: {},
   maxRetries: 2,

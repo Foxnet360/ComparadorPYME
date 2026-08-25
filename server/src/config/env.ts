@@ -20,6 +20,7 @@ export interface EnvConfig {
   // Gemini
   GEMINI_API_KEY: string;
   GEMINI_MODEL: string;
+  GEMINI_THINKING_LEVEL: string;
   GEMINI_CHAT_MODEL: string;
   GEMINI_CLAUSE_MODEL: string;
   GEMINI_EMBEDDING_MODEL: string;
@@ -162,6 +163,7 @@ function sanitizeGeminiModelName(modelName?: string, defaultModel = 'gemini-3.7-
     SUPABASE_JWT_SECRET: process.env.SUPABASE_JWT_SECRET || '',
     GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
     GEMINI_MODEL: sanitizeGeminiModelName(process.env.GEMINI_MODEL, 'gemini-3.7-flash'),
+    GEMINI_THINKING_LEVEL: process.env.GEMINI_THINKING_LEVEL || 'low',
     GEMINI_CHAT_MODEL: sanitizeGeminiModelName(process.env.GEMINI_CHAT_MODEL, 'gemini-3.7-flash'),
     GEMINI_CLAUSE_MODEL: sanitizeGeminiModelName(process.env.GEMINI_CLAUSE_MODEL, 'gemini-3.7-flash'),
     GEMINI_EMBEDDING_MODEL: process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-2',

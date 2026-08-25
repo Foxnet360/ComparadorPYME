@@ -514,7 +514,7 @@ export const geminiService = {
       while (true) {
         try {
           console.log(
-            `🤖 [Gemini] Using model: ${extractionModel} (High Reasoning) for PDF extraction (attempt ${retries + 1})`
+            `🤖 [Gemini] Using model: ${extractionModel} for PDF extraction (attempt ${retries + 1})`
           );
 
           let finalPrompt = prompt;
@@ -541,7 +541,7 @@ export const geminiService = {
               responseMimeType: 'application/json',
               responseSchema: QuoteExtractionSchemaV2 as unknown,
               thinkingConfig: {
-                thinkingLevel: (process.env.GEMINI_THINKING_LEVEL || 'high') as any,
+                thinkingLevel: (process.env.GEMINI_THINKING_LEVEL || 'low') as any,
               },
             },
           });
