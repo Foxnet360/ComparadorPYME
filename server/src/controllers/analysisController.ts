@@ -18,6 +18,7 @@ import { saveAnalysisHistory, getAnalysisHistoryByUser } from '../repositories/a
 import { formatCOP } from '../utils/formatCurrency';
 import { parseColombianCurrency } from '../utils/currencyParser';
 import { sanitizeDeep } from '../utils/textSanitizer';
+import { auditGroundedComparison } from '../services/groundingAuditor';
 import quoteBasedAuditor from '../services/quoteBasedAuditor';
 
 import { AlertItem, AlertLevel, MatrixRow, QuoteAnalysis } from '../types';
@@ -304,8 +305,8 @@ export const analysisController = {
       const duration = Date.now() - startTime;
       console.log(`✅ Analysis completed in ${duration}ms`);
 
-      const sanitizedResult = sanitizeDeep(comparisonResult);
-      res.json(sanitizedResult);
+      const auditEnvelope = auditGroundedComparison(comparisonResult);
+      res.json(auditEnvelope.result);
     } catch (error: unknown) {
       console.error('Controller Error:', error);
 

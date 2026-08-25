@@ -93,8 +93,8 @@ describe('Domain threading (PYME default + per-domain bundles)', () => {
     pymeCategories.push({ id: 999, name: 'Fake Category' });
     const pymeCategoriesReloaded = semanticMatcher.getAllCategories('pyme');
     const otherCategoriesReloaded = semanticMatcher.getAllCategories('cache-isolation-test-domain');
-    expect(pymeCategoriesReloaded.length).toBe(14);
-    expect(otherCategoriesReloaded.length).toBe(14);
+    expect(pymeCategoriesReloaded.length).toBe(16);
+    expect(otherCategoriesReloaded.length).toBe(16);
     expect(pymeCategoriesReloaded.map((c) => c.name)).not.toContain('Fake Category');
     expect(otherCategoriesReloaded.map((c) => c.name)).not.toContain('Fake Category');
   });

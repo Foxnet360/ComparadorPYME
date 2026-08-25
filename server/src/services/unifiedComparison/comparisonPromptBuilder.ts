@@ -142,6 +142,8 @@ Reglas de Negocio para Secciones:
 
 Reglas Generales:
 - REGLA CRÍTICA DE COMPLETITUD: DEBES EXTRAER EL 100% DE LAS COBERTURAS, BIENES, DEDUCIBLES Y CONDICIONES PRESENTES EN LAS COTIZACIONES. NO OMITAS NINGUNA FILA POR RESUMEN O LÍMITE DE ESPACIO. SI EXISTEN 30 O 40 AMPAROS, GENERA LAS 30 O 40 FILAS EN EL JSON.
+- REGLA DE INTEGRIDAD NUMÉRICA: Conserva intactos los montos, monedas (COP/USD), símbolos y separadores de miles/decimales. Si una cifra dice "$ 15.000.000,00" o "$ 15,000,000.00", déjala tal cual sin alterar ni mover los puntos o comas.
+- CITA DE PÁGINA: Extrae obligatoriamente en pageNumber el número de página exacto (1-indexado) donde figura la información dentro de la cotización.
 - Copia los valores textualmente como aparecen en cada cotización.
 - No agrupes, no normalices a coberturas canónicas y no inventes datos.
 - Si una fila no aparece en una cotización, usa "No informado".
@@ -170,7 +172,7 @@ Reglas Generales:
       "label": "Mercancías",
       "section": "BIENES ASEGURADOS",
       "cells": [
-        {"insurer": "Aseguradora A", "value": "...", "rawText": "..."},
+        {"insurer": "Aseguradora A", "value": "...", "rawText": "...", "pageNumber": 1},
         ...
       ]
     },
