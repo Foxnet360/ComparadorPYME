@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import multer from 'multer';
+import { asyncHandler } from './utils/asyncHandler';
 
 const rootEnvPath = path.resolve(__dirname, '../../.env');
 const serverEnvPath = path.resolve(__dirname, '../.env');
@@ -173,10 +174,10 @@ app.post(
     { name: 'quotes', maxCount: 10 },
     { name: 'clauses', maxCount: 10 },
   ]),
-  analysisController.uploadAndAnalyze
+  asyncHandler(analysisController.uploadAndAnalyze)
 );
 
-app.get('/api/history', optionalAuthMiddleware, analysisController.getHistory);
+app.get('/api/history', optionalAuthMiddleware, asyncHandler(analysisController.getHistory));
 
 // Document Indexing routes
 import { documentController } from './controllers/documentController';

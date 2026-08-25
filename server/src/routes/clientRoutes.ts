@@ -19,7 +19,7 @@ router.get(
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized', message: 'Authentication required' });
+      return res.json([]);
     }
 
     const { data, error } = await (supabase as any)
@@ -59,7 +59,7 @@ router.post(
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized', message: 'Authentication required' });
+      return res.status(200).json({ message: 'Saved locally' });
     }
 
     const client = req.body;
