@@ -1,0 +1,193 @@
+{
+  "version": "2.0.0",
+  "domain": "autos",
+  "entries": [
+    {
+      "canonicalName": "Responsabilidad Civil Extracontractual Vehicular",
+      "variants": [
+        "RCE vehicular",
+        "RC vehicular",
+        "Responsabilidad Civil Extracontractual",
+        "Daños a terceros",
+        "RC autos",
+        "Responsabilidad civil por daños a terceros",
+        "RCE Vehículos",
+        "Daños a bienes de terceros",
+        "Muerte o lesiones a una persona"
+      ],
+      "category": "Responsabilidad Civil"
+    },
+    {
+      "canonicalName": "Pérdida Total (hurto, daños, PT)",
+      "variants": [
+        "PT",
+        "Pérdida total",
+        "Hurto total",
+        "Daños totales",
+        "Pérdida total por hurto",
+        "Pérdida total por daños",
+        "Total loss",
+        "PTD",
+        "FNAC"
+      ],
+      "category": "Daños al Vehículo"
+    },
+    {
+      "canonicalName": "Pérdida Parcial (colisión, PP)",
+      "variants": [
+        "PP",
+        "Pérdida parcial",
+        "Colisión",
+        "Daños parciales",
+        "Golpes",
+        "Choque",
+        "Partial loss",
+        "Pérdida parcial por daños",
+        "Pérdida parcial por hurto"
+      ],
+      "category": "Daños al Vehículo"
+    },
+    {
+      "canonicalName": "Carro Taller / Vehículo de Reemplazo",
+      "variants": [
+        "Carro taller",
+        "Vehículo de reemplazo",
+        "Auto de sustitución",
+        "Vehículo sustituto",
+        "Carro de reemplazo",
+        "Movilidad adicional",
+        "Auto sustituto"
+      ],
+      "category": "Asistencias y Servicios"
+    },
+    {
+      "canonicalName": "Asistencia en Viaje / Carretera",
+      "variants": [
+        "Asistencia en viaje",
+        "Asistencia en carretera",
+        "Auxilio mecánico",
+        "Grúa 24/7",
+        "Asistencia vial",
+        "Road assistance",
+        "Servicio de grúa",
+        "Asistencia en viaje nacional"
+      ],
+      "category": "Asistencias y Servicios"
+    },
+    {
+      "canonicalName": "Gastos de Transporte / Peajes / Grúa",
+      "variants": [
+        "Gastos de transporte",
+        "Peajes",
+        "Grúa",
+        "Transporte del vehículo",
+        "Traslado del vehículo",
+        "Gastos de remolque",
+        "Auxilio de transporte"
+      ],
+      "category": "Asistencias y Servicios"
+    },
+    {
+      "canonicalName": "Hurto de Partes y Accesorios",
+      "variants": [
+        "Hurto de partes",
+        "Hurto de accesorios",
+        "Robo de espejos",
+        "Robo de rines",
+        "Hurto de equipos",
+        "Pérdida parcial por hurto de partes"
+      ],
+      "category": "Daños al Vehículo"
+    },
+    {
+      "canonicalName": "Eventos de la Naturaleza (granizo, inundación)",
+      "variants": [
+        "Granizo",
+        "Inundación",
+        "Eventos naturales",
+        "Fenómenos naturales",
+        "Desastres naturales",
+        "Callejón",
+        "Eventos de la naturaleza",
+        "Vendaval"
+      ],
+      "category": "Daños al Vehículo"
+    },
+    {
+      "canonicalName": "Conductor Adicional",
+      "variants": [
+        "Conductor adicional",
+        "Conductor ocasional",
+        "Conductor autorizado",
+        "Conductores adicionales",
+        "Conductor elegido"
+      ],
+      "category": "Coberturas de Personas"
+    },
+    {
+      "canonicalName": "Menores de 25 Años",
+      "variants": [
+        "Menores de 25",
+        "Conductores menores de 25 años",
+        "Jóvenes conductores",
+        "Menores de 25 años",
+        "Conductores menores"
+      ],
+      "category": "Coberturas de Personas"
+    },
+    {
+      "canonicalName": "Deducibles (SMMLV / días de inmovilización / %)",
+      "variants": [
+        "Deducibles",
+        "Deducible SMMLV",
+        "Deducible días",
+        "Deducible porcentaje",
+        "Franquicia",
+        "Siniestro parcial deducible"
+      ],
+      "category": "Deducibles"
+    },
+    {
+      "canonicalName": "SOAT / Seguro Obligatorio de Accidentes de Tránsito",
+      "variants": [
+        "SOAT",
+        "Seguro obligatorio",
+        "Accidentes de tránsito",
+        "Lesiones personales obligatorio",
+        "Seguro obligatorio vehicular",
+        "SOAT vigente"
+      ],
+      "category": "COBERTURAS OBLIGATORIAS"
+    },
+    {
+      "canonicalName": "Pérdida Total por Definición (PTD / FNAC)",
+      "variants": [
+        "Pérdida total por definición",
+        "PTD",
+        "FNAC",
+        "No constituye pérdida total",
+        "Definición de pérdida total",
+        "Porcentaje de pérdida total",
+        "75% del valor",
+        "80% del valor asegurado"
+      ],
+      "category": "PÉRDIDA TOTAL"
+    },
+    {
+      "canonicalName": "Accesorios, Lujos y Blindaje",
+      "variants": [
+        "Accesorios",
+        "Lujos",
+        "Blindaje",
+        "Equipo adicional",
+        "Sistema de sonido",
+        "Llantas especiales",
+        "Rines",
+        "Tracción 4x4",
+        "Equipo de seguimiento GPS",
+        "Modificaciones al vehículo"
+      ],
+      "category": "COBERTURAS ESPECIALES"
+    }
+  ]
+}

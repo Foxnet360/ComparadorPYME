@@ -1,0 +1,215 @@
+{
+  "version": "2.0.0",
+  "domain": "transporte",
+  "entries": [
+    {
+      "canonicalName": "Daño Material a la Carga (Todo Riesgo / Named Perils)",
+      "variants": [
+        "Daño material",
+        "Todo riesgo",
+        "Riesgos nominados",
+        "Named perils",
+        "Daños físicos a la carga",
+        "Avería de la mercancía",
+        "Deterioro de carga",
+        "Daño en tránsito"
+      ],
+      "category": "COBERTURAS PRINCIPALES"
+    },
+    {
+      "canonicalName": "Pérdida Total de la Carga (Hurto, Extravío, Siniestro Total)",
+      "variants": [
+        "Pérdida total",
+        "Hurto total",
+        "Extravío",
+        "Desaparición de carga",
+        "Siniestro total",
+        "Pérdida completa",
+        "Total loss",
+        "No entrega"
+      ],
+      "category": "COBERTURAS PRINCIPALES"
+    },
+    {
+      "canonicalName": "Avería Particular y Avería Gruesa (Marítima)",
+      "variants": [
+        "Avería particular",
+        "Avería gruesa",
+        "General average",
+        "Particular average",
+        "Contribución de avería gruesa",
+        "Salvamento marítimo",
+        "Contribución de salvamento"
+      ],
+      "category": "COBERTURAS MARÍTIMAS"
+    },
+    {
+      "canonicalName": "Responsabilidad Civil del Transportador",
+      "variants": [
+        "Responsabilidad civil del transportador",
+        "RC del transportador",
+        "Responsabilidad del operador",
+        "Liability del transportista",
+        "Responsabilidad legal",
+        "Carrier liability",
+        "Daños al remitente"
+      ],
+      "category": "COBERTURAS DE RESPONSABILIDAD"
+    },
+    {
+      "canonicalName": "Robo y Hurto (Con y Sin Violencia)",
+      "variants": [
+        "Robo",
+        "Hurto",
+        "Hurto con violencia",
+        "Hurto sin violencia",
+        "Asalto",
+        "Piratería terrestre",
+        "Robo parcial",
+        "Hurto calificado"
+      ],
+      "category": "COBERTURAS PRINCIPALES"
+    },
+    {
+      "canonicalName": "Refrigeración y Carga Perecedera (Cadena de Frío)",
+      "variants": [
+        "Refrigeración",
+        "Cadena de frío",
+        "Carga perecedera",
+        "Alimentos perecederos",
+        "Falla de refrigeración",
+        "Temperatura controlada",
+        "Cold chain",
+        "Carga congelada"
+      ],
+      "category": "COBERTURAS ESPECIALES"
+    },
+    {
+      "canonicalName": "Carga a Granel y Carga Peligrosa (ADR / IMDG / IATA)",
+      "variants": [
+        "Carga a granel",
+        "Carga peligrosa",
+        "Mercancías peligrosas",
+        "ADR",
+        "IMDG",
+        "IATA",
+        "Materiales peligrosos",
+        "Hazmat",
+        "Químicos"
+      ],
+      "category": "COBERTURAS ESPECIALES"
+    },
+    {
+      "canonicalName": "Transporte Multimodal (Terrestre, Aéreo y Marítimo)",
+      "variants": [
+        "Transporte multimodal",
+        "Transporte terrestre",
+        "Transporte aéreo",
+        "Transporte marítimo",
+        "Transporte fluvial",
+        "Multimodal",
+        "Intermodal",
+        "TN",
+        "TI"
+      ],
+      "category": "MODALIDADES DE TRANSPORTE"
+    },
+    {
+      "canonicalName": "Cobertura de Fletes e Impuestos según Incoterm (CIF / FOB / DAP / DDP)",
+      "variants": [
+        "Fletes",
+        "Impuestos",
+        "Incoterm",
+        "CIF",
+        "FOB",
+        "DAP",
+        "DDP",
+        "Valor asegurado",
+        "Valor de la carga"
+      ],
+      "category": "VALOR ASEGURADO"
+    },
+    {
+      "canonicalName": "Daño o Pérdida del Contenedor / Embalaje",
+      "variants": [
+        "Contenedor",
+        "Embalaje",
+        "Daño al contenedor",
+        "Pérdida del contenedor",
+        "Packaging",
+        "Daño al embalaje",
+        "Container damage"
+      ],
+      "category": "COBERTURAS COMPLEMENTARIAS"
+    },
+    {
+      "canonicalName": "Demora en la Entrega y Lucro Cesante",
+      "variants": [
+        "Demora en la entrega",
+        "Retraso",
+        "Lucro cesante",
+        "Pérdida de mercado",
+        "Delay",
+        "Pérdidas consecuenciales"
+      ],
+      "category": "COBERTURAS CONSECUENCIALES"
+    },
+    {
+      "canonicalName": "Deducibles y Franquicias",
+      "variants": [
+        "Deducible",
+        "Franquicia",
+        "Coaseguro",
+        "Deducible por siniestro",
+        "Deducible mínimo",
+        "Retention"
+      ],
+      "category": "CONDICIONES DE LA COBERTURA"
+    },
+    {
+      "canonicalName": "Vigencia y Tipo de Póliza (Flotante / Por Viaje / Abierta)",
+      "variants": [
+        "Vigencia",
+        "Póliza flotante",
+        "Póliza por viaje",
+        "Póliza abierta",
+        "Cobertura automática",
+        "Open cover"
+      ],
+      "category": "CONDICIONES GENERALES"
+    },
+    {
+      "canonicalName": "Marco Normativo (Decreto 1079/2015 · Código de Comercio · Incoterms 2020)",
+      "variants": [
+        "Decreto 1079",
+        "Código de Comercio",
+        "Incoterms 2020",
+        "SuperTransporte",
+        "Cláusulas de carga ICC"
+      ],
+      "category": "CUMPLIMIENTO NORMATIVO"
+    },
+    {
+      "canonicalName": "Robo Parcial, Pillaje y Saqueo de la Carga",
+      "variants": [
+        "Robo parcial",
+        "Pillaje",
+        "Saqueo",
+        "Hurto parcial de carga",
+        "Pilferage"
+      ],
+      "category": "COBERTURAS PRINCIPALES"
+    },
+    {
+      "canonicalName": "Cláusula de Abandono y Pérdida Total Constructiva (Marítima)",
+      "variants": [
+        "Cláusula de abandono",
+        "Pérdida total constructiva",
+        "Constructive total loss",
+        "Abandono de carga",
+        "CTL"
+      ],
+      "category": "COBERTURAS MARÍTIMAS"
+    }
+  ]
+}

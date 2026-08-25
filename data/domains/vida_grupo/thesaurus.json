@@ -1,0 +1,176 @@
+{
+  "version": "2.0.0",
+  "domain": "vida_grupo",
+  "entries": [
+    {
+      "canonicalName": "Amparo Básico por Muerte (Cualquier Causa)",
+      "variants": [
+        "Muerte por cualquier causa",
+        "Amparo básico de vida",
+        "Vida grupo",
+        "Fallecimiento",
+        "Muerte natural o accidental",
+        "Capital básico asegurado"
+      ],
+      "category": "Coberturas Principales"
+    },
+    {
+      "canonicalName": "Incapacidad Total y Permanente (ITP)",
+      "variants": [
+        "ITP",
+        "Incapacidad total y permanente",
+        "Invalidez por enfermedad o accidente",
+        "Pérdida de capacidad laboral 50% o más",
+        "Anticipo por incapacidad permanente"
+      ],
+      "category": "Coberturas Principales"
+    },
+    {
+      "canonicalName": "Muerte Accidental y Desmembración (MAyD)",
+      "variants": [
+        "MAyD",
+        "MA",
+        "Muerte accidental",
+        "Desmembración",
+        "Indemnización adicional por accidente",
+        "Pérdida de miembros o visión por accidente"
+      ],
+      "category": "Accidentes e Incapacidad"
+    },
+    {
+      "canonicalName": "Enfermedades Graves",
+      "variants": [
+        "EGM",
+        "Enfermedades de alto costo",
+        "Anticipo por cáncer, infarto o derrame",
+        "Amparo adicional enfermedades graves",
+        "Enfermedades catastróficas"
+      ],
+      "category": "Salud y Enfermedades"
+    },
+    {
+      "canonicalName": "Auxilio Funerario / Gastos de Sepelio",
+      "variants": [
+        "Auxilio funerario",
+        "Gastos exequiales",
+        "Servicios exequiales",
+        "Auxilio para sepelio",
+        "Gastos de entierro"
+      ],
+      "category": "Auxilios y Beneficios"
+    },
+    {
+      "canonicalName": "Renta Diaria por Hospitalización / Incapacidad",
+      "variants": [
+        "Renta por hospitalización",
+        "Renta diaria por incapacidad temporal",
+        "Auxilio diario de hospitalización",
+        "Subsidio por estancia hospitalaria"
+      ],
+      "category": "Salud y Enfermedades"
+    },
+    {
+      "canonicalName": "Exoneración de Pago de Primas por Incapacidad",
+      "variants": [
+        "Exoneración de primas",
+        "Liberación de pago de primas",
+        "Exención de prima por invalidez",
+        "Perdón de primas por incapacidad"
+      ],
+      "category": "Accidentes e Incapacidad"
+    },
+    {
+      "canonicalName": "Condiciones de Ingreso y Permanencia",
+      "variants": [
+        "Edad de ingreso",
+        "Edad límite de permanencia",
+        "Requisitos de asegurabilidad",
+        "Declaración de salud",
+        "Carencias y preexistencias"
+      ],
+      "category": "Condiciones Especiales"
+    },
+    {
+      "canonicalName": "Cobertura de Suicidio (Carencia / Día 1)",
+      "variants": [
+        "Suicidio desde el primer día",
+        "Carencia para suicidio",
+        "Amparo de suicidio",
+        "Suicidio sin período de espera"
+      ],
+      "category": "Condiciones Especiales"
+    },
+    {
+      "canonicalName": "Auxilio Educativo para Hijos",
+      "variants": [
+        "Beca educativa para beneficiarios",
+        "Auxilio de educación",
+        "Seguro educacional por orfandad",
+        "Renta de estudios para hijos"
+      ],
+      "category": "Auxilios y Beneficios"
+    },
+    {
+      "canonicalName": "Auxilio de Canasta / Mantenimiento Familiar",
+      "variants": [
+        "Renta de canasta familiar",
+        "Auxilio de canasta mensual",
+        "Sostenimiento familiar post-mortem",
+        "Subsidio alimentario para beneficiarios"
+      ],
+      "category": "Auxilios y Beneficios"
+    },
+    {
+      "canonicalName": "Anticipo por Enfermedad Terminal",
+      "variants": [
+        "Anticipo enfermedad terminal",
+        "Adelanto por fase terminal",
+        "Pago anticipado por expectativa de vida limitada",
+        "Amparo de estado terminal"
+      ],
+      "category": "Salud y Enfermedades"
+    },
+    {
+      "canonicalName": "Doble Indemnización por Accidente de Tránsito",
+      "variants": [
+        "Doble indemnización accidente vehicular",
+        "Accidente en transporte público",
+        "Muerte accidental en tránsito",
+        "Doble capital por accidente automovilístico"
+      ],
+      "category": "Accidentes e Incapacidad"
+    },
+    {
+      "canonicalName": "Auxilio por Hijos con Enfermedades Congénitas",
+      "variants": [
+        "Nacimiento con enfermedad congénita",
+        "Auxilio hijos con malformación",
+        "Cobertura de alteración congénita",
+        "Subsidio por malformación al nacer"
+      ],
+      "category": "Auxilios y Beneficios"
+    },
+    {
+      "canonicalName": "Incapacidad Parcial Permanente (IPP)",
+      "variants": [
+        "IPP",
+        "Incapacidad parcial permanente",
+        "Invalidez parcial",
+        "Pérdida parcial de capacidad laboral",
+        "Porcentaje de invalidez menor 50%"
+      ],
+      "category": "COBERTURAS DE INCAPACIDAD"
+    },
+    {
+      "canonicalName": "Renta por Desempleo Involuntario",
+      "variants": [
+        "Desempleo involuntario",
+        "Renta por desempleo",
+        "Pérdida de empleo",
+        "Desvinculación laboral",
+        "Amparo desempleo"
+      ],
+      "category": "COBERTURAS COMPLEMENTARIAS"
+    }
+  ]
+}

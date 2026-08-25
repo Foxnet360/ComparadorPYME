@@ -1,0 +1,211 @@
+{
+  "version": "2.0.0",
+  "domain": "cumplimiento",
+  "entries": [
+    {
+      "canonicalName": "Seriedad de Oferta",
+      "variants": [
+        "Seriedad de oferta",
+        "Garantía de oferta",
+        "Bid bond",
+        "Propuesta",
+        "Licitación",
+        "Concurso",
+        "Valor de la oferta",
+        "Sostenimiento de la oferta"
+      ],
+      "category": "GARANTÍAS PRECONTRACTUALES"
+    },
+    {
+      "canonicalName": "Cumplimiento de Contrato",
+      "variants": [
+        "Cumplimiento de contrato",
+        "Performance bond",
+        "Ejecución del contrato",
+        "Obligaciones contractuales",
+        "Incumplimiento",
+        "Amparo de cumplimiento",
+        "Garantía de ejecución",
+        "Cumplimiento del contrato u orden de compra"
+      ],
+      "category": "GARANTÍAS DE EJECUCIÓN"
+    },
+    {
+      "canonicalName": "Estabilidad y Calidad de Obra",
+      "variants": [
+        "Estabilidad de obra",
+        "Calidad de obra",
+        "Estabilidad y calidad",
+        "Vicios ocultos",
+        "Defectos de construcción",
+        "Post-entrega obra",
+        "Garantía de obra",
+        "Mantenimiento de obra"
+      ],
+      "category": "GARANTÍAS POST-CONTRACTUALES"
+    },
+    {
+      "canonicalName": "Correcta Inversión del Anticipo",
+      "variants": [
+        "Anticipo",
+        "BMA",
+        "Correcta inversión del anticipo",
+        "Advance payment bond",
+        "Inversión del anticipo",
+        "Devolución de anticipo",
+        "Manejo del anticipo",
+        "Pago anticipado"
+      ],
+      "category": "GARANTÍAS DE EJECUCIÓN"
+    },
+    {
+      "canonicalName": "Salarios, Prestaciones e Indemnizaciones Laborales",
+      "variants": [
+        "SPS",
+        "Salarios",
+        "Prestaciones sociales",
+        "Indemnizaciones laborales",
+        "Obligaciones laborales",
+        "Parafiscales",
+        "Seguridad social",
+        "Labor bond",
+        "Nómina y prestaciones"
+      ],
+      "category": "GARANTÍAS DE EJECUCIÓN"
+    },
+    {
+      "canonicalName": "Pago de Daños a Terceros (RC Contractual)",
+      "variants": [
+        "Pago de daños a terceros",
+        "Responsabilidad civil contractual",
+        "RC contractual",
+        "Daños a terceros",
+        "Afectación a terceros",
+        "Perjuicios a terceros",
+        "Daños durante ejecución"
+      ],
+      "category": "GARANTÍAS DE RESPONSABILIDAD"
+    },
+    {
+      "canonicalName": "Calidad del Bien o Servicio",
+      "variants": [
+        "Calidad del bien",
+        "Calidad del servicio",
+        "Garantía de calidad",
+        "Producto defectuoso",
+        "Servicio deficiente",
+        "Post-entrega bienes",
+        "Quality bond"
+      ],
+      "category": "GARANTÍAS POST-CONTRACTUALES"
+    },
+    {
+      "canonicalName": "Buen Manejo y Correcta Inversión de Bienes",
+      "variants": [
+        "Buen manejo de bienes",
+        "Correcta inversión de bienes",
+        "Bienes entregados",
+        "Manejo de recursos",
+        "Custodia de bienes",
+        "Administración de bienes",
+        "Depósito bienes"
+      ],
+      "category": "GARANTÍAS DE MANEJO"
+    },
+    {
+      "canonicalName": "Responsabilidad Civil Extracontractual (RC durante ejecución)",
+      "variants": [
+        "Responsabilidad civil extracontractual",
+        "RCE",
+        "RC durante ejecución",
+        "Daños extracontractuales",
+        "Terceros afectados",
+        "Daños a personas o bienes de terceros",
+        "Liability insurance"
+      ],
+      "category": "GARANTÍAS DE RESPONSABILIDAD"
+    },
+    {
+      "canonicalName": "Todo Riesgo Construcción / Montaje (TRC / TRM)",
+      "variants": [
+        "Todo riesgo construcción",
+        "TRC",
+        "Todo riesgo montaje",
+        "TRM",
+        "Obra en construcción",
+        "Equipos de construcción",
+        "Daños a la obra",
+        "CAR insurance",
+        "Constructor all risk"
+      ],
+      "category": "COBERTURAS DE OBRA"
+    },
+    {
+      "canonicalName": "Manejo de Empleados (Fidelidad Colectiva)",
+      "variants": [
+        "Manejo de empleados",
+        "Fidelidad colectiva",
+        "Deshonestidad de empleados",
+        "Actos deshonestos",
+        "Blanket bond",
+        "Employee fidelity",
+        "Hurto por empleados",
+        "Fraude interno"
+      ],
+      "category": "GARANTÍAS DE MANEJO"
+    },
+    {
+      "canonicalName": "Manejo Individual (Fidelidad / Forgery)",
+      "variants": [
+        "Manejo individual",
+        "Fidelidad individual",
+        "Forgery",
+        "Falsificación",
+        "Empleado específico",
+        "Tesorero",
+        "Cajero",
+        "Manejo de fondos individuales"
+      ],
+      "category": "GARANTÍAS DE MANEJO"
+    },
+    {
+      "canonicalName": "Vigencia, Plazo y Condiciones del Amparo",
+      "variants": [
+        "Vigencia",
+        "Plazo",
+        "Duración del amparo",
+        "Prórroga automática",
+        "Renovación",
+        "Término del contrato",
+        "Vencimiento"
+      ],
+      "category": "CONDICIONES GENERALES"
+    },
+    {
+      "canonicalName": "Garantía Única de Cumplimiento (Contratación Estatal — Ley 80/1993 · Decreto 1082/2015)",
+      "variants": [
+        "Garantía única de cumplimiento",
+        "Ley 80",
+        "Contratación estatal",
+        "Entidad pública",
+        "SECOP",
+        "Decreto 1082",
+        "Contrato estatal",
+        "Póliza de cumplimiento estatal"
+      ],
+      "category": "CUMPLIMIENTO NORMATIVO ESTATAL"
+    },
+    {
+      "canonicalName": "Garantía de Mantenimiento (Post-Obra / Post-Contrato)",
+      "variants": [
+        "Garantía de mantenimiento",
+        "Mantenimiento post-obra",
+        "Post-entrega",
+        "Mantenimiento correctivo",
+        "Mantenimiento preventivo contractual",
+        "Maintenance bond"
+      ],
+      "category": "GARANTÍAS POST-CONTRACTUALES"
+    }
+  ]
+}

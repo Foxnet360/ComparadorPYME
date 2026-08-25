@@ -1,0 +1,205 @@
+{
+  "version": "2.0.0",
+  "domain": "salud",
+  "entries": [
+    {
+      "canonicalName": "Plan de Beneficios Base (Complemento o Sustitución del PBS)",
+      "variants": [
+        "Plan de beneficios",
+        "Plan complementario",
+        "Plan sustitutivo",
+        "PBS",
+        "POS",
+        "Cobertura base",
+        "Plan básico"
+      ],
+      "category": "ESTRUCTURA DEL PLAN"
+    },
+    {
+      "canonicalName": "Hospitalización y Cirugía",
+      "variants": [
+        "Hospitalización",
+        "Internación",
+        "Cirugía",
+        "Procedimientos quirúrgicos",
+        "Sala de operaciones",
+        "Habitación privada",
+        "UCI",
+        "Unidad de cuidados intensivos"
+      ],
+      "category": "COBERTURAS HOSPITALARIAS"
+    },
+    {
+      "canonicalName": "Consulta Médica Especialista y Telemedicina",
+      "variants": [
+        "Consulta especialista",
+        "Consulta médica",
+        "Médico especialista",
+        "Telemedicina",
+        "Teleconsulta",
+        "Consulta ambulatoria"
+      ],
+      "category": "COBERTURAS AMBULATORIAS"
+    },
+    {
+      "canonicalName": "Medicamentos (Ambulatorios y Hospitalarios)",
+      "variants": [
+        "Medicamentos",
+        "Fármacos",
+        "Drogas",
+        "Medicación ambulatoria",
+        "Medicación hospitalaria",
+        "Cobertura farmacéutica"
+      ],
+      "category": "COBERTURAS AMBULATORIAS"
+    },
+    {
+      "canonicalName": "Urgencias (Nacional e Internacional)",
+      "variants": [
+        "Urgencias",
+        "Emergencias",
+        "Urgencias nacionales",
+        "Urgencias internacionales",
+        "Sala de urgencias",
+        "Atención de emergencia"
+      ],
+      "category": "COBERTURAS DE URGENCIAS"
+    },
+    {
+      "canonicalName": "Oncología (Tratamientos de Alto Costo)",
+      "variants": [
+        "Oncología",
+        "Cáncer",
+        "Quimioterapia",
+        "Radioterapia",
+        "Inmunoterapia",
+        "Tratamiento oncológico",
+        "Alto costo"
+      ],
+      "category": "ENFERMEDADES DE ALTO COSTO"
+    },
+    {
+      "canonicalName": "Maternidad y Neonatología",
+      "variants": [
+        "Maternidad",
+        "Embarazo",
+        "Parto",
+        "Neonatología",
+        "Recién nacido",
+        "RN patológico",
+        "AMP"
+      ],
+      "category": "COBERTURAS ESPECIALES"
+    },
+    {
+      "canonicalName": "Cobertura Internacional y Repatriación",
+      "variants": [
+        "Cobertura internacional",
+        "Emergencia en el exterior",
+        "Repatriación",
+        "Evacuación médica",
+        "Asistencia viajes"
+      ],
+      "category": "COBERTURAS DE VIAJE"
+    },
+    {
+      "canonicalName": "Salud Mental y Psiquiatría",
+      "variants": [
+        "Salud mental",
+        "Psiquiatría",
+        "Psicología",
+        "Internación psiquiátrica",
+        "Terapia psicológica"
+      ],
+      "category": "COBERTURAS ESPECIALES"
+    },
+    {
+      "canonicalName": "Odontología (Preventiva, Restaurativa y Ortodoncia)",
+      "variants": [
+        "Odontología",
+        "Dental",
+        "Ortodoncia",
+        "Prótesis dental",
+        "Profilaxis",
+        "Endodoncia"
+      ],
+      "category": "COBERTURAS COMPLEMENTARIAS"
+    },
+    {
+      "canonicalName": "Optometría y Oftalmología",
+      "variants": [
+        "Optometría",
+        "Oftalmología",
+        "Gafas",
+        "Monturas",
+        "Lentes de contacto",
+        "Cirugía refractiva"
+      ],
+      "category": "COBERTURAS COMPLEMENTARIAS"
+    },
+    {
+      "canonicalName": "Enfermedades Preexistentes (Declaración y Exclusiones)",
+      "variants": [
+        "Preexistencias",
+        "Enfermedades preexistentes",
+        "Condiciones previas",
+        "Declaración de salud"
+      ],
+      "category": "CONDICIONES DE ASEGURABILIDAD"
+    },
+    {
+      "canonicalName": "Red de Prestadores (IPS, Clínicas y Cobertura Geográfica)",
+      "variants": [
+        "Red de IPS",
+        "Red de clínicas",
+        "Red de prestadores",
+        "Red propia",
+        "Hospitales disponibles"
+      ],
+      "category": "RED ASISTENCIAL"
+    },
+    {
+      "canonicalName": "Copagos, Deducibles y Cuotas Moderadoras",
+      "variants": [
+        "Copago",
+        "Deducible",
+        "Cuota moderadora",
+        "Coaseguro",
+        "Tope anual"
+      ],
+      "category": "ESTRUCTURA DE COSTOS COMPARTIDOS"
+    },
+    {
+      "canonicalName": "Portabilidad y Carencias Regulatorias (Res. 244/2019 · Ley 1438)",
+      "variants": [
+        "Portabilidad",
+        "Período de carencia",
+        "Carencia obligatoria",
+        "Resolución 244",
+        "Ley 1438"
+      ],
+      "category": "CUMPLIMIENTO NORMATIVO"
+    },
+    {
+      "canonicalName": "Hospitalización Domiciliaria y Atención en Casa",
+      "variants": [
+        "Hospitalización domiciliaria",
+        "Atención en casa",
+        "Home care",
+        "Enfermería domiciliaria"
+      ],
+      "category": "COBERTURAS HOSPITALARIAS"
+    },
+    {
+      "canonicalName": "Medicina Preventiva, Vacunación y Programas de Bienestar",
+      "variants": [
+        "Medicina preventiva",
+        "Vacunación",
+        "Bienestar",
+        "Wellness",
+        "Chequeo médico"
+      ],
+      "category": "COBERTURAS PREVENTIVAS"
+    }
+  ]
+}
