@@ -122,8 +122,8 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
     color: [79, 70, 229],
   });
 
-  // The dashboard is always shown in technical mode; the client/technical toggle was removed.
-  const viewMode: 'client' | 'technical' = 'technical';
+  // Dynamic view mode toggle (Auditor Técnico vs Cliente Final)
+  const [viewMode, setViewMode] = useState<'technical' | 'client'>('technical');
 
   if (!report.quotes || report.quotes.length === 0) {
     return (
@@ -274,11 +274,41 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
             </span>
           </div>
           <p className="text-sm text-slate-500">
-            Vista técnica detallada para auditores de seguros.
+            {viewMode === 'technical'
+              ? 'Vista técnica detallada para auditores de seguros (sublímites, deducibles, confianzas).'
+              : 'Resumen ejecutivo simplificado para presentación y toma de decisión del cliente.'}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          {/* Dual View Mode Selector */}
+          <div className="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-inner">
+            <button
+              onClick={() => setViewMode('technical')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                viewMode === 'technical'
+                  ? 'bg-indigo-600 text-white shadow'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              title="Vista para Auditor Técnico"
+            >
+              <Layers size={14} />
+              Auditor Técnico
+            </button>
+            <button
+              onClick={() => setViewMode('client')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                viewMode === 'client'
+                  ? 'bg-emerald-600 text-white shadow'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              title="Vista Presentación Cliente"
+            >
+              <ShieldAlert size={14} />
+              Cliente Final
+            </button>
+          </div>
+
           <button
             onClick={() => setShowExportModal(true)}
             className="flex items-center space-x-2 bg-slate-800 text-white px-5 py-2.5 rounded-lg hover:bg-slate-700 transition-all shadow-sm text-sm font-medium"
