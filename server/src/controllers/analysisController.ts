@@ -231,7 +231,25 @@ export const analysisController = {
       });
 
       // Save to Supabase
-      const clientName = req.body.clientName || 'Cliente';
+      const extractedClientName = adapterResult.quoteMetadata?.find((m: any) => m?.cliente)?.cliente;
+      const clientName = req.body.clientName && req.body.clientName !== 'Cliente' ? req.body.clientName : (extractedClientName || 'Cliente');
+
+      const clientActivity =
+        req.body.clientActivity ||
+        (domain === 'copropiedades'
+          ? 'Edificio Residencial / Comercial (Copropiedad)'
+          : domain === 'autos'
+          ? 'Vehículo Particular / Flotas'
+          : domain === 'hogar'
+          ? 'Vivienda Residencial / Hogar'
+          : 'Comercial / PYME');
+
+      (comparisonResult as any).domain = domain;
+      (comparisonResult as any).clientInfo = {
+        name: clientName,
+        activity: clientActivity,
+        location: 'Bogotá D.C.',
+      };
 
       try {
         const avgConfidence =
@@ -245,6 +263,7 @@ export const analysisController = {
         const insertData = {
           user_id: userId,
           client_name: clientName,
+          domain: domain,
           analysis_result: comparisonResult,
           recommendation: comparisonResult.recommendation || null,
           total_score: comparisonResult.quotes?.[0]?.score || null,
