@@ -26,6 +26,15 @@ export interface ParsedCoverage {
   valueSource?: 'extracted' | 'calculated' | 'inferred';
   // Sublimit information (optional)
   sublimit?: string;
+  // Step 1 Multinivel Additions:
+  level?: 1 | 2 | 3;
+  parentCanonicalName?: string;
+  sublimits?: Array<{
+    name: string;
+    value: string;
+    deductible?: string;
+    limitType?: 'evento' | 'agregado' | 'subamparo';
+  }>;
   // Text evidence tracking for reverse page anchoring
   rawTextSnippet?: string;
   calculatedPage?: number;

@@ -183,12 +183,44 @@ export function formatMatrixValue(val: string | undefined | null): string {
   return formatCurrency(numericVal);
 }
 
-export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
+export function getCategoryConfigsForDomain(domain: string = 'pyme'): CategoryConfig[] {
+  const d = (domain || 'pyme').toLowerCase();
+  if (d === 'pyme') {
+    return CATEGORY_CONFIGS;
+  }
+
+  try {
+    const { hasDomainSpecificFile, loadDomainJson } = require('./domainBundleLoader');
+    if (hasDomainSpecificFile(d, 'taxonomy.json')) {
+      const taxonomy: any = loadDomainJson(d, 'taxonomy.json');
+
+      if (taxonomy && Array.isArray(taxonomy.categories) && taxonomy.categories.length > 0) {
+        return taxonomy.categories.map((cat: any, idx: number) => ({
+          id: typeof cat.id === 'number' ? cat.id : idx + 1,
+          canonicalName: cat.name,
+          headerLabel: String(cat.section || cat.name).toUpperCase(),
+          rows: [
+            { label: 'Valor Asegurado', field: 'value' as const },
+            { label: 'Deducible', field: 'deductible' as const },
+            { label: 'Incluye / Sublímites', field: 'details' as const },
+          ],
+        }));
+      }
+    }
+  } catch (err) {
+    console.warn(`[MatrixTransformer] Dynamic taxonomy load failed for ${domain}, using PYME fallback`, err);
+  }
+
+  return CATEGORY_CONFIGS;
+}
+
+export function transformQuotesToMatrix(quotes: QuoteAnalysis[], domain: string = 'pyme'): MatrixRow[] {
   const matrix: MatrixRow[] = [];
   const numQuotes = quotes.length;
+  const activeCategoryConfigs = getCategoryConfigsForDomain(domain);
 
   // 1. Process Canonical Categories
-  for (const config of CATEGORY_CONFIGS) {
+  for (const config of activeCategoryConfigs) {
     // Check if at least one quote has this coverage configured (avoiding empty sections if all NC, but for strictness we include all 14)
     // Add Header
     matrix.push({

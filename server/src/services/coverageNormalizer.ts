@@ -42,6 +42,15 @@ export interface CanonicalCoverage {
   categoryId?: number | string | null;
   rawTextSnippet?: string;
   pageNumber?: number | null;
+  // Step 1 Multinivel Additions:
+  level?: 1 | 2 | 3;
+  parentName?: string;
+  sublimits?: Array<{
+    name: string;
+    value: string;
+    deductible?: string;
+    limitType?: 'evento' | 'agregado' | 'subamparo';
+  }>;
 }
 
 export interface RawCoverage {
