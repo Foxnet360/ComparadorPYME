@@ -750,6 +750,7 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
             viewMode={viewMode}
             analysisId={report.id}
             schemaVersion={report.schemaVersion}
+            domain={(report as any).domain}
           />
         </div>
       )}

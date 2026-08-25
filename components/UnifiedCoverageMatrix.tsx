@@ -924,6 +924,7 @@ interface UnifiedCoverageMatrixProps {
   viewMode?: 'client' | 'technical';
   analysisId?: string; // Optional ID for direct exports
   schemaVersion?: 1 | 2;
+  domain?: string;
 }
 
 export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
@@ -933,6 +934,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
   viewMode = 'technical',
   analysisId,
   schemaVersion,
+  domain,
 }) => {
   const [activeTab, setActiveTab] = useState<'coverages' | 'financials' | 'additional'>(
     'coverages'
@@ -1065,7 +1067,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
       const response = await apiClient.fetch(`/analysis/${analysisId}/export`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cellNotes: exportNotes }),
+        body: JSON.stringify({ cellNotes: exportNotes, domain: domain || 'pyme' }),
       });
 
       const blob = await response.blob();

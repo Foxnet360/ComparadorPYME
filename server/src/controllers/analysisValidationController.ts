@@ -323,10 +323,38 @@ export const exportAnalysisExcel = async (
       return;
     }
 
-    const domain = (analysis as any).domain || req.body?.domain || 'pyme';
+    const domain = (
+      (req.query?.domain as string) ||
+      req.body?.domain ||
+      (analysis as any).domain ||
+      (analysis.analysis_result as any)?.domain ||
+      ((analysis as any).metadata as any)?.domain ||
+      'pyme'
+    ).toLowerCase().trim();
+
+    const rawClientName =
+      (req.query?.clientName as string) ||
+      req.body?.clientName ||
+      analysis.client_name ||
+      (analysis.analysis_result as any)?.clientInfo?.name ||
+      'Cliente';
+
+    const defaultActivity =
+      domain === 'copropiedades'
+        ? 'Edificio Residencial / Comercial (Copropiedad)'
+        : domain === 'autos'
+        ? 'Vehículo Particular / Flotas'
+        : domain === 'hogar'
+        ? 'Vivienda Residencial / Hogar'
+        : 'Comercial / PYME';
+
     const clientInfo = {
-      name: analysis.client_name || 'Edificio Alicante',
-      activity: req.body?.clientActivity || (domain === 'copropiedades' ? 'Edificio Residencial / Comercial (Copropiedad)' : domain === 'autos' ? 'Vehículo Particular / Flotas' : 'Comercial / PYME'),
+      name: rawClientName !== 'Edificio Alicante' || domain === 'copropiedades' ? rawClientName : 'Cliente',
+      activity:
+        (req.query?.clientActivity as string) ||
+        req.body?.clientActivity ||
+        (analysis.analysis_result as any)?.clientInfo?.activity ||
+        defaultActivity,
       location: 'Bogotá D.C.',
     };
 
