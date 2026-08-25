@@ -45,20 +45,23 @@ export async function saveAnalysisHistory(data: Record<string, unknown>): Promis
     .select('id')
     .single();
 
-  if (error && (error.code === 'PGRST204' || error.message?.includes('domain'))) {
-    console.warn('⚠️ [AnalysisRepository] Missing domain column in DB schema cache, retrying with domain in metadata...');
-    const fallbackPayload = { ...payload };
-    delete fallbackPayload.domain;
-    if (payload.domain) {
-      fallbackPayload.metadata = {
-        ...(typeof fallbackPayload.metadata === 'object' && fallbackPayload.metadata ? fallbackPayload.metadata : {}),
-        domain: payload.domain,
-      };
-    }
+  if (error) {
+    console.warn(
+      `⚠️ [AnalysisRepository] Insert failed (${error.code || 'schema_error'}: ${error.message}). Retrying with minimal schema...`
+    );
+
+    const minimalPayload = {
+      user_id: payload.user_id || 'anonymous',
+      client_name: payload.client_name || 'Cliente Desconocido',
+      analysis_result: payload.analysis_result || payload.unified_result || {},
+      recommendation: payload.recommendation || null,
+      total_score: payload.total_score || null,
+      correlation_id: payload.correlation_id || null,
+    };
 
     const retryRes = await supabase
       .from('analysis_history')
-      .insert(fallbackPayload as never)
+      .insert(minimalPayload as never)
       .select('id')
       .single();
 
