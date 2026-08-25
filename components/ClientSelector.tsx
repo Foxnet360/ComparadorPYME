@@ -778,6 +778,196 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
                 </div>
               )}
 
+              {/* Ramo: Autos y Flotas */}
+              {activeDomain === 'autos' && (
+                <div className="pt-3 border-t border-slate-100">
+                  <h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-3 flex items-center">
+                    <Building2 size={15} className="mr-1.5 text-indigo-600" />
+                    Parámetros de la Flota / Vehículos
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Número de Vehículos
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="Ej. 10"
+                        className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Uso Vehicular
+                      </label>
+                      <select className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs bg-white">
+                        <option value="particular">Particular / Directivo</option>
+                        <option value="comercial">Comercial / Operativo</option>
+                        <option value="carga">Transporte de Carga</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Dispositivo GPS Activo
+                      </label>
+                      <select className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs bg-white">
+                        <option value="si">Sí (Toda la flota)</option>
+                        <option value="parcial">Parcial</option>
+                        <option value="no">No</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Ramo: Vida Grupo */}
+              {activeDomain === 'vida_grupo' && (
+                <div className="pt-3 border-t border-slate-100">
+                  <h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-3 flex items-center">
+                    <Building2 size={15} className="mr-1.5 text-indigo-600" />
+                    Datos del Colectivo / Grupo Asegurado
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Número de Asegurados
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="Ej. 50"
+                        className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Promedio de Edad (Años)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="Ej. 38"
+                        className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Valor Asegurado por Vida ($ COP)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. $ 100.000.000"
+                        className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Ramo: Salud / Prepagada */}
+              {activeDomain === 'salud' && (
+                <div className="pt-3 border-t border-slate-100">
+                  <h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-3 flex items-center">
+                    <Building2 size={15} className="mr-1.5 text-indigo-600" />
+                    Datos del Colectivo de Salud
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Beneficiarios / Afiliados
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="Ej. 30"
+                        className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Nivel de Cobertura Deseado
+                      </label>
+                      <select className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs bg-white">
+                        <option value="hospitalaria">Hospitalario + Cirugía</option>
+                        <option value="integral">Integral (Ambulatorio + Maternidad)</option>
+                        <option value="internacional">Cobertura Internacional</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Ramo: Cumplimiento y Fianzas */}
+              {activeDomain === 'cumplimiento' && (
+                <div className="pt-3 border-t border-slate-100">
+                  <h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-3 flex items-center">
+                    <Building2 size={15} className="mr-1.5 text-indigo-600" />
+                    Parámetros del Contrato / Garantía
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Valor Total del Contrato ($ COP)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. $ 500.000.000"
+                        className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Duración del Contrato (Meses)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="Ej. 12"
+                        className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Ramo: Hogar */}
+              {activeDomain === 'hogar' && (
+                <div className="pt-3 border-t border-slate-100">
+                  <h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-3 flex items-center">
+                    <Building2 size={15} className="mr-1.5 text-indigo-600" />
+                    Parámetros del Inmueble / Vivienda
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Tipo de Vivienda
+                      </label>
+                      <select className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs bg-white">
+                        <option value="apto">Apartamento en Conjunto</option>
+                        <option value="casa">Casa Independiente</option>
+                        <option value="campestre">Casa Campestre</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Valor Estructural ($ COP)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. $ 400.000.000"
+                        className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                        Valor Contenidos ($ COP)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. $ 80.000.000"
+                        className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="pt-4 border-t border-slate-100 flex justify-end space-x-3">
                 <button
                   type="button"
