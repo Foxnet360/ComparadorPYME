@@ -35,7 +35,8 @@ export async function generateExcelBuffer(
   quotes: QuoteAnalysis[],
   clientInfo?: ClientInfo,
   cellNotes?: Record<string, string>,
-  brokerInfo?: BrokerInfo
+  brokerInfo?: BrokerInfo,
+  domain: string = 'pyme'
 ): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = brokerInfo?.intermediaryName || 'Agente Comparador CSA';
@@ -44,12 +45,18 @@ export async function generateExcelBuffer(
   workbook.modified = new Date();
 
   // Generate Matrix
-  const matrix = transformQuotesToMatrix(quotes);
+  const matrix = transformQuotesToMatrix(quotes, domain);
   const hasNotes = cellNotes && Object.keys(cellNotes).length > 0;
 
   // Parse Client Info
   const clientName = clientInfo?.name || 'Cliente';
-  const clientActivity = clientInfo?.activity || 'Comercial / PYME';
+  const defaultActivity =
+    domain === 'copropiedades'
+      ? 'Edificio Residencial / Comercial (Copropiedad)'
+      : domain === 'autos'
+      ? 'Vehículo Particular / Flotas'
+      : 'Comercial / PYME';
+  const clientActivity = clientInfo?.activity && clientInfo.activity !== 'Centro de Belleza y/o Estetica (CIIU 9602)' ? clientInfo.activity : defaultActivity;
   const clientLocation = clientInfo?.location || 'Bogotá D.C.';
 
   // Find max asset value from Incendio coverages

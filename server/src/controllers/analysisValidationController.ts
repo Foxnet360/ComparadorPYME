@@ -323,9 +323,10 @@ export const exportAnalysisExcel = async (
       return;
     }
 
+    const domain = (analysis as any).domain || req.body?.domain || 'pyme';
     const clientInfo = {
-      name: analysis.client_name || 'Cliente',
-      activity: 'Centro de Belleza y/o Estetica (CIIU 9602)',
+      name: analysis.client_name || 'Edificio Alicante',
+      activity: req.body?.clientActivity || (domain === 'copropiedades' ? 'Edificio Residencial / Comercial (Copropiedad)' : domain === 'autos' ? 'Vehículo Particular / Flotas' : 'Comercial / PYME'),
       location: 'Bogotá D.C.',
     };
 
@@ -341,7 +342,7 @@ export const exportAnalysisExcel = async (
       city: req.user?.city || req.user?.agentDetails?.city,
     };
 
-    const buffer = await generateExcelBuffer(quotes, clientInfo, cellNotes, brokerInfo);
+    const buffer = await generateExcelBuffer(quotes, clientInfo, cellNotes, brokerInfo, domain);
 
     res.setHeader(
       'Content-Type',
