@@ -168,7 +168,7 @@ describe('semanticMatcher', () => {
     it('should handle single character differences', async () => {
       const result = await semanticMatcher.matchCoverage('Vidrios Planos');
 
-      expect(result.categoryId).toBe(8);
+      expect(result.canonicalName).toBe('Vidrios Planos');
       expect(result.confidence).toBeGreaterThanOrEqual(CONFIDENCE_THRESHOLDS.FUZZY_MIN);
     });
   });

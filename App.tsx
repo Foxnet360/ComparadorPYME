@@ -343,10 +343,10 @@ const App: React.FC = () => {
             {status === AppStatus.IDLE && (
               <div className="text-center mb-8 max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <h2 className="text-3xl font-bold text-slate-900 mb-3 tracking-tight">
-                  Nueva Auditoría
+                  Nueva Comparación de Seguros
                 </h2>
                 <p className="text-slate-600">
-                  Selecciona el cliente y sube las cotizaciones para iniciar.
+                  Selecciona el cliente, el ramo de seguro y carga los documentos para iniciar la comparación.
                 </p>
               </div>
             )}
@@ -361,7 +361,6 @@ const App: React.FC = () => {
                       selectedClient={selectedClient}
                       onSelectClient={(client) => {
                         setSelectedClient(client);
-                        setDomain('pyme');
                         setClientSelectorOpen(false);
                       }}
                       isOpen={clientSelectorOpen}
@@ -372,12 +371,7 @@ const App: React.FC = () => {
                   <div className="flex-1 min-w-[260px]">
                     <DomainSelector
                       selectedDomain={domain}
-                      onChange={(newDomain: InsuranceDomain) => {
-                        if (newDomain === 'pyme' || newDomain === 'autos') {
-                          setDomain(newDomain);
-                        }
-                      }}
-                      allowedDomains={['pyme', 'autos']}
+                      onChange={(newDomain: InsuranceDomain) => setDomain(newDomain)}
                     />
                   </div>
                 </div>
@@ -390,8 +384,8 @@ const App: React.FC = () => {
                     {/* Left: Quotes */}
                     <div className="p-8">
                       <FileUploader
-                        title="1. Cotizaciones (Input)"
-                        description="Sube aquí las ofertas (PDF/IMG)."
+                        title="1. Cotizaciones de Aseguradoras"
+                        description="Carga aquí las ofertas y proposiciones (PDF)."
                         files={quoteFiles}
                         onFilesSelected={handleQuotesSelected}
                         onRemoveFile={handleRemoveQuote}
@@ -437,10 +431,10 @@ const App: React.FC = () => {
                       <Sparkles size={20} className="relative z-10" />
                       <span className="relative z-10">
                         {clauseMode === 'library' && selectedClauseIds.length > 0
-                          ? `Analizar (${selectedClauseIds.length} clausulados biblioteca)`
+                          ? `Comparar (${selectedClauseIds.length} clausulados biblioteca)`
                           : clauseFiles.length > 0
-                            ? `Analizar con ${clauseFiles.length} referencias`
-                            : 'Analizar Cotizaciones'}
+                            ? `Comparar con ${clauseFiles.length} referencias`
+                            : 'Comparar Cotizaciones'}
                       </span>
                     </button>
                   </div>
@@ -448,10 +442,10 @@ const App: React.FC = () => {
               </div>
             )}
 
-            {/* Loading State with Progress Bar */}
+            {/* Loading State with Progress Bar & Pipeline Steps */}
             {status === AppStatus.ANALYZING && (
-              <div className="max-w-xl mx-auto text-center py-20">
-                <div className="relative w-24 h-24 mx-auto mb-8">
+              <div className="max-w-2xl mx-auto text-center py-12 px-4 animate-in fade-in duration-300">
+                <div className="relative w-24 h-24 mx-auto mb-6">
                   <div className="absolute inset-0 border-4 border-indigo-100 rounded-full"></div>
                   <div className="absolute inset-0 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
                   <Activity
@@ -460,27 +454,54 @@ const App: React.FC = () => {
                   />
                 </div>
 
-                <h3 className="text-2xl font-bold text-slate-800 mb-2">Auditando Clausulados...</h3>
-                <p className="text-slate-500 mb-6">
-                  Procesando información de <strong>{selectedClient?.name || 'Cliente'}</strong>.
+                <h3 className="text-2xl font-bold text-slate-800 mb-2">
+                  Comparando Clausulados y Cotizaciones...
+                </h3>
+                <p className="text-slate-600 mb-6">
+                  Procesando análisis técnico para <strong>{selectedClient?.name || 'Cliente'}</strong>.
                 </p>
 
                 {/* Status Message */}
-                <div className="mb-4 text-indigo-700 font-medium animate-pulse">
-                  {statusMessage || 'Iniciando...'}
+                <div className="mb-4 p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-indigo-800 font-medium text-sm">
+                  {statusMessage || 'Ejecutando motor de reconciliación ontológica...'}
+                </div>
+
+                {/* Progress Steps (Technical Natural Language Pipeline) */}
+                <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm mb-6 text-left space-y-3">
+                  <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Etapas del Análisis Técnico
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                    <div className="flex items-center space-x-2 text-slate-700">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                      <span>1. Extracción OCR Multimodal y Estructuración PDF</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-slate-700">
+                      <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+                      <span>2. Normalización Ontológica (Gemini 3.5)</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-slate-700">
+                      <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+                      <span>3. Matriz de Coberturas y Reconciliación de Deducibles</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-slate-700">
+                      <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
+                      <span>4. Evaluador de Riesgos y Scoring Multidimensional</span>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Progress Bar (Indeterminate) */}
-                <div className="w-full bg-slate-200 rounded-full h-2.5 mb-2 overflow-hidden">
+                <div className="w-full bg-slate-200 rounded-full h-2.5 mb-6 overflow-hidden">
                   <div
                     className="bg-indigo-600 h-2.5 rounded-full animate-progress"
                     style={{ width: '100%' }}
                   ></div>
                 </div>
 
-                <div className="inline-flex items-center px-4 py-2 bg-indigo-50 text-indigo-700 rounded-full text-sm font-medium">
-                  <Sparkles size={16} className="mr-2" />
-                  Aplicando razonamiento profundo (Thinking Model)
+                <div className="inline-flex items-center px-4 py-2 bg-slate-100 text-slate-700 rounded-full text-xs font-semibold">
+                  <Sparkles size={14} className="mr-2 text-indigo-600" />
+                  Motor IA Gemini 3.5 • Supabase PGVector 3072d • Prevalencia Técnica
                 </div>
               </div>
             )}
@@ -500,13 +521,13 @@ const App: React.FC = () => {
                     onClick={handleRetry}
                     className="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 text-white rounded-full font-semibold shadow hover:bg-indigo-700 transition-colors"
                   >
-                    Reintentar auditoría
+                    Reintentar comparación
                   </button>
                   <button
                     onClick={handleReset}
                     className="w-full sm:w-auto px-4 py-2.5 text-slate-500 font-medium hover:text-slate-700 transition-colors"
                   >
-                    Nueva Auditoría
+                    Nueva Comparación
                   </button>
                 </div>
               </div>

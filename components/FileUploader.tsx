@@ -83,21 +83,6 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       {shouldDisplayDomainSelector && (
         <DomainSelector selectedDomain={domain} onChange={handleDomainChange} disabled={disabled} />
       )}
-
-      {disabled && isPrimary && (
-        <button
-          type="button"
-          onClick={onFocusClientSelection}
-          className="w-full text-left bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-center space-x-2 animate-in fade-in hover:bg-amber-100 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 pointer-events-auto"
-        >
-          <span className="font-medium">
-            ⚠️ Selecciona o crea un cliente arriba para habilitar la carga de cotizaciones.
-          </span>
-          <span className="ml-auto font-semibold text-amber-700 underline whitespace-nowrap">
-            Seleccionar cliente →
-          </span>
-        </button>
-      )}
       <div
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}

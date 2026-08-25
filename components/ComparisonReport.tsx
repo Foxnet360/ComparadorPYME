@@ -456,7 +456,7 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
           className={`flex items-center space-x-2 pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'auditoria' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
         >
           <ShieldAlert size={18} />
-          <span>Auditoría de Riesgos</span>
+          <span>Evaluación de Riesgos</span>
         </button>
         {hasAdvancedAnalysis && (
           <button
