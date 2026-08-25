@@ -17,6 +17,7 @@ import { semanticMatcher } from '../services/semanticMatcher';
 import { saveAnalysisHistory, getAnalysisHistoryByUser } from '../repositories/analysisRepository';
 import { formatCOP } from '../utils/formatCurrency';
 import { parseColombianCurrency } from '../utils/currencyParser';
+import { sanitizeDeep } from '../utils/textSanitizer';
 import quoteBasedAuditor from '../services/quoteBasedAuditor';
 
 import { AlertItem, AlertLevel, MatrixRow, QuoteAnalysis } from '../types';
@@ -303,7 +304,8 @@ export const analysisController = {
       const duration = Date.now() - startTime;
       console.log(`✅ Analysis completed in ${duration}ms`);
 
-      res.json(comparisonResult);
+      const sanitizedResult = sanitizeDeep(comparisonResult);
+      res.json(sanitizedResult);
     } catch (error: unknown) {
       console.error('Controller Error:', error);
 

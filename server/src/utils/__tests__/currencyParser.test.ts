@@ -27,6 +27,12 @@ describe('currencyParser - parseColombianCurrency', () => {
     expect(parseColombianCurrency('1,5')).toBe(1.5);
   });
 
+  it('should parse US/International currency format with commas as thousands and dot as decimal', () => {
+    expect(parseColombianCurrency('$ 15,000,000.00')).toBe(15000000.0);
+    expect(parseColombianCurrency('15,000,000.50')).toBe(15000000.5);
+    expect(parseColombianCurrency('1,500,000')).toBe(1500000.0);
+  });
+
   it('should return null for null, undefined, or empty strings', () => {
     expect(parseColombianCurrency(null)).toBeNull();
     expect(parseColombianCurrency(undefined)).toBeNull();
