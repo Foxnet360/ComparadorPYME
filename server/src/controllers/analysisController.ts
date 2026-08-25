@@ -684,6 +684,12 @@ export async function matrixRowsToComparisonReport(
           ? Math.round(realConfidences.reduce((sum, val) => sum + val, 0) / realConfidences.length)
           : 90;
 
+      // Actualizar la propiedad confidence en cada elemento de coverages para la matriz UI
+      coverages.forEach((c, idx) => {
+        const confScore = realConfidences[idx] ?? avgCellConfidence;
+        c.confidence = confScore > 1 ? confScore / 100 : confScore;
+      });
+
       const parsedQuote: ParsedQuote = {
         insurerName,
         policyName: 'Cotización PYME',

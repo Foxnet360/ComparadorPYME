@@ -503,8 +503,11 @@ export const semanticMatcher = {
       console.log(`💡 [SemanticMatcher] Expanded acronym: "${coverageName}" → "${effectiveName}"`);
     }
 
-    // Capa 1: Thesaurus exacto
-    const thesaurusResult = matchByThesaurus(effectiveName, d);
+    // Capa 1: Thesaurus exacto (prueba nombre expandido y nombre original)
+    let thesaurusResult = matchByThesaurus(effectiveName, d);
+    if (!thesaurusResult && effectiveName !== coverageName) {
+      thesaurusResult = matchByThesaurus(coverageName, d);
+    }
     if (thesaurusResult) {
       console.log(
         `✅ [SemanticMatcher] Thesaurus match: ${thesaurusResult.canonicalName} (${thesaurusResult.confidence})`
@@ -512,8 +515,11 @@ export const semanticMatcher = {
       return thesaurusResult;
     }
 
-    // Capa 2: Fuzzy
-    const fuzzyResult = matchByFuzzy(effectiveName, d);
+    // Capa 2: Fuzzy (prueba nombre expandido y nombre original)
+    let fuzzyResult = matchByFuzzy(effectiveName, d);
+    if (!fuzzyResult && effectiveName !== coverageName) {
+      fuzzyResult = matchByFuzzy(coverageName, d);
+    }
     if (fuzzyResult) {
       console.log(
         `✅ [SemanticMatcher] Fuzzy match: ${fuzzyResult.canonicalName} (${fuzzyResult.confidence})`

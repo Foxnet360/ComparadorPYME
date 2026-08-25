@@ -129,15 +129,38 @@ function buildThesaurusData(
     Object.assign(coberturas_plantilla, legacy.coberturas_plantilla);
   }
 
-  // Aseguramos que todas las categorías del bundle tengan una definición;
-  // para dominios nuevos se genera una definición mínima a partir de aliases.
+  // Cargar variantes específicas de thesaurus.json si existen para el dominio
+  let domainThesaurusVariants: Record<string, string[]> = {};
+  if (hasDomainSpecificFile(domain, 'thesaurus.json')) {
+    try {
+      const thesaurusObj = loadDomainJson<{
+        entries?: Array<{ canonicalName: string; variants: string[] }>;
+      }>(domain, 'thesaurus.json');
+      if (thesaurusObj?.entries && Array.isArray(thesaurusObj.entries)) {
+        for (const entry of thesaurusObj.entries) {
+          if (entry.canonicalName && Array.isArray(entry.variants)) {
+            domainThesaurusVariants[entry.canonicalName] = entry.variants;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn(`[ThesaurusService] Could not parse thesaurus.json for domain ${domain}:`, err);
+    }
+  }
+
+  // Aseguramos que todas las categorías del bundle tengan una definición completa
   for (const category of taxonomy.categories) {
     const existing = coberturas_plantilla[category.name];
-    const aliases = category.aliases || [];
+    const aliases = (category as any).synonyms || category.aliases || [];
+    const thesaurusVariants = domainThesaurusVariants[category.name] || [];
+    const combinedSynonyms = Array.from(
+      new Set([...(existing?.sinonimos || []), ...aliases, ...thesaurusVariants])
+    );
+
     coberturas_plantilla[category.name] = {
       id: existing?.id || toKebabId(category.name),
-      sinonimos: existing?.sinonimos || aliases,
-      terminos_busqueda: existing?.terminos_busqueda || aliases,
+      sinonimos: combinedSynonyms,
+      terminos_busqueda: combinedSynonyms,
       exclusiones_comunes: existing?.exclusiones_comunes,
       alertas_criticas: existing?.alertas_criticas,
       deducibles_tipicos: existing?.deducibles_tipicos,

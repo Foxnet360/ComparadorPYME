@@ -19,13 +19,16 @@
       "section": "COBERTURAS OBLIGATORIAS LEY 675",
       "isRequired": true,
       "synonyms": [
-        "incendio bienes comunes",
-        "rayo",
-        "explosión",
-        "fuego áreas comunes",
+        "Incendio, Rayo y Explosión sobre Bienes Comunes",
+        "Incendio (Edificio y Contenidos)",
+        "Amparo Básico Incendio",
+        "Incendio y Rayo",
+        "Incendio y Líneas Aliadas (ILA)",
+        "Edificios y Áreas Comunes",
         "incendio copropiedad",
         "incendio zonas comunes",
-        "amparo básico incendio"
+        "Todo Riesgo Incendio",
+        "Incendio y Rayo Edificios"
       ]
     },
     {
@@ -34,13 +37,14 @@
       "section": "COBERTURAS OBLIGATORIAS LEY 675",
       "isRequired": true,
       "synonyms": [
+        "Terremoto, Temblor y Erupción Volcánica sobre Bienes Comunes",
+        "Terremoto",
+        "Terremoto y Eventos Catastróficos",
+        "Terremoto, Temblor y Erupción (TTEV)",
         "terremoto bienes comunes",
-        "temblor",
-        "erupción volcánica",
         "sismo copropiedad",
-        "amparo terremoto",
-        "NSR-10",
-        "zona sísmica"
+        "TTEV",
+        "Terremoto, Temblor y Erupción Volcánica"
       ]
     },
     {
@@ -49,11 +53,21 @@
       "section": "COBERTURAS OBLIGATORIAS LEY 675",
       "isRequired": true,
       "synonyms": [
+        "Responsabilidad Civil Extracontractual Áreas Comunes",
+        "Responsabilidad Civil Extracontractual",
+        "Responsabilidad Civil Extracontractual (PL)",
+        "Responsabilidad Civil Extracontractual (RCE)",
+        "RCE",
         "RC áreas comunes",
         "responsabilidad civil copropiedad",
-        "daños a residentes",
         "RCE zonas comunes",
-        "responsabilidad administración"
+        "RC en proceso civil",
+        "Responsabilidad Civil Extracontractual en Proceso Civil y Gastos de Defensa",
+        "Responsabilidad Civil en Proceso Civil",
+        "Gastos de Defensa RCE",
+        "Predios, Labores y Operaciones",
+        "PL",
+        "PLO"
       ]
     },
     {
@@ -62,6 +76,9 @@
       "section": "RESPONSABILIDAD PROFESIONAL",
       "isRequired": false,
       "synonyms": [
+        "RC Directores y Administradores (D&O Copropiedades)",
+        "Responsabilidad Civil Directores y Administradores (D&O)",
+        "D&O",
         "D&O copropiedades",
         "RC administrador",
         "responsabilidad directores",
@@ -75,14 +92,13 @@
       "section": "RESPONSABILIDAD CIVIL",
       "isRequired": false,
       "synonyms": [
+        "Responsabilidad Civil Patronal (Empleados de Zonas Comunes)",
         "RC patronal",
         "accidente de trabajo empleados",
         "responsabilidad empleador copropiedad",
-        "portero",
-        "vigilante",
-        "aseador",
-        "empleados zonas comunes",
-        "employer liability"
+        "RC Patronal Porteros y Vigilantes",
+        "employer liability",
+        "Responsabilidad Civil Patronal"
       ]
     },
     {
@@ -91,12 +107,17 @@
       "section": "DAÑOS MATERIALES",
       "isRequired": false,
       "synonyms": [
-        "equipo eléctrico zonas comunes",
+        "Equipo Eléctrico y Maquinaria de Zonas Comunes",
+        "Equipo Eléctrico y Electrónico",
+        "Equipos eléctricos y electrónicos",
+        "Rotura de Maquinaria",
+        "Maquinaria y equipo",
         "ascensores",
         "planta eléctrica",
         "bombas de agua",
-        "equipos HVAC",
-        "cortocircuito maquinaria"
+        "equipo eléctrico zonas comunes",
+        "Rotura de Maquinaria y Equipo Eléctrico",
+        "Equipo Eléctrico y Electrónico y Rotura de Maquinaria"
       ]
     },
     {
@@ -105,10 +126,16 @@
       "section": "DAÑOS MATERIALES",
       "isRequired": false,
       "synonyms": [
+        "Sustracción y Hurto de Bienes Comunes",
+        "Sustracción / Hurto",
+        "Sustracción con Violencia",
+        "Sustracción con Violencia e Infidelidad",
         "hurto zonas comunes",
         "sustracción bienes comunes",
         "robo copropiedad",
-        "hurto equipos comunes"
+        "Títulos valores y dinero en efectivo",
+        "Sustracción y Hurto",
+        "Muebles y enseres"
       ]
     },
     {
@@ -117,11 +144,14 @@
       "section": "DAÑOS MATERIALES",
       "isRequired": false,
       "synonyms": [
+        "Rotura de Vidrios, Fachadas y Domos",
+        "Vidrios",
         "vidrios planos",
+        "rotura vidrios copropiedad",
         "fachadas",
         "domos",
         "cristales zonas comunes",
-        "rotura vidrios copropiedad"
+        "Rotura de Vidrios"
       ]
     },
     {
@@ -130,10 +160,14 @@
       "section": "DAÑOS MATERIALES",
       "isRequired": false,
       "synonyms": [
+        "Todo Riesgo Daño Material Copropiedades",
+        "Edificio y Bienes Comunes (Valor Asegurado)",
+        "Todo Riesgo Incendio",
         "todo riesgo copropiedad",
         "daño material zonas comunes",
+        "all risk copropiedad",
         "pérdida o daño físico",
-        "all risk copropiedad"
+        "Todo Riesgo Daños Materiales"
       ]
     },
     {
@@ -142,12 +176,15 @@
       "section": "DAÑOS MATERIALES",
       "isRequired": false,
       "synonyms": [
+        "Daños por Agua, Anegación e Inundación en Áreas Comunes",
+        "Daños por Agua, Anegación e Inundación",
         "daños por agua copropiedad",
         "anegación",
         "inundación zonas comunes",
         "filtración",
         "tubería rota",
-        "daños por humedad"
+        "daños por humedad",
+        "Daños por Agua"
       ]
     },
     {
@@ -156,10 +193,13 @@
       "section": "RESPONSABILIDAD CIVIL",
       "isRequired": false,
       "synonyms": [
+        "Manejo e Infidelidad de Empleados",
+        "Manejo Global / Infidelidad de Empleados",
+        "Manejo global / Infidelidad",
         "infidelidad empleados copropiedad",
         "manejo empleados",
         "deshonestidad empleados",
-        "fraude administrador"
+        "Infidelidad y Riesgos Financieros"
       ]
     },
     {
@@ -168,6 +208,12 @@
       "section": "RIESGOS ESPECIALES",
       "isRequired": false,
       "synonyms": [
+        "AMIT, Terrorismo y Actos Malintencionados",
+        "HMACC-AMIT",
+        "Huelga, Motín, Asonada, Conmoción Civil y Actos Malintencionados de Terceros",
+        "Huelga, Motín y Asonada (HMA / HMACC)",
+        "Huelga, Motín, Asonada y Conmoción Civil",
+        "Actos Malintencionados de Terceros",
         "AMIT copropiedad",
         "terrorismo edificio",
         "actos malintencionados",
@@ -181,12 +227,14 @@
       "section": "FENÓMENOS NATURALES",
       "isRequired": false,
       "synonyms": [
+        "Granizo, Vientos Fuertes y Tempestades",
         "granizo",
         "vientos fuertes",
         "tempestad",
         "vendaval",
         "lluvia con granizo",
-        "tormenta"
+        "tormenta",
+        "Vientos Fuertes y Granizo"
       ]
     },
     {
@@ -195,10 +243,12 @@
       "section": "GASTOS COMPLEMENTARIOS",
       "isRequired": false,
       "synonyms": [
+        "Remoción de Escombros y Gastos de Preservación",
         "remoción de escombros",
         "gastos de preservación",
         "demolición",
-        "gastos adicionales siniestro"
+        "gastos adicionales siniestro",
+        "Preservación de Bienes"
       ]
     },
     {
@@ -207,6 +257,9 @@
       "section": "PÉRDIDAS CONSECUENCIALES",
       "isRequired": false,
       "synonyms": [
+        "Pérdida de Expensas y Cuotas de Administración",
+        "Lucro Cesante",
+        "Lucro Cesante / Pérdida de Cánones de Arrendamiento y Gastos Adicionales de Alojamiento",
         "pérdida de expensas",
         "cuotas de administración",
         "ingresos por cuotas",
@@ -220,10 +273,12 @@
       "section": "SERVICIOS Y ASISTENCIAS",
       "isRequired": false,
       "synonyms": [
+        "Asistencia y Mantenimiento de Áreas Comunes",
         "asistencia mantenimiento",
         "mantenimiento zonas comunes",
         "asistencia técnica copropiedad",
-        "reparaciones urgentes"
+        "reparaciones urgentes",
+        "Asistencia 24/7 Copropiedades"
       ]
     }
   ]
