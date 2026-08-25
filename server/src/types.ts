@@ -60,6 +60,8 @@ export interface AlertItem {
   level: AlertLevel;
   title: string;
   description: string;
+  clauseReference?: string;
+  sourceDocument?: string;
 }
 
 export interface ScoringBreakdown {
