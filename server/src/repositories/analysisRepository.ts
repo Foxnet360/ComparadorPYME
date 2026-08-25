@@ -37,18 +37,41 @@ export interface AnalysisHistoryRecord {
 }
 
 export async function saveAnalysisHistory(data: Record<string, unknown>): Promise<string | null> {
-  const { data: result, error } = await supabase
+  const payload = { ...data };
+
+  let { data: result, error } = await supabase
     .from('analysis_history')
-    .insert(data as never)
+    .insert(payload as never)
     .select('id')
     .single();
+
+  if (error && (error.code === 'PGRST204' || error.message?.includes('domain'))) {
+    console.warn('⚠️ [AnalysisRepository] Missing domain column in DB schema cache, retrying with domain in metadata...');
+    const fallbackPayload = { ...payload };
+    delete fallbackPayload.domain;
+    if (payload.domain) {
+      fallbackPayload.metadata = {
+        ...(typeof fallbackPayload.metadata === 'object' && fallbackPayload.metadata ? fallbackPayload.metadata : {}),
+        domain: payload.domain,
+      };
+    }
+
+    const retryRes = await supabase
+      .from('analysis_history')
+      .insert(fallbackPayload as never)
+      .select('id')
+      .single();
+
+    result = retryRes.data;
+    error = retryRes.error;
+  }
 
   if (error) {
     console.error('❌ [AnalysisRepository] Failed to save analysis:', error);
     return null;
   }
 
-  return (result as { id?: string })?.id || null;
+  return (result as unknown as { id?: string })?.id || null;
 }
 
 export async function getAnalysisHistoryByUser(userId: string): Promise<AnalysisHistoryRecord[]> {
