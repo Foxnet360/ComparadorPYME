@@ -33,6 +33,20 @@ export interface AuthenticatedRequest extends Request {
 
 const getJwtSecret = (): string => process.env.SUPABASE_JWT_SECRET || '';
 
+/**
+ * SEC-2: In production the JWT secret is mandatory. Without it the middleware
+ * silently decodes tokens WITHOUT verifying signatures, which lets anyone forge
+ * any user identity. Fail fast at startup instead of binding the port.
+ */
+export const assertProductionJwtSecret = (env: NodeJS.ProcessEnv = process.env): void => {
+  if (env.NODE_ENV === 'production' && !env.SUPABASE_JWT_SECRET) {
+    throw new Error(
+      'SUPABASE_JWT_SECRET is required in production. Refusing to start: ' +
+        'without it, JWTs would be decoded without signature verification.'
+    );
+  }
+};
+
 export const authMiddleware = (
   req: AuthenticatedRequest,
   _res: Response,

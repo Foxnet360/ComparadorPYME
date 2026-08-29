@@ -48,7 +48,8 @@ if (activeKey && viteKey && activeKey !== viteKey) {
 // Import controllers after dotenv is loaded (they depend on env vars)
 import { analysisController } from './controllers/analysisController';
 import { compareExtraction } from './controllers/compareController';
-import { optionalAuthMiddleware } from './middleware/auth';
+import { optionalAuthMiddleware, assertProductionJwtSecret } from './middleware/auth';
+import { createCorsOrigin, getCorsOrigins } from './config/cors';
 
 // Import routes
 import auditRoutes from './routes/audit';
@@ -75,28 +76,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// Dynamic CORS configuration
-let corsOrigins: string[] = ['http://localhost:3000', 'http://localhost:8080'];
-try {
-  if (process.env.CORS_ORIGINS) {
-    const parsed = JSON.parse(process.env.CORS_ORIGINS);
-    if (Array.isArray(parsed)) {
-      corsOrigins = parsed;
-      console.log('🌐 [CORS] Using configured origins:', corsOrigins);
-    } else {
-      console.warn('⚠️ [CORS] CORS_ORIGINS is not a valid JSON array, using defaults');
-    }
-  } else {
-    console.log('🌐 [CORS] Using default origins:', corsOrigins);
-  }
-} catch (error) {
-  console.error('❌ [CORS] Failed to parse CORS_ORIGINS:', error);
-  console.log('🌐 [CORS] Using default origins:', corsOrigins);
-}
+// Dynamic CORS configuration (fail-closed: disallowed origins are rejected)
+const corsOrigins = getCorsOrigins();
+console.log('🌐 [CORS] Allowed origins:', corsOrigins);
 
 app.use(
   cors({
-    origin: corsOrigins,
+    origin: createCorsOrigin(corsOrigins),
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
   })
@@ -291,6 +277,14 @@ async function seedCoverageGraphOnStartup(): Promise<void> {
 }
 
 async function bootstrap(): Promise<void> {
+  // SEC-2: fail before binding the port when mandatory config is missing
+  try {
+    assertProductionJwtSecret();
+  } catch (error) {
+    console.error('❌ [Startup]', error instanceof Error ? error.message : error);
+    process.exit(1);
+  }
+
   await seedCoverageGraphOnStartup();
 
   app.listen(port, '0.0.0.0', () => {
