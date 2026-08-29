@@ -5,6 +5,7 @@ import fs from 'fs';
 import { documentIndexingService, DocumentMetadata } from '../services/documentIndexingService';
 import { supabase } from '../config/database';
 import { handleSupabaseError } from '../config/database';
+import { AuthenticatedRequest, requireUser } from '../middleware/auth';
 
 interface DocumentListItem {
   id: string;
@@ -127,6 +128,17 @@ export const documentController = {
         return;
       }
 
+      // AUTH-2: ownership comes from the authenticated session; a
+      // client-supplied userId is a spoofing vector and is rejected.
+      if ((req.body as Record<string, unknown>).userId !== undefined) {
+        res.status(400).json({
+          success: false,
+          error: 'userId is derived from the authenticated session; do not send it',
+        });
+        return;
+      }
+      const uploadedBy = requireUser(req as AuthenticatedRequest);
+
       // Validar campos
       const validation = validateDocumentFields(req.body);
       if (!validation.valid) {
@@ -138,7 +150,6 @@ export const documentController = {
       }
 
       const { insurerName, documentName, documentType, version, productName } = req.body;
-      const uploadedBy = req.body.userId || 'anonymous';
 
       console.log(`   File: ${req.file.originalname} (${req.file.size} bytes)`);
       console.log(`   Insurer: ${insurerName}`);

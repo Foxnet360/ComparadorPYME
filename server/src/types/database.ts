@@ -73,6 +73,39 @@ export interface Database {
           updated_at?: string;
         };
       };
+      client_profiles: {
+        Row: {
+          id: string;
+          user_id: string;
+          client_name: string;
+          primary_activity: string | null;
+          location_city: string | null;
+          raw_client_data: Json | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          client_name: string;
+          primary_activity?: string | null;
+          location_city?: string | null;
+          raw_client_data?: Json | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          client_name?: string;
+          primary_activity?: string | null;
+          location_city?: string | null;
+          raw_client_data?: Json | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       page_images: {
         Row: {
           id: string;

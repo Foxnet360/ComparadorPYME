@@ -34,6 +34,19 @@ export interface AuthenticatedRequest extends Request {
 const getJwtSecret = (): string => process.env.SUPABASE_JWT_SECRET || '';
 
 /**
+ * AUTH-2: returns the authenticated user's id or throws.
+ * Controllers MUST derive ownership from this value; a client-supplied
+ * userId in body/query is never trusted (spoofing vector).
+ */
+export const requireUser = (req: AuthenticatedRequest): string => {
+  const id = req.user?.id;
+  if (!id) {
+    throw new AuthenticationError('Authentication required');
+  }
+  return id;
+};
+
+/**
  * SEC-2: In production the JWT secret is mandatory. Without it the middleware
  * silently decodes tokens WITHOUT verifying signatures, which lets anyone forge
  * any user identity. Fail fast at startup instead of binding the port.

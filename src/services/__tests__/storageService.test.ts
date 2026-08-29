@@ -58,6 +58,21 @@ describe('storageService - getHistory', () => {
     expect(apiClient.fetch).toHaveBeenCalledWith('/history');
   });
 
+  it('calls /history without userId query param even for a logged-in user (AUTH-2)', async () => {
+    globalThis.localStorage.setItem(
+      'seguro_app_user',
+      JSON.stringify({ id: 'user-1', email: 'u@example.com', name: 'U' })
+    );
+    vi.mocked(apiClient.fetch).mockResolvedValue({
+      json: vi.fn().mockResolvedValue([]),
+    } as unknown as Response);
+
+    await storageService.getHistory();
+
+    expect(apiClient.fetch).toHaveBeenCalledWith('/history');
+    globalThis.localStorage.clear();
+  });
+
   it('transforms backend history to frontend format', async () => {
     vi.mocked(apiClient.fetch).mockResolvedValue({
       json: vi.fn().mockResolvedValue([

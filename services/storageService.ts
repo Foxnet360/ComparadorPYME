@@ -179,9 +179,9 @@ export const storageService = {
     let cloudTransformed: HistoryEntry[] = [];
     let backendReachable = false;
     try {
-      const currentUser = storageService.getCurrentUser();
-      const queryParam = currentUser?.id ? `?userId=${encodeURIComponent(currentUser.id)}` : '';
-      const response = await apiClient.fetch(`/history${queryParam}`);
+      // AUTH-2: the backend derives user_id from the Bearer token; sending
+      // ?userId= is a spoofing vector and is rejected with 400.
+      const response = await apiClient.fetch('/history');
       if (response.ok !== false) {
         backendReachable = true;
         const rawData = await response.json();
