@@ -49,6 +49,7 @@ if (activeKey && viteKey && activeKey !== viteKey) {
 import { analysisController } from './controllers/analysisController';
 import { compareExtraction } from './controllers/compareController';
 import { optionalAuthMiddleware, assertProductionJwtSecret } from './middleware/auth';
+import { authGate } from './middleware/authGate';
 import { createCorsOrigin, getCorsOrigins } from './config/cors';
 
 // Import routes
@@ -89,6 +90,11 @@ app.use(
 );
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// AUTH-1: global authentication gate. MUST stay before any /api route
+// registration so every non-allowlisted /api/* route requires a Bearer token
+// (fail-closed). Coverage: tests/server/routeAuthCoverage.test.ts.
+app.use('/api', authGate);
 
 // Health check with dependency status
 import { checkHealth } from './services/healthCheckService';
@@ -181,26 +187,22 @@ app.post('/api/search', searchController.search);
 app.post('/api/search/by-coverage', searchController.searchByCoverage);
 app.post('/api/search/compare', searchController.compareDocuments);
 
-// NEW: Audit enrichment routes
-app.use('/api/audit', auditRoutes);
+// Router mounts: single source of truth consumed by the route-coverage test.
+// The gate already applies optional auth to allowlisted prefixes, so no
+// per-mount auth middleware is needed here.
+export const apiRouterMounts = [
+  { prefix: '/api/audit', router: auditRoutes },
+  { prefix: '/api/analysis', router: analysisRoutes },
+  { prefix: '/api/chat', router: chatRoutes },
+  { prefix: '/api/monitoring', router: monitoringRoutes },
+  { prefix: '/api/templates/registry', router: templateRegistryRoutes },
+  { prefix: '/api/comparison', router: comparisonRoutes },
+  { prefix: '/api/clients', router: clientRoutes },
+] as const;
 
-// NEW: Analysis validation routes
-app.use('/api/analysis', analysisRoutes);
-
-// NEW: Chat routes
-app.use('/api/chat', chatRoutes);
-
-// NEW: Monitoring routes
-app.use('/api/monitoring', monitoringRoutes);
-
-// NEW: Template registry routes
-app.use('/api/templates/registry', templateRegistryRoutes);
-
-// NEW: Unified Comparison routes
-app.use('/api/comparison', optionalAuthMiddleware, comparisonRoutes);
-
-// NEW: Client Sync routes
-app.use('/api/clients', optionalAuthMiddleware, clientRoutes);
+for (const { prefix, router } of apiRouterMounts) {
+  app.use(prefix, router);
+}
 
 // Centralized error handling middleware (must be after all routes)
 import { errorHandler } from './middleware/errorHandler';
@@ -292,4 +294,11 @@ async function bootstrap(): Promise<void> {
   });
 }
 
-bootstrap();
+// Start only when run as a server, not when imported by tests (vitest sets VITEST).
+// Production start goes through the root index.js -> server/dist/index.js chain,
+// so a require.main check is not safe here.
+if (!process.env.VITEST) {
+  void bootstrap();
+}
+
+export { app };

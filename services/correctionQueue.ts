@@ -1,4 +1,5 @@
 import { CorrectionInput } from '../schemas/correction';
+import { apiClient } from './apiClient';
 
 interface QueuedCorrection {
   id: string;
@@ -112,22 +113,17 @@ export class CorrectionQueue {
         this.updateStatus(item.id, 'syncing');
         this.incrementAttempt(item.id);
 
-        const response = await fetch('/api/analysis/correction', {
+        // Goes through apiClient so the request carries the Bearer token;
+        // /api/analysis/correction requires authentication (AUTH-1).
+        // apiClient.fetch throws on non-2xx responses.
+        await apiClient.fetch('/analysis/correction', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(item.correction),
         });
 
-        if (response.ok) {
-          this.remove(item.id);
-          success.push(item.id);
-        } else {
-          const errorData = await response
-            .json()
-            .catch(() => ({ error: `HTTP ${response.status}` }));
-          this.updateStatus(item.id, 'error', errorData.error);
-          failed.push(item.id);
-        }
+        this.remove(item.id);
+        success.push(item.id);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Error de red';
         this.updateStatus(item.id, 'error', errorMessage);
