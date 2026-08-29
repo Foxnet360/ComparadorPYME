@@ -50,6 +50,7 @@ import { analysisController } from './controllers/analysisController';
 import { compareExtraction } from './controllers/compareController';
 import { optionalAuthMiddleware, assertProductionJwtSecret } from './middleware/auth';
 import { authGate } from './middleware/authGate';
+import { globalRateLimiter, analyzeRateLimiter, chatRateLimiter } from './middleware/rateLimiter';
 import { createCorsOrigin, getCorsOrigins } from './config/cors';
 
 // Import routes
@@ -90,6 +91,10 @@ app.use(
 );
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// SEC-4: global rate limit on all /api traffic. Runs before the auth gate
+// so unauthenticated floods are also throttled.
+app.use('/api', globalRateLimiter);
 
 // AUTH-1: global authentication gate. MUST stay before any /api route
 // registration so every non-allowlisted /api/* route requires a Bearer token
@@ -156,11 +161,17 @@ if (!fs.existsSync(uploadDir)) {
 const upload = multer({ dest: uploadDir });
 
 // Compare V1 vs V2 endpoint
-app.post('/api/compare-extraction', upload.array('quotes', 10), compareExtraction);
+app.post(
+  '/api/compare-extraction',
+  analyzeRateLimiter,
+  upload.array('quotes', 10),
+  compareExtraction
+);
 
 // Analysis routes
 app.post(
   '/api/analyze',
+  analyzeRateLimiter,
   optionalAuthMiddleware,
   upload.fields([
     { name: 'quotes', maxCount: 10 },
@@ -189,19 +200,24 @@ app.post('/api/search/compare', searchController.compareDocuments);
 
 // Router mounts: single source of truth consumed by the route-coverage test.
 // The gate already applies optional auth to allowlisted prefixes, so no
-// per-mount auth middleware is needed here.
+// per-mount auth middleware is needed here. SEC-4: analysis and chat mounts
+// carry their stricter rate limiters.
 export const apiRouterMounts = [
   { prefix: '/api/audit', router: auditRoutes },
-  { prefix: '/api/analysis', router: analysisRoutes },
-  { prefix: '/api/chat', router: chatRoutes },
+  { prefix: '/api/analysis', middleware: [analyzeRateLimiter], router: analysisRoutes },
+  { prefix: '/api/chat', middleware: [chatRateLimiter], router: chatRoutes },
   { prefix: '/api/monitoring', router: monitoringRoutes },
   { prefix: '/api/templates/registry', router: templateRegistryRoutes },
   { prefix: '/api/comparison', router: comparisonRoutes },
   { prefix: '/api/clients', router: clientRoutes },
 ] as const;
 
-for (const { prefix, router } of apiRouterMounts) {
-  app.use(prefix, router);
+for (const mount of apiRouterMounts) {
+  if ('middleware' in mount) {
+    app.use(mount.prefix, ...mount.middleware, mount.router);
+  } else {
+    app.use(mount.prefix, mount.router);
+  }
 }
 
 // Centralized error handling middleware (must be after all routes)
