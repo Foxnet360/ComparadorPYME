@@ -35,9 +35,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@google-cloud/storage": "^5.18.3",
     "@google/genai": "^1.46.0",
-    "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.105.1",
     "@tanstack/react-virtual": "^3.14.5",
     "ajv": "^8.20.0",
