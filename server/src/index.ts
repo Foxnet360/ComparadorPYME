@@ -48,7 +48,10 @@ if (activeKey && viteKey && activeKey !== viteKey) {
 // Import controllers after dotenv is loaded (they depend on env vars)
 import { analysisController } from './controllers/analysisController';
 import { compareExtraction } from './controllers/compareController';
-import { optionalAuthMiddleware } from './middleware/auth';
+import { optionalAuthMiddleware, assertProductionJwtSecret } from './middleware/auth';
+import { authGate } from './middleware/authGate';
+import { globalRateLimiter, analyzeRateLimiter, chatRateLimiter } from './middleware/rateLimiter';
+import { createCorsOrigin, getCorsOrigins } from './config/cors';
 
 // Import routes
 import auditRoutes from './routes/audit';
@@ -75,34 +78,28 @@ app.use((req, res, next) => {
   next();
 });
 
-// Dynamic CORS configuration
-let corsOrigins: string[] = ['http://localhost:3000', 'http://localhost:8080'];
-try {
-  if (process.env.CORS_ORIGINS) {
-    const parsed = JSON.parse(process.env.CORS_ORIGINS);
-    if (Array.isArray(parsed)) {
-      corsOrigins = parsed;
-      console.log('🌐 [CORS] Using configured origins:', corsOrigins);
-    } else {
-      console.warn('⚠️ [CORS] CORS_ORIGINS is not a valid JSON array, using defaults');
-    }
-  } else {
-    console.log('🌐 [CORS] Using default origins:', corsOrigins);
-  }
-} catch (error) {
-  console.error('❌ [CORS] Failed to parse CORS_ORIGINS:', error);
-  console.log('🌐 [CORS] Using default origins:', corsOrigins);
-}
+// Dynamic CORS configuration (fail-closed: disallowed origins are rejected)
+const corsOrigins = getCorsOrigins();
+console.log('🌐 [CORS] Allowed origins:', corsOrigins);
 
 app.use(
   cors({
-    origin: corsOrigins,
+    origin: createCorsOrigin(corsOrigins),
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
   })
 );
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// SEC-4: global rate limit on all /api traffic. Runs before the auth gate
+// so unauthenticated floods are also throttled.
+app.use('/api', globalRateLimiter);
+
+// AUTH-1: global authentication gate. MUST stay before any /api route
+// registration so every non-allowlisted /api/* route requires a Bearer token
+// (fail-closed). Coverage: tests/server/routeAuthCoverage.test.ts.
+app.use('/api', authGate);
 
 // Health check with dependency status
 import { checkHealth } from './services/healthCheckService';
@@ -164,11 +161,17 @@ if (!fs.existsSync(uploadDir)) {
 const upload = multer({ dest: uploadDir });
 
 // Compare V1 vs V2 endpoint
-app.post('/api/compare-extraction', upload.array('quotes', 10), compareExtraction);
+app.post(
+  '/api/compare-extraction',
+  analyzeRateLimiter,
+  upload.array('quotes', 10),
+  compareExtraction
+);
 
 // Analysis routes
 app.post(
   '/api/analyze',
+  analyzeRateLimiter,
   optionalAuthMiddleware,
   upload.fields([
     { name: 'quotes', maxCount: 10 },
@@ -195,26 +198,27 @@ app.post('/api/search', searchController.search);
 app.post('/api/search/by-coverage', searchController.searchByCoverage);
 app.post('/api/search/compare', searchController.compareDocuments);
 
-// NEW: Audit enrichment routes
-app.use('/api/audit', auditRoutes);
+// Router mounts: single source of truth consumed by the route-coverage test.
+// The gate already applies optional auth to allowlisted prefixes, so no
+// per-mount auth middleware is needed here. SEC-4: analysis and chat mounts
+// carry their stricter rate limiters.
+export const apiRouterMounts = [
+  { prefix: '/api/audit', router: auditRoutes },
+  { prefix: '/api/analysis', middleware: [analyzeRateLimiter], router: analysisRoutes },
+  { prefix: '/api/chat', middleware: [chatRateLimiter], router: chatRoutes },
+  { prefix: '/api/monitoring', router: monitoringRoutes },
+  { prefix: '/api/templates/registry', router: templateRegistryRoutes },
+  { prefix: '/api/comparison', router: comparisonRoutes },
+  { prefix: '/api/clients', router: clientRoutes },
+] as const;
 
-// NEW: Analysis validation routes
-app.use('/api/analysis', analysisRoutes);
-
-// NEW: Chat routes
-app.use('/api/chat', chatRoutes);
-
-// NEW: Monitoring routes
-app.use('/api/monitoring', monitoringRoutes);
-
-// NEW: Template registry routes
-app.use('/api/templates/registry', templateRegistryRoutes);
-
-// NEW: Unified Comparison routes
-app.use('/api/comparison', optionalAuthMiddleware, comparisonRoutes);
-
-// NEW: Client Sync routes
-app.use('/api/clients', optionalAuthMiddleware, clientRoutes);
+for (const mount of apiRouterMounts) {
+  if ('middleware' in mount) {
+    app.use(mount.prefix, ...mount.middleware, mount.router);
+  } else {
+    app.use(mount.prefix, mount.router);
+  }
+}
 
 // Centralized error handling middleware (must be after all routes)
 import { errorHandler } from './middleware/errorHandler';
@@ -291,6 +295,14 @@ async function seedCoverageGraphOnStartup(): Promise<void> {
 }
 
 async function bootstrap(): Promise<void> {
+  // SEC-2: fail before binding the port when mandatory config is missing
+  try {
+    assertProductionJwtSecret();
+  } catch (error) {
+    console.error('❌ [Startup]', error instanceof Error ? error.message : error);
+    process.exit(1);
+  }
+
   await seedCoverageGraphOnStartup();
 
   app.listen(port, '0.0.0.0', () => {
@@ -298,4 +310,11 @@ async function bootstrap(): Promise<void> {
   });
 }
 
-bootstrap();
+// Start only when run as a server, not when imported by tests (vitest sets VITEST).
+// Production start goes through the root index.js -> server/dist/index.js chain,
+// so a require.main check is not safe here.
+if (!process.env.VITEST) {
+  void bootstrap();
+}
+
+export { app };

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Save, Pin } from 'lucide-react';
-import { sanitizeNote } from '../utils/sanitizeNote';
+import ReactMarkdown from 'react-markdown';
 
 interface InlineNoteEditorProps {
   cellId: string;
@@ -41,8 +41,6 @@ export const InlineNoteEditor: React.FC<InlineNoteEditorProps> = ({
     }
   };
 
-  const previewHtml = content ? sanitizeNote(content) : '';
-
   return (
     <div className="absolute inset-0 bg-white z-50 flex flex-col shadow-lg border border-slate-200 rounded-lg">
       <div className="flex items-center justify-between px-3 py-2 border-b bg-slate-50">
@@ -81,10 +79,11 @@ export const InlineNoteEditor: React.FC<InlineNoteEditorProps> = ({
       {content && (
         <div className="px-3 py-2 border-t bg-slate-50">
           <p className="text-xs text-slate-400 mb-1">Vista previa:</p>
-          <div
-            className="text-xs text-slate-600 prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: previewHtml }}
-          />
+          {/* SEC-3: react-markdown escapes raw HTML by default (no rehype-raw)
+              and sanitizes dangerous link protocols — no HTML injection sink. */}
+          <div className="text-xs text-slate-600 prose prose-sm max-w-none">
+            <ReactMarkdown>{content}</ReactMarkdown>
+          </div>
         </div>
       )}
 

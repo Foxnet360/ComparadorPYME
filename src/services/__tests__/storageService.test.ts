@@ -15,6 +15,34 @@ vi.mock('../../../services/db', () => ({
   },
 }));
 
+describe('storageService - login (SEC-1)', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    globalThis.localStorage.clear();
+  });
+
+  afterEach(() => {
+    globalThis.localStorage.clear();
+  });
+
+  it('rejects the former hardcoded admin credentials as invalid', async () => {
+    vi.mocked(dbService.getAll).mockResolvedValue([]);
+
+    await expect(storageService.login('admin@seguros.com', 'admin123')).rejects.toThrow(
+      'Credenciales inválidas'
+    );
+    expect(globalThis.localStorage.getItem('seguro_app_user')).toBeNull();
+  });
+
+  it('logs in a registered user with matching credentials', async () => {
+    const user = { id: 'u1', email: 'user@example.com', password: 'secret', name: 'User' };
+    vi.mocked(dbService.getAll).mockResolvedValue([user]);
+
+    await expect(storageService.login('user@example.com', 'secret')).resolves.toEqual(user);
+    expect(globalThis.localStorage.getItem('seguro_app_user')).toBe(JSON.stringify(user));
+  });
+});
+
 describe('storageService - getHistory', () => {
   beforeEach(() => {
     vi.resetAllMocks();
@@ -28,6 +56,21 @@ describe('storageService - getHistory', () => {
     await storageService.getHistory();
 
     expect(apiClient.fetch).toHaveBeenCalledWith('/history');
+  });
+
+  it('calls /history without userId query param even for a logged-in user (AUTH-2)', async () => {
+    globalThis.localStorage.setItem(
+      'seguro_app_user',
+      JSON.stringify({ id: 'user-1', email: 'u@example.com', name: 'U' })
+    );
+    vi.mocked(apiClient.fetch).mockResolvedValue({
+      json: vi.fn().mockResolvedValue([]),
+    } as unknown as Response);
+
+    await storageService.getHistory();
+
+    expect(apiClient.fetch).toHaveBeenCalledWith('/history');
+    globalThis.localStorage.clear();
   });
 
   it('transforms backend history to frontend format', async () => {

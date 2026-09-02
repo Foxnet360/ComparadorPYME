@@ -79,6 +79,11 @@ interface ComparisonResult {
   quoteMetadata?: any[];
   schemaVersion?: 1 | 2;
   domain?: InsuranceDomain;
+  clientInfo?: {
+    name: string;
+    activity: string;
+    location: string;
+  };
 }
 
 interface UnifiedQuote {
@@ -134,12 +139,12 @@ interface UnifiedComparisonReport {
  * Resolve the effective user id for /api/analyze.
  *
  * The endpoint uses optional authentication. Only an authenticated user's id
- * is trusted for per-user feature-rollout bucketing; without it we intentionally
- * return undefined so anonymous traffic is treated as MISSING rather than being
- * collapsed into a shared 'anonymous' bucket (hashUserId('anonymous') === 75).
+ * is trusted for per-user feature-rollout bucketing; a client-supplied
+ * body userId is NEVER trusted (spoofing vector — callers sending one get a
+ * 400 from uploadAndAnalyze). Anonymous traffic is bucketed as 'anonymous'.
  */
 export function resolveAnalysisUserId(req: AuthenticatedRequest): string {
-  return req.user?.id || (req.body?.userId as string) || 'anonymous';
+  return req.user?.id ?? 'anonymous';
 }
 
 export interface AnalysisDomainResolution {
@@ -174,6 +179,16 @@ export const analysisController = {
     const startTime = Date.now();
 
     try {
+      // AUTH-2: ownership is derived from the authenticated session; a
+      // client-supplied userId is a spoofing vector and is rejected.
+      if ((req.body as Record<string, unknown> | undefined)?.userId !== undefined) {
+        res.status(400).json({
+          success: false,
+          error: 'userId is derived from the authenticated session; do not send it',
+        });
+        return;
+      }
+
       const userId = resolveAnalysisUserId(req);
 
       const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
@@ -233,21 +248,26 @@ export const analysisController = {
       });
 
       // Save to Supabase
-      const extractedClientName = adapterResult.quoteMetadata?.find((m: any) => m?.cliente)?.cliente;
-      const clientName = req.body.clientName && req.body.clientName !== 'Cliente' ? req.body.clientName : (extractedClientName || 'Cliente');
+      const extractedClientName = adapterResult.quoteMetadata?.find(
+        (m: any) => m?.cliente
+      )?.cliente;
+      const clientName =
+        req.body.clientName && req.body.clientName !== 'Cliente'
+          ? req.body.clientName
+          : extractedClientName || 'Cliente';
 
       const clientActivity =
         req.body.clientActivity ||
         (domain === 'copropiedades'
           ? 'Edificio Residencial / Comercial (Copropiedad)'
           : domain === 'autos'
-          ? 'Vehículo Particular / Flotas'
-          : domain === 'hogar'
-          ? 'Vivienda Residencial / Hogar'
-          : 'Comercial / PYME');
+            ? 'Vehículo Particular / Flotas'
+            : domain === 'hogar'
+              ? 'Vivienda Residencial / Hogar'
+              : 'Comercial / PYME');
 
-      (comparisonResult as any).domain = domain;
-      (comparisonResult as any).clientInfo = {
+      comparisonResult.domain = domain;
+      comparisonResult.clientInfo = {
         name: clientName,
         activity: clientActivity,
         location: 'Bogotá D.C.',
@@ -329,7 +349,17 @@ export const analysisController = {
 
   getHistory: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      const userId = req.user?.id || (req.query.userId as string) || 'anonymous';
+      // AUTH-2: ownership is derived from the authenticated session; a
+      // client-supplied userId query param is a spoofing vector.
+      if (req.query.userId !== undefined) {
+        res.status(400).json({
+          success: false,
+          error: 'userId is derived from the authenticated session; do not send it',
+        });
+        return;
+      }
+
+      const userId = req.user?.id ?? 'anonymous';
 
       const rawLimit = req.query.limit;
       const rawOffset = req.query.offset;

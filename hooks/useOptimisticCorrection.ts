@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { CorrectionQueue } from '../services/correctionQueue';
+import { apiClient } from '../services/apiClient';
 
 interface CorrectionInput {
   rawName: string;
@@ -65,7 +66,10 @@ export function useOptimisticCorrection(): UseOptimisticCorrectionReturn {
           return { success: true, id: queueId, offline: true };
         }
 
-        const response = await fetch('/api/analysis/correction', {
+        // Goes through apiClient so the request carries the Bearer token;
+        // /api/analysis/correction requires authentication (AUTH-1).
+        // apiClient.fetch throws on non-2xx responses.
+        const response = await apiClient.fetch('/analysis/correction', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -75,11 +79,6 @@ export function useOptimisticCorrection(): UseOptimisticCorrectionReturn {
             correctionType: correction.correctionType || 'coverage_mapping',
           }),
         });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-          throw new Error(errorData.error || `HTTP ${response.status}`);
-        }
 
         const data = await response.json();
 

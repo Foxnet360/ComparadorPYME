@@ -76,19 +76,55 @@ describe('documentController.createDocument', () => {
     };
   });
 
-  const createMockRequest = (
-    documentType: string,
-    file?: Express.Multer.File
-  ): Partial<Request> => ({
-    file:
-      file ||
-      ({ path: '/tmp/test.pdf', originalname: 'test.pdf', size: 1024 } as Express.Multer.File),
-    body: {
-      insurerName: 'Test Insurer',
-      documentName: 'Test Document',
-      documentType,
-      userId: 'user-123',
-    },
+  const createMockRequest = (documentType: string, file?: Express.Multer.File): Partial<Request> =>
+    ({
+      file:
+        file ||
+        ({ path: '/tmp/test.pdf', originalname: 'test.pdf', size: 1024 } as Express.Multer.File),
+      // AUTH-2: ownership comes from the authenticated session, never the body
+      user: { id: 'user-123' },
+      body: {
+        insurerName: 'Test Insurer',
+        documentName: 'Test Document',
+        documentType,
+      },
+    }) as Partial<Request>;
+
+  it('rejects a client-supplied userId in the body with 400 (AUTH-2)', async () => {
+    mockReq = {
+      file: { path: '/tmp/test.pdf', originalname: 'test.pdf', size: 1024 } as Express.Multer.File,
+      user: { id: 'user-123' },
+      body: {
+        insurerName: 'Test Insurer',
+        documentName: 'Test Document',
+        documentType: 'CLAUSULADO_GENERAL',
+        userId: 'someone-else',
+      },
+    } as Partial<Request>;
+
+    await documentController.createDocument(mockReq as Request, mockRes as Response);
+
+    expect(statusMock).toHaveBeenCalledWith(400);
+    expect(documentIndexingService.indexDocument).not.toHaveBeenCalled();
+  });
+
+  it('stamps uploadedBy from the authenticated session, not the body (AUTH-2)', async () => {
+    mockReq = createMockRequest('CLAUSULADO_GENERAL');
+
+    vi.mocked(documentIndexingService.indexDocument).mockResolvedValue({
+      success: true,
+      documentId: 'doc-123',
+      insurerId: 'insurer-123',
+      stats: { totalPages: 1, chunksCreated: 1, imagesUploaded: 1, processingTimeMs: 1 },
+      errors: [],
+      warnings: [],
+    });
+
+    await documentController.createDocument(mockReq as Request, mockRes as Response);
+
+    expect(vi.mocked(documentIndexingService.indexDocument).mock.calls[0][1].uploadedBy).toBe(
+      'user-123'
+    );
   });
 
   it('should create document for CLAUSULADO_GENERAL', async () => {

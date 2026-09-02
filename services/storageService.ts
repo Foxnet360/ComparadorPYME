@@ -49,19 +49,6 @@ export const storageService = {
   },
 
   login: async (email: string, password: string): Promise<UserProfile> => {
-    if (email === 'admin@seguros.com' && password === 'admin123') {
-      const adminUser: UserProfile = {
-        id: '1774422600105', // Use a consistent ID that matches backend expectations
-        name: 'Administrador',
-        email: email,
-        role: 'ADMIN',
-        avatarUrl: 'https://ui-avatars.com/api/?name=Admin&background=4f46e5&color=fff',
-        intermediaryName: 'Seguros Admin HQ',
-      };
-      localStorage.setItem(USER_KEY, JSON.stringify(adminUser));
-      return adminUser;
-    }
-
     const users = await dbService.getAll('users');
     const foundUser = users.find((u) => u.email === email && u.password === password);
 
@@ -192,9 +179,9 @@ export const storageService = {
     let cloudTransformed: HistoryEntry[] = [];
     let backendReachable = false;
     try {
-      const currentUser = storageService.getCurrentUser();
-      const queryParam = currentUser?.id ? `?userId=${encodeURIComponent(currentUser.id)}` : '';
-      const response = await apiClient.fetch(`/history${queryParam}`);
+      // AUTH-2: the backend derives user_id from the Bearer token; sending
+      // ?userId= is a spoofing vector and is rejected with 400.
+      const response = await apiClient.fetch('/history');
       if (response.ok !== false) {
         backendReachable = true;
         const rawData = await response.json();

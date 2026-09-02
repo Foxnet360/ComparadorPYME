@@ -20,6 +20,7 @@ import { ClauseSelector } from './components/ClauseSelector';
 import { analyzeQuotesWithGemini } from './services/geminiService';
 import { storageService } from './services/storageService';
 import { ComparisonReport as ReportType, AppStatus, UserProfile, Client } from './types';
+import type { ExtendedUserProfile } from './types';
 // Chat is now handled via backend API
 
 import RegisterScreen from './components/RegisterScreen';
@@ -35,7 +36,16 @@ const ClientManager = lazy(() => import('./components/ClientManager'));
 const ExecutiveAnalytics = lazy(() => import('./components/ExecutiveAnalytics'));
 const UserManagement = lazy(() => import('./components/UserManagement'));
 
-type ViewState = 'LANDING' | 'LOGIN' | 'REGISTER' | 'DASHBOARD' | 'ANALYZER' | 'REPORT' | 'CLIENTS' | 'ANALYTICS' | 'USERS';
+type ViewState =
+  | 'LANDING'
+  | 'LOGIN'
+  | 'REGISTER'
+  | 'DASHBOARD'
+  | 'ANALYZER'
+  | 'REPORT'
+  | 'CLIENTS'
+  | 'ANALYTICS'
+  | 'USERS';
 
 const App: React.FC = () => {
   // Auth State
@@ -121,8 +131,7 @@ const App: React.FC = () => {
         clientName,
         (msg) => setStatusMessage(msg),
         clauseIdsToUse,
-        domain,
-        currentUser?.id
+        domain
       );
       // Save to history unconditionally and capture generated ID
       const savedId = await storageService.saveAnalysis(clientName, result, selectedClient?.id);
@@ -370,9 +379,7 @@ const App: React.FC = () => {
               </div>
             }
           >
-            <ExecutiveAnalytics
-              onBackToDashboard={() => setCurrentView('DASHBOARD')}
-            />
+            <ExecutiveAnalytics onBackToDashboard={() => setCurrentView('DASHBOARD')} />
           </Suspense>
         )}
 
@@ -386,8 +393,12 @@ const App: React.FC = () => {
             }
           >
             <UserManagement
-              currentUserRole={(currentUser as any)?.role || 'super_admin'}
-              currentAllyId={(currentUser as any)?.allyId || 'ally-100'}
+              currentUserRole={
+                (currentUser as unknown as ExtendedUserProfile | null)?.role || 'super_admin'
+              }
+              currentAllyId={
+                (currentUser as unknown as ExtendedUserProfile | null)?.allyId || 'ally-100'
+              }
               onClose={() => setCurrentView('DASHBOARD')}
             />
           </Suspense>
@@ -403,7 +414,8 @@ const App: React.FC = () => {
                   Nueva Comparación de Seguros
                 </h2>
                 <p className="text-slate-600">
-                  Selecciona el cliente, el ramo de seguro y carga los documentos para iniciar la comparación.
+                  Selecciona el cliente, el ramo de seguro y carga los documentos para iniciar la
+                  comparación.
                 </p>
               </div>
             )}
@@ -514,7 +526,8 @@ const App: React.FC = () => {
                   Comparando Clausulados y Cotizaciones...
                 </h3>
                 <p className="text-slate-600 mb-6">
-                  Procesando análisis técnico para <strong>{selectedClient?.name || 'Cliente'}</strong>.
+                  Procesando análisis técnico para{' '}
+                  <strong>{selectedClient?.name || 'Cliente'}</strong>.
                 </p>
 
                 {/* Status Message */}

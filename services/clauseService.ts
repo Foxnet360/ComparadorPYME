@@ -1,4 +1,4 @@
-import { API_BASE_URL } from './apiConfig';
+import { apiClient } from './apiClient';
 
 export interface InsurerRef {
   id: string;
@@ -45,8 +45,7 @@ export const clauseService = {
     if (params?.isActive !== undefined) queryParams.append('isActive', String(params.isActive));
     if (params?.latest) queryParams.append('latest', 'true');
 
-    const response = await fetch(`${API_BASE_URL}/documents?${queryParams.toString()}`);
-    if (!response.ok) throw new Error('Failed to fetch documents');
+    const response = await apiClient.fetch(`/documents?${queryParams.toString()}`);
     const data = await response.json();
     return data.documents || [];
   },
@@ -63,15 +62,11 @@ export const clauseService = {
     if (metadata.productName) formData.append('productName', metadata.productName);
     if (metadata.version) formData.append('version', metadata.version);
 
-    const response = await fetch(`${API_BASE_URL}/documents`, {
+    const response = await apiClient.fetch('/documents', {
       method: 'POST',
       body: formData,
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to create document');
-    }
     return response.json();
   },
 
@@ -79,20 +74,16 @@ export const clauseService = {
    * Delete a document by ID
    */
   deleteDocument: async (id: string): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/documents/${id}`, {
+    await apiClient.fetch(`/documents/${id}`, {
       method: 'DELETE',
     });
-    if (!response.ok) throw new Error('Failed to delete document');
   },
 
   /**
    * Get document versions for an insurer
    */
   getDocumentVersions: async (insurerId: string): Promise<ClauseDocument[]> => {
-    const response = await fetch(
-      `${API_BASE_URL}/documents?insurerId=${encodeURIComponent(insurerId)}`
-    );
-    if (!response.ok) throw new Error('Failed to fetch document versions');
+    const response = await apiClient.fetch(`/documents?insurerId=${encodeURIComponent(insurerId)}`);
     const data = await response.json();
     return data.documents || [];
   },

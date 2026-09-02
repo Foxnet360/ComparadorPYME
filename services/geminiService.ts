@@ -7,15 +7,13 @@ export const analyzeQuotesWithGemini = async (
   clientName: string,
   onStatusUpdate?: (status: string) => void,
   clauseIds?: string[],
-  domain: string = 'pyme',
-  userId?: string
+  domain: string = 'pyme'
 ): Promise<ComparisonReport> => {
   const formData = new FormData();
   formData.append('clientName', clientName);
   formData.append('domain', domain);
-  if (userId) {
-    formData.append('userId', userId);
-  }
+  // AUTH-2: no userId here — the backend derives it from the Bearer token
+  // that apiClient attaches, and rejects client-supplied userId with 400.
 
   if (onStatusUpdate) onStatusUpdate('Preparando archivos para envío...');
 
