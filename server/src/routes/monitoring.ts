@@ -106,7 +106,7 @@ router.post(
       userId,
     });
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Feedback collected successfully',
     });
@@ -413,7 +413,7 @@ router.post(
 
     featureFlags.updateFlag('useUnifiedComparisonEngine', enabled);
 
-    res.json({
+    return res.json({
       success: true,
       enabled,
       message: `Unified engine ${enabled ? 'enabled' : 'disabled'}`,
@@ -439,7 +439,7 @@ router.post(
 
     unifiedComparisonFlag.updateRolloutPercentage(percentage);
 
-    res.json({
+    return res.json({
       success: true,
       percentage,
       message: `Rollout percentage set to ${percentage}%`,
@@ -480,7 +480,7 @@ router.post(
         });
     }
 
-    res.json({
+    return res.json({
       success: true,
       action,
       users,

@@ -121,7 +121,7 @@ export const chatRepository = {
     }
 
     if (existing && existing.length > 0) {
-      return (existing[0] as ChatThread).id;
+      return (existing[0]! as ChatThread).id;
     }
 
     // Create new thread

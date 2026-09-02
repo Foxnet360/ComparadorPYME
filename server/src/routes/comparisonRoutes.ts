@@ -130,7 +130,7 @@ router.post('/unified', upload.array('quotes', 10), async (req, res) => {
     });
 
     // Return result
-    res.json({
+    return res.json({
       success: true,
       correlationId: adapterResult.correlationId,
       engine: adapterResult.engine,
@@ -153,7 +153,7 @@ router.post('/unified', upload.array('quotes', 10), async (req, res) => {
       });
     }
 
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Comparison failed',
       message,
       correlationId,
@@ -195,7 +195,7 @@ router.post('/:id/deep-mode', upload.array('clauses', 5), async (req, res) => {
     console.log(`📄 [API] Validating with ${files.length} clause files [${correlationId}]`);
 
     // Validate with clauses
-    const comparisonId = Array.isArray(id) ? id[0] : id;
+    const comparisonId = (Array.isArray(id) ? id[0] : id) as string;
     const result = await comparisonEngineAdapter.validateWithClauses(comparisonId, filePaths);
 
     // Clean up temporary files
@@ -207,7 +207,7 @@ router.post('/:id/deep-mode', upload.array('clauses', 5), async (req, res) => {
       }
     });
 
-    res.json({
+    return res.json({
       success: true,
       correlationId,
       comparisonId: id,

@@ -358,7 +358,7 @@ export const documentController = {
     console.log(`📄 [documentController.getDocument] ID: ${req.params.id}`);
 
     try {
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
 
       const { data, error } = await supabase
         .from('documents')

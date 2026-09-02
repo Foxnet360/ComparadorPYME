@@ -33,7 +33,7 @@ router.post(
       `✅ [auditRoute] Enrichment complete: ${result.enrichedAlerts.length} alerts, ${result.crossInsurerRisks.length} cross-insurer risks`
     );
 
-    res.json(result);
+    return res.json(result);
   })
 );
 

@@ -17,7 +17,7 @@ import fs from 'fs';
  * Compare V1 (legacy) vs V2 (multimodal) extraction
  * Endpoint: POST /api/compare-extraction
  */
-export async function compareExtraction(req: Request, res: Response) {
+export async function compareExtraction(req: Request, res: Response): Promise<Response | void> {
   try {
     const files = req.files as Express.Multer.File[];
     if (!files || files.length === 0) {
