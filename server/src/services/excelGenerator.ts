@@ -100,7 +100,7 @@ export async function generateExcelBuffer(
   // Find Best Quote
   const bestQuote = quotes.reduce(
     (prev, current) => ((prev.score || 0) > (current.score || 0) ? prev : current),
-    quotes[0]
+    quotes[0]!
   );
 
   // -------------------------------------------------------------
@@ -580,12 +580,12 @@ export async function generateExcelBuffer(
   const maxNet = Math.max(...netPremiums.filter((n) => n > 0));
 
   addFinRow('Prima Neta (Anual)', 5, (_, idx) => ({
-    value: netPremiums[idx],
-    isWinner: netPremiums[idx] > 0 && netPremiums[idx] === minNet,
+    value: netPremiums[idx]!,
+    isWinner: netPremiums[idx]! > 0 && netPremiums[idx]! === minNet,
   }));
 
   addFinRow('Gastos de Expedición', 6, (_, idx) => ({
-    value: expenses[idx],
+    value: expenses[idx]!,
   }));
 
   // Fórmulas automáticas nativas
@@ -601,7 +601,7 @@ export async function generateExcelBuffer(
   addFinRow('TOTAL A PAGAR', 9, (colLetter, idx) => ({
     formula: `${colLetter}7+${colLetter}8`,
     isTotal: true,
-    isWinner: netPremiums[idx] > 0 && netPremiums[idx] === minNet,
+    isWinner: netPremiums[idx]! > 0 && netPremiums[idx]! === minNet,
   }));
 
   // Ratio % sobre Valor Asegurado
@@ -613,7 +613,7 @@ export async function generateExcelBuffer(
   quotes.forEach((q, idx) => {
     const colLetter = String.fromCharCode(66 + idx);
     const xlCell = financialsSheet.getCell(`${colLetter}11`);
-    if (netPremiums[idx] > 0 && maxAsset > 0) {
+    if (netPremiums[idx]! > 0 && maxAsset > 0) {
       xlCell.value = { formula: `${colLetter}9/${maxAsset}` };
       xlCell.numFmt = '0.00%';
     } else {
@@ -637,7 +637,7 @@ export async function generateExcelBuffer(
   quotes.forEach((q, idx) => {
     const colLetter = String.fromCharCode(66 + idx);
     const xlCell = financialsSheet.getCell(`${colLetter}14`);
-    const p = netPremiums[idx];
+    const p = netPremiums[idx]!;
 
     if (p > 0 && minNet > 0) {
       const diffPct = ((p - minNet) / minNet) * 100;
