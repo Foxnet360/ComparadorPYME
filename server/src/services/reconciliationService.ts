@@ -55,7 +55,7 @@ export function getThreshold(insurerName: string, coverageName: string): number 
   const insurerKey = Object.keys(thresholdRegistry.insurers).find(
     (k) => k.toLowerCase() === insurerName.toLowerCase()
   );
-  const config = insurerKey ? thresholdRegistry.insurers[insurerKey] : thresholdRegistry.default;
+  const config = insurerKey ? thresholdRegistry.insurers[insurerKey]! : thresholdRegistry.default;
   const override = config.coverageOverrides?.[coverageName];
   return override ?? config.default;
 }
@@ -80,7 +80,7 @@ function buildDeductibleStructureFromClause(
 
   const hasMinimum = components.some((c) => c.type === 'minimum');
   const hasMaximum = components.some((c) => c.type === 'maximum');
-  const isZero = components.length === 1 && components[0].type === 'na';
+  const isZero = components.length === 1 && components[0]!.type === 'na';
   const isComposite = components.length > 1;
 
   return {

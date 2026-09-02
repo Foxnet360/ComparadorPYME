@@ -40,7 +40,7 @@ export async function extractClausesFromPdf(
     let pageNum = startPage > 0 ? startPage : Math.ceil(pageCount / 2);
 
     for (let i = 1; i < sections.length; i++) {
-      const content = sections[i].trim();
+      const content = sections[i]!.trim();
 
       // Only keep substantial sections
       if (content.length >= minClauseLength) {

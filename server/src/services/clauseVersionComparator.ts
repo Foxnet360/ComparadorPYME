@@ -220,19 +220,19 @@ function parseDeductibleAmount(deductibleText: string): number {
   // Percentage
   const percentMatch = text.match(/(\d+(?:\.\d+)?)\s*%/);
   if (percentMatch) {
-    return parseFloat(percentMatch[1]);
+    return parseFloat(percentMatch[1]!);
   }
 
   // SMMLV
   const smmlvMatch = text.match(/(\d+)\s*(?:smmlv|sm)/);
   if (smmlvMatch) {
-    return parseFloat(smmlvMatch[1]) * getDomainConstants().smmlv; // Convert to COP
+    return parseFloat(smmlvMatch[1]!) * getDomainConstants().smmlv; // Convert to COP
   }
 
   // Fixed amount
   const fixedMatch = text.match(/[$\s]*(\d+(?:[.,]\d+)*)/);
   if (fixedMatch) {
-    const cleaned = fixedMatch[1].replace(/[.,]/g, '');
+    const cleaned = fixedMatch[1]!.replace(/[.,]/g, '');
     return parseFloat(cleaned);
   }
 

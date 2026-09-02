@@ -205,16 +205,16 @@ export async function setBatch(coverageNames: string[], embeddings: number[][]):
 
   // 1. Store in memory
   for (let i = 0; i < normalizedNames.length; i++) {
-    memoryCache.set(normalizedNames[i], embeddings[i]);
+    memoryCache.set(normalizedNames[i]!, embeddings[i]!);
   }
 
   // 2. Store in Supabase
   try {
     const rows = normalizedNames.map((name, i) => ({
       coverage_name: name,
-      embedding: embeddings[i],
+      embedding: embeddings[i]!,
       model: EMBEDDING_MODEL_NAME,
-      dimensions: embeddings[i].length,
+      dimensions: embeddings[i]!.length,
     }));
 
     const { error } = await supabase

@@ -262,8 +262,8 @@ class MonitoringService {
       return {
         avgAnalysisTime: durations.reduce((a, b) => a + b, 0) / total,
         avgChatResponseTime: 0, // Separate tracking needed
-        p95AnalysisTime: durations[Math.floor(total * 0.95)],
-        p99AnalysisTime: durations[Math.floor(total * 0.99)],
+        p95AnalysisTime: durations[Math.floor(total * 0.95)]!,
+        p99AnalysisTime: durations[Math.floor(total * 0.99)]!,
         errorRate: (total - successCount) / total,
         timestamp: new Date().toISOString(),
       };
@@ -303,11 +303,9 @@ class MonitoringService {
       const byFeature: Record<string, { ratings: number[]; count: number }> = {};
 
       dataList.forEach((item) => {
-        if (!byFeature[item.feature]) {
-          byFeature[item.feature] = { ratings: [], count: 0 };
-        }
-        byFeature[item.feature].ratings.push(item.rating);
-        byFeature[item.feature].count++;
+        const bucket = (byFeature[item.feature] ??= { ratings: [], count: 0 });
+        bucket.ratings.push(item.rating);
+        bucket.count++;
       });
 
       const result: Record<string, { avgRating: number; count: number }> = {};

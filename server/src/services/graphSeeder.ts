@@ -16,7 +16,7 @@ function normalizeKey(text: string): string {
 
 function compositeSlug(pattern: string): string {
   return pattern
-    .split('|')[0]
+    .split('|')[0]!
     .replace(/\\s\+/g, '-')
     .replace(/[^a-zA-Z0-9]+/g, '-')
     .toLowerCase()

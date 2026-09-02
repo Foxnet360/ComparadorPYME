@@ -17,7 +17,7 @@ function resolveLegacyThesaurusPath(): string {
     }
   }
 
-  return candidates[0];
+  return candidates[0]!;
 }
 
 let legacyThesaurusCache: ThesaurusData | null = null;
@@ -180,8 +180,8 @@ function buildThesaurusData(
     : legacy.metadata;
 
   return {
-    version: taxonomy.version,
-    last_updated: new Date().toISOString().split('T')[0],
+    version: taxonomy.version ?? legacy.version,
+    last_updated: new Date().toISOString().split('T')[0]!,
     metadata,
     coberturas_plantilla,
     deducibles: legacy.deducibles,

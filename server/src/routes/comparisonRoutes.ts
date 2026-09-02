@@ -231,7 +231,7 @@ router.post('/:id/deep-mode', upload.array('clauses', 5), async (req, res) => {
       });
     }
 
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Deep mode validation failed',
       message,
       correlationId,

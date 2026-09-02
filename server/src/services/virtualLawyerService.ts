@@ -203,7 +203,7 @@ function parseLegalOpinion(
   // Parse negotiation points
   const negotiationPoints: NegotiationPoint[] = [];
   if (pointsMatch) {
-    const lines = pointsMatch[1]
+    const lines = pointsMatch[1]!
       .split('\n')
       .filter((l) => l.trim().startsWith('-') || l.trim().match(/^\d+\./));
 
@@ -211,7 +211,7 @@ function parseLegalOpinion(
       const parts = line.replace(/^[-\d.\s]+/, '').split(' - ');
       if (parts.length >= 2) {
         negotiationPoints.push({
-          point: parts[0].trim(),
+          point: parts[0]!.trim(),
           rationale: parts[1]?.trim() || '',
           expectedOutcome: parts[2]?.trim() || 'Por definir',
           priority: (parts[3]?.trim().toUpperCase() as 'HIGH' | 'MEDIUM' | 'LOW') || 'MEDIUM',
