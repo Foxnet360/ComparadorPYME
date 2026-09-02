@@ -436,7 +436,7 @@ function findCanonicalDisplayForId(canonicalId: string): string | undefined {
 function titleCaseId(canonicalId: string): string {
   return canonicalId
     .split('-')
-    .map((word) => (word ? word[0].toUpperCase() + word.slice(1) : ''))
+    .map((word) => (word ? word[0]!.toUpperCase() + word.slice(1) : ''))
     .join(' ');
 }
 
@@ -480,7 +480,7 @@ export function normalizeAlias(
     return b.matchedAlias.length - a.matchedAlias.length;
   });
 
-  const best = matches[0];
+  const best = matches[0]!;
   const canonicals = new Set(
     matches
       .filter(
@@ -631,7 +631,7 @@ export function parseDeductible(text: string | null | undefined): {
   }
 
   const percentageMatch = normalized.match(/([\d.,]+)\s*%/);
-  const percentage = percentageMatch ? parseDeductibleNumber(percentageMatch[1]) : undefined;
+  const percentage = percentageMatch ? parseDeductibleNumber(percentageMatch[1]!) : undefined;
 
   let minimum: number | undefined;
   let currency: string | undefined;
@@ -640,14 +640,14 @@ export function parseDeductible(text: string | null | undefined): {
     /m[i\u00ed]n\.?\s*([\d.,]+)\s*(?:smmlv|salarios?|smlv|ums)/i
   );
   if (minSmmlvMatch) {
-    minimum = parseDeductibleNumber(minSmmlvMatch[1]);
+    minimum = parseDeductibleNumber(minSmmlvMatch[1]!);
     currency = 'SMMLV';
   }
 
   if (minimum === undefined) {
     const standaloneSmmlvMatch = normalized.match(/([\d.,]+)\s*(?:smmlv|salarios?|smlv|ums)/i);
     if (standaloneSmmlvMatch) {
-      minimum = parseDeductibleNumber(standaloneSmmlvMatch[1]);
+      minimum = parseDeductibleNumber(standaloneSmmlvMatch[1]!);
       currency = 'SMMLV';
     }
   }
@@ -657,8 +657,8 @@ export function parseDeductible(text: string | null | undefined): {
       /m[i\u00ed]n\.?\s*[$]?\s*([\d.,]+)\s*(?:cop|usd|uf|ums)?/i
     );
     if (minMoneyMatch) {
-      minimum = parseDeductibleNumber(minMoneyMatch[1]);
-      currency = (minMoneyMatch[2] || 'COP').toUpperCase();
+      minimum = parseDeductibleNumber(minMoneyMatch[1]!);
+      currency = (minMoneyMatch[2]! || 'COP').toUpperCase();
     }
   }
 
@@ -666,8 +666,8 @@ export function parseDeductible(text: string | null | undefined): {
   if (percentage === undefined && minimum === undefined) {
     const fixedMoneyMatch = normalized.match(/[$]?\s*([\d.,]+)\s*(?:cop|usd|uf|ums)?/);
     if (fixedMoneyMatch) {
-      minimum = parseDeductibleNumber(fixedMoneyMatch[1]);
-      currency = (fixedMoneyMatch[2] || 'COP').toUpperCase();
+      minimum = parseDeductibleNumber(fixedMoneyMatch[1]!);
+      currency = (fixedMoneyMatch[2]! || 'COP').toUpperCase();
       return { deductible: { minimum, currency, type: 'fixed' }, isAmbiguous: false };
     }
   }
@@ -727,7 +727,7 @@ function detectFormat(raw: string): 'markdown' | 'csv' | 'json' | 'kv' {
     return 'markdown';
   }
 
-  if (lines.length >= 2 && inferCsvDelimiter(lines[0])) {
+  if (lines.length >= 2 && inferCsvDelimiter(lines[0]!)) {
     return 'csv';
   }
 
@@ -793,7 +793,7 @@ function parseMarkdown(raw: string): RawTable {
     throw new Error('Markdown table must have at least a header and one data row');
   }
 
-  const headerCells = splitMarkdownLine(lines[0]);
+  const headerCells = splitMarkdownLine(lines[0]!);
   // First header cell is the row-label column; remaining cells are insurers.
   const insurers = headerCells
     .slice(1)
@@ -804,7 +804,7 @@ function parseMarkdown(raw: string): RawTable {
   const extraRows = new Map<string, RowValues>();
 
   for (let i = 1; i < lines.length; i++) {
-    const line = lines[i];
+    const line = lines[i]!;
     if (isMarkdownSeparator(line)) continue;
 
     const cells = splitMarkdownLine(line);
@@ -875,12 +875,12 @@ function parseCsv(raw: string): RawTable {
     throw new Error('CSV input must have at least a header and one data row');
   }
 
-  const delimiter = inferCsvDelimiter(lines[0]);
+  const delimiter = inferCsvDelimiter(lines[0]!);
   if (!delimiter) {
     throw new Error('Could not detect CSV delimiter');
   }
 
-  const headerCells = parseCsvLine(lines[0], delimiter);
+  const headerCells = parseCsvLine(lines[0]!, delimiter);
   const firstHeader = headerCells[0]?.trim() ?? '';
   const hasRowLabelColumn =
     firstHeader === '' || /^(fila|concepto|cobertura|row|label|rowlabel)$/i.test(firstHeader);
@@ -896,7 +896,7 @@ function parseCsv(raw: string): RawTable {
   const extraRows = new Map<string, RowValues>();
 
   for (let i = 1; i < lines.length; i++) {
-    const cells = parseCsvLine(lines[i], delimiter);
+    const cells = parseCsvLine(lines[i]!, delimiter);
     const label = hasRowLabelColumn ? cells[0]?.trim() : undefined;
     if (hasRowLabelColumn && !label) continue;
 
@@ -1069,8 +1069,8 @@ function parseKeyValue(raw: string): RawTable {
     const separatorMatch = line.match(/^([^:]+):\s*(.*)$/);
     if (!separatorMatch) continue;
 
-    const insurer = separatorMatch[1].trim();
-    const value = separatorMatch[2].trim();
+    const insurer = separatorMatch[1]!.trim();
+    const value = separatorMatch[2]!.trim();
     if (!insurer) continue;
 
     insurersSet.add(insurer);
@@ -1194,7 +1194,7 @@ async function buildV2Cell(
     if (graphEnabled && graphService && rawValue) {
       const links = await graphService.queryDeductible(rawValue, { insurer });
       if (links.length > 0) {
-        deductible = { ...deductible, appliesTo: [links[0].appliesTo] };
+        deductible = { ...deductible, appliesTo: [links[0]!.appliesTo] };
       }
     }
   }
