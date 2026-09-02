@@ -55,7 +55,7 @@ CoverageCell.displayName = 'CoverageCell';
 
 export const VirtualizedCoverageMatrix: React.FC<VirtualizedMatrixProps> = ({
   rows,
-  _quotes,
+  quotes: _quotes,
   onCellClick,
   onCellDoubleClick,
 }) => {
@@ -86,7 +86,7 @@ export const VirtualizedCoverageMatrix: React.FC<VirtualizedMatrixProps> = ({
         }}
       >
         {virtualRows.map((virtualRow) => {
-          const row = rows[virtualRow.index];
+          const row = rows[virtualRow.index]!;
           const isHeader = row.type === 'header';
           const isSpacer = row.type === 'spacer';
 

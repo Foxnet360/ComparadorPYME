@@ -444,6 +444,7 @@ export interface MatrixCell {
   justification?: string;
   canonicalName?: string;
   matchMethod?: 'thesaurus' | 'fuzzy' | 'embedding' | 'llm' | null;
+  rawName?: string;
 }
 
 export interface MatrixRow {

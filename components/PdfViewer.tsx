@@ -6,12 +6,12 @@ import { useBreakpoint } from '../hooks/useBreakpoint';
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/node_modules/pdfjs-dist/build/pdf.worker.mjs';
 
 interface PdfViewerProps {
-  pdfUrl: string;
-  targetPage: number;
+  pdfUrl?: string;
+  targetPage?: number;
   searchText?: string;
-  title: string;
-  isOpen: boolean;
-  onClose: () => void;
+  title?: string;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 const PdfViewer: React.FC<PdfViewerProps> = ({
@@ -24,7 +24,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
-  const [currentPage, setCurrentPage] = useState(targetPage);
+  const [currentPage, setCurrentPage] = useState(targetPage ?? 1);
   const [numPages, setNumPages] = useState(0);
   const [scale, setScale] = useState(1.5);
   const [loading, setLoading] = useState(false);
@@ -53,7 +53,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         const pdf = await loadingTask.promise;
         setPdfDoc(pdf);
         setNumPages(pdf.numPages);
-        setCurrentPage(Math.min(targetPage, pdf.numPages));
+        setCurrentPage(Math.min(targetPage ?? 1, pdf.numPages));
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error cargando PDF');
       } finally {
@@ -191,7 +191,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
 
             {/* Close button */}
             <button
-              onClick={onClose}
+              onClick={() => onClose?.()}
               className="p-1.5 hover:bg-slate-200 rounded-lg transition-colors ml-2"
               aria-label="Cerrar visor PDF"
             >
