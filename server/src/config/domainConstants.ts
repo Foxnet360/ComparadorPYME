@@ -70,7 +70,7 @@ export function getCanonicalCoverageName(domain: string = 'pyme', index: number)
       `Canonical coverage index ${index} is out of range for domain "${domain}" (count: ${names.length})`
     );
   }
-  return names[index];
+  return names[index]!;
 }
 
 export function resolveValueToCOP(

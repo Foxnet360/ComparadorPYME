@@ -79,7 +79,7 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
     setClients(loadedClients);
 
     if (loadedClients.length > 0 && !selectedClient) {
-      handleSelectClient(loadedClients[0]);
+      handleSelectClient(loadedClients[0]!);
     } else if (selectedClient) {
       handleSelectClient(selectedClient);
     }
@@ -191,7 +191,7 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
       setClients(updatedList);
       if (selectedClient?.id === client.id) {
         if (updatedList.length > 0) {
-          handleSelectClient(updatedList[0]);
+          handleSelectClient(updatedList[0]!);
         } else {
           setSelectedClient(null);
           setClientAudits([]);

@@ -250,7 +250,7 @@ export const crossReferenceEngine = {
     const uniqueCoverages = new Map<string, { coverage: ParsedCoverage; quoteIndices: number[] }>();
 
     for (let i = 0; i < quotes.length; i++) {
-      const quote = quotes[i];
+      const quote = quotes[i]!;
       for (const coverage of quote.coverages) {
         const key = coverage.canonicalName || coverage.name;
         if (!uniqueCoverages.has(key)) {
@@ -285,7 +285,7 @@ export const crossReferenceEngine = {
 
     // Distribute results to all quotes
     for (let i = 0; i < quotes.length; i++) {
-      const quote = quotes[i];
+      const quote = quotes[i]!;
       const quoteResults: CrossReferenceResult[] = [];
 
       for (const coverage of quote.coverages) {
@@ -611,7 +611,7 @@ function parseValue(valueText: string): number | null {
   const match = cleaned.match(/(\d+(?:\.\d+)?)\s*(M|millones|millon)?/i);
   if (!match) return null;
 
-  let value = parseFloat(match[1]);
+  let value = parseFloat(match[1]!);
   if (match[2]) {
     value *= 1000000; // Convert millions
   }

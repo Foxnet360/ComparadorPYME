@@ -100,7 +100,7 @@ function median(values: number[]): number {
   if (values.length === 0) return 0;
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+  return sorted.length % 2 === 0 ? (sorted[mid - 1]! + sorted[mid]!) / 2 : sorted[mid]!;
 }
 
 function rowCenter(row: LayoutTextItem[]): number {
@@ -155,11 +155,11 @@ export function deriveColumnBoundaries(rows: LayoutTextItem[][], xTolerance: num
 
   leftEdges.sort((a, b) => a - b);
 
-  const clusters: number[][] = [[leftEdges[0]]];
+  const clusters: number[][] = [[leftEdges[0]!]];
   for (let i = 1; i < leftEdges.length; i++) {
-    const current = leftEdges[i];
-    const lastCluster = clusters[clusters.length - 1];
-    if (current - lastCluster[lastCluster.length - 1] <= xTolerance) {
+    const current = leftEdges[i]!;
+    const lastCluster = clusters[clusters.length - 1]!;
+    if (current - lastCluster[lastCluster.length - 1]! <= xTolerance) {
       lastCluster.push(current);
     } else {
       clusters.push([current]);
@@ -172,9 +172,9 @@ export function deriveColumnBoundaries(rows: LayoutTextItem[][], xTolerance: num
 
 function nearestColumnIndex(x: number, boundaries: number[]): number {
   let best = 0;
-  let bestDist = Math.abs(x - boundaries[0]);
+  let bestDist = Math.abs(x - boundaries[0]!);
   for (let i = 1; i < boundaries.length; i++) {
-    const dist = Math.abs(x - boundaries[i]);
+    const dist = Math.abs(x - boundaries[i]!);
     if (dist < bestDist) {
       bestDist = dist;
       best = i;
@@ -260,9 +260,9 @@ function buildTable(
   let bodyRows: LayoutTextItem[][] = block;
 
   if (block.length > 0) {
-    const firstRowTexts = block[0].map((item) => item.text);
+    const firstRowTexts = block[0]!.map((item) => item.text);
     if (detectTableHeader(firstRowTexts, options.headerTokens)) {
-      headerRow = assignRowToColumns(block[0], boundaries).filter(
+      headerRow = assignRowToColumns(block[0]!, boundaries).filter(
         (c): c is LayoutCell => c !== undefined
       );
       bodyRows = block.slice(1);
@@ -273,7 +273,7 @@ function buildTable(
   const mergedCells: LayoutCell[] = [];
 
   for (let r = 0; r < bodyRows.length; r++) {
-    const cells = assignRowToColumns(bodyRows[r], boundaries);
+    const cells = assignRowToColumns(bodyRows[r]!, boundaries);
     const rowCells: LayoutCell[] = [];
     for (let c = 0; c < cells.length; c++) {
       const cell = cells[c];

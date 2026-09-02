@@ -47,7 +47,7 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
 
       // Auto-expand first insurer
       if (docs.length > 0) {
-        setExpandedInsurers(new Set([docs[0].insurer?.name]));
+        setExpandedInsurers(new Set([docs[0]!.insurer?.name]));
       }
     } catch (err: unknown) {
       console.error('Error loading documents:', err);

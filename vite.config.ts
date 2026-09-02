@@ -60,6 +60,7 @@ export default defineConfig(({ mode }) => {
             ) {
               return 'vendor-utils';
             }
+            return undefined;
           },
         },
       },

@@ -22,7 +22,7 @@ const formatCoverageValuePDF = (value: string | undefined | null): string => {
   // Handle "500M" format (millions)
   const millionMatch = trimmed.match(/^(\d+(?:[.,]\d+)?)\s*M$/i);
   if (millionMatch) {
-    const num = parseFloat(millionMatch[1].replace(/\./g, '').replace(',', '.'));
+    const num = parseFloat(millionMatch[1]!.replace(/\./g, '').replace(',', '.'));
     if (!isNaN(num)) {
       return formatCOP(num * 1000000);
     }
@@ -31,7 +31,7 @@ const formatCoverageValuePDF = (value: string | undefined | null): string => {
   // Handle values with $ sign or plain numbers
   const dollarMatch = trimmed.match(/^\$?\s*([\d.,]+)\s*(.*)$/);
   if (dollarMatch) {
-    const numStr = dollarMatch[1].replace(/\./g, '').replace(',', '.');
+    const numStr = dollarMatch[1]!.replace(/\./g, '').replace(',', '.');
     const num = parseFloat(numStr);
     if (!isNaN(num) && num > 0) {
       return formatCOP(num);

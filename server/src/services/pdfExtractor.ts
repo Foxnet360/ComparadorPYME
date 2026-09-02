@@ -39,7 +39,7 @@ function parseTextItem(item: unknown): TextItem | null {
     return null;
   }
 
-  const [a, b, , , x, y] = item.transform;
+  const [a = 0, b = 0, , , x = 0, y = 0] = item.transform;
   const rotation = Math.round((Math.atan2(b, a) * 180) / Math.PI);
 
   return {

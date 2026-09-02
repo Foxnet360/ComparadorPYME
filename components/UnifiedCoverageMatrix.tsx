@@ -262,19 +262,19 @@ function localLevenshteinDistance(str1: string, str2: string): number {
     matrix[i] = [i];
   }
   for (let j = 0; j <= str2.length; j++) {
-    matrix[0][j] = j;
+    matrix[0]![j] = j;
   }
   for (let i = 1; i <= str1.length; i++) {
     for (let j = 1; j <= str2.length; j++) {
       const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
-      matrix[i][j] = Math.min(
-        matrix[i - 1][j] + 1,
-        matrix[i][j - 1] + 1,
-        matrix[i - 1][j - 1] + cost
+      matrix[i]![j] = Math.min(
+        matrix[i - 1]![j]! + 1,
+        matrix[i]![j - 1]! + 1,
+        matrix[i - 1]![j - 1]! + cost
       );
     }
   }
-  return matrix[str1.length][str2.length];
+  return matrix[str1.length]![str2.length]!;
 }
 
 function calculateSimilarity(str1: string, str2: string): number {
@@ -362,12 +362,12 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
 
       for (const rowConfig of config.rows) {
         // Deductible rows are rendered in a dedicated DEDUCIBLES section below
-        if (rowConfig.field === 'deductible') continue;
+        if ((rowConfig.field as string) === 'deductible') continue;
 
         const cells: MatrixCell[] = [];
 
         for (let i = 0; i < numQuotes; i++) {
-          const quote = quotes[i];
+          const quote = quotes[i]!;
           const cov = quote.coverages.find(
             (c) =>
               (c.categoryId === config.id ||
@@ -382,7 +382,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
             let cellValue = '';
             if (rowConfig.field === 'value') {
               cellValue = cov.value || 'No incluida';
-            } else if (rowConfig.field === 'deductible') {
+            } else if ((rowConfig.field as string) === 'deductible') {
               cellValue = cov.deductible || 'No aplica';
             } else {
               cellValue =
@@ -393,7 +393,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
 
             // In a deductible row, "No aplica" is not an exclusion
             const excluded =
-              rowConfig.field === 'deductible' && cellValue.toLowerCase().trim() === 'no aplica'
+              (rowConfig.field as string) === 'deductible' && cellValue.toLowerCase().trim() === 'no aplica'
                 ? false
                 : isExcludedValue(cellValue);
             const firstCitation = cov.citations?.[0];
@@ -432,7 +432,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
               }
             });
           }
-        } else if (rowConfig.field === 'deductible') {
+        } else if ((rowConfig.field as string) === 'deductible') {
           const hasNoAplica = cells.some((c) => c.value.toLowerCase().trim() === 'no aplica');
           if (hasNoAplica) {
             cells.forEach((cell) => {
@@ -498,7 +498,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
       const cells: MatrixCell[] = [];
 
       for (let i = 0; i < numQuotes; i++) {
-        const quote = quotes[i];
+        const quote = quotes[i]!;
         const cov = quote.coverages.find(
           (c) =>
             (c.categoryId === config.id ||
@@ -513,7 +513,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
           let cellValue = '';
           if (rowConfig.field === 'value') {
             cellValue = cov.value || 'No incluida';
-          } else if (rowConfig.field === 'deductible') {
+          } else if ((rowConfig.field as string) === 'deductible') {
             cellValue = cov.deductible || 'No aplica';
           } else {
             cellValue =
@@ -523,7 +523,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
           }
 
           const excluded =
-            rowConfig.field === 'deductible' && cellValue.toLowerCase().trim() === 'no aplica'
+            (rowConfig.field as string) === 'deductible' && cellValue.toLowerCase().trim() === 'no aplica'
               ? false
               : isExcludedValue(cellValue);
           const firstCitation = cov.citations?.[0];
@@ -640,7 +640,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
             return displayVal;
           });
 
-          const bestItem = matchingItems[0].item;
+          const bestItem = matchingItems[0]!.item;
 
           cells.push({
             value: displayVals.join(' / '),
@@ -699,9 +699,9 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     if (q.insurerName.toLowerCase().includes('chubb')) return 12000;
     return 0;
   });
-  const subtotals = netPremiums.map((net, idx) => net + expenses[idx]);
+  const subtotals = netPremiums.map((net, idx) => net + expenses[idx]!);
   const ivas = subtotals.map((sub) => Math.round(sub * 0.19));
-  const totals = subtotals.map((sub, idx) => sub + ivas[idx]);
+  const totals = subtotals.map((sub, idx) => sub + ivas[idx]!);
   const positiveTotals = totals.filter((t) => t > 0);
   const minTotal = positiveTotals.length > 0 ? Math.min(...positiveTotals) : 0;
 
@@ -711,10 +711,10 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     label: 'Prima Neta',
     sectionId: 100,
     cells: quotes.map((q, idx) => ({
-      value: netPremiums[idx] > 0 ? formatCurrency(netPremiums[idx]) : 'No informada',
-      isExcluded: netPremiums[idx] === 0,
+      value: netPremiums[idx]! > 0 ? formatCurrency(netPremiums[idx]!) : 'No informada',
+      isExcluded: netPremiums[idx]! === 0,
       isWinner:
-        netPremiums[idx] > 0 && netPremiums[idx] === Math.min(...netPremiums.filter((n) => n > 0)),
+        netPremiums[idx]! > 0 && netPremiums[idx]! === Math.min(...netPremiums.filter((n) => n > 0)),
     })),
   });
 
@@ -724,8 +724,8 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     label: 'Gastos de Expedición',
     sectionId: 100,
     cells: quotes.map((q, idx) => ({
-      value: netPremiums[idx] > 0 ? formatCurrency(expenses[idx]) : 'No informado',
-      isExcluded: netPremiums[idx] === 0,
+      value: netPremiums[idx]! > 0 ? formatCurrency(expenses[idx]!) : 'No informado',
+      isExcluded: netPremiums[idx]! === 0,
       isWinner: false,
     })),
   });
@@ -736,8 +736,8 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     label: 'Subtotal',
     sectionId: 100,
     cells: quotes.map((q, idx) => ({
-      value: netPremiums[idx] > 0 ? formatCurrency(subtotals[idx]) : 'No informado',
-      isExcluded: netPremiums[idx] === 0,
+      value: netPremiums[idx]! > 0 ? formatCurrency(subtotals[idx]!) : 'No informado',
+      isExcluded: netPremiums[idx]! === 0,
       isWinner: false,
     })),
   });
@@ -748,8 +748,8 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     label: 'IVA (19%)',
     sectionId: 100,
     cells: quotes.map((q, idx) => ({
-      value: netPremiums[idx] > 0 ? formatCurrency(ivas[idx]) : 'No informado',
-      isExcluded: netPremiums[idx] === 0,
+      value: netPremiums[idx]! > 0 ? formatCurrency(ivas[idx]!) : 'No informado',
+      isExcluded: netPremiums[idx]! === 0,
       isWinner: false,
     })),
   });
@@ -760,9 +760,9 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     label: 'TOTAL A PAGAR',
     sectionId: 100,
     cells: quotes.map((q, idx) => ({
-      value: netPremiums[idx] > 0 ? formatCurrency(totals[idx]) : 'No informado',
-      isExcluded: netPremiums[idx] === 0,
-      isWinner: netPremiums[idx] > 0 && totals[idx] === minTotal,
+      value: netPremiums[idx]! > 0 ? formatCurrency(totals[idx]!) : 'No informado',
+      isExcluded: netPremiums[idx]! === 0,
+      isWinner: netPremiums[idx]! > 0 && totals[idx]! === minTotal,
     })),
   });
 
@@ -782,10 +782,10 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     label: '% SOBRE VALOR ASEGURADO',
     sectionId: 100,
     cells: quotes.map((q, idx) => {
-      if (netPremiums[idx] === 0 || maxAsset === 0) {
+      if (netPremiums[idx]! === 0 || maxAsset === 0) {
         return { value: 'N/A', isExcluded: true, isWinner: false };
       }
-      const ratio = totals[idx] / maxAsset;
+      const ratio = totals[idx]! / maxAsset;
       return {
         value: ratio.toLocaleString('es-CO', {
           style: 'percent',
@@ -1467,7 +1467,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                                   {(cell.calculatedPage !== undefined ||
                                     cell.pageNumber !== undefined) && (
                                     <button
-                                      onClick={() => handleOpenPdfEvidence(cell, quotes[colIdx])}
+                                       onClick={() => handleOpenPdfEvidence(cell, quotes[colIdx]!)}
                                       className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-1.5 py-0.5 rounded border border-blue-200 flex items-center gap-0.5 transition-colors cursor-pointer"
                                       title="Ver evidencia en PDF"
                                     >

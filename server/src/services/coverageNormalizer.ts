@@ -224,7 +224,7 @@ async function mapRawToCanonicalWithInsurer(
     try {
       const graphResult = await coverageGraphService.query(rawName, { domain: d, insurer });
       if (graphResult.mappings.length > 0) {
-        const best = graphResult.mappings[0];
+        const best = graphResult.mappings[0]!;
         const confidence = Math.round(best.confidence * 100);
         if (confidence >= 70) {
           let canonicalName = best.canonicalId;
@@ -359,7 +359,7 @@ export async function mapRawToCanonicalBatch(
 
       for (let i = 0; i < batchResults.length; i++) {
         const result = batchResults[i];
-        const originalIndex = embeddingIndices[i];
+        const originalIndex = embeddingIndices[i]!;
 
         if (result && result.canonicalName && result.confidence >= 0.7) {
           results[originalIndex] = {
@@ -370,7 +370,7 @@ export async function mapRawToCanonicalBatch(
           };
         } else {
           // LLM fallback
-          const llmResult = await semanticMatcher.matchCoverage(namesNeedingEmbeddings[i], d);
+          const llmResult = await semanticMatcher.matchCoverage(namesNeedingEmbeddings[i]!, d);
           if (llmResult && llmResult.canonicalName && llmResult.confidence >= 0.7) {
             results[originalIndex] = {
               canonicalName: llmResult.canonicalName,
@@ -387,8 +387,8 @@ export async function mapRawToCanonicalBatch(
       console.error(`❌ [CoverageNormalizer] Batch processing failed:`, error);
       // Fallback to individual processing
       for (let i = 0; i < namesNeedingEmbeddings.length; i++) {
-        const singleResult = await mapRawToCanonical(namesNeedingEmbeddings[i], d, insurer);
-        results[embeddingIndices[i]] = singleResult;
+        const singleResult = await mapRawToCanonical(namesNeedingEmbeddings[i]!, d, insurer);
+        results[embeddingIndices[i]!] = singleResult;
       }
     }
   }
@@ -396,11 +396,11 @@ export async function mapRawToCanonicalBatch(
   // Graph fallback for unresolved names
   if (featureFlags.isEnabled('useTemplateGraphPipeline')) {
     for (let i = 0; i < results.length; i++) {
-      if (!results[i].canonicalName) {
+      if (!results[i]?.canonicalName) {
         try {
-          const graphResult = await coverageGraphService.query(rawNames[i], { domain: d, insurer });
+          const graphResult = await coverageGraphService.query(rawNames[i]!, { domain: d, insurer });
           if (graphResult.mappings.length > 0) {
-            const best = graphResult.mappings[0];
+            const best = graphResult.mappings[0]!;
             const confidence = Math.round(best.confidence * 100);
             if (confidence >= 70) {
               let canonicalName = best.canonicalId;
@@ -504,7 +504,7 @@ async function mapWithOntology(
     }
 
     // Get best match
-    const best = mapping.groups[0];
+    const best = mapping.groups[0]!;
     if (best.confidence < 0.7) {
       console.log(
         `ℹ️ [CoverageNormalizer] Ontology confidence (${best.confidence.toFixed(2)}) below 0.70 threshold, falling back to thesaurus/fuzzy`
@@ -775,9 +775,9 @@ export async function buildCanonicalCoverages(
   const batchResults = await mapRawToCanonicalBatch(coverageNames, d, insurerName);
 
   for (let i = 0; i < withAmounts.length; i++) {
-    const result = batchResults[i];
+    const result = batchResults[i]!;
     mapped.push({
-      coverage: withAmounts[i],
+      coverage: withAmounts[i]!,
       canonicalName: result.canonicalName,
       confidence: result.confidence,
       graphConfidence: result.graphConfidence,
@@ -823,7 +823,7 @@ export async function buildCanonicalCoverages(
       if (best.confidence < 70) needsReview = true;
     } else if (implicitMatches.length > 0) {
       // Use implicit
-      const bestImplicit = implicitMatches[0];
+      const bestImplicit = implicitMatches[0]!;
       const parentCoverage = rawCoverages.find((r) => r.rawName === bestImplicit.rawName);
 
       canonicalCoverages.push({
@@ -960,7 +960,7 @@ async function buildOntologyBasedCoverages(
   const executing: Set<Promise<void>> = new Set();
 
   for (let i = 0; i < withAmounts.length; i++) {
-    const coverage = withAmounts[i];
+    const coverage = withAmounts[i]!;
     const task = (async () => {
       const mapping = await coverageOntology.mapCoverage(coverage.rawName, insurerName, d);
 
@@ -1018,7 +1018,7 @@ async function buildOntologyBasedCoverages(
     }
 
     // Use best group
-    const bestGroup = mapping.groups[0];
+    const bestGroup = mapping.groups[0]!;
     const node = coverageOntology.getNodeById(bestGroup.groupId, d);
 
     if (!node) continue;

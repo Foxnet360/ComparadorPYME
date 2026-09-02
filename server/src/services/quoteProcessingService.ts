@@ -174,7 +174,7 @@ export async function enrichRawCoveragesWithGraph(
           return coverage as GraphEnrichedCoverage;
         }
 
-        const best = graphResult.mappings[0];
+        const best = graphResult.mappings[0]!;
         return {
           ...coverage,
           graphConfidence: Math.round(best.confidence * 100),

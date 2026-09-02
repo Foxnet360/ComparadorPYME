@@ -84,7 +84,7 @@ async function initializeCategoryEmbeddings(domain: string = 'pyme'): Promise<vo
     let successCount = 0;
     for (let i = 0; i < categories.length; i++) {
       if (categoryEmbeddings[i]?.embedding) {
-        cache.set(categories[i].id, categoryEmbeddings[i].embedding);
+        cache.set(categories[i]!.id, categoryEmbeddings[i]!.embedding);
         successCount++;
       }
     }
@@ -378,8 +378,8 @@ async function matchByLLM(
     const confidenceMatch = response.match(/CONFIANZA:\s*([\d.]+)/i);
 
     if (categoryMatch && confidenceMatch) {
-      const categoryId = parseInt(categoryMatch[1]);
-      const confidence = parseFloat(confidenceMatch[1]);
+      const categoryId = parseInt(categoryMatch[1]!);
+      const confidence = parseFloat(confidenceMatch[1]!);
 
       if (categoryId >= 1 && confidence >= CONFIDENCE_THRESHOLDS.LLM_MIN) {
         const category = categories.find((c) => c.id === categoryId);
@@ -550,7 +550,7 @@ export const semanticMatcher = {
       try {
         const graphResult = await coverageGraphService.query(effectiveName, { domain: d });
         if (graphResult.mappings.length > 0) {
-          const best = graphResult.mappings[0];
+          const best = graphResult.mappings[0]!;
           if (best.confidence >= 0.5) {
             const categories = loadCanonicalCategories(d);
             let categoryId: number | string | null = null;
@@ -694,7 +694,7 @@ export const semanticMatcher = {
 
     // Paso 1 & 2: Thesaurus + Fuzzy (rápido, sin API)
     for (let i = 0; i < coverageNames.length; i++) {
-      const name = coverageNames[i];
+      const name = coverageNames[i]!;
 
       // Capa 1: Thesaurus exacto
       const thesaurusResult = await matchByThesaurus(name, d);
@@ -732,19 +732,19 @@ export const semanticMatcher = {
     const stillPendingNames: string[] = [];
 
     for (let i = 0; i < pendingNames.length; i++) {
-      const cached = cacheHits.get(pendingNames[i].toLowerCase().trim());
+      const cached = cacheHits.get(pendingNames[i]!.toLowerCase().trim());
       if (cached) {
         // Encontrado en cache, comparar con categorías
-        const match = await matchByEmbeddingWithVector(pendingNames[i], cached, d);
-        results[pendingIndices[i]] = match || {
+        const match = await matchByEmbeddingWithVector(pendingNames[i]!, cached, d);
+        results[pendingIndices[i]!] = match || {
           categoryId: null,
           canonicalName: null,
           confidence: 0,
           method: null,
         };
       } else {
-        stillPendingIndices.push(pendingIndices[i]);
-        stillPendingNames.push(pendingNames[i]);
+        stillPendingIndices.push(pendingIndices[i]!);
+        stillPendingNames.push(pendingNames[i]!);
       }
     }
 
@@ -764,17 +764,17 @@ export const semanticMatcher = {
 
       for (let i = 0; i < batchResults.length; i++) {
         const result = batchResults[i];
-        const originalIndex = stillPendingIndices[i];
+        const originalIndex = stillPendingIndices[i]!;
 
         if (result && result.embedding) {
           // Almacenar para cache
           embeddingsToCache.push({
-            name: stillPendingNames[i],
+            name: stillPendingNames[i]!,
             embedding: result.embedding,
           });
 
           // Comparar con categorías
-          const match = await matchByEmbeddingWithVector(stillPendingNames[i], result.embedding, d);
+          const match = await matchByEmbeddingWithVector(stillPendingNames[i]!, result.embedding, d);
           results[originalIndex] = match || {
             categoryId: null,
             canonicalName: null,
@@ -783,7 +783,7 @@ export const semanticMatcher = {
           };
         } else {
           // Fallback a LLM si el embedding falló
-          const llmMatch = await matchByLLM(stillPendingNames[i], d);
+          const llmMatch = await matchByLLM(stillPendingNames[i]!, d);
           results[originalIndex] = llmMatch || {
             categoryId: null,
             canonicalName: null,
@@ -808,8 +808,8 @@ export const semanticMatcher = {
       console.error(`❌ [SemanticMatcher] Batch embedding failed:`, error);
       // Fallback individual a LLM
       for (let i = 0; i < stillPendingNames.length; i++) {
-        const llmMatch = await matchByLLM(stillPendingNames[i], d);
-        results[stillPendingIndices[i]] = llmMatch || {
+        const llmMatch = await matchByLLM(stillPendingNames[i]!, d);
+        results[stillPendingIndices[i]!] = llmMatch || {
           categoryId: null,
           canonicalName: null,
           confidence: 0,

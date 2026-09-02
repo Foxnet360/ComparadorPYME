@@ -32,7 +32,7 @@ export interface PdfViewerState {
   searchText?: string;
   title: string;
   isOpen: boolean;
-  mode: 'drawer' | 'modal' | 'fullscreen';
+  mode?: 'drawer' | 'modal' | 'fullscreen';
 }
 
 // Audit progress

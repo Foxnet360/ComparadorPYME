@@ -257,7 +257,7 @@ export class RedisTemplateHintMeasurementHarness implements TemplateHintMeasurem
   private percentile(values: number[], p: number): number {
     const sorted = [...values].sort((a, b) => a - b);
     if (sorted.length === 1) {
-      return sorted[0];
+      return sorted[0]!;
     }
 
     const rank = p * (sorted.length - 1);
@@ -265,8 +265,8 @@ export class RedisTemplateHintMeasurementHarness implements TemplateHintMeasurem
     const upperIndex = Math.ceil(rank);
     const fraction = rank - lowerIndex;
 
-    const lower = sorted[lowerIndex];
-    const upper = sorted[upperIndex];
+    const lower = sorted[lowerIndex]!;
+    const upper = sorted[upperIndex]!;
 
     return lower + fraction * (upper - lower);
   }

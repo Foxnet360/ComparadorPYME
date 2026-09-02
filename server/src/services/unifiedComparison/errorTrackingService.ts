@@ -140,7 +140,7 @@ class ErrorTrackingService {
       pdfCount: pdfPaths.length,
       pdfNames: pdfPaths.map((p) => {
         const parts = p.split('/');
-        return parts[parts.length - 1];
+        return parts[parts.length - 1]!;
       }),
       resolved: false,
     };

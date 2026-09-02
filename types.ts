@@ -373,6 +373,7 @@ export type QuoteStatus = 'DRAFT' | 'SENT' | 'SOLD' | 'LOST';
 export interface HistoryEntry {
   id: string;
   userId?: string; // Owner of the record
+  clientId?: string;
   date: string;
   clientName: string;
   insurers: string[];
@@ -443,6 +444,7 @@ export interface MatrixCell {
   justification?: string;
   canonicalName?: string;
   matchMethod?: 'thesaurus' | 'fuzzy' | 'embedding' | 'llm' | null;
+  rawName?: string;
 }
 
 export interface MatrixRow {
@@ -464,7 +466,7 @@ export interface Ally {
   createdAt?: string;
 }
 
-export interface ExtendedUserProfile extends UserProfile {
+export interface ExtendedUserProfile extends Omit<UserProfile, 'role'> {
   role: UserRole;
   allyId?: string;
   allyName?: string;

@@ -108,7 +108,7 @@ export const analyticsService = {
       };
     }
 
-    const currentAlly = DEMO_ALLIES.find((a) => a.id === allyId) || DEMO_ALLIES[0];
+    const currentAlly = DEMO_ALLIES.find((a) => a.id === allyId) || DEMO_ALLIES[0]!;
 
     return {
       role,

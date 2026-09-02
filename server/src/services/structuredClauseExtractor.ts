@@ -305,7 +305,7 @@ export const structuredClauseExtractor = {
       const dataList = (data || []) as Array<{ extracted_data: StructuredClause }>;
       if (dataList.length === 0) return null;
 
-      return dataList[0].extracted_data as StructuredClause;
+      return dataList[0]!.extracted_data as StructuredClause;
     } catch (_error) {
       console.info('ℹ️ [StructuredExtractor] Search unavailable, falling back to legacy RAG');
       return null;
@@ -329,7 +329,7 @@ export const structuredClauseExtractor = {
       const dataList = (data || []) as Record<string, unknown>[];
       if (dataList.length === 0) return null;
 
-      return dataList[0];
+      return dataList[0]!;
     } catch (error) {
       console.error('❌ [StructuredExtractor] Get deductible failed:', error);
       return null;

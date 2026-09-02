@@ -382,13 +382,13 @@ export class DocumentIndexingService {
 
     for (let i = 0; i < chunks.length; i++) {
       try {
-        const chunk = chunks[i];
+        const chunk = chunks[i]!;
         const embedding = await embeddingService.generateEmbedding(chunk.content);
 
         results.push({
           ...chunk,
           embedding,
-        });
+        } as Chunk & { embedding: number[] });
 
         // Reportar progreso
         const percent = 70 + Math.floor((i / chunks.length) * 20);

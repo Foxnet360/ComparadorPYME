@@ -149,7 +149,7 @@ const analyzeDeductible = (coverage: CoverageItem): DeductibleRisk => {
   // Parse percentage
   const percentMatch = deductible.match(/(\d+)%/);
   if (percentMatch) {
-    const percentage = parseInt(percentMatch[1]);
+    const percentage = parseInt(percentMatch[1]!);
     if (percentage > 10) {
       return {
         coverageName: coverage.name,
@@ -172,7 +172,7 @@ const analyzeDeductible = (coverage: CoverageItem): DeductibleRisk => {
   // Parse SMMLV
   const smmlvMatch = deductible.match(/(\d+)\s*SMMLV/i);
   if (smmlvMatch) {
-    const smmlv = parseInt(smmlvMatch[1]);
+    const smmlv = parseInt(smmlvMatch[1]!);
     if (smmlv > 5) {
       return {
         coverageName: coverage.name,
@@ -286,7 +286,7 @@ const extractSpecialConditions = (quote: QuoteAnalysis): SpecialCondition[] => {
   for (const pattern of patterns) {
     let match;
     while ((match = pattern.regex.exec(rawText)) !== null) {
-      const text = match[1].trim();
+      const text = match[1]!.trim();
       if (text.length > 10 && !conditions.some((c) => c.text === text)) {
         conditions.push({
           text,
@@ -799,10 +799,10 @@ export const compareDeductibles = (
   comparisons.sort((a, b) => b.score - a.score);
 
   return {
-    bestInsurer: comparisons[0].insurer,
-    worstInsurer: comparisons[comparisons.length - 1].insurer,
-    bestDeductible: comparisons[0].deductible,
-    worstDeductible: comparisons[comparisons.length - 1].deductible,
+    bestInsurer: comparisons[0]!.insurer,
+    worstInsurer: comparisons[comparisons.length - 1]!.insurer,
+    bestDeductible: comparisons[0]!.deductible,
+    worstDeductible: comparisons[comparisons.length - 1]!.deductible,
   };
 };
 

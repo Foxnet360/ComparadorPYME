@@ -1,4 +1,4 @@
-import { openDB, DBSchema, IDBPDatabase } from 'idb';
+import { openDB, DBSchema, IDBPDatabase, StoreNames } from 'idb';
 import { UserProfile, Client, HistoryEntry } from '../types';
 
 interface CSADB extends DBSchema {
@@ -54,71 +54,71 @@ async function getDb(): Promise<IDBPDatabase<CSADB>> {
 
 export const dbService = {
   // Generic Helpers
-  async getAll<StoreName extends keyof CSADB>(
+  async getAll<StoreName extends StoreNames<CSADB>>(
     storeName: StoreName
   ): Promise<CSADB[StoreName]['value'][]> {
     try {
       const db = await getDb();
-      return await db.getAll(storeName);
+      return await db.getAll<StoreName>(storeName);
     } catch (err) {
       console.warn(`[IndexedDB] Retry getAll on store ${String(storeName)} due to connection reset`, err);
       dbInstance = null;
       const db = await getDb();
-      return await db.getAll(storeName);
+      return await db.getAll<StoreName>(storeName);
     }
   },
 
-  async get<StoreName extends keyof CSADB>(
+  async get<StoreName extends StoreNames<CSADB>>(
     storeName: StoreName,
     key: string
   ): Promise<CSADB[StoreName]['value'] | undefined> {
     try {
       const db = await getDb();
-      return await db.get(storeName, key);
+      return await db.get<StoreName>(storeName, key);
     } catch (err) {
       console.warn(`[IndexedDB] Retry get on store ${String(storeName)} due to connection reset`, err);
       dbInstance = null;
       const db = await getDb();
-      return await db.get(storeName, key);
+      return await db.get<StoreName>(storeName, key);
     }
   },
 
-  async put<StoreName extends keyof CSADB>(
+  async put<StoreName extends StoreNames<CSADB>>(
     storeName: StoreName,
     value: CSADB[StoreName]['value']
   ): Promise<string> {
     try {
       const db = await getDb();
-      return await db.put(storeName, value);
+      return await db.put<StoreName>(storeName, value);
     } catch (err) {
       console.warn(`[IndexedDB] Retry put on store ${String(storeName)} due to connection reset`, err);
       dbInstance = null;
       const db = await getDb();
-      return await db.put(storeName, value);
+      return await db.put<StoreName>(storeName, value);
     }
   },
 
-  async clear<StoreName extends keyof CSADB>(storeName: StoreName): Promise<void> {
+  async clear<StoreName extends StoreNames<CSADB>>(storeName: StoreName): Promise<void> {
     try {
       const db = await getDb();
-      return await db.clear(storeName);
+      return await db.clear(storeName as 'users' | 'clients' | 'history');
     } catch (err) {
       console.warn(`[IndexedDB] Retry clear on store ${String(storeName)} due to connection reset`, err);
       dbInstance = null;
       const db = await getDb();
-      return await db.clear(storeName);
+      return await db.clear(storeName as 'users' | 'clients' | 'history');
     }
   },
 
-  async delete<StoreName extends keyof CSADB>(storeName: StoreName, key: string): Promise<void> {
+  async delete<StoreName extends StoreNames<CSADB>>(storeName: StoreName, key: string): Promise<void> {
     try {
       const db = await getDb();
-      return await db.delete(storeName, key);
+      return await db.delete<StoreName>(storeName, key);
     } catch (err) {
       console.warn(`[IndexedDB] Retry delete on store ${String(storeName)} due to connection reset`, err);
       dbInstance = null;
       const db = await getDb();
-      return await db.delete(storeName, key);
+      return await db.delete<StoreName>(storeName, key);
     }
   },
 

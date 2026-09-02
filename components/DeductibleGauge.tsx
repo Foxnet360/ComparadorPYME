@@ -43,7 +43,7 @@ const parseDeductible = (deductible: string): GaugeConfig => {
   // Parse percentage
   const percentMatch = upperValue.match(/(\d+)%/);
   if (percentMatch) {
-    const percentage = parseInt(percentMatch[1]);
+    const percentage = parseInt(percentMatch[1]!);
     if (percentage > 10) {
       return {
         percentage: Math.min(percentage, 100),
@@ -64,7 +64,7 @@ const parseDeductible = (deductible: string): GaugeConfig => {
   // Parse absolute values (SMMLV, etc.)
   const smmlvMatch = upperValue.match(/(\d+)\s*SMMLV/i);
   if (smmlvMatch) {
-    const smmlv = parseInt(smmlvMatch[1]);
+    const smmlv = parseInt(smmlvMatch[1]!);
     if (smmlv > 5) {
       return {
         percentage: Math.min(smmlv * 10, 100),

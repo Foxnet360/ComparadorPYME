@@ -152,7 +152,7 @@ function extractField(text: string, startMarker: string, endMarker: string): str
   if (!text) return '';
   const regex = new RegExp(`${startMarker}\\s*([^\\n]+?)(?=\\n|${endMarker}|$)`, 'i');
   const match = text.match(regex);
-  return match ? match[1].trim() : '';
+  return match?.[1]?.trim() ?? '';
 }
 
 async function extractCoverages(text: string): Promise<ParsedCoverage[]> {
@@ -172,7 +172,7 @@ async function extractCoverages(text: string): Promise<ParsedCoverage[]> {
   let match;
 
   while ((match = coverageRegex.exec(coverageSection)) !== null) {
-    const rawName = match[2].trim();
+    const rawName = match[2]!.trim();
     const canonicalName = normalizeCoverageName(rawName);
 
     // Apply semantic matching
@@ -181,9 +181,9 @@ async function extractCoverages(text: string): Promise<ParsedCoverage[]> {
     coverages.push({
       name: rawName,
       canonicalName: semanticMatch.canonicalName || canonicalName || rawName,
-      value: match[3].trim(),
-      deductible: match[4].trim(),
-      sublimit: match[5] ? match[5].trim() : undefined,
+      value: match[3]!.trim(),
+      deductible: match[4]!.trim(),
+      sublimit: match[5]?.trim(),
       confidence: canonicalName !== rawName ? 95 : 70,
       categoryId: semanticMatch.categoryId,
       matchConfidence: semanticMatch.confidence,
@@ -195,15 +195,15 @@ async function extractCoverages(text: string): Promise<ParsedCoverage[]> {
   if (coverages.length === 0) {
     const simpleRegex = /^(\s+)?-\s+([^:]+):\s*([^\n]+)\n\s*Deducible:\s*([^\n]+)/gm;
     while ((match = simpleRegex.exec(coverageSection)) !== null) {
-      const rawName = match[2].trim();
+      const rawName = match[2]!.trim();
       const canonicalName = normalizeCoverageName(rawName);
       const semanticMatch = await semanticMatcher.matchCoverage(rawName);
 
       coverages.push({
         name: rawName,
         canonicalName: semanticMatch.canonicalName || canonicalName || rawName,
-        value: match[3].trim(),
-        deductible: match[4].trim(),
+        value: match[3]!.trim(),
+        deductible: match[4]!.trim(),
         confidence: canonicalName !== rawName ? 95 : 70,
         categoryId: semanticMatch.categoryId,
         matchConfidence: semanticMatch.confidence,
@@ -290,7 +290,7 @@ function parsePrice(priceText: string): number {
   const cleaned = priceText.replace(/[$\s.]/g, '').replace(/,/g, ''); // Remove comma if used as thousand separator
 
   const match = cleaned.match(/(\d+)/);
-  return match ? parseInt(match[1]) : 0;
+  return match ? parseInt(match[1]!) : 0;
 }
 
 function calculateConfidence(

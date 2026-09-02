@@ -358,7 +358,7 @@ export const documentController = {
     console.log(`📄 [documentController.getDocument] ID: ${req.params.id}`);
 
     try {
-      const { id } = req.params;
+      const { id } = req.params as { id: string };
 
       const { data, error } = await supabase
         .from('documents')
@@ -394,13 +394,13 @@ export const documentController = {
       const { count: chunkCount } = await supabase
         .from('chunks')
         .select('*', { count: 'exact', head: true })
-        .eq('document_id', id);
+        .eq('document_id', id as string);
 
       // Obtener conteo de imágenes
       const { count: imageCount } = await supabase
         .from('page_images')
         .select('*', { count: 'exact', head: true })
-        .eq('document_id', id);
+        .eq('document_id', id as string);
 
       const docData = data as unknown as DocumentDetail;
       res.json({
@@ -478,7 +478,7 @@ export const documentController = {
       let query = supabase
         .from('chunks')
         .select('id, page_number, content, coverage_tags, section_type, metadata, created_at')
-        .eq('document_id', id)
+        .eq('document_id', id as string)
         .order('page_number', { ascending: true })
         .limit(parseInt(limit as string))
         .range(

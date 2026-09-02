@@ -110,7 +110,7 @@ export function groupUncategorizedCoverages(
     // Try to match against group keywords
     for (const [groupId, keywords] of Object.entries(GROUP_KEYWORDS)) {
       if (keywords.some((keyword) => nameLower.includes(keyword))) {
-        groups[groupId].coverages.push({
+        groups[groupId]!.coverages.push({
           rawName: coverage.rawName,
           insuredAmount: coverage.insuredAmount || null,
           deductible: coverage.deductible || null,
@@ -123,7 +123,7 @@ export function groupUncategorizedCoverages(
 
     // If no match, put in "Otros"
     if (!assigned) {
-      groups['otros'].coverages.push({
+      groups['otros']!.coverages.push({
         rawName: coverage.rawName,
         insuredAmount: coverage.insuredAmount || null,
         deductible: coverage.deductible || null,

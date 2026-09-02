@@ -134,8 +134,8 @@ function parseNarrativeResponse(response: string): NarrativeResult {
   );
   const findingsMatch = response.match(/=== HALLAZGOS CLAVE ===\n?([\s\S]*?)$/);
 
-  let clientAnalysis = clientMatch ? clientMatch[1].trim() : '';
-  let technicalAnalysis = technicalMatch ? technicalMatch[1].trim() : '';
+  let clientAnalysis = clientMatch ? clientMatch[1]!.trim() : '';
+  let technicalAnalysis = technicalMatch ? technicalMatch[1]!.trim() : '';
 
   // Enforce character limits
   if (clientAnalysis.length > 1500) {
@@ -148,7 +148,7 @@ function parseNarrativeResponse(response: string): NarrativeResult {
   // Extract key findings
   const keyFindings: string[] = [];
   if (findingsMatch) {
-    const lines = findingsMatch[1].split('\n');
+    const lines = findingsMatch[1]!.split('\n');
     for (const line of lines) {
       const trimmed = line.trim();
       if (trimmed.startsWith('-') || trimmed.startsWith('•')) {

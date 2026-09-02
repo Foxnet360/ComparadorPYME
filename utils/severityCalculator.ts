@@ -28,7 +28,7 @@ export const calculateDeductibleSeverity = (
 
   // Extract percentage
   const percentMatch = deductibleText.match(/(\d+(?:[.,]\d+)?)\s*%/);
-  const percentage = percentMatch ? parseFloat(percentMatch[1].replace(',', '.')) : 0;
+  const percentage = percentMatch ? parseFloat(percentMatch[1]!.replace(',', '.')) : 0;
 
   // Check if applies to insured value (worse)
   const lowerText = deductibleText.toLowerCase();

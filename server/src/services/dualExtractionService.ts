@@ -62,15 +62,15 @@ function parseNumericValue(value: string): number | null {
 
   // Check for percentage
   const percentMatch = cleanValue.match(/(\d+(?:\.\d+)?)\s*%/);
-  if (percentMatch) return parseFloat(percentMatch[1]);
+  if (percentMatch) return parseFloat(percentMatch[1]!);
 
   // Check for SMMLV
   const smmlvMatch = cleanValue.match(/(\d+)\s*(?:SMMLV|SM)/i);
-  if (smmlvMatch) return parseFloat(smmlvMatch[1]);
+  if (smmlvMatch) return parseFloat(smmlvMatch[1]!);
 
   // Check for plain number
   const numMatch = cleanValue.match(/(\d+(?:\.\d+)?)/);
-  if (numMatch) return parseFloat(numMatch[1]);
+  if (numMatch) return parseFloat(numMatch[1]!);
 
   return null;
 }

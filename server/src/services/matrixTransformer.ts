@@ -248,7 +248,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[], domain: string 
       const cells: MatrixCell[] = [];
 
       for (let i = 0; i < numQuotes; i++) {
-        const quote = quotes[i];
+        const quote = quotes[i]!;
         // Match coverage item semantically or by categoryId
         const cov = quote.coverages.find(
           (c) =>
@@ -371,7 +371,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[], domain: string 
 
     exclusiveGroups.forEach((groupItems, rawKey) => {
       const cells: MatrixCell[] = [];
-      const repName = groupItems[0].item.canonicalName || groupItems[0].item.name;
+      const repName = groupItems[0]!.item.canonicalName || groupItems[0]!.item.name;
 
       for (let i = 0; i < numQuotes; i++) {
         const matchingItem = groupItems.find((gi) => gi.quoteIdx === i);
@@ -435,9 +435,9 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[], domain: string 
     if (q.insurerName.toLowerCase().includes('chubb')) return 12000;
     return 0; // Default
   });
-  const subtotals = netPremiums.map((net, idx) => net + expenses[idx]);
+  const subtotals = netPremiums.map((net, idx) => net + expenses[idx]!);
   const ivas = subtotals.map((sub) => Math.round(sub * 0.19));
-  const totals = subtotals.map((sub, idx) => sub + ivas[idx]);
+  const totals = subtotals.map((sub, idx) => sub + ivas[idx]!);
 
   // Determine Cheaper Total Price Winner
   const positiveTotals = totals.filter((t) => t > 0);
@@ -450,10 +450,10 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[], domain: string 
     label: 'Prima Neta',
     sectionId: 100,
     cells: quotes.map((q, idx) => ({
-      value: netPremiums[idx] > 0 ? formatCurrency(netPremiums[idx]) : 'No informada',
-      isExcluded: netPremiums[idx] === 0,
+      value: netPremiums[idx]! > 0 ? formatCurrency(netPremiums[idx]!) : 'No informada',
+      isExcluded: netPremiums[idx]! === 0,
       isWinner:
-        netPremiums[idx] > 0 && netPremiums[idx] === Math.min(...netPremiums.filter((n) => n > 0)),
+        netPremiums[idx]! > 0 && netPremiums[idx]! === Math.min(...netPremiums.filter((n) => n > 0)),
     })),
   });
 
@@ -464,8 +464,8 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[], domain: string 
     label: 'Gastos de Expedición',
     sectionId: 100,
     cells: quotes.map((q, idx) => ({
-      value: netPremiums[idx] > 0 ? formatCurrency(expenses[idx]) : 'No informado',
-      isExcluded: netPremiums[idx] === 0,
+      value: netPremiums[idx]! > 0 ? formatCurrency(expenses[idx]!) : 'No informado',
+      isExcluded: netPremiums[idx]! === 0,
       isWinner: false,
     })),
   });
@@ -477,8 +477,8 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[], domain: string 
     label: 'Subtotal',
     sectionId: 100,
     cells: quotes.map((q, idx) => ({
-      value: netPremiums[idx] > 0 ? formatCurrency(subtotals[idx]) : 'No informado',
-      isExcluded: netPremiums[idx] === 0,
+      value: netPremiums[idx]! > 0 ? formatCurrency(subtotals[idx]!) : 'No informado',
+      isExcluded: netPremiums[idx]! === 0,
       isWinner: false,
     })),
   });
@@ -490,8 +490,8 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[], domain: string 
     label: 'IVA (19%)',
     sectionId: 100,
     cells: quotes.map((q, idx) => ({
-      value: netPremiums[idx] > 0 ? formatCurrency(ivas[idx]) : 'No informado',
-      isExcluded: netPremiums[idx] === 0,
+      value: netPremiums[idx]! > 0 ? formatCurrency(ivas[idx]!) : 'No informado',
+      isExcluded: netPremiums[idx]! === 0,
       isWinner: false,
     })),
   });
@@ -503,9 +503,9 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[], domain: string 
     label: 'TOTAL A PAGAR',
     sectionId: 100,
     cells: quotes.map((q, idx) => ({
-      value: netPremiums[idx] > 0 ? formatCurrency(totals[idx]) : 'No informado',
-      isExcluded: netPremiums[idx] === 0,
-      isWinner: netPremiums[idx] > 0 && totals[idx] === minTotal,
+      value: netPremiums[idx]! > 0 ? formatCurrency(totals[idx]!) : 'No informado',
+      isExcluded: netPremiums[idx]! === 0,
+      isWinner: netPremiums[idx]! > 0 && totals[idx]! === minTotal,
     })),
   });
 
@@ -530,7 +530,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[], domain: string 
       if (netPremiums[idx] === 0 || maxAsset === 0) {
         return { value: 'N/A', isExcluded: true, isWinner: false };
       }
-      const ratio = totals[idx] / maxAsset;
+      const ratio = totals[idx]! / maxAsset;
       return {
         value: ratio.toLocaleString('es-CO', {
           style: 'percent',

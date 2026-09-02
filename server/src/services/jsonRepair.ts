@@ -212,20 +212,20 @@ function extractPartialData(json: string): PartialQuoteData | null {
   const keyValuePattern = /"(insurerName|policyName|currency|validityPeriod)"\s*:\s*"([^"]*)"/g;
   let match;
   while ((match = keyValuePattern.exec(json)) !== null) {
-    result[match[1]] = match[2];
+    result[match[1]!] = match[2]!;
   }
 
   // Try to extract numeric values
   const numericPattern = /"(priceAnnual)"\s*:\s*(\d+)/g;
   while ((match = numericPattern.exec(json)) !== null) {
-    result[match[1]] = parseInt(match[2], 10);
+    result[match[1]!] = parseInt(match[2]!, 10);
   }
 
   // Try to extract coverages array
   const coveragesMatch = json.match(/"coverages"\s*:\s*(\[[\s\S]*?\])\s*[},]/);
   if (coveragesMatch) {
     try {
-      result.coverages = JSON.parse(coveragesMatch[1]);
+      result.coverages = JSON.parse(coveragesMatch[1]!);
     } catch {
       // If array parse fails, try to extract individual coverage objects
       result.coverages = extractCoveragesFromText(json);
@@ -250,9 +250,9 @@ function extractCoveragesFromText(
   let match;
   while ((match = coveragePattern.exec(text)) !== null) {
     coverages.push({
-      name: match[1],
-      value: match[2],
-      deductible: match[3],
+      name: match[1]!,
+      value: match[2]!,
+      deductible: match[3]!,
     });
   }
 

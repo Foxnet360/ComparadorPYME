@@ -16,7 +16,7 @@ export function formatDeductibleForDisplay(structure: DeductibleStructure): stri
   if (
     structure.isZero ||
     structure.components.length === 0 ||
-    (structure.components.length === 1 && structure.components[0].type === 'na')
+    (structure.components.length === 1 && structure.components[0]?.type === 'na')
   ) {
     return 'No aplica';
   }
@@ -31,7 +31,7 @@ export function formatDeductibleForDisplay(structure: DeductibleStructure): stri
     return structure.rawText.trim();
   }
 
-  const only = structure.components[0];
+  const only = structure.components[0]!;
   switch (only.type) {
     case 'percentage':
       return `${only.value}%`;
@@ -57,7 +57,7 @@ export function formatDeductibleForDisplay(structure: DeductibleStructure): stri
  */
 export function extractDeductibleContext(rawText: string): string | undefined {
   const match = rawText.match(/^\s*\d+(?:[.,]\d+)?\s*%\s*(.*)$/);
-  if (match && match[1].trim()) {
+  if (match?.[1]?.trim()) {
     return match[1].trim();
   }
   return undefined;
@@ -70,7 +70,7 @@ export function extractDeductibleContext(rawText: string): string | undefined {
  */
 export function extractDeductibleFromClauseText(text: string): string | undefined {
   const match = text.match(/deducible[\s:]+(\d+%?[^\n.]*)/i);
-  return match ? match[1].trim() : undefined;
+  return match?.[1]?.trim();
 }
 
 function currencyKey(currency?: string | null): string {
@@ -109,9 +109,9 @@ function componentsEqual(
   const right = normalise(b);
 
   for (let i = 0; i < left.length; i++) {
-    if (left[i].type !== right[i].type) return false;
-    if (!numbersEqual(left[i].value, right[i].value)) return false;
-    if (left[i].currency !== right[i].currency) return false;
+    if (left[i]!.type !== right[i]!.type) return false;
+    if (!numbersEqual(left[i]!.value, right[i]!.value)) return false;
+    if (left[i]!.currency !== right[i]!.currency) return false;
   }
 
   return true;

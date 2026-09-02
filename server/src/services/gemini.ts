@@ -949,10 +949,10 @@ ANÁLISIS DE MERCADO:
 
     return {
       recommendation: recMatch
-        ? recMatch[1].trim().substring(0, 1500)
+        ? recMatch[1]!.trim().substring(0, 1500)
         : 'No se pudo generar recomendación',
       marketAnalysis: marketMatch
-        ? marketMatch[1].trim().substring(0, 1500)
+        ? marketMatch[1]!.trim().substring(0, 1500)
         : 'No se pudo generar análisis',
     };
   },

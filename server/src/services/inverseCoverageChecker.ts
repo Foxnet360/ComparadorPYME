@@ -30,7 +30,7 @@ function getMandatoryCoverageNames(): string[] {
   const canonical = getCanonicalCoverageNames();
   // Canonical order is stable: Incendio, Lucro Cesante, ..., Responsabilidad Civil (RCE) at index 5
   const mandatoryIndices = [0, 1, 5];
-  return mandatoryIndices.map((i) => canonical[i]?.toLowerCase()).filter(Boolean);
+  return mandatoryIndices.map((i) => canonical[i]?.toLowerCase()).filter((name): name is string => Boolean(name));
 }
 
 export const inverseCoverageChecker = {

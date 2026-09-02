@@ -297,7 +297,7 @@ export const ragRetrievalService = {
 
     if (filteredResults.length === 0 && results.length > 0) {
       console.warn(
-        `⚠️ [ragRetrieval] All chunks below threshold (${MIN_SIMILARITY_THRESHOLD}). Best: ${results[0].similarity.toFixed(3)}`
+        `⚠️ [ragRetrieval] All chunks below threshold (${MIN_SIMILARITY_THRESHOLD}). Best: ${results[0]!.similarity.toFixed(3)}`
       );
     }
 
@@ -495,7 +495,7 @@ export const ragRetrievalService = {
       let matchedInsurerId: string | null = null;
 
       if (insurerData && insurerData.length > 0) {
-        matchedInsurerId = (insurerData[0] as Record<string, unknown>).id as string;
+        matchedInsurerId = (insurerData[0]! as Record<string, unknown>).id as string;
       } else {
         // Fuzzy matching ILIKE si no hay match directo
         const { data: fuzzyData, error: fuzzyError } = await supabase
@@ -507,7 +507,7 @@ export const ragRetrievalService = {
         if (fuzzyError || !fuzzyData || fuzzyData.length === 0) {
           return false;
         }
-        matchedInsurerId = (fuzzyData[0] as Record<string, unknown>).id as string;
+        matchedInsurerId = (fuzzyData[0]! as Record<string, unknown>).id as string;
       }
 
       const insurerId = matchedInsurerId!;
@@ -529,7 +529,7 @@ export const ragRetrievalService = {
       const { count, error: chunksError } = await supabase
         .from('chunks')
         .select('id', { count: 'exact', head: true })
-        .eq('document_id', (docData[0] as Record<string, unknown>).id as string)
+        .eq('document_id', (docData[0]! as Record<string, unknown>).id as string)
         .limit(1);
 
       if (chunksError || count === null || count === 0) {

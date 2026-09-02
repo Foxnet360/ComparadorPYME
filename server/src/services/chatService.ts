@@ -162,7 +162,7 @@ class ContextWindowManager {
         currentTokens += sourcesTokens;
       } else {
         // Only include top source if budget is tight
-        const topSource = sources[0];
+        const topSource = sources[0]!;
         const minimalSources = `\n\n=== FUENTE PRINCIPAL ===\n${this.getSourceLabel(topSource.type)}: ${topSource.data}\n`;
         prompt += minimalSources;
         currentTokens += this.estimateTokens(minimalSources);
@@ -552,7 +552,7 @@ export const processChatMessage = async (
         llmError instanceof Error ? llmError.message : String(llmError)
       );
       if (sources.length > 0) {
-        const topSource = sources[0];
+        const topSource = sources[0]!;
         responseText = `📄 ${topSource.data}\n\nℹ️ *(Respuesta generada desde los documentos de la cotización)*`;
       } else {
         responseText =
@@ -754,7 +754,7 @@ export const generateSuggestedQuestions = (
   ];
 
   while (questions.length < 3) {
-    questions.push(defaultQuestions[questions.length]);
+    questions.push(defaultQuestions[questions.length]!);
   }
 
   return questions.slice(0, 5);

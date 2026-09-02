@@ -77,7 +77,7 @@ router.post(
       `✅ [chatRoute] Response generated | Tokens: ${result.tokensUsed || 'unknown'} | Model: ${result.modelUsed}`
     );
 
-    res.json(result);
+    return res.json(result);
   })
 );
 

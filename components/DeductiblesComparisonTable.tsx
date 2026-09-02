@@ -49,13 +49,13 @@ export const DeductiblesComparisonTable: React.FC<DeductiblesComparisonTableProp
 
     // Extraer porcentaje (maneja tanto punto como coma como separador decimal)
     const percentMatch = deductibleText.match(/(\d+(?:[.,]\d+)?)\s*%/);
-    const percentage = percentMatch ? parseFloat(percentMatch[1].replace(',', '.')) : null;
+    const percentage = percentMatch ? parseFloat(percentMatch[1]!.replace(',', '.')) : null;
 
     // Extraer mínimo
     const minMatch = deductibleText.match(
       /(?:m[ií]n\.?|mínimo)\s*:?\s*(\d+(?:\.\d+)?)\s*(?:SMMLV|salarios?)/i
     );
-    const minimum = minMatch ? parseFloat(minMatch[1]) : null;
+    const minimum = minMatch ? parseFloat(minMatch[1]!) : null;
 
     // Determinar sobre qué aplica
     let appliesTo: 'perdida' | 'valor' | null = null;

@@ -101,7 +101,7 @@ router.get(
       };
     });
 
-    res.json(clients);
+    return res.json(clients);
   })
 );
 
@@ -174,7 +174,7 @@ router.post(
       resultData = insertData;
     }
 
-    res.status(201).json(resultData?.raw_client_data || client);
+    return res.status(201).json(resultData?.raw_client_data || client);
   })
 );
 

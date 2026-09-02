@@ -353,7 +353,7 @@ export const variableComparator = {
    */
   async getGroupId(groupName: string): Promise<string> {
     const nodes = coverageOntology.findNodesByName(groupName);
-    return nodes.length > 0 ? nodes[0].id : 'unknown';
+    return nodes.length > 0 ? nodes[0]!.id : 'unknown';
   },
 
   /**

@@ -245,7 +245,7 @@ export const semanticChunker = {
 
     // Extraer clauseId si existe
     const clauseMatch = text.match(/^(\d+\.\d+)/);
-    const clauseId = clauseMatch ? clauseMatch[1] : undefined;
+    const clauseId = clauseMatch?.[1];
 
     return {
       id: chunkId,
@@ -301,7 +301,7 @@ export const semanticChunker = {
     let currentSection = '';
 
     for (let i = 0; i < structure.length; i++) {
-      const section = structure[i];
+      const section = structure[i]!;
       const nextSection = structure[i + 1];
       const endIndex = nextSection ? nextSection.startIndex : text.length;
 
@@ -320,7 +320,7 @@ export const semanticChunker = {
         const pageEnd = semanticChunker.getPageForCharIndex(endIndex, pageBoundaries);
 
         const clauseMatch = content.match(/^(\d+\.\d+)/);
-        const clauseId = clauseMatch ? clauseMatch[1] : undefined;
+        const clauseId = clauseMatch?.[1];
 
         const coverageTags = semanticChunker.detectCoverages(content);
         const sectionType = semanticChunker.detectSectionType(content);
@@ -356,8 +356,8 @@ export const semanticChunker = {
     if (!pageBoundaries.length) return 1;
 
     for (let i = pageBoundaries.length - 1; i >= 0; i--) {
-      if (charIndex >= pageBoundaries[i].charIndex) {
-        return pageBoundaries[i].pageNumber;
+      if (charIndex >= pageBoundaries[i]!.charIndex) {
+        return pageBoundaries[i]!.pageNumber;
       }
     }
 
@@ -376,7 +376,7 @@ export const semanticChunker = {
         pageNumber: i + 1,
         charIndex,
       });
-      charIndex += pages[i].length + 2;
+      charIndex += pages[i]!.length + 2;
     }
 
     return boundaries;

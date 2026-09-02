@@ -547,13 +547,13 @@ export const learningEngine = {
 
     if (metrics.topCorrectedMappings.length > 0) {
       improvements.push(
-        `Top corrected mapping: "${metrics.topCorrectedMappings[0].rawName}" (${metrics.topCorrectedMappings[0].count} times)`
+        `Top corrected mapping: "${metrics.topCorrectedMappings[0]!.rawName}" (${metrics.topCorrectedMappings[0]!.count} times)`
       );
     }
 
     if (metrics.accuracyTrend.length > 1) {
-      const latest = metrics.accuracyTrend[metrics.accuracyTrend.length - 1];
-      const previous = metrics.accuracyTrend[metrics.accuracyTrend.length - 2];
+      const latest = metrics.accuracyTrend[metrics.accuracyTrend.length - 1]!;
+      const previous = metrics.accuracyTrend[metrics.accuracyTrend.length - 2]!;
       const change = latest.accuracy - previous.accuracy;
 
       if (change > 0) {
