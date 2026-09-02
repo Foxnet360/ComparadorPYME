@@ -373,6 +373,7 @@ export type QuoteStatus = 'DRAFT' | 'SENT' | 'SOLD' | 'LOST';
 export interface HistoryEntry {
   id: string;
   userId?: string; // Owner of the record
+  clientId?: string;
   date: string;
   clientName: string;
   insurers: string[];

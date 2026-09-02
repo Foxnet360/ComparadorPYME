@@ -229,7 +229,7 @@ export const useAdvancedAnalysis = (quote: QuoteAnalysis | null) => {
       if (signal.aborted) return;
 
       setState({
-        deductibleAnalysis: deductibleResult?.data || null,
+        deductibleAnalysis: (deductibleResult?.data as DeductibleAnalysis[] | undefined) || null,
         inverseCheck: inverseResult?.data || null,
         contextualRisk: quote.contextualRisk || null,
         warrantyCompliance: quote.warrantyCompliance || null,

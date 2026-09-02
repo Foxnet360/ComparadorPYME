@@ -208,8 +208,8 @@ export const storageService = {
             userId: item.user_id,
             clientId: item.client_id,
             date: item.created_at
-              ? item.created_at.split('T')[0]
-              : new Date().toISOString().split('T')[0],
+              ? item.created_at.split('T')[0]!
+              : new Date().toISOString().split('T')[0]!,
             clientName: item.client_name || 'Cliente Sin Nombre',
             insurers: quotes.map((q) => q.insurerName || 'Desconocido'),
             bestOption: bestQuote?.insurerName || 'N/A',
@@ -275,7 +275,7 @@ export const storageService = {
       id,
       userId: effectiveUserId,
       clientId,
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString().split('T')[0]!,
       clientName: clientName || 'Cliente Sin Nombre',
       insurers: insurers,
       bestOption: bestQuote?.insurerName || 'N/A',

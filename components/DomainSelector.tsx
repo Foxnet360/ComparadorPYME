@@ -17,7 +17,7 @@ export interface DomainOption {
   id: InsuranceDomain;
   label: string;
   sublabel: string;
-  icon: React.ComponentType<{ className?: string; size?: number }>;
+  icon: React.ComponentType<{ className?: string; size?: string | number }>;
 }
 
 export interface DomainSelectorProps {

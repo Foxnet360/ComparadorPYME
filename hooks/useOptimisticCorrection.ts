@@ -18,6 +18,7 @@ interface CorrectionResult {
   success: boolean;
   id?: string;
   error?: string;
+  offline?: boolean;
 }
 
 interface UseOptimisticCorrectionReturn {
@@ -54,7 +55,10 @@ export function useOptimisticCorrection(): UseOptimisticCorrectionReturn {
         // Check if online
         if (!navigator.onLine) {
           // Save to offline queue
-          const queueId = CorrectionQueue.add(correction);
+          const queueId = CorrectionQueue.add({
+            ...correction,
+            correctionType: correction.correctionType || 'coverage_mapping',
+          });
 
           // Remover de pending
           setPendingCorrections((prev) => {
@@ -93,7 +97,10 @@ export function useOptimisticCorrection(): UseOptimisticCorrectionReturn {
       } catch (error) {
         // If network error, save to queue
         if (!navigator.onLine || (error instanceof Error && error.message.includes('fetch'))) {
-          const queueId = CorrectionQueue.add(correction);
+          const queueId = CorrectionQueue.add({
+            ...correction,
+            correctionType: correction.correctionType || 'coverage_mapping',
+          });
 
           // Remover de pending
           setPendingCorrections((prev) => {

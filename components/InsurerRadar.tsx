@@ -69,7 +69,7 @@ export const InsurerRadar: React.FC<InsurerRadarProps> = ({
       const hasUnspecified = deductibleTexts.some((d) => d.includes('NO ESPECIFICADO'));
       const hasHigh = deductibleTexts.some((d) => {
         const match = d.match(/(\d+)%/);
-        return match && parseInt(match[1]) > 10;
+        return match && parseInt(match[1]!) > 10;
       });
 
       if (hasUnspecified) deductibleScore = 3;
@@ -107,11 +107,11 @@ export const InsurerRadar: React.FC<InsurerRadarProps> = ({
 
   quotes.forEach((quote, _idx) => {
     const scores = calculateScores(quote);
-    radarData[0][quote.insurerName] = scores.price;
-    radarData[1][quote.insurerName] = scores.coverage;
-    radarData[2][quote.insurerName] = scores.deductibles;
-    radarData[3][quote.insurerName] = scores.clauses;
-    radarData[4][quote.insurerName] = scores.risk;
+    radarData[0]![quote.insurerName] = scores.price;
+    radarData[1]![quote.insurerName] = scores.coverage;
+    radarData[2]![quote.insurerName] = scores.deductibles;
+    radarData[3]![quote.insurerName] = scores.clauses;
+    radarData[4]![quote.insurerName] = scores.risk;
   });
 
   const toggleInsurer = (insurerName: string) => {

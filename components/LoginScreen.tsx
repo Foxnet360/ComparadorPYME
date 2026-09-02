@@ -61,7 +61,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
       } as unknown as UserProfile;
     }
 
-    authService.saveSession(demoUser);
+    (authService as unknown as { saveSession: (user: UserProfile) => void }).saveSession(demoUser);
     onLoginSuccess(demoUser);
   };
 

@@ -106,7 +106,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     e.preventDefault();
     if (!newUserName || !newUserEmail) return;
 
-    const selectedAlly = alliesList.find((a) => a.id === newUserAllyId) || alliesList[0];
+    const selectedAlly = alliesList.find((a) => a.id === newUserAllyId) || alliesList[0]!;
 
     const newUser: ManagedUser = {
       id: `user-${Date.now()}`,
