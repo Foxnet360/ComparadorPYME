@@ -574,7 +574,7 @@ export async function matrixRowsToComparisonReport(
       const coverages: UnifiedQuote['coverages'] = [];
       const alerts: UnifiedQuote['alerts'] = [];
       let priceAnnual = 0;
-      const cellIdx = indexMap[idx];
+      const cellIdx = indexMap[idx] ?? -1;
       const cellConfidences: number[] = [];
 
       // Extract coverages from matrix rows (skip financial rows; premium is handled separately)
@@ -796,15 +796,15 @@ export async function matrixRowsToComparisonReport(
     if (!premiumRowLabels.some((label) => normalizedLabel.includes(label))) continue;
 
     for (let i = 0; i < insurerNames.length; i++) {
-      const cellIdx = indexMap[i];
+      const cellIdx = indexMap[i] ?? -1;
       const cell = row.cells[cellIdx];
       if (!cell) continue;
 
       const numericValue = parseColombianCurrency(cell.value);
       if (numericValue !== null && numericValue > 0) {
-        intermediateQuotes[i].priceAnnual = numericValue;
-        intermediateQuotes[i].parsedQuote.priceAnnual = numericValue;
-        intermediateQuotes[i].priceMonthly = Math.round(numericValue / 12);
+        intermediateQuotes[i]!.priceAnnual = numericValue;
+        intermediateQuotes[i]!.parsedQuote.priceAnnual = numericValue;
+        intermediateQuotes[i]!.priceMonthly = Math.round(numericValue / 12);
       }
     }
   }
@@ -980,8 +980,8 @@ function longestCommonSubstringLength(a: string, b: string): number {
   for (let i = 1; i <= a.length; i++) {
     for (let j = 1; j <= b.length; j++) {
       if (a[i - 1] === b[j - 1]) {
-        matrix[i][j] = matrix[i - 1][j - 1] + 1;
-        max = Math.max(max, matrix[i][j]);
+        matrix[i]![j] = matrix[i - 1]![j - 1]! + 1;
+        max = Math.max(max, matrix[i]![j]!);
       }
     }
   }
@@ -1002,7 +1002,7 @@ function alignInsurerIndices(quoteInsurers: string[], matrixInsurers: string[]):
     let bestScore = 0;
 
     for (let i = 0; i < normalizedMatrix.length; i++) {
-      const matrixName = normalizedMatrix[i];
+      const matrixName = normalizedMatrix[i]!;
       if (matrixName === normalizedQuote) {
         return i;
       }

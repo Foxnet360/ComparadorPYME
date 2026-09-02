@@ -400,7 +400,7 @@ export function buildEvaluationReport(
   const byInsurer: Record<string, FixtureResult[]> = {};
   for (const r of fixturesWithRegressions) {
     byInsurer[r.insurer] = byInsurer[r.insurer] ?? [];
-    byInsurer[r.insurer].push(r);
+    byInsurer[r.insurer]!.push(r);
   }
 
   const perInsurer: Record<string, EvaluationMetrics> = {};
@@ -485,7 +485,7 @@ export async function runEvaluation(
 
   const results: FixtureResult[] = [];
   for (let i = 0; i < fixtures.length; i++) {
-    const fixture = fixtures[i];
+    const fixture = fixtures[i]!;
     try {
       const output = await runner(fixture);
       results.push(evaluateFixture(fixture, output, thresholds));

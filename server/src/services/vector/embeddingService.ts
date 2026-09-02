@@ -101,7 +101,7 @@ export const embeddingService = {
           // Procesar resultados
           if (response.embeddings && response.embeddings.length > 0) {
             for (let j = 0; j < response.embeddings.length && j < batch.length; j++) {
-              let embedding = response.embeddings[j].values;
+              let embedding = response.embeddings[j]!.values;
 
               if (!embedding || embedding.length === 0) {
                 console.warn(`⚠️ [Embedding Service] Empty embedding for text ${i + j}`);
@@ -110,7 +110,7 @@ export const embeddingService = {
 
               results.push({
                 embedding,
-                text: batch[j],
+                text: batch[j]!,
                 model: EMBEDDING_MODEL_NAME,
               });
             }
@@ -140,10 +140,10 @@ export const embeddingService = {
         // Retry individual items as fallback
         for (let j = 0; j < batch.length; j++) {
           try {
-            const embedding = await embeddingService.generateEmbedding(batch[j]);
+            const embedding = await embeddingService.generateEmbedding(batch[j]!);
             results.push({
               embedding,
-              text: batch[j],
+              text: batch[j]!,
               model: EMBEDDING_MODEL_NAME,
             });
           } catch (error) {
@@ -184,9 +184,9 @@ export const embeddingService = {
     let normB = 0;
 
     for (let i = 0; i < vecA.length; i++) {
-      dotProduct += vecA[i] * vecB[i];
-      normA += vecA[i] * vecA[i];
-      normB += vecB[i] * vecB[i];
+      dotProduct += vecA[i]! * vecB[i]!;
+      normA += vecA[i]! * vecA[i]!;
+      normB += vecB[i]! * vecB[i]!;
     }
 
     if (normA === 0 || normB === 0) return 0;
