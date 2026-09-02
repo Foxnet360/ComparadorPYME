@@ -736,7 +736,7 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
     label: 'Subtotal',
     sectionId: 100,
     cells: quotes.map((q, idx) => ({
-      value: netPremiums[idx]! > 0 ? formatCurrency(subtotals[idx]!!) : 'No informado',
+      value: netPremiums[idx]! > 0 ? formatCurrency(subtotals[idx]!) : 'No informado',
       isExcluded: netPremiums[idx]! === 0,
       isWinner: false,
     })),
