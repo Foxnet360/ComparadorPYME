@@ -1,5 +1,6 @@
 import { QuoteAnalysis, CoverageItem, MatrixRow, MatrixCell } from '../types';
 import { getCanonicalCoverageNames } from '../config/domainConstants';
+import { hasDomainSpecificFile, loadDomainJson } from './domainBundleLoader';
 
 // Lista de coberturas de la Plantilla PYME — fuente única de verdad en taxonomy.json
 export const PLANTILLA_ITEMS = getCanonicalCoverageNames('pyme') as string[];
@@ -203,7 +204,6 @@ export function getCategoryConfigsForDomain(domain: string = 'pyme'): CategoryCo
   const d = (domain || 'pyme').toLowerCase();
 
   try {
-    const { hasDomainSpecificFile, loadDomainJson } = require('./domainBundleLoader');
     if (hasDomainSpecificFile(d, 'taxonomy.json')) {
       const taxonomy: any = loadDomainJson(d, 'taxonomy.json');
 
