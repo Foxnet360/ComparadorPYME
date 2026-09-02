@@ -280,7 +280,7 @@ async function queryGraphForMapping(
       return null;
     }
 
-    const best = graphResult.mappings[0];
+    const best = graphResult.mappings[0]!;
     if (best.confidence < threshold) {
       return null;
     }
@@ -641,7 +641,7 @@ export const coverageOntology = {
         .limit(1);
 
       if (data && data.length > 0) {
-        const record = data[0] as Record<string, unknown>;
+        const record = data[0] as unknown as Record<string, unknown>;
         console.log(`📦 [Ontology DB] Hit for "${rawName}" -> "${record.canonical_name}"`);
 
         const mapping: CoverageMapping = {
@@ -744,7 +744,7 @@ export const coverageOntology = {
       const mapping = await this.mapCoverage(coverage.name, coverage.insurerName, domain);
 
       if (mapping.groups.length > 0) {
-        const bestGroup = mapping.groups[0];
+        const bestGroup = mapping.groups[0]!;
         const node = this.getNodeById(bestGroup.groupId, domain);
 
         if (node) {
