@@ -125,15 +125,15 @@ function parseThesaurusMarkdown(content: string): ThesaurusEntry[] {
     // Detect category headers
     const categoryMatch = line.match(/##\s*\d+\.\s*(.+)/);
     if (categoryMatch) {
-      currentCategory = categoryMatch[1].trim();
+      currentCategory = categoryMatch[1]!.trim();
       continue;
     }
 
     // Parse table rows with coverage mappings
     const tableMatch = line.match(/\|\s*\*\*(.+?)\*\*\s*\|\s*(.+?)\s*\|/);
     if (tableMatch) {
-      const canonicalName = tableMatch[1].trim();
-      const variantsText = tableMatch[2].trim();
+      const canonicalName = tableMatch[1]!.trim();
+      const variantsText = tableMatch[2]!.trim();
 
       // Split variants by comma
       const variants = variantsText
@@ -166,7 +166,7 @@ function parseExtensionMarkdown(content: string): ThesaurusEntry[] {
     // Detect category headers (## 1. Sub-límites de Incendio...)
     const categoryMatch = line.match(/##\s*\d+\.\s*(.+)/);
     if (categoryMatch) {
-      currentCategory = categoryMatch[1].trim();
+      currentCategory = categoryMatch[1]!.trim();
       // Set default type based on category name
       if (currentCategory.toLowerCase().includes('rider')) {
         defaultType = 'rider';
@@ -193,10 +193,10 @@ function parseExtensionMarkdown(content: string): ThesaurusEntry[] {
       /^\|\s*\*\*([^*]+)\*\*\s*\|\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^|]+)\s*\|/
     );
     if (tableMatch4) {
-      const parent = tableMatch4[1].trim();
-      const typeStr = tableMatch4[2].trim().toLowerCase();
-      const name = tableMatch4[3].trim();
-      const variantsText = tableMatch4[4].trim();
+      const parent = tableMatch4[1]!.trim();
+      const typeStr = tableMatch4[2]!.trim().toLowerCase();
+      const name = tableMatch4[3]!.trim();
+      const variantsText = tableMatch4[4]!.trim();
 
       const type = (
         typeStr.includes('rider')
@@ -228,9 +228,9 @@ function parseExtensionMarkdown(content: string): ThesaurusEntry[] {
     // Parse table rows with 3 columns (Format: | **Parent** | Name | Variants |)
     const tableMatch3 = line.match(/^\|\s*\*\*([^*]+)\*\*\s*\|\s*([^|]+)\s*\|\s*([^|]+)\s*\|/);
     if (tableMatch3) {
-      const parent = tableMatch3[1].trim();
-      const name = tableMatch3[2].trim();
-      const variantsText = tableMatch3[3].trim();
+      const parent = tableMatch3[1]!.trim();
+      const name = tableMatch3[2]!.trim();
+      const variantsText = tableMatch3[3]!.trim();
 
       const variants = variantsText
         .split(/[,，]/)

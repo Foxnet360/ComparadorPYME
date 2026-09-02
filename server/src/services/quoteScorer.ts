@@ -416,30 +416,30 @@ function parseMonetaryValue(value: string): number | null {
   // Billones (B)
   const billionsMatch = normalized.match(/([\d.]+)\s*b/);
   if (billionsMatch) {
-    const num = parseFloat(billionsMatch[1]);
+    const num = parseFloat(billionsMatch[1]!);
     return isNaN(num) ? null : num * 1_000_000_000;
   }
 
   // Millones (M)
   const millionsMatch = normalized.match(/([\d.]+)\s*m/);
   if (millionsMatch) {
-    const num = parseFloat(millionsMatch[1]);
+    const num = parseFloat(millionsMatch[1]!);
     return isNaN(num) ? null : num * 1_000_000;
   }
 
   // Miles (K)
   const thousandsMatch = normalized.match(/([\d.]+)\s*k/);
   if (thousandsMatch) {
-    const num = parseFloat(thousandsMatch[1]);
+    const num = parseFloat(thousandsMatch[1]!);
     return isNaN(num) ? null : num * 1_000;
   }
 
   // Plain number with optional thousands separators
   const plainMatch = normalized.match(/([\d.]+)/);
   if (plainMatch) {
-    const raw = plainMatch[1];
+    const raw = plainMatch[1]!;
     const num =
-      raw.includes('.') && raw.split('.').slice(-1)[0].length === 3
+      raw.includes('.') && raw.split('.').slice(-1)[0]!.length === 3
         ? parseFloat(raw.replace(/\./g, ''))
         : parseFloat(raw.replace(/\./g, '').replace(',', '.'));
     return isNaN(num) ? null : num;

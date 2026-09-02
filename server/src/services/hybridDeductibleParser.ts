@@ -173,7 +173,7 @@ function inferCompoundOperator(
 function parseNumericSegment(segment: string): { value: number; currency?: string } | null {
   const fixedMatch = segment.match(/(?:\$?\s*)([\d.,]+)\s*(COP|USD)?/i);
   if (fixedMatch) {
-    const val = parseFloat(fixedMatch[1].replace(/[.,]/g, ''));
+    const val = parseFloat(fixedMatch[1]!.replace(/[.,]/g, ''));
     if (!isNaN(val) && val >= 0) {
       return { value: val, currency: fixedMatch[2] || undefined };
     }
@@ -192,13 +192,13 @@ function parseCompoundJoin(text: string): ParsedDeductibleComponents | null {
   const explicitQualifierMatch = text.match(
     /^\s*(mayor\s+entre|mayor\s+de|menor\s+entre|menor\s+de)\s+/i
   );
-  const qualifier = explicitQualifierMatch ? explicitQualifierMatch[1].toLowerCase() : null;
+  const qualifier = explicitQualifierMatch ? explicitQualifierMatch[1]!.toLowerCase() : null;
   const textAfterQualifier = qualifier ? text.substring(explicitQualifierMatch![0].length) : text;
 
   const pctMatch = textAfterQualifier.match(/^\s*(\d+(?:[.,]\d+)?)\s*%/);
   if (!pctMatch) return null;
 
-  const percentage = parseFloat(pctMatch[1].replace(',', '.'));
+  const percentage = parseFloat(pctMatch[1]!.replace(',', '.'));
   const afterPct = textAfterQualifier.substring(pctMatch[0].length);
 
   // Detect operator between percentage and second component.
@@ -215,11 +215,11 @@ function parseCompoundJoin(text: string): ParsedDeductibleComponents | null {
   // Second component: SMMLV, UVT, or fixed amount.
   const smmlvMatch = rest.match(PATTERNS.smmlv);
   if (smmlvMatch) {
-    components.push({ type: 'smmlv', value: parseInt(smmlvMatch[1], 10) });
+    components.push({ type: 'smmlv', value: parseInt(smmlvMatch[1]!, 10) });
   } else {
     const uvtMatch = rest.match(PATTERNS.uvt);
     if (uvtMatch) {
-      components.push({ type: 'uvt', value: parseInt(uvtMatch[1], 10) });
+      components.push({ type: 'uvt', value: parseInt(uvtMatch[1]!, 10) });
     } else {
       const fixed = parseNumericSegment(rest);
       if (fixed) {
@@ -275,7 +275,7 @@ function parseSimple(text: string): ParsedDeductibleComponents | null {
   const pctMatch = t.match(PATTERNS.percentage);
   if (pctMatch && !PATTERNS.minClause.test(t) && !PATTERNS.maxClause.test(t)) {
     return {
-      components: [{ type: 'percentage', value: parseFloat(pctMatch[1].replace(',', '.')) }],
+      components: [{ type: 'percentage', value: parseFloat(pctMatch[1]!.replace(',', '.')) }],
       compoundOperator: 'none',
       isZero: false,
       hasMinimum: false,
@@ -288,7 +288,7 @@ function parseSimple(text: string): ParsedDeductibleComponents | null {
   const smmlvMatch = t.match(PATTERNS.smmlv);
   if (smmlvMatch && !PATTERNS.percentage.test(t)) {
     return {
-      components: [{ type: 'smmlv', value: parseInt(smmlvMatch[1], 10) }],
+      components: [{ type: 'smmlv', value: parseInt(smmlvMatch[1]!, 10) }],
       compoundOperator: 'none',
       isZero: false,
       hasMinimum: false,
@@ -301,7 +301,7 @@ function parseSimple(text: string): ParsedDeductibleComponents | null {
   const uvtMatch = t.match(PATTERNS.uvt);
   if (uvtMatch && !PATTERNS.percentage.test(t)) {
     return {
-      components: [{ type: 'uvt', value: parseInt(uvtMatch[1], 10) }],
+      components: [{ type: 'uvt', value: parseInt(uvtMatch[1]!, 10) }],
       compoundOperator: 'none',
       isZero: false,
       hasMinimum: false,
@@ -320,11 +320,11 @@ function parseSimple(text: string): ParsedDeductibleComponents | null {
     !PATTERNS.smmlv.test(t) &&
     !PATTERNS.uvt.test(t)
   ) {
-    const val = parseFloat(simpleFixed[1].replace(/[.,]/g, ''));
-    const hasCurrency = !!simpleFixed[2] || /^\$/.test(t);
+    const val = parseFloat(simpleFixed[1]!.replace(/[.,]/g, ''));
+    const hasCurrency = !!simpleFixed[2]! || /^\$/.test(t);
     if (!isNaN(val) && val > 0 && (hasCurrency || val >= 10000)) {
       return {
-        components: [{ type: 'fixed', value: val, currency: simpleFixed[2] || 'COP' }],
+        components: [{ type: 'fixed', value: val, currency: simpleFixed[2]! || 'COP' }],
         compoundOperator: 'none',
         isZero: false,
         hasMinimum: false,
@@ -345,12 +345,12 @@ function parseSimple(text: string): ParsedDeductibleComponents | null {
     let hasMaximum = false;
 
     if (pctCompound) {
-      components.push({ type: 'percentage', value: parseFloat(pctCompound[1]) });
+      components.push({ type: 'percentage', value: parseFloat(pctCompound[1]!) });
     }
 
     if (minCompound) {
       hasMinimum = true;
-      const val = parseFloat(minCompound[1].replace(/[.,]/g, ''));
+      const val = parseFloat(minCompound[1]!.replace(/[.,]/g, ''));
       const unit = minCompound[2]?.toUpperCase() || '';
       components.push({
         type: 'minimum',
@@ -361,7 +361,7 @@ function parseSimple(text: string): ParsedDeductibleComponents | null {
 
     if (maxCompound) {
       hasMaximum = true;
-      const val = parseFloat(maxCompound[1].replace(/[.,]/g, ''));
+      const val = parseFloat(maxCompound[1]!.replace(/[.,]/g, ''));
       const unit = maxCompound[2]?.toUpperCase() || '';
       components.push({
         type: 'maximum',
