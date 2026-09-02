@@ -40,7 +40,9 @@ export const InsurerRadar: React.FC<InsurerRadarProps> = ({
   if (!isOpen) return null;
 
   // Calculate scores for each insurer across 5 dimensions
-  const calculateScores = (quote: QuoteAnalysis): Record<string, number> => {
+  const calculateScores = (
+    quote: QuoteAnalysis
+  ): { price: number; coverage: number; deductibles: number; clauses: number; risk: number } => {
     const bd = quote.scoringBreakdown || {
       coverage: 5,
       deductibles: 5,

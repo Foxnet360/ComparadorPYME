@@ -28,6 +28,7 @@ import {
   ChevronDown,
   ChevronUp,
   BarChart3,
+  PieChart as PieChartIcon,
 } from 'lucide-react';
 
 interface LearningMetric {
@@ -43,9 +44,27 @@ interface LearningMetric {
   page?: number;
 }
 
+interface ConsensusHistoryEntry {
+  date: string;
+  totalClassifications: number;
+  discrepancies: number;
+  consensusRate: number;
+  avgConfidence: number;
+}
+
+interface CuratorDashboardProps {
+  metrics?: LearningMetric[];
+  consensusHistory?: ConsensusHistoryEntry[];
+  isLoading?: boolean;
+}
+
 const COLORS = ['#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6'];
 
-export const CuratorDashboard = ({ metrics = [], consensusHistory = [], isLoading = false }) => {
+export const CuratorDashboard = ({
+  metrics = [],
+  consensusHistory = [],
+  isLoading = false,
+}: CuratorDashboardProps) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'corrections' | 'consensus'>('overview');
   const [sortField, setSortField] = useState<keyof LearningMetric>('timestamp');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -55,7 +74,7 @@ export const CuratorDashboard = ({ metrics = [], consensusHistory = [], isLoadin
   const totalCorrections = metrics.length;
   const pendingReviews = metrics.filter((m) => m.confidenceAfter < 0.7).length;
   const consensusRate =
-    consensusHistory.length > 0 ? consensusHistory[consensusHistory.length - 1].consensusRate : 0;
+    consensusHistory.length > 0 ? consensusHistory[consensusHistory.length - 1]!.consensusRate : 0;
   const avgConfidence =
     metrics.length > 0
       ? metrics.reduce((sum, m) => sum + m.confidenceAfter, 0) / metrics.length
@@ -105,9 +124,9 @@ export const CuratorDashboard = ({ metrics = [], consensusHistory = [], isLoadin
       const aVal = a[sortField];
       const bVal = b[sortField];
       if (sortDirection === 'asc') {
-        return aVal > bVal ? 1 : -1;
+        return (aVal ?? '') > (bVal ?? '') ? 1 : -1;
       }
-      return aVal < bVal ? 1 : -1;
+      return (aVal ?? '') < (bVal ?? '') ? 1 : -1;
     });
 
   const handleSort = (field: keyof LearningMetric) => {
@@ -268,7 +287,7 @@ export const CuratorDashboard = ({ metrics = [], consensusHistory = [], isLoadin
                       tick={{ fontSize: 11 }}
                     />
                     <RechartsTooltip
-                      formatter={(value: number) => [`${(value * 100).toFixed(1)}%`, 'Confianza']}
+                      formatter={(value) => [`${(Number(value) * 100).toFixed(1)}%`, 'Confianza']}
                       contentStyle={{
                         borderRadius: '8px',
                         border: '1px solid #E2E8F0',
@@ -290,7 +309,7 @@ export const CuratorDashboard = ({ metrics = [], consensusHistory = [], isLoadin
             {/* Corrections by Category */}
             <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
               <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <PieChart size={16} className="text-purple-500" />
+                <PieChartIcon size={16} className="text-purple-500" />
                 Correcciones por Categoría
               </h3>
               <div className="h-64">

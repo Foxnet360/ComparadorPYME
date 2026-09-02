@@ -135,7 +135,7 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
 
   const bestQuote = report.quotes.reduce(
     (prev, current) => ((prev.score || 0) > (current.score || 0) ? prev : current),
-    report.quotes[0]
+    report.quotes[0]!
   );
 
   // IVA toggle state
@@ -373,11 +373,11 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
                 </label>
                 <div className="flex gap-2">
                   {[
-                    { c: '#4f46e5', v: [79, 70, 229] },
-                    { c: '#059669', v: [5, 150, 105] },
-                    { c: '#dc2626', v: [220, 38, 38] },
-                    { c: '#2563eb', v: [37, 99, 235] },
-                  ].map((color: { c: string; v: [number, number, number] }, i) => (
+                    { c: '#4f46e5', v: [79, 70, 229] as [number, number, number] },
+                    { c: '#059669', v: [5, 150, 105] as [number, number, number] },
+                    { c: '#dc2626', v: [220, 38, 38] as [number, number, number] },
+                    { c: '#2563eb', v: [37, 99, 235] as [number, number, number] },
+                  ].map((color, i) => (
                     <button
                       key={i}
                       className={`w-6 h-6 rounded-full border-2 ${pdfOptions.color[0] === color.v[0] ? 'border-slate-800 ring-1 ring-slate-800' : 'border-transparent'}`}
@@ -414,7 +414,7 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
                         primaryColor: pdfOptions.color,
                         brokerInfo,
                       },
-                      cellNotes
+                      cellNotes as unknown as Record<string, string>
                     );
                     setShowExportModal(false);
                   }}
@@ -704,7 +704,7 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
                           border: 'none',
                           boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
                         }}
-                        formatter={(value: number) => [formatCOP(value), 'Prima Anual']}
+                        formatter={(value) => [formatCOP(Number(value)), 'Prima Anual']}
                       />
                       <Bar
                         dataKey="fullPrice"
@@ -831,11 +831,11 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
             )}
 
             {/* Inverse Coverage */}
-            {report.quotes.some((q) => q.clauseValidation?.mandatoryMissingCount > 0) && (
+            {report.quotes.some((q) => (q.clauseValidation?.mandatoryMissingCount ?? 0) > 0) && (
               <div className="bg-white rounded-xl border border-slate-200 p-6">
                 <h3 className="text-lg font-bold text-slate-800 mb-4">Coberturas Omitidas</h3>
                 {report.quotes
-                  .filter((q) => q.clauseValidation?.mandatoryMissingCount > 0)
+                  .filter((q) => (q.clauseValidation?.mandatoryMissingCount ?? 0) > 0)
                   .map((quote, idx) => (
                     <InverseCoverageAlert key={idx} quote={quote} />
                   ))}

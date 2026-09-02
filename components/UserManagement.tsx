@@ -116,7 +116,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       allyId: selectedAlly.id,
       allyName: selectedAlly.name,
       status: 'ACTIVE',
-      createdAt: new Date().toISOString().split('T')[0],
+      createdAt: new Date().toISOString().split('T')[0]!,
     };
 
     setUsersList([newUser, ...usersList]);

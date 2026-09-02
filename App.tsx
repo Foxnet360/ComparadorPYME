@@ -55,7 +55,7 @@ const App: React.FC = () => {
   const [showClauseAdmin, setShowClauseAdmin] = useState(false);
 
   // Analyzer State
-  const [domain, setDomain] = useState<'pyme' | 'autos'>('pyme');
+  const [domain, setDomain] = useState<InsuranceDomain>('pyme');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [clientSelectorOpen, setClientSelectorOpen] = useState(false);
   const [quoteFiles, setQuoteFiles] = useState<File[]>([]);
@@ -81,7 +81,7 @@ const App: React.FC = () => {
 
   // Simulate progress bar when analyzing
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (status === AppStatus.ANALYZING) {
       // Keep infinite loader or pulse
     }

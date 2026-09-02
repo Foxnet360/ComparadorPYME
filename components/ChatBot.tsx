@@ -195,7 +195,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
       ontology: { label: '📋 Ontología', className: 'bg-purple-100 text-purple-700' },
       fallback: { label: 'ℹ️ General', className: 'bg-amber-100 text-amber-700' },
     };
-    return configs[source || 'direct'] || configs['direct'];
+    return configs[source || 'direct'] || configs['direct']!;
   };
 
   if (!isOpen) return null;
