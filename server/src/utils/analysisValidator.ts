@@ -334,8 +334,8 @@ export const parseDeductibles = (deductiblesText: string): ParsedDeductible[] =>
 
     const match = line.match(/^([^:]+):\s*(.+)$/i);
     if (match) {
-      const coverage = match[1].trim();
-      const details = match[2].trim();
+      const coverage = match[1]!.trim();
+      const details = match[2]!.trim();
 
       // Extraer porcentaje
       const percentMatch = details.match(/(\d+(?:\.\d+)?)\s*%/);

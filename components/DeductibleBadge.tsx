@@ -53,7 +53,7 @@ export const parseDeductibleForBadge = (deductible: string): BadgeConfig => {
   // Parse percentage
   const percentMatch = upperValue.match(/(\d+)%/);
   if (percentMatch) {
-    const percentage = parseInt(percentMatch[1]);
+    const percentage = parseInt(percentMatch[1]!);
     if (percentage > 10) {
       return {
         color: 'text-red-700',
@@ -76,7 +76,7 @@ export const parseDeductibleForBadge = (deductible: string): BadgeConfig => {
   // Parse absolute values (SMMLV, etc.)
   const smmlvMatch = upperValue.match(/(\d+)\s*SMMLV/i);
   if (smmlvMatch) {
-    const smmlv = parseInt(smmlvMatch[1]);
+    const smmlv = parseInt(smmlvMatch[1]!);
     if (smmlv > 5) {
       return {
         color: 'text-red-700',

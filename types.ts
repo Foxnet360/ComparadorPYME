@@ -464,7 +464,7 @@ export interface Ally {
   createdAt?: string;
 }
 
-export interface ExtendedUserProfile extends UserProfile {
+export interface ExtendedUserProfile extends Omit<UserProfile, 'role'> {
   role: UserRole;
   allyId?: string;
   allyName?: string;

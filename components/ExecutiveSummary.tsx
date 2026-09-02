@@ -35,7 +35,7 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
     .reduce(
       (prev, current) =>
         (prev.priceAnnual || Infinity) < (current.priceAnnual || Infinity) ? prev : current,
-      quotes[0]
+      quotes[0]!
     );
 
   // Find highest risk (most critical alerts)

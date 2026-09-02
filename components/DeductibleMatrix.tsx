@@ -50,13 +50,13 @@ const parseDeductible = (deductible: string): ParsedDeductible => {
 
   // Extract percentage (handle both dot and comma as decimal separator)
   const percentMatch = normalizedDeductible.match(/(\d+(?:[.,]\d+)?)\s*%/);
-  const percentage = percentMatch ? parseFloat(percentMatch[1].replace(',', '.')) : null;
+  const percentage = percentMatch ? parseFloat(percentMatch[1]!.replace(',', '.')) : null;
 
   // Extract minimum (SMMLV or salaries)
   const minMatch = normalizedDeductible.match(
     /(?:m[ií]n\.?|mínimo)\s*:?\s*(\d+(?:\.\d+)?)\s*(?:SMMLV|salarios?)/i
   );
-  const minimum = minMatch ? parseFloat(minMatch[1]) : null;
+  const minimum = minMatch ? parseFloat(minMatch[1]!) : null;
 
   return {
     percentage,
@@ -102,7 +102,7 @@ export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes }) =>
   const bestQuoteIdx =
     deductibleCounts.length > 0
       ? deductibleCounts.reduce((bestIdx, count, idx, arr) =>
-          count > arr[bestIdx] ? idx : bestIdx
+          count > arr[bestIdx]! ? idx : bestIdx
         )
       : 0;
   const bestQuote = quotes[bestQuoteIdx];
@@ -218,7 +218,7 @@ export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes }) =>
                     <td className="px-4 py-3 text-center bg-amber-50/30">
                       {bestEntry ? (
                         <div className="text-xs font-semibold text-green-700">
-                          {quotes[bestEntry.quoteIdx].insurerName}
+                          {quotes[bestEntry.quoteIdx]!.insurerName}
                         </div>
                       ) : (
                         <span className="text-slate-400 text-xs">-</span>

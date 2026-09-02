@@ -39,7 +39,7 @@ const getRiskScore = (
   // Parse deductible percentage
   const deductibleMatch = deductible.match(/(\d+)%/);
   if (deductibleMatch) {
-    const percentage = parseInt(deductibleMatch[1]);
+    const percentage = parseInt(deductibleMatch[1]!);
     if (percentage > 10) {
       return { score: 'high', reason: `Deducible alto (${percentage}%)` };
     } else if (percentage > 0) {

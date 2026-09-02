@@ -30,14 +30,14 @@ const parseValue = (value: string | number | undefined): number => {
   // Handle "500M" format
   const millionMatch = value.match(/^(\d+(?:[.,]\d+)?)\s*M$/i);
   if (millionMatch) {
-    const num = parseFloat(millionMatch[1].replace(/\./g, '').replace(',', '.'));
+    const num = parseFloat(millionMatch[1]!.replace(/\./g, '').replace(',', '.'));
     return !isNaN(num) ? num * 1000000 : 0;
   }
 
   // Handle values with $ sign or plain numbers
   const numMatch = value.match(/^\$?\s*([\d.,]+)\s*(.*)$/);
   if (numMatch) {
-    const numStr = numMatch[1].replace(/\./g, '').replace(',', '.');
+    const numStr = numMatch[1]!.replace(/\./g, '').replace(',', '.');
     const num = parseFloat(numStr);
     return !isNaN(num) && num > 0 ? num : 0;
   }

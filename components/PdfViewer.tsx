@@ -122,8 +122,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           context.save();
           context.fillStyle = 'rgba(255, 255, 0, 0.4)';
           context.fillRect(
-            textItem.transform[4],
-            textItem.transform[5] - fontHeight,
+            textItem.transform[4]!,
+            textItem.transform[5]! - fontHeight,
             textItem.width * fontWidth,
             fontHeight * 1.2
           );

@@ -243,9 +243,9 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
                   {msg.role === 'model' && msg.source && (
                     <div className="flex items-center gap-1 mb-2">
                       <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${getSourceBadge(msg.source).className}`}
+                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${getSourceBadge(msg.source!).className}`}
                       >
-                        {getSourceBadge(msg.source).label}
+                        {getSourceBadge(msg.source!).label}
                       </span>
                     </div>
                   )}

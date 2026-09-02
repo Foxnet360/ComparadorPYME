@@ -25,13 +25,13 @@ const parseDeductible = (deductibleText: string | undefined | null) => {
 
   // Extract percentage (handle both dot and comma as decimal separator)
   const percentMatch = deductibleText.match(/(\d+(?:[.,]\d+)?)\s*%/);
-  const percentage = percentMatch ? parseFloat(percentMatch[1].replace(',', '.')) : null;
+  const percentage = percentMatch ? parseFloat(percentMatch[1]!.replace(',', '.')) : null;
 
   // Extract minimum (SMMLV or salaries)
   const minMatch = deductibleText.match(
     /(?:m[ií]n\.?|mínimo)\s*:?\s*(\d+(?:\.\d+)?)\s*(?:SMMLV|salarios?)/i
   );
-  const minimum = minMatch ? parseFloat(minMatch[1]) : null;
+  const minimum = minMatch ? parseFloat(minMatch[1]!) : null;
 
   // Determine what it applies to
   let appliesTo: 'perdida' | 'valor' | null = null;
@@ -76,7 +76,7 @@ const hasDifferences = (
   const validValues = values.filter((v) => v.hasData);
   if (validValues.length <= 1) return false;
 
-  const first = validValues[0];
+  const first = validValues[0]!;
   return validValues.some(
     (v) =>
       v.percentage !== first.percentage ||
