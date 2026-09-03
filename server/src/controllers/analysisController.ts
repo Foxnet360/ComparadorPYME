@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Response, NextFunction } from 'express';
 import fs from 'fs';
 
 import { ParsedQuote } from '../services/quoteParser';
@@ -24,6 +24,22 @@ import quoteBasedAuditor from '../services/quoteBasedAuditor';
 import { AlertItem, AlertLevel, MatrixRow, QuoteAnalysis } from '../types';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { InsuranceDomain, isInsuranceDomain } from '../types/domain';
+import { AppError } from '../errors';
+import logger from '../config/logger';
+
+/**
+ * ERR-1: map legacy upstream failures onto operational AppErrors so the
+ * central errorHandler can answer with the right status code and traceId.
+ */
+function toHttpError(error: unknown): Error {
+  if (error instanceof Error && error.message?.includes('No response received')) {
+    return new AppError('Upstream Error: No response from Gemini AI.', 502);
+  }
+  if (error instanceof Error && error.message?.includes('429')) {
+    return new AppError('Rate Limit Exceeded: Please try again later.', 429);
+  }
+  return error instanceof Error ? error : new Error(String(error));
+}
 
 interface ComparisonResultQuote {
   insurerName: string;
@@ -175,7 +191,11 @@ export function resolveAnalysisDomain(rawDomain: unknown): AnalysisDomainResolut
 }
 
 export const analysisController = {
-  uploadAndAnalyze: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  uploadAndAnalyze: async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     const startTime = Date.now();
 
     try {
@@ -206,9 +226,9 @@ export const analysisController = {
       }
       const domain = domainResolution.domain;
 
-      console.log(`📄 Processing ${quoteFiles.length} quotes...`);
-      console.log(`🔧 Pipeline: ${isMultimodalEnabled() ? 'Multimodal (V2)' : 'Legacy (V1)'}`);
-      console.log(`🌐 Domain: ${domain}`);
+      logger.info(`📄 Processing ${quoteFiles.length} quotes...`);
+      logger.info(`🔧 Pipeline: ${isMultimodalEnabled() ? 'Multimodal (V2)' : 'Legacy (V1)'}`);
+      logger.info(`🌐 Domain: ${domain}`);
 
       const pdfPaths = quoteFiles.map((f) => f.path);
       const adapterResult = await comparisonEngineAdapter.generateComparison(pdfPaths, {
@@ -218,13 +238,13 @@ export const analysisController = {
       const matrixRows = adapterResult.matrix;
 
       // Debug: Log matrix structure
-      console.log(
+      logger.info(
         `📊 [Adapter Debug] engine=${adapterResult.engine}, correlationId=${adapterResult.correlationId}, matrix rows: ${matrixRows.length}`
       );
       const dataRows = matrixRows.filter((r) => r.type === 'data');
-      console.log(`📊 [Adapter Debug] Data rows: ${dataRows.length}`);
+      logger.info(`📊 [Adapter Debug] Data rows: ${dataRows.length}`);
       if (dataRows.length > 0) {
-        console.log(`📊 [Adapter Debug] First data row:`, JSON.stringify(dataRows[0], null, 2));
+        logger.info(`📊 [Adapter Debug] First data row: ${JSON.stringify(dataRows[0], null, 2)}`);
       }
 
       // Convert MatrixRow[] to ComparisonReport format
@@ -240,9 +260,9 @@ export const analysisController = {
       comparisonResult.domain = domain;
 
       // Debug: Log result structure
-      console.log(`📊 [Adapter Debug] Quotes generated: ${comparisonResult.quotes?.length || 0}`);
+      logger.info(`📊 [Adapter Debug] Quotes generated: ${comparisonResult.quotes?.length || 0}`);
       comparisonResult.quotes?.forEach((q: ComparisonResultQuote, i: number) => {
-        console.log(
+        logger.info(
           `📊 [Adapter Debug] Quote ${i} (${q.insurerName}): ${q.coverages?.length || 0} coverages, price: ${q.priceAnnual}`
         );
       });
@@ -308,7 +328,22 @@ export const analysisController = {
           (comparisonResult as ComparisonResult).id = savedId;
         }
       } catch (saveError: unknown) {
-        console.error('❌ [Supabase] Exception saving analysis:', saveError);
+        // ERR-1: a failed save must be logged and reach the central error
+        // handler via next(error) — temp files are cleaned up either way.
+        logger.error({ err: saveError }, '❌ [Supabase] Exception saving analysis');
+
+        quoteFiles.forEach((f) => {
+          try {
+            if (f && f.path) {
+              fs.unlinkSync(f.path);
+            }
+          } catch (e) {
+            logger.warn({ err: e }, `Failed to delete temp file ${f.path}`);
+          }
+        });
+
+        next(toHttpError(saveError));
+        return;
       }
 
       // Cleanup temp files
@@ -318,36 +353,28 @@ export const analysisController = {
             fs.unlinkSync(f.path);
           }
         } catch (e) {
-          console.error(`Failed to delete temp file ${f.path}`, e);
+          logger.warn({ err: e }, `Failed to delete temp file ${f.path}`);
         }
       });
 
       const duration = Date.now() - startTime;
-      console.log(`✅ Analysis completed in ${duration}ms`);
+      logger.info(`✅ Analysis completed in ${duration}ms`);
 
       const auditEnvelope = auditGroundedComparison(comparisonResult);
       res.json(auditEnvelope.result);
     } catch (error: unknown) {
-      console.error('Controller Error:', error);
-
-      if (error instanceof Error && error.message?.includes('No response received')) {
-        res.status(502).json({ error: 'Upstream Error: No response from Gemini AI.' });
-        return;
-      }
-      if (error instanceof Error && error.message?.includes('429')) {
-        res.status(429).json({ error: 'Rate Limit Exceeded: Please try again later.' });
-        return;
-      }
-
-      res.status(500).json({
-        error: 'Internal Server Error during analysis',
-        details: error instanceof Error ? error.message : String(error),
-        isMockData: false,
-      });
+      // ERR-1: forward to the central error handler instead of sending a raw
+      // response from the controller — the handler attaches the traceId.
+      logger.error({ err: error }, 'Controller Error: uploadAndAnalyze failed');
+      next(toHttpError(error));
     }
   },
 
-  getHistory: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  getHistory: async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       // AUTH-2: ownership is derived from the authenticated session; a
       // client-supplied userId query param is a spoofing vector.
@@ -378,8 +405,8 @@ export const analysisController = {
         pagination: { limit, offset, total: history.length },
       });
     } catch (error) {
-      console.error('Error fetching history:', error);
-      res.status(500).json({ success: false, error: 'Failed to fetch history' });
+      logger.error({ err: error }, 'Error fetching history');
+      next(error);
     }
   },
 };

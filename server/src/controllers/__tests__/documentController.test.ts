@@ -63,12 +63,14 @@ describe('documentController.createDocument', () => {
   let mockRes: Partial<Response>;
   let jsonMock: ReturnType<typeof vi.fn>;
   let statusMock: ReturnType<typeof vi.fn>;
+  let nextMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
 
     jsonMock = vi.fn();
     statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    nextMock = vi.fn();
 
     mockRes = {
       status: statusMock,
@@ -102,7 +104,7 @@ describe('documentController.createDocument', () => {
       },
     } as Partial<Request>;
 
-    await documentController.createDocument(mockReq as Request, mockRes as Response);
+    await documentController.createDocument(mockReq as Request, mockRes as Response, nextMock);
 
     expect(statusMock).toHaveBeenCalledWith(400);
     expect(documentIndexingService.indexDocument).not.toHaveBeenCalled();
@@ -120,7 +122,7 @@ describe('documentController.createDocument', () => {
       warnings: [],
     });
 
-    await documentController.createDocument(mockReq as Request, mockRes as Response);
+    await documentController.createDocument(mockReq as Request, mockRes as Response, nextMock);
 
     expect(vi.mocked(documentIndexingService.indexDocument).mock.calls[0][1].uploadedBy).toBe(
       'user-123'
@@ -144,7 +146,7 @@ describe('documentController.createDocument', () => {
       warnings: [],
     });
 
-    await documentController.createDocument(mockReq as Request, mockRes as Response);
+    await documentController.createDocument(mockReq as Request, mockRes as Response, nextMock);
 
     expect(statusMock).toHaveBeenCalledWith(201);
   });
@@ -166,7 +168,7 @@ describe('documentController.createDocument', () => {
       warnings: [],
     });
 
-    await documentController.createDocument(mockReq as Request, mockRes as Response);
+    await documentController.createDocument(mockReq as Request, mockRes as Response, nextMock);
 
     expect(statusMock).toHaveBeenCalledWith(201);
   });
@@ -188,7 +190,7 @@ describe('documentController.createDocument', () => {
       warnings: [],
     });
 
-    await documentController.createDocument(mockReq as Request, mockRes as Response);
+    await documentController.createDocument(mockReq as Request, mockRes as Response, nextMock);
 
     expect(statusMock).toHaveBeenCalledWith(201);
   });
@@ -210,12 +212,12 @@ describe('documentController.createDocument', () => {
       warnings: [],
     });
 
-    await documentController.createDocument(mockReq as Request, mockRes as Response);
+    await documentController.createDocument(mockReq as Request, mockRes as Response, nextMock);
 
     expect(statusMock).toHaveBeenCalledWith(201);
   });
 
-  it('should handle main indexing failure', async () => {
+  it('should forward main indexing failures to the central error handler (ERR-1)', async () => {
     mockReq = createMockRequest('CLAUSULADO_GENERAL');
 
     vi.mocked(documentIndexingService.indexDocument).mockResolvedValue({
@@ -230,8 +232,12 @@ describe('documentController.createDocument', () => {
       warnings: [],
     });
 
-    await documentController.createDocument(mockReq as Request, mockRes as Response);
+    await documentController.createDocument(mockReq as Request, mockRes as Response, nextMock);
 
-    expect(statusMock).toHaveBeenCalledWith(500);
+    expect(nextMock).toHaveBeenCalledWith(expect.any(Error));
+    const forwarded = nextMock.mock.calls[0][0] as { statusCode?: number; message?: string };
+    expect(forwarded.statusCode).toBe(500);
+    expect(forwarded.message).toContain('PDF extraction failed');
+    expect(statusMock).not.toHaveBeenCalledWith(500);
   });
 });

@@ -91,7 +91,7 @@ describe('analysisController.uploadAndAnalyze - domain contract', () => {
     });
     const res = makeRes();
 
-    await analysisController.uploadAndAnalyze(req, res);
+    await analysisController.uploadAndAnalyze(req, res, vi.fn());
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith(
@@ -111,7 +111,7 @@ describe('analysisController.uploadAndAnalyze - domain contract', () => {
     });
     const res = makeRes();
 
-    await analysisController.uploadAndAnalyze(req, res);
+    await analysisController.uploadAndAnalyze(req, res, vi.fn());
 
     expect(comparisonEngineAdapter.generateComparison).toHaveBeenCalledWith(
       [tmpFile],
@@ -130,7 +130,7 @@ describe('analysisController.uploadAndAnalyze - domain contract', () => {
     });
     const res = makeRes();
 
-    await analysisController.uploadAndAnalyze(req, res);
+    await analysisController.uploadAndAnalyze(req, res, vi.fn());
 
     expect(comparisonEngineAdapter.generateComparison).toHaveBeenCalledWith(
       [tmpFile],
