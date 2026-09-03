@@ -2,6 +2,9 @@ import { openDB, DBSchema, IDBPDatabase, StoreNames } from 'idb';
 import { UserProfile, Client, HistoryEntry } from '../types';
 
 interface CSADB extends DBSchema {
+  // ERR-4: the legacy `users` store held local auth profiles. Fresh databases
+  // no longer create it; existing databases keep it until
+  // clearLegacyUsersStore() wipes it during boot cleanup.
   users: {
     key: string;
     value: UserProfile;
@@ -33,9 +36,6 @@ async function getDb(): Promise<IDBPDatabase<CSADB>> {
 
   dbInstance = await openDB<CSADB>(DB_NAME, DB_VERSION, {
     upgrade(db) {
-      if (!db.objectStoreNames.contains('users')) {
-        db.createObjectStore('users', { keyPath: 'id' });
-      }
       if (!db.objectStoreNames.contains('clients')) {
         db.createObjectStore('clients', { keyPath: 'id' });
       }
@@ -61,7 +61,10 @@ export const dbService = {
       const db = await getDb();
       return await db.getAll<StoreName>(storeName);
     } catch (err) {
-      console.warn(`[IndexedDB] Retry getAll on store ${String(storeName)} due to connection reset`, err);
+      console.warn(
+        `[IndexedDB] Retry getAll on store ${String(storeName)} due to connection reset`,
+        err
+      );
       dbInstance = null;
       const db = await getDb();
       return await db.getAll<StoreName>(storeName);
@@ -76,7 +79,10 @@ export const dbService = {
       const db = await getDb();
       return await db.get<StoreName>(storeName, key);
     } catch (err) {
-      console.warn(`[IndexedDB] Retry get on store ${String(storeName)} due to connection reset`, err);
+      console.warn(
+        `[IndexedDB] Retry get on store ${String(storeName)} due to connection reset`,
+        err
+      );
       dbInstance = null;
       const db = await getDb();
       return await db.get<StoreName>(storeName, key);
@@ -91,7 +97,10 @@ export const dbService = {
       const db = await getDb();
       return await db.put<StoreName>(storeName, value);
     } catch (err) {
-      console.warn(`[IndexedDB] Retry put on store ${String(storeName)} due to connection reset`, err);
+      console.warn(
+        `[IndexedDB] Retry put on store ${String(storeName)} due to connection reset`,
+        err
+      );
       dbInstance = null;
       const db = await getDb();
       return await db.put<StoreName>(storeName, value);
@@ -103,19 +112,28 @@ export const dbService = {
       const db = await getDb();
       return await db.clear(storeName as 'users' | 'clients' | 'history');
     } catch (err) {
-      console.warn(`[IndexedDB] Retry clear on store ${String(storeName)} due to connection reset`, err);
+      console.warn(
+        `[IndexedDB] Retry clear on store ${String(storeName)} due to connection reset`,
+        err
+      );
       dbInstance = null;
       const db = await getDb();
       return await db.clear(storeName as 'users' | 'clients' | 'history');
     }
   },
 
-  async delete<StoreName extends StoreNames<CSADB>>(storeName: StoreName, key: string): Promise<void> {
+  async delete<StoreName extends StoreNames<CSADB>>(
+    storeName: StoreName,
+    key: string
+  ): Promise<void> {
     try {
       const db = await getDb();
       return await db.delete<StoreName>(storeName, key);
     } catch (err) {
-      console.warn(`[IndexedDB] Retry delete on store ${String(storeName)} due to connection reset`, err);
+      console.warn(
+        `[IndexedDB] Retry delete on store ${String(storeName)} due to connection reset`,
+        err
+      );
       dbInstance = null;
       const db = await getDb();
       return await db.delete<StoreName>(storeName, key);
@@ -132,6 +150,22 @@ export const dbService = {
       dbInstance = null;
       const db = await getDb();
       return await db.getAllFromIndex('history', 'by-user', userId);
+    }
+  },
+
+  /**
+   * ERR-4: wipe the legacy `users` object store that persisted local auth
+   * profiles in previous versions. Best-effort: fresh databases do not have
+   * the store, and IndexedDB may be unavailable entirely.
+   */
+  async clearLegacyUsersStore(): Promise<void> {
+    try {
+      const db = await getDb();
+      if (db.objectStoreNames.contains('users')) {
+        await db.clear('users');
+      }
+    } catch {
+      // IndexedDB unavailable (private mode, SSR, tests) — nothing to clean.
     }
   },
 };

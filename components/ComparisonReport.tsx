@@ -245,32 +245,32 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
                 report.domain === 'autos'
                   ? 'bg-blue-100 text-blue-800'
                   : report.domain === 'copropiedades'
-                  ? 'bg-emerald-100 text-emerald-800'
-                  : report.domain === 'cumplimiento'
-                  ? 'bg-amber-100 text-amber-800'
-                  : report.domain === 'transporte'
-                  ? 'bg-purple-100 text-purple-800'
-                  : report.domain === 'salud'
-                  ? 'bg-rose-100 text-rose-800'
-                  : report.domain === 'vida_grupo'
-                  ? 'bg-teal-100 text-teal-800'
-                  : report.domain === 'hogar'
-                  ? 'bg-cyan-100 text-cyan-800'
-                  : 'bg-indigo-100 text-indigo-800'
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : report.domain === 'cumplimiento'
+                      ? 'bg-amber-100 text-amber-800'
+                      : report.domain === 'transporte'
+                        ? 'bg-purple-100 text-purple-800'
+                        : report.domain === 'salud'
+                          ? 'bg-rose-100 text-rose-800'
+                          : report.domain === 'vida_grupo'
+                            ? 'bg-teal-100 text-teal-800'
+                            : report.domain === 'hogar'
+                              ? 'bg-cyan-100 text-cyan-800'
+                              : 'bg-indigo-100 text-indigo-800'
               }`}
             >
-              Ramo: {
-                {
-                  pyme: 'PYME',
-                  copropiedades: 'Copropiedades',
-                  autos: 'Autos',
-                  cumplimiento: 'Cumplimiento',
-                  transporte: 'Transporte',
-                  salud: 'Salud',
-                  vida_grupo: 'Vida Grupo',
-                  hogar: 'Hogar',
-                }[report.domain || 'pyme'] || (report.domain ? String(report.domain).toUpperCase() : 'PYME')
-              }
+              Ramo:{' '}
+              {{
+                pyme: 'PYME',
+                copropiedades: 'Copropiedades',
+                autos: 'Autos',
+                cumplimiento: 'Cumplimiento',
+                transporte: 'Transporte',
+                salud: 'Salud',
+                vida_grupo: 'Vida Grupo',
+                hogar: 'Hogar',
+              }[report.domain || 'pyme'] ||
+                (report.domain ? String(report.domain).toUpperCase() : 'PYME')}
             </span>
           </div>
           <p className="text-sm text-slate-500">
@@ -391,32 +391,35 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
               <div className="pt-2">
                 <button
                   onClick={() => {
-                    const user = storageService.getCurrentUser();
-                    const brokerInfo = user
-                      ? {
-                          name: user.name,
-                          intermediaryName: user.intermediaryName,
-                          registrationNumber:
-                            user.registrationNumber || user.agentDetails?.registrationNumber,
-                          phone: user.agentDetails?.phone,
-                          email: user.email,
-                          address: user.address || user.agentDetails?.address,
-                          city: user.city || user.agentDetails?.city,
-                          logoUrl: user.logoUrl || user.agentDetails?.logoUrl,
-                        }
-                      : undefined;
+                    // ERR-4: the user profile comes from the Supabase session,
+                    // never from local storage.
+                    void storageService.getCurrentUser().then((user) => {
+                      const brokerInfo = user
+                        ? {
+                            name: user.name,
+                            intermediaryName: user.intermediaryName,
+                            registrationNumber:
+                              user.registrationNumber || user.agentDetails?.registrationNumber,
+                            phone: user.agentDetails?.phone,
+                            email: user.email,
+                            address: user.address || user.agentDetails?.address,
+                            city: user.city || user.agentDetails?.city,
+                            logoUrl: user.logoUrl || user.agentDetails?.logoUrl,
+                          }
+                        : undefined;
 
-                    generatePDF(
-                      report,
-                      {
-                        customTitle: pdfOptions.title,
-                        logoBase64: brokerInfo?.logoUrl || pdfOptions.logo,
-                        primaryColor: pdfOptions.color,
-                        brokerInfo,
-                      },
-                      cellNotes as unknown as Record<string, string>
-                    );
-                    setShowExportModal(false);
+                      generatePDF(
+                        report,
+                        {
+                          customTitle: pdfOptions.title,
+                          logoBase64: brokerInfo?.logoUrl || pdfOptions.logo,
+                          primaryColor: pdfOptions.color,
+                          brokerInfo,
+                        },
+                        cellNotes as unknown as Record<string, string>
+                      );
+                      setShowExportModal(false);
+                    });
                   }}
                   className="w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors"
                 >

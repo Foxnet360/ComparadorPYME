@@ -1,5 +1,5 @@
 import { ComparisonReport } from '../types';
-import { apiClient } from './apiClient';
+import { apiClient, ApiTimeoutError, DEFAULT_API_TIMEOUT_MS } from './apiClient';
 
 export const analyzeQuotesWithGemini = async (
   quoteFiles: File[],
@@ -30,9 +30,12 @@ export const analyzeQuotesWithGemini = async (
   if (onStatusUpdate) onStatusUpdate('Subiendo archivos al servidor seguro (Cloud Run)...');
 
   try {
+    // ERR-3: the analysis call is bounded and cancellable — if the backend
+    // stalls beyond the timeout, apiClient aborts the request.
     const response = await apiClient.fetch('/analyze', {
       method: 'POST',
       body: formData,
+      timeoutMs: DEFAULT_API_TIMEOUT_MS,
     });
 
     if (onStatusUpdate) onStatusUpdate('Procesando con Gemini Advanced (RAG)...');
@@ -41,6 +44,12 @@ export const analyzeQuotesWithGemini = async (
     return result as ComparisonReport;
   } catch (error) {
     console.error('API Error:', error);
+
+    if (error instanceof ApiTimeoutError) {
+      throw new Error(
+        'El análisis excedió el tiempo máximo permitido. Intenta de nuevo o sube menos archivos a la vez.'
+      );
+    }
 
     const rawMessage = error instanceof Error ? error.message : String(error);
 

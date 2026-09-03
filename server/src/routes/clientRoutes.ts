@@ -7,6 +7,8 @@ import { Router, Response } from 'express';
 import { supabase } from '../config/database';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
+import { AppError } from '../errors';
+import logger from '../config/logger';
 import { Database, Json } from '../types/database';
 
 type ClientProfileRow = Database['public']['Tables']['client_profiles']['Row'];
@@ -84,8 +86,9 @@ router.get(
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('❌ [Clients API] Failed to fetch clients:', error);
-      return res.status(500).json({ error: 'Database error', message: error.message });
+      // ERR-1: db errors reach the central errorHandler (with traceId).
+      logger.error({ err: error }, '❌ [Clients API] Failed to fetch clients');
+      throw new AppError(`Database error: ${error.message}`, 500);
     }
 
     // Transform database records back to frontend Client structures.
@@ -143,21 +146,22 @@ router.post(
       .limit(1);
 
     if (checkError) {
-      console.warn('⚠️ [Clients API] Failed to check existing client:', checkError);
+      logger.warn({ err: checkError }, '⚠️ [Clients API] Failed to check existing client');
     }
 
     let resultData: ClientProfileRow | null;
-    if (existing && existing.length > 0) {
+    const existingRow = existing?.[0];
+    if (existingRow) {
       // Update existing
       const { data: updateData, error: updateError } = await clientProfiles()
         .update(profile)
-        .eq('id', existing[0].id)
+        .eq('id', existingRow.id)
         .select('*')
         .single();
 
       if (updateError) {
-        console.error('❌ [Clients API] Failed to update client:', updateError);
-        return res.status(500).json({ error: 'Database error', message: updateError.message });
+        logger.error({ err: updateError }, '❌ [Clients API] Failed to update client');
+        throw new AppError(`Database error: ${updateError.message}`, 500);
       }
       resultData = updateData;
     } else {
@@ -168,8 +172,8 @@ router.post(
         .single();
 
       if (insertError) {
-        console.error('❌ [Clients API] Failed to insert client:', insertError);
-        return res.status(500).json({ error: 'Database error', message: insertError.message });
+        logger.error({ err: insertError }, '❌ [Clients API] Failed to insert client');
+        throw new AppError(`Database error: ${insertError.message}`, 500);
       }
       resultData = insertData;
     }

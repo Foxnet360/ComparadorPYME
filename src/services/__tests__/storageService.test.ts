@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { storageService } from '../../../services/storageService';
 import { apiClient } from '../../../services/apiClient';
 import { dbService } from '../../../services/db';
+import { authService } from '../../../services/authService';
 
 vi.mock('../../../services/apiClient', () => ({
   apiClient: {
@@ -9,37 +10,72 @@ vi.mock('../../../services/apiClient', () => ({
   },
 }));
 
-vi.mock('../../../services/db', () => ({
-  dbService: {
-    getAll: vi.fn(),
+vi.mock('../../../services/authService', () => ({
+  authService: {
+    getCurrentUser: vi.fn(),
+    signOut: vi.fn(),
+    updateProfile: vi.fn(),
   },
 }));
 
-describe('storageService - login (SEC-1)', () => {
+vi.mock('../../../services/db', () => ({
+  dbService: {
+    getAll: vi.fn(),
+    clearLegacyUsersStore: vi.fn(),
+  },
+}));
+
+describe('storageService - local auth persistence removed (ERR-4)', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     globalThis.localStorage.clear();
   });
 
-  afterEach(() => {
-    globalThis.localStorage.clear();
+  it('no longer exposes the legacy local register/login methods', () => {
+    const service = storageService as unknown as Record<string, unknown>;
+    expect(service.register).toBeUndefined();
+    expect(service.login).toBeUndefined();
   });
 
-  it('rejects the former hardcoded admin credentials as invalid', async () => {
-    vi.mocked(dbService.getAll).mockResolvedValue([]);
+  it('cleanupLegacyAuthStorage removes legacy auth keys from localStorage', async () => {
+    globalThis.localStorage.setItem('seguro_app_user', JSON.stringify({ id: 'legacy' }));
+    globalThis.localStorage.setItem('authToken', 'legacy-token');
+    globalThis.localStorage.setItem('user', JSON.stringify({ id: 'legacy' }));
 
-    await expect(storageService.login('admin@seguros.com', 'admin123')).rejects.toThrow(
-      'Credenciales inválidas'
-    );
+    await storageService.cleanupLegacyAuthStorage();
+
     expect(globalThis.localStorage.getItem('seguro_app_user')).toBeNull();
+    expect(globalThis.localStorage.getItem('authToken')).toBeNull();
+    expect(globalThis.localStorage.getItem('user')).toBeNull();
   });
 
-  it('logs in a registered user with matching credentials', async () => {
-    const user = { id: 'u1', email: 'user@example.com', password: 'secret', name: 'User' };
-    vi.mocked(dbService.getAll).mockResolvedValue([user]);
+  it('cleanupLegacyAuthStorage clears the legacy IndexedDB users store', async () => {
+    await storageService.cleanupLegacyAuthStorage();
 
-    await expect(storageService.login('user@example.com', 'secret')).resolves.toEqual(user);
-    expect(globalThis.localStorage.getItem('seguro_app_user')).toBe(JSON.stringify(user));
+    expect(dbService.clearLegacyUsersStore).toHaveBeenCalledTimes(1);
+  });
+
+  it('getCurrentUser derives from the session and writes no auth keys locally', async () => {
+    vi.mocked(authService.getCurrentUser).mockResolvedValue({
+      id: 'u1',
+      name: 'U',
+      email: 'u@example.com',
+      role: 'TECHNICAL',
+    });
+
+    const user = await storageService.getCurrentUser();
+
+    expect(user?.email).toBe('u@example.com');
+    expect(authService.getCurrentUser).toHaveBeenCalledTimes(1);
+    expect(globalThis.localStorage.getItem('seguro_app_user')).toBeNull();
+    expect(globalThis.localStorage.length).toBe(0);
+  });
+
+  it('logout clears the session via the auth service', async () => {
+    await storageService.logout();
+
+    expect(authService.signOut).toHaveBeenCalledTimes(1);
+    expect(globalThis.localStorage.getItem('seguro_app_user')).toBeNull();
   });
 });
 

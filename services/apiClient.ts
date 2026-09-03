@@ -8,12 +8,33 @@ export async function getAuthToken(): Promise<string | null> {
   return session?.access_token ?? null;
 }
 
+/**
+ * ERR-3: upper bound for every API call. The /analyze upload can be slow, so
+ * the default is generous (120s) — but every request is cancellable and will
+ * never hang forever.
+ */
+export const DEFAULT_API_TIMEOUT_MS = 120_000;
+
+export class ApiTimeoutError extends Error {
+  readonly code = 'API_TIMEOUT';
+  readonly timeoutMs: number;
+
+  constructor(timeoutMs: number) {
+    super(`La solicitud excedió el tiempo límite de ${Math.round(timeoutMs / 1000)}s.`);
+    this.name = 'ApiTimeoutError';
+    this.timeoutMs = timeoutMs;
+  }
+}
+
 export interface ApiClientOptions extends RequestInit {
   headers?: Record<string, string>;
+  /** Per-request timeout override. Defaults to DEFAULT_API_TIMEOUT_MS. */
+  timeoutMs?: number;
 }
 
 export const apiClient = {
   fetch: async (url: string, options: ApiClientOptions = {}): Promise<Response> => {
+    const { timeoutMs = DEFAULT_API_TIMEOUT_MS, signal: callerSignal, ...rest } = options;
     const token = await getAuthToken();
 
     const isRelative = url.startsWith('/api/') || url.startsWith('/');
@@ -33,10 +54,35 @@ export const apiClient = {
       delete headers['Content-Type'];
     }
 
-    const response = await fetch(normalizedUrl, {
-      ...options,
-      headers,
-    });
+    const controller = new AbortController();
+    const onCallerAbort = () => controller.abort();
+    if (callerSignal) {
+      if (callerSignal.aborted) {
+        controller.abort();
+      } else {
+        callerSignal.addEventListener('abort', onCallerAbort, { once: true });
+      }
+    }
+    const timeoutTimer = setTimeout(() => controller.abort(), timeoutMs);
+
+    let response: Response;
+    try {
+      response = await fetch(normalizedUrl, {
+        ...rest,
+        headers,
+        signal: controller.signal,
+      });
+    } catch (error: unknown) {
+      // A caller-initiated abort is propagated as-is; a timeout abort is
+      // surfaced as a dedicated ApiTimeoutError.
+      if (controller.signal.aborted && !callerSignal?.aborted) {
+        throw new ApiTimeoutError(timeoutMs);
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutTimer);
+      callerSignal?.removeEventListener('abort', onCallerAbort);
+    }
 
     if (response.status === 401) {
       throw new Error('Sesión expirada. Por favor inicia sesión nuevamente.');

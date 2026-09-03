@@ -71,12 +71,15 @@ const App: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    // Check for existing session
-    const user = storageService.getCurrentUser();
-    if (user) {
-      setCurrentUser(user);
-      setCurrentView('DASHBOARD');
-    }
+    // ERR-4: wipe auth data persisted by legacy versions, then check for an
+    // existing Supabase session. No auth data lives in local storage.
+    void storageService.cleanupLegacyAuthStorage();
+    void storageService.getCurrentUser().then((user) => {
+      if (user) {
+        setCurrentUser(user);
+        setCurrentView('DASHBOARD');
+      }
+    });
   }, []);
 
   // Simulate progress bar when analyzing
@@ -94,7 +97,7 @@ const App: React.FC = () => {
   };
 
   const handleLogout = () => {
-    storageService.logout();
+    void storageService.logout();
     setCurrentUser(null);
     setCurrentView('LANDING');
     setShowProfile(false);

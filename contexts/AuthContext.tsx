@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { storageService } from '../services/storageService';
 
@@ -12,16 +12,28 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
-    return storageService.getCurrentUser();
-  });
+  // ERR-4: the session is resolved asynchronously from Supabase; nothing is
+  // read from local storage.
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void storageService.getCurrentUser().then((user) => {
+      if (!cancelled && user) {
+        setCurrentUser(user);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const login = useCallback((user: UserProfile) => {
     setCurrentUser(user);
   }, []);
 
   const logout = useCallback(() => {
-    storageService.logout();
+    void storageService.logout();
     setCurrentUser(null);
   }, []);
 

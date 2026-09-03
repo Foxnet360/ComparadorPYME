@@ -61,7 +61,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
       } as unknown as UserProfile;
     }
 
-    (authService as unknown as { saveSession: (user: UserProfile) => void }).saveSession(demoUser);
+    // ERR-4: demo logins are session-only; nothing is persisted locally.
     onLoginSuccess(demoUser);
   };
 
@@ -188,7 +188,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
                   className="w-full py-2.5 px-3 bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 rounded-xl text-xs font-bold transition-all flex items-center justify-between shadow-xs"
                 >
                   <span>👑 Super Administrador Global</span>
-                  <span className="text-[10px] bg-purple-200 text-purple-800 px-2 py-0.5 rounded-md font-extrabold">Probar Rol</span>
+                  <span className="text-[10px] bg-purple-200 text-purple-800 px-2 py-0.5 rounded-md font-extrabold">
+                    Probar Rol
+                  </span>
                 </button>
 
                 <button
@@ -197,7 +199,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
                   className="w-full py-2.5 px-3 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-xl text-xs font-bold transition-all flex items-center justify-between shadow-xs"
                 >
                   <span>👔 Admin de Aliado (Director Correduría)</span>
-                  <span className="text-[10px] bg-blue-200 text-blue-800 px-2 py-0.5 rounded-md font-extrabold">Probar Rol</span>
+                  <span className="text-[10px] bg-blue-200 text-blue-800 px-2 py-0.5 rounded-md font-extrabold">
+                    Probar Rol
+                  </span>
                 </button>
 
                 <button
@@ -206,7 +210,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
                   className="w-full py-2.5 px-3 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-xl text-xs font-bold transition-all flex items-center justify-between shadow-xs"
                 >
                   <span>👷 Analista Técnico de Seguros</span>
-                  <span className="text-[10px] bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-md font-extrabold">Probar Rol</span>
+                  <span className="text-[10px] bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-md font-extrabold">
+                    Probar Rol
+                  </span>
                 </button>
               </div>
             </div>

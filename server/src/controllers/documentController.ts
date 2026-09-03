@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -6,6 +6,8 @@ import { documentIndexingService, DocumentMetadata } from '../services/documentI
 import { supabase } from '../config/database';
 import { handleSupabaseError } from '../config/database';
 import { AuthenticatedRequest, requireUser } from '../middleware/auth';
+import { AppError } from '../errors';
+import logger from '../config/logger';
 
 interface DocumentListItem {
   id: string;
@@ -112,8 +114,8 @@ export const documentController = {
   /**
    * POST /api/documents - Indexar nuevo documento
    */
-  createDocument: async (req: Request, res: Response): Promise<void> => {
-    console.log('📥 [documentController.createDocument] Request received');
+  createDocument: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    logger.info('📥 [documentController.createDocument] Request received');
 
     const filePath = req.file?.path;
 
@@ -151,11 +153,11 @@ export const documentController = {
 
       const { insurerName, documentName, documentType, version, productName } = req.body;
 
-      console.log(`   File: ${req.file.originalname} (${req.file.size} bytes)`);
-      console.log(`   Insurer: ${insurerName}`);
-      console.log(`   Document: ${documentName}`);
-      console.log(`   Type: ${documentType}`);
-      console.log(`   Product: ${productName || 'N/A'}`);
+      logger.info(`   File: ${req.file.originalname} (${req.file.size} bytes)`);
+      logger.info(`   Insurer: ${insurerName}`);
+      logger.info(`   Document: ${documentName}`);
+      logger.info(`   Type: ${documentType}`);
+      logger.info(`   Product: ${productName || 'N/A'}`);
 
       // Obtener o crear aseguradora
       const insurerId = await documentIndexingService.getOrCreateInsurer(insurerName.trim());
@@ -182,7 +184,7 @@ export const documentController = {
 
       let archivedDoc = null;
       if (existingDoc) {
-        console.log(
+        logger.info(
           `   📁 Archivando versión anterior: ${existingDoc.document_name} (v${existingDoc.version || 'N/A'})`
         );
 
@@ -192,7 +194,7 @@ export const documentController = {
           .eq('id', existingDoc.id);
 
         if (archiveError) {
-          console.warn(`   ⚠️ Error archivando documento anterior:`, archiveError);
+          logger.warn({ err: archiveError }, `   ⚠️ Error archivando documento anterior`);
         } else {
           archivedDoc = existingDoc;
         }
@@ -212,12 +214,10 @@ export const documentController = {
       const result = await documentIndexingService.indexDocument(filePath!, metadata);
 
       if (!result.success) {
-        res.status(500).json({
-          success: false,
-          error: 'Failed to index document',
-          details: result.errors,
-          warnings: result.warnings,
-        });
+        // ERR-1: indexing failures reach the central errorHandler (traceId).
+        next(
+          new AppError(`Failed to index document: ${result.errors.join('; ') || 'unknown'}`, 500)
+        );
         return;
       }
 
@@ -236,20 +236,17 @@ export const documentController = {
           : null,
       });
     } catch (error: unknown) {
-      console.error('❌ [documentController] Error:', error);
+      logger.error({ err: error }, '❌ [documentController] Error');
 
-      res.status(500).json({
-        success: false,
-        error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      });
+      // ERR-1: forward to the central error handler instead of a raw 500.
+      next(error instanceof Error ? error : new Error(String(error)));
     } finally {
       // Garantizar limpieza del archivo temporal en TODAS las ramas
       if (filePath && fs.existsSync(filePath)) {
         try {
           fs.unlinkSync(filePath);
         } catch (e) {
-          console.warn('Failed to cleanup temp file:', e);
+          logger.warn({ err: e }, 'Failed to cleanup temp file');
         }
       }
     }
