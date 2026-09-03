@@ -114,9 +114,9 @@ describe('analyzeQuotesWithGemini', () => {
   });
 
   it('maps an ApiTimeoutError to a friendly timeout message (ERR-3)', async () => {
-    const { ApiTimeoutError } = await vi.importActual<
-      typeof import('../../../services/apiClient')
-    >('../../../services/apiClient');
+    const { ApiTimeoutError } = await vi.importActual<typeof import('../../../services/apiClient')>(
+      '../../../services/apiClient'
+    );
     vi.mocked(apiClient.fetch).mockRejectedValue(new ApiTimeoutError(120_000));
 
     await expect(analyzeQuotesWithGemini([createFile('q.pdf')], [], 'Cliente G')).rejects.toThrow(

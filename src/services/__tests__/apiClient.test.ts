@@ -214,18 +214,16 @@ describe('apiClient', () => {
 
     /** Simulate a fetch that never resolves on its own but honors abort. */
     const mockHangingFetch = () => {
-      vi.mocked(globalThis.fetch).mockImplementation(
-        (_url: RequestInfo | URL, init?: RequestInit) => {
-          if (init?.signal?.aborted) {
-            return Promise.reject(new DOMException('The operation was aborted.', 'AbortError'));
-          }
-          return new Promise<Response>((_resolve, reject) => {
-            init?.signal?.addEventListener('abort', () =>
-              reject(new DOMException('The operation was aborted.', 'AbortError'))
-            );
-          });
+      vi.mocked(globalThis.fetch).mockImplementation((_url, init) => {
+        if (init?.signal?.aborted) {
+          return Promise.reject(new DOMException('The operation was aborted.', 'AbortError'));
         }
-      );
+        return new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () =>
+            reject(new DOMException('The operation was aborted.', 'AbortError'))
+          );
+        });
+      });
     };
 
     it('bounds requests with a 120s default timeout', () => {

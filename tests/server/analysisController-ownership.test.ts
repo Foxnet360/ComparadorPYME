@@ -71,17 +71,14 @@ describe('analysisController ownership (AUTH-2)', () => {
     });
 
     it('logs and forwards to next(error) when saving the analysis fails (ERR-1)', async () => {
-      const { comparisonEngineAdapter } = await import(
-        '../../server/src/services/unifiedComparison/comparisonEngineAdapter'
-      );
+      const { comparisonEngineAdapter } =
+        await import('../../server/src/services/unifiedComparison/comparisonEngineAdapter');
       vi.mocked(comparisonEngineAdapter.generateComparison).mockResolvedValue({
         matrix: [],
         quoteMetadata: [],
         engine: 'test-engine',
         correlationId: 'corr-1',
-      } as unknown as Awaited<
-        ReturnType<typeof comparisonEngineAdapter.generateComparison>
-      >);
+      } as unknown as Awaited<ReturnType<typeof comparisonEngineAdapter.generateComparison>>);
       saveAnalysisHistory.mockRejectedValue(new Error('db connection lost'));
 
       const tmpFile = `/tmp/err1-quote-${Date.now()}.pdf`;

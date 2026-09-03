@@ -61,7 +61,10 @@ export const dbService = {
       const db = await getDb();
       return await db.getAll<StoreName>(storeName);
     } catch (err) {
-      console.warn(`[IndexedDB] Retry getAll on store ${String(storeName)} due to connection reset`, err);
+      console.warn(
+        `[IndexedDB] Retry getAll on store ${String(storeName)} due to connection reset`,
+        err
+      );
       dbInstance = null;
       const db = await getDb();
       return await db.getAll<StoreName>(storeName);
@@ -76,7 +79,10 @@ export const dbService = {
       const db = await getDb();
       return await db.get<StoreName>(storeName, key);
     } catch (err) {
-      console.warn(`[IndexedDB] Retry get on store ${String(storeName)} due to connection reset`, err);
+      console.warn(
+        `[IndexedDB] Retry get on store ${String(storeName)} due to connection reset`,
+        err
+      );
       dbInstance = null;
       const db = await getDb();
       return await db.get<StoreName>(storeName, key);
@@ -91,7 +97,10 @@ export const dbService = {
       const db = await getDb();
       return await db.put<StoreName>(storeName, value);
     } catch (err) {
-      console.warn(`[IndexedDB] Retry put on store ${String(storeName)} due to connection reset`, err);
+      console.warn(
+        `[IndexedDB] Retry put on store ${String(storeName)} due to connection reset`,
+        err
+      );
       dbInstance = null;
       const db = await getDb();
       return await db.put<StoreName>(storeName, value);
@@ -103,19 +112,28 @@ export const dbService = {
       const db = await getDb();
       return await db.clear(storeName as 'users' | 'clients' | 'history');
     } catch (err) {
-      console.warn(`[IndexedDB] Retry clear on store ${String(storeName)} due to connection reset`, err);
+      console.warn(
+        `[IndexedDB] Retry clear on store ${String(storeName)} due to connection reset`,
+        err
+      );
       dbInstance = null;
       const db = await getDb();
       return await db.clear(storeName as 'users' | 'clients' | 'history');
     }
   },
 
-  async delete<StoreName extends StoreNames<CSADB>>(storeName: StoreName, key: string): Promise<void> {
+  async delete<StoreName extends StoreNames<CSADB>>(
+    storeName: StoreName,
+    key: string
+  ): Promise<void> {
     try {
       const db = await getDb();
       return await db.delete<StoreName>(storeName, key);
     } catch (err) {
-      console.warn(`[IndexedDB] Retry delete on store ${String(storeName)} due to connection reset`, err);
+      console.warn(
+        `[IndexedDB] Retry delete on store ${String(storeName)} due to connection reset`,
+        err
+      );
       dbInstance = null;
       const db = await getDb();
       return await db.delete<StoreName>(storeName, key);
