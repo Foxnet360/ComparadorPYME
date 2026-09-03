@@ -241,22 +241,8 @@ describe('apiClient', () => {
         await vi.advanceTimersByTimeAsync(5_000);
         await assertion;
         await expect(promise).rejects.toThrow('tiempo límite');
-      } finally {
-        vi.useRealTimers();
-      }
-    });
 
-    it('passes an AbortSignal to fetch', async () => {
-      vi.useFakeTimers();
-      try {
-        mockNoSession();
-        mockHangingFetch();
-
-        const promise = apiClient.fetch('/history', { timeoutMs: 60_000 });
-        const assertion = expect(promise).rejects.toBeInstanceOf(ApiTimeoutError);
-        await vi.advanceTimersByTimeAsync(60_000);
-        await assertion;
-
+        // the request must be wired to an AbortSignal so it can be cancelled
         const init = vi.mocked(globalThis.fetch).mock.calls[0][1] as RequestInit;
         expect(init.signal).toBeInstanceOf(AbortSignal);
       } finally {

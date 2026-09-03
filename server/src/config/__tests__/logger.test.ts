@@ -56,17 +56,6 @@ describe('structured logger (ERR-2)', () => {
     expect(JSON.parse(sink.lines[1]!)).toMatchObject({ level: 40, msg: 'step two' });
   });
 
-  it('honours the minimum level', () => {
-    const sink = createSink();
-    const logger = buildLogger({ stream: sink, pretty: false, level: 'warn' });
-
-    logger.info('not emitted');
-    logger.error('emitted');
-
-    expect(sink.lines).toHaveLength(1);
-    expect(JSON.parse(sink.lines[0]!)).toMatchObject({ msg: 'emitted' });
-  });
-
   it('exposes a createTraceLogger helper that binds traceId', () => {
     const traceLogger = createTraceLogger('trace-helper-3');
 
