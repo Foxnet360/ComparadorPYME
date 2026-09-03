@@ -150,11 +150,12 @@ router.post(
     }
 
     let resultData: ClientProfileRow | null;
-    if (existing && existing.length > 0) {
+    const existingRow = existing?.[0];
+    if (existingRow) {
       // Update existing
       const { data: updateData, error: updateError } = await clientProfiles()
         .update(profile)
-        .eq('id', existing[0].id)
+        .eq('id', existingRow.id)
         .select('*')
         .single();
 
