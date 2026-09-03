@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useCallback } from 'react';
-import { ComparisonReport, AppStatus, Client } from '../types';
+import { ComparisonReport, AppStatus, Client, InsuranceDomain } from '../types';
+import type { InsuranceDomainType } from '../types';
 import { CorrectionQueue } from '../services/correctionQueue';
 
 // Types for corrections
@@ -54,6 +55,7 @@ interface AnalysisState {
   clauseFiles: File[];
   clauseMode: 'library' | 'upload';
   selectedClauseIds: string[];
+  domain: InsuranceDomainType;
   statusMessage: string;
   errorMessage: string;
   // UX Improvements state
@@ -75,6 +77,7 @@ type AnalysisAction =
   | { type: 'REMOVE_CLAUSE_FILE'; payload: number }
   | { type: 'SET_CLAUSE_MODE'; payload: 'library' | 'upload' }
   | { type: 'SET_SELECTED_CLAUSE_IDS'; payload: string[] }
+  | { type: 'SET_DOMAIN'; payload: InsuranceDomainType }
   | { type: 'SET_STATUS_MESSAGE'; payload: string }
   | { type: 'SET_ERROR_MESSAGE'; payload: string }
   | { type: 'ADD_CORRECTION'; payload: Correction }
@@ -99,6 +102,7 @@ const initialState: AnalysisState = {
   clauseFiles: [],
   clauseMode: 'library',
   selectedClauseIds: [],
+  domain: InsuranceDomain.PYME,
   statusMessage: '',
   errorMessage: '',
   corrections: [],
@@ -136,6 +140,8 @@ function analysisReducer(state: AnalysisState, action: AnalysisAction): Analysis
       return { ...state, clauseMode: action.payload };
     case 'SET_SELECTED_CLAUSE_IDS':
       return { ...state, selectedClauseIds: action.payload };
+    case 'SET_DOMAIN':
+      return { ...state, domain: action.payload };
     case 'SET_STATUS_MESSAGE':
       return { ...state, statusMessage: action.payload };
     case 'SET_ERROR_MESSAGE':

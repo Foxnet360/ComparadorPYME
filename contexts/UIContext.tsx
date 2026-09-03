@@ -4,10 +4,12 @@ interface UIContextType {
   chatOpen: boolean;
   showProfile: boolean;
   showClauseAdmin: boolean;
+  clientSelectorOpen: boolean;
   toast: { message: string; type: 'success' | 'error' | 'info' } | null;
   setChatOpen: (open: boolean) => void;
   setShowProfile: (show: boolean) => void;
   setShowClauseAdmin: (show: boolean) => void;
+  setClientSelectorOpen: (open: boolean) => void;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   clearToast: () => void;
 }
@@ -18,6 +20,7 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const [chatOpen, setChatOpen] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showClauseAdmin, setShowClauseAdmin] = useState(false);
+  const [clientSelectorOpen, setClientSelectorOpen] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
     type: 'success' | 'error' | 'info';
@@ -39,10 +42,12 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         chatOpen,
         showProfile,
         showClauseAdmin,
+        clientSelectorOpen,
         toast,
         setChatOpen,
         setShowProfile,
         setShowClauseAdmin,
+        setClientSelectorOpen,
         showToast,
         clearToast,
       }}

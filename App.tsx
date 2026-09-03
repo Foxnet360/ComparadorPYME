@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import {
   Sparkles,
   MessageSquare,
@@ -13,14 +13,21 @@ import {
 } from 'lucide-react';
 import FileUploader from './components/FileUploader';
 import DomainSelector from './components/DomainSelector';
-import { AnalysisProvider } from './contexts/AnalysisContext';
+import { AnalysisProvider, useAnalysis } from './contexts/AnalysisContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { UIProvider, useUI } from './contexts/UIContext';
 import LoginScreen from './components/LoginScreen';
 import ClientSelector from './components/ClientSelector';
 import { ClauseSelector } from './components/ClauseSelector';
 import { analyzeQuotesWithGemini } from './services/geminiService';
 import { storageService } from './services/storageService';
-import { ComparisonReport as ReportType, AppStatus, UserProfile, Client } from './types';
-import { InsuranceDomain } from './types';
+import {
+  ComparisonReport as ReportType,
+  AppStatus,
+  UserProfile,
+  Client,
+  InsuranceDomain,
+} from './types';
 import type { ExtendedUserProfile, InsuranceDomainType } from './types';
 // Chat is now handled via backend API
 
@@ -48,82 +55,87 @@ type ViewState =
   | 'ANALYTICS'
   | 'USERS';
 
-const App: React.FC = () => {
-  // Auth State
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+const AppShell: React.FC = () => {
+  // Analyzer state lives in AnalysisContext (single source of truth).
+  const {
+    state,
+    dispatch,
+    addQuoteFiles,
+    removeQuoteFile,
+    addClauseFiles,
+    removeClauseFile,
+    reset,
+  } = useAnalysis();
+  // Session state lives in AuthContext, resolved by authService.
+  const { currentUser, bootstrapped, login, logout, updateUser } = useAuth();
+  // Ephemeral UI state lives in UIContext.
+  const {
+    chatOpen,
+    setChatOpen,
+    showProfile,
+    setShowProfile,
+    showClauseAdmin,
+    setShowClauseAdmin,
+    clientSelectorOpen,
+    setClientSelectorOpen,
+  } = useUI();
+
   const [currentView, setCurrentView] = useState<ViewState>('LANDING');
-  const [showProfile, setShowProfile] = useState(false);
-  const [showClauseAdmin, setShowClauseAdmin] = useState(false);
 
-  // Analyzer State
-  const [domain, setDomain] = useState<InsuranceDomainType>(InsuranceDomain.PYME);
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [clientSelectorOpen, setClientSelectorOpen] = useState(false);
-  const [quoteFiles, setQuoteFiles] = useState<File[]>([]);
-  const [clauseFiles, setClauseFiles] = useState<File[]>([]);
-  const [clauseMode, setClauseMode] = useState<'library' | 'upload'>('library');
-  const [selectedClauseIds, setSelectedClauseIds] = useState<string[]>([]);
-  const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
-  const [report, setReport] = useState<ReportType | null>(null);
-  const [chatOpen, setChatOpen] = useState(false);
+  const {
+    status,
+    report,
+    selectedClient,
+    quoteFiles,
+    clauseFiles,
+    clauseMode,
+    selectedClauseIds,
+    domain,
+    statusMessage,
+    errorMessage,
+  } = state;
 
-  // Progress State
-  const [statusMessage, setStatusMessage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
-
+  // Navigate to the dashboard once the initial Supabase session resolution
+  // completes with an active user (replaces the legacy boot effect).
+  const handledBoot = useRef(false);
   useEffect(() => {
-    // ERR-4: wipe auth data persisted by legacy versions, then check for an
-    // existing Supabase session. No auth data lives in local storage.
-    void storageService.cleanupLegacyAuthStorage();
-    void storageService.getCurrentUser().then((user) => {
-      if (user) {
-        setCurrentUser(user);
-        setCurrentView('DASHBOARD');
-      }
-    });
-  }, []);
-
-  // Simulate progress bar when analyzing
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | undefined;
-    if (status === AppStatus.ANALYZING) {
-      // Keep infinite loader or pulse
+    if (!handledBoot.current && bootstrapped) {
+      handledBoot.current = true;
+      if (currentUser) setCurrentView('DASHBOARD');
     }
-    return () => clearInterval(interval);
-  }, [status]);
+  }, [bootstrapped, currentUser]);
 
   const handleLogin = (user: UserProfile) => {
-    setCurrentUser(user);
+    login(user);
     setCurrentView('DASHBOARD');
   };
 
   const handleLogout = () => {
-    void storageService.logout();
-    setCurrentUser(null);
+    logout();
     setCurrentView('LANDING');
     setShowProfile(false);
     handleReset();
   };
 
   const handleQuotesSelected = (newFiles: File[]) => {
-    setQuoteFiles((prev) => [...prev, ...newFiles]);
+    addQuoteFiles(newFiles);
   };
 
   const handleClausesSelected = (newFiles: File[]) => {
-    setClauseFiles((prev) => [...prev, ...newFiles]);
+    addClauseFiles(newFiles);
   };
 
   const handleRemoveQuote = (index: number) => {
-    setQuoteFiles((prev) => prev.filter((_, i) => i !== index));
+    removeQuoteFile(index);
   };
 
   const handleRemoveClause = (index: number) => {
-    setClauseFiles((prev) => prev.filter((_, i) => i !== index));
+    removeClauseFile(index);
   };
 
   const handleAnalyze = async () => {
     if (quoteFiles.length === 0) return;
-    setStatus(AppStatus.ANALYZING);
+    dispatch({ type: 'SET_STATUS', payload: AppStatus.ANALYZING });
 
     try {
       const clientName = selectedClient?.name || 'Cliente Desconocido';
@@ -133,7 +145,7 @@ const App: React.FC = () => {
         quoteFiles,
         clauseFiles,
         clientName,
-        (msg) => setStatusMessage(msg),
+        (msg) => dispatch({ type: 'SET_STATUS_MESSAGE', payload: msg }),
         clauseIdsToUse,
         domain
       );
@@ -142,48 +154,39 @@ const App: React.FC = () => {
 
       if (savedId) {
         result.id = savedId;
-        setReport({ ...result, id: savedId });
+        dispatch({ type: 'SET_REPORT', payload: { ...result, id: savedId } });
       } else {
-        setReport(result);
+        dispatch({ type: 'SET_REPORT', payload: result });
       }
 
-      setStatus(AppStatus.COMPLETED);
+      dispatch({ type: 'SET_STATUS', payload: AppStatus.COMPLETED });
       setCurrentView('REPORT');
     } catch (error: unknown) {
       console.error(error);
-      setStatusMessage(''); // Clear status
-      setStatus(AppStatus.ERROR);
+      dispatch({ type: 'SET_STATUS_MESSAGE', payload: '' }); // Clear status
+      dispatch({ type: 'SET_STATUS', payload: AppStatus.ERROR });
       // Extract clean message
       const msg = error instanceof Error ? error.message : 'Hubo un problema desconocido.';
-      setErrorMessage(msg);
+      dispatch({ type: 'SET_ERROR_MESSAGE', payload: msg });
     }
   };
 
   const handleReset = () => {
-    setQuoteFiles([]);
-    setClauseFiles([]);
-    setSelectedClauseIds([]);
-    setClauseMode('library');
-    setDomain(InsuranceDomain.PYME);
-    setReport(null);
-    setSelectedClient(null);
-    setStatus(AppStatus.IDLE);
+    reset();
     setChatOpen(false);
-    setStatusMessage('');
-    setErrorMessage('');
     // Don't change view here if we are just resetting for a new analysis within the tool
     if (currentView === 'REPORT') setCurrentView('ANALYZER');
   };
 
   const handleRetry = () => {
-    setErrorMessage('');
-    setStatusMessage('');
-    setStatus(AppStatus.IDLE);
+    dispatch({ type: 'SET_ERROR_MESSAGE', payload: '' });
+    dispatch({ type: 'SET_STATUS_MESSAGE', payload: '' });
+    dispatch({ type: 'SET_STATUS', payload: AppStatus.IDLE });
   };
 
   const handleViewExistingReport = (existingReport: ReportType) => {
-    setReport(existingReport);
-    setStatus(AppStatus.COMPLETED);
+    dispatch({ type: 'SET_REPORT', payload: existingReport });
+    dispatch({ type: 'SET_STATUS', payload: AppStatus.COMPLETED });
     setCurrentView('REPORT');
   };
 
@@ -347,11 +350,11 @@ const App: React.FC = () => {
           >
             <ClientManager
               onSelectClientForAudit={(client) => {
-                setSelectedClient(client);
+                dispatch({ type: 'SET_SELECTED_CLIENT', payload: client });
                 setCurrentView('ANALYZER');
               }}
               onViewReport={(rep) => {
-                setReport(rep);
+                dispatch({ type: 'SET_REPORT', payload: rep });
                 setCurrentView('REPORT');
               }}
             />
@@ -431,14 +434,16 @@ const App: React.FC = () => {
                 <div className="space-y-4">
                   <DomainSelector
                     selectedDomain={domain}
-                    onChange={(newDomain: InsuranceDomainType) => setDomain(newDomain)}
+                    onChange={(newDomain: InsuranceDomainType) =>
+                      dispatch({ type: 'SET_DOMAIN', payload: newDomain })
+                    }
                   />
 
                   <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                     <ClientSelector
                       selectedClient={selectedClient}
                       onSelectClient={(client) => {
-                        setSelectedClient(client);
+                        dispatch({ type: 'SET_SELECTED_CLIENT', payload: client });
                         setClientSelectorOpen(false);
                       }}
                       isOpen={clientSelectorOpen}
@@ -471,8 +476,12 @@ const App: React.FC = () => {
                     <div className="p-8 bg-slate-50/50">
                       <ClauseSelector
                         mode={clauseMode}
-                        onModeChange={setClauseMode}
-                        onClausesSelected={setSelectedClauseIds}
+                        onModeChange={(mode) =>
+                          dispatch({ type: 'SET_CLAUSE_MODE', payload: mode })
+                        }
+                        onClausesSelected={(ids) =>
+                          dispatch({ type: 'SET_SELECTED_CLAUSE_IDS', payload: ids })
+                        }
                       />
 
                       {/* Show file uploader only in upload mode */}
@@ -610,37 +619,37 @@ const App: React.FC = () => {
 
         {/* VIEW: REPORT */}
         {currentView === 'REPORT' && report && (
-          <AnalysisProvider>
-            <div>
-              <div className="flex justify-between items-center mb-6">
-                <button
-                  onClick={() => setCurrentView('DASHBOARD')}
-                  className="text-sm text-slate-500 hover:text-indigo-600 font-medium px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors flex items-center"
-                >
-                  <LayoutDashboard size={16} className="mr-2" />
-                  Volver al Dashboard
-                </button>
-                <button
-                  onClick={handleReset}
-                  className="text-sm text-white bg-indigo-600 px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
-                >
-                  Nueva Auditoría
-                </button>
-              </div>
-              <Suspense
-                fallback={
-                  <div className="flex items-center justify-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-                  </div>
-                }
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <button
+                onClick={() => setCurrentView('DASHBOARD')}
+                className="text-sm text-slate-500 hover:text-indigo-600 font-medium px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors flex items-center"
               >
-                <ComparisonReport
-                  report={report}
-                  onUpdateReport={(updatedReport) => setReport(updatedReport)}
-                />
-              </Suspense>
+                <LayoutDashboard size={16} className="mr-2" />
+                Volver al Dashboard
+              </button>
+              <button
+                onClick={handleReset}
+                className="text-sm text-white bg-indigo-600 px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+              >
+                Nueva Auditoría
+              </button>
             </div>
-          </AnalysisProvider>
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                </div>
+              }
+            >
+              <ComparisonReport
+                report={report}
+                onUpdateReport={(updatedReport) =>
+                  dispatch({ type: 'SET_REPORT', payload: updatedReport })
+                }
+              />
+            </Suspense>
+          </div>
         )}
       </main>
 
@@ -649,7 +658,7 @@ const App: React.FC = () => {
         <Suspense fallback={null}>
           <ProfileScreen
             currentUser={currentUser}
-            onUpdateProfile={setCurrentUser}
+            onUpdateProfile={updateUser}
             onClose={() => setShowProfile(false)}
           />
         </Suspense>
@@ -673,5 +682,15 @@ const App: React.FC = () => {
     </div>
   );
 };
+
+const App: React.FC = () => (
+  <AuthProvider>
+    <UIProvider>
+      <AnalysisProvider>
+        <AppShell />
+      </AnalysisProvider>
+    </UIProvider>
+  </AuthProvider>
+);
 
 export default App;
