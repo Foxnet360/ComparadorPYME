@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { InsuranceDomain, type InsuranceDomainType } from '../../../shared/insuranceDomain';
+import { InsuranceDomain, type InsuranceDomainType } from '../../../src/shared/insuranceDomain';
 
 const EXPECTED_DOMAINS: Record<string, string> = {
   PYME: 'pyme',
@@ -34,7 +34,7 @@ const SCANNED_FILES = [
   'pages/UsersPage.tsx',
 ];
 
-describe('shared/insuranceDomain (ARCH-4)', () => {
+describe('src/shared/insuranceDomain (ARCH-4)', () => {
   it('exports an enum with all ten canonical domain values', () => {
     expect(Object.keys(EXPECTED_DOMAINS)).toHaveLength(10);
     for (const [member, value] of Object.entries(EXPECTED_DOMAINS)) {

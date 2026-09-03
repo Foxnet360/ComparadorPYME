@@ -1,5 +1,5 @@
-export { InsuranceDomain } from './shared/insuranceDomain';
-export type { InsuranceDomainType } from './shared/insuranceDomain';
+export { InsuranceDomain } from './src/shared/insuranceDomain';
+export type { InsuranceDomainType } from './src/shared/insuranceDomain';
 
 export interface Citation {
   text: string;
