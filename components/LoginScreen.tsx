@@ -61,7 +61,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
       } as unknown as UserProfile;
     }
 
-    (authService as unknown as { saveSession: (user: UserProfile) => void }).saveSession(demoUser);
+    // ERR-4: demo logins are session-only; nothing is persisted locally.
     onLoginSuccess(demoUser);
   };
 

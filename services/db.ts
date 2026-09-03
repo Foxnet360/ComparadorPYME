@@ -2,6 +2,9 @@ import { openDB, DBSchema, IDBPDatabase, StoreNames } from 'idb';
 import { UserProfile, Client, HistoryEntry } from '../types';
 
 interface CSADB extends DBSchema {
+  // ERR-4: the legacy `users` store held local auth profiles. Fresh databases
+  // no longer create it; existing databases keep it until
+  // clearLegacyUsersStore() wipes it during boot cleanup.
   users: {
     key: string;
     value: UserProfile;
@@ -33,9 +36,6 @@ async function getDb(): Promise<IDBPDatabase<CSADB>> {
 
   dbInstance = await openDB<CSADB>(DB_NAME, DB_VERSION, {
     upgrade(db) {
-      if (!db.objectStoreNames.contains('users')) {
-        db.createObjectStore('users', { keyPath: 'id' });
-      }
       if (!db.objectStoreNames.contains('clients')) {
         db.createObjectStore('clients', { keyPath: 'id' });
       }
@@ -132,6 +132,22 @@ export const dbService = {
       dbInstance = null;
       const db = await getDb();
       return await db.getAllFromIndex('history', 'by-user', userId);
+    }
+  },
+
+  /**
+   * ERR-4: wipe the legacy `users` object store that persisted local auth
+   * profiles in previous versions. Best-effort: fresh databases do not have
+   * the store, and IndexedDB may be unavailable entirely.
+   */
+  async clearLegacyUsersStore(): Promise<void> {
+    try {
+      const db = await getDb();
+      if (db.objectStoreNames.contains('users')) {
+        await db.clear('users');
+      }
+    } catch {
+      // IndexedDB unavailable (private mode, SSR, tests) — nothing to clean.
     }
   },
 };

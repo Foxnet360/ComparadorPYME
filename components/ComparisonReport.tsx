@@ -391,32 +391,35 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
               <div className="pt-2">
                 <button
                   onClick={() => {
-                    const user = storageService.getCurrentUser();
-                    const brokerInfo = user
-                      ? {
-                          name: user.name,
-                          intermediaryName: user.intermediaryName,
-                          registrationNumber:
-                            user.registrationNumber || user.agentDetails?.registrationNumber,
-                          phone: user.agentDetails?.phone,
-                          email: user.email,
-                          address: user.address || user.agentDetails?.address,
-                          city: user.city || user.agentDetails?.city,
-                          logoUrl: user.logoUrl || user.agentDetails?.logoUrl,
-                        }
-                      : undefined;
+                    // ERR-4: the user profile comes from the Supabase session,
+                    // never from local storage.
+                    void storageService.getCurrentUser().then((user) => {
+                      const brokerInfo = user
+                        ? {
+                            name: user.name,
+                            intermediaryName: user.intermediaryName,
+                            registrationNumber:
+                              user.registrationNumber || user.agentDetails?.registrationNumber,
+                            phone: user.agentDetails?.phone,
+                            email: user.email,
+                            address: user.address || user.agentDetails?.address,
+                            city: user.city || user.agentDetails?.city,
+                            logoUrl: user.logoUrl || user.agentDetails?.logoUrl,
+                          }
+                        : undefined;
 
-                    generatePDF(
-                      report,
-                      {
-                        customTitle: pdfOptions.title,
-                        logoBase64: brokerInfo?.logoUrl || pdfOptions.logo,
-                        primaryColor: pdfOptions.color,
-                        brokerInfo,
-                      },
-                      cellNotes as unknown as Record<string, string>
-                    );
-                    setShowExportModal(false);
+                      generatePDF(
+                        report,
+                        {
+                          customTitle: pdfOptions.title,
+                          logoBase64: brokerInfo?.logoUrl || pdfOptions.logo,
+                          primaryColor: pdfOptions.color,
+                          brokerInfo,
+                        },
+                        cellNotes as unknown as Record<string, string>
+                      );
+                      setShowExportModal(false);
+                    });
                   }}
                   className="w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors"
                 >

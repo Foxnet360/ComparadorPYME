@@ -10,8 +10,13 @@ import {
 } from '../types';
 import { dbService } from './db';
 import { apiClient } from './apiClient';
+import { authService } from './authService';
 
-const USER_KEY = 'seguro_app_user';
+/**
+ * ERR-4: legacy local auth keys that used to persist session/profile data in
+ * localStorage. They are deleted on app boot by cleanupLegacyAuthStorage.
+ */
+const LEGACY_AUTH_KEYS = ['seguro_app_user', 'seguro_app_token', 'authToken', 'auth_token', 'user'];
 
 // Mock Data for initial load (fallback only)
 const MOCK_CLIENTS: Client[] = [
@@ -34,53 +39,29 @@ const MOCK_CLIENTS: Client[] = [
 ];
 
 export const storageService = {
-  // --- AUTHENTICATION ---
+  // --- AUTHENTICATION (ERR-4) ---
+  // The local register/login flow and the localStorage/IndexedDB copies were
+  // removed: the Supabase client owns the session and no auth data is kept
+  // in local or IndexedDB storage.
 
-  register: async (user: UserProfile): Promise<UserProfile> => {
-    const users = await dbService.getAll('users');
-    if (users.find((u) => u.email === user.email)) {
-      throw new Error('El correo electrónico ya está registrado.');
+  getCurrentUser: (): Promise<UserProfile | null> => authService.getCurrentUser(),
+
+  logout: (): Promise<void> => authService.signOut(),
+
+  updateProfile: (updatedUser: UserProfile): Promise<UserProfile> =>
+    authService.updateProfile(updatedUser),
+
+  /** ERR-4: on app boot, wipe any auth data persisted by legacy versions. */
+  cleanupLegacyAuthStorage: async (): Promise<void> => {
+    for (const key of LEGACY_AUTH_KEYS) {
+      localStorage.removeItem(key);
     }
-
-    const newUser = { ...user, id: Date.now().toString() };
-    await dbService.put('users', newUser);
-    localStorage.setItem(USER_KEY, JSON.stringify(newUser));
-    return newUser;
-  },
-
-  login: async (email: string, password: string): Promise<UserProfile> => {
-    const users = await dbService.getAll('users');
-    const foundUser = users.find((u) => u.email === email && u.password === password);
-
-    if (foundUser) {
-      localStorage.setItem(USER_KEY, JSON.stringify(foundUser));
-      return foundUser;
-    } else {
-      throw new Error('Credenciales inválidas');
-    }
-  },
-
-  updateProfile: async (updatedUser: UserProfile): Promise<UserProfile> => {
-    await dbService.put('users', updatedUser);
-    const currentUser = storageService.getCurrentUser();
-    if (currentUser && currentUser.id === updatedUser.id) {
-      localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
-    }
-    return updatedUser;
-  },
-
-  logout: () => {
-    localStorage.removeItem(USER_KEY);
-  },
-
-  getCurrentUser: (): UserProfile | null => {
-    const stored = localStorage.getItem(USER_KEY);
-    return stored ? JSON.parse(stored) : null;
+    await dbService.clearLegacyUsersStore();
   },
 
   // --- CLIENTS ---
   getClients: async (): Promise<Client[]> => {
-    const currentUser = storageService.getCurrentUser();
+    const currentUser = await storageService.getCurrentUser();
     if (currentUser) {
       try {
         const response = await apiClient.fetch('/clients');
@@ -123,7 +104,7 @@ export const storageService = {
 
     // Sync with cloud backend database if authenticated
     try {
-      const currentUser = storageService.getCurrentUser();
+      const currentUser = await storageService.getCurrentUser();
       if (currentUser) {
         await apiClient.fetch('/clients', {
           method: 'POST',
@@ -147,7 +128,7 @@ export const storageService = {
   updateClient: async (client: Client): Promise<Client[]> => {
     await dbService.put('clients', client);
     try {
-      const currentUser = storageService.getCurrentUser();
+      const currentUser = await storageService.getCurrentUser();
       if (currentUser && client.id) {
         await apiClient.fetch(`/clients/${client.id}`, {
           method: 'PUT',
@@ -164,7 +145,7 @@ export const storageService = {
   deleteClient: async (clientId: string): Promise<Client[]> => {
     await dbService.delete('clients', clientId);
     try {
-      const currentUser = storageService.getCurrentUser();
+      const currentUser = await storageService.getCurrentUser();
       if (currentUser) {
         await apiClient.fetch(`/clients/${clientId}`, { method: 'DELETE' });
       }
@@ -256,7 +237,7 @@ export const storageService = {
     report: ComparisonReport,
     clientId?: string
   ): Promise<string | undefined> => {
-    const currentUser = storageService.getCurrentUser();
+    const currentUser = await storageService.getCurrentUser();
     const effectiveUserId = currentUser?.id || 'guest';
 
     if (!report || !report.quotes || !Array.isArray(report.quotes) || report.quotes.length === 0) {

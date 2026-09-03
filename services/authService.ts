@@ -13,6 +13,34 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
+/** ERR-4: build the app profile strictly from the Supabase session/user. No
+ * auth data is persisted in localStorage/IndexedDB — the Supabase client
+ * owns the session. */
+function profileFromUser(user: User): UserProfile {
+  const metadata = (user.user_metadata ?? {}) as Record<string, unknown>;
+  const name = (metadata.name as string | undefined) || user.email?.split('@')[0] || 'Usuario';
+
+  return {
+    id: user.id,
+    email: user.email || '',
+    name,
+    role: (metadata.role ?? 'USER') as UserProfile['role'],
+    avatarUrl:
+      (metadata.avatar_url as string | undefined) ||
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=4f46e5&color=fff`,
+    intermediaryName: (metadata.intermediary_name as string | undefined) || '',
+    registrationNumber: (metadata.registration_number as string | undefined) || '',
+    address: (metadata.address as string | undefined) || '',
+    city: (metadata.city as string | undefined) || '',
+    logoUrl: (metadata.logo_url as string | undefined) || '',
+    agentDetails: {
+      phone: (metadata.phone as string | undefined) || '',
+      field: (metadata.field as string | undefined) || '',
+      bio: metadata.bio as string | undefined,
+    },
+  };
+}
+
 export const authService = {
   // Registro de usuario (Administrador de Aliado / Intermediario por defecto)
   signUp: async (
@@ -47,7 +75,8 @@ export const authService = {
 
     return {
       user: data.user,
-      message: '¡Registro exitoso de Compañía Aliada! Ya puedes iniciar sesión con tu cuenta de Administrador.',
+      message:
+        '¡Registro exitoso de Compañía Aliada! Ya puedes iniciar sesión con tu cuenta de Administrador.',
     };
   },
 
@@ -66,27 +95,14 @@ export const authService = {
       throw new Error('No se pudo iniciar sesión');
     }
 
-    const profile: UserProfile = {
-      id: data.user.id,
-      email: data.user.email || '',
-      name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Usuario',
-      role: data.user.user_metadata?.role || 'ally_admin',
-      avatarUrl:
-        data.user.user_metadata?.avatar_url ||
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(data.user.user_metadata?.name || 'Usuario')}&background=4f46e5&color=fff`,
-      intermediaryName: data.user.user_metadata?.intermediary_name || '',
-    };
-
-    // Guardar en localStorage para compatibilidad
-    localStorage.setItem('seguro_app_user', JSON.stringify(profile));
-
-    return profile;
+    // ERR-4: nothing is written to localStorage — the Supabase client owns
+    // the persisted session.
+    return profileFromUser(data.user);
   },
 
   // Cerrar sesión
   signOut: async (): Promise<void> => {
     await supabase.auth.signOut();
-    localStorage.removeItem('seguro_app_user');
   },
 
   // Obtener usuario actual
@@ -96,24 +112,33 @@ export const authService = {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      // Intentar recuperar de localStorage
-      const stored = localStorage.getItem('seguro_app_user');
-      if (stored) {
-        return JSON.parse(stored);
-      }
       return null;
     }
 
-    const profile: UserProfile = {
-      id: user.id,
-      email: user.email || '',
-      name: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuario',
-      role: user.user_metadata?.role || 'USER',
-      avatarUrl:
-        user.user_metadata?.avatar_url ||
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_metadata?.name || 'Usuario')}&background=4f46e5&color=fff`,
-      intermediaryName: user.user_metadata?.intermediary_name || '',
-    };
+    return profileFromUser(user);
+  },
+
+  // ERR-4: profile updates persist to the Supabase user metadata instead of
+  // the removed localStorage/IndexedDB copies.
+  updateProfile: async (profile: UserProfile): Promise<UserProfile> => {
+    const { error } = await supabase.auth.updateUser({
+      data: {
+        name: profile.name,
+        intermediary_name: profile.intermediaryName || '',
+        registration_number: profile.registrationNumber || '',
+        phone: profile.agentDetails?.phone || '',
+        field: profile.agentDetails?.field || '',
+        bio: profile.agentDetails?.bio || '',
+        address: profile.address || profile.agentDetails?.address || '',
+        city: profile.city || profile.agentDetails?.city || '',
+        logo_url: profile.logoUrl || profile.agentDetails?.logoUrl || '',
+        avatar_url: profile.avatarUrl || '',
+      },
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
 
     return profile;
   },
@@ -133,20 +158,9 @@ export const authService = {
   onAuthStateChange: (callback: (user: UserProfile | null) => void) => {
     return supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
-        const profile: UserProfile = {
-          id: session.user.id,
-          email: session.user.email || '',
-          name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Usuario',
-          role: session.user.user_metadata?.role || 'USER',
-          avatarUrl:
-            session.user.user_metadata?.avatar_url ||
-            `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user.user_metadata?.name || 'Usuario')}&background=4f46e5&color=fff`,
-          intermediaryName: session.user.user_metadata?.intermediary_name || '',
-        };
-        localStorage.setItem('seguro_app_user', JSON.stringify(profile));
-        callback(profile);
+        // ERR-4: no local persistence — the session lives in the client.
+        callback(profileFromUser(session.user));
       } else if (event === 'SIGNED_OUT') {
-        localStorage.removeItem('seguro_app_user');
         callback(null);
       }
     });
