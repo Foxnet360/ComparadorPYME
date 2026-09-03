@@ -76,6 +76,23 @@ describe('report component split (ARCH-1)', () => {
     expect(shellSource).toContain("from './report/AdvancedAnalysisTab'");
     expect(shellSource).toContain("from './report/ExportModal'");
     expect(shellSource).toContain("from '../hooks/useReportCorrections'");
+    expect(shellSource).toContain("from './report/SummaryTab'");
+
+    // Charts and score cards are composed by SummaryTab, not the shell.
+    const summaryTabSource = readFileSync(
+      join(__dirname, '../../../components/report/SummaryTab.tsx'),
+      'utf8'
+    );
+    expect(summaryTabSource).toContain("from './ReportCharts'");
+    expect(summaryTabSource).toContain("from './QuoteScoreCard'");
+  });
+
+  it('keeps the ComparisonReport shell under 250 LOC', () => {
+    const shellSource = readFileSync(
+      join(__dirname, '../../../components/ComparisonReport.tsx'),
+      'utf8'
+    );
+    expect(shellSource.split('\n').length).toBeLessThan(250);
   });
 
   it('ExportModal renders in isolation with the same fixture shape', () => {

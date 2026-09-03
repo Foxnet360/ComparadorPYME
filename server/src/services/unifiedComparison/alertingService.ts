@@ -182,11 +182,9 @@ class AlertingService {
     console.log(`   Details:`, JSON.stringify(alert.details, null, 2));
     console.log(`   Time: ${alert.timestamp}`);
 
-    // TODO: Send to external alerting systems
-    // - Send email
-    // - Send Slack notification
-    // - Send PagerDuty alert
-    // - Log to monitoring system
+    // FOLLOW-UP(tech-debt-remediation/DEV-4): external alerting (email, Slack,
+    // PagerDuty, monitoring system) is intentionally out of scope for this
+    // change; alerts are logged locally only.
   }
 
   /**

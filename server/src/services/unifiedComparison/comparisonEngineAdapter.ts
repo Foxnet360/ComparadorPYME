@@ -202,8 +202,10 @@ export class ComparisonEngineAdapter {
     }
 
     try {
-      // TODO: Retrieve original comparison from database
-      // For now, this is a placeholder implementation
+      // FOLLOW-UP(tech-debt-remediation/DEV-4): deep mode is a placeholder — the
+      // original comparison must be retrieved from the database before the
+      // engine call below can be enabled. Tracked with the V1/V2 pipeline
+      // sunset plan (Informe_deuda.md, MEDIA/Arquitectura).
 
       // Call unified engine deep mode
       // const result = await unifiedComparisonEngine.validateWithClauses(
