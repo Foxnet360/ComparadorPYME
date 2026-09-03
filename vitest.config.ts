@@ -88,11 +88,14 @@ export default defineConfig({
         '**/dist/**',
       ],
       reportOnFailure: true,
+      // OBS-4: floors set ~2pp below the current branch coverage
+      // (lines 44.4 / stmts 43.7 / funcs 45.7 / branches 36.7) so CI fails
+      // on real regressions without flaking on noise.
       thresholds: {
-        lines: 20,
-        statements: 20,
-        functions: 20,
-        branches: 15,
+        lines: 42,
+        statements: 41,
+        functions: 43,
+        branches: 34,
       },
     },
   },
