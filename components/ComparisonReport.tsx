@@ -1,41 +1,22 @@
 import React, { useState } from 'react';
 import {
-  Check,
-  Award,
-  ShieldAlert,
   BarChart3,
-  AlertTriangle,
+  ShieldAlert,
   Scale,
-  FileDown,
   Layers,
   BookOpen,
 } from 'lucide-react';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-  Radar,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Legend,
-} from 'recharts';
 import { DISCLAIMER_TEXT } from '../constants';
 import { AuditSection } from './AuditSection';
 import { UnifiedCoverageMatrix } from './UnifiedCoverageMatrix';
-import { ExecutiveSummary } from './ExecutiveSummary';
 import { DeductibleMatrix } from './DeductibleMatrix';
-import { CorrectionUI } from './CorrectionUI';
 import { AdvancedAnalysisTab } from './report/AdvancedAnalysisTab';
-import ExportModal, { type PdfExportOptions } from './report/ExportModal';
+import ExportModal from './report/ExportModal';
+import { ReportAlerts } from './report/ReportAlerts';
+import { ReportHeader } from './report/ReportHeader';
+import { SummaryTab } from './report/SummaryTab';
 import { useReportCorrections } from '../hooks/useReportCorrections';
-import { formatCOP, formatCOPMillions } from '../utils/formatCurrency';
+import { usePdfExport } from '../hooks/usePdfExport';
 import { isAdvancedAnalysisEnabled } from '../config/features';
 import { useCellNotes } from '../contexts/AnalysisContext';
 import type { ComparisonReport as ReportType } from '../types';
@@ -58,22 +39,8 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
   // Get cell notes from context
   const { cellNotes } = useCellNotes();
 
-  // Check if advanced analysis is enabled via feature flag and any quote has data
-  const hasAdvancedAnalysis =
-    isAdvancedAnalysisEnabled() &&
-    report.quotes.some(
-      (q) =>
-        q.clauseValidation ||
-        q.deductibleAnalysis ||
-        q.contextualRisk ||
-        q.warrantyCompliance ||
-        q.legalOpinion
-    );
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [pdfOptions, setPdfOptions] = useState<PdfExportOptions>({
-    title: 'Reporte Ejecutivo de Seguros',
-    color: [79, 70, 229],
-  });
+  const { pdfOptions, setPdfOptions, showExportModal, openExportModal, closeExportModal } =
+    usePdfExport();
 
   // Dynamic view mode toggle (Auditor Técnico vs Cliente Final)
   const [viewMode, setViewMode] = useState<'technical' | 'client'>('technical');
@@ -91,197 +58,39 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
     report.quotes[0]!
   );
 
-  // IVA toggle state
-  const [showIva, setShowIva] = useState(false);
-  const IVA_RATE = 0.19;
-
-  // Data for Bar Chart (Price)
-  const priceData = report.quotes.map((q) => {
-    const basePrice = q.priceAnnual || (q.priceMonthly ? q.priceMonthly * 12 : 0);
-    return {
-      name: (q.insurerName || 'Desconocido').substring(0, 15),
-      fullPrice: showIva ? Math.round(basePrice * (1 + IVA_RATE)) : basePrice,
-    };
-  });
-
-  // Data for Radar Chart (Scoring Dimensions)
-  const radarData = [
-    { subject: 'Coberturas', fullMark: 10 },
-    { subject: 'Deducibles', fullMark: 10 },
-    { subject: 'Exclusiones', fullMark: 10 },
-    { subject: 'Costo/Beneficio', fullMark: 10 },
-    { subject: 'Sublímites', fullMark: 10 },
-    { subject: 'Garantías', fullMark: 10 },
-  ].map((dim, i) => {
-    const dataPoint: Record<string, string | number> = { subject: dim.subject, fullMark: 10 };
-    report.quotes.forEach((q) => {
-      const bd = q.scoringBreakdown || {
-        coverage: 5,
-        deductibles: 5,
-        exclusions: 5,
-        priceRatio: 5,
-        sublimits: 5,
-        warranties: 5,
-      };
-      const values = [
-        bd.coverage,
-        bd.deductibles,
-        bd.exclusions,
-        bd.priceRatio,
-        bd.sublimits,
-        bd.warranties,
-      ];
-      dataPoint[q.insurerName] = values[i] || 5;
-    });
-    return dataPoint;
-  });
-
-  // Colors for charts
-  const CHART_COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+  // Check if advanced analysis is enabled via feature flag and any quote has data
+  const hasAdvancedAnalysis =
+    isAdvancedAnalysisEnabled() &&
+    report.quotes.some(
+      (q) =>
+        q.clauseValidation ||
+        q.deductibleAnalysis ||
+        q.contextualRisk ||
+        q.warrantyCompliance ||
+        q.legalOpinion
+    );
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Confidence Banner */}
-      {report.quotes.some((q) => q.needsReview) && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-          <AlertTriangle className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
-          <div>
-            <h3 className="font-semibold text-amber-800">Extracción Requiere Revisión</h3>
-            <p className="text-sm text-amber-700 mt-1">
-              Algunas cotizaciones tienen baja confianza de extracción. Se recomienda verificar los
-              datos manualmente.
-            </p>
-          </div>
-        </div>
-      )}
+      <ReportAlerts quotes={report.quotes} />
 
-      {/* Dual Extraction Discrepancy Alerts */}
-      {report.quotes.some((q) => q.dualExtractionValidation?.some((v) => v.isDiscrepancy)) && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
-          <AlertTriangle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
-          <div>
-            <h3 className="font-semibold text-red-800">
-              Discrepancias Detectadas en Extracción Dual
-            </h3>
-            <p className="text-sm text-red-700 mt-1">
-              Se detectaron diferencias significativas (&gt;20%) entre las extracciones de
-              coberturas críticas (Incendio y RC). Por favor verifique los valores manualmente.
-            </p>
-            <div className="mt-2 space-y-1">
-              {report.quotes.map((q, idx) =>
-                q.dualExtractionValidation
-                  ?.filter((v) => v.isDiscrepancy)
-                  .map((v, vIdx) => (
-                    <div key={`${idx}-${vIdx}`} className="text-sm text-red-600">
-                      <strong>{q.insurerName}</strong> - {v.coverageName}:{' '}
-                      {v.discrepancy.toFixed(1)}% de diferencia
-                      <br />
-                      <span className="text-red-500">
-                        Extracción 1: {v.firstExtraction.value} | Extracción 2:{' '}
-                        {v.secondExtraction.value}
-                      </span>
-                    </div>
-                  ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Header Actions */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200 relative">
-        <div>
-          <div className="flex items-center space-x-2">
-            <h2 className="text-2xl font-bold text-slate-800">Dashboard de Análisis</h2>
-            <span
-              className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${
-                report.domain === 'autos'
-                  ? 'bg-blue-100 text-blue-800'
-                  : report.domain === 'copropiedades'
-                    ? 'bg-emerald-100 text-emerald-800'
-                    : report.domain === 'cumplimiento'
-                      ? 'bg-amber-100 text-amber-800'
-                      : report.domain === 'transporte'
-                        ? 'bg-purple-100 text-purple-800'
-                        : report.domain === 'salud'
-                          ? 'bg-rose-100 text-rose-800'
-                          : report.domain === 'vida_grupo'
-                            ? 'bg-teal-100 text-teal-800'
-                            : report.domain === 'hogar'
-                              ? 'bg-cyan-100 text-cyan-800'
-                              : 'bg-indigo-100 text-indigo-800'
-              }`}
-            >
-              Ramo:{' '}
-              {{
-                pyme: 'PYME',
-                copropiedades: 'Copropiedades',
-                autos: 'Autos',
-                cumplimiento: 'Cumplimiento',
-                transporte: 'Transporte',
-                salud: 'Salud',
-                vida_grupo: 'Vida Grupo',
-                hogar: 'Hogar',
-              }[report.domain || 'pyme'] ||
-                (report.domain ? String(report.domain).toUpperCase() : 'PYME')}
-            </span>
-          </div>
-          <p className="text-sm text-slate-500">
-            {viewMode === 'technical'
-              ? 'Vista técnica detallada para auditores de seguros (sublímites, deducibles, confianzas).'
-              : 'Resumen ejecutivo simplificado para presentación y toma de decisión del cliente.'}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Dual View Mode Selector */}
-          <div className="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-inner">
-            <button
-              onClick={() => setViewMode('technical')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                viewMode === 'technical'
-                  ? 'bg-indigo-600 text-white shadow'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-              title="Vista para Auditor Técnico"
-            >
-              <Layers size={14} />
-              Auditor Técnico
-            </button>
-            <button
-              onClick={() => setViewMode('client')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                viewMode === 'client'
-                  ? 'bg-emerald-600 text-white shadow'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-              title="Vista Presentación Cliente"
-            >
-              <ShieldAlert size={14} />
-              Cliente Final
-            </button>
-          </div>
-
-          <button
-            onClick={() => setShowExportModal(true)}
-            className="flex items-center space-x-2 bg-slate-800 text-white px-5 py-2.5 rounded-lg hover:bg-slate-700 transition-all shadow-sm text-sm font-medium"
-          >
-            <FileDown size={18} />
-            <span className="hidden sm:inline">Exportar PDF</span>
-          </button>
-        </div>
-
-        {/* Export Modal */}
-        {showExportModal && (
-          <ExportModal
-            report={report}
-            pdfOptions={pdfOptions}
-            onPdfOptionsChange={setPdfOptions}
-            cellNotes={cellNotes}
-            onClose={() => setShowExportModal(false)}
-          />
-        )}
-      </div>
+      <ReportHeader
+        domain={report.domain}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        onExport={openExportModal}
+        exportModal={
+          showExportModal && (
+            <ExportModal
+              report={report}
+              pdfOptions={pdfOptions}
+              onPdfOptionsChange={setPdfOptions}
+              cellNotes={cellNotes}
+              onClose={closeExportModal}
+            />
+          )
+        }
+      />
 
       {/* Tabs Navigation */}
       <div className="flex overflow-x-auto pb-2 border-b border-slate-200 gap-6">
@@ -326,273 +135,14 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
 
       {/* --- TAB CONTENT: RESUMEN (DASHBOARD) --- */}
       {activeTab === 'resumen' && (
-        <div className="space-y-6 animate-in fade-in duration-300">
-          {/* Executive Summary */}
-          <ExecutiveSummary
-            quotes={report.quotes}
-            recommendation={report.recommendation}
-            onNavigate={setActiveTab}
-          />
-
-          {/* Scoring Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {report.quotes.map((q, idx) => {
-              const isBest = q.insurerName === bestQuote.insurerName;
-              return (
-                <div
-                  key={idx}
-                  className={`relative rounded-xl p-6 border transition-all hover:shadow-lg ${isBest ? 'bg-gradient-to-br from-indigo-50 to-white border-indigo-200 shadow-md' : 'bg-white border-slate-200'}`}
-                >
-                  {isBest && (
-                    <div className="absolute top-0 right-0 bg-indigo-600 text-white text-xs px-2 py-1 rounded-bl-lg rounded-tr-lg font-bold">
-                      MEJOR OPCIÓN
-                    </div>
-                  )}
-                  <h3 className="text-lg font-bold text-slate-800 mb-2">{q.insurerName}</h3>
-                  <div className="flex items-end gap-2 mb-4">
-                    <span
-                      className={`text-4xl font-bold ${isBest ? 'text-indigo-600' : 'text-slate-700'}`}
-                    >
-                      {q.dataQualityScore || q.score}
-                    </span>
-                    <span className="text-sm text-slate-400 mb-1">/ 100</span>
-                  </div>
-
-                  {/* Verification Confidence Badge */}
-                  {q.verificationConfidence !== undefined && q.verificationConfidence > 0 && (
-                    <div className="mb-3 flex items-center gap-2">
-                      <span className="text-xs text-slate-500">Verificación:</span>
-                      <span
-                        className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                          q.verificationConfidence >= 80
-                            ? 'bg-green-100 text-green-700'
-                            : q.verificationConfidence >= 50
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-red-100 text-red-700'
-                        }`}
-                      >
-                        {q.verificationConfidence}/100
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-500">Prima Anual</span>
-                      <span className="font-bold text-slate-800">{formatCOP(q.priceAnnual)}</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${(q.dataQualityScore || q.score) >= 80 ? 'bg-green-500' : (q.dataQualityScore || q.score) >= 60 ? 'bg-yellow-400' : 'bg-red-400'}`}
-                        style={{ width: `${q.dataQualityScore || q.score}%` }}
-                      ></div>
-                    </div>
-
-                    {/* Confidence Indicator */}
-                    {q.extractionConfidence !== undefined && (
-                      <div className="mt-3 pt-3 border-t border-slate-100">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs text-slate-500">Confianza de Extracción</span>
-                          <span
-                            className={`text-xs font-bold ${
-                              q.extractionConfidence >= 90
-                                ? 'text-green-600'
-                                : q.extractionConfidence >= 75
-                                  ? 'text-yellow-600'
-                                  : q.extractionConfidence >= 50
-                                    ? 'text-orange-600'
-                                    : 'text-red-600'
-                            }`}
-                          >
-                            {q.extractionConfidence}/100
-                            {q.needsReview && <span className="ml-1">⚠️</span>}
-                          </span>
-                        </div>
-                        <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${
-                              q.extractionConfidence >= 90
-                                ? 'bg-green-500'
-                                : q.extractionConfidence >= 75
-                                  ? 'bg-yellow-400'
-                                  : q.extractionConfidence >= 50
-                                    ? 'bg-orange-400'
-                                    : 'bg-red-400'
-                            }`}
-                            style={{ width: `${q.extractionConfidence}%` }}
-                          ></div>
-                        </div>
-
-                        {/* Validation Flags */}
-                        {q.validationFlags &&
-                          q.validationFlags.length > 0 &&
-                          viewMode === 'technical' && (
-                            <div className="mt-2 space-y-1">
-                              {q.validationFlags.slice(0, 3).map((flag, fidx) => (
-                                <div
-                                  key={fidx}
-                                  className={`text-xs px-2 py-1 rounded ${
-                                    flag.severity === 'CRITICAL'
-                                      ? 'bg-red-50 text-red-700'
-                                      : flag.severity === 'WARNING'
-                                        ? 'bg-amber-50 text-amber-700'
-                                        : 'bg-blue-50 text-blue-700'
-                                  }`}
-                                >
-                                  {flag.message}
-                                </div>
-                              ))}
-                              {q.validationFlags.length > 3 && (
-                                <div className="text-xs text-slate-500">
-                                  +{q.validationFlags.length - 3} más...
-                                </div>
-                              )}
-                            </div>
-                          )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Correction UI */}
-                  {viewMode === 'technical' && (
-                    <CorrectionUI
-                      quote={q}
-                      onCorrection={(correction) => {
-                        handleApplyCorrection(q.id || q.insurerName, correction);
-                      }}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Radar Chart: Qualitative Analysis */}
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center">
-              <h3 className="text-lg font-bold text-slate-800 mb-2 w-full flex items-center">
-                <Award className="mr-2 text-indigo-600" size={20} />
-                Análisis Cualitativo (Radar)
-              </h3>
-              <div className="h-[300px] w-full min-h-[300px]" style={{ minWidth: '300px' }}>
-                {activeTab === 'resumen' &&
-                report.quotes.length > 0 &&
-                radarData.some((d) => Object.keys(d).length > 2) ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-                      <PolarGrid stroke="#e2e8f0" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 11 }} />
-                      <PolarRadiusAxis angle={30} domain={[0, 10]} tick={false} axisLine={false} />
-                      {report.quotes.map((q, i) => (
-                        <Radar
-                          key={i}
-                          name={q.insurerName}
-                          dataKey={q.insurerName}
-                          stroke={CHART_COLORS[i % CHART_COLORS.length]}
-                          fill={CHART_COLORS[i % CHART_COLORS.length]}
-                          fillOpacity={0.2}
-                        />
-                      ))}
-                      <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                      <Tooltip
-                        contentStyle={{
-                          borderRadius: '8px',
-                          border: 'none',
-                          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                        }}
-                      />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-slate-400">
-                    No hay datos suficientes para el gráfico
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Bar Chart: Price Analysis */}
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-bold text-slate-800 flex items-center">
-                  <BarChart3 className="mr-2 text-indigo-600" size={20} />
-                  Comparativa de Primas
-                </h3>
-                <button
-                  onClick={() => setShowIva(!showIva)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    showIva
-                      ? 'bg-indigo-100 text-indigo-700 border border-indigo-300'
-                      : 'bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200'
-                  }`}
-                  title={showIva ? 'Mostrar sin IVA' : 'Mostrar con IVA (19%)'}
-                >
-                  <span>{showIva ? 'Con IVA (19%)' : 'Sin IVA'}</span>
-                  <span
-                    className={`w-2 h-2 rounded-full ${showIva ? 'bg-indigo-500' : 'bg-slate-400'}`}
-                  />
-                </button>
-              </div>
-              <div className="h-[300px] w-full mt-4 min-h-[300px]" style={{ minWidth: '300px' }}>
-                {activeTab === 'resumen' &&
-                priceData.length > 0 &&
-                priceData.some((d) => d.fullPrice > 0) ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={priceData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis
-                        dataKey="name"
-                        tick={{ fill: '#64748b', fontSize: 12 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        tick={{ fill: '#64748b', fontSize: 12 }}
-                        axisLine={false}
-                        tickLine={false}
-                        tickFormatter={(value) => formatCOPMillions(value)}
-                      />
-                      <Tooltip
-                        cursor={{ fill: '#f8fafc' }}
-                        contentStyle={{
-                          borderRadius: '8px',
-                          border: 'none',
-                          boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                        }}
-                        formatter={(value) => [formatCOP(Number(value)), 'Prima Anual']}
-                      />
-                      <Bar
-                        dataKey="fullPrice"
-                        name="Precio Anual"
-                        radius={[4, 4, 0, 0]}
-                        barSize={40}
-                      >
-                        {priceData.map((entry, index) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={CHART_COLORS[index % CHART_COLORS.length]}
-                          />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-slate-400">
-                    No hay datos de precios disponibles
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Recommendation Text */}
-          <div className="bg-slate-800 text-white p-6 rounded-xl shadow-lg">
-            <h3 className="text-lg font-bold mb-3 flex items-center">
-              <Check className="mr-2 text-green-400" /> Dictamen del Auditor
-            </h3>
-            <p className="leading-relaxed text-slate-200 font-light">{report.recommendation}</p>
-          </div>
-        </div>
+        <SummaryTab
+          quotes={report.quotes}
+          bestQuote={bestQuote}
+          recommendation={report.recommendation}
+          viewMode={viewMode}
+          onCorrection={(q, correction) => handleApplyCorrection(q.id || q.insurerName, correction)}
+          onNavigate={setActiveTab}
+        />
       )}
 
       {/* --- TAB CONTENT: COBERTURAS --- */}
