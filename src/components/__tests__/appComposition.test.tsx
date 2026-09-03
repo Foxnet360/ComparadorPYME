@@ -65,7 +65,7 @@ describe('app composition (ARCH-2, ARCH-3)', () => {
 
   it('App reads analyzer state from AnalysisContext instead of duplicating it', () => {
     const appSource = readSource('App.tsx');
-    expect(appSource).toContain('useAnalysis()');
+    expect(appSource).toContain('useAnalysisFlow()');
     expect(appSource).not.toContain('useState<AppStatus>');
     expect(appSource).not.toContain('useState<ReportType');
     expect(appSource).not.toContain('useState<Client');

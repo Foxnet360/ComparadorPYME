@@ -21,7 +21,18 @@ const DOMAIN_LITERAL_PATTERN =
 
 // Files refactored in slice 4 must reference domains through the shared enum
 // instead of raw string literals.
-const SCANNED_FILES = ['App.tsx'];
+const SCANNED_FILES = [
+  'App.tsx',
+  'hooks/useAnalysisFlow.ts',
+  'hooks/useAuthSession.ts',
+  'components/layout/AppHeader.tsx',
+  'pages/AnalyzerPage.tsx',
+  'pages/DashboardPage.tsx',
+  'pages/ReportPage.tsx',
+  'pages/ClientsPage.tsx',
+  'pages/AnalyticsPage.tsx',
+  'pages/UsersPage.tsx',
+];
 
 describe('shared/insuranceDomain (ARCH-4)', () => {
   it('exports an enum with all ten canonical domain values', () => {
