@@ -647,8 +647,9 @@ export class UnifiedComparisonEngine {
     comparison: UnifiedComparisonResult,
     validationResult: Record<string, unknown>
   ): UnifiedComparisonResult {
-    // TODO: Implement deep mode validation application
-    // For now, return original with validation notes
+    // FOLLOW-UP(tech-debt-remediation/DEV-4): deep mode validation application
+    // is not implemented; only warnings/discrepancies are merged into the
+    // analysis notes for now.
     const warnings = validationResult.warnings as string[] | undefined;
     if (warnings) {
       comparison.analysis.warnings.push(...warnings);
