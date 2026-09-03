@@ -99,7 +99,8 @@ const CUMPLIMIENTO_FORMAT_INSTRUCTIONS = `FORMATO DE SALIDA (JSON):
 
 const CUMPLIMIENTO_RESPONSE_SCHEMA: Record<string, unknown> = {
   type: 'object',
-  description: 'Cumplimiento / Fianzas quote extraction schema under Ley 80/1993 and Decreto 1082/2015',
+  description:
+    'Cumplimiento / Fianzas quote extraction schema under Ley 80/1993 and Decreto 1082/2015',
   additionalProperties: true,
   properties: {
     insurerName: { type: 'string' },

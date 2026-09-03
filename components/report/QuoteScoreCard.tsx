@@ -38,9 +38,7 @@ export const QuoteScoreCard: React.FC<QuoteScoreCardProps> = ({
       )}
       <h3 className="text-lg font-bold text-slate-800 mb-2">{q.insurerName}</h3>
       <div className="flex items-end gap-2 mb-4">
-        <span
-          className={`text-4xl font-bold ${isBest ? 'text-indigo-600' : 'text-slate-700'}`}
-        >
+        <span className={`text-4xl font-bold ${isBest ? 'text-indigo-600' : 'text-slate-700'}`}>
           {q.dataQualityScore || q.score}
         </span>
         <span className="text-sm text-slate-400 mb-1">/ 100</span>

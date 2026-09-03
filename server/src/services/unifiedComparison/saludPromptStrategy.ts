@@ -107,7 +107,8 @@ const SALUD_FORMAT_INSTRUCTIONS = `FORMATO DE SALIDA (JSON):
 
 const SALUD_RESPONSE_SCHEMA: Record<string, unknown> = {
   type: 'object',
-  description: 'Salud / Medicina Prepagada quote extraction schema compliant with MinSalud Res. 244/2019',
+  description:
+    'Salud / Medicina Prepagada quote extraction schema compliant with MinSalud Res. 244/2019',
   additionalProperties: true,
   properties: {
     insurerName: { type: 'string' },

@@ -1,6 +1,12 @@
 import * as ExcelJS from 'exceljs';
 import { QuoteAnalysis, MatrixRow, MatrixCell } from '../types';
-import { transformQuotesToMatrix, parseNumericValue, formatMatrixValue, enrichSmmlvDeductible, isExcludedValue } from './matrixTransformer';
+import {
+  transformQuotesToMatrix,
+  parseNumericValue,
+  formatMatrixValue,
+  enrichSmmlvDeductible,
+  isExcludedValue,
+} from './matrixTransformer';
 
 interface ClientInfo {
   name?: string;
@@ -60,10 +66,10 @@ export async function generateExcelBuffer(
     domain === 'copropiedades'
       ? 'Edificio Residencial / Comercial (Copropiedad)'
       : domain === 'autos'
-      ? 'Vehículo Particular / Flotas'
-      : domain === 'hogar'
-      ? 'Vivienda Residencial / Hogar'
-      : 'Comercial / PYME';
+        ? 'Vehículo Particular / Flotas'
+        : domain === 'hogar'
+          ? 'Vivienda Residencial / Hogar'
+          : 'Comercial / PYME';
   const clientActivity =
     clientInfo?.activity && clientInfo.activity !== 'Centro de Belleza y/o Estetica (CIIU 9602)'
       ? clientInfo.activity
@@ -94,7 +100,8 @@ export async function generateExcelBuffer(
   const maxAsset = assetValues.length > 0 ? Math.max(...assetValues) : 0;
   const totalAssetValueStr =
     maxAsset > 0
-      ? '$' + maxAsset.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+      ? '$' +
+        maxAsset.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
       : 'No especificado';
 
   // Find Best Quote
@@ -164,14 +171,24 @@ export async function generateExcelBuffer(
   };
 
   portada.getCell('B10').value = 'DATOS DEL ASEGURADO (CLIENTE)';
-  portada.getCell('B10').font = { name: FONT_NAME, size: 11, bold: true, color: { argb: 'FF1E3A8A' } };
+  portada.getCell('B10').font = {
+    name: FONT_NAME,
+    size: 11,
+    bold: true,
+    color: { argb: 'FF1E3A8A' },
+  };
   addInfoRow('Asegurado:', clientName, 11);
   addInfoRow('Actividad / Ocupación:', clientActivity, 12);
   addInfoRow('Ubicación del Riesgo:', clientLocation, 13);
   addInfoRow('Valor Total Bienes:', totalAssetValueStr, 14);
 
   portada.getCell('B16').value = 'DATOS DEL INTERMEDIARIO / ALIADO TÉCNICO';
-  portada.getCell('B16').font = { name: FONT_NAME, size: 11, bold: true, color: { argb: 'FF1E3A8A' } };
+  portada.getCell('B16').font = {
+    name: FONT_NAME,
+    size: 11,
+    bold: true,
+    color: { argb: 'FF1E3A8A' },
+  };
   addInfoRow('Corredoría / Agencia:', brokerInfo?.intermediaryName || 'Agencia Aliada', 17);
   addInfoRow('Asesor Responsable:', brokerInfo?.name || 'Asesor Técnico de Seguros', 18);
   addInfoRow('Nº Matrícula / Registro:', brokerInfo?.registrationNumber || 'No especificado', 19);
@@ -179,7 +196,12 @@ export async function generateExcelBuffer(
 
   // Scorecard Multidimensional (0 - 100)
   portada.getCell('B22').value = 'SCORECARD COMPARATIVO DE AUDITORÍA (0 - 100)';
-  portada.getCell('B22').font = { name: FONT_NAME, size: 11, bold: true, color: { argb: 'FF1E3A8A' } };
+  portada.getCell('B22').font = {
+    name: FONT_NAME,
+    size: 11,
+    bold: true,
+    color: { argb: 'FF1E3A8A' },
+  };
 
   portada.getRow(23).height = 26;
   const colAHeader = portada.getCell('B23');
@@ -213,7 +235,12 @@ export async function generateExcelBuffer(
     const isTotal = dim.key === 'total';
     const labelCell = portada.getCell(`B${rowNum}`);
     labelCell.value = dim.label;
-    labelCell.font = { name: FONT_NAME, size: 10, bold: isTotal, color: { argb: isTotal ? 'FF1E3A8A' : 'FF334155' } };
+    labelCell.font = {
+      name: FONT_NAME,
+      size: 10,
+      bold: isTotal,
+      color: { argb: isTotal ? 'FF1E3A8A' : 'FF334155' },
+    };
 
     quotes.forEach((q, qIdx) => {
       const colLetter = String.fromCharCode(68 + qIdx);
@@ -246,14 +273,34 @@ export async function generateExcelBuffer(
 
   // Guía de Navegación
   portada.getCell('B32').value = 'CONTENIDO Y NAVEGACIÓN DEL INFORME';
-  portada.getCell('B32').font = { name: FONT_NAME, size: 11, bold: true, color: { argb: 'FF1E3A8A' } };
+  portada.getCell('B32').font = {
+    name: FONT_NAME,
+    size: 11,
+    bold: true,
+    color: { argb: 'FF1E3A8A' },
+  };
 
   const navRows = [
-    { name: 'Portada y Resumen General', desc: 'Resumen ejecutivo, ficha del cliente, aliado y scorecard de puntaje 0-100.' },
-    { name: 'Matriz Coberturas', desc: 'Matriz comparativa ampliada de amparos canónicos y ventajas exclusivas.' },
-    { name: 'Matriz Deducibles', desc: 'Matriz consolidada dedicada a deducibles y valores equivalentes en COP.' },
-    { name: 'Primas y Costos', desc: 'Desglose financiero con fórmulas automáticas nativas e indicador gráfico visual.' },
-    { name: 'Análisis de Riesgos', desc: 'Auditoría técnica de alertas clasificadas y escala de calificación 1 a 10.' },
+    {
+      name: 'Portada y Resumen General',
+      desc: 'Resumen ejecutivo, ficha del cliente, aliado y scorecard de puntaje 0-100.',
+    },
+    {
+      name: 'Matriz Coberturas',
+      desc: 'Matriz comparativa ampliada de amparos canónicos y ventajas exclusivas.',
+    },
+    {
+      name: 'Matriz Deducibles',
+      desc: 'Matriz consolidada dedicada a deducibles y valores equivalentes en COP.',
+    },
+    {
+      name: 'Primas y Costos',
+      desc: 'Desglose financiero con fórmulas automáticas nativas e indicador gráfico visual.',
+    },
+    {
+      name: 'Análisis de Riesgos',
+      desc: 'Auditoría técnica de alertas clasificadas y escala de calificación 1 a 10.',
+    },
   ];
 
   navRows.forEach((item, idx) => {
@@ -319,7 +366,12 @@ export async function generateExcelBuffer(
   let currentCovRow = 5;
   for (const row of coverageMatrixRows) {
     if (row.type === 'header') {
-      coveragesSheet.mergeCells(currentCovRow, 1, currentCovRow, quotes.length + 1 + (hasNotes ? 1 : 0));
+      coveragesSheet.mergeCells(
+        currentCovRow,
+        1,
+        currentCovRow,
+        quotes.length + 1 + (hasNotes ? 1 : 0)
+      );
       const secCell = coveragesSheet.getCell(currentCovRow, 1);
       secCell.value = row.label;
       secCell.font = { name: FONT_NAME, size: 11, bold: true, color: { argb: 'FF1E3A8A' } };
@@ -380,7 +432,8 @@ export async function generateExcelBuffer(
         const notesCell = coveragesSheet.getCell(currentCovRow, quotes.length + 2);
         notesCell.value = note || '';
         notesCell.font = { name: FONT_NAME, size: 9, color: { argb: 'FF7C3AED' }, italic: true };
-        if (note) notesCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3E8FF' } };
+        if (note)
+          notesCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3E8FF' } };
       }
 
       currentCovRow++;
@@ -546,7 +599,10 @@ export async function generateExcelBuffer(
   const addFinRow = (
     label: string,
     rowNum: number,
-    getValueOrFormula: (colLetter: string, idx: number) => { value?: number; formula?: string; isTotal?: boolean; isWinner?: boolean }
+    getValueOrFormula: (
+      colLetter: string,
+      idx: number
+    ) => { value?: number; formula?: string; isTotal?: boolean; isWinner?: boolean }
   ) => {
     financialsSheet.getRow(rowNum).height = 22;
     const lCell = financialsSheet.getCell(rowNum, 1);
@@ -682,7 +738,13 @@ export async function generateExcelBuffer(
 
   // Scorecard de Calificación Técnica (1 a 10)
   riskSheet.getRow(4).height = 28;
-  const scoreHeaders = ['Aseguradora', 'Perfil de Riesgo', 'Calificación (1 - 10)', 'Fortaleza Principal', 'Riesgo / Debilidad Principal'];
+  const scoreHeaders = [
+    'Aseguradora',
+    'Perfil de Riesgo',
+    'Calificación (1 - 10)',
+    'Fortaleza Principal',
+    'Riesgo / Debilidad Principal',
+  ];
   scoreHeaders.forEach((h, idx) => {
     const cell = riskSheet.getCell(4, idx + 1);
     cell.value = h;
@@ -697,7 +759,12 @@ export async function generateExcelBuffer(
     const ratingScore = Math.min(10, Math.max(1, Math.round((q.score || 50) / 10)));
 
     riskSheet.getCell(rowNum, 1).value = q.insurerName;
-    riskSheet.getCell(rowNum, 2).value = ratingScore >= 8 ? 'Riesgo Bajo / Óptimo' : ratingScore >= 6 ? 'Riesgo Moderado' : 'Riesgo Alto';
+    riskSheet.getCell(rowNum, 2).value =
+      ratingScore >= 8
+        ? 'Riesgo Bajo / Óptimo'
+        : ratingScore >= 6
+          ? 'Riesgo Moderado'
+          : 'Riesgo Alto';
 
     // Columna Calificación con Gradient Scale RAG
     const gradeCell = riskSheet.getCell(rowNum, 3);
@@ -716,14 +783,22 @@ export async function generateExcelBuffer(
       gradeCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF9B1C1C' } };
     }
 
-    riskSheet.getCell(rowNum, 4).value = q.technicalAnalysis || 'Alta cobertura canónica y estabilidad financiera';
-    riskSheet.getCell(rowNum, 5).value = q.clientAnalysis || 'Revisar sublímites específicos e insumos de deducibles';
+    riskSheet.getCell(rowNum, 4).value =
+      q.technicalAnalysis || 'Alta cobertura canónica y estabilidad financiera';
+    riskSheet.getCell(rowNum, 5).value =
+      q.clientAnalysis || 'Revisar sublímites específicos e insumos de deducibles';
   });
 
   // Tabla de Alertas Auditadas
   let rRowIdx = 7 + quotes.length;
   riskSheet.getRow(rRowIdx).height = 28;
-  const alertHeaders = ['Nivel Severidad', 'Aseguradora', 'Hallazgo / Cobertura', 'Detalle de Alerta', 'Referencia Clausulado'];
+  const alertHeaders = [
+    'Nivel Severidad',
+    'Aseguradora',
+    'Hallazgo / Cobertura',
+    'Detalle de Alerta',
+    'Referencia Clausulado',
+  ];
   alertHeaders.forEach((h, idx) => {
     const cell = riskSheet.getCell(rRowIdx, idx + 1);
     cell.value = h;
@@ -758,7 +833,8 @@ export async function generateExcelBuffer(
       riskSheet.getCell(rRowIdx, 2).value = q.insurerName;
       riskSheet.getCell(rRowIdx, 3).value = alert.title || 'Alerta Técnica';
       riskSheet.getCell(rRowIdx, 4).value = alert.description || '';
-      riskSheet.getCell(rRowIdx, 5).value = alert.clauseReference || alert.sourceDocument || 'Condicionado General';
+      riskSheet.getCell(rRowIdx, 5).value =
+        alert.clauseReference || alert.sourceDocument || 'Condicionado General';
 
       rRowIdx++;
     });

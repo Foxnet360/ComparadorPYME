@@ -156,7 +156,12 @@ describe('ComparisonReport - Advanced Tab Visibility', () => {
             optionalMissingCount: 0,
             scoreImpact: 0,
             results: [
-              { coverageName: 'Incendio', status: 'VERIFIED', isMandatory: true, alertLevel: 'INFO' },
+              {
+                coverageName: 'Incendio',
+                status: 'VERIFIED',
+                isMandatory: true,
+                alertLevel: 'INFO',
+              },
             ],
           },
           deductibleAnalysis: [

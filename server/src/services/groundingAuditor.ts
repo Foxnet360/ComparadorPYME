@@ -44,10 +44,8 @@ export function auditGroundedComparison<T extends Record<string, any>>(
   }
 
   const coverageCount =
-    sanitizedReport.quotes?.reduce(
-      (acc: number, q: any) => acc + (q.coverages?.length || 0),
-      0
-    ) || 1;
+    sanitizedReport.quotes?.reduce((acc: number, q: any) => acc + (q.coverages?.length || 0), 0) ||
+    1;
 
   const groundingScore = Math.min(100, Math.round((totalCitations / coverageCount) * 100));
 

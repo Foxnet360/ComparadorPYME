@@ -40,7 +40,9 @@ export interface ProbabilisticMatchResult {
 
 const canonicalCategoriesCache = new Map<string, Array<{ id: number | string; name: string }>>();
 
-function loadCanonicalCategories(domain: string = 'pyme'): Array<{ id: number | string; name: string }> {
+function loadCanonicalCategories(
+  domain: string = 'pyme'
+): Array<{ id: number | string; name: string }> {
   if (canonicalCategoriesCache.has(domain)) {
     return canonicalCategoriesCache.get(domain)!;
   }
@@ -774,7 +776,11 @@ export const semanticMatcher = {
           });
 
           // Comparar con categorías
-          const match = await matchByEmbeddingWithVector(stillPendingNames[i]!, result.embedding, d);
+          const match = await matchByEmbeddingWithVector(
+            stillPendingNames[i]!,
+            result.embedding,
+            d
+          );
           results[originalIndex] = match || {
             categoryId: null,
             canonicalName: null,

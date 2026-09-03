@@ -1,5 +1,16 @@
 import React from 'react';
-import { Building2, Car, Building, Users, Stethoscope, Scale, Truck, Home, Cog, Anchor } from 'lucide-react';
+import {
+  Building2,
+  Car,
+  Building,
+  Users,
+  Stethoscope,
+  Scale,
+  Truck,
+  Home,
+  Cog,
+  Anchor,
+} from 'lucide-react';
 
 export type InsuranceDomain =
   | 'pyme'
@@ -103,7 +114,9 @@ export const DomainSelector: React.FC<DomainSelectorProps> = ({
     : DOMAIN_OPTIONS;
 
   return (
-    <div className={`w-full bg-white p-5 rounded-2xl border border-slate-200 shadow-sm ${className}`}>
+    <div
+      className={`w-full bg-white p-5 rounded-2xl border border-slate-200 shadow-sm ${className}`}
+    >
       <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
         <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center">
           <span className="w-2 h-2 rounded-full bg-indigo-600 mr-2"></span>

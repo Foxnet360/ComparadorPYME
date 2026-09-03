@@ -314,7 +314,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
                   <span className="inline-flex items-center px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-sm">
-                    <Building className="w-3.5 h-3.5 mr-1.5 text-indigo-600" /> Copropiedades (Ley 675)
+                    <Building className="w-3.5 h-3.5 mr-1.5 text-indigo-600" /> Copropiedades (Ley
+                    675)
                   </span>
                   <span className="inline-flex items-center px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-sm">
                     <Scale className="w-3.5 h-3.5 mr-1.5 text-blue-600" /> Cumplimiento (Ley 80)
@@ -332,7 +333,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
                     <Car className="w-3.5 h-3.5 mr-1.5 text-emerald-600" /> Autos
                   </span>
                   <span className="inline-flex items-center px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-sm">
-                    <Briefcase className="w-3.5 h-3.5 mr-1.5 text-orange-600" /> Maquinaria (Art. 1083)
+                    <Briefcase className="w-3.5 h-3.5 mr-1.5 text-orange-600" /> Maquinaria (Art.
+                    1083)
                   </span>
                   <span className="inline-flex items-center px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-sm">
                     <Globe className="w-3.5 h-3.5 mr-1.5 text-cyan-600" /> Casco Embarcación (DIMAR)
@@ -499,7 +501,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
               Estructura Multi-Tenant para Corredoras y Aliados
             </h2>
             <p className="mt-4 text-lg text-slate-600 max-w-3xl mx-auto">
-              Control jerárquico claro en 3 niveles para la gestión centralizada de intermediarios, administradores de firma y equipos técnicos de analistas.
+              Control jerárquico claro en 3 niveles para la gestión centralizada de intermediarios,
+              administradores de firma y equipos técnicos de analistas.
             </p>
           </div>
 
@@ -510,14 +513,23 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
               <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mb-6 group-hover:scale-110 transition-transform">
                 <ShieldCheck size={26} />
               </div>
-              <span className="text-xs font-extrabold text-indigo-600 uppercase tracking-wider">Nivel 1</span>
+              <span className="text-xs font-extrabold text-indigo-600 uppercase tracking-wider">
+                Nivel 1
+              </span>
               <h3 className="text-xl font-bold text-slate-900 mt-1 mb-3">Super Admin</h3>
               <p className="text-slate-600 text-sm leading-relaxed mb-4">
-                Administrador General de la Aplicación. Supervisa la totalidad de Aliados/Intermediarios, métricas globales de mercado y gobernanza de la plataforma.
+                Administrador General de la Aplicación. Supervisa la totalidad de
+                Aliados/Intermediarios, métricas globales de mercado y gobernanza de la plataforma.
               </p>
               <ul className="space-y-2 text-xs text-slate-500 border-t border-slate-100 pt-4">
-                <li className="flex items-center"><CheckCircle size={14} className="text-emerald-500 mr-2" /> Monitoreo global de analítica multiramo</li>
-                <li className="flex items-center"><CheckCircle size={14} className="text-emerald-500 mr-2" /> Gestión integral de Corredoras y Aliados</li>
+                <li className="flex items-center">
+                  <CheckCircle size={14} className="text-emerald-500 mr-2" /> Monitoreo global de
+                  analítica multiramo
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle size={14} className="text-emerald-500 mr-2" /> Gestión integral de
+                  Corredoras y Aliados
+                </li>
               </ul>
             </div>
 
@@ -529,14 +541,25 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
               <div className="w-12 h-12 rounded-xl bg-indigo-600 text-white flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-md shadow-indigo-200">
                 <Building2 size={26} />
               </div>
-              <span className="text-xs font-extrabold text-indigo-600 uppercase tracking-wider">Nivel 2</span>
-              <h3 className="text-xl font-bold text-slate-900 mt-1 mb-3">Admin de Compañía Aliada</h3>
+              <span className="text-xs font-extrabold text-indigo-600 uppercase tracking-wider">
+                Nivel 2
+              </span>
+              <h3 className="text-xl font-bold text-slate-900 mt-1 mb-3">
+                Admin de Compañía Aliada
+              </h3>
               <p className="text-slate-600 text-sm leading-relaxed mb-4">
-                Un Administrador por cada Firma / Corredora. Se registra con el NIT de su empresa y es el encargado de dar de alta y gestionar a sus técnicos.
+                Un Administrador por cada Firma / Corredora. Se registra con el NIT de su empresa y
+                es el encargado de dar de alta y gestionar a sus técnicos.
               </p>
               <ul className="space-y-2 text-xs text-slate-600 border-t border-slate-100 pt-4">
-                <li className="flex items-center font-medium"><CheckCircle size={14} className="text-indigo-600 mr-2" /> Registro directo con NIT en la plataforma</li>
-                <li className="flex items-center font-medium"><CheckCircle size={14} className="text-indigo-600 mr-2" /> Creación y asignación de N Técnicos Analistas</li>
+                <li className="flex items-center font-medium">
+                  <CheckCircle size={14} className="text-indigo-600 mr-2" /> Registro directo con
+                  NIT en la plataforma
+                </li>
+                <li className="flex items-center font-medium">
+                  <CheckCircle size={14} className="text-indigo-600 mr-2" /> Creación y asignación
+                  de N Técnicos Analistas
+                </li>
               </ul>
             </div>
 
@@ -546,14 +569,23 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
               <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-6 group-hover:scale-110 transition-transform">
                 <Users size={26} />
               </div>
-              <span className="text-xs font-extrabold text-blue-600 uppercase tracking-wider">Nivel 3</span>
+              <span className="text-xs font-extrabold text-blue-600 uppercase tracking-wider">
+                Nivel 3
+              </span>
               <h3 className="text-xl font-bold text-slate-900 mt-1 mb-3">Técnicos Analistas</h3>
               <p className="text-slate-600 text-sm leading-relaxed mb-4">
-                N cantidad de usuarios analistas por cada Intermediario. Cargan cotizaciones en PDF, ejecutan comparaciones RAG y generan informes de riesgo.
+                N cantidad de usuarios analistas por cada Intermediario. Cargan cotizaciones en PDF,
+                ejecutan comparaciones RAG y generan informes de riesgo.
               </p>
               <ul className="space-y-2 text-xs text-slate-500 border-t border-slate-100 pt-4">
-                <li className="flex items-center"><CheckCircle size={14} className="text-emerald-500 mr-2" /> Auditoría automatizada de pólizas PDF</li>
-                <li className="flex items-center"><CheckCircle size={14} className="text-emerald-500 mr-2" /> Abogado Virtual y consulta de clausulados</li>
+                <li className="flex items-center">
+                  <CheckCircle size={14} className="text-emerald-500 mr-2" /> Auditoría automatizada
+                  de pólizas PDF
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle size={14} className="text-emerald-500 mr-2" /> Abogado Virtual y
+                  consulta de clausulados
+                </li>
               </ul>
             </div>
           </div>

@@ -58,20 +58,12 @@
     {
       "canonicalId": "cas_06",
       "canonicalName": "Remolque y Asistencia Náutica de Emergencia",
-      "variants": [
-        "gastos de remolcador",
-        "asistencia en el mar",
-        "remolque náutico de emergencia"
-      ]
+      "variants": ["gastos de remolcador", "asistencia en el mar", "remolque náutico de emergencia"]
     },
     {
       "canonicalId": "cas_07",
       "canonicalName": "Cobertura de Motores Fuera de Borda y Maquinaria Auxiliar",
-      "variants": [
-        "motores fuera de borda",
-        "motor marino auxiliar",
-        "radar sonar náutico"
-      ]
+      "variants": ["motores fuera de borda", "motor marino auxiliar", "radar sonar náutico"]
     }
   ]
 }

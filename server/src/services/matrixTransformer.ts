@@ -176,15 +176,18 @@ export function enrichSmmlvDeductible(text: string | undefined | null): string {
   if (!text) return 'Según amparo principal';
   if (text.includes('($')) return text; // Already enriched
 
-  return text.replace(/(\d+(?:\.\d+)?)\s*(?:S\.?M\.?M\.?L\.?V\.?|salarios?\s+mínimos?|smmlv)/gi, (match, numStr) => {
-    const num = parseFloat(numStr);
-    if (!isNaN(num) && num > 0) {
-      const copVal = Math.round(num * SMMLV_2026);
-      const formattedCop = '$' + copVal.toLocaleString('es-CO');
-      return `${match} (${formattedCop} COP)`;
+  return text.replace(
+    /(\d+(?:\.\d+)?)\s*(?:S\.?M\.?M\.?L\.?V\.?|salarios?\s+mínimos?|smmlv)/gi,
+    (match, numStr) => {
+      const num = parseFloat(numStr);
+      if (!isNaN(num) && num > 0) {
+        const copVal = Math.round(num * SMMLV_2026);
+        const formattedCop = '$' + copVal.toLocaleString('es-CO');
+        return `${match} (${formattedCop} COP)`;
+      }
+      return match;
     }
-    return match;
-  });
+  );
 }
 
 export function formatMatrixValue(val: string | undefined | null): string {
@@ -221,13 +224,19 @@ export function getCategoryConfigsForDomain(domain: string = 'pyme'): CategoryCo
       }
     }
   } catch (err) {
-    console.warn(`[MatrixTransformer] Dynamic taxonomy load failed for ${domain}, using PYME fallback`, err);
+    console.warn(
+      `[MatrixTransformer] Dynamic taxonomy load failed for ${domain}, using PYME fallback`,
+      err
+    );
   }
 
   return CATEGORY_CONFIGS;
 }
 
-export function transformQuotesToMatrix(quotes: QuoteAnalysis[], domain: string = 'pyme'): MatrixRow[] {
+export function transformQuotesToMatrix(
+  quotes: QuoteAnalysis[],
+  domain: string = 'pyme'
+): MatrixRow[] {
   const matrix: MatrixRow[] = [];
   const numQuotes = quotes.length;
   const activeCategoryConfigs = getCategoryConfigsForDomain(domain);
@@ -253,7 +262,8 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[], domain: string 
         const cov = quote.coverages.find(
           (c) =>
             (String(c.categoryId) === String(config.id) ||
-              (c.canonicalName && c.canonicalName.toLowerCase() === config.canonicalName.toLowerCase()) ||
+              (c.canonicalName &&
+                c.canonicalName.toLowerCase() === config.canonicalName.toLowerCase()) ||
               (c.name && c.name.toLowerCase() === config.canonicalName.toLowerCase())) &&
             (c.matchConfidence === undefined ||
               c.matchConfidence === null ||
@@ -266,7 +276,10 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[], domain: string 
             cellValue = formatMatrixValue(cov.value || 'No incluida');
           } else if (rowConfig.field === 'deductible') {
             const rawDed = cov.deductible;
-            cellValue = rawDed && rawDed !== cov.value ? enrichSmmlvDeductible(rawDed) : 'Según amparo principal';
+            cellValue =
+              rawDed && rawDed !== cov.value
+                ? enrichSmmlvDeductible(rawDed)
+                : 'Según amparo principal';
           } else {
             cellValue =
               cov.description ||
@@ -453,7 +466,8 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[], domain: string 
       value: netPremiums[idx]! > 0 ? formatCurrency(netPremiums[idx]!) : 'No informada',
       isExcluded: netPremiums[idx]! === 0,
       isWinner:
-        netPremiums[idx]! > 0 && netPremiums[idx]! === Math.min(...netPremiums.filter((n) => n > 0)),
+        netPremiums[idx]! > 0 &&
+        netPremiums[idx]! === Math.min(...netPremiums.filter((n) => n > 0)),
     })),
   });
 

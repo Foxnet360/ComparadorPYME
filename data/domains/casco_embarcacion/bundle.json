@@ -2,7 +2,7 @@
   "domain": "casco_embarcacion",
   "name": "Casco y Maquinaria / Embarcaciones",
   "scoringWeights": {
-    "coverage": 0.50,
+    "coverage": 0.5,
     "deductible": 0.25,
     "price": 0.25
   }

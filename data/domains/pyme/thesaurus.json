@@ -76,11 +76,7 @@
     },
     {
       "canonicalName": "Rotura de Maquinaria",
-      "variants": [
-        "Daño Interno de Maquinaria",
-        "RM",
-        "Daño Súbito e Imprevisto (Maquinaria)"
-      ],
+      "variants": ["Daño Interno de Maquinaria", "RM", "Daño Súbito e Imprevisto (Maquinaria)"],
       "category": "Patrimoniales"
     },
     {

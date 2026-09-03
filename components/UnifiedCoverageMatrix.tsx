@@ -393,7 +393,8 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
 
             // In a deductible row, "No aplica" is not an exclusion
             const excluded =
-              (rowConfig.field as string) === 'deductible' && cellValue.toLowerCase().trim() === 'no aplica'
+              (rowConfig.field as string) === 'deductible' &&
+              cellValue.toLowerCase().trim() === 'no aplica'
                 ? false
                 : isExcludedValue(cellValue);
             const firstCitation = cov.citations?.[0];
@@ -523,7 +524,8 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
           }
 
           const excluded =
-            (rowConfig.field as string) === 'deductible' && cellValue.toLowerCase().trim() === 'no aplica'
+            (rowConfig.field as string) === 'deductible' &&
+            cellValue.toLowerCase().trim() === 'no aplica'
               ? false
               : isExcludedValue(cellValue);
           const firstCitation = cov.citations?.[0];
@@ -714,7 +716,8 @@ export function transformQuotesToMatrix(quotes: QuoteAnalysis[]): MatrixRow[] {
       value: netPremiums[idx]! > 0 ? formatCurrency(netPremiums[idx]!) : 'No informada',
       isExcluded: netPremiums[idx]! === 0,
       isWinner:
-        netPremiums[idx]! > 0 && netPremiums[idx]! === Math.min(...netPremiums.filter((n) => n > 0)),
+        netPremiums[idx]! > 0 &&
+        netPremiums[idx]! === Math.min(...netPremiums.filter((n) => n > 0)),
     })),
   });
 
@@ -1067,7 +1070,12 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
       const response = await apiClient.fetch(`/analysis/${analysisId}/export`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cellNotes: exportNotes, domain: domain || 'pyme', quotes, matrix: rows }),
+        body: JSON.stringify({
+          cellNotes: exportNotes,
+          domain: domain || 'pyme',
+          quotes,
+          matrix: rows,
+        }),
       });
 
       const blob = await response.blob();
@@ -1467,7 +1475,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                                   {(cell.calculatedPage !== undefined ||
                                     cell.pageNumber !== undefined) && (
                                     <button
-                                       onClick={() => handleOpenPdfEvidence(cell, quotes[colIdx]!)}
+                                      onClick={() => handleOpenPdfEvidence(cell, quotes[colIdx]!)}
                                       className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-1.5 py-0.5 rounded border border-blue-200 flex items-center gap-0.5 transition-colors cursor-pointer"
                                       title="Ver evidencia en PDF"
                                     >

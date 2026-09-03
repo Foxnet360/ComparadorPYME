@@ -322,11 +322,13 @@ export const exportAnalysisExcel = async (
     const domain = (
       (req.query?.domain as string) ||
       req.body?.domain ||
-      ((analysis as any)?.domain) ||
+      (analysis as any)?.domain ||
       ((analysis as any)?.analysis_result as any)?.domain ||
       ((analysis as any)?.metadata as any)?.domain ||
       'pyme'
-    ).toLowerCase().trim();
+    )
+      .toLowerCase()
+      .trim();
 
     const rawClientName =
       (req.query?.clientName as string) ||
@@ -339,13 +341,16 @@ export const exportAnalysisExcel = async (
       domain === 'copropiedades'
         ? 'Edificio Residencial / Comercial (Copropiedad)'
         : domain === 'autos'
-        ? 'Vehículo Particular / Flotas'
-        : domain === 'hogar'
-        ? 'Vivienda Residencial / Hogar'
-        : 'Comercial / PYME';
+          ? 'Vehículo Particular / Flotas'
+          : domain === 'hogar'
+            ? 'Vivienda Residencial / Hogar'
+            : 'Comercial / PYME';
 
     const clientInfo = {
-      name: rawClientName !== 'Edificio Alicante' || domain === 'copropiedades' ? rawClientName : 'Cliente',
+      name:
+        rawClientName !== 'Edificio Alicante' || domain === 'copropiedades'
+          ? rawClientName
+          : 'Cliente',
       activity:
         (req.query?.clientActivity as string) ||
         req.body?.clientActivity ||
@@ -367,11 +372,23 @@ export const exportAnalysisExcel = async (
     };
 
     const reportData = {
-      ...(typeof analysis?.analysis_result === 'object' && analysis?.analysis_result ? analysis.analysis_result : {}),
+      ...(typeof analysis?.analysis_result === 'object' && analysis?.analysis_result
+        ? analysis.analysis_result
+        : {}),
       ...(typeof req.body?.report === 'object' && req.body?.report ? req.body.report : {}),
-      matrix: req.body?.matrix || (analysis?.analysis_result as any)?.matrix || (analysis?.analysis_result as any)?.rows,
+      matrix:
+        req.body?.matrix ||
+        (analysis?.analysis_result as any)?.matrix ||
+        (analysis?.analysis_result as any)?.rows,
     };
-    const buffer = await generateExcelBuffer(quotes, clientInfo, cellNotes, brokerInfo, domain, reportData);
+    const buffer = await generateExcelBuffer(
+      quotes,
+      clientInfo,
+      cellNotes,
+      brokerInfo,
+      domain,
+      reportData
+    );
 
     res.setHeader(
       'Content-Type',

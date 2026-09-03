@@ -56,13 +56,7 @@
         "Terremoto Contenidos",
         "Sismo Vivienda"
       ],
-      "aliases": [
-        "Terremoto",
-        "Temblor",
-        "Erupción Volcánica",
-        "Sismo",
-        "Terremoto Hogar"
-      ]
+      "aliases": ["Terremoto", "Temblor", "Erupción Volcánica", "Sismo", "Terremoto Hogar"]
     },
     {
       "id": 3,
@@ -79,13 +73,7 @@
         "Filtraciones accesorias",
         "Agua accidental"
       ],
-      "aliases": [
-        "Daños por agua",
-        "Anegación",
-        "Inundación",
-        "Fuga de agua",
-        "Rotura de tuberías"
-      ]
+      "aliases": ["Daños por agua", "Anegación", "Inundación", "Fuga de agua", "Rotura de tuberías"]
     },
     {
       "id": 4,
@@ -102,13 +90,7 @@
         "Huracán",
         "Viento y Granizo"
       ],
-      "aliases": [
-        "Granizo",
-        "Vientos fuertes",
-        "Vendaval",
-        "Tempestad",
-        "Tornados"
-      ]
+      "aliases": ["Granizo", "Vientos fuertes", "Vendaval", "Tempestad", "Tornados"]
     },
     {
       "id": 5,
@@ -273,13 +255,7 @@
         "Vandalismo",
         "Terrorismo hogar"
       ],
-      "aliases": [
-        "HMCE",
-        "AMIT",
-        "Actos malintencionados",
-        "Huelga y motín",
-        "Conmoción civil"
-      ]
+      "aliases": ["HMCE", "AMIT", "Actos malintencionados", "Huelga y motín", "Conmoción civil"]
     },
     {
       "id": 13,
@@ -293,11 +269,7 @@
         "Gastos para aminorar el siniestro",
         "Honorarios de ingenieros y arquitectos"
       ],
-      "aliases": [
-        "Remoción de escombros",
-        "Limpieza y desmonte",
-        "Preservación de bienes"
-      ]
+      "aliases": ["Remoción de escombros", "Limpieza y desmonte", "Preservación de bienes"]
     },
     {
       "id": 14,
@@ -311,11 +283,7 @@
         "Vidrios fijos",
         "Cristales fijos del predio"
       ],
-      "aliases": [
-        "Rotura de vidrios",
-        "Cristales y espejos",
-        "Loza sanitaria"
-      ]
+      "aliases": ["Rotura de vidrios", "Cristales y espejos", "Loza sanitaria"]
     },
     {
       "id": 15,
@@ -330,11 +298,7 @@
         "Bienes de alto valor declarados",
         "Joyas dentro de caja fuerte"
       ],
-      "aliases": [
-        "Objetos de valor",
-        "Joyas y relojes",
-        "Obras de arte"
-      ]
+      "aliases": ["Objetos de valor", "Joyas y relojes", "Obras de arte"]
     },
     {
       "id": 16,
@@ -373,12 +337,7 @@
         "Deducible en SMMLV",
         "Deducible sismo SFC"
       ],
-      "aliases": [
-        "Deducibles de hogar",
-        "Deducible terremoto",
-        "Deducible hurto",
-        "Deducible agua"
-      ]
+      "aliases": ["Deducibles de hogar", "Deducible terremoto", "Deducible hurto", "Deducible agua"]
     }
   ]
 }

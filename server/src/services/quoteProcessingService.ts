@@ -676,7 +676,19 @@ async function processQuoteMultimodalInternal(
 
       if (covNorm === cliNorm) return true;
 
-      const stopWords = new Set(['de', 'del', 'las', 'los', 'san', 'santa', 'edificio', 'conjunto', 'y', 'la', 'el']);
+      const stopWords = new Set([
+        'de',
+        'del',
+        'las',
+        'los',
+        'san',
+        'santa',
+        'edificio',
+        'conjunto',
+        'y',
+        'la',
+        'el',
+      ]);
       const clientTokens = cliNorm.split(/\s+/).filter((t) => t.length >= 3 && !stopWords.has(t));
       const covTokens = new Set(covNorm.split(/\s+/).filter((t) => t.length >= 3));
 
@@ -687,19 +699,25 @@ async function processQuoteMultimodalInternal(
     };
 
     // Filter rawCoverages: remove items matching the client's name or pure numbers/page numbers
-    const clientNameNorm = ((extracted as any).clientInfo?.name || (extracted as any).cliente || '').toLowerCase().trim();
+    const clientNameNorm = ((extracted as any).clientInfo?.name || (extracted as any).cliente || '')
+      .toLowerCase()
+      .trim();
     if (extracted.rawCoverages && Array.isArray(extracted.rawCoverages)) {
       extracted.rawCoverages = extracted.rawCoverages.filter((cov: any) => {
         const nameNorm = (cov.rawName || cov.name || '').toLowerCase().trim();
         if (!nameNorm) return false;
         // Generic token overlap check (eliminates client name leaks without hardcoded strings)
         if (clientNameNorm && isClientNameLeak(nameNorm, clientNameNorm)) {
-          console.log(`   🛡️ [Sanitizer] Filtered out client name from coverages: "${cov.rawName || cov.name}"`);
+          console.log(
+            `   🛡️ [Sanitizer] Filtered out client name from coverages: "${cov.rawName || cov.name}"`
+          );
           return false;
         }
         // Filter out if coverage name is just a page number like "Pag. 202" or number "101"
         if (/^(pag|pág|página|\d+)\s*\d*$/i.test(nameNorm)) {
-          console.log(`   🛡️ [Sanitizer] Filtered out page number label: "${cov.rawName || cov.name}"`);
+          console.log(
+            `   🛡️ [Sanitizer] Filtered out page number label: "${cov.rawName || cov.name}"`
+          );
           return false;
         }
         return true;

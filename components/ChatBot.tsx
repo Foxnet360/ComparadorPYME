@@ -66,9 +66,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
       const user = localStorage.getItem('seguro_app_user');
       const userId = user ? JSON.parse(user)?.id : 'anonymous';
 
-      const response = await apiClient.fetch(
-        `/chat/threads/report/${reportId}?userId=${userId}`
-      );
+      const response = await apiClient.fetch(`/chat/threads/report/${reportId}?userId=${userId}`);
 
       if (response.ok) {
         const data = await response.json();

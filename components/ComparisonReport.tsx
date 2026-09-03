@@ -1,11 +1,5 @@
 import React, { useState } from 'react';
-import {
-  BarChart3,
-  ShieldAlert,
-  Scale,
-  Layers,
-  BookOpen,
-} from 'lucide-react';
+import { BarChart3, ShieldAlert, Scale, Layers, BookOpen } from 'lucide-react';
 import { DISCLAIMER_TEXT } from '../constants';
 import { AuditSection } from './AuditSection';
 import { UnifiedCoverageMatrix } from './UnifiedCoverageMatrix';

@@ -160,13 +160,7 @@
     },
     {
       "canonicalName": "Copagos, Deducibles y Cuotas Moderadoras",
-      "variants": [
-        "Copago",
-        "Deducible",
-        "Cuota moderadora",
-        "Coaseguro",
-        "Tope anual"
-      ],
+      "variants": ["Copago", "Deducible", "Cuota moderadora", "Coaseguro", "Tope anual"],
       "category": "ESTRUCTURA DE COSTOS COMPARTIDOS"
     },
     {
@@ -192,13 +186,7 @@
     },
     {
       "canonicalName": "Medicina Preventiva, Vacunación y Programas de Bienestar",
-      "variants": [
-        "Medicina preventiva",
-        "Vacunación",
-        "Bienestar",
-        "Wellness",
-        "Chequeo médico"
-      ],
+      "variants": ["Medicina preventiva", "Vacunación", "Bienestar", "Wellness", "Chequeo médico"],
       "category": "COBERTURAS PREVENTIVAS"
     }
   ]

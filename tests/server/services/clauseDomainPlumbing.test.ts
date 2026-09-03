@@ -33,7 +33,9 @@ describe('PR6 clause-domain-plumbing verification', () => {
       'utf-8'
     );
 
-    expect(code).toContain('structuredClauseExtractor.searchClause(insurerName, undefined, options.domain)');
+    expect(code).toContain(
+      'structuredClauseExtractor.searchClause(insurerName, undefined, options.domain)'
+    );
   });
 
   it('6.4 seedClauses.ts includes domain in document metadata', () => {
