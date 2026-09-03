@@ -1,3 +1,6 @@
+export { InsuranceDomain } from './src/shared/insuranceDomain';
+export type { InsuranceDomainType } from './src/shared/insuranceDomain';
+
 export interface Citation {
   text: string;
   source: string;

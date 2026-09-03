@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { ComparisonReport as ReportType } from '../types';
 import {
   Check,
   Award,
@@ -28,25 +27,18 @@ import {
   Legend,
 } from 'recharts';
 import { DISCLAIMER_TEXT } from '../constants';
-import { generatePDF } from '../services/pdfService';
-import { storageService } from '../services/storageService';
-
 import { AuditSection } from './AuditSection';
 import { UnifiedCoverageMatrix } from './UnifiedCoverageMatrix';
 import { ExecutiveSummary } from './ExecutiveSummary';
-import { CoverageValidationMatrix } from './CoverageValidationMatrix';
-import { DeductibleRiskGauge } from './DeductibleRiskGauge';
 import { DeductibleMatrix } from './DeductibleMatrix';
-import { ContextualExclusionCard } from './ContextualExclusionCard';
-import { WarrantyComplianceDashboard } from './WarrantyComplianceDashboard';
-import { LegalOpinionCard } from './LegalOpinionCard';
-import { NegotiationPointsList } from './NegotiationPointsList';
-import { InverseCoverageAlert } from './InverseCoverageAlert';
 import { CorrectionUI } from './CorrectionUI';
+import { AdvancedAnalysisTab } from './report/AdvancedAnalysisTab';
+import ExportModal, { type PdfExportOptions } from './report/ExportModal';
+import { useReportCorrections } from '../hooks/useReportCorrections';
 import { formatCOP, formatCOPMillions } from '../utils/formatCurrency';
 import { isAdvancedAnalysisEnabled } from '../config/features';
-
 import { useCellNotes } from '../contexts/AnalysisContext';
+import type { ComparisonReport as ReportType } from '../types';
 
 interface ComparisonReportProps {
   report: ReportType;
@@ -57,42 +49,7 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
   report: initialReport,
   onUpdateReport,
 }) => {
-  const [report, setReport] = useState<ReportType>(initialReport);
-
-  React.useEffect(() => {
-    setReport(initialReport);
-  }, [initialReport]);
-
-  const handleApplyCorrection = (
-    quoteId: string,
-    correction: { field: string; originalValue: string; correctedValue: string }
-  ) => {
-    setReport((prev) => {
-      const updatedQuotes = prev.quotes.map((q) => {
-        if (q.id !== quoteId && q.insurerName !== quoteId) return q;
-        const updatedQuote = { ...q };
-
-        if (correction.field.startsWith('coverage_')) {
-          const covName = correction.field.replace(/^coverage_/, '');
-          updatedQuote.coverages = (updatedQuote.coverages || []).map((cov) =>
-            cov.name === covName ? { ...cov, value: correction.correctedValue } : cov
-          );
-        } else if (correction.field === 'deductible') {
-          updatedQuote.deductibles = correction.correctedValue;
-        } else if (correction.field === 'price_annual') {
-          updatedQuote.priceAnnual = Number(correction.correctedValue) || updatedQuote.priceAnnual;
-        } else if (correction.field === 'price_monthly') {
-          updatedQuote.priceMonthly =
-            Number(correction.correctedValue) || updatedQuote.priceMonthly;
-        }
-        return updatedQuote;
-      });
-
-      const nextReport = { ...prev, quotes: updatedQuotes };
-      if (onUpdateReport) onUpdateReport(nextReport);
-      return nextReport;
-    });
-  };
+  const { report, handleApplyCorrection } = useReportCorrections(initialReport, onUpdateReport);
 
   const [activeTab, setActiveTab] = useState<
     'resumen' | 'coberturas' | 'deducibles' | 'auditoria' | 'analisis-avanzado'
@@ -113,11 +70,7 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
         q.legalOpinion
     );
   const [showExportModal, setShowExportModal] = useState(false);
-  const [pdfOptions, setPdfOptions] = useState<{
-    title: string;
-    logo?: string;
-    color: [number, number, number];
-  }>({
+  const [pdfOptions, setPdfOptions] = useState<PdfExportOptions>({
     title: 'Reporte Ejecutivo de Seguros',
     color: [79, 70, 229],
   });
@@ -320,114 +273,13 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
 
         {/* Export Modal */}
         {showExportModal && (
-          <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-50 p-4 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-slate-800">Personalizar Reporte</h3>
-              <button
-                onClick={() => setShowExportModal(false)}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">
-                  Título Personalizado
-                </label>
-                <input
-                  type="text"
-                  className="w-full text-sm border-slate-200 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="Ej: Informe Ejecutivo CSA"
-                  value={pdfOptions.title}
-                  onChange={(e) => setPdfOptions({ ...pdfOptions, title: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">
-                  Logo del Aliado (Opcional)
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        setPdfOptions({ ...pdfOptions, logo: reader.result as string });
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }}
-                />
-              </div>
-
-              {/* Color Picker Simple */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">
-                  Color Principal
-                </label>
-                <div className="flex gap-2">
-                  {[
-                    { c: '#4f46e5', v: [79, 70, 229] as [number, number, number] },
-                    { c: '#059669', v: [5, 150, 105] as [number, number, number] },
-                    { c: '#dc2626', v: [220, 38, 38] as [number, number, number] },
-                    { c: '#2563eb', v: [37, 99, 235] as [number, number, number] },
-                  ].map((color, i) => (
-                    <button
-                      key={i}
-                      className={`w-6 h-6 rounded-full border-2 ${pdfOptions.color[0] === color.v[0] ? 'border-slate-800 ring-1 ring-slate-800' : 'border-transparent'}`}
-                      style={{ backgroundColor: color.c }}
-                      onClick={() => setPdfOptions({ ...pdfOptions, color: color.v })}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <button
-                  onClick={() => {
-                    // ERR-4: the user profile comes from the Supabase session,
-                    // never from local storage.
-                    void storageService.getCurrentUser().then((user) => {
-                      const brokerInfo = user
-                        ? {
-                            name: user.name,
-                            intermediaryName: user.intermediaryName,
-                            registrationNumber:
-                              user.registrationNumber || user.agentDetails?.registrationNumber,
-                            phone: user.agentDetails?.phone,
-                            email: user.email,
-                            address: user.address || user.agentDetails?.address,
-                            city: user.city || user.agentDetails?.city,
-                            logoUrl: user.logoUrl || user.agentDetails?.logoUrl,
-                          }
-                        : undefined;
-
-                      generatePDF(
-                        report,
-                        {
-                          customTitle: pdfOptions.title,
-                          logoBase64: brokerInfo?.logoUrl || pdfOptions.logo,
-                          primaryColor: pdfOptions.color,
-                          brokerInfo,
-                        },
-                        cellNotes as unknown as Record<string, string>
-                      );
-                      setShowExportModal(false);
-                    });
-                  }}
-                  className="w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors"
-                >
-                  Generar PDF
-                </button>
-              </div>
-            </div>
-          </div>
+          <ExportModal
+            report={report}
+            pdfOptions={pdfOptions}
+            onPdfOptionsChange={setPdfOptions}
+            cellNotes={cellNotes}
+            onClose={() => setShowExportModal(false)}
+          />
         )}
       </div>
 
@@ -771,129 +623,7 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
 
       {/* --- TAB CONTENT: ANÁLISIS AVANZADO --- */}
       {activeTab === 'analisis-avanzado' && hasAdvancedAnalysis && (
-        <div className="space-y-6 animate-in fade-in duration-300">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Coverage Validation */}
-            {report.quotes.some((q) => q.clauseValidation?.results?.length) && (
-              <div className="bg-white rounded-xl border border-slate-200 p-6">
-                <h3 className="text-lg font-bold text-slate-800 mb-4">Validación de Coberturas</h3>
-                {report.quotes
-                  .filter((q) => q.clauseValidation?.results?.length)
-                  .map((quote, idx) => (
-                    <CoverageValidationMatrix
-                      key={idx}
-                      validations={quote.clauseValidation!.results!}
-                    />
-                  ))}
-              </div>
-            )}
-
-            {/* Deductible Risk */}
-            {report.quotes.some((q) => q.deductibleAnalysis?.length) && (
-              <div className="bg-white rounded-xl border border-slate-200 p-6">
-                <h3 className="text-lg font-bold text-slate-800 mb-4">Riesgo de Deducibles</h3>
-                {report.quotes
-                  .filter((q) => q.deductibleAnalysis?.length)
-                  .flatMap((quote, qIdx) =>
-                    quote.deductibleAnalysis!.map((analysis, i) => (
-                      <DeductibleRiskGauge key={`${quote.id ?? qIdx}-${i}`} {...analysis} />
-                    ))
-                  )}
-              </div>
-            )}
-
-            {/* Contextual Risk */}
-            {report.quotes.some((q) => q.contextualRisk?.exclusions.length) && (
-              <div className="bg-white rounded-xl border border-slate-200 p-6">
-                <h3 className="text-lg font-bold text-slate-800 mb-4">Riesgo Contextualizado</h3>
-                {report.quotes
-                  .filter((q) => q.contextualRisk?.exclusions.length)
-                  .flatMap((quote, qIdx) =>
-                    quote.contextualRisk!.exclusions.map((ex, i) => (
-                      <ContextualExclusionCard
-                        key={`${quote.id ?? qIdx}-${i}`}
-                        exclusion={ex.exclusion}
-                        contextualRiskLevel={ex.contextualRiskLevel}
-                        explanation={ex.explanation}
-                        mitigationSuggestions={ex.mitigationSuggestions}
-                      />
-                    ))
-                  )}
-              </div>
-            )}
-
-            {/* Warranty Compliance */}
-            {report.quotes.some((q) => q.warrantyCompliance) && (
-              <div className="bg-white rounded-xl border border-slate-200 p-6">
-                <h3 className="text-lg font-bold text-slate-800 mb-4">Cumplimiento de Garantías</h3>
-                {report.quotes
-                  .filter((q) => q.warrantyCompliance)
-                  .map((quote, idx) => (
-                    <WarrantyComplianceDashboard key={idx} summary={quote.warrantyCompliance!} />
-                  ))}
-              </div>
-            )}
-
-            {/* Legal Opinion */}
-            {report.quotes.some((q) => q.legalOpinion?.length) && (
-              <div className="bg-white rounded-xl border border-slate-200 p-6">
-                <h3 className="text-lg font-bold text-slate-800 mb-4">Asesoría Legal</h3>
-                {report.quotes
-                  .filter((q) => q.legalOpinion?.length)
-                  .flatMap((quote, qIdx) =>
-                    quote.legalOpinion!.map((opinion, i) => (
-                      <LegalOpinionCard
-                        key={`${quote.id ?? qIdx}-${i}`}
-                        coverageName={opinion.coverageName}
-                        riskScenario={opinion.riskScenario}
-                        clauseInterpretation={opinion.clauseInterpretation}
-                        recommendation={opinion.recommendation}
-                        citations={opinion.citations}
-                        confidence={opinion.confidence}
-                      />
-                    ))
-                  )}
-              </div>
-            )}
-
-            {/* Inverse Coverage */}
-            {report.quotes.some((q) => (q.clauseValidation?.mandatoryMissingCount ?? 0) > 0) && (
-              <div className="bg-white rounded-xl border border-slate-200 p-6">
-                <h3 className="text-lg font-bold text-slate-800 mb-4">Coberturas Omitidas</h3>
-                {report.quotes
-                  .filter((q) => (q.clauseValidation?.mandatoryMissingCount ?? 0) > 0)
-                  .flatMap((quote, qIdx) =>
-                    (quote.clauseValidation?.results ?? [])
-                      .filter((r) => r.status === 'MANDATORY_MISSING')
-                      .map((r, i) => (
-                        <InverseCoverageAlert
-                          key={`${quote.id ?? qIdx}-${i}`}
-                          coverageName={r.coverageName}
-                          isMandatory={r.isMandatory}
-                        />
-                      ))
-                  )}
-              </div>
-            )}
-
-            {/* Negotiation Points */}
-            {report.quotes.some((q) =>
-              q.legalOpinion?.some((lo) => lo.negotiationPoints.length > 0)
-            ) && (
-              <div className="bg-white rounded-xl border border-slate-200 p-6">
-                <h3 className="text-lg font-bold text-slate-800 mb-4">Puntos de Negociación</h3>
-                {report.quotes
-                  .filter((q) => q.legalOpinion?.some((lo) => lo.negotiationPoints.length > 0))
-                  .map((quote, idx) => (
-                    <NegotiationPointsList
-                      key={idx}
-                      points={quote.legalOpinion!.flatMap((lo) => lo.negotiationPoints)}
-                    />
-                  ))}
-              </div>
-            )}
-          </div>
-        </div>
+        <AdvancedAnalysisTab quotes={report.quotes} />
       )}
 
       {/* Footer */}
