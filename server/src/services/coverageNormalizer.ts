@@ -398,7 +398,10 @@ export async function mapRawToCanonicalBatch(
     for (let i = 0; i < results.length; i++) {
       if (!results[i]?.canonicalName) {
         try {
-          const graphResult = await coverageGraphService.query(rawNames[i]!, { domain: d, insurer });
+          const graphResult = await coverageGraphService.query(rawNames[i]!, {
+            domain: d,
+            insurer,
+          });
           if (graphResult.mappings.length > 0) {
             const best = graphResult.mappings[0]!;
             const confidence = Math.round(best.confidence * 100);
@@ -735,7 +738,12 @@ export async function buildCanonicalCoverages(
   pageTextMap?: Record<number, string>,
   domain?: string,
   insurerName?: string,
-  rawSubLimits?: Array<{ parentCoverage: string; name: string; limit: number | string; deductible?: string | null }>
+  rawSubLimits?: Array<{
+    parentCoverage: string;
+    name: string;
+    limit: number | string;
+    deductible?: string | null;
+  }>
 ): Promise<NormalizationResult> {
   const d = domain ?? 'pyme';
   // Ontology mode (fluid architecture - only if domain has dedicated ontology.json)
@@ -866,18 +874,25 @@ export async function buildCanonicalCoverages(
     for (const sub of rawSubLimits) {
       if (!sub.name || !sub.parentCoverage) continue;
       const parentLower = sub.parentCoverage.toLowerCase().trim();
-      const targetCov = canonicalCoverages.find(
-        (c) =>
-          c.name.toLowerCase().includes(parentLower) ||
-          parentLower.includes(c.name.toLowerCase()) ||
-          c.rawNames.some((rn) => rn.toLowerCase().includes(parentLower) || parentLower.includes(rn.toLowerCase()))
-      ) || canonicalCoverages.find((c) => c.status === 'present');
+      const targetCov =
+        canonicalCoverages.find(
+          (c) =>
+            c.name.toLowerCase().includes(parentLower) ||
+            parentLower.includes(c.name.toLowerCase()) ||
+            c.rawNames.some(
+              (rn) =>
+                rn.toLowerCase().includes(parentLower) || parentLower.includes(rn.toLowerCase())
+            )
+        ) || canonicalCoverages.find((c) => c.status === 'present');
 
       if (targetCov) {
         if (!targetCov.sublimits) targetCov.sublimits = [];
         targetCov.sublimits.push({
           name: sub.name,
-          value: typeof sub.limit === 'number' ? `$ ${sub.limit.toLocaleString('es-CO')}` : String(sub.limit || 'Incluido'),
+          value:
+            typeof sub.limit === 'number'
+              ? `$ ${sub.limit.toLocaleString('es-CO')}`
+              : String(sub.limit || 'Incluido'),
           deductible: sub.deductible || 'Según amparo principal',
           limitType: 'subamparo',
         });

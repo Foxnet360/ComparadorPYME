@@ -191,13 +191,7 @@
     },
     {
       "canonicalName": "Robo Parcial, Pillaje y Saqueo de la Carga",
-      "variants": [
-        "Robo parcial",
-        "Pillaje",
-        "Saqueo",
-        "Hurto parcial de carga",
-        "Pilferage"
-      ],
+      "variants": ["Robo parcial", "Pillaje", "Saqueo", "Hurto parcial de carga", "Pilferage"],
       "category": "COBERTURAS PRINCIPALES"
     },
     {

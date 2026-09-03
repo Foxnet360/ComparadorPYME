@@ -100,7 +100,8 @@ const TRANSPORTE_FORMAT_INSTRUCTIONS = `FORMATO DE SALIDA (JSON):
 
 const TRANSPORTE_RESPONSE_SCHEMA: Record<string, unknown> = {
   type: 'object',
-  description: 'Transporte de Mercancías quote extraction schema under Decreto 1079/2015 and Incoterms 2020',
+  description:
+    'Transporte de Mercancías quote extraction schema under Decreto 1079/2015 and Incoterms 2020',
   additionalProperties: true,
   properties: {
     insurerName: { type: 'string' },

@@ -496,7 +496,12 @@ export interface ExecutiveAnalyticsData {
   totalPremium: number;
   activeProspects: number;
   avgProcessTimeMinutes: number;
-  domainDistribution: Array<{ domainId: string; domainName: string; count: number; percentage: number }>;
+  domainDistribution: Array<{
+    domainId: string;
+    domainName: string;
+    count: number;
+    percentage: number;
+  }>;
   insurerDistribution: Array<{ insurerName: string; count: number; percentage: number }>;
   analystPerformance?: AnalystPerformance[];
   aiBenchmarks?: {
@@ -510,6 +515,11 @@ export interface ExecutiveAnalyticsData {
     avgCostPerComparisonUSD?: number;
     avgCostPerComparisonCOP?: number;
     totalEstimatedCostUSD?: number;
-    allyTokenBreakdown?: Array<{ allyName: string; inputTokens: number; outputTokens: number; estimatedCostUSD: number }>;
+    allyTokenBreakdown?: Array<{
+      allyName: string;
+      inputTokens: number;
+      outputTokens: number;
+      estimatedCostUSD: number;
+    }>;
   };
 }

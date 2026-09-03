@@ -45,7 +45,9 @@ describe('domainConstants', () => {
 
   it('looks up canonical coverage names by stable index', () => {
     expect(getCanonicalCoverageName('pyme', 0)).toBe('Incendio (Edificio y Contenidos)');
-    expect(getCanonicalCoverageName('pyme', 5)).toBe('Responsabilidad Civil Extracontractual (RCE)');
+    expect(getCanonicalCoverageName('pyme', 5)).toBe(
+      'Responsabilidad Civil Extracontractual (RCE)'
+    );
     expect(() => getCanonicalCoverageName('pyme', 99)).toThrow(/out of range/);
   });
 

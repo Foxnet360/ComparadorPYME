@@ -175,10 +175,7 @@ export const ReportCharts: React.FC<ReportChartsProps> = ({ quotes }) => {
                 />
                 <Bar dataKey="fullPrice" name="Precio Anual" radius={[4, 4, 0, 0]} barSize={40}>
                   {priceData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={CHART_COLORS[index % CHART_COLORS.length]}
-                    />
+                    <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                   ))}
                 </Bar>
               </BarChart>

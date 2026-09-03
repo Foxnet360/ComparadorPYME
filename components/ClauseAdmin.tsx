@@ -1,6 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { clauseService } from '../services/clauseService';
-import { Search, Eye, Trash2, ShieldCheck, FileText, Sparkles, BookOpen, Layers, X, Filter } from 'lucide-react';
+import {
+  Search,
+  Eye,
+  Trash2,
+  ShieldCheck,
+  FileText,
+  Sparkles,
+  BookOpen,
+  Layers,
+  X,
+  Filter,
+} from 'lucide-react';
 
 interface ClauseAdminProps {
   onClose: () => void;
@@ -467,9 +478,14 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose }) => {
             <div className="flex justify-between items-center border-b pb-3">
               <div>
                 <h3 className="font-bold text-slate-900 text-base">{previewDoc.documentName}</h3>
-                <p className="text-xs text-slate-500 font-semibold">{previewDoc.insurer?.name} • Versión {previewDoc.version || '2026.1'}</p>
+                <p className="text-xs text-slate-500 font-semibold">
+                  {previewDoc.insurer?.name} • Versión {previewDoc.version || '2026.1'}
+                </p>
               </div>
-              <button onClick={() => setPreviewDoc(null)} className="text-slate-400 hover:text-slate-600 p-1">
+              <button
+                onClick={() => setPreviewDoc(null)}
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
                 <X size={20} />
               </button>
             </div>
@@ -480,7 +496,9 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose }) => {
                   <Sparkles size={14} className="mr-1.5 text-indigo-600" />
                   Estado Vectorial: Indexado en PGVector (3072 dimensiones)
                 </span>
-                <span className="font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">100% RAG Ready</span>
+                <span className="font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                  100% RAG Ready
+                </span>
               </div>
 
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs font-mono text-slate-700 space-y-2 max-h-60 overflow-y-auto">

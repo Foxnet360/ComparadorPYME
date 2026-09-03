@@ -27,7 +27,11 @@ describe('analyticsService', () => {
   });
 
   it('calculates executive analytics for ally_technical role', async () => {
-    const data = await analyticsService.getExecutiveAnalytics('ally_technical', 'user-tech-1', 'ally-100');
+    const data = await analyticsService.getExecutiveAnalytics(
+      'ally_technical',
+      'user-tech-1',
+      'ally-100'
+    );
     expect(data.role).toBe('ally_technical');
     expect(data.analystPerformance).toBeUndefined();
     expect(data.aiBenchmarks).toBeUndefined();

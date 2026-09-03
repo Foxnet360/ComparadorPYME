@@ -7,23 +7,25 @@
 const ACRONYM_DICTIONARY: Record<string, string> = {
   // General & Patrimoniales / PYME
   'HMACC-AMIT': 'Huelga, Motín, Asonada, Conmoción Civil y Actos Malintencionados de Terceros',
-  'HMACC': 'Huelga, Motín, Asonada y Conmoción Civil',
-  'AMIT': 'Actos Malintencionados de Terceros',
-  'HMA': 'Huelga, Motín y Asonada',
-  'RCE': 'Responsabilidad Civil Extracontractual',
-  'RC': 'Responsabilidad Civil',
-  'PL': 'Predios, Labores y Operaciones',
-  'PLO': 'Predios, Labores y Operaciones',
+  HMACC: 'Huelga, Motín, Asonada y Conmoción Civil',
+  AMIT: 'Actos Malintencionados de Terceros',
+  HMA: 'Huelga, Motín y Asonada',
+  RCE: 'Responsabilidad Civil Extracontractual',
+  RC: 'Responsabilidad Civil',
+  PL: 'Predios, Labores y Operaciones',
+  PLO: 'Predios, Labores y Operaciones',
 
   // Copropiedades
-  'RCE PROCESO CIVIL': 'Responsabilidad Civil Extracontractual en Proceso Civil y Gastos de Defensa',
+  'RCE PROCESO CIVIL':
+    'Responsabilidad Civil Extracontractual en Proceso Civil y Gastos de Defensa',
   'RC PROCESO CIVIL': 'Responsabilidad Civil en Proceso Civil',
   'RCE PARQUEADEROS': 'Responsabilidad Civil Extracontractual Vehículos en Parqueaderos',
   'RC PARQUEADEROS': 'Responsabilidad Civil Vehículos en Parqueaderos',
-  'LUCRO CESANTE': 'Lucro Cesante / Pérdida de Cánones de Arrendamiento y Gastos Adicionales de Alojamiento',
+  'LUCRO CESANTE':
+    'Lucro Cesante / Pérdida de Cánones de Arrendamiento y Gastos Adicionales de Alojamiento',
 
   // Autos
-  'SOAT': 'Seguro Obligatorio de Accidentes de Tránsito',
+  SOAT: 'Seguro Obligatorio de Accidentes de Tránsito',
   'PT DAÑOS': 'Pérdida Total por Daños Materiales',
   'PP DAÑOS': 'Pérdida Parcial por Daños Materiales',
   'PT HURTO': 'Pérdida Total por Hurto / Sustracción',
@@ -31,24 +33,24 @@ const ACRONYM_DICTIONARY: Record<string, string> = {
   'RCE VEHICULOS': 'Responsabilidad Civil Extracontractual Vehículos',
 
   // Cumplimiento
-  'BMA': 'Buen Manejo y Correcta Inversión del Anticipo',
-  'ANTICIPO': 'Buen Manejo y Correcta Inversión del Anticipo',
-  'CUMPLIMIENTO': 'Cumplimiento del Contrato',
-  'SPS': 'Salarios, Prestaciones Sociales e Indemnizaciones',
+  BMA: 'Buen Manejo y Correcta Inversión del Anticipo',
+  ANTICIPO: 'Buen Manejo y Correcta Inversión del Anticipo',
+  CUMPLIMIENTO: 'Cumplimiento del Contrato',
+  SPS: 'Salarios, Prestaciones Sociales e Indemnizaciones',
   'SALARIOS Y PRESTACIONES': 'Salarios, Prestaciones Sociales e Indemnizaciones',
   'CALIDAD SERVICIO': 'Calidad del Servicio Prestado',
 
   // Transporte
-  'ST': 'Seguro de Transporte de Mercancías',
-  'TN': 'Trayecto Nacional',
-  'TI': 'Trayecto Internacional',
-  'URBANO': 'Trayecto Urbano y Metropolitano',
+  ST: 'Seguro de Transporte de Mercancías',
+  TN: 'Trayecto Nacional',
+  TI: 'Trayecto Internacional',
+  URBANO: 'Trayecto Urbano y Metropolitano',
 
   // Salud & Vida
-  'IPTP': 'Incapacidad Total y Permanente',
-  'MA': 'Muerte Accidental y Desmembración',
-  'AMP': 'Anexo Maternidad y Parto',
-  'EGM': 'Enfermedades Graves Mayores',
+  IPTP: 'Incapacidad Total y Permanente',
+  MA: 'Muerte Accidental y Desmembración',
+  AMP: 'Anexo Maternidad y Parto',
+  EGM: 'Enfermedades Graves Mayores',
 };
 
 /**

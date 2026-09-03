@@ -82,7 +82,8 @@ function checkEnvTaxonomyConsistency(config: EnvConfig): void {
 
   const envSmmlv = process.env.SMMLV_VALUE;
   const envUvt = process.env.UVT_VALUE;
-  const targetSalary = metadata?.salaryValue2026 || metadata?.salaryValue2025 || metadata?.salaryValue2024;
+  const targetSalary =
+    metadata?.salaryValue2026 || metadata?.salaryValue2025 || metadata?.salaryValue2024;
   const targetUvt = metadata?.uvtValue2026 || metadata?.uvtValue2025 || metadata?.uvtValue2024;
 
   if (!envSmmlv && targetSalary) {
@@ -148,10 +149,10 @@ function validateEnv(): EnvConfig {
     }
   }
 
-function sanitizeGeminiModelName(modelName?: string, defaultModel = 'gemini-3.7-flash'): string {
-  if (!modelName) return defaultModel;
-  return modelName;
-}
+  function sanitizeGeminiModelName(modelName?: string, defaultModel = 'gemini-3.7-flash'): string {
+    if (!modelName) return defaultModel;
+    return modelName;
+  }
 
   const config: EnvConfig = {
     PORT: parseInt(process.env.PORT || '8080', 10),
@@ -165,7 +166,10 @@ function sanitizeGeminiModelName(modelName?: string, defaultModel = 'gemini-3.7-
     GEMINI_MODEL: sanitizeGeminiModelName(process.env.GEMINI_MODEL, 'gemini-3.7-flash'),
     GEMINI_THINKING_LEVEL: process.env.GEMINI_THINKING_LEVEL || 'low',
     GEMINI_CHAT_MODEL: sanitizeGeminiModelName(process.env.GEMINI_CHAT_MODEL, 'gemini-3.7-flash'),
-    GEMINI_CLAUSE_MODEL: sanitizeGeminiModelName(process.env.GEMINI_CLAUSE_MODEL, 'gemini-3.7-flash'),
+    GEMINI_CLAUSE_MODEL: sanitizeGeminiModelName(
+      process.env.GEMINI_CLAUSE_MODEL,
+      'gemini-3.7-flash'
+    ),
     GEMINI_EMBEDDING_MODEL: process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-2',
 
     REGION: process.env.REGION || 'CO',

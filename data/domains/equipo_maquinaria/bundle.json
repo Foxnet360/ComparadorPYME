@@ -3,7 +3,7 @@
   "name": "Maquinaria y Equipo Contratista",
   "scoringWeights": {
     "coverage": 0.45,
-    "deductible": 0.30,
+    "deductible": 0.3,
     "price": 0.25
   }
 }

@@ -280,7 +280,8 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
             <div className="pt-1.5 border-t border-slate-200/60 flex flex-wrap gap-1.5 text-[11px] font-semibold text-slate-700">
               {selectedClient.domainDetails.commercialAssetsValue && (
                 <span className="bg-indigo-100/70 text-indigo-800 px-2 py-0.5 rounded-md">
-                  Activos Fijos: ${selectedClient.domainDetails.commercialAssetsValue.toLocaleString()} COP
+                  Activos Fijos: $
+                  {selectedClient.domainDetails.commercialAssetsValue.toLocaleString()} COP
                 </span>
               )}
               {selectedClient.domainDetails.employeeCount && (
@@ -300,7 +301,8 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
               )}
               {selectedClient.domainDetails.machineryReplacementValue && (
                 <span className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md">
-                  Maquinaria: ${selectedClient.domainDetails.machineryReplacementValue.toLocaleString()} COP
+                  Maquinaria: $
+                  {selectedClient.domainDetails.machineryReplacementValue.toLocaleString()} COP
                 </span>
               )}
             </div>

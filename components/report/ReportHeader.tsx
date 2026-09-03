@@ -43,8 +43,7 @@ export const ReportHeader: React.FC<ReportHeaderProps> = ({
   exportModal,
 }) => {
   const domainKey = domain || 'pyme';
-  const domainLabel =
-    DOMAIN_LABELS[domainKey] || (domain ? String(domain).toUpperCase() : 'PYME');
+  const domainLabel = DOMAIN_LABELS[domainKey] || (domain ? String(domain).toUpperCase() : 'PYME');
 
   return (
     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200 relative">

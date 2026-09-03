@@ -41,7 +41,8 @@ const TechnicalDashboard: React.FC<TechnicalDashboardProps> = ({ onNewAnalysis, 
   const totalComparisons = history.length;
   const soldCount = history.filter((h) => h.status === 'SOLD').length;
   const activeCount = history.filter((h) => h.status === 'SENT' || h.status === 'DRAFT').length;
-  const conversionRate = totalComparisons > 0 ? Math.round((soldCount / totalComparisons) * 100) : 0;
+  const conversionRate =
+    totalComparisons > 0 ? Math.round((soldCount / totalComparisons) * 100) : 0;
   const totalPremium = history.reduce((sum, item) => sum + (item.premiumValue || 0), 0);
 
   const filteredHistory = history.filter((item) => {
@@ -203,13 +204,15 @@ const TechnicalDashboard: React.FC<TechnicalDashboardProps> = ({ onNewAnalysis, 
               ) : filteredHistory.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
-                    <p className="font-medium text-slate-600 mb-1">No se encontraron comparaciones</p>
+                    <p className="font-medium text-slate-600 mb-1">
+                      No se encontraron comparaciones
+                    </p>
                     <p className="text-xs text-slate-400 mb-4">
                       {filter || statusFilter !== 'ALL'
                         ? 'Probá ajustando los filtros de búsqueda.'
                         : 'Hacé clic en "Nueva Comparación" para realizar la primera.'}
                     </p>
-                    {(!filter && statusFilter === 'ALL') && (
+                    {!filter && statusFilter === 'ALL' && (
                       <button
                         onClick={onNewAnalysis}
                         className="inline-flex items-center space-x-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-colors"

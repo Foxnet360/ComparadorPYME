@@ -95,12 +95,18 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const [newAllyNit, setNewAllyNit] = useState('');
 
   // Filter users based on RBAC level
-  const visibleUsers = usersList.filter((u) => {
-    if (currentUserRole === 'ally_admin') {
-      return u.allyId === currentAllyId;
-    }
-    return true; // Super Admin sees all users
-  }).filter((u) => u.name.toLowerCase().includes(searchQuery.toLowerCase()) || u.email.toLowerCase().includes(searchQuery.toLowerCase()));
+  const visibleUsers = usersList
+    .filter((u) => {
+      if (currentUserRole === 'ally_admin') {
+        return u.allyId === currentAllyId;
+      }
+      return true; // Super Admin sees all users
+    })
+    .filter(
+      (u) =>
+        u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        u.email.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,7 +163,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         <div>
           <div className="flex items-center space-x-3">
             <h2 className="text-2xl font-bold text-slate-900">
-              {currentUserRole === 'super_admin' ? 'Gestión Global de Usuarios y Aliados' : 'Gestión del Equipo Técnico'}
+              {currentUserRole === 'super_admin'
+                ? 'Gestión Global de Usuarios y Aliados'
+                : 'Gestión del Equipo Técnico'}
             </h2>
             <span className="px-2.5 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold uppercase">
               RBAC Control
@@ -283,7 +291,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                             : 'Técnico Analista'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-xs font-medium text-slate-700">{user.allyName}</td>
+                    <td className="px-6 py-4 text-xs font-medium text-slate-700">
+                      {user.allyName}
+                    </td>
                     <td className="px-6 py-4">
                       <span
                         className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
@@ -339,7 +349,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                     </td>
                     <td className="px-6 py-4 text-xs font-mono text-slate-600">{ally.nit}</td>
                     <td className="px-6 py-4 text-xs font-mono text-slate-400">{ally.id}</td>
-                    <td className="px-6 py-4 text-xs text-slate-500">{ally.createdAt || '2025-10-01'}</td>
+                    <td className="px-6 py-4 text-xs text-slate-500">
+                      {ally.createdAt || '2025-10-01'}
+                    </td>
                     <td className="px-6 py-4 text-right">
                       <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold">
                         Vigente
@@ -359,7 +371,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({
           <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95">
             <div className="flex justify-between items-center border-b pb-3">
               <h3 className="font-bold text-slate-900">Registrar Nuevo Usuario</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X size={18} />
               </button>
             </div>
@@ -455,7 +470,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({
           <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95">
             <div className="flex justify-between items-center border-b pb-3">
               <h3 className="font-bold text-slate-900">Registrar Nueva Correduría Aliada</h3>
-              <button onClick={() => setShowAllyModal(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setShowAllyModal(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X size={18} />
               </button>
             </div>

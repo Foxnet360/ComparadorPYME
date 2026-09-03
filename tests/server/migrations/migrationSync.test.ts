@@ -32,10 +32,18 @@ describe('PR3 migration-prod-sync migrations', () => {
   it('3.3 migration 026 reconciles prod schema columns idempotently', () => {
     const sql = readMigration('026_reconcile_prod_schema.sql');
 
-    expect(sql).toContain('ALTER TABLE public.client_profiles ADD COLUMN IF NOT EXISTS user_id TEXT');
-    expect(sql).toContain('ALTER TABLE public.analysis_history ADD COLUMN IF NOT EXISTS correlation_id TEXT');
-    expect(sql).toContain('ALTER TABLE public.analysis_history ADD COLUMN IF NOT EXISTS quote_document_ids TEXT[]');
-    expect(sql).toContain('ALTER TABLE public.analysis_history ADD COLUMN IF NOT EXISTS clause_document_ids TEXT[]');
+    expect(sql).toContain(
+      'ALTER TABLE public.client_profiles ADD COLUMN IF NOT EXISTS user_id TEXT'
+    );
+    expect(sql).toContain(
+      'ALTER TABLE public.analysis_history ADD COLUMN IF NOT EXISTS correlation_id TEXT'
+    );
+    expect(sql).toContain(
+      'ALTER TABLE public.analysis_history ADD COLUMN IF NOT EXISTS quote_document_ids TEXT[]'
+    );
+    expect(sql).toContain(
+      'ALTER TABLE public.analysis_history ADD COLUMN IF NOT EXISTS clause_document_ids TEXT[]'
+    );
   });
 });
 

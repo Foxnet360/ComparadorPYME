@@ -38,31 +38,86 @@ export const analyticsService = {
       filteredHistory = history;
     }
 
-    const totalComparisons = filteredHistory.length || (role === 'super_admin' ? 142 : role === 'ally_admin' ? 58 : 24);
-    const soldCount = filteredHistory.filter((h) => h.status === 'SOLD').length || Math.round(totalComparisons * 0.42);
-    const activeProspects = filteredHistory.filter((h) => h.status === 'SENT' || h.status === 'DRAFT').length || Math.round(totalComparisons * 0.35);
-    const conversionRate = totalComparisons > 0 ? Math.round((soldCount / totalComparisons) * 100) : 42;
-    
-    const realTotalPremium = filteredHistory.reduce((sum, item) => sum + (item.premiumValue || 0), 0);
-    const totalPremium = realTotalPremium > 0 ? realTotalPremium : (role === 'super_admin' ? 8450000000 : role === 'ally_admin' ? 3200000000 : 1250000000);
+    const totalComparisons =
+      filteredHistory.length || (role === 'super_admin' ? 142 : role === 'ally_admin' ? 58 : 24);
+    const soldCount =
+      filteredHistory.filter((h) => h.status === 'SOLD').length ||
+      Math.round(totalComparisons * 0.42);
+    const activeProspects =
+      filteredHistory.filter((h) => h.status === 'SENT' || h.status === 'DRAFT').length ||
+      Math.round(totalComparisons * 0.35);
+    const conversionRate =
+      totalComparisons > 0 ? Math.round((soldCount / totalComparisons) * 100) : 42;
+
+    const realTotalPremium = filteredHistory.reduce(
+      (sum, item) => sum + (item.premiumValue || 0),
+      0
+    );
+    const totalPremium =
+      realTotalPremium > 0
+        ? realTotalPremium
+        : role === 'super_admin'
+          ? 8450000000
+          : role === 'ally_admin'
+            ? 3200000000
+            : 1250000000;
     const avgProcessTimeMinutes = role === 'super_admin' ? 4.2 : role === 'ally_admin' ? 4.8 : 3.5;
 
     // Domain Distribution
     const domainDistribution = [
-      { domainId: 'pyme', domainName: 'PYME Multirriesgo', count: Math.round(totalComparisons * 0.35), percentage: 35 },
-      { domainId: 'danos_materiales', domainName: 'Todo Riesgo Daños', count: Math.round(totalComparisons * 0.20), percentage: 20 },
-      { domainId: 'responsabilidad_civil', domainName: 'Responsabilidad Civil', count: Math.round(totalComparisons * 0.15), percentage: 15 },
-      { domainId: 'sustraccion', domainName: 'Sustracción y Hurto', count: Math.round(totalComparisons * 0.10), percentage: 10 },
-      { domainId: 'transporte', domainName: 'Transporte de Mercancías', count: Math.round(totalComparisons * 0.08), percentage: 8 },
-      { domainId: 'equipo_electronico', domainName: 'Equipo Electrónico', count: Math.round(totalComparisons * 0.07), percentage: 7 },
-      { domainId: 'manejo', domainName: 'Manejo / Infidelidad', count: Math.round(totalComparisons * 0.05), percentage: 5 },
+      {
+        domainId: 'pyme',
+        domainName: 'PYME Multirriesgo',
+        count: Math.round(totalComparisons * 0.35),
+        percentage: 35,
+      },
+      {
+        domainId: 'danos_materiales',
+        domainName: 'Todo Riesgo Daños',
+        count: Math.round(totalComparisons * 0.2),
+        percentage: 20,
+      },
+      {
+        domainId: 'responsabilidad_civil',
+        domainName: 'Responsabilidad Civil',
+        count: Math.round(totalComparisons * 0.15),
+        percentage: 15,
+      },
+      {
+        domainId: 'sustraccion',
+        domainName: 'Sustracción y Hurto',
+        count: Math.round(totalComparisons * 0.1),
+        percentage: 10,
+      },
+      {
+        domainId: 'transporte',
+        domainName: 'Transporte de Mercancías',
+        count: Math.round(totalComparisons * 0.08),
+        percentage: 8,
+      },
+      {
+        domainId: 'equipo_electronico',
+        domainName: 'Equipo Electrónico',
+        count: Math.round(totalComparisons * 0.07),
+        percentage: 7,
+      },
+      {
+        domainId: 'manejo',
+        domainName: 'Manejo / Infidelidad',
+        count: Math.round(totalComparisons * 0.05),
+        percentage: 5,
+      },
     ];
 
     // Insurer Distribution
     const insurerDistribution = [
       { insurerName: 'SURA', count: Math.round(totalComparisons * 0.28), percentage: 28 },
       { insurerName: 'AXA COLPATRIA', count: Math.round(totalComparisons * 0.24), percentage: 24 },
-      { insurerName: 'SEGUROS DEL ESTADO', count: Math.round(totalComparisons * 0.18), percentage: 18 },
+      {
+        insurerName: 'SEGUROS DEL ESTADO',
+        count: Math.round(totalComparisons * 0.18),
+        percentage: 18,
+      },
       { insurerName: 'ALLIANZ', count: Math.round(totalComparisons * 0.16), percentage: 16 },
       { insurerName: 'MAPFRE / BBVA', count: Math.round(totalComparisons * 0.14), percentage: 14 },
     ];
@@ -70,9 +125,8 @@ export const analyticsService = {
     // Analyst Performance (for Ally Admin and Super Admin)
     let analystPerformance: AnalystPerformance[] | undefined;
     if (role === 'ally_admin' || role === 'super_admin') {
-      const relevantTeam = role === 'ally_admin'
-        ? DEMO_ANALYSTS.filter((a) => a.allyId === allyId)
-        : DEMO_ANALYSTS;
+      const relevantTeam =
+        role === 'ally_admin' ? DEMO_ANALYSTS.filter((a) => a.allyId === allyId) : DEMO_ANALYSTS;
 
       analystPerformance = relevantTeam.map((analyst, index) => ({
         analystId: analyst.id,
@@ -101,9 +155,24 @@ export const analyticsService = {
         avgCostPerComparisonCOP: 330,
         totalEstimatedCostUSD: 14.85,
         allyTokenBreakdown: [
-          { allyName: 'Correduría Andina de Seguros S.A.', inputTokens: 680000, outputTokens: 155000, estimatedCostUSD: 6.80 },
-          { allyName: 'Alianza Corredores PYME Ltda.', inputTokens: 490000, outputTokens: 112000, estimatedCostUSD: 4.90 },
-          { allyName: 'Seguros Estratégicos del Caribe', inputTokens: 315000, outputTokens: 75000, estimatedCostUSD: 3.15 },
+          {
+            allyName: 'Correduría Andina de Seguros S.A.',
+            inputTokens: 680000,
+            outputTokens: 155000,
+            estimatedCostUSD: 6.8,
+          },
+          {
+            allyName: 'Alianza Corredores PYME Ltda.',
+            inputTokens: 490000,
+            outputTokens: 112000,
+            estimatedCostUSD: 4.9,
+          },
+          {
+            allyName: 'Seguros Estratégicos del Caribe',
+            inputTokens: 315000,
+            outputTokens: 75000,
+            estimatedCostUSD: 3.15,
+          },
         ],
       };
     }

@@ -41,7 +41,11 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
   const loadAnalytics = async () => {
     setLoading(true);
     try {
-      const result = await analyticsService.getExecutiveAnalytics(role, 'user-tech-1', selectedAllyId);
+      const result = await analyticsService.getExecutiveAnalytics(
+        role,
+        'user-tech-1',
+        selectedAllyId
+      );
       setData(result);
     } catch (err) {
       console.error('Error loading analytics:', err);
@@ -74,7 +78,8 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
               </span>
             </div>
             <p className="text-slate-500 text-sm mt-0.5">
-              Tablero estratégico adaptativo de rendimiento técnico, conversión e Inteligencia Artificial
+              Tablero estratégico adaptativo de rendimiento técnico, conversión e Inteligencia
+              Artificial
             </p>
           </div>
         </div>
@@ -176,7 +181,9 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
                 <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
                   {role === 'ally_technical' ? 'Mis Comparaciones' : 'Comparaciones Totales'}
                 </div>
-                <div className="text-2xl font-extrabold text-slate-900">{data.totalComparisons}</div>
+                <div className="text-2xl font-extrabold text-slate-900">
+                  {data.totalComparisons}
+                </div>
                 <div className="text-xs text-slate-500 mt-1">
                   {role === 'super_admin' ? 'En todas las corredurías' : 'Estudios procesados'}
                 </div>
@@ -192,7 +199,9 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
                 <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
                   Tasa de Conversión
                 </div>
-                <div className="text-2xl font-extrabold text-emerald-600">{data.conversionRate}%</div>
+                <div className="text-2xl font-extrabold text-emerald-600">
+                  {data.conversionRate}%
+                </div>
                 <div className="text-xs text-slate-500 mt-1">
                   {data.soldCount} pólizas cerradas ganadas
                 </div>
@@ -297,25 +306,36 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                  <div className="text-xs text-slate-500 font-semibold">Tokens Entrada / Salida</div>
-                  <div className="text-lg font-extrabold text-slate-900">
-                    {(data.aiBenchmarks.totalInputTokens / 1000000).toFixed(2)}M / {((data.aiBenchmarks.totalOutputTokens || 0) / 1000).toFixed(0)}k
+                  <div className="text-xs text-slate-500 font-semibold">
+                    Tokens Entrada / Salida
                   </div>
-                  <div className="text-xs text-slate-400 mt-0.5">Input / Output tokens procesados</div>
+                  <div className="text-lg font-extrabold text-slate-900">
+                    {(data.aiBenchmarks.totalInputTokens / 1000000).toFixed(2)}M /{' '}
+                    {((data.aiBenchmarks.totalOutputTokens || 0) / 1000).toFixed(0)}k
+                  </div>
+                  <div className="text-xs text-slate-400 mt-0.5">
+                    Input / Output tokens procesados
+                  </div>
                 </div>
 
                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                  <div className="text-xs text-slate-500 font-semibold">Costo Medio / Comparación</div>
+                  <div className="text-xs text-slate-500 font-semibold">
+                    Costo Medio / Comparación
+                  </div>
                   <div className="text-lg font-extrabold text-emerald-600">
                     ${data.aiBenchmarks.avgCostPerComparisonUSD} USD
                   </div>
-                  <div className="text-xs text-slate-400 mt-0.5">~ ${data.aiBenchmarks.avgCostPerComparisonCOP} COP por estudio</div>
+                  <div className="text-xs text-slate-400 mt-0.5">
+                    ~ ${data.aiBenchmarks.avgCostPerComparisonCOP} COP por estudio
+                  </div>
                 </div>
 
                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
                   <div className="text-xs text-slate-500 font-semibold">Eficiencia Económica</div>
                   <div className="text-lg font-extrabold text-indigo-600">97.8%</div>
-                  <div className="text-xs text-slate-400 mt-0.5">Ahorro vs. auditoría externa manual</div>
+                  <div className="text-xs text-slate-400 mt-0.5">
+                    Ahorro vs. auditoría externa manual
+                  </div>
                 </div>
               </div>
             </div>
@@ -360,12 +380,17 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
                   <Activity className="text-emerald-600" size={18} />
                   <span>Participación por Compañía Aseguradora</span>
                 </h3>
-                <span className="text-xs text-slate-400 font-medium">Frecuencia en Cotizaciones</span>
+                <span className="text-xs text-slate-400 font-medium">
+                  Frecuencia en Cotizaciones
+                </span>
               </div>
 
               <div className="space-y-3">
                 {data.insurerDistribution.map((ins, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100"
+                  >
                     <div className="font-bold text-sm text-slate-800">{ins.insurerName}</div>
                     <div className="text-xs font-bold text-slate-600">
                       <span className="text-indigo-600 mr-2">{ins.count} cotizaciones</span>
@@ -412,7 +437,10 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {data.analystPerformance.map((analyst) => (
-                      <tr key={analyst.analystId} className="hover:bg-slate-50/70 transition-colors">
+                      <tr
+                        key={analyst.analystId}
+                        className="hover:bg-slate-50/70 transition-colors"
+                      >
                         <td className="px-6 py-4 font-bold text-slate-900 flex items-center space-x-2">
                           <Award size={16} className="text-amber-500 flex-shrink-0" />
                           <span>{analyst.analystName}</span>

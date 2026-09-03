@@ -465,7 +465,11 @@ IMPORTANTE - FORMATO DE RESPUESTA:
     console.log(`\n✅ STAGE 5: Validation`);
     console.log('-'.repeat(50));
 
-    const validation = validateQuote({ rawText: '', parseConfidence: 0, ...geminiResult } as unknown as ParsedQuote);
+    const validation = validateQuote({
+      rawText: '',
+      parseConfidence: 0,
+      ...geminiResult,
+    } as unknown as ParsedQuote);
 
     console.log(`   Valid: ${validation.isValid ? '✅' : '❌'}`);
     console.log(`   Coverages: ${validation.coverageCount}/${validation.expectedCoverageCount}`);
@@ -477,7 +481,11 @@ IMPORTANTE - FORMATO DE RESPUESTA:
     }
 
     // === DETAILED CONFIDENCE BREAKDOWN ===
-    const finalScore = printConfidenceBreakdown({ rawText: '', parseConfidence: 0, ...geminiResult } as unknown as ParsedQuote, validation, true);
+    const finalScore = printConfidenceBreakdown(
+      { rawText: '', parseConfidence: 0, ...geminiResult } as unknown as ParsedQuote,
+      validation,
+      true
+    );
 
     // Save detailed results
     const outputPath = pdfPath.replace('.pdf', '_confidence_debug.json');

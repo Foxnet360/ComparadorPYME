@@ -17,16 +17,48 @@
       "name": "Incendio (Edificio y Contenidos)",
       "section": "DAÑOS MATERIALES",
       "isRequired": true,
-      "aliases": ["incendio", "rayo", "explosión", "edificio", "contenidos", "estructura", "instalaciones", "fuego"],
-      "synonyms": ["incendio", "rayo", "explosión", "edificio", "contenidos", "estructura", "instalaciones", "fuego", "daños por incendio", "amparo básico"]
+      "aliases": [
+        "incendio",
+        "rayo",
+        "explosión",
+        "edificio",
+        "contenidos",
+        "estructura",
+        "instalaciones",
+        "fuego"
+      ],
+      "synonyms": [
+        "incendio",
+        "rayo",
+        "explosión",
+        "edificio",
+        "contenidos",
+        "estructura",
+        "instalaciones",
+        "fuego",
+        "daños por incendio",
+        "amparo básico"
+      ]
     },
     {
       "id": 2,
       "name": "Lucro Cesante",
       "section": "PÉRDIDAS CONSECUENCIALES",
       "isRequired": false,
-      "aliases": ["lucro cesante", "pérdida de ingresos", "interrupción de negocio", "pérdida de beneficios"],
-      "synonyms": ["lucro cesante", "pérdida de ingresos", "interrupción de negocio", "pérdida de beneficios", "renta por interrupción", "business interruption"]
+      "aliases": [
+        "lucro cesante",
+        "pérdida de ingresos",
+        "interrupción de negocio",
+        "pérdida de beneficios"
+      ],
+      "synonyms": [
+        "lucro cesante",
+        "pérdida de ingresos",
+        "interrupción de negocio",
+        "pérdida de beneficios",
+        "renta por interrupción",
+        "business interruption"
+      ]
     },
     {
       "id": 3,
@@ -34,23 +66,59 @@
       "section": "DAÑOS MATERIALES",
       "isRequired": false,
       "aliases": ["sustracción", "hurto", "robo", "theft"],
-      "synonyms": ["sustracción", "hurto", "robo", "hurto calificado", "hurto simple", "robo con fuerza", "robo a mano armada", "theft"]
+      "synonyms": [
+        "sustracción",
+        "hurto",
+        "robo",
+        "hurto calificado",
+        "hurto simple",
+        "robo con fuerza",
+        "robo a mano armada",
+        "theft"
+      ]
     },
     {
       "id": 4,
       "name": "Equipo Eléctrico y Electrónico",
       "section": "DAÑOS MATERIALES",
       "isRequired": false,
-      "aliases": ["equipo eléctrico", "equipo electrónico", "cortocircuito", "daño eléctrico", "sobretensión"],
-      "synonyms": ["equipo eléctrico", "equipo electrónico", "cortocircuito", "daño eléctrico", "sobretensión", "daño por corriente", "EEE", "bienes electrónicos"]
+      "aliases": [
+        "equipo eléctrico",
+        "equipo electrónico",
+        "cortocircuito",
+        "daño eléctrico",
+        "sobretensión"
+      ],
+      "synonyms": [
+        "equipo eléctrico",
+        "equipo electrónico",
+        "cortocircuito",
+        "daño eléctrico",
+        "sobretensión",
+        "daño por corriente",
+        "EEE",
+        "bienes electrónicos"
+      ]
     },
     {
       "id": 5,
       "name": "Rotura de Maquinaria",
       "section": "DAÑOS MATERIALES",
       "isRequired": false,
-      "aliases": ["rotura de maquinaria", "daño a maquinaria", "falla mecánica", "avería de máquina"],
-      "synonyms": ["rotura de maquinaria", "daño a maquinaria", "falla mecánica", "avería de máquina", "machinery breakdown", "equipo industrial"]
+      "aliases": [
+        "rotura de maquinaria",
+        "daño a maquinaria",
+        "falla mecánica",
+        "avería de máquina"
+      ],
+      "synonyms": [
+        "rotura de maquinaria",
+        "daño a maquinaria",
+        "falla mecánica",
+        "avería de máquina",
+        "machinery breakdown",
+        "equipo industrial"
+      ]
     },
     {
       "id": 6,
@@ -58,7 +126,15 @@
       "section": "RESPONSABILIDAD CIVIL",
       "isRequired": true,
       "aliases": ["responsabilidad civil", "RCE", "daños a terceros"],
-      "synonyms": ["responsabilidad civil", "RCE", "daños a terceros", "responsabilidad civil extracontractual", "RC general", "perjuicios a terceros", "daños a personas o bienes de terceros"]
+      "synonyms": [
+        "responsabilidad civil",
+        "RCE",
+        "daños a terceros",
+        "responsabilidad civil extracontractual",
+        "RC general",
+        "perjuicios a terceros",
+        "daños a personas o bienes de terceros"
+      ]
     },
     {
       "id": 7,
@@ -66,7 +142,18 @@
       "section": "DAÑOS MATERIALES",
       "isRequired": false,
       "aliases": ["daños por agua", "anegación", "inundación", "agua", "filtraciones", "goteras"],
-      "synonyms": ["daños por agua", "anegación", "inundación", "filtraciones", "goteras", "tubería rota", "agua lluvia", "desbordamiento", "humedad", "derrame de agua"]
+      "synonyms": [
+        "daños por agua",
+        "anegación",
+        "inundación",
+        "filtraciones",
+        "goteras",
+        "tubería rota",
+        "agua lluvia",
+        "desbordamiento",
+        "humedad",
+        "derrame de agua"
+      ]
     },
     {
       "id": 8,
@@ -74,7 +161,15 @@
       "section": "DAÑOS MATERIALES",
       "isRequired": false,
       "aliases": ["vidrios planos", "cristales", "vitrina", "ventanas"],
-      "synonyms": ["vidrios planos", "cristales", "vitrina", "ventanas", "rotura de vidrios", "glass", "fachadas de vidrio"]
+      "synonyms": [
+        "vidrios planos",
+        "cristales",
+        "vitrina",
+        "ventanas",
+        "rotura de vidrios",
+        "glass",
+        "fachadas de vidrio"
+      ]
     },
     {
       "id": 9,
@@ -82,7 +177,16 @@
       "section": "RESPONSABILIDAD CIVIL",
       "isRequired": false,
       "aliases": ["manejo global", "infidelidad", "deshonestidad de empleados", "fidelidad"],
-      "synonyms": ["manejo global", "infidelidad", "deshonestidad de empleados", "fidelidad", "fraude interno", "hurto por empleados", "blanket bond", "manejo de empleados"]
+      "synonyms": [
+        "manejo global",
+        "infidelidad",
+        "deshonestidad de empleados",
+        "fidelidad",
+        "fraude interno",
+        "hurto por empleados",
+        "blanket bond",
+        "manejo de empleados"
+      ]
     },
     {
       "id": 10,
@@ -90,7 +194,14 @@
       "section": "TRANSPORTE",
       "isRequired": false,
       "aliases": ["transporte de mercancías", "transporte de bienes", "carga en tránsito"],
-      "synonyms": ["transporte de mercancías", "transporte de bienes", "carga en tránsito", "mercancía transportada", "flete", "envío"]
+      "synonyms": [
+        "transporte de mercancías",
+        "transporte de bienes",
+        "carga en tránsito",
+        "mercancía transportada",
+        "flete",
+        "envío"
+      ]
     },
     {
       "id": 11,
@@ -98,15 +209,34 @@
       "section": "TRANSPORTE",
       "isRequired": false,
       "aliases": ["transporte de valores", "valores en tránsito", "dinero en tránsito"],
-      "synonyms": ["transporte de valores", "valores en tránsito", "dinero en tránsito", "efectivo transportado", "armored transport"]
+      "synonyms": [
+        "transporte de valores",
+        "valores en tránsito",
+        "dinero en tránsito",
+        "efectivo transportado",
+        "armored transport"
+      ]
     },
     {
       "id": 12,
       "name": "Asistencia PYME y Legal",
       "section": "SERVICIOS Y ASISTENCIAS",
       "isRequired": false,
-      "aliases": ["asistencia pyme", "asistencia legal", "asistencia jurídica", "asistencia técnica"],
-      "synonyms": ["asistencia pyme", "asistencia legal", "asistencia jurídica", "asistencia técnica", "asesoría legal", "defensa legal", "asistencia al comercio"]
+      "aliases": [
+        "asistencia pyme",
+        "asistencia legal",
+        "asistencia jurídica",
+        "asistencia técnica"
+      ],
+      "synonyms": [
+        "asistencia pyme",
+        "asistencia legal",
+        "asistencia jurídica",
+        "asistencia técnica",
+        "asesoría legal",
+        "defensa legal",
+        "asistencia al comercio"
+      ]
     },
     {
       "id": 13,
@@ -114,7 +244,15 @@
       "section": "RIESGOS POLÍTICOS Y CATASTRÓFICOS",
       "isRequired": false,
       "aliases": ["terrorismo", "AMIT", "actos malintencionados", "sabotaje", "vandalismo"],
-      "synonyms": ["terrorismo", "AMIT", "actos malintencionados de terceros", "sabotaje", "vandalismo", "acto terrorista", "daños intencionales"]
+      "synonyms": [
+        "terrorismo",
+        "AMIT",
+        "actos malintencionados de terceros",
+        "sabotaje",
+        "vandalismo",
+        "acto terrorista",
+        "daños intencionales"
+      ]
     },
     {
       "id": 14,
@@ -122,7 +260,16 @@
       "section": "RIESGOS POLÍTICOS Y CATASTRÓFICOS",
       "isRequired": false,
       "aliases": ["huelga", "motín", "asonada", "HMACC", "HMA", "disturbios civiles"],
-      "synonyms": ["huelga", "motín", "asonada", "HMACC", "HMA", "disturbios civiles", "conmoción civil", "paro cívico"]
+      "synonyms": [
+        "huelga",
+        "motín",
+        "asonada",
+        "HMACC",
+        "HMA",
+        "disturbios civiles",
+        "conmoción civil",
+        "paro cívico"
+      ]
     },
     {
       "id": 15,
@@ -130,15 +277,37 @@
       "section": "RIESGOS POLÍTICOS Y CATASTRÓFICOS",
       "isRequired": false,
       "aliases": ["terremoto", "temblor", "erupción volcánica", "catástrofe", "eventos sísmicos"],
-      "synonyms": ["terremoto", "temblor", "erupción volcánica", "catástrofe", "eventos sísmicos", "fenómenos naturales", "maremoto", "sismo"]
+      "synonyms": [
+        "terremoto",
+        "temblor",
+        "erupción volcánica",
+        "catástrofe",
+        "eventos sísmicos",
+        "fenómenos naturales",
+        "maremoto",
+        "sismo"
+      ]
     },
     {
       "id": 16,
       "name": "Responsabilidad Civil por Productos (RC Productos)",
       "section": "RESPONSABILIDAD CIVIL",
       "isRequired": false,
-      "aliases": ["RC por productos", "responsabilidad civil productos", "productos defectuosos", "defectos de fabricación"],
-      "synonyms": ["RC por productos", "responsabilidad civil productos", "productos defectuosos", "defectos de fabricación", "product liability", "daños causados por productos", "garantía de producto"]
+      "aliases": [
+        "RC por productos",
+        "responsabilidad civil productos",
+        "productos defectuosos",
+        "defectos de fabricación"
+      ],
+      "synonyms": [
+        "RC por productos",
+        "responsabilidad civil productos",
+        "productos defectuosos",
+        "defectos de fabricación",
+        "product liability",
+        "daños causados por productos",
+        "garantía de producto"
+      ]
     }
   ]
 }
