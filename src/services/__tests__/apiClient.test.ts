@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { apiClient, getAuthToken } from '../../../services/apiClient';
+import {
+  apiClient,
+  getAuthToken,
+  DEFAULT_API_TIMEOUT_MS,
+  ApiTimeoutError,
+} from '../../../services/apiClient';
 import { supabase } from '../../../services/authService';
 
 // Mock Supabase auth client
@@ -197,6 +202,98 @@ describe('apiClient', () => {
       );
 
       await expect(apiClient.fetch('/history')).rejects.toThrow('500 Internal Server Error');
+    });
+  });
+
+  describe('timeout and cancellation (ERR-3)', () => {
+    const mockNoSession = () =>
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: { session: null },
+        error: null,
+      });
+
+    /** Simulate a fetch that never resolves on its own but honors abort. */
+    const mockHangingFetch = () => {
+      vi.mocked(globalThis.fetch).mockImplementation(
+        (_url: RequestInfo | URL, init?: RequestInit) => {
+          if (init?.signal?.aborted) {
+            return Promise.reject(new DOMException('The operation was aborted.', 'AbortError'));
+          }
+          return new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () =>
+              reject(new DOMException('The operation was aborted.', 'AbortError'))
+            );
+          });
+        }
+      );
+    };
+
+    it('bounds requests with a 120s default timeout', () => {
+      expect(DEFAULT_API_TIMEOUT_MS).toBe(120_000);
+    });
+
+    it('aborts the request and rejects with ApiTimeoutError when the timeout fires', async () => {
+      vi.useFakeTimers();
+      try {
+        mockNoSession();
+        mockHangingFetch();
+
+        const promise = apiClient.fetch('/analyze', { timeoutMs: 5_000 });
+        const assertion = expect(promise).rejects.toBeInstanceOf(ApiTimeoutError);
+        await vi.advanceTimersByTimeAsync(5_000);
+        await assertion;
+        await expect(promise).rejects.toThrow('tiempo límite');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('passes an AbortSignal to fetch', async () => {
+      vi.useFakeTimers();
+      try {
+        mockNoSession();
+        mockHangingFetch();
+
+        const promise = apiClient.fetch('/history', { timeoutMs: 60_000 });
+        const assertion = expect(promise).rejects.toBeInstanceOf(ApiTimeoutError);
+        await vi.advanceTimersByTimeAsync(60_000);
+        await assertion;
+
+        const init = vi.mocked(globalThis.fetch).mock.calls[0][1] as RequestInit;
+        expect(init.signal).toBeInstanceOf(AbortSignal);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('propagates an external caller abort instead of reporting a timeout', async () => {
+      vi.useFakeTimers();
+      try {
+        mockNoSession();
+        mockHangingFetch();
+
+        const controller = new AbortController();
+        const promise = apiClient.fetch('/history', {
+          timeoutMs: 60_000,
+          signal: controller.signal,
+        });
+        const assertion = expect(promise).rejects.toMatchObject({ name: 'AbortError' });
+        controller.abort();
+        await assertion;
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('clears the timeout timer when the response arrives in time', async () => {
+      mockNoSession();
+      vi.mocked(globalThis.fetch).mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), { status: 200 })
+      );
+
+      const response = await apiClient.fetch('/history', { timeoutMs: 60_000 });
+
+      expect(response.status).toBe(200);
     });
   });
 });

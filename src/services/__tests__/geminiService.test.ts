@@ -2,11 +2,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { analyzeQuotesWithGemini } from '../../../services/geminiService';
 import { apiClient } from '../../../services/apiClient';
 
-vi.mock('../../../services/apiClient', () => ({
-  apiClient: {
-    fetch: vi.fn(),
-  },
-}));
+vi.mock('../../../services/apiClient', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../services/apiClient')>();
+  return {
+    ...actual,
+    apiClient: {
+      fetch: vi.fn(),
+    },
+  };
+});
 
 describe('analyzeQuotesWithGemini', () => {
   beforeEach(() => {
@@ -96,6 +100,27 @@ describe('analyzeQuotesWithGemini', () => {
 
     await expect(analyzeQuotesWithGemini([createFile('q.pdf')], [], 'Cliente E')).rejects.toThrow(
       'Network error'
+    );
+  });
+
+  it('bounds the /analyze call with the 120s timeout (ERR-3)', async () => {
+    vi.mocked(apiClient.fetch).mockResolvedValue({
+      json: vi.fn().mockResolvedValue({ quotes: [] }),
+    } as unknown as Response);
+
+    await analyzeQuotesWithGemini([createFile('q.pdf')], [], 'Cliente F');
+
+    expect(vi.mocked(apiClient.fetch).mock.calls[0][1].timeoutMs).toBe(120_000);
+  });
+
+  it('maps an ApiTimeoutError to a friendly timeout message (ERR-3)', async () => {
+    const { ApiTimeoutError } = await vi.importActual<
+      typeof import('../../../services/apiClient')
+    >('../../../services/apiClient');
+    vi.mocked(apiClient.fetch).mockRejectedValue(new ApiTimeoutError(120_000));
+
+    await expect(analyzeQuotesWithGemini([createFile('q.pdf')], [], 'Cliente G')).rejects.toThrow(
+      'El análisis excedió el tiempo máximo permitido'
     );
   });
 });
