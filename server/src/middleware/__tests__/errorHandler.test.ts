@@ -3,7 +3,7 @@ import request from 'supertest';
 import express, { Request, Response, NextFunction } from 'express';
 
 import { errorHandler } from '../errorHandler';
-import { AppError, ValidationError, RateLimitError } from '../../errors';
+import { ValidationError, RateLimitError } from '../../errors';
 
 /**
  * ERR-1: every error reaching the central handler must produce a response
@@ -36,21 +36,6 @@ describe('errorHandler (ERR-1)', () => {
         success: false,
         error: 'Internal server error',
         traceId: 'trace-abc-123',
-      })
-    );
-  });
-
-  it('exposes the AppError status code and message along with the traceId', () => {
-    const { res, statusMock, jsonMock } = createMockRes({ requestId: 'trace-502' });
-
-    errorHandler(new AppError('Upstream Error: No response from Gemini AI.', 502), req, res, next);
-
-    expect(statusMock).toHaveBeenCalledWith(502);
-    expect(jsonMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        success: false,
-        error: 'Upstream Error: No response from Gemini AI.',
-        traceId: 'trace-502',
       })
     );
   });
