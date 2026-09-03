@@ -12,7 +12,7 @@ import {
   BarChart3,
 } from 'lucide-react';
 import FileUploader from './components/FileUploader';
-import DomainSelector, { InsuranceDomain } from './components/DomainSelector';
+import DomainSelector from './components/DomainSelector';
 import { AnalysisProvider } from './contexts/AnalysisContext';
 import LoginScreen from './components/LoginScreen';
 import ClientSelector from './components/ClientSelector';
@@ -20,7 +20,8 @@ import { ClauseSelector } from './components/ClauseSelector';
 import { analyzeQuotesWithGemini } from './services/geminiService';
 import { storageService } from './services/storageService';
 import { ComparisonReport as ReportType, AppStatus, UserProfile, Client } from './types';
-import type { ExtendedUserProfile } from './types';
+import { InsuranceDomain } from './types';
+import type { ExtendedUserProfile, InsuranceDomainType } from './types';
 // Chat is now handled via backend API
 
 import RegisterScreen from './components/RegisterScreen';
@@ -55,7 +56,7 @@ const App: React.FC = () => {
   const [showClauseAdmin, setShowClauseAdmin] = useState(false);
 
   // Analyzer State
-  const [domain, setDomain] = useState<InsuranceDomain>('pyme');
+  const [domain, setDomain] = useState<InsuranceDomainType>(InsuranceDomain.PYME);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [clientSelectorOpen, setClientSelectorOpen] = useState(false);
   const [quoteFiles, setQuoteFiles] = useState<File[]>([]);
@@ -163,7 +164,7 @@ const App: React.FC = () => {
     setClauseFiles([]);
     setSelectedClauseIds([]);
     setClauseMode('library');
-    setDomain('pyme');
+    setDomain(InsuranceDomain.PYME);
     setReport(null);
     setSelectedClient(null);
     setStatus(AppStatus.IDLE);
@@ -430,7 +431,7 @@ const App: React.FC = () => {
                 <div className="space-y-4">
                   <DomainSelector
                     selectedDomain={domain}
-                    onChange={(newDomain: InsuranceDomain) => setDomain(newDomain)}
+                    onChange={(newDomain: InsuranceDomainType) => setDomain(newDomain)}
                   />
 
                   <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
