@@ -337,11 +337,9 @@ LANGUAGE plpgsql STABLE SET search_path = public, pg_temp AS $$
 DECLARE
     v_result JSONB;
 BEGIN
-    SELECT jsonb_path_query_first(
-               sc.extracted_data,
-               '$.coverages[*] ? (@.name like_regex $n flag "i")',
-               jsonb_build_object('n', COALESCE(p_coverage_name, '.*'))
-           )
+    SELECT (SELECT cov FROM jsonb_array_elements(sc.extracted_data->'coverages') cov
+            WHERE COALESCE(p_coverage_name,'') = '' OR cov->>'name' ILIKE '%' || p_coverage_name || '%'
+            LIMIT 1)
     INTO v_result
     FROM public.structured_clauses sc
     WHERE sc.insurer_name = p_insurer_name
@@ -403,11 +401,8 @@ BEGIN
         sc.insurer_name,
         sc.product_name,
         sc.document_type,
-        jsonb_path_query_array(
-            sc.extracted_data,
-            '$.coverages ? (@.name like_regex $coverage_name flag "i")',
-            jsonb_build_object('coverage_name', COALESCE(p_coverage_name, '.*'))
-        ) AS coverage_data,
+        COALESCE((SELECT jsonb_agg(cov) FROM jsonb_array_elements(sc.extracted_data->'coverages') cov
+         WHERE COALESCE(p_coverage_name,'') = '' OR cov->>'name' ILIKE '%' || p_coverage_name || '%'), '[]'::jsonb) AS coverage_data,
         sc.extracted_data,
         (sc.extracted_data->>'sourcePage')::INT AS page_number,
         CASE

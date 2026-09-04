@@ -1,25 +1,8 @@
--- 021_fix.sql — corrector defensivo para 021_recreate_rpc_functions.sql
--- DROP IF EXISTS de TODAS las funciones por firma exacta y recreacion completa.
--- Corrige: delete_document_complete usaba FOUND() (plpgsql) en LANGUAGE sql —
--- reescrito con CTE + EXISTS. Idempotente: ejecutable las veces que haga falta.
+-- 021_fix.sql — corrector defensivo: DROP por firma exacta + recreacion completa.
+-- NOTA: nunca dropear exec_sql antes que el resto (es el conducto de aplicacion).
+-- Idempotente.
 
-DROP FUNCTION IF EXISTS public._to_vector(jsonb);
-DROP FUNCTION IF EXISTS public.index_document_transaction(uuid, text, text, text, integer, text, text, jsonb, jsonb, text);
-DROP FUNCTION IF EXISTS public.match_chunks_unified(jsonb, text, text, text[], text, integer);
-DROP FUNCTION IF EXISTS public.match_chunks_vector_unified(jsonb, text, text[], integer);
-DROP FUNCTION IF EXISTS public.match_chunks_hybrid(jsonb, text, text, text[], text, integer, real, real);
-DROP FUNCTION IF EXISTS public.match_chunks(jsonb, real, integer, text);
-DROP FUNCTION IF EXISTS public.get_chunks_by_coverage_unified(text, text, text, integer);
-DROP FUNCTION IF EXISTS public.get_parent_chunks(uuid, text, integer);
-DROP FUNCTION IF EXISTS public.search_chunks_advanced(jsonb, uuid, text[], text[], integer, real);
-DROP FUNCTION IF EXISTS public.search_chunks_by_coverage(jsonb, uuid, text, integer);
-DROP FUNCTION IF EXISTS public.get_chunks_with_images(uuid[]);
-DROP FUNCTION IF EXISTS public.validate_quote_coverage(uuid, uuid, text, integer);
-DROP FUNCTION IF EXISTS public.get_clause_deductible(text, text);
-DROP FUNCTION IF EXISTS public.list_documents_by_insurer(uuid, text);
-DROP FUNCTION IF EXISTS public.delete_document_complete(uuid);
-DROP FUNCTION IF EXISTS public.search_structured_clauses(text, text, text, integer, text);
-DROP FUNCTION IF EXISTS public.exec_sql(text);
+
 
 -- 021_recreate_rpc_functions.sql
 -- db-coherence-remediation — Fase 1.1/1.2
@@ -360,11 +343,9 @@ LANGUAGE plpgsql STABLE SET search_path = public, pg_temp AS $$
 DECLARE
     v_result JSONB;
 BEGIN
-    SELECT jsonb_path_query_first(
-               sc.extracted_data,
-               '$.coverages[*] ? (@.name like_regex $n flag "i")',
-               jsonb_build_object('n', COALESCE(p_coverage_name, '.*'))
-           )
+    SELECT (SELECT cov FROM jsonb_array_elements(sc.extracted_data->'coverages') cov
+            WHERE COALESCE(p_coverage_name,'') = '' OR cov->>'name' ILIKE '%' || p_coverage_name || '%'
+            LIMIT 1)
     INTO v_result
     FROM public.structured_clauses sc
     WHERE sc.insurer_name = p_insurer_name
@@ -426,11 +407,8 @@ BEGIN
         sc.insurer_name,
         sc.product_name,
         sc.document_type,
-        jsonb_path_query_array(
-            sc.extracted_data,
-            '$.coverages ? (@.name like_regex $coverage_name flag "i")',
-            jsonb_build_object('coverage_name', COALESCE(p_coverage_name, '.*'))
-        ) AS coverage_data,
+        COALESCE((SELECT jsonb_agg(cov) FROM jsonb_array_elements(sc.extracted_data->'coverages') cov
+         WHERE COALESCE(p_coverage_name,'') = '' OR cov->>'name' ILIKE '%' || p_coverage_name || '%'), '[]'::jsonb) AS coverage_data,
         sc.extracted_data,
         (sc.extracted_data->>'sourcePage')::INT AS page_number,
         CASE
@@ -479,3 +457,10 @@ REVOKE ALL ON FUNCTION public.exec_sql(TEXT) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.exec_sql(TEXT) FROM anon;
 REVOKE EXECUTE ON FUNCTION public.exec_sql(TEXT) FROM authenticated;
 GRANT EXECUTE ON FUNCTION public.exec_sql(TEXT) TO service_role;
+
+
+-- 2026-09-04: index_document_transaction upserts on (insurer_id, document_name,
+-- document_type); live DB lacked the unique index (42P10). One historical
+-- duplicate (MAPFRE Clausulado v1 vs v2) was deduped keeping the active v2 row.
+CREATE UNIQUE INDEX IF NOT EXISTS documents_unique_insurer_name_type
+  ON documents(insurer_id, document_name, document_type);
