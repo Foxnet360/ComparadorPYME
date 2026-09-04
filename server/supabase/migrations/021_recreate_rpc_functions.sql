@@ -369,8 +369,8 @@ $$;
 CREATE OR REPLACE FUNCTION public.delete_document_complete(p_document_id UUID)
 RETURNS BOOLEAN
 LANGUAGE sql SET search_path = public, pg_temp AS $$
-    DELETE FROM public.documents WHERE id = p_document_id;
-    SELECT FOUND();
+    WITH deleted AS (DELETE FROM public.documents WHERE id = p_document_id RETURNING id)
+    SELECT EXISTS (SELECT 1 FROM deleted);
 $$;
 
 -- ---------------------------------------------------------------------------

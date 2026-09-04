@@ -1,9 +1,7 @@
 -- 021_fix.sql — corrector defensivo para 021_recreate_rpc_functions.sql
--- Contexto: el SQL Editor detiene la ejecucion en el primer error. La corrida
--- inicial creo las funciones 1-6 y fallo en get_chunks_by_coverage_unified
--- (42P13: existia con otro tipo de retorno). Este script hace DROP IF EXISTS
--- de TODAS las funciones (firmas exactas) y recrea todo. Idempotente.
--- Ejecutar completo en SQL Editor.
+-- DROP IF EXISTS de TODAS las funciones por firma exacta y recreacion completa.
+-- Corrige: delete_document_complete usaba FOUND() (plpgsql) en LANGUAGE sql —
+-- reescrito con CTE + EXISTS. Idempotente: ejecutable las veces que haga falta.
 
 DROP FUNCTION IF EXISTS public._to_vector(jsonb);
 DROP FUNCTION IF EXISTS public.index_document_transaction(uuid, text, text, text, integer, text, text, jsonb, jsonb, text);
@@ -394,8 +392,8 @@ $$;
 CREATE OR REPLACE FUNCTION public.delete_document_complete(p_document_id UUID)
 RETURNS BOOLEAN
 LANGUAGE sql SET search_path = public, pg_temp AS $$
-    DELETE FROM public.documents WHERE id = p_document_id;
-    SELECT FOUND();
+    WITH deleted AS (DELETE FROM public.documents WHERE id = p_document_id RETURNING id)
+    SELECT EXISTS (SELECT 1 FROM deleted);
 $$;
 
 -- ---------------------------------------------------------------------------
