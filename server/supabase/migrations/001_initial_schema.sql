@@ -322,6 +322,8 @@ CREATE INDEX IF NOT EXISTS idx_chat_threads_user ON public.chat_threads(user_id)
 CREATE INDEX IF NOT EXISTS idx_chat_messages_thread ON public.chat_messages(thread_id);
 CREATE INDEX IF NOT EXISTS idx_coverage_mappings_raw ON public.coverage_mappings(raw_name);
 CREATE INDEX IF NOT EXISTS idx_coverage_mappings_canonical ON public.coverage_mappings(canonical_name);
+-- Required by learningEngine/coverageOntology upsert onConflict (raw_name, insurer_name)
+CREATE UNIQUE INDEX IF NOT EXISTS coverage_mappings_unique_raw_insurer ON public.coverage_mappings(raw_name, insurer_name);
 CREATE INDEX IF NOT EXISTS idx_coverage_graph_from ON public.coverage_graph_edges(from_node);
 CREATE INDEX IF NOT EXISTS idx_coverage_graph_to ON public.coverage_graph_edges(to_node);
 CREATE INDEX IF NOT EXISTS idx_analysis_logs_status ON public.analysis_logs(status);
