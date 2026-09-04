@@ -131,6 +131,8 @@ CREATE TABLE IF NOT EXISTS public.analysis_history (
     recommendation TEXT,
     total_score INTEGER,
     correlation_id TEXT,
+    domain TEXT NOT NULL DEFAULT 'pyme',
+    metadata JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -268,13 +270,17 @@ CREATE TABLE IF NOT EXISTS public.analysis_logs (
 
 CREATE TABLE IF NOT EXISTS public.unified_engine_errors (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    correlation_id TEXT,
+    correlation_id TEXT NOT NULL,
     category TEXT NOT NULL,
     error_code TEXT,
-    error_message TEXT NOT NULL,
+    message TEXT NOT NULL,
     stack_trace TEXT,
     metadata JSONB,
+    pdf_count INTEGER,
+    pdf_names TEXT[],
     resolved BOOLEAN DEFAULT false,
+    resolution TEXT,
+    updated_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
