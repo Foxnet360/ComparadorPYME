@@ -1,6 +1,7 @@
 import { supabase } from '../config/database';
 import { GoogleGenAI, Type } from '@google/genai';
 import { env } from '../config/env';
+import { embeddingService } from './vector/embeddingService';
 import { getCachedCoverageMapping, setCachedCoverageMapping } from './cache/redisCache';
 import { calculateSimilarity } from '../utils/stringUtils';
 import { mapCoverageName } from './thesaurusMapper';
@@ -784,6 +785,16 @@ export const coverageOntology = {
     try {
       const d = domain || 'pyme';
 
+      let embedding: number[] | null = null;
+      try {
+        embedding = await embeddingService.generateEmbedding(mapping.rawName);
+      } catch (embErr) {
+        console.warn(
+          '⚠️ [Ontology DB] Could not generate embedding for mapping:',
+          embErr instanceof Error ? embErr.message : embErr
+        );
+      }
+
       // Intento 1: Guardar con las nuevas columnas de alta certeza
       const { error } = await supabase.from('coverage_mappings').upsert(
         {
@@ -795,6 +806,7 @@ export const coverageOntology = {
           is_composite: mapping.isComposite,
           components: mapping.components || null,
           domain: d,
+          embedding: embedding || null,
           raw_text_snippet: mapping.rawTextSnippet || null,
           ai_justification: mapping.justification || null,
           page_number: mapping.pageNumber || null,
@@ -824,6 +836,7 @@ export const coverageOntology = {
             is_composite: mapping.isComposite,
             components: mapping.components || null,
             domain: d,
+            embedding: embedding || null,
             last_used_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           } as unknown as never,
