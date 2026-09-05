@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 
-describe('migration 019_template_registry_and_graph', () => {
+describe('template_registry and coverage_graph_edges (consolidated into baseline 001)', () => {
   const migrationPath = path.resolve(
     __dirname,
     '..',
@@ -10,17 +10,17 @@ describe('migration 019_template_registry_and_graph', () => {
     '..',
     'supabase',
     'migrations',
-    '019_template_registry_and_graph.sql'
+    '001_initial_schema.sql'
   );
 
   it('exists as the next migration file', () => {
-    expect(fs.existsSync(migrationPath)).toBe(true);
+    expect(fs.existsSync(migrationPath)).toBe(true); // consolidated: 7a38962 folded 019 into baseline 001
   });
 
   it('creates the template_registry table with the expected columns', () => {
     const sql = fs.readFileSync(migrationPath, 'utf-8').toLowerCase();
 
-    expect(sql).toMatch(/create table if not exists\s+template_registry/);
+    expect(sql).toMatch(/create table if not exists\s+(public\.)?template_registry/);
     expect(sql).toContain('id');
     expect(sql).toContain('template_id');
     expect(sql).toContain('insurer');
@@ -37,7 +37,7 @@ describe('migration 019_template_registry_and_graph', () => {
   it('creates the coverage_graph_edges table with the expected columns', () => {
     const sql = fs.readFileSync(migrationPath, 'utf-8').toLowerCase();
 
-    expect(sql).toMatch(/create table if not exists\s+coverage_graph_edges/);
+    expect(sql).toMatch(/create table if not exists\s+(public\.)?coverage_graph_edges/);
     expect(sql).toContain('from_node');
     expect(sql).toContain('to_node');
     expect(sql).toContain('edge_type');

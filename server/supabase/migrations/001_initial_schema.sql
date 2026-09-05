@@ -329,8 +329,14 @@ CREATE INDEX IF NOT EXISTS idx_coverage_mappings_raw ON public.coverage_mappings
 CREATE INDEX IF NOT EXISTS idx_coverage_mappings_canonical ON public.coverage_mappings(canonical_name);
 -- Required by learningEngine/coverageOntology upsert onConflict (raw_name, insurer_name)
 CREATE UNIQUE INDEX IF NOT EXISTS coverage_mappings_unique_raw_insurer ON public.coverage_mappings(raw_name, insurer_name);
-CREATE INDEX IF NOT EXISTS idx_coverage_graph_from ON public.coverage_graph_edges(from_node);
-CREATE INDEX IF NOT EXISTS idx_coverage_graph_to ON public.coverage_graph_edges(to_node);
+CREATE INDEX IF NOT EXISTS idx_coverage_graph_edges_lookup ON public.coverage_graph_edges(from_node, edge_type, domain);
+CREATE INDEX IF NOT EXISTS idx_coverage_graph_edges_to_node ON public.coverage_graph_edges(to_node, edge_type, domain);
+CREATE INDEX IF NOT EXISTS idx_coverage_graph_edges_insurer ON public.coverage_graph_edges(insurer, domain);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_coverage_graph_edges_unique ON public.coverage_graph_edges(from_node, to_node, edge_type, insurer, domain);
+CREATE UNIQUE INDEX IF NOT EXISTS template_registry_template_id_key ON public.template_registry(template_id);
+CREATE INDEX IF NOT EXISTS idx_template_registry_template_id ON public.template_registry(template_id);
+CREATE INDEX IF NOT EXISTS idx_template_registry_domain_insurer ON public.template_registry(domain, insurer);
+CREATE INDEX IF NOT EXISTS idx_template_registry_active_domain ON public.template_registry(domain, is_active);
 CREATE INDEX IF NOT EXISTS idx_analysis_logs_status ON public.analysis_logs(status);
 CREATE INDEX IF NOT EXISTS idx_unified_engine_errors_category ON public.unified_engine_errors(category);
 

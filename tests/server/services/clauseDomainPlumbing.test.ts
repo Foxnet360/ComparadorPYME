@@ -6,9 +6,9 @@ const MIGRATIONS_DIR = path.join(__dirname, '../../../server/supabase/migrations
 const REPO_ROOT = path.join(__dirname, '../../..');
 
 describe('PR6 clause-domain-plumbing verification', () => {
-  it('6.1 migration 028 adds p_domain filter parameter to search_structured_clauses', () => {
+  it('6.1 021 reconstructs search_structured_clauses with p_domain filter parameter to search_structured_clauses', () => {
     const sql = fs.readFileSync(
-      path.join(MIGRATIONS_DIR, '028_domain_aware_clause_search.sql'),
+      path.join(MIGRATIONS_DIR, '021_recreate_rpc_functions.sql'),
       'utf-8'
     );
 
