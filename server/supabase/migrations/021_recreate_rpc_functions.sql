@@ -22,7 +22,7 @@
 -- Helper: normalize jsonb (string "[...]" OR number array) -> vector(3072)
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public._to_vector(p_val JSONB)
-RETURNS public.vector LANGUAGE sql IMMUTABLE AS $$
+RETURNS public.vector LANGUAGE sql IMMUTABLE SET search_path = public, pg_temp AS $$
     SELECT CASE
         WHEN p_val IS NULL OR p_val = 'null'::jsonb THEN NULL
         WHEN jsonb_typeof(p_val) = 'string' THEN (p_val #>> '{}')::public.vector

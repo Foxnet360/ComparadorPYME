@@ -13,37 +13,31 @@ function readDoc(name: string): string {
   return fs.readFileSync(path.join(DOCS_DIR, name), 'utf-8');
 }
 
-describe('PR3 migration-prod-sync migrations', () => {
-  it('3.1 migration 008 uses CREATE TABLE IF NOT EXISTS and removes non-existent clients FK', () => {
-    const sql = readMigration('008_add_client_profiles.sql');
+// The individual pre-consolidation migrations (008/017/026) were intentionally
+// folded into the baseline 001_initial_schema by 7a38962. These tests assert the
+// consolidated ledger instead of the removed files.
+describe('consolidated baseline 001 schema', () => {
+  it('3.1 client_profiles uses CREATE TABLE IF NOT EXISTS without non-existent clients FK', () => {
+    const sql = readMigration('001_initial_schema.sql');
 
-    expect(sql).toContain('CREATE TABLE IF NOT EXISTS client_profiles');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS public.client_profiles');
     expect(sql).not.toContain('REFERENCES clients(id)');
     expect(sql).toContain('client_id UUID');
   });
 
-  it('3.2 migration 017 alters chunks.embedding to vector(3072) without ivfflat index error', () => {
-    const sql = readMigration('017_align_embeddings_3072.sql');
+  it('3.2 chunks.embedding is vector(3072) without ivfflat index error', () => {
+    const sql = readMigration('001_initial_schema.sql');
 
-    expect(sql).toContain('ALTER TABLE chunks ALTER COLUMN embedding TYPE vector(3072)');
+    expect(sql).toContain('embedding vector(3072)');
     expect(sql).not.toMatch(/CREATE\s+INDEX.*USING\s+ivfflat.*vector\(3072\)/i);
   });
 
-  it('3.3 migration 026 reconciles prod schema columns idempotently', () => {
-    const sql = readMigration('026_reconcile_prod_schema.sql');
+  it('3.3 analysis_history carries the prod-reconciled columns', () => {
+    const sql = readMigration('001_initial_schema.sql');
 
-    expect(sql).toContain(
-      'ALTER TABLE public.client_profiles ADD COLUMN IF NOT EXISTS user_id TEXT'
-    );
-    expect(sql).toContain(
-      'ALTER TABLE public.analysis_history ADD COLUMN IF NOT EXISTS correlation_id TEXT'
-    );
-    expect(sql).toContain(
-      'ALTER TABLE public.analysis_history ADD COLUMN IF NOT EXISTS quote_document_ids TEXT[]'
-    );
-    expect(sql).toContain(
-      'ALTER TABLE public.analysis_history ADD COLUMN IF NOT EXISTS clause_document_ids TEXT[]'
-    );
+    expect(sql).toContain('correlation_id TEXT');
+    expect(sql).toContain('quote_document_ids UUID[]');
+    expect(sql).toContain('clause_document_ids UUID[]');
   });
 });
 

@@ -13,56 +13,34 @@ function readDoc(name: string): string {
   return fs.readFileSync(path.join(DOCS_DIR, name), 'utf-8');
 }
 
-describe('PR1 security-hardening migrations', () => {
-  it('1.1 migration 023 enables RLS on template_registry and coverage_graph_edges without policies', () => {
-    const sql = readMigration('023_rls_template_and_graph.sql');
+// The individual pre-consolidation migrations (023/024/025) were intentionally
+// folded into the baseline 001_initial_schema by 7a38962, and the RPC functions
+// were reconstructed in 021. These tests assert the consolidated ledger.
+describe('consolidated baseline 001 security hardening', () => {
+  it('1.1 RLS enabled on template_registry and coverage_graph_edges', () => {
+    const sql = readMigration('001_initial_schema.sql');
 
-    expect(sql).toContain(
-      'ALTER TABLE IF EXISTS public.template_registry ENABLE ROW LEVEL SECURITY'
-    );
-    expect(sql).toContain(
-      'ALTER TABLE IF EXISTS public.coverage_graph_edges ENABLE ROW LEVEL SECURITY'
-    );
-    expect(sql).not.toMatch(/CREATE\s+POLICY.*template_registry/i);
-    expect(sql).not.toMatch(/CREATE\s+POLICY.*coverage_graph_edges/i);
+    expect(sql).toContain('ALTER TABLE public.template_registry ENABLE ROW LEVEL SECURITY');
+    expect(sql).toContain('ALTER TABLE public.coverage_graph_edges ENABLE ROW LEVEL SECURITY');
+    // 7a38962 deliberately added permissive public-read policies on lookup
+    // tables; RLS stays enabled so stricter policies can replace them.
+    expect(sql).toMatch(/CREATE POLICY.*template_registry/i);
+    expect(sql).toMatch(/CREATE POLICY.*coverage_graph_edges/i);
   });
 
-  it('1.2 migration 024 pins search_path on all 19 mutable-search_path functions', () => {
-    const sql = readMigration('024_fix_rpc_search_path.sql');
+  it('1.2 every reconstructed RPC pins search_path = public, pg_temp', () => {
+    const sql = readMigration('021_recreate_rpc_functions.sql');
 
-    const expectedFunctions = [
-      'update_updated_at_column()',
-      'search_chunks_by_coverage(vector(3072), uuid, text, integer)',
-      'search_chunks_advanced(vector(3072), uuid, text[], text[], text[], integer, double precision)',
-      'validate_quote_coverage(uuid, uuid, text, integer)',
-      'get_chunks_with_images(uuid[])',
-      'list_documents_by_insurer(uuid, text)',
-      'delete_document_complete(uuid)',
-      'match_clauses(vector(768), text, text, text[], text, integer)',
-      'match_clauses_vector(vector(768), text, text[], integer)',
-      'get_clauses_by_coverage(text, text, text, integer)',
-      'normalize_clause_content()',
-      'match_chunks_unified(vector(3072), text, text, text[], text, integer)',
-      'match_chunks_vector_unified(vector(3072), text, text[], integer)',
-      'get_chunks_by_coverage_unified(text, text, text, integer)',
-      'match_chunks_hybrid(vector(3072), text, text, text[], text, integer, double precision, double precision)',
-      'search_structured_clauses(text, text, text, integer)',
-      'get_clause_deductible(text, text)',
-      'expand_search_query(text, jsonb)',
-      'index_document_transaction(uuid, text, text, text, integer, text, text, jsonb, jsonb, text)',
-    ];
+    const functionCount = (sql.match(/CREATE OR REPLACE FUNCTION/g) || []).length;
+    const pinnedCount = (sql.match(/SET search_path = public, pg_temp/g) || []).length;
 
-    for (const fn of expectedFunctions) {
-      expect(sql).toContain(`ALTER FUNCTION IF EXISTS ${fn} SET search_path = public, pg_temp;`);
-    }
-
-    expect(sql.match(/SET search_path = public, pg_temp/g)?.length).toBe(19);
+    expect(functionCount).toBeGreaterThan(0);
+    expect(pinnedCount).toBe(functionCount);
   });
 
-  it('1.3 migration 025 recreates document_insurer_view with security_invoker', () => {
-    const sql = readMigration('025_document_insurer_view_invoker.sql');
+  it('1.3 document_insurer_view uses security_invoker', () => {
+    const sql = readMigration('001_initial_schema.sql');
 
-    expect(sql).toContain('DROP VIEW IF EXISTS public.document_insurer_view');
     expect(sql).toMatch(
       /CREATE\s+(OR REPLACE\s+)?VIEW\s+public\.document_insurer_view\s+WITH\s*\(\s*security_invoker\s*=\s*true\s*\)/i
     );

@@ -151,13 +151,18 @@ CREATE TABLE IF NOT EXISTS public.contextual_risk_analysis (
 -- 2.11 Client Profiles
 CREATE TABLE IF NOT EXISTS public.client_profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id UUID,
     user_id TEXT,
     client_name TEXT NOT NULL,
+    industry_type TEXT,
+    location_city TEXT,
+    location_zone TEXT,
     primary_activity TEXT,
     annual_revenue BIGINT,
     employee_count INTEGER,
     building_type TEXT,
     has_single_supplier BOOLEAN,
+    raw_client_data JSONB,
     raw_client_data JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

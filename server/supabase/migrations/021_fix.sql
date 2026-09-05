@@ -27,8 +27,31 @@
 -- ---------------------------------------------------------------------------
 -- Helper: normalize jsonb (string "[...]" OR number array) -> vector(3072)
 -- ---------------------------------------------------------------------------
+-- 021_recreate_rpc_functions.sql
+-- db-coherence-remediation — Fase 1.1/1.2
+-- Reconstructs the RPC functions lost from the live database, following the
+-- CALL-SITE contracts in server/src (arg names, return fields), not the stale
+-- versions in 001_initial_schema.sql.
+--
+-- Design notes:
+-- * Vector params are JSONB: callers pass BOTH "raw number[]" (ragRetrievalService)
+--   and string "[...]" (vectorStore, documentIndexingService). _to_vector
+--   normalizes either form to vector(3072).
+-- * All retrieval RPCs return the unified 8-field row the callers read:
+--   (id, document_id, insurer_name, section_type, coverage_tags, content,
+--    page_number, similarity).
+-- * search_structured_clauses is CREATE OR REPLACE'd to ADD extracted_data to
+--   its result (callers read row.extracted_data; live function only returned
+--   coverage_data, so searchClause always fell back to null).
+-- * documents.document_type CHECK widened with 'ANEXO' (code enum includes it).
+-- * exec_sql is recreated for admin scripts but EXECUTE is revoked from
+--   anon/authenticated (service_role only).
+
+-- ---------------------------------------------------------------------------
+-- Helper: normalize jsonb (string "[...]" OR number array) -> vector(3072)
+-- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public._to_vector(p_val JSONB)
-RETURNS public.vector LANGUAGE sql IMMUTABLE AS $$
+RETURNS public.vector LANGUAGE sql IMMUTABLE SET search_path = public, pg_temp AS $$
     SELECT CASE
         WHEN p_val IS NULL OR p_val = 'null'::jsonb THEN NULL
         WHEN jsonb_typeof(p_val) = 'string' THEN (p_val #>> '{}')::public.vector
@@ -457,10 +480,3 @@ REVOKE ALL ON FUNCTION public.exec_sql(TEXT) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.exec_sql(TEXT) FROM anon;
 REVOKE EXECUTE ON FUNCTION public.exec_sql(TEXT) FROM authenticated;
 GRANT EXECUTE ON FUNCTION public.exec_sql(TEXT) TO service_role;
-
-
--- 2026-09-04: index_document_transaction upserts on (insurer_id, document_name,
--- document_type); live DB lacked the unique index (42P10). One historical
--- duplicate (MAPFRE Clausulado v1 vs v2) was deduped keeping the active v2 row.
-CREATE UNIQUE INDEX IF NOT EXISTS documents_unique_insurer_name_type
-  ON documents(insurer_id, document_name, document_type);

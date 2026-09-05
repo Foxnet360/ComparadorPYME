@@ -10,8 +10,9 @@ function readMigration(name: string): string {
 }
 
 describe('PR4 orphan-writers migrations and cleanup', () => {
-  it('4.1 migration 027 creates analysis_logs and unified_engine_errors with RLS', () => {
-    const sql = readMigration('027_monitoring_and_error_logs.sql');
+  // Migration 027 was folded into the consolidated baseline 001 (7a38962).
+  it('4.1 baseline 001 creates analysis_logs and unified_engine_errors with RLS', () => {
+    const sql = readMigration('001_initial_schema.sql');
 
     expect(sql).toContain('CREATE TABLE IF NOT EXISTS public.analysis_logs');
     expect(sql).toContain('CREATE TABLE IF NOT EXISTS public.unified_engine_errors');
