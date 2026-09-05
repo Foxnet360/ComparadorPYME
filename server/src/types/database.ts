@@ -214,38 +214,6 @@ export interface Database {
           created_at?: string;
         };
       };
-      storage_uploads: {
-        Row: {
-          id: string;
-          document_id: string;
-          file_path: string;
-          file_size: number | null;
-          upload_status: 'PENDING' | 'COMPLETED' | 'FAILED';
-          error_message: string | null;
-          created_at: string;
-          completed_at: string | null;
-        };
-        Insert: {
-          id?: string;
-          document_id: string;
-          file_path: string;
-          file_size?: number | null;
-          upload_status?: 'PENDING' | 'COMPLETED' | 'FAILED';
-          error_message?: string | null;
-          created_at?: string;
-          completed_at?: string | null;
-        };
-        Update: {
-          id?: string;
-          document_id?: string;
-          file_path?: string;
-          file_size?: number | null;
-          upload_status?: 'PENDING' | 'COMPLETED' | 'FAILED';
-          error_message?: string | null;
-          created_at?: string;
-          completed_at?: string | null;
-        };
-      };
     };
     Functions: {
       search_chunks_by_coverage: {
