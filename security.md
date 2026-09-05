@@ -93,5 +93,18 @@ the repository maintainer and are tracked as tasks 0.1–0.3 of the
 - **0.3 Update CI/deployment secret references** so the hardened
   JWT-secret and CORS configuration (slice 1) start from clean secrets.
 
+### 2026-09-04 evidence update (db-coherence-remediation)
+
+- The `.env` `GEMINI_API_KEY` (committed, `AIza…` prefix) is **invalid** —
+  Google API returns `API_KEY_INVALID`. Production works because Railway
+  carries a different key (`AQ.…` prefix). Rotate the Railway key and remove
+  the dead one from `.env`.
+- A Supabase personal access token (`sbp_…`) was used for migration work and
+  appears in session tooling logs — rotate it at
+  <https://supabase.com/dashboard/account/tokens> after the DB migration work
+  is done.
+- The DB password (SCRAM) and service-role key remain in committed history —
+  include them in 0.1/0.2 scope.
+
 Until rotation is complete, all committed credentials must be treated as
 compromised.
