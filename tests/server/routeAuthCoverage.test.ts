@@ -104,15 +104,16 @@ describe('route auth coverage (AUTH-1)', () => {
     expect(routes.length).toBeGreaterThan(0);
 
     const protectedRoutes = routes.filter(
-      ({ path }) => !isPublicPath(path.replace(/^\/api/, '') || '/')
+      ({ path, method }) => !isPublicPath(path.replace(/^\/api/, '') || '/', method)
     );
     // Sanity: the catalog must cover the known protected surface.
     expect(protectedRoutes.map((r) => `${r.method} ${r.path}`)).toEqual(
       expect.arrayContaining([
         'POST /api/documents',
-        'GET /api/documents',
+        'DELETE /api/documents/:id',
         'POST /api/analysis/correction',
         'POST /api/search',
+        'DELETE /api/chat/threads/:id',
       ])
     );
 
@@ -130,9 +131,34 @@ describe('route auth coverage (AUTH-1)', () => {
   it('allowlisted routes pass the gate without a token (no 401 from the gate)', () => {
     // Classification-only check: the HTTP behavior of allowlisted endpoints
     // is covered by their own route tests. Here we only pin the allowlist.
-    const publicPaths = ['/analyze', '/history', '/comparison', '/clients', '/analysis/x/export'];
-    for (const path of publicPaths) {
-      expect(isPublicPath(path)).toBe(true);
+    const publicPaths: Array<{ method: string; path: string }> = [
+      { method: 'POST', path: '/analyze' },
+      { method: 'GET', path: '/history' },
+      { method: 'GET', path: '/comparison' },
+      { method: 'GET', path: '/clients' },
+      // Chat is anonymous-by-design; reads of the clause library too.
+      { method: 'POST', path: '/chat' },
+      { method: 'GET', path: '/chat/threads' },
+      { method: 'POST', path: '/chat/suggestions' },
+      { method: 'GET', path: '/documents' },
+      { method: 'GET', path: '/documents/x/chunks' },
+      { method: 'GET', path: '/analysis/x/export' },
+    ];
+    for (const { method, path } of publicPaths) {
+      expect(isPublicPath(path, method), `${method} ${path} must be public`).toBe(true);
+    }
+  });
+
+  it('method-scoped allowlist keeps mutations protected', () => {
+    // Public read prefixes must not leak into destructive methods.
+    const protectedCases: Array<{ method: string; path: string }> = [
+      { method: 'POST', path: '/documents' },
+      { method: 'DELETE', path: '/documents/x' },
+      { method: 'DELETE', path: '/chat/threads/x' },
+      { method: 'PUT', path: '/chat/threads/x' },
+    ];
+    for (const { method, path } of protectedCases) {
+      expect(isPublicPath(path, method), `${method} ${path} must stay protected`).toBe(false);
     }
   });
 });

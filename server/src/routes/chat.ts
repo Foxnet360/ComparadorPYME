@@ -10,9 +10,18 @@ import {
   getConversationHistory,
 } from '../services/chatService';
 import { chatRepository, ChatMessageDB } from '../repositories/chatRepository';
+import { AuthenticatedRequest } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
 
 const router = Router();
+
+/**
+ * AUTH-2: the authenticated session wins over any client-supplied userId;
+ * anonymous traffic is bucketed as 'anonymous'. Chat is anonymous-by-design
+ * (see authGate allowlist), so a valid token only personalizes threading.
+ */
+const resolveUserId = (req: AuthenticatedRequest, supplied?: unknown): string =>
+  req.user?.id ?? (typeof supplied === 'string' && supplied ? supplied : undefined) ?? 'anonymous';
 
 // Simple rate limiting map (in production, use Redis)
 const rateLimitMap: Map<string, { count: number; resetTime: number }> = new Map();
@@ -69,7 +78,7 @@ router.post(
 
     console.log(`💬 [chatRoute] Message: "${message.substring(0, 50)}..."`);
 
-    const userId = req.body.userId || 'anonymous';
+    const userId = resolveUserId(req as AuthenticatedRequest, req.body.userId);
 
     const result = await processChatMessage(message, reportContext, userId, threadId);
 
@@ -89,7 +98,7 @@ router.get(
   '/threads/report/:reportId',
   asyncHandler(async (req, res) => {
     const reportId = req.params.reportId as string;
-    const userId = String(req.query.userId || 'anonymous');
+    const userId = resolveUserId(req as AuthenticatedRequest, req.query.userId);
 
     console.log(`🔍 [chatRoute] Getting thread for report: ${reportId}, user: ${userId}`);
 
@@ -171,7 +180,7 @@ router.post(
 router.get(
   '/threads',
   asyncHandler(async (req, res) => {
-    const userId = (req.query.userId as string) || 'anonymous';
+    const userId = resolveUserId(req as AuthenticatedRequest, req.query.userId);
 
     const threads = await chatRepository.listUserThreads(userId);
 

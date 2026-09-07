@@ -63,10 +63,9 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
 
   const loadThread = async (reportId: string) => {
     try {
-      const user = localStorage.getItem('seguro_app_user');
-      const userId = user ? JSON.parse(user)?.id : 'anonymous';
-
-      const response = await apiClient.fetch(`/chat/threads/report/${reportId}?userId=${userId}`);
+      // ERR-4: no localStorage auth keys — the backend derives the user from
+      // the Supabase session (or buckets anonymous traffic).
+      const response = await apiClient.fetch(`/chat/threads/report/${reportId}`);
 
       if (response.ok) {
         const data = await response.json();
@@ -134,9 +133,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
     setShowSuggestions(false);
 
     try {
-      const user = localStorage.getItem('seguro_app_user');
-      const userId = user ? JSON.parse(user)?.id : 'anonymous';
-
       const response = await apiClient.fetch('/chat', {
         method: 'POST',
         headers: {
@@ -146,7 +142,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
           message: messageText,
           reportContext,
           threadId,
-          userId,
         }),
       });
 
