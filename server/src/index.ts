@@ -69,6 +69,11 @@ import { supabase } from './config/database';
 const app = express();
 const port = parseInt(process.env.PORT || '8080', 10);
 
+// Railway (and most PaaS proxies) sets X-Forwarded-For. Without trust proxy,
+// express-rate-limit emits ERR_ERL_UNEXPECTED_X_FORWARDED_FOR and keys every
+// client as the proxy IP. Exactly one proxy hop sits in front of this app.
+app.set('trust proxy', 1);
+
 // Request ID middleware
 import { v4 as uuidv4 } from 'uuid';
 app.use((req, res, next) => {
@@ -265,13 +270,6 @@ if (process.env.NODE_ENV === 'production') {
     });
   });
 }
-
-console.log('🚀 About to start server...');
-console.log('📍 Port:', port);
-console.log('📍 Host: 0.0.0.0');
-console.log('📍 NODE_ENV:', process.env.NODE_ENV);
-console.log('📍 Static path:', path.join(__dirname, '../../dist'));
-console.log('📍 Static exists:', fs.existsSync(path.join(__dirname, '../../dist')));
 
 console.log('🚀 About to start server...');
 console.log('📍 Port:', port);

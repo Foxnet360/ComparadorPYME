@@ -12,6 +12,7 @@ vi.mock('../../../services/authService', () => ({
   supabase: {
     auth: {
       getSession: vi.fn(),
+      refreshSession: vi.fn(),
     },
   },
 }));
@@ -60,6 +61,24 @@ describe('apiClient', () => {
 
       const token = await getAuthToken();
       expect(token).toBeNull();
+    });
+
+    it('refreshes proactively when the cached token is about to expire', async () => {
+      const payload = btoa(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 30 }));
+      const expiringToken = `header.${payload}.signature`;
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: { session: mockSession(expiringToken) },
+        error: null,
+      });
+      vi.mocked(supabase.auth.refreshSession).mockResolvedValue({
+        data: { session: mockSession('fresh-token') },
+        error: null,
+      } as never);
+
+      const token = await getAuthToken();
+
+      expect(token).toBe('fresh-token');
+      expect(supabase.auth.refreshSession).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -171,6 +190,10 @@ describe('apiClient', () => {
         data: { session: mockSession('bearer-token') },
         error: null,
       });
+      vi.mocked(supabase.auth.refreshSession).mockResolvedValue({
+        data: { session: null },
+        error: null,
+      } as never);
       vi.mocked(globalThis.fetch).mockResolvedValue(
         new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
       );
@@ -178,6 +201,49 @@ describe('apiClient', () => {
       await expect(apiClient.fetch('/history')).rejects.toThrow(
         'Sesión expirada. Por favor inicia sesión nuevamente.'
       );
+    });
+
+    it('refreshes the session and retries once when a 401 is recoverable', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: { session: mockSession('expired-token') },
+        error: null,
+      });
+      vi.mocked(supabase.auth.refreshSession).mockResolvedValue({
+        data: { session: mockSession('fresh-token') },
+        error: null,
+      } as never);
+      vi.mocked(globalThis.fetch)
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+        )
+        .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+      const response = await apiClient.fetch('/history');
+
+      expect(response.status).toBe(200);
+      expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+      expect(supabase.auth.refreshSession).toHaveBeenCalledTimes(1);
+      const retryInit = vi.mocked(globalThis.fetch).mock.calls[1][1] as RequestInit;
+      expect(retryInit.headers).toEqual({ Authorization: 'Bearer fresh-token' });
+    });
+
+    it('does not retry when the refresh yields no new token', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: { session: mockSession('expired-token') },
+        error: null,
+      });
+      vi.mocked(supabase.auth.refreshSession).mockResolvedValue({
+        data: { session: null },
+        error: null,
+      } as never);
+      vi.mocked(globalThis.fetch).mockResolvedValue(
+        new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+      );
+
+      await expect(apiClient.fetch('/history')).rejects.toThrow(
+        'Sesión expirada. Por favor inicia sesión nuevamente.'
+      );
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
     });
 
     it('throws Error with server message on non-OK response', async () => {
