@@ -7,7 +7,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   Cell,
   Radar,
   RadarChart,
@@ -16,6 +15,7 @@ import {
   PolarRadiusAxis,
   Legend,
 } from 'recharts';
+import DeferredChart from '../DeferredChart';
 import { formatCOP, formatCOPMillions } from '../../utils/formatCurrency';
 import type { QuoteAnalysis } from '../../types';
 
@@ -92,7 +92,7 @@ export const ReportCharts: React.FC<ReportChartsProps> = ({ quotes }) => {
         </h3>
         <div className="h-[300px] w-full min-h-[300px]" style={{ minWidth: '300px' }}>
           {quotes.length > 0 && radarData.some((d) => Object.keys(d).length > 2) ? (
-            <ResponsiveContainer width="100%" height="100%">
+            <DeferredChart>
               <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                 <PolarGrid stroke="#e2e8f0" />
                 <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 11 }} />
@@ -116,7 +116,7 @@ export const ReportCharts: React.FC<ReportChartsProps> = ({ quotes }) => {
                   }}
                 />
               </RadarChart>
-            </ResponsiveContainer>
+            </DeferredChart>
           ) : (
             <div className="flex items-center justify-center h-full text-slate-400">
               No hay datos suficientes para el gráfico
@@ -149,7 +149,7 @@ export const ReportCharts: React.FC<ReportChartsProps> = ({ quotes }) => {
         </div>
         <div className="h-[300px] w-full mt-4 min-h-[300px]" style={{ minWidth: '300px' }}>
           {priceData.length > 0 && priceData.some((d) => d.fullPrice > 0) ? (
-            <ResponsiveContainer width="100%" height="100%">
+            <DeferredChart>
               <BarChart data={priceData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                 <XAxis
@@ -179,7 +179,7 @@ export const ReportCharts: React.FC<ReportChartsProps> = ({ quotes }) => {
                   ))}
                 </Bar>
               </BarChart>
-            </ResponsiveContainer>
+            </DeferredChart>
           ) : (
             <div className="flex items-center justify-center h-full text-slate-400">
               No hay datos de precios disponibles

@@ -7,9 +7,9 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   Legend,
-  ResponsiveContainer,
   Tooltip,
 } from 'recharts';
+import DeferredChart from './DeferredChart';
 import { X, Radar as RadarIcon } from 'lucide-react';
 
 interface InsurerRadarProps {
@@ -165,7 +165,7 @@ export const InsurerRadar: React.FC<InsurerRadarProps> = ({
 
           {/* Radar Chart */}
           <div className="h-[400px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+            <DeferredChart>
               <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                 <PolarGrid stroke="#e2e8f0" />
                 <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 12 }} />
@@ -200,7 +200,7 @@ export const InsurerRadar: React.FC<InsurerRadarProps> = ({
                   }}
                 />
               </RadarChart>
-            </ResponsiveContainer>
+            </DeferredChart>
           </div>
 
           {/* Score Explanation */}

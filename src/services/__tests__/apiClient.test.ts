@@ -4,6 +4,7 @@ import {
   getAuthToken,
   DEFAULT_API_TIMEOUT_MS,
   ApiTimeoutError,
+  SessionExpiredError,
 } from '../../../services/apiClient';
 import { supabase } from '../../../services/authService';
 
@@ -201,6 +202,7 @@ describe('apiClient', () => {
       await expect(apiClient.fetch('/history')).rejects.toThrow(
         'Sesión expirada. Por favor inicia sesión nuevamente.'
       );
+      await expect(apiClient.fetch('/history')).rejects.toBeInstanceOf(SessionExpiredError);
     });
 
     it('refreshes the session and retries once when a 401 is recoverable', async () => {

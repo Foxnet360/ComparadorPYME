@@ -1,8 +1,14 @@
 import React from 'react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { AuditDashboard } from '../../../components/AuditDashboard';
 import { QuoteAnalysis } from '../../../types';
+
+// jsdom never performs layout, so DeferredChart would keep charts unmounted
+// (zero-size container). Replace it with a passthrough for these tests.
+vi.mock('../../../components/DeferredChart', () => ({
+  default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
 
 describe('AuditDashboard', () => {
   const mockQuotes: QuoteAnalysis[] = [

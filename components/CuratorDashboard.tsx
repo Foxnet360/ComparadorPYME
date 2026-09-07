@@ -7,13 +7,13 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip as RechartsTooltip,
-  ResponsiveContainer,
   LineChart,
   Line,
   PieChart,
   Pie,
   Cell,
 } from 'recharts';
+import DeferredChart from './DeferredChart';
 import {
   Brain,
   TrendingUp,
@@ -277,7 +277,7 @@ export const CuratorDashboard = ({
                 Tendencia de Confianza
               </h3>
               <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
+                <DeferredChart>
                   <LineChart data={confidenceTrend}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                     <XAxis dataKey="date" tick={{ fontSize: 11 }} />
@@ -302,7 +302,7 @@ export const CuratorDashboard = ({
                       dot={{ fill: '#3B82F6', r: 4 }}
                     />
                   </LineChart>
-                </ResponsiveContainer>
+                </DeferredChart>
               </div>
             </div>
 
@@ -313,7 +313,7 @@ export const CuratorDashboard = ({
                 Correcciones por Categoría
               </h3>
               <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
+                <DeferredChart>
                   <PieChart>
                     <Pie
                       data={pieData}
@@ -336,7 +336,7 @@ export const CuratorDashboard = ({
                       }}
                     />
                   </PieChart>
-                </ResponsiveContainer>
+                </DeferredChart>
               </div>
               <div className="flex flex-wrap gap-2 mt-2">
                 {pieData.map((entry, index) => (
@@ -464,7 +464,7 @@ export const CuratorDashboard = ({
               Historial de Consenso de Doble Agente
             </h3>
             <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
+              <DeferredChart>
                 <BarChart data={consensusHistory}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                   <XAxis dataKey="date" tick={{ fontSize: 11 }} />
@@ -506,7 +506,7 @@ export const CuratorDashboard = ({
                     name="Tasa de Consenso"
                   />
                 </BarChart>
-              </ResponsiveContainer>
+              </DeferredChart>
             </div>
           </div>
 

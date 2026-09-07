@@ -2,6 +2,12 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import ComparisonReport from '../../../components/ComparisonReport';
+
+// jsdom never performs layout, so DeferredChart would keep charts unmounted
+// (zero-size container). Replace it with a passthrough for these tests.
+vi.mock('../../../components/DeferredChart', () => ({
+  default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
 import { ComparisonReport as ReportType } from '../../../types';
 import { AnalysisProvider } from '../../../contexts/AnalysisContext';
 

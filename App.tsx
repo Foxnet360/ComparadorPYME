@@ -192,7 +192,7 @@ const AppShell: React.FC = () => {
       {/* Clause Library Admin Modal */}
       {showClauseAdmin && (
         <Suspense fallback={null}>
-          <ClauseAdmin onClose={() => setShowClauseAdmin(false)} />
+          <ClauseAdmin currentUser={currentUser} onClose={() => setShowClauseAdmin(false)} />
         </Suspense>
       )}
 

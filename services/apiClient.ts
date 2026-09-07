@@ -73,6 +73,18 @@ export class ApiTimeoutError extends Error {
   }
 }
 
+/**
+ * Thrown when the API answers 401 and the session could not be recovered
+ * (refresh failed or no session exists). Callers can catch this type to
+ * prompt login instead of surfacing a generic failure.
+ */
+export class SessionExpiredError extends Error {
+  constructor() {
+    super('Sesión expirada. Por favor inicia sesión nuevamente.');
+    this.name = 'SessionExpiredError';
+  }
+}
+
 export interface ApiClientOptions extends RequestInit {
   headers?: Record<string, string>;
   /** Per-request timeout override. Defaults to DEFAULT_API_TIMEOUT_MS. */
@@ -117,17 +129,19 @@ export const apiClient = {
         ...rest,
         headers,
         signal: controller.signal,
-      }).catch((error: unknown) => {
-        // A caller-initiated abort is propagated as-is; a timeout abort is
-        // surfaced as a dedicated ApiTimeoutError.
-        if (controller.signal.aborted && !callerSignal?.aborted) {
-          throw new ApiTimeoutError(timeoutMs);
-        }
-        throw error;
-      }).finally(() => {
-        clearTimeout(timeoutTimer);
-        callerSignal?.removeEventListener('abort', onCallerAbort);
-      });
+      })
+        .catch((error: unknown) => {
+          // A caller-initiated abort is propagated as-is; a timeout abort is
+          // surfaced as a dedicated ApiTimeoutError.
+          if (controller.signal.aborted && !callerSignal?.aborted) {
+            throw new ApiTimeoutError(timeoutMs);
+          }
+          throw error;
+        })
+        .finally(() => {
+          clearTimeout(timeoutTimer);
+          callerSignal?.removeEventListener('abort', onCallerAbort);
+        });
     };
 
     let response = await executeFetch(token);
@@ -146,7 +160,7 @@ export const apiClient = {
     }
 
     if (response.status === 401) {
-      throw new Error('Sesión expirada. Por favor inicia sesión nuevamente.');
+      throw new SessionExpiredError();
     }
 
     if (!response.ok) {

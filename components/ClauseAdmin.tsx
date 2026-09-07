@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { clauseService } from '../services/clauseService';
+import { SessionExpiredError } from '../services/apiClient';
+import { UserProfile } from '../types';
 import {
   Search,
   Eye,
@@ -15,6 +17,7 @@ import {
 
 interface ClauseAdminProps {
   onClose: () => void;
+  currentUser?: UserProfile | null;
 }
 
 interface Document {
@@ -33,7 +36,7 @@ interface Document {
   };
 }
 
-export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose }) => {
+export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -105,7 +108,13 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose }) => {
 
       await loadData();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error desconocido');
+      setError(
+        err instanceof SessionExpiredError
+          ? 'Tu sesión no permite cargar documentos. Inicia sesión desde el menú de usuario (arriba a la derecha) e intenta de nuevo.'
+          : err instanceof Error
+            ? err.message
+            : 'Error desconocido'
+      );
     } finally {
       setUploading(false);
     }
@@ -118,7 +127,13 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose }) => {
       await clauseService.deleteDocument(id);
       await loadData();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error desconocido');
+      setError(
+        err instanceof SessionExpiredError
+          ? 'Tu sesión no permite eliminar documentos. Inicia sesión desde el menú de usuario (arriba a la derecha) e intenta de nuevo.'
+          : err instanceof Error
+            ? err.message
+            : 'Error desconocido'
+      );
     }
   };
 
@@ -199,114 +214,130 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose }) => {
             <h3 className="font-semibold text-slate-800 mb-4 flex items-center">
               ☁️ Subir Nuevo Documento
             </h3>
-            <form
-              onSubmit={handleSubmit}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-            >
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">
-                  Aseguradora
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ej: AXA COLPATRIA"
-                  value={formData.insurerName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, insurerName: e.target.value.toUpperCase() })
-                  }
-                  className="border border-slate-300 rounded-lg px-3 py-2 w-full focus:ring-indigo-500 focus:border-indigo-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">
-                  Nombre Documento
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ej: Clausulado General.pdf"
-                  value={formData.documentName}
-                  onChange={(e) => setFormData({ ...formData, documentName: e.target.value })}
-                  className="border border-slate-300 rounded-lg px-3 py-2 w-full focus:ring-indigo-500 focus:border-indigo-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Tipo</label>
-                <select
-                  value={formData.documentType}
-                  onChange={(e) => setFormData({ ...formData, documentType: e.target.value })}
-                  className="border border-slate-300 rounded-lg px-3 py-2 w-full focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  <option value="CLAUSULADO_GENERAL">Clausulado General</option>
-                  <option value="CLAUSULADO_PARTICULAR">Clausulado Particular</option>
-                  <option value="ANEXO">Anexo</option>
-                  <option value="COTIZACION">Cotización</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Producto</label>
-                <input
-                  type="text"
-                  placeholder="Ej: Póliza PYME"
-                  value={formData.productName}
-                  onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
-                  className="border border-slate-300 rounded-lg px-3 py-2 w-full focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Versión</label>
-                <input
-                  type="text"
-                  placeholder="Ej: 2024.1"
-                  value={formData.version}
-                  onChange={(e) => setFormData({ ...formData, version: e.target.value })}
-                  className="border border-slate-300 rounded-lg px-3 py-2 w-full focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-              <div className="flex gap-2">
-                <div className="flex-1">
+            {currentUser ? (
+              <form
+                onSubmit={handleSubmit}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+              >
+                <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1">
-                    Archivo (PDF)
+                    Aseguradora
                   </label>
-                  <label className="border border-slate-300 rounded-lg px-3 py-2 bg-white cursor-pointer flex items-center justify-center hover:bg-slate-100 transition-colors h-[42px]">
-                    <span className="truncate text-sm text-slate-600">
-                      {selectedFile ? selectedFile.name : '📄 Elegir PDF'}
-                    </span>
-                    <input
-                      type="file"
-                      accept=".pdf"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0] || null;
-                        setSelectedFile(file);
-                        if (file && !formData.documentName) {
-                          setFormData({ ...formData, documentName: file.name });
-                        }
-                      }}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-                <div className="flex items-end">
-                  <button
-                    type="submit"
-                    disabled={
-                      uploading || !formData.insurerName || !formData.documentName || !selectedFile
+                  <input
+                    type="text"
+                    placeholder="Ej: AXA COLPATRIA"
+                    value={formData.insurerName}
+                    onChange={(e) =>
+                      setFormData({ ...formData, insurerName: e.target.value.toUpperCase() })
                     }
-                    className="bg-indigo-600 text-white font-medium rounded-lg px-4 py-2 hover:bg-indigo-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors h-[42px]"
-                  >
-                    {uploading ? (
-                      <span className="flex items-center justify-center">
-                        <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></span>
-                        Procesando...
-                      </span>
-                    ) : (
-                      'Subir'
-                    )}
-                  </button>
+                    className="border border-slate-300 rounded-lg px-3 py-2 w-full focus:ring-indigo-500 focus:border-indigo-500"
+                    required
+                  />
                 </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">
+                    Nombre Documento
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Clausulado General.pdf"
+                    value={formData.documentName}
+                    onChange={(e) => setFormData({ ...formData, documentName: e.target.value })}
+                    className="border border-slate-300 rounded-lg px-3 py-2 w-full focus:ring-indigo-500 focus:border-indigo-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Tipo</label>
+                  <select
+                    value={formData.documentType}
+                    onChange={(e) => setFormData({ ...formData, documentType: e.target.value })}
+                    className="border border-slate-300 rounded-lg px-3 py-2 w-full focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="CLAUSULADO_GENERAL">Clausulado General</option>
+                    <option value="CLAUSULADO_PARTICULAR">Clausulado Particular</option>
+                    <option value="ANEXO">Anexo</option>
+                    <option value="COTIZACION">Cotización</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">
+                    Producto
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Póliza PYME"
+                    value={formData.productName}
+                    onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
+                    className="border border-slate-300 rounded-lg px-3 py-2 w-full focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Versión</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: 2024.1"
+                    value={formData.version}
+                    onChange={(e) => setFormData({ ...formData, version: e.target.value })}
+                    className="border border-slate-300 rounded-lg px-3 py-2 w-full focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">
+                      Archivo (PDF)
+                    </label>
+                    <label className="border border-slate-300 rounded-lg px-3 py-2 bg-white cursor-pointer flex items-center justify-center hover:bg-slate-100 transition-colors h-[42px]">
+                      <span className="truncate text-sm text-slate-600">
+                        {selectedFile ? selectedFile.name : '📄 Elegir PDF'}
+                      </span>
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          setSelectedFile(file);
+                          if (file && !formData.documentName) {
+                            setFormData({ ...formData, documentName: file.name });
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  <div className="flex items-end">
+                    <button
+                      type="submit"
+                      disabled={
+                        uploading ||
+                        !formData.insurerName ||
+                        !formData.documentName ||
+                        !selectedFile
+                      }
+                      className="bg-indigo-600 text-white font-medium rounded-lg px-4 py-2 hover:bg-indigo-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors h-[42px]"
+                    >
+                      {uploading ? (
+                        <span className="flex items-center justify-center">
+                          <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></span>
+                          Procesando...
+                        </span>
+                      ) : (
+                        'Subir'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            ) : (
+              <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg text-sm flex items-start gap-2">
+                <ShieldCheck size={16} className="mt-0.5 flex-shrink-0" />
+                <span>
+                  La carga de clausulados requiere una cuenta. Inicia sesión desde el menú de
+                  usuario (arriba a la derecha) para subir documentos; la librería es de lectura
+                  pública.
+                </span>
               </div>
-            </form>
+            )}
           </div>
 
           {/* Filters & Search */}
@@ -434,13 +465,15 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose }) => {
                             <Eye size={13} />
                             <span>Previsualizar</span>
                           </button>
-                          <button
-                            onClick={() => handleDelete(doc.id, doc.documentName)}
-                            className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-1.5 rounded-lg transition-colors text-xs"
-                            title="Eliminar documento"
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                          {currentUser && (
+                            <button
+                              onClick={() => handleDelete(doc.id, doc.documentName)}
+                              className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-1.5 rounded-lg transition-colors text-xs"
+                              title="Eliminar documento"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

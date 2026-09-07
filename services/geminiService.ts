@@ -1,5 +1,10 @@
 import { ComparisonReport } from '../types';
-import { apiClient, ApiTimeoutError, DEFAULT_API_TIMEOUT_MS } from './apiClient';
+import {
+  apiClient,
+  ApiTimeoutError,
+  SessionExpiredError,
+  DEFAULT_API_TIMEOUT_MS,
+} from './apiClient';
 
 export const analyzeQuotesWithGemini = async (
   quoteFiles: File[],
@@ -52,6 +57,11 @@ export const analyzeQuotesWithGemini = async (
     }
 
     const rawMessage = error instanceof Error ? error.message : String(error);
+
+    if (error instanceof SessionExpiredError) {
+      // Preserve the typed error so callers can prompt login.
+      throw error;
+    }
 
     if (rawMessage.includes('Sesión expirada')) {
       throw new Error('Sesión expirada. Por favor inicia sesión nuevamente.');
