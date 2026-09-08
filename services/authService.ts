@@ -1,11 +1,26 @@
 import { createClient, User } from '@supabase/supabase-js';
 import { UserProfile } from '../types';
 
-const supabaseUrl = 'https://nubiecwypgfekhvaffxm.supabase.co';
-const supabaseAnonKey =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51YmllY3d5cGdmZWtodmFmZnhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0MDgxMjQsImV4cCI6MjA4OTk4NDEyNH0.Yxh0tCPZm9pyysQxsdDaWRJbf54FnNKhrqQo9ZsI4yw';
+// Supabase anon credentials are public by design (RLS enforces authorization,
+// never the key). They come from the build/dev environment, not from this
+// repo: .env.local for dev, Railway variables (via loadEnv in vite.config.ts
+// and the Dockerfile ARGs) for production builds.
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+if (!supabaseUrl || !supabaseAnonKey) {
+  // Fail-soft at module load: tests import this module without env vars, and
+  // a hard throw would brick them. Auth calls fail loudly without real values.
+  console.error(
+    '[authService] Missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY — ' +
+      'define them in .env.local (dev) or in the build environment (Railway).'
+  );
+}
+
+export const supabase = createClient(
+  supabaseUrl ?? 'https://placeholder.supabase.co',
+  supabaseAnonKey ?? 'placeholder-anon-key-not-a-secret',
+  {
   auth: {
     autoRefreshToken: true,
     persistSession: true,

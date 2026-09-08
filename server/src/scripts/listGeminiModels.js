@@ -2,9 +2,18 @@
  * Script para listar modelos disponibles en Gemini
  */
 
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../../../.env.local') });
+
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-const GEMINI_API_KEY = 'AIzaSyD3LOshQxEY4swacCat1VnlVuGj8WviWAU';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+if (!GEMINI_API_KEY) {
+  console.error('❌ Error: GEMINI_API_KEY es requerida.');
+  console.error('Definila en .env.local o en el entorno antes de ejecutar este script.');
+  process.exit(1);
+}
 
 async function listModels() {
   try {

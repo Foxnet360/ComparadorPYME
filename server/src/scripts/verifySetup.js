@@ -4,11 +4,15 @@ require('dotenv').config({ path: path.join(__dirname, '../../../.env.local') });
 const { createClient } = require('@supabase/supabase-js');
 const WebSocket = require('ws');
 
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://nubiecwypgfekhvaffxm.supabase.co';
-const SUPABASE_SERVICE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51YmllY3d5cGdmZWtodmFmZnhtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDQwODEyNCwiZXhwIjoyMDg5OTg0MTI0fQ.yJVMLIPSs2llvTh2UHMyIHmT9NJkC80yEfhgIetgwo4';
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyD3LOshQxEY4swacCat1VnlVuGj8WviWAU';
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !GEMINI_API_KEY) {
+  console.error('❌ Error: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY y GEMINI_API_KEY son requeridas.');
+  console.error('Definilas en .env.local o en el entorno antes de ejecutar este script.');
+  process.exit(1);
+}
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
   auth: {
