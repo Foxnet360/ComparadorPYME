@@ -24,15 +24,10 @@ COPY . .
 COPY tesauro(pyme).md /app/
 COPY tesauro-extensiones.md /app/
 
-# Build-time public client config (Supabase anon credentials are public by
-# design — RLS enforces authorization). Railway exposes service variables
-# during the build, so declaring the ARGs picks them up when set.
-ARG VITE_SUPABASE_URL
-ARG VITE_SUPABASE_ANON_KEY
-ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
-ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
-
-# Build the application (frontend + backend)
+# Build the application (frontend + backend).
+# Client config (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY) is read by
+# vite.config.ts via loadEnv from the build environment — do NOT pass it
+# through ARG/ENV (Docker linter flags it and it bakes values into the image).
 RUN npm run build
 
 # Create uploads directory
