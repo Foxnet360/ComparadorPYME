@@ -29,7 +29,7 @@ import {
   type RlsContext,
   USER_ID_TABLES,
   PARENT_SCOPED_TABLES,
-} from './helpers/rlsEmulator';
+} from '../../../tests/server/helpers/rlsEmulator';
 
 const A = 'user-a';
 const B = 'user-b';
