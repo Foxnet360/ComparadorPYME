@@ -199,3 +199,23 @@ export async function deletePolicy(userId: string, id: string): Promise<boolean>
 
   return true;
 }
+
+/**
+ * System-job read for the campaign scheduler (renovacion-polizas PR-4):
+ * batch fetch of policies by id. Scheduler-only — routes use the
+ * user-scoped accessors above.
+ */
+export async function listPoliciesByIds(ids: string[]): Promise<PolicyRecord[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+  const { data, error } = await supabase
+    .from('policies' as never)
+    .select(POLICY_COLUMNS)
+    .in('id', ids);
+
+  if (error) {
+    handleDbError(error, 'Failed to list policies by ids');
+  }
+  return (data as unknown as PolicyRecord[]) || [];
+}

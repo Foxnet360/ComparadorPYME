@@ -216,3 +216,21 @@ export async function listOpenRenewalsForPolicies(
   }
   return (data as unknown as Array<{ policy_id: string; cycle_start: string }>) || [];
 }
+
+/**
+ * System-job read for the campaign scheduler (task 1.19): every non-closed
+ * renewal of a tenant. Scheduler-only — routes use listRenewals instead.
+ */
+export async function listOpenRenewals(userId: string): Promise<RenewalRecord[]> {
+  const { data, error } = await supabase
+    .from('renewals' as never)
+    .select(COLUMNS)
+    .eq('user_id', userId)
+    .neq('state', 'closed')
+    .order('cycle_start', { ascending: true });
+
+  if (error) {
+    handleDbError(error, 'Failed to list open renewals');
+  }
+  return (data as unknown as RenewalRecord[]) || [];
+}
