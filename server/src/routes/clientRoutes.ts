@@ -1,59 +1,47 @@
 /**
- * Clients API Routes
- * Endpoints for syncing and retrieving client profiles
+ * Portfolio Clients API Routes (renovacion-polizas PR-2, task 1.7)
+ *
+ * CRUD for the `clients` table, scoped to the authenticated session user.
+ * Replaces the legacy client_profiles sync endpoint: the frontend syncs
+ * profiles through local storage and never called the old HTTP route, while
+ * the portfolio spec (R1.1) owns this path now.
+ *
+ * - R1.1: CRUD persists rows with user_id = session user and reads them back.
+ * - AUTH-2: ownership comes ONLY from the authenticated session; a
+ *   client-supplied userId (body or query) is rejected with 400.
+ * - XC-1: the route is behind the auth gate (no public allowlist entry) and
+ *   every repository call carries the session user_id.
+ * - R1.4: zod parsing strips unknown keys and the repository whitelists the
+ *   persisted columns, so extraneous fields never reach the database.
  */
 
-import { Router, Response } from 'express';
-import { supabase } from '../config/database';
-import { AuthenticatedRequest } from '../middleware/auth';
+import { Router, Request, Response, NextFunction } from 'express';
+import { AuthenticatedRequest, requireUser } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
-import { AppError } from '../errors';
-import logger from '../config/logger';
-import { Database, Json } from '../types/database';
-
-type ClientProfileRow = Database['public']['Tables']['client_profiles']['Row'];
-type ClientProfileInsert = Database['public']['Tables']['client_profiles']['Insert'];
-type ClientProfileUpdate = Database['public']['Tables']['client_profiles']['Update'];
-
-interface DbError {
-  message: string;
-}
-
-interface DbResult<T> {
-  data: T | null;
-  error: DbError | null;
-}
-
-/**
- * Narrowly typed view of the client_profiles query builder. The generated
- * schema types predate the Relationships metadata supabase-js v2 requires,
- * so untyped from() chains resolve to never; this interface documents the
- * exact operations this router performs.
- */
-interface ClientProfilesChain extends PromiseLike<DbResult<ClientProfileRow[]>> {
-  select(columns?: string): ClientProfilesChain;
-  insert(row: ClientProfileInsert): ClientProfilesChain;
-  update(row: ClientProfileUpdate): ClientProfilesChain;
-  eq(column: string, value: string): ClientProfilesChain;
-  order(column: string, options: { ascending: boolean }): ClientProfilesChain;
-  limit(count: number): ClientProfilesChain;
-  single(): PromiseLike<DbResult<ClientProfileRow>>;
-}
-
-const clientProfiles = (): ClientProfilesChain =>
-  supabase.from('client_profiles') as unknown as ClientProfilesChain;
+import { validateBody } from '../middleware/validateRequest';
+import { createClientSchema, updateClientSchema } from '../middleware/validationSchemas';
+import { NotFoundError } from '../errors';
+import {
+  createClient,
+  listClients,
+  getClientById,
+  updateClient,
+  deleteClient,
+  type CreateClientInput,
+  type UpdateClientInput,
+} from '../repositories/clientRepository';
 
 const router = Router();
 
 // AUTH-2: a client-supplied userId (body or query) is never trusted; the
 // backend derives ownership from the authenticated session instead.
-const hasClientSuppliedUserId = (req: AuthenticatedRequest): boolean =>
+const hasClientSuppliedUserId = (req: Request): boolean =>
   req.query.userId !== undefined ||
   (req.body !== undefined &&
     typeof req.body === 'object' &&
     (req.body as Record<string, unknown>).userId !== undefined);
 
-const rejectClientSuppliedUserId = (req: AuthenticatedRequest, res: Response): boolean => {
+const rejectClientSuppliedUserId = (req: Request, res: Response): boolean => {
   if (!hasClientSuppliedUserId(req)) {
     return false;
   }
@@ -64,121 +52,89 @@ const rejectClientSuppliedUserId = (req: AuthenticatedRequest, res: Response): b
   return true;
 };
 
-/**
- * GET /api/clients
- * Retrieve all clients synced under the authenticated user
- */
+// Middleware form for routes with body validation: the spoofing check MUST
+// run before validateBody, because zod strips unknown keys and would erase
+// the evidence of a forged userId.
+const rejectSpoofedUserId = (req: Request, res: Response, next: NextFunction): void => {
+  if (!rejectClientSuppliedUserId(req, res)) {
+    next();
+  }
+};
+
+/** GET /api/clients — list the session user's clients. */
 router.get(
   '/',
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     if (rejectClientSuppliedUserId(req, res)) {
       return;
     }
-
-    const userId = req.user?.id;
-    if (!userId) {
-      return res.json([]);
-    }
-
-    const { data, error } = await clientProfiles()
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      // ERR-1: db errors reach the central errorHandler (with traceId).
-      logger.error({ err: error }, '❌ [Clients API] Failed to fetch clients');
-      throw new AppError(`Database error: ${error.message}`, 500);
-    }
-
-    // Transform database records back to frontend Client structures.
-    const clients = (data ?? []).map((row) => {
-      if (row.raw_client_data && typeof row.raw_client_data === 'object') {
-        return row.raw_client_data;
-      }
-      return {
-        id: row.id,
-        name: row.client_name || '',
-        nit: '',
-        industry: row.primary_activity || '',
-      };
-    });
-
-    return res.json(clients);
+    const userId = requireUser(req);
+    const clients = await listClients(userId);
+    res.json(clients);
   })
 );
 
-/**
- * POST /api/clients
- * Sync/persist a client profile under the authenticated user
- */
+/** POST /api/clients — create a client owned by the session user. */
 router.post(
   '/',
+  rejectSpoofedUserId,
+  validateBody(createClientSchema),
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const userId = requireUser(req);
+    const created = await createClient(userId, req.body as CreateClientInput);
+    res.status(201).json(created);
+  })
+);
+
+/** GET /api/clients/:id — 404 when the client is missing or not owned. */
+router.get(
+  '/:id',
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     if (rejectClientSuppliedUserId(req, res)) {
       return;
     }
-
-    const userId = req.user?.id;
-    if (!userId) {
-      return res.status(200).json({ message: 'Saved locally' });
+    const userId = requireUser(req);
+    const client = await getClientById(userId, String(req.params.id));
+    if (!client) {
+      throw new NotFoundError('Client not found');
     }
+    res.json(client);
+  })
+);
 
-    const client = req.body;
-    if (!client || !client.name) {
-      return res.status(400).json({ error: 'Bad Request', message: 'Client name is required' });
+/** PATCH /api/clients/:id — whitelisted partial update of an own client. */
+router.patch(
+  '/:id',
+  rejectSpoofedUserId,
+  validateBody(updateClientSchema),
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const userId = requireUser(req);
+    const updated = await updateClient(
+      userId,
+      String(req.params.id),
+      req.body as UpdateClientInput
+    );
+    if (!updated) {
+      throw new NotFoundError('Client not found');
     }
+    res.json(updated);
+  })
+);
 
-    const profile: ClientProfileInsert = {
-      user_id: userId,
-      client_name: client.name as string,
-      primary_activity: (client.industry as string | undefined) || null,
-      location_city: (client.location_city as string | undefined) || null,
-      raw_client_data: client as Json,
-      updated_at: new Date().toISOString(),
-    };
-
-    // Check if client with same name already exists for this user to avoid duplication
-    const { data: existing, error: checkError } = await clientProfiles()
-      .select('id')
-      .eq('user_id', userId)
-      .eq('client_name', client.name as string)
-      .limit(1);
-
-    if (checkError) {
-      logger.warn({ err: checkError }, '⚠️ [Clients API] Failed to check existing client');
+/** DELETE /api/clients/:id — removes an own client; 404 otherwise. */
+router.delete(
+  '/:id',
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    if (rejectClientSuppliedUserId(req, res)) {
+      return;
     }
-
-    let resultData: ClientProfileRow | null;
-    const existingRow = existing?.[0];
-    if (existingRow) {
-      // Update existing
-      const { data: updateData, error: updateError } = await clientProfiles()
-        .update(profile)
-        .eq('id', existingRow.id)
-        .select('*')
-        .single();
-
-      if (updateError) {
-        logger.error({ err: updateError }, '❌ [Clients API] Failed to update client');
-        throw new AppError(`Database error: ${updateError.message}`, 500);
-      }
-      resultData = updateData;
-    } else {
-      // Insert new
-      const { data: insertData, error: insertError } = await clientProfiles()
-        .insert(profile)
-        .select('*')
-        .single();
-
-      if (insertError) {
-        logger.error({ err: insertError }, '❌ [Clients API] Failed to insert client');
-        throw new AppError(`Database error: ${insertError.message}`, 500);
-      }
-      resultData = insertData;
+    const userId = requireUser(req);
+    const existing = await getClientById(userId, String(req.params.id));
+    if (!existing) {
+      throw new NotFoundError('Client not found');
     }
-
-    return res.status(201).json(resultData?.raw_client_data || client);
+    await deleteClient(userId, String(req.params.id));
+    res.status(204).end();
   })
 );
 
