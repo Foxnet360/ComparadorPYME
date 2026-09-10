@@ -15,9 +15,15 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { AuthenticatedRequest, requireUser } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
 import { validateBody } from '../middleware/validateRequest';
-import { createPolicySchema, updatePolicySchema } from '../middleware/validationSchemas';
+import {
+  createPolicySchema,
+  updatePolicySchema,
+  promotePolicySchema,
+} from '../middleware/validationSchemas';
 import { NotFoundError, ValidationError } from '../errors';
 import { getClientById } from '../repositories/clientRepository';
+import { getAnalysisById } from '../repositories/analysisRepository';
+import { buildPromotedPolicyInput, type PromoteConfirmations } from '../services/policyPromotion';
 import {
   createPolicy,
   listPolicies,
@@ -84,6 +90,43 @@ router.post(
       throw new NotFoundError('Client not found');
     }
 
+    const created = await createPolicy(userId, input);
+    res.status(201).json(created);
+  })
+);
+
+/**
+ * POST /api/policies/promote (task 1.9, R1.3)
+ * Promotes a winning analysis quote into a Policy. The mapper auto-carries
+ * insurer/premium/coverages/deductibles/ramo/source_analysis_id; the broker
+ * confirms policy_number, dates, client and the per-ramo insured object.
+ * Ownership: getAnalysisById is NOT user-scoped, so the route verifies the
+ * analysis and the target client belong to the session user and answers 404
+ * (not 403) to avoid leaking existence across tenants (XC-1).
+ */
+router.post(
+  '/promote',
+  rejectSpoofedUserId,
+  validateBody(promotePolicySchema),
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const userId = requireUser(req);
+    const { analysis_id, quote_index, confirmations } = req.body as {
+      analysis_id: string;
+      quote_index: number;
+      confirmations: PromoteConfirmations;
+    };
+
+    const analysis = await getAnalysisById(analysis_id);
+    if (!analysis || analysis.user_id !== userId) {
+      throw new NotFoundError('Analysis not found');
+    }
+
+    const client = await getClientById(userId, confirmations.client_id);
+    if (!client) {
+      throw new NotFoundError('Client not found');
+    }
+
+    const input = buildPromotedPolicyInput(analysis, quote_index, confirmations);
     const created = await createPolicy(userId, input);
     res.status(201).json(created);
   })
