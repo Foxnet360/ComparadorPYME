@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { RENEWAL_OUTCOMES, RENEWAL_STATES } from '../services/renewalStateMachine';
 
 // Common schemas
 export const uuidSchema = z.string().uuid();
@@ -184,4 +185,18 @@ export const promotePolicySchema = z.object({
     end_date: z.string().min(1),
     insured: z.record(z.string(), z.unknown()),
   }),
+});
+
+// Renewal lifecycle schemas (renovacion-polizas PR-4). The state machine
+// (renewalStateMachine.ts) owns the transition/outcome RULES; these schemas
+// only gate shape and known values at the HTTP boundary (R3.1/R3.2).
+export const listRenewalsQuerySchema = z.object({
+  state: z.enum(RENEWAL_STATES).optional(),
+});
+
+export const transitionRenewalSchema = z.object({
+  to: z.enum(RENEWAL_STATES),
+  outcome: z.enum(RENEWAL_OUTCOMES).nullish(),
+  final_premium: z.number().nonnegative().nullish(),
+  loss_reason: z.string().min(1).max(500).nullish(),
 });

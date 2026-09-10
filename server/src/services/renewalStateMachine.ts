@@ -46,13 +46,26 @@ export interface TransitionErrorDetail {
   message: string;
 }
 
+/**
+ * 'structure': the edge itself is illegal (unknown state, non-adjacent jump,
+ * terminal source) → HTTP 409. 'payload': the edge is legal but the outcome
+ * payload violates R3.2 → HTTP 400.
+ */
+export type InvalidTransitionKind = 'structure' | 'payload';
+
 export class InvalidTransitionError extends Error {
   readonly details: TransitionErrorDetail[];
+  readonly kind: InvalidTransitionKind;
 
-  constructor(message: string, details: TransitionErrorDetail[] = []) {
+  constructor(
+    message: string,
+    details: TransitionErrorDetail[] = [],
+    kind: InvalidTransitionKind = 'structure'
+  ) {
     super(message);
     this.name = 'InvalidTransitionError';
     this.details = details;
+    this.kind = kind;
   }
 }
 
@@ -73,8 +86,12 @@ const ALLOWED_TRANSITIONS: Readonly<Record<RenewalState, readonly RenewalState[]
   closed: [],
 };
 
-function fail(message: string, details: TransitionErrorDetail[]): never {
-  throw new InvalidTransitionError(message, details);
+function fail(
+  message: string,
+  details: TransitionErrorDetail[],
+  kind: InvalidTransitionKind = 'structure'
+): never {
+  throw new InvalidTransitionError(message, details, kind);
 }
 
 /**
@@ -110,9 +127,11 @@ export function planTransition(current: RenewalState, input: TransitionInput): T
     input.outcome != null || input.final_premium != null || input.loss_reason != null;
 
   if (!closing && hasOutcomePayload) {
-    fail('Outcome fields are only valid when closing a renewal', [
-      { field: 'outcome', message: 'outcome/final_premium/loss_reason require to=closed' },
-    ]);
+    fail(
+      'Outcome fields are only valid when closing a renewal',
+      [{ field: 'outcome', message: 'outcome/final_premium/loss_reason require to=closed' }],
+      'payload'
+    );
   }
 
   if (!closing) {
@@ -120,21 +139,27 @@ export function planTransition(current: RenewalState, input: TransitionInput): T
   }
 
   if (!isRenewalOutcome(input.outcome)) {
-    fail('Closing a renewal requires a valid outcome', [
-      {
-        field: 'outcome',
-        message: `outcome must be one of: ${RENEWAL_OUTCOMES.join(', ')}`,
-      },
-    ]);
+    fail(
+      'Closing a renewal requires a valid outcome',
+      [
+        {
+          field: 'outcome',
+          message: `outcome must be one of: ${RENEWAL_OUTCOMES.join(', ')}`,
+        },
+      ],
+      'payload'
+    );
   }
   const outcome = input.outcome;
 
   if (outcome === 'lost') {
     const reason = typeof input.loss_reason === 'string' ? input.loss_reason.trim() : '';
     if (reason.length === 0) {
-      fail('loss_reason is required when the outcome is lost', [
-        { field: 'loss_reason', message: 'required when outcome=lost (R3.2)' },
-      ]);
+      fail(
+        'loss_reason is required when the outcome is lost',
+        [{ field: 'loss_reason', message: 'required when outcome=lost (R3.2)' }],
+        'payload'
+      );
     }
     const patch: TransitionPatch = { state: 'closed', outcome, loss_reason: reason };
     if (input.final_premium != null) {
@@ -145,14 +170,18 @@ export function planTransition(current: RenewalState, input: TransitionInput): T
 
   // renewed_same_insurer | renewed_competitor
   if (input.loss_reason != null) {
-    fail('loss_reason is only meaningful when the outcome is lost', [
-      { field: 'loss_reason', message: 'forbidden unless outcome=lost' },
-    ]);
+    fail(
+      'loss_reason is only meaningful when the outcome is lost',
+      [{ field: 'loss_reason', message: 'forbidden unless outcome=lost' }],
+      'payload'
+    );
   }
   if (input.final_premium == null) {
-    fail('final_premium is required for a renewed outcome', [
-      { field: 'final_premium', message: 'required unless outcome=lost (R3.2)' },
-    ]);
+    fail(
+      'final_premium is required for a renewed outcome',
+      [{ field: 'final_premium', message: 'required unless outcome=lost (R3.2)' }],
+      'payload'
+    );
   }
   return {
     from: current,
@@ -163,9 +192,11 @@ export function planTransition(current: RenewalState, input: TransitionInput): T
 
 function assertPremium(value: number): number {
   if (typeof value !== 'number' || Number.isNaN(value) || value < 0) {
-    fail('final_premium must be a non-negative number', [
-      { field: 'final_premium', message: 'must be a non-negative number' },
-    ]);
+    fail(
+      'final_premium must be a non-negative number',
+      [{ field: 'final_premium', message: 'must be a non-negative number' }],
+      'payload'
+    );
   }
   return value;
 }
