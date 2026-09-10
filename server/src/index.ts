@@ -63,6 +63,7 @@ import templateRegistryRoutes from './routes/templateRegistry';
 import clientRoutes from './routes/clientRoutes';
 import policyRoutes from './routes/policyRoutes';
 import renewalRoutes from './routes/renewalRoutes';
+import campaignRoutes from './routes/campaignRoutes';
 
 // Graph seeding lifecycle
 import { buildGraphEdgesFromDomain, seedCoverageGraph } from './services/graphSeeder';
@@ -220,6 +221,7 @@ export const apiRouterMounts = [
   { prefix: '/api/clients', router: clientRoutes },
   { prefix: '/api/policies', router: policyRoutes },
   { prefix: '/api/renewals', router: renewalRoutes },
+  { prefix: '/api/campaigns', router: campaignRoutes },
 ] as const;
 
 for (const mount of apiRouterMounts) {

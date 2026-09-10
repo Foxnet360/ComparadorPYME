@@ -200,3 +200,10 @@ export const transitionRenewalSchema = z.object({
   final_premium: z.number().nonnegative().nullish(),
   loss_reason: z.string().min(1).max(500).nullish(),
 });
+
+// Campaign config schema (renovacion-polizas PR-4, R4.1): windows are whole
+// days before policy end_date, at least one, at most a year out.
+export const updateCampaignConfigSchema = z.object({
+  windows: z.array(z.number().int().min(1).max(365)).min(1).max(10),
+  enabled: z.boolean(),
+});

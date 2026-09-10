@@ -17,6 +17,7 @@ import {
   listDeliveriesForRenewals,
   insertDelivery,
   markDeliverySent,
+  getDelivery,
 } from '../repositories/campaignRepository';
 import { listOpenRenewals, applyTransition } from '../repositories/renewalRepository';
 import { listPoliciesByIds } from '../repositories/policyRepository';
@@ -179,4 +180,60 @@ export async function runCampaignTick(options: {
   }
 
   return result;
+}
+
+export type ManualSendResult =
+  | {
+      kind: 'sent';
+      delivery: {
+        id: string;
+        renewal_id: string;
+        window_key: string;
+        channel: string;
+        status: string;
+        sent_at: string | null;
+        created_at: string;
+      };
+    }
+  | { kind: 'conflict' };
+
+/**
+ * R4.2 manual send: identical idempotency to the scheduler tick (R4.3) —
+ * claim the pair first, then notify, then mark sent. When the renewal is
+ * still 'detected', the send advances it to 'notified' with the broker as
+ * actor (R3.1 audit).
+ */
+export async function sendManualDelivery(options: {
+  userId: string;
+  renewalId: string;
+  renewalState: RenewalState;
+  windowKey: string;
+  actorId: string;
+  notifier?: CampaignNotifier;
+}): Promise<ManualSendResult> {
+  const notifier = options.notifier ?? consoleNotifier;
+
+  const insert = await insertDelivery({
+    renewal_id: options.renewalId,
+    window_key: options.windowKey,
+  });
+  if (insert.kind === 'conflict') {
+    return { kind: 'conflict' };
+  }
+
+  await notifier.send({
+    renewalId: options.renewalId,
+    userId: options.userId,
+    windowKey: options.windowKey,
+    channel: insert.delivery.channel,
+  });
+  await markDeliverySent(insert.delivery.id);
+
+  if (options.renewalState === 'detected') {
+    const plan = planTransition('detected', { to: 'notified' });
+    await applyTransition(options.userId, options.renewalId, plan, options.actorId);
+  }
+
+  const delivery = await getDelivery(options.renewalId, options.windowKey);
+  return { kind: 'sent', delivery: delivery ?? insert.delivery };
 }

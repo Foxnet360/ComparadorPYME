@@ -25,8 +25,26 @@ import {
   type TransitionInput,
 } from '../services/renewalStateMachine';
 import { getRenewalById, listRenewals, applyTransition } from '../repositories/renewalRepository';
+import { insertDelivery, getDelivery, deleteDelivery } from '../repositories/campaignRepository';
+import { sendManualDelivery } from '../services/campaignService';
 
 const router = Router();
+
+/** R4.2: the :window path param is a positive integer of days (e.g. '30'). */
+function parseWindowParam(raw: string): string {
+  if (!/^\d{1,3}$/.test(raw)) {
+    throw new ValidationError('Validation failed', [
+      { field: 'window', message: 'window must be a positive integer of days' },
+    ]);
+  }
+  const days = parseInt(raw, 10);
+  if (days < 1 || days > 365) {
+    throw new ValidationError('Validation failed', [
+      { field: 'window', message: 'window must be between 1 and 365 days' },
+    ]);
+  }
+  return String(days);
+}
 
 // AUTH-2: a client-supplied userId (body or query) is never trusted.
 const hasClientSuppliedUserId = (req: Request): boolean =>
@@ -97,6 +115,93 @@ router.post(
       throw new NotFoundError('Renewal not found');
     }
     res.json(updated);
+  })
+);
+
+/**
+ * POST /api/renewals/:id/campaigns/:window/send (R4.2 manual send).
+ * Same insert-first-then-send idempotency as the scheduler (R4.3): an
+ * already-claimed pair answers 409.
+ */
+router.post(
+  '/:id/campaigns/:window/send',
+  rejectSpoofedUserId,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const userId = requireUser(req);
+    const windowKey = parseWindowParam(String(req.params.window));
+    const renewal = await getRenewalById(userId, String(req.params.id));
+    if (!renewal) {
+      throw new NotFoundError('Renewal not found');
+    }
+
+    const result = await sendManualDelivery({
+      userId,
+      renewalId: renewal.id,
+      renewalState: renewal.state,
+      windowKey,
+      actorId: userId,
+    });
+    if (result.kind === 'conflict') {
+      throw new ConflictError('This renewal window was already handled');
+    }
+    res.json(result.delivery);
+  })
+);
+
+/**
+ * POST /api/renewals/:id/campaigns/:window/skip (R4.2 manual skip).
+ * Claims the pair with status 'skipped' so the scheduler never sends it.
+ */
+router.post(
+  '/:id/campaigns/:window/skip',
+  rejectSpoofedUserId,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const userId = requireUser(req);
+    const windowKey = parseWindowParam(String(req.params.window));
+    const renewal = await getRenewalById(userId, String(req.params.id));
+    if (!renewal) {
+      throw new NotFoundError('Renewal not found');
+    }
+
+    const result = await insertDelivery({
+      renewal_id: renewal.id,
+      window_key: windowKey,
+      status: 'skipped',
+    });
+    if (result.kind === 'conflict') {
+      throw new ConflictError('This renewal window was already handled');
+    }
+    res.json(result.delivery);
+  })
+);
+
+/**
+ * POST /api/renewals/:id/campaigns/:window/reschedule (R4.2).
+ * Releases a pending/skipped pair so the next scheduler tick plans it
+ * again. Already-sent deliveries are immutable (409); a pair that was
+ * never claimed answers 404.
+ */
+router.post(
+  '/:id/campaigns/:window/reschedule',
+  rejectSpoofedUserId,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const userId = requireUser(req);
+    const windowKey = parseWindowParam(String(req.params.window));
+    const renewal = await getRenewalById(userId, String(req.params.id));
+    if (!renewal) {
+      throw new NotFoundError('Renewal not found');
+    }
+
+    const delivery = await getDelivery(renewal.id, windowKey);
+    if (!delivery) {
+      throw new NotFoundError('No campaign delivery for this renewal window');
+    }
+    if (delivery.status === 'sent') {
+      throw new ConflictError('An already-sent delivery cannot be rescheduled');
+    }
+
+    await deleteDelivery(renewal.id, windowKey);
+    res.json({ renewal_id: renewal.id, window_key: windowKey, rescheduled: true });
   })
 );
 
