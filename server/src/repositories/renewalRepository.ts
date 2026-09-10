@@ -178,3 +178,41 @@ export async function listRenewalEvents(renewalId: string): Promise<RenewalEvent
   }
   return (data as unknown as RenewalEventRecord[]) || [];
 }
+
+/**
+ * System-job reads for the detection scheduler (task 1.18). Intentionally NOT
+ * user-scoped: the job runs with the service role and scans across tenants;
+ * tenant isolation (XC-1) is preserved because each detected renewal inherits
+ * the user_id of its policy. Never call these from session-scoped routes.
+ */
+export async function listPoliciesWithEndDate(): Promise<
+  Array<{ id: string; user_id: string; end_date: string | null }>
+> {
+  const { data, error } = await supabase
+    .from('policies' as never)
+    .select('id, user_id, end_date')
+    .not('end_date', 'is', null);
+
+  if (error) {
+    handleDbError(error, 'Failed to list policies with end_date');
+  }
+  return (data as unknown as Array<{ id: string; user_id: string; end_date: string | null }>) || [];
+}
+
+export async function listOpenRenewalsForPolicies(
+  policyIds: string[]
+): Promise<Array<{ policy_id: string; cycle_start: string }>> {
+  if (policyIds.length === 0) {
+    return [];
+  }
+  const { data, error } = await supabase
+    .from('renewals' as never)
+    .select('policy_id, cycle_start')
+    .in('policy_id', policyIds)
+    .neq('state', 'closed');
+
+  if (error) {
+    handleDbError(error, 'Failed to list open renewals for policies');
+  }
+  return (data as unknown as Array<{ policy_id: string; cycle_start: string }>) || [];
+}

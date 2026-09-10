@@ -24,8 +24,10 @@ import {
   getRenewalById,
   applyTransition,
   listRenewalEvents,
+  createRenewal,
 } from '../renewalRepository';
 import { planTransition } from '../../services/renewalStateMachine';
+import { RENEWAL_UNIQUE_CONSTRAINTS } from '../../../../../tests/server/helpers/fakeSupabase';
 
 const USER_A = 'user-a';
 const USER_B = 'user-b';
@@ -132,5 +134,49 @@ describe('listRenewalEvents', () => {
       'detected->notified',
       'notified->in_review',
     ]);
+  });
+});
+
+describe('createRenewal (R3.3)', () => {
+  beforeEach(() => {
+    for (const constraint of RENEWAL_UNIQUE_CONSTRAINTS) {
+      fake.registerUnique(constraint.table, constraint);
+    }
+  });
+
+  it('creates an open renewal in state detected', async () => {
+    const result = await createRenewal(USER_A, { policy_id: 'p1', cycle_start: '2026-11-01' });
+    expect(result.kind).toBe('created');
+    if (result.kind === 'created') {
+      expect(result.renewal.state).toBe('detected');
+      expect(result.renewal.user_id).toBe(USER_A);
+    }
+  });
+
+  it('maps the one-open-per-cycle unique violation to a conflict, never throws', async () => {
+    await createRenewal(USER_A, { policy_id: 'p1', cycle_start: '2026-11-01' });
+
+    const duplicate = await createRenewal(USER_A, { policy_id: 'p1', cycle_start: '2026-11-01' });
+
+    expect(duplicate.kind).toBe('conflict');
+    expect(fake.rows('renewals')).toHaveLength(1);
+  });
+
+  it('allows the same cycle for a different policy and a closed prior cycle', async () => {
+    await createRenewal(USER_A, { policy_id: 'p1', cycle_start: '2026-11-01' });
+    const otherPolicy = await createRenewal(USER_A, { policy_id: 'p2', cycle_start: '2026-11-01' });
+    expect(otherPolicy.kind).toBe('created');
+
+    fake.insertRow('renewals', {
+      user_id: USER_B,
+      policy_id: 'p9',
+      cycle_start: '2026-12-01',
+      state: 'closed',
+    });
+    const afterClosed = await createRenewal(USER_B, {
+      policy_id: 'p9',
+      cycle_start: '2026-12-01',
+    });
+    expect(afterClosed.kind).toBe('created');
   });
 });
