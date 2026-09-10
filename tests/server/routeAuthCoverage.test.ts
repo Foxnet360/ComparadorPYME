@@ -121,6 +121,10 @@ describe('route auth coverage (AUTH-1)', () => {
         'POST /api/clients/',
         'PATCH /api/clients/:id',
         'DELETE /api/clients/:id',
+        'GET /api/policies/',
+        'POST /api/policies/',
+        'PATCH /api/policies/:id',
+        'DELETE /api/policies/:id',
       ])
     );
 
