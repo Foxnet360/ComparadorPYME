@@ -1,0 +1,227 @@
+[
+  {
+    "type": "header",
+    "id": "client_info",
+    "label": "Cotizaciones PYME - MAPFRE, CHUBB",
+    "sectionId": 0,
+    "cells": [
+      {
+        "value": "",
+        "isExcluded": false,
+        "isWinner": false
+      },
+      {
+        "value": "",
+        "isExcluded": false,
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "type": "header",
+    "id": "section_0",
+    "label": "INFORMACIÓN GENERAL",
+    "sectionId": 1,
+    "cells": [
+      {
+        "value": "",
+        "isExcluded": false,
+        "isWinner": false
+      },
+      {
+        "value": "",
+        "isExcluded": false,
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "type": "data",
+    "id": "section_0_row_0",
+    "label": "Bienes Asegurados",
+    "sectionId": 1,
+    "cells": [
+      {
+        "value": "Edificio $500M",
+        "isExcluded": false,
+        "isWinner": false,
+        "confidence": 0.85
+      },
+      {
+        "value": "Edificio y contenidos $600M",
+        "isExcluded": false,
+        "isWinner": false,
+        "confidence": 0.85
+      }
+    ]
+  },
+  {
+    "type": "data",
+    "id": "section_0_row_1",
+    "label": "Deducibles",
+    "sectionId": 1,
+    "cells": [
+      {
+        "value": "10%",
+        "isExcluded": false,
+        "isWinner": false,
+        "confidence": 0.85
+      },
+      {
+        "value": "5%",
+        "isExcluded": false,
+        "isWinner": false,
+        "notes": "ded 5%",
+        "confidence": 0.85
+      }
+    ]
+  },
+  {
+    "type": "data",
+    "id": "section_0_row_2",
+    "label": "Prima con IVA",
+    "sectionId": 1,
+    "cells": [
+      {
+        "value": "$ 8.500.000",
+        "isExcluded": false,
+        "isWinner": false,
+        "confidence": 0.85
+      },
+      {
+        "value": "$ 9.200.000",
+        "isExcluded": false,
+        "isWinner": false,
+        "confidence": 0.85
+      }
+    ]
+  },
+  {
+    "type": "data",
+    "id": "section_0_row_3",
+    "label": "Forma de Pago",
+    "sectionId": 1,
+    "cells": [
+      {
+        "value": "Anual",
+        "isExcluded": false,
+        "isWinner": false,
+        "confidence": 0.85
+      },
+      {
+        "value": "Mensual",
+        "isExcluded": false,
+        "isWinner": false,
+        "confidence": 0.85
+      }
+    ]
+  },
+  {
+    "type": "header",
+    "id": "financials",
+    "label": "PRIMAS Y COSTOS",
+    "sectionId": 100,
+    "cells": [
+      {
+        "value": "",
+        "isExcluded": false,
+        "isWinner": false
+      },
+      {
+        "value": "",
+        "isExcluded": false,
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "type": "data",
+    "id": "premium_total",
+    "label": "TOTAL A PAGAR",
+    "sectionId": 100,
+    "cells": [
+      {
+        "value": "$ 8.500.000",
+        "isExcluded": false,
+        "isWinner": false
+      },
+      {
+        "value": "$ 9.200.000",
+        "isExcluded": false,
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "type": "data",
+    "id": "meta_payment",
+    "label": "Forma de Pago",
+    "sectionId": 100,
+    "cells": [
+      {
+        "value": "Anual",
+        "isExcluded": false,
+        "isWinner": false
+      },
+      {
+        "value": "Mensual",
+        "isExcluded": false,
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "type": "spacer",
+    "id": "spacer_warnings",
+    "label": "",
+    "sectionId": 100,
+    "cells": [
+      {
+        "value": "",
+        "isExcluded": false,
+        "isWinner": false
+      },
+      {
+        "value": "",
+        "isExcluded": false,
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "type": "header",
+    "id": "warnings",
+    "label": "⚠️ ALERTAS",
+    "sectionId": 100,
+    "cells": [
+      {
+        "value": "",
+        "isExcluded": false,
+        "isWinner": false
+      },
+      {
+        "value": "",
+        "isExcluded": false,
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "type": "data",
+    "id": "warning_0",
+    "label": "Revisar deducible de CHUBB",
+    "sectionId": 100,
+    "cells": [
+      {
+        "value": "",
+        "isExcluded": false,
+        "isWinner": false
+      },
+      {
+        "value": "",
+        "isExcluded": false,
+        "isWinner": false
+      }
+    ]
+  }
+]

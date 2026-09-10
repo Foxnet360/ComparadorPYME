@@ -1,0 +1,99 @@
+[
+  {
+    "type": "header",
+    "id": "client_info",
+    "label": "Cotizaciones PYME - MAPFRE, CHUBB",
+    "sectionId": 0,
+    "cells": [
+      {
+        "value": "",
+        "isExcluded": false,
+        "isWinner": false
+      },
+      {
+        "value": "",
+        "isExcluded": false,
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "type": "header",
+    "id": "section_0",
+    "label": "COBERTURAS",
+    "sectionId": 1,
+    "cells": [
+      {
+        "value": "",
+        "isExcluded": false,
+        "isWinner": false
+      },
+      {
+        "value": "",
+        "isExcluded": false,
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "type": "data",
+    "id": "section_0_row_0",
+    "label": "Incendio",
+    "sectionId": 1,
+    "canonicalName": "Incendio (Edificio y Contenidos)",
+    "matchMethod": null,
+    "cells": [
+      {
+        "value": "500M",
+        "isExcluded": false,
+        "isWinner": false,
+        "confidence": 0.9
+      },
+      {
+        "value": "600M",
+        "isExcluded": false,
+        "isWinner": false,
+        "confidence": 0.95
+      }
+    ]
+  },
+  {
+    "type": "header",
+    "id": "section_1",
+    "label": "PRIMAS Y COSTOS",
+    "sectionId": 100,
+    "cells": [
+      {
+        "value": "",
+        "isExcluded": false,
+        "isWinner": false
+      },
+      {
+        "value": "",
+        "isExcluded": false,
+        "isWinner": false
+      }
+    ]
+  },
+  {
+    "type": "data",
+    "id": "section_1_row_0",
+    "label": "Prima total",
+    "sectionId": 100,
+    "matchMethod": null,
+    "cells": [
+      {
+        "value": "$ 8.500.000",
+        "isExcluded": false,
+        "isWinner": false,
+        "confidence": 0
+      },
+      {
+        "value": "$ 9.200.000",
+        "isExcluded": false,
+        "isWinner": false,
+        "confidence": 0
+      }
+    ]
+  }
+]
