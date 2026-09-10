@@ -113,29 +113,88 @@ export const QuoteMetadataSchema = z.object({
   vigencia: z.string().nullable().optional(),
 });
 
-export const FlatComparisonSchemaV2 = z
-  .object({
-    metadata: FlatComparisonMetadataSchema,
-    insurers: z.array(z.string().min(1)).min(1),
-    schemaVersion: z.number().default(2),
-    rows: z.array(FlatComparisonRowSchemaV2),
-    extraRows: z.array(FlatComparisonRowSchemaV2).default([]),
-    warnings: z.array(z.string()).default([]),
-    quoteMetadata: z.array(QuoteMetadataSchema).optional(),
-  })
-  .refine(
-    (data) =>
-      data.rows.every(
-        (row) =>
-          row.cells.length === data.insurers.length &&
-          row.cells.every((cell) => data.insurers.includes(cell.insurer))
-      ),
-    { message: 'Each row must contain one cell per insurer' }
+const FlatComparisonSchemaV2Base = z.object({
+  metadata: FlatComparisonMetadataSchema,
+  insurers: z.array(z.string().min(1)).min(1),
+  schemaVersion: z.number().default(2),
+  rows: z.array(FlatComparisonRowSchemaV2),
+  extraRows: z.array(FlatComparisonRowSchemaV2).default([]),
+  warnings: z.array(z.string()).default([]),
+  quoteMetadata: z.array(QuoteMetadataSchema).optional(),
+});
+
+const oneCellPerInsurer = (data: {
+  insurers: string[];
+  rows: { cells: { insurer: string }[] }[];
+}) =>
+  data.rows.every(
+    (row) =>
+      row.cells.length === data.insurers.length &&
+      row.cells.every((cell) => data.insurers.includes(cell.insurer))
   );
+
+export const FlatComparisonSchemaV2 = FlatComparisonSchemaV2Base.refine(oneCellPerInsurer, {
+  message: 'Each row must contain one cell per insurer',
+});
 
 export const FlatComparisonSchema = FlatComparisonSchemaV2;
 export const FlatComparisonCellSchema = FlatComparisonCellSchemaV2;
 export const FlatComparisonRowSchema = FlatComparisonRowSchemaV2;
+
+// -----------------------------------------------------------------------------
+// schemaVersion 3 (renewal mode): v2 + optional baseline + renewal analytics
+// -----------------------------------------------------------------------------
+
+/** Analysis discriminator. NULL/omitted analysis_type always means 'new' (R5.4). */
+export type AnalysisType = 'new' | 'renewal';
+
+export function normalizeAnalysisType(value: unknown): AnalysisType {
+  return value === 'renewal' ? 'renewal' : 'new';
+}
+
+export const RenewalBaselineSchema = z.object({
+  insurerName: z.string().min(1),
+  priceAnnual: z.number().nullable(),
+  coverages: z.array(
+    z.object({
+      name: z.string(),
+      value: z.string().nullable(),
+      deductible: z.string().nullable(),
+    })
+  ),
+});
+
+export const RenewalGapAnalysisSchema = z.object({
+  coveragesLost: z.array(z.string()),
+  coveragesGained: z.array(z.string()),
+  deductibleWorsening: z.array(z.string()),
+  newExclusions: z.array(z.string()),
+});
+
+export const RenewalPremiumDeltaSchema = z.object({
+  absolute: z.number().nullable(),
+  percentage: z.number().nullable(),
+  direction: z.enum(['increase', 'decrease', 'equal', 'unknown']),
+});
+
+export const CandidateRenewalAnalyticsSchema = z.object({
+  insurer: z.string().min(1),
+  gaps: RenewalGapAnalysisSchema,
+  premiumDelta: RenewalPremiumDeltaSchema,
+  friction: z.array(z.string()),
+});
+
+export const FlatComparisonSchemaV3 = FlatComparisonSchemaV2Base.extend({
+  schemaVersion: z.literal(3),
+  baseline: RenewalBaselineSchema.optional(),
+  renewalAnalytics: z.array(CandidateRenewalAnalyticsSchema).optional(),
+}).refine(oneCellPerInsurer, { message: 'Each row must contain one cell per insurer' });
+
+export type RenewalBaseline = z.infer<typeof RenewalBaselineSchema>;
+export type RenewalGapAnalysis = z.infer<typeof RenewalGapAnalysisSchema>;
+export type RenewalPremiumDelta = z.infer<typeof RenewalPremiumDeltaSchema>;
+export type CandidateRenewalAnalytics = z.infer<typeof CandidateRenewalAnalyticsSchema>;
+export type FlatComparisonResultV3 = z.infer<typeof FlatComparisonSchemaV3>;
 
 export type FlatComparisonResultV1 = z.infer<typeof FlatComparisonSchemaV1>;
 export type FlatComparisonRowV1 = z.infer<typeof FlatComparisonRowSchemaV1>;
@@ -148,12 +207,26 @@ export type FlatComparisonResult = z.infer<typeof FlatComparisonSchema>;
 export type FlatComparisonRow = z.infer<typeof FlatComparisonRowSchema>;
 export type FlatComparisonCell = z.infer<typeof FlatComparisonCellSchema>;
 
-export function resolveComparisonSchemaVersion(result: unknown, flagEnabled: boolean): 1 | 2 {
+/**
+ * Resolve the schema version of a comparison result.
+ *
+ * v3 is emitted ONLY for renewal analyses on the granular path
+ * (analysis_type === 'renewal' AND flagEnabled). NEW mode (including NULL
+ * analysis_type) keeps the historical v1/v2 behavior byte-identical.
+ */
+export function resolveComparisonSchemaVersion(
+  result: unknown,
+  flagEnabled: boolean,
+  analysisType?: AnalysisType | null
+): 1 | 2 | 3 {
   if (!flagEnabled) return 1;
   const resultVersion =
     typeof result === 'object' && result !== null && 'schemaVersion' in result
       ? (result as { schemaVersion: unknown }).schemaVersion
       : undefined;
+  if (normalizeAnalysisType(analysisType) === 'renewal' && (resultVersion === 2 || resultVersion === 3)) {
+    return 3;
+  }
   return resultVersion === 2 ? 2 : 1;
 }
 

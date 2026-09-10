@@ -291,6 +291,8 @@ export interface MatrixCell {
   notes?: string;
   pageNumber?: number;
   confidence?: number;
+  /** Renewal mode (schemaVersion 3): this cell belongs to the baseline column. */
+  isBaseline?: boolean;
 }
 
 export interface MatrixRow {
@@ -303,4 +305,6 @@ export interface MatrixRow {
   canonicalId?: string;
   matchConfidence?: number;
   matchMethod?: string | null;
+  /** Renewal mode (schemaVersion 3): row includes a leading baseline column cell. */
+  isBaseline?: boolean;
 }

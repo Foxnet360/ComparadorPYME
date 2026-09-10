@@ -24,14 +24,20 @@ import { processQuotesBatch } from '../quoteProcessingService';
 import {
   flatResultToMatrixRows,
   flatResultToMatrixRowsV2,
+  flatResultToMatrixRowsV3,
   quotesToMatrixRows,
 } from './matrixTransformer';
-import { resolveComparisonSchemaVersion, FlatComparisonResultV2 } from './comparisonSchema';
+import {
+  resolveComparisonSchemaVersion,
+  FlatComparisonResultV2,
+  AnalysisType,
+} from './comparisonSchema';
+import { ParsedQuote } from '../quoteParser';
 
 export interface ComparisonAdapterResult {
   matrix: MatrixRow[];
   engine: 'unified' | 'fallback';
-  schemaVersion: 1 | 2;
+  schemaVersion: 1 | 2 | 3;
   fallbackReason?: string;
   correlationId: string;
   quoteMetadata?: any[];
@@ -46,6 +52,16 @@ export interface ComparisonAdapterOptions {
   userId?: string;
   domain?: InsuranceDomain;
   granularComparisonSchema?: boolean;
+  /**
+   * Analysis discriminator (R5.1). NULL/omitted means 'new' (R5.4); only
+   * 'renewal' can promote the granular result to schemaVersion 3.
+   */
+  analysisType?: AnalysisType | null;
+  /**
+   * Incumbent reference quote for renewal analyses (R2.1). Never sent to the
+   * engine as a candidate; only used to prepend the baseline column.
+   */
+  referenceQuote?: ParsedQuote | null;
 }
 
 export class ComparisonEngineAdapter {
@@ -113,12 +129,15 @@ export class ComparisonEngineAdapter {
       const result = await unifiedComparisonEngine.compare(pdfPaths, compareOptions);
       const schemaVersion = resolveComparisonSchemaVersion(
         result,
-        granularOverride ?? unifiedComparisonFlag.isGranularComparisonSchemaEnabled()
+        granularOverride ?? unifiedComparisonFlag.isGranularComparisonSchemaEnabled(),
+        opts.analysisType
       );
       const matrix =
-        schemaVersion === 2
-          ? flatResultToMatrixRowsV2(result, domain)
-          : flatResultToMatrixRows(result, domain);
+        schemaVersion === 3
+          ? flatResultToMatrixRowsV3(result as FlatComparisonResultV2, domain, opts.referenceQuote)
+          : schemaVersion === 2
+            ? flatResultToMatrixRowsV2(result, domain)
+            : flatResultToMatrixRows(result, domain);
 
       console.log(
         `✅ [Adapter] Unified engine succeeded [${correlationId}] schemaVersion=${schemaVersion}`
@@ -129,9 +148,9 @@ export class ComparisonEngineAdapter {
         schemaVersion,
         correlationId,
         quoteMetadata:
-          schemaVersion === 2 ? (result as FlatComparisonResultV2).quoteMetadata : undefined,
-        graphEnabled: schemaVersion === 2 ? graphEnabled : false,
-        templateHintsEnabled: schemaVersion === 2 ? templateHintsEnabled : false,
+          schemaVersion >= 2 ? (result as FlatComparisonResultV2).quoteMetadata : undefined,
+        graphEnabled: schemaVersion >= 2 ? graphEnabled : false,
+        templateHintsEnabled: schemaVersion >= 2 ? templateHintsEnabled : false,
         domain,
       };
     } catch (error) {

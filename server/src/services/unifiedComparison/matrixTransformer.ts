@@ -4,7 +4,7 @@
  * MatrixRow[] shape consumed by the analysis controller and UI.
  */
 
-import { MatrixRow } from '../../types';
+import { MatrixCell, MatrixRow } from '../../types';
 import {
   FlatComparisonResult,
   FlatComparisonResultV2,
@@ -594,4 +594,108 @@ export function quotesToMatrixRows(
   }
 
   return matrix;
+}
+
+// ---------------------------------------------------------------------------
+// v3 transformer (renewal mode): v2 matrix + "Póliza Actual" baseline column
+// ---------------------------------------------------------------------------
+
+function normalizeForBaselineMatch(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .trim();
+}
+
+function findBaselineCoverage(
+  referenceQuote: ParsedQuote,
+  rowLabel: string
+): ParsedQuote['coverages'][number] | undefined {
+  const normalizedLabel = normalizeForBaselineMatch(rowLabel);
+  return referenceQuote.coverages.find((coverage) => {
+    const candidate = normalizeForBaselineMatch(coverage.canonicalName || coverage.name);
+    return (
+      candidate === normalizedLabel ||
+      candidate.includes(normalizedLabel) ||
+      normalizedLabel.includes(candidate)
+    );
+  });
+}
+
+const PREMIUM_ROW_PATTERN = /prima|total|pagar/i;
+
+function baselineCellForRow(row: MatrixRow, referenceQuote: ParsedQuote): MatrixCell {
+  if (row.type !== 'data' || row.id.startsWith('warning_')) {
+    return { value: '', isExcluded: false, isWinner: false, isBaseline: true };
+  }
+
+  if (row.sectionId === FINANCIAL_SECTION_ID && PREMIUM_ROW_PATTERN.test(row.label)) {
+    return referenceQuote.priceAnnual > 0
+      ? {
+          value: formatCOP(referenceQuote.priceAnnual),
+          isExcluded: false,
+          isWinner: false,
+          isBaseline: true,
+        }
+      : { value: 'No informado', isExcluded: true, isWinner: false, isBaseline: true };
+  }
+
+  const coverage = findBaselineCoverage(referenceQuote, row.label);
+  if (!coverage || !coverage.value || coverage.value === 'NO ESPECIFICADO') {
+    return { value: 'No informado', isExcluded: true, isWinner: false, isBaseline: true };
+  }
+  return {
+    value: coverage.value,
+    isExcluded: false,
+    isWinner: false,
+    isBaseline: true,
+    notes: coverage.deductible ?? undefined,
+    confidence: coverage.confidence !== undefined ? coverage.confidence / 100 : undefined,
+  };
+}
+
+/**
+ * Build the renewal-mode (schemaVersion 3) matrix: the v2 matrix plus a
+ * leading "Póliza Actual" baseline column sourced from the incumbent
+ * reference quote. Every row is flagged `isBaseline` and gains a leading
+ * baseline cell; a marker header row (`baseline_column`) lets consumers
+ * render the baseline badge. Without a reference quote the output is the
+ * plain v2 matrix (v1/v2 consumers stay untouched — R5.1/R5.2).
+ */
+export function flatResultToMatrixRowsV3(
+  result: FlatComparisonResultV2,
+  domain: InsuranceDomain = 'pyme',
+  referenceQuote?: ParsedQuote | null
+): MatrixRow[] {
+  const matrix = flatResultToMatrixRowsV2(result, domain);
+  if (!referenceQuote) return matrix;
+
+  const withBaseline = matrix.map((row) => ({
+    ...row,
+    isBaseline: true,
+    cells: [baselineCellForRow(row, referenceQuote), ...row.cells],
+  }));
+
+  const numColumns = result.insurers.length + 1;
+  const markerIndex = withBaseline.findIndex((row) => row.id === 'client_info');
+  const markerRow: MatrixRow = {
+    type: 'header',
+    id: 'baseline_column',
+    label: `Póliza Actual - ${referenceQuote.insurerName}`,
+    sectionId: HEADER_SECTION_ID,
+    isBaseline: true,
+    cells: [
+      { value: referenceQuote.insurerName, isExcluded: false, isWinner: false, isBaseline: true },
+      ...emptyCells(numColumns - 1),
+    ],
+  };
+
+  const clientHeader = withBaseline[markerIndex];
+  if (clientHeader) {
+    clientHeader.label = `${clientHeader.label.split(' - ')[0]} - ${referenceQuote.insurerName} (Póliza Actual), ${result.insurers.join(', ')}`;
+  }
+
+  withBaseline.splice(markerIndex >= 0 ? markerIndex + 1 : 0, 0, markerRow);
+  return withBaseline;
 }
