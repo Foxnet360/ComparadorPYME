@@ -59,9 +59,7 @@ describe('migration 023 renewals/renewal_events (lifecycle foundation)', () => {
   it('creates supporting indexes renewals(user_id, state) and renewal_events(renewal_id)', () => {
     const sql = readMigration('023_renewals.sql');
 
-    expect(sql).toMatch(
-      /CREATE INDEX (IF NOT EXISTS )?\w+ ON public\.renewals\(user_id, state\)/i
-    );
+    expect(sql).toMatch(/CREATE INDEX (IF NOT EXISTS )?\w+ ON public\.renewals\(user_id, state\)/i);
     expect(sql).toMatch(
       /CREATE INDEX (IF NOT EXISTS )?\w+ ON public\.renewal_events\(renewal_id\)/i
     );

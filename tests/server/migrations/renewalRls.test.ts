@@ -38,12 +38,8 @@ describe('migration 026 RLS hardening on renewal tables (XC-1)', () => {
   it.each(NEW_TABLES)('enables and FORCES row level security on %s', (table) => {
     const sql = readMigration('026_renewal_rls.sql');
 
-    expect(sql).toMatch(
-      new RegExp(`ALTER TABLE public\\.${table} ENABLE ROW LEVEL SECURITY`, 'i')
-    );
-    expect(sql).toMatch(
-      new RegExp(`ALTER TABLE public\\.${table} FORCE ROW LEVEL SECURITY`, 'i')
-    );
+    expect(sql).toMatch(new RegExp(`ALTER TABLE public\\.${table} ENABLE ROW LEVEL SECURITY`, 'i'));
+    expect(sql).toMatch(new RegExp(`ALTER TABLE public\\.${table} FORCE ROW LEVEL SECURITY`, 'i'));
   });
 
   it.each(['clients', 'policies', 'renewals', 'campaign_configs'] as const)(

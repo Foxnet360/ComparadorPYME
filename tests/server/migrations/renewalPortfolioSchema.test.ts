@@ -35,9 +35,7 @@ describe('migration 022 clients/policies (portfolio foundation)', () => {
     expect(sql).toMatch(/CREATE TABLE (IF NOT EXISTS )?public\.policies/i);
     expect(sql).toMatch(/client_id UUID NOT NULL REFERENCES public\.clients\(id\)/i);
     expect(sql).toMatch(/provenance TEXT/i);
-    expect(sql).toMatch(
-      /source_analysis_id UUID REFERENCES public\.analysis_history\(id\)/i
-    );
+    expect(sql).toMatch(/source_analysis_id UUID REFERENCES public\.analysis_history\(id\)/i);
   });
 
   it('stores ramo_details as minimized jsonb, not wide columns (R1.4)', () => {

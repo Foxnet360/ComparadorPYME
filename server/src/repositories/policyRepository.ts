@@ -102,8 +102,7 @@ export async function createPolicy(
   if (input.end_date !== undefined) payload.end_date = input.end_date;
   if (input.coverages !== undefined) payload.coverages = input.coverages;
   if (input.deductibles !== undefined) payload.deductibles = input.deductibles;
-  if (input.source_analysis_id !== undefined)
-    payload.source_analysis_id = input.source_analysis_id;
+  if (input.source_analysis_id !== undefined) payload.source_analysis_id = input.source_analysis_id;
   if (input.ramo_details !== undefined) payload.ramo_details = input.ramo_details;
 
   const { data, error } = await supabase
@@ -166,8 +165,7 @@ export async function updatePolicy(
   if (input.coverages !== undefined) payload.coverages = input.coverages;
   if (input.deductibles !== undefined) payload.deductibles = input.deductibles;
   if (input.provenance !== undefined) payload.provenance = input.provenance;
-  if (input.source_analysis_id !== undefined)
-    payload.source_analysis_id = input.source_analysis_id;
+  if (input.source_analysis_id !== undefined) payload.source_analysis_id = input.source_analysis_id;
   if (input.ramo_details !== undefined) payload.ramo_details = input.ramo_details;
 
   const { data, error } = await supabase
