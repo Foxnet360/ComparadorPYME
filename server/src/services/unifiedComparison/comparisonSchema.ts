@@ -224,7 +224,10 @@ export function resolveComparisonSchemaVersion(
     typeof result === 'object' && result !== null && 'schemaVersion' in result
       ? (result as { schemaVersion: unknown }).schemaVersion
       : undefined;
-  if (normalizeAnalysisType(analysisType) === 'renewal' && (resultVersion === 2 || resultVersion === 3)) {
+  if (
+    normalizeAnalysisType(analysisType) === 'renewal' &&
+    (resultVersion === 2 || resultVersion === 3)
+  ) {
     return 3;
   }
   return resultVersion === 2 ? 2 : 1;

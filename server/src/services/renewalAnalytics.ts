@@ -77,11 +77,7 @@ export function getFrictionNotes(ramo: string): string[] {
 // ---------------------------------------------------------------------------
 
 function normalizeName(name: string): string {
-  return name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .trim();
+  return name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
 }
 
 const ABSENT_VALUES = new Set(['', 'excluido', 'no informado', 'no especificado', 'no incluido']);

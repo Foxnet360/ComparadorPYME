@@ -93,7 +93,7 @@ interface ComparisonResult {
   id?: string;
   matrix?: MatrixRow[];
   quoteMetadata?: any[];
-  schemaVersion?: 1 | 2;
+  schemaVersion?: 1 | 2 | 3;
   domain?: InsuranceDomain;
   clientInfo?: {
     name: string;
@@ -148,7 +148,7 @@ interface UnifiedComparisonReport {
   id?: string;
   matrix?: MatrixRow[];
   quoteMetadata?: any[];
-  schemaVersion?: 1 | 2;
+  schemaVersion?: 1 | 2 | 3;
 }
 
 /**

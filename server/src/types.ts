@@ -111,7 +111,7 @@ export interface ComparisonReport {
   }[];
   matrix?: MatrixRow[]; // Synced backend rows
   quoteMetadata?: QuoteMetadata[]; // Extracted risk details
-  schemaVersion?: 1 | 2;
+  schemaVersion?: 1 | 2 | 3;
 }
 
 export type QuoteStatus = 'DRAFT' | 'SENT' | 'SOLD' | 'LOST';

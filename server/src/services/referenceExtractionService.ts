@@ -55,8 +55,7 @@ export async function extractReferenceQuote(
 ): Promise<ReferenceExtractionResult> {
   const domain = options.domain ?? 'pyme';
   const processBatch =
-    options.processBatch ??
-    (await import('./quoteProcessingService')).processQuotesBatch;
+    options.processBatch ?? (await import('./quoteProcessingService')).processQuotesBatch;
   const validate = options.validate ?? (await import('./quoteValidator')).validateQuote;
 
   // Existing multimodal pipeline, unchanged: the incumbent PDF is processed

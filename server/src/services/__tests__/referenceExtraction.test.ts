@@ -8,10 +8,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import {
-  extractReferenceQuote,
-  ReferenceExtractionResult,
-} from '../referenceExtractionService';
+import { extractReferenceQuote, ReferenceExtractionResult } from '../referenceExtractionService';
 import { ParsedQuote } from '../quoteParser';
 import { ValidationResult } from '../quoteValidator';
 

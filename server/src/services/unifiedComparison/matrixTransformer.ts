@@ -601,11 +601,7 @@ export function quotesToMatrixRows(
 // ---------------------------------------------------------------------------
 
 function normalizeForBaselineMatch(value: string): string {
-  return value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .trim();
+  return value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
 }
 
 function findBaselineCoverage(
@@ -671,7 +667,7 @@ export function flatResultToMatrixRowsV3(
   const matrix = flatResultToMatrixRowsV2(result, domain);
   if (!referenceQuote) return matrix;
 
-  const withBaseline = matrix.map((row) => ({
+  const withBaseline: MatrixRow[] = matrix.map((row) => ({
     ...row,
     isBaseline: true,
     cells: [baselineCellForRow(row, referenceQuote), ...row.cells],

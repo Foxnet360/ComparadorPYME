@@ -813,7 +813,10 @@ function applyChangeVsStatusQuo(
     ...result,
     breakdown: { ...result.breakdown, changeVsStatusQuo: changeScore },
     totalScore: clamp(
-      Math.round(result.totalScore * (1 - CHANGE_VS_STATUS_QUO_WEIGHT) + changeScore * CHANGE_VS_STATUS_QUO_WEIGHT),
+      Math.round(
+        result.totalScore * (1 - CHANGE_VS_STATUS_QUO_WEIGHT) +
+          changeScore * CHANGE_VS_STATUS_QUO_WEIGHT
+      ),
       0,
       100
     ),

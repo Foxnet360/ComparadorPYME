@@ -80,9 +80,7 @@ function makeReferenceQuote(): ParsedQuote {
     policyName: 'PYME Empresarial',
     priceAnnual: 8_500_000,
     currency: 'COP',
-    coverages: [
-      { name: 'Incendio', canonicalName: 'Incendio', value: '450M', deductible: '10%' },
-    ],
+    coverages: [{ name: 'Incendio', canonicalName: 'Incendio', value: '450M', deductible: '10%' }],
     specialConditions: [],
     rawText: '',
     parseConfidence: 90,

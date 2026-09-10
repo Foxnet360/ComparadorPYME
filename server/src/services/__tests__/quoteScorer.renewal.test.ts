@@ -69,9 +69,17 @@ describe('quoteScorer — renewal change-vs-status-quo dimension (R5.3)', () => 
     });
 
     const base = await quoteScorer.calculateScore(candidate, [], [candidate]);
-    const renewal = await quoteScorer.calculateScore(candidate, [], [candidate], undefined, undefined, 'pyme', {
-      baseline,
-    });
+    const renewal = await quoteScorer.calculateScore(
+      candidate,
+      [],
+      [candidate],
+      undefined,
+      undefined,
+      'pyme',
+      {
+        baseline,
+      }
+    );
 
     // +10 gained coverage (Terremoto), +15 premium decrease → 75
     expect(renewal.breakdown.changeVsStatusQuo).toBe(75);
@@ -91,9 +99,17 @@ describe('quoteScorer — renewal change-vs-status-quo dimension (R5.3)', () => 
     });
 
     const base = await quoteScorer.calculateScore(worse, [], [worse]);
-    const renewal = await quoteScorer.calculateScore(worse, [], [worse], undefined, undefined, 'pyme', {
-      baseline,
-    });
+    const renewal = await quoteScorer.calculateScore(
+      worse,
+      [],
+      [worse],
+      undefined,
+      undefined,
+      'pyme',
+      {
+        baseline,
+      }
+    );
 
     expect(renewal.breakdown.changeVsStatusQuo).toBeLessThan(50);
     expect(renewal.totalScore).toBeLessThan(base.totalScore);
@@ -102,9 +118,17 @@ describe('quoteScorer — renewal change-vs-status-quo dimension (R5.3)', () => 
   it('is neutral (50) when the candidate matches the baseline', async () => {
     const same = makeQuote({ priceAnnual: 8_500_000 });
 
-    const renewal = await quoteScorer.calculateScore(same, [], [same], undefined, undefined, 'pyme', {
-      baseline,
-    });
+    const renewal = await quoteScorer.calculateScore(
+      same,
+      [],
+      [same],
+      undefined,
+      undefined,
+      'pyme',
+      {
+        baseline,
+      }
+    );
 
     expect(renewal.breakdown.changeVsStatusQuo).toBe(50);
   });
