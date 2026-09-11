@@ -254,3 +254,72 @@ describe('POST /api/renewals/:id/transition (1.17, R3.1/R3.2)', () => {
     expect(res.status).toBe(401);
   });
 });
+
+describe('GET /api/renewals/:id/events (PR-5 task 1.22, R3.1)', () => {
+  const seedEvent = (renewalId: string, overrides: Record<string, unknown> = {}) =>
+    fake.insertRow('renewal_events', {
+      renewal_id: renewalId,
+      from_state: null,
+      to_state: 'detected',
+      actor_id: USER_A,
+      payload: {},
+      created_at: '2026-09-01T00:00:00Z',
+      ...overrides,
+    });
+
+  it('returns the audit history for an own renewal, oldest first', async () => {
+    const id = seedRenewal();
+    seedEvent(id);
+    seedEvent(id, {
+      from_state: 'detected',
+      to_state: 'notified',
+      created_at: '2026-09-02T00:00:00Z',
+    });
+    const app = buildApp();
+
+    const res = await request(app)
+      .get(`/api/renewals/${id}/events`)
+      .set('Authorization', bearerTokenFor(USER_A));
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(2);
+    expect(res.body[0].to_state).toBe('detected');
+    expect(res.body[1].to_state).toBe('notified');
+    expect(res.body[1].from_state).toBe('detected');
+  });
+
+  it('answers 404 for another user renewal — no existence leak (XC-1)', async () => {
+    const id = seedRenewal();
+    seedEvent(id);
+    const app = buildApp();
+
+    const res = await request(app)
+      .get(`/api/renewals/${id}/events`)
+      .set('Authorization', bearerTokenFor(USER_B));
+
+    expect(res.status).toBe(404);
+  });
+
+  it('answers 404 for an unknown renewal', async () => {
+    const app = buildApp();
+    const res = await request(app)
+      .get('/api/renewals/does-not-exist/events')
+      .set('Authorization', bearerTokenFor(USER_A));
+    expect(res.status).toBe(404);
+  });
+
+  it('rejects anonymous requests with 401', async () => {
+    const app = buildApp();
+    const res = await request(app).get('/api/renewals/x/events');
+    expect(res.status).toBe(401);
+  });
+
+  it('rejects a spoofed userId query param with 400 (AUTH-2)', async () => {
+    const id = seedRenewal();
+    const app = buildApp();
+    const res = await request(app)
+      .get(`/api/renewals/${id}/events?userId=${USER_B}`)
+      .set('Authorization', bearerTokenFor(USER_A));
+    expect(res.status).toBe(400);
+  });
+});
