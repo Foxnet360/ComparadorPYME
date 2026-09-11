@@ -604,6 +604,15 @@ export interface CampaignConfig {
 // v3 = v2 + baseline column (MatrixCell.isBaseline) + renewalAnalytics block.
 // Present ONLY on renewal analyses; NEW-mode reports never carry these (XC-3).
 
+/** Analysis discriminator (R5.1). Absent/omitted behaves as 'new' (XC-3). */
+export type AnalysisMode = 'new' | 'renewal';
+
+/** Links a renewal-mode analysis to its portfolio rows (R5.4). */
+export interface RenewalAnalysisContext {
+  policyId: string;
+  renewalId: string;
+}
+
 export interface RenewalBaselineCoverage {
   name: string;
   value: string | null;

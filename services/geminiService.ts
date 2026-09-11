@@ -1,4 +1,5 @@
 import { ComparisonReport } from '../types';
+import type { AnalysisMode, RenewalAnalysisContext } from '../types';
 import {
   apiClient,
   ApiTimeoutError,
@@ -12,13 +13,25 @@ export const analyzeQuotesWithGemini = async (
   clientName: string,
   onStatusUpdate?: (status: string) => void,
   clauseIds?: string[],
-  domain: string = 'pyme'
+  domain: string = 'pyme',
+  // Renewal mode (renovacion-polizas, R5.1/R5.4): optional — when absent the
+  // request is byte-identical to the NEW-mode contract (XC-3). AUTH-2: the
+  // backend still derives ownership from the session; these fields only
+  // discriminate the analysis type and link portfolio rows.
+  analysisMode: AnalysisMode = 'new',
+  renewalContext?: RenewalAnalysisContext | null
 ): Promise<ComparisonReport> => {
   const formData = new FormData();
   formData.append('clientName', clientName);
   formData.append('domain', domain);
   // AUTH-2: no userId here — the backend derives it from the Bearer token
   // that apiClient attaches, and rejects client-supplied userId with 400.
+
+  if (analysisMode === 'renewal' && renewalContext) {
+    formData.append('analysisType', 'renewal');
+    formData.append('policyId', renewalContext.policyId);
+    formData.append('renewalId', renewalContext.renewalId);
+  }
 
   if (onStatusUpdate) onStatusUpdate('Preparando archivos para envío...');
 

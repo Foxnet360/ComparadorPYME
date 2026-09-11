@@ -28,6 +28,8 @@ export const useAnalysisFlow = () => {
     removeQuoteFile,
     addClauseFiles,
     removeClauseFile,
+    setMode,
+    setRenewalContext,
     reset,
   } = useAnalysis();
   const { setChatOpen } = useUI();
@@ -48,7 +50,9 @@ export const useAnalysisFlow = () => {
         clientName,
         (msg) => dispatch({ type: 'SET_STATUS_MESSAGE', payload: msg }),
         clauseIdsToUse,
-        state.domain
+        state.domain,
+        state.mode,
+        state.renewalContext
       );
       // Save to history unconditionally and capture generated ID
       const savedId = await storageService.saveAnalysis(
@@ -102,6 +106,8 @@ export const useAnalysisFlow = () => {
     removeQuoteFile,
     addClauseFiles,
     removeClauseFile,
+    setMode,
+    setRenewalContext,
     analyze,
     resetFlow,
     retry,
