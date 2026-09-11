@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import { UIProvider, useUI } from './contexts/UIContext';
 import { AnalysisProvider } from './contexts/AnalysisContext';
+import { PortfolioProvider } from './contexts/PortfolioContext';
 import LandingPage from './components/LandingPage';
 import LoginScreen from './components/LoginScreen';
 import RegisterScreen from './components/RegisterScreen';
@@ -23,6 +24,10 @@ const UsersPage = lazy(() => import('./pages/UsersPage'));
 const ChatBot = lazy(() => import('./components/ChatBot'));
 const ProfileScreen = lazy(() => import('./components/ProfileScreen'));
 const ClauseAdmin = lazy(() => import('./components/ClauseAdmin'));
+// Renewal portfolio (renovacion-polizas PR-5): lazy-loaded so the
+// NEW-comparison bundle stays lean (XC-3).
+const PortfolioPage = lazy(() => import('./pages/Portfolio'));
+const RenewalDetailPage = lazy(() => import('./pages/RenewalDetail'));
 
 const AppShell: React.FC = () => {
   // Analyzer state and flow live in AnalysisContext via useAnalysisFlow.
@@ -44,6 +49,7 @@ const AppShell: React.FC = () => {
   } = useUI();
 
   const [currentView, setCurrentView] = useState<AppView>('LANDING');
+  const [activeRenewalId, setActiveRenewalId] = useState<string | null>(null);
   const { status, report } = state;
 
   // Navigate to the dashboard once the initial Supabase session resolution
@@ -110,6 +116,7 @@ const AppShell: React.FC = () => {
         chatOpen={chatOpen}
         onNavigateDashboard={navigateToDashboard}
         onOpenClients={() => setCurrentView('CLIENTS')}
+        onOpenPortfolio={() => setCurrentView('PORTFOLIO')}
         onOpenAnalytics={() => setCurrentView('ANALYTICS')}
         onOpenUsers={() => setCurrentView('USERS')}
         onOpenClauseAdmin={() => setShowClauseAdmin(true)}
@@ -125,6 +132,30 @@ const AppShell: React.FC = () => {
             <ClientsPage
               onSelectClientForAudit={() => setCurrentView('ANALYZER')}
               onViewReport={() => setCurrentView('REPORT')}
+            />
+          </Suspense>
+        )}
+
+        {/* VIEW: PORTFOLIO (renewal portfolio, PR-5) */}
+        {currentView === 'PORTFOLIO' && (
+          <Suspense fallback={<ViewLoadingFallback />}>
+            <PortfolioProvider>
+              <PortfolioPage
+                onOpenRenewal={(renewalId) => {
+                  setActiveRenewalId(renewalId);
+                  setCurrentView('RENEWAL_DETAIL');
+                }}
+              />
+            </PortfolioProvider>
+          </Suspense>
+        )}
+
+        {/* VIEW: RENEWAL DETAIL (PR-5) */}
+        {currentView === 'RENEWAL_DETAIL' && activeRenewalId && (
+          <Suspense fallback={<ViewLoadingFallback />}>
+            <RenewalDetailPage
+              renewalId={activeRenewalId}
+              onBack={() => setCurrentView('PORTFOLIO')}
             />
           </Suspense>
         )}

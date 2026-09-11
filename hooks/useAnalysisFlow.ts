@@ -14,7 +14,9 @@ export type AppView =
   | 'REPORT'
   | 'CLIENTS'
   | 'ANALYTICS'
-  | 'USERS';
+  | 'USERS'
+  | 'PORTFOLIO'
+  | 'RENEWAL_DETAIL';
 
 /** Encapsulates the analyzer flow (analyze/reset/retry/view) on top of
  * AnalysisContext so pages and the app shell share one source of truth. */
