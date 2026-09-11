@@ -8,12 +8,10 @@ import LoginScreen from './components/LoginScreen';
 import RegisterScreen from './components/RegisterScreen';
 import { AppHeader } from './components/layout/AppHeader';
 import { ViewLoadingFallback } from './components/layout/ViewLoadingFallback';
-import { useAnalysisFlow } from './hooks/useAnalysisFlow';
-import type { AppView } from './hooks/useAnalysisFlow';
+import { useAnalysisFlow, type AppView } from './hooks/useAnalysisFlow';
 import { useAuthSession } from './hooks/useAuthSession';
 import AnalyzerPage from './pages/AnalyzerPage';
-import { AppStatus } from './types';
-import type { ExtendedUserProfile, UserProfile } from './types';
+import { AppStatus, type ExtendedUserProfile, type UserProfile } from './types';
 
 // Lazy load heavy pages and components
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
@@ -24,8 +22,7 @@ const UsersPage = lazy(() => import('./pages/UsersPage'));
 const ChatBot = lazy(() => import('./components/ChatBot'));
 const ProfileScreen = lazy(() => import('./components/ProfileScreen'));
 const ClauseAdmin = lazy(() => import('./components/ClauseAdmin'));
-// Renewal portfolio (renovacion-polizas PR-5): lazy-loaded so the
-// NEW-comparison bundle stays lean (XC-3).
+// Renewal portfolio (renovacion-polizas PR-5): lazy-loaded to keep bundle lean (XC-3)
 const PortfolioPage = lazy(() => import('./pages/Portfolio'));
 const RenewalDetailPage = lazy(() => import('./pages/RenewalDetail'));
 
@@ -52,8 +49,7 @@ const AppShell: React.FC = () => {
   const [activeRenewalId, setActiveRenewalId] = useState<string | null>(null);
   const { status, report } = state;
 
-  // Navigate to the dashboard once the initial Supabase session resolution
-  // completes with an active user (replaces the legacy boot effect).
+  // Navigate to dashboard once initial Supabase session resolution completes with active user.
   const handledBoot = useRef(false);
   useEffect(() => {
     if (!handledBoot.current && bootstrapped) {

@@ -246,7 +246,7 @@ describe('ComparisonReport - Advanced Tab Visibility', () => {
     expect(screen.getByText('Dashboard Resumen')).toBeTruthy();
     expect(screen.getByText('Matriz de Coberturas')).toBeTruthy();
     expect(screen.getByText('Deducibles')).toBeTruthy();
-    expect(screen.getByText('Auditoría de Riesgos')).toBeTruthy();
+    expect(screen.getByText('Evaluación de Riesgos')).toBeTruthy();
   });
 
   it('renders without errors when report has empty quotes', () => {
