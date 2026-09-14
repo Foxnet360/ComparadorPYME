@@ -11,10 +11,12 @@ import { type ClauseValidationSummary } from '../services/clauseCoverageValidato
 import { type DualExtractionResult } from '../services/dualExtractionService';
 import { isMultimodalEnabled } from '../services/quoteProcessingService';
 import { comparisonEngineAdapter } from '../services/unifiedComparison/comparisonEngineAdapter';
+import { AnalysisType } from '../services/unifiedComparison/comparisonSchema';
 import { FINANCIAL_SECTION_ID } from '../services/unifiedComparison/matrixTransformer';
 import { semanticMatcher } from '../services/semanticMatcher';
 
 import { saveAnalysisHistory, getAnalysisHistoryByUser } from '../repositories/analysisRepository';
+import { getPolicyById } from '../repositories/policyRepository';
 import { formatCOP } from '../utils/formatCurrency';
 import { parseColombianCurrency } from '../utils/currencyParser';
 import { sanitizeDeep } from '../utils/textSanitizer';
@@ -93,8 +95,11 @@ interface ComparisonResult {
   id?: string;
   matrix?: MatrixRow[];
   quoteMetadata?: any[];
-  schemaVersion?: 1 | 2;
+  schemaVersion?: 1 | 2 | 3;
   domain?: InsuranceDomain;
+  analysisType?: AnalysisType;
+  policyId?: string;
+  renewalId?: string;
   clientInfo?: {
     name: string;
     activity: string;
@@ -148,7 +153,10 @@ interface UnifiedComparisonReport {
   id?: string;
   matrix?: MatrixRow[];
   quoteMetadata?: any[];
-  schemaVersion?: 1 | 2;
+  schemaVersion?: 1 | 2 | 3;
+  analysisType?: AnalysisType;
+  policyId?: string;
+  renewalId?: string;
 }
 
 /**
@@ -226,6 +234,39 @@ export const analysisController = {
       }
       const domain = domainResolution.domain;
 
+      const rawAnalysisType = req.body?.analysisType ?? req.body?.analysis_type;
+      const analysisType: AnalysisType | undefined =
+        rawAnalysisType === 'renewal' ? 'renewal' : undefined;
+      const policyId =
+        typeof (req.body?.policyId ?? req.body?.policy_id) === 'string'
+          ? (req.body.policyId ?? req.body.policy_id).trim()
+          : undefined;
+      const renewalId =
+        typeof (req.body?.renewalId ?? req.body?.renewal_id) === 'string'
+          ? (req.body.renewalId ?? req.body.renewal_id).trim()
+          : undefined;
+
+      let referenceQuote: ParsedQuote | undefined;
+      if (analysisType === 'renewal' && policyId && userId) {
+        try {
+          const policy = await getPolicyById(userId, policyId);
+          if (policy) {
+            referenceQuote = {
+              insurerName: policy.insurer,
+              policyName: policy.policy_number ? `Póliza ${policy.policy_number}` : 'Póliza Actual',
+              priceAnnual: Number(policy.premium) || 0,
+              currency: 'COP',
+              coverages: Array.isArray(policy.coverages) ? (policy.coverages as any) : [],
+              specialConditions: [],
+              rawText: '',
+              parseConfidence: 100,
+            };
+          }
+        } catch (e) {
+          logger.warn({ err: e }, `Failed to fetch policy ${policyId} for renewal reference quote`);
+        }
+      }
+
       logger.info(`📄 Processing ${quoteFiles.length} quotes...`);
       logger.info(`🔧 Pipeline: ${isMultimodalEnabled() ? 'Multimodal (V2)' : 'Legacy (V1)'}`);
       logger.info(`🌐 Domain: ${domain}`);
@@ -234,6 +275,10 @@ export const analysisController = {
       const adapterResult = await comparisonEngineAdapter.generateComparison(pdfPaths, {
         userId,
         domain,
+        ...(analysisType ? { analysisType } : {}),
+        ...(referenceQuote ? { referenceQuote } : {}),
+        ...(policyId ? { policyId } : {}),
+        ...(renewalId ? { renewalId } : {}),
       });
       const matrixRows = adapterResult.matrix;
 
@@ -258,6 +303,15 @@ export const analysisController = {
       comparisonResult.quoteMetadata = adapterResult.quoteMetadata;
       comparisonResult.schemaVersion = adapterResult.schemaVersion;
       comparisonResult.domain = domain;
+      if (analysisType) {
+        comparisonResult.analysisType = analysisType;
+      }
+      if (policyId) {
+        comparisonResult.policyId = policyId;
+      }
+      if (renewalId) {
+        comparisonResult.renewalId = renewalId;
+      }
 
       // Debug: Log result structure
       logger.info(`📊 [Adapter Debug] Quotes generated: ${comparisonResult.quotes?.length || 0}`);
@@ -321,6 +375,9 @@ export const analysisController = {
           unified_result: comparisonResult,
           fallback_reason: adapterResult.fallbackReason || null,
           correlation_id: adapterResult.correlationId,
+          analysis_type: analysisType || null,
+          policy_id: policyId || null,
+          renewal_id: renewalId || null,
         };
 
         const savedId = await saveAnalysisHistory(insertData);

@@ -80,6 +80,12 @@ export interface CompareOptions {
    * entry.
    */
   domain?: InsuranceDomain;
+  /**
+   * Renewal mode flag (R5.3). Mixed into the cache hash so renewal and NEW
+   * mode results never share a cache entry. The change-vs-status-quo scoring
+   * dimension itself is applied by the scorer, only in renewal mode.
+   */
+  renewalMode?: boolean;
 }
 
 export interface TextExtractor {
@@ -124,7 +130,8 @@ export class UnifiedComparisonEngine {
     schemaNamespace: string,
     graphEnabled: boolean,
     templateHintsEnabled: boolean,
-    domain: InsuranceDomain
+    domain: InsuranceDomain,
+    renewalMode: boolean = false
   ): string {
     const hash = crypto.createHash('md5');
     hash.update(CACHE_SCHEMA_VERSION); // Invalidate stale Redis cache entries
@@ -132,6 +139,8 @@ export class UnifiedComparisonEngine {
     hash.update(domain);
     hash.update(graphEnabled ? 'g1' : 'g0');
     hash.update(templateHintsEnabled ? 't1' : 't0');
+    // Renewal mode only: keep NEW-mode hashes byte-identical (R5.3).
+    if (renewalMode) hash.update('r1');
     for (const path of pdfPaths.sort()) {
       try {
         const stats = fs.statSync(path);
@@ -172,7 +181,8 @@ export class UnifiedComparisonEngine {
       granularEnabled ? 'v2' : 'v1',
       graphEnabled,
       templateHintsEnabled,
-      domain
+      domain,
+      options?.renewalMode ?? false
     );
     try {
       const cached = await getCachedUnifiedResult<FlatComparisonResult>(fileHash);

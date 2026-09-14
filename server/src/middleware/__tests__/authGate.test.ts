@@ -11,12 +11,9 @@ describe('isPublicPath (AUTH-1 allowlist semantics)', () => {
     expect(isPublicPath(path)).toBe(true);
   });
 
-  it.each(['/comparison', '/comparison/unified', '/clients', '/clients/abc-123'])(
-    'allows public prefix %s',
-    (path) => {
-      expect(isPublicPath(path)).toBe(true);
-    }
-  );
+  it.each(['/comparison', '/comparison/unified'])('allows public prefix %s', (path) => {
+    expect(isPublicPath(path)).toBe(true);
+  });
 
   it.each(['/analysis/abc-123/export', '/analysis/00000000-0000-0000-0000-000000000000/export'])(
     'allows the parametric export route %s',
@@ -38,6 +35,13 @@ describe('isPublicPath (AUTH-1 allowlist semantics)', () => {
     '/templates/registry',
     '/monitoring',
     '/features',
+    // XC-1: portfolio routes require a session (removed from the allowlist
+    // in renovacion-polizas PR-2).
+    '/clients',
+    '/clients/abc-123',
+    '/policies',
+    '/policies/abc-123',
+    '/policies/promote',
     '/',
   ])('rejects non-allowlisted path %s', (path) => {
     expect(isPublicPath(path)).toBe(false);

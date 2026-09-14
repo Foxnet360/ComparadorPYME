@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useCallback } from 'react';
 import { ComparisonReport, AppStatus, Client, InsuranceDomain } from '../types';
-import type { InsuranceDomainType } from '../types';
+import type { AnalysisMode, InsuranceDomainType, RenewalAnalysisContext } from '../types';
 import { CorrectionQueue } from '../services/correctionQueue';
 
 // Types for corrections
@@ -58,6 +58,9 @@ interface AnalysisState {
   domain: InsuranceDomainType;
   statusMessage: string;
   errorMessage: string;
+  // Renewal mode (renovacion-polizas): optional — absent means 'new' (XC-3).
+  mode: AnalysisMode;
+  renewalContext: RenewalAnalysisContext | null;
   // UX Improvements state
   corrections: Correction[];
   cellNotes: Record<string, CellNote>;
@@ -80,6 +83,8 @@ type AnalysisAction =
   | { type: 'SET_DOMAIN'; payload: InsuranceDomainType }
   | { type: 'SET_STATUS_MESSAGE'; payload: string }
   | { type: 'SET_ERROR_MESSAGE'; payload: string }
+  | { type: 'SET_ANALYSIS_MODE'; payload: AnalysisMode }
+  | { type: 'SET_RENEWAL_CONTEXT'; payload: RenewalAnalysisContext | null }
   | { type: 'ADD_CORRECTION'; payload: Correction }
   | {
       type: 'UPDATE_CORRECTION_STATUS';
@@ -105,6 +110,8 @@ const initialState: AnalysisState = {
   domain: InsuranceDomain.PYME,
   statusMessage: '',
   errorMessage: '',
+  mode: 'new',
+  renewalContext: null,
   corrections: [],
   cellNotes: {},
   pdfViewer: null,
@@ -146,6 +153,10 @@ function analysisReducer(state: AnalysisState, action: AnalysisAction): Analysis
       return { ...state, statusMessage: action.payload };
     case 'SET_ERROR_MESSAGE':
       return { ...state, errorMessage: action.payload };
+    case 'SET_ANALYSIS_MODE':
+      return { ...state, mode: action.payload };
+    case 'SET_RENEWAL_CONTEXT':
+      return { ...state, renewalContext: action.payload };
     case 'ADD_CORRECTION':
       return { ...state, corrections: [...state.corrections, action.payload] };
     case 'UPDATE_CORRECTION_STATUS':
@@ -189,6 +200,8 @@ interface AnalysisContextType {
   removeQuoteFile: (index: number) => void;
   addClauseFiles: (files: File[]) => void;
   removeClauseFile: (index: number) => void;
+  setMode: (mode: AnalysisMode) => void;
+  setRenewalContext: (context: RenewalAnalysisContext | null) => void;
   reset: () => void;
 }
 
@@ -211,6 +224,14 @@ export const AnalysisProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const removeClauseFile = useCallback((index: number) => {
     dispatch({ type: 'REMOVE_CLAUSE_FILE', payload: index });
+  }, []);
+
+  const setMode = useCallback((mode: AnalysisMode) => {
+    dispatch({ type: 'SET_ANALYSIS_MODE', payload: mode });
+  }, []);
+
+  const setRenewalContext = useCallback((context: RenewalAnalysisContext | null) => {
+    dispatch({ type: 'SET_RENEWAL_CONTEXT', payload: context });
   }, []);
 
   const reset = useCallback(() => {
@@ -254,6 +275,8 @@ export const AnalysisProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         removeQuoteFile,
         addClauseFiles,
         removeClauseFile,
+        setMode,
+        setRenewalContext,
         reset,
       }}
     >

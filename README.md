@@ -72,6 +72,14 @@ Sistema de análisis y comparación de cotizaciones de seguros usando IA (Gemini
 - **Backward compatible**: Clientes antiguos ignoran campos nuevos sin errores
 - **Feature flag controlado**: Rollout gradual via `VITE_ENABLE_ADVANCED_ANALYSIS`
 
+### Renovación de Pólizas (Portfolio & Renewal Mode)
+
+- **Portfolio management**: Session-scoped CRUD for clients and policies (`/api/clients`, `/api/policies`, `POST /api/policies/promote` promotes a winning quote into a policy).
+- **Renewal comparison mode**: `AnalysisContext` accepts an optional `mode: 'new' | 'renewal'` plus `renewalContext {policyId, renewalId}`. When absent, the NEW flow is unchanged (v1/v2 payloads byte-identical). Renewal mode emits `schemaVersion 3`: a "Póliza Actual" baseline column flagged `isBaseline`, plus `renewalAnalytics` (gaps, premium delta, switching friction). Renewal UI is lazy-loaded and gated on schemaVersion 3.
+- **Renewal lifecycle**: Audited state machine `detected → notified → in_review → quoted → closed` with outcomes (`renewed_same_insurer`, `renewed_competitor`, `lost`), loss reason, and final premium (`/api/renewals`).
+- **Expiration campaigns**: Configurable windows (default 60/30/7 days) via `/api/campaigns/config`, plus manual send/skip/reschedule. A server-side scheduler (node-cron, opt-in via `CAMPAIGN_SCHEDULER_ENABLED`) elects a leader with DB advisory locks and guarantees idempotent delivery via `UNIQUE(renewal_id, window_key)` on `campaign_deliveries`.
+- **Multi-tenant RLS**: All new tables (`clients`, `policies`, `renewals`, `renewal_events`, `campaign_configs`, `campaign_deliveries`) enforce per-user RLS (ENABLE + FORCE, dual auth pattern). Ownership always derives from the session, never from client input.
+
 ## Requisitos Previos
 
 - Node.js 18+
