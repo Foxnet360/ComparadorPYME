@@ -372,9 +372,12 @@ function matrixRowsToFlatResultV2(matrix: MatrixRow[]): FlatComparisonResult {
  */
 export function matrixRowsToFlatResult(
   matrix: MatrixRow[],
-  schemaVersion: 1 | 2 = 1
+  schemaVersion: 1 | 2 | 3 = 1
 ): FlatComparisonResult {
-  return schemaVersion === 2 ? matrixRowsToFlatResultV2(matrix) : matrixRowsToFlatResultV1(matrix);
+  // schemaVersion 3 is the v2 matrix plus a baseline column; the v2 reader is
+  // the best-effort mapping for it. (The eval harness never runs renewal
+  // mode, so 3 is currently unreachable here.)
+  return schemaVersion >= 2 ? matrixRowsToFlatResultV2(matrix) : matrixRowsToFlatResultV1(matrix);
 }
 
 // ---------------------------------------------------------------------------

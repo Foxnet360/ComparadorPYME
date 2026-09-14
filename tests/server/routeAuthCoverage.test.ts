@@ -114,6 +114,17 @@ describe('route auth coverage (AUTH-1)', () => {
         'POST /api/analysis/correction',
         'POST /api/search',
         'DELETE /api/chat/threads/:id',
+        // XC-1: portfolio routes are session-scoped (renovacion-polizas PR-2).
+        // The walker concatenates mount prefix + route path, so the
+        // collection routes appear with a trailing slash.
+        'GET /api/clients/',
+        'POST /api/clients/',
+        'PATCH /api/clients/:id',
+        'DELETE /api/clients/:id',
+        'GET /api/policies/',
+        'POST /api/policies/',
+        'PATCH /api/policies/:id',
+        'DELETE /api/policies/:id',
       ])
     );
 
@@ -135,7 +146,6 @@ describe('route auth coverage (AUTH-1)', () => {
       { method: 'POST', path: '/analyze' },
       { method: 'GET', path: '/history' },
       { method: 'GET', path: '/comparison' },
-      { method: 'GET', path: '/clients' },
       // Chat is anonymous-by-design; reads of the clause library too.
       { method: 'POST', path: '/chat' },
       { method: 'GET', path: '/chat/threads' },
