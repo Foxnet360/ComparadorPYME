@@ -76,7 +76,7 @@ export async function saveCampaignConfig(
     handleDbError(updateError, 'Failed to update campaign config');
   }
   const updatedRows = (updated as unknown as CampaignConfigRecord[]) || [];
-  if (updatedRows.length > 0) {
+  if (updatedRows.length > 0 && updatedRows[0]) {
     return updatedRows[0];
   }
 

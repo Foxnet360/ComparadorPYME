@@ -15,6 +15,10 @@ import { isAdvancedAnalysisEnabled } from '../config/features';
 import { useCellNotes } from '../contexts/AnalysisContext';
 import type { ComparisonReport as ReportType } from '../types';
 
+// Renewal-mode (schemaVersion 3) extras: lazy-loaded so the NEW-mode bundle
+// stays lean; only mounted for v3 reports, keeping v1/v2 output identical (XC-3).
+const RenewalAnalysisSection = React.lazy(() => import('./report/RenewalAnalysisSection'));
+
 interface ComparisonReportProps {
   report: ReportType;
   onUpdateReport?: (updatedReport: ReportType) => void;
@@ -85,6 +89,13 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
           )
         }
       />
+
+      {/* Renewal mode (schemaVersion 3): baseline badge + gap/delta panels (R2.2–R2.5) */}
+      {report.schemaVersion === 3 && (
+        <React.Suspense fallback={null}>
+          <RenewalAnalysisSection baseline={report.baseline} analytics={report.renewalAnalytics} />
+        </React.Suspense>
+      )}
 
       {/* Tabs Navigation */}
       <div className="flex overflow-x-auto pb-2 border-b border-slate-200 gap-6">

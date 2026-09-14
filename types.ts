@@ -248,7 +248,10 @@ export interface ComparisonReport {
   }[];
   matrix?: MatrixRow[]; // Synced backend rows
   quoteMetadata?: QuoteMetadata[]; // Extracted risk details
-  schemaVersion?: 1 | 2; // 2 = V2 granular schema, 1 or missing = legacy V1
+  schemaVersion?: 1 | 2 | 3; // 3 = renewal (v2 + baseline + analytics), 2 = V2 granular, 1/missing = legacy V1
+  /** Renewal mode only (schemaVersion 3): incumbent baseline + per-candidate analytics. */
+  baseline?: RenewalBaseline;
+  renewalAnalytics?: CandidateRenewalAnalytics[];
   domain?: string;
   clientInfo?: {
     name?: string;
@@ -448,6 +451,8 @@ export interface MatrixCell {
   canonicalName?: string;
   matchMethod?: 'thesaurus' | 'fuzzy' | 'embedding' | 'llm' | null;
   rawName?: string;
+  /** Renewal mode (schemaVersion 3): this cell belongs to the baseline column. */
+  isBaseline?: boolean;
 }
 
 export interface MatrixRow {
@@ -522,4 +527,120 @@ export interface ExecutiveAnalyticsData {
       estimatedCostUSD: number;
     }>;
   };
+}
+
+// --- RENEWAL PORTFOLIO (renovacion-polizas) ---
+// Mirrors the backend portfolio API (PR-2/PR-4). Ownership is always derived
+// from the session server-side; these shapes never carry userId.
+
+export interface PortfolioClient {
+  id: string;
+  name: string;
+  tax_id?: string | null;
+  contact?: Record<string, unknown> | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type PolicyProvenance = 'analysis' | 'incumbent_pdf' | 'manual';
+
+export interface PortfolioPolicy {
+  id: string;
+  client_id: string;
+  ramo: string;
+  insurer: string;
+  policy_number?: string | null;
+  premium?: number | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  provenance?: PolicyProvenance;
+  coverages?: unknown[] | null;
+  deductibles?: unknown[] | null;
+  source_analysis_id?: string | null;
+  ramo_details?: Record<string, unknown> | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type RenewalState = 'detected' | 'notified' | 'in_review' | 'quoted' | 'closed';
+
+export type RenewalOutcome = 'renewed_same_insurer' | 'renewed_competitor' | 'lost';
+
+export interface PortfolioRenewal {
+  id: string;
+  policy_id: string;
+  cycle_start: string;
+  state: RenewalState;
+  outcome?: RenewalOutcome | null;
+  final_premium?: number | null;
+  loss_reason?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface RenewalEvent {
+  id: string;
+  renewal_id: string;
+  from_state: RenewalState | null;
+  to_state: RenewalState;
+  actor_id?: string | null;
+  payload?: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface RenewalTransitionInput {
+  to: RenewalState;
+  outcome?: RenewalOutcome;
+  final_premium?: number;
+  loss_reason?: string;
+}
+
+export interface CampaignConfig {
+  windows: number[];
+  enabled: boolean;
+}
+
+// --- RENEWAL COMPARISON (schemaVersion 3) ---
+// v3 = v2 + baseline column (MatrixCell.isBaseline) + renewalAnalytics block.
+// Present ONLY on renewal analyses; NEW-mode reports never carry these (XC-3).
+
+/** Analysis discriminator (R5.1). Absent/omitted behaves as 'new' (XC-3). */
+export type AnalysisMode = 'new' | 'renewal';
+
+/** Links a renewal-mode analysis to its portfolio rows (R5.4). */
+export interface RenewalAnalysisContext {
+  policyId: string;
+  renewalId: string;
+}
+
+export interface RenewalBaselineCoverage {
+  name: string;
+  value: string | null;
+  deductible: string | null;
+}
+
+export interface RenewalBaseline {
+  insurerName: string;
+  priceAnnual: number | null;
+  coverages: RenewalBaselineCoverage[];
+}
+
+export interface RenewalGapAnalysis {
+  coveragesLost: string[];
+  coveragesGained: string[];
+  deductibleWorsening: string[];
+  newExclusions: string[];
+}
+
+export interface RenewalPremiumDelta {
+  absolute: number | null;
+  percentage: number | null;
+  direction: 'increase' | 'decrease' | 'equal' | 'unknown';
+}
+
+export interface CandidateRenewalAnalytics {
+  insurer: string;
+  gaps: RenewalGapAnalysis;
+  premiumDelta: RenewalPremiumDelta;
+  friction: string[];
 }

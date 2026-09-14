@@ -29,8 +29,12 @@ export default defineConfig(({ mode }) => {
       // Supabase anon credentials for the browser client (authService.ts).
       // loadEnv picks them up from .env.local (dev) and from the build
       // environment (Railway Dockerfile ARGs) for production builds.
-      'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL ?? ''),
-      'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(env.VITE_SUPABASE_ANON_KEY ?? ''),
+      'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(
+        env.VITE_SUPABASE_URL || env.SUPABASE_URL || ''
+      ),
+      'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(
+        env.VITE_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY || ''
+      ),
     },
     resolve: {
       alias: {

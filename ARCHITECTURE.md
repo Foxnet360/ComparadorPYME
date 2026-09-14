@@ -116,6 +116,14 @@ Aprende de correcciones del usuario:
 - `GET /api/analysis/monthly-report`
 - `POST /api/analysis/batch-retrain`
 
+### 7. Renovación de Pólizas (Renewal Mode)
+**Archivos:** `contexts/PortfolioContext.tsx`, `contexts/AnalysisContext.tsx` (optional `mode`/`renewalContext`), `components/report/RenewalAnalysisSection.tsx`, `server/src/services/renewalAnalytics.ts`, `server/src/services/renewalStateMachine.ts`, `server/src/services/campaignScheduler.ts`
+
+- **Additive renewal mode, not a fork**: the engine discriminates `analysis_type 'new' | 'renewal'`; omitted means 'new' (NULL semantics, R5.4). v1/v2 outputs stay byte-identical (XC-3); renewal emits explicit `schemaVersion 3` (v2 + baseline column flagged `isBaseline` + `renewalAnalytics` block). Incumbent policy PDF is a reference input, never a candidate.
+- **Scheduler**: server-side node-cron job in a guarded entry (opt-in via `CAMPAIGN_SCHEDULER_ENABLED`), leader election via Supabase advisory-lock RPCs (migration 027), insert-first-then-send idempotency on `campaign_deliveries` with `UNIQUE(renewal_id, window_key)` — a (renewal, window) pair never notifies twice.
+- **RLS**: migrations 022–027 enable + FORCE RLS on all new tables with per-verb policies replicating the dual pattern `auth.uid()::text OR current_setting('app.current_user_id', true)`; user A can never read or write user B's portfolio (verified A≠B per table and per auth path in `rls-a-ne-b.integration.test.ts`).
+- **Frontend**: renewal extras are lazy-loaded (dynamic import) and mounted only for `schemaVersion === 3` reports; the NEW-mode bundle and UX are untouched.
+
 ## Esquema de Base de Datos
 
 ### Nuevas Tablas

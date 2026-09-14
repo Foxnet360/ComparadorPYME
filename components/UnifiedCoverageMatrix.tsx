@@ -926,7 +926,7 @@ interface UnifiedCoverageMatrixProps {
   metadata?: QuoteMetadata[];
   viewMode?: 'client' | 'technical';
   analysisId?: string; // Optional ID for direct exports
-  schemaVersion?: 1 | 2;
+  schemaVersion?: 1 | 2 | 3; // 3 = renewal (v2 + leading baseline column); rendered like v2 here — the baseline badge/delta panels live in RenewalAnalysisSection
   domain?: string;
 }
 

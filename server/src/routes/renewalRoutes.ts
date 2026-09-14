@@ -24,7 +24,12 @@ import {
   type RenewalState,
   type TransitionInput,
 } from '../services/renewalStateMachine';
-import { getRenewalById, listRenewals, applyTransition } from '../repositories/renewalRepository';
+import {
+  getRenewalById,
+  listRenewals,
+  applyTransition,
+  listRenewalEvents,
+} from '../repositories/renewalRepository';
 import { insertDelivery, getDelivery, deleteDelivery } from '../repositories/campaignRepository';
 import { sendManualDelivery } from '../services/campaignService';
 
@@ -115,6 +120,25 @@ router.post(
       throw new NotFoundError('Renewal not found');
     }
     res.json(updated);
+  })
+);
+
+/**
+ * GET /api/renewals/:id/events — R3.1 audit history (who/when/from→to).
+ * Ownership is proven via getRenewalById before events are read; foreign or
+ * unknown renewals answer 404 (XC-1).
+ */
+router.get(
+  '/:id/events',
+  rejectSpoofedUserId,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const userId = requireUser(req);
+    const renewal = await getRenewalById(userId, String(req.params.id));
+    if (!renewal) {
+      throw new NotFoundError('Renewal not found');
+    }
+    const events = await listRenewalEvents(renewal.id);
+    res.json(events);
   })
 );
 

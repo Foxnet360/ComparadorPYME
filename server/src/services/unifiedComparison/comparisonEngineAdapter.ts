@@ -62,6 +62,8 @@ export interface ComparisonAdapterOptions {
    * engine as a candidate; only used to prepend the baseline column.
    */
   referenceQuote?: ParsedQuote | null;
+  policyId?: string | null;
+  renewalId?: string | null;
 }
 
 export class ComparisonEngineAdapter {

@@ -76,3 +76,23 @@ describe('app composition (ARCH-2, ARCH-3)', () => {
     expect(authSource).toContain('../services/authService');
   });
 });
+
+describe('renewal portfolio wiring (renovacion-polizas PR-5, XC-3)', () => {
+  it('App lazy-loads the Portfolio page and routes the PORTFOLIO view', () => {
+    const appSource = readSource('App.tsx');
+    expect(appSource).toContain("lazy(() => import('./pages/Portfolio'))");
+    expect(appSource).toContain("currentView === 'PORTFOLIO'");
+    expect(appSource).toContain('PortfolioProvider');
+  });
+
+  it('App lazy-loads the RenewalDetail page and routes the RENEWAL_DETAIL view', () => {
+    const appSource = readSource('App.tsx');
+    expect(appSource).toContain("lazy(() => import('./pages/RenewalDetail'))");
+    expect(appSource).toContain("currentView === 'RENEWAL_DETAIL'");
+  });
+
+  it('AppHeader exposes a portfolio navigation action', () => {
+    const headerSource = readSource('components/layout/AppHeader.tsx');
+    expect(headerSource).toContain('onOpenPortfolio');
+  });
+});
