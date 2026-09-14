@@ -12,6 +12,7 @@ import { CoverageExistenceResult } from './clauseCoverageValidator';
 import { hybridDeductibleParser } from './hybridDeductibleParser';
 import { featureFlags } from '../config/featureFlags';
 import { getCanonicalCoverageNames } from '../config/domainConstants';
+import { computeGapAnalysis, computePremiumDelta } from './renewalAnalytics';
 import { InsuranceDomain } from '../types/domain';
 
 export interface ScoreWeights {
@@ -30,6 +31,17 @@ export interface ScoreBreakdown {
   priceRatio: number;
   sublimits: number;
   warranties: number;
+  /** Renewal mode only (R5.3): change-vs-status-quo dimension vs the baseline. */
+  changeVsStatusQuo?: number;
+}
+
+/**
+ * Renewal scoring context (R5.3). When present, calculateScore blends a
+ * change-vs-status-quo dimension into the total; when absent the scoring is
+ * byte-identical to the historical NEW-mode behavior.
+ */
+export interface RenewalScoringContext {
+  baseline: ParsedQuote;
 }
 
 export interface ScoringResult {
@@ -99,6 +111,33 @@ export const quoteScorer = {
    * Uses variable comparison engine when enabled
    */
   calculateScore: (
+    quote: ParsedQuote,
+    crossRefResults: CrossReferenceResult[],
+    allQuotes: ParsedQuote[] = [],
+    customWeights?: Partial<ScoreWeights>,
+    clauseValidation?: CoverageExistenceResult[],
+    domain: InsuranceDomain = 'pyme',
+    renewal?: RenewalScoringContext
+  ): Promise<ScoringResult> | ScoringResult => {
+    const baseResult = quoteScorer.calculateBaseScore(
+      quote,
+      crossRefResults,
+      allQuotes,
+      customWeights,
+      clauseValidation,
+      domain
+    );
+    if (!renewal) return baseResult;
+    return Promise.resolve(baseResult).then((result) =>
+      applyChangeVsStatusQuo(result, quote, renewal.baseline)
+    );
+  },
+
+  /**
+   * Historical scoring path (NEW mode). Extracted verbatim from the original
+   * calculateScore so renewal blending can wrap it without changing behavior.
+   */
+  calculateBaseScore: (
     quote: ParsedQuote,
     crossRefResults: CrossReferenceResult[],
     allQuotes: ParsedQuote[] = [],
@@ -730,6 +769,58 @@ function calculatePriceRank(
   const average = sorted.reduce((sum, q) => sum + q.priceAnnual, 0) / sorted.length;
 
   return { rank, average };
+}
+
+// ---------------------------------------------------------------------------
+// Renewal mode (R5.3): change-vs-status-quo dimension
+// ---------------------------------------------------------------------------
+
+/** Weight of the change-vs-status-quo dimension in the renewal total score. */
+const CHANGE_VS_STATUS_QUO_WEIGHT = 0.15;
+const CHANGE_NEUTRAL = 50;
+const CHANGE_GAINED_COVERAGE_BONUS = 10;
+const CHANGE_GAINED_COVERAGE_BONUS_CAP = 30;
+const CHANGE_LOST_COVERAGE_PENALTY = 15;
+const CHANGE_DEDUCTIBLE_WORSENING_PENALTY = 5;
+const CHANGE_NEW_EXCLUSION_PENALTY = 10;
+const CHANGE_PREMIUM_EFFECT = 15;
+
+/**
+ * Blend the change-vs-status-quo dimension into an existing scoring result.
+ * Renewal mode ONLY — NEW mode never calls this (R5.3).
+ */
+function applyChangeVsStatusQuo(
+  result: ScoringResult,
+  candidate: ParsedQuote,
+  baseline: ParsedQuote
+): ScoringResult {
+  const gaps = computeGapAnalysis(baseline, candidate);
+  const premiumDelta = computePremiumDelta(baseline.priceAnnual, candidate.priceAnnual);
+
+  let changeScore = CHANGE_NEUTRAL;
+  changeScore += Math.min(
+    gaps.coveragesGained.length * CHANGE_GAINED_COVERAGE_BONUS,
+    CHANGE_GAINED_COVERAGE_BONUS_CAP
+  );
+  changeScore -= gaps.coveragesLost.length * CHANGE_LOST_COVERAGE_PENALTY;
+  changeScore -= gaps.deductibleWorsening.length * CHANGE_DEDUCTIBLE_WORSENING_PENALTY;
+  changeScore -= gaps.newExclusions.length * CHANGE_NEW_EXCLUSION_PENALTY;
+  if (premiumDelta.direction === 'decrease') changeScore += CHANGE_PREMIUM_EFFECT;
+  if (premiumDelta.direction === 'increase') changeScore -= CHANGE_PREMIUM_EFFECT;
+  changeScore = clamp(Math.round(changeScore), 0, 100);
+
+  return {
+    ...result,
+    breakdown: { ...result.breakdown, changeVsStatusQuo: changeScore },
+    totalScore: clamp(
+      Math.round(
+        result.totalScore * (1 - CHANGE_VS_STATUS_QUO_WEIGHT) +
+          changeScore * CHANGE_VS_STATUS_QUO_WEIGHT
+      ),
+      0,
+      100
+    ),
+  };
 }
 
 function clamp(value: number, min: number, max: number): number {

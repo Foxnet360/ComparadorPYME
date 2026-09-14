@@ -241,6 +241,21 @@ describe('UnifiedComparisonEngine (flat table)', () => {
     expect(mockGemini.models.generateContent).toHaveBeenCalledTimes(1);
   });
 
+  it('should not share cache between renewal and new modes for the same files (R5.3)', async () => {
+    mockGemini = buildMockGemini([validFlatJson, validFlatJson]);
+
+    const engine = new UnifiedComparisonEngine({ retryDelayMs: 0 });
+    await engine.compare(['cache-renewal-fake1.pdf', 'cache-renewal-fake2.pdf']);
+
+    await engine.compare(['cache-renewal-fake1.pdf', 'cache-renewal-fake2.pdf'], {
+      renewalMode: true,
+    });
+
+    // If the cache key did not include renewalMode, the second call would hit
+    // the NEW-mode cache and skip the Gemini call.
+    expect(mockGemini.models.generateContent).toHaveBeenCalledTimes(2);
+  });
+
   it('should use the v2 parser and prompt when granularComparisonSchema is enabled', async () => {
     mockGemini = buildMockGemini([validGranularJson]);
 

@@ -3,6 +3,7 @@ import request from 'supertest';
 import express from 'express';
 import multer from 'multer';
 import { analysisController } from '../../controllers/analysisController';
+import { comparisonEngineAdapter } from '../../services/unifiedComparison/comparisonEngineAdapter';
 import { AuthenticatedRequest } from '../../middleware/auth';
 
 vi.mock('../../services/unifiedComparison/comparisonEngineAdapter', () => ({
@@ -435,5 +436,46 @@ describe('Backward Compatibility', () => {
       expect(quote).toHaveProperty('coverages');
       expect(Array.isArray(quote.coverages)).toBe(true);
     });
+  });
+
+  it('treats an omitted analysis_type as new mode (NULL semantics, R5.1/R5.4/XC-3)', async () => {
+    const adapterMock = vi.mocked(comparisonEngineAdapter.generateComparison);
+    adapterMock.mockClear();
+
+    const response = await request(app)
+      .post('/api/analyze')
+      .field('clientData', JSON.stringify({}))
+      .attach('quotes', Buffer.from('test pdf content'), 'quote1.pdf');
+
+    expect(response.status).toBe(200);
+
+    // The adapter is called without an analysisType: the engine resolves it
+    // as 'new' (R5.4 NULL semantics) and never emits schemaVersion 3.
+    const options = adapterMock.mock.calls[0]![1];
+    expect(options).toBeDefined();
+    expect((options as Record<string, unknown>).analysisType).toBeUndefined();
+    expect((options as Record<string, unknown>).referenceQuote).toBeUndefined();
+
+    // No renewal artifacts leak into the NEW-mode response (XC-3).
+    const serialized = JSON.stringify(response.body);
+    expect(serialized).not.toContain('isBaseline');
+    expect(serialized).not.toContain('baseline_column');
+    expect(serialized).not.toContain('renewalAnalytics');
+  });
+
+  it('ignores an explicit analysis_type=new body field exactly like an omitted one', async () => {
+    const adapterMock = vi.mocked(comparisonEngineAdapter.generateComparison);
+    adapterMock.mockClear();
+
+    const response = await request(app)
+      .post('/api/analyze')
+      .field('clientData', JSON.stringify({}))
+      .field('analysis_type', 'new')
+      .attach('quotes', Buffer.from('test pdf content'), 'quote1.pdf');
+
+    expect(response.status).toBe(200);
+    const serialized = JSON.stringify(response.body);
+    expect(serialized).not.toContain('isBaseline');
+    expect(serialized).not.toContain('renewalAnalytics');
   });
 });
