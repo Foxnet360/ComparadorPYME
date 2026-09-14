@@ -9,12 +9,15 @@ import { AuthenticatedRequest, authMiddleware, optionalAuthMiddleware } from './
  * the path relative to the /api mount point:
  *
  * - exact:   /analyze, /history
- * - prefix (all methods): /comparison/*, /clients/*
+ * - prefix (all methods): /comparison/*
  * - method-scoped prefix: GET+POST /chat/*, GET /documents/*
  * - pattern: /analysis/:id/export
  *
  * /health is registered outside /api and never reaches this gate.
  * Static assets are not under /api either.
+ *
+ * The portfolio routes (/clients, /policies) are intentionally NOT
+ * allowlisted: XC-1 requires a session for every portfolio read/write.
  *
  * Allowlisted routes use optional auth: a valid token is attached when
  * present, but anonymous traffic is allowed through. Chat and the clause
@@ -25,7 +28,7 @@ import { AuthenticatedRequest, authMiddleware, optionalAuthMiddleware } from './
  */
 const PUBLIC_EXACT_PATHS: ReadonlySet<string> = new Set(['/analyze', '/history']);
 
-const PUBLIC_PREFIXES: readonly string[] = ['/comparison', '/clients'];
+const PUBLIC_PREFIXES: readonly string[] = ['/comparison'];
 
 const PUBLIC_METHOD_PREFIXES: ReadonlyArray<{
   prefix: string;

@@ -119,3 +119,69 @@ export const auditEnrichSchema = z.object({
   deductible: z.string().optional(),
   exclusions: z.array(z.string()).optional(),
 });
+
+// Portfolio schemas (renovacion-polizas PR-2). R1.4: zod's default object
+// behavior strips unknown keys, so only the whitelisted fields below ever
+// reach the repositories.
+export const createClientSchema = z.object({
+  name: z.string().min(1).max(300),
+  tax_id: z.string().max(50).nullish(),
+  contact: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const updateClientSchema = z
+  .object({
+    name: z.string().min(1).max(300).optional(),
+    tax_id: z.string().max(50).nullish(),
+    contact: z.record(z.string(), z.unknown()).optional(),
+  })
+  .refine((val) => Object.values(val).some((v) => v !== undefined), {
+    message: 'At least one field must be provided',
+  });
+
+export const createPolicySchema = z.object({
+  client_id: z.string().uuid(),
+  ramo: z.string().min(1),
+  insurer: z.string().min(1).max(300),
+  policy_number: z.string().max(120).nullish(),
+  premium: z.number().nonnegative().nullish(),
+  start_date: z.string().min(1).nullish(),
+  end_date: z.string().min(1).nullish(),
+  coverages: z.array(z.unknown()).optional(),
+  deductibles: z.array(z.unknown()).optional(),
+  provenance: z.enum(['analysis', 'incumbent_pdf', 'manual']).optional(),
+  source_analysis_id: z.string().uuid().nullish(),
+  ramo_details: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const updatePolicySchema = z
+  .object({
+    ramo: z.string().min(1).optional(),
+    insurer: z.string().min(1).max(300).optional(),
+    policy_number: z.string().max(120).nullish(),
+    premium: z.number().nonnegative().nullish(),
+    start_date: z.string().min(1).nullish(),
+    end_date: z.string().min(1).nullish(),
+    coverages: z.array(z.unknown()).optional(),
+    deductibles: z.array(z.unknown()).optional(),
+    provenance: z.enum(['analysis', 'incumbent_pdf', 'manual']).optional(),
+    source_analysis_id: z.string().uuid().nullish(),
+    ramo_details: z.record(z.string(), z.unknown()).optional(),
+  })
+  .refine((val) => Object.values(val).some((v) => v !== undefined), {
+    message: 'At least one field must be provided',
+  });
+
+// Q4: the broker confirms what extraction cannot know (policy number, dates,
+// client link, per-ramo insured object); the mapper auto-carries the rest.
+export const promotePolicySchema = z.object({
+  analysis_id: z.string().uuid(),
+  quote_index: z.number().int().nonnegative(),
+  confirmations: z.object({
+    client_id: z.string().uuid(),
+    policy_number: z.string().min(1).max(120),
+    start_date: z.string().min(1),
+    end_date: z.string().min(1),
+    insured: z.record(z.string(), z.unknown()),
+  }),
+});
