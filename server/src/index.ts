@@ -62,10 +62,13 @@ import monitoringRoutes from './routes/monitoring';
 import templateRegistryRoutes from './routes/templateRegistry';
 import clientRoutes from './routes/clientRoutes';
 import policyRoutes from './routes/policyRoutes';
+import renewalRoutes from './routes/renewalRoutes';
+import campaignRoutes from './routes/campaignRoutes';
 
 // Graph seeding lifecycle
 import { buildGraphEdgesFromDomain, seedCoverageGraph } from './services/graphSeeder';
 import { supabase } from './config/database';
+import { startCampaignScheduler } from './services/campaignScheduler';
 
 const app = express();
 const port = parseInt(process.env.PORT || '8080', 10);
@@ -217,6 +220,8 @@ export const apiRouterMounts = [
   { prefix: '/api/comparison', router: comparisonRoutes },
   { prefix: '/api/clients', router: clientRoutes },
   { prefix: '/api/policies', router: policyRoutes },
+  { prefix: '/api/renewals', router: renewalRoutes },
+  { prefix: '/api/campaigns', router: campaignRoutes },
 ] as const;
 
 for (const mount of apiRouterMounts) {
@@ -304,6 +309,15 @@ async function bootstrap(): Promise<void> {
   }
 
   await seedCoverageGraphOnStartup();
+
+  // renovacion-polizas PR-4: campaign scheduler (design Q3). Guarded entry —
+  // schedules nothing unless CAMPAIGN_SCHEDULER_ENABLED=true. A scheduler
+  // failure must never block startup.
+  try {
+    startCampaignScheduler();
+  } catch (error) {
+    console.error('❌ [Startup] campaign scheduler failed to start:', error);
+  }
 
   app.listen(port, '0.0.0.0', () => {
     console.log(`✅ Server running on port ${port}`);
