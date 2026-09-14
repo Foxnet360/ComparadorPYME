@@ -24,10 +24,15 @@ COPY . .
 COPY tesauro(pyme).md /app/
 COPY tesauro-extensiones.md /app/
 
+# Build-time client config for frontend bundle (Supabase anon credentials are
+# public by design; RLS enforces authorization). Declaring ARGs allows Docker to
+# receive Railway service variables during build.
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+
 # Build the application (frontend + backend).
-# Client config (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY) is read by
-# vite.config.ts via loadEnv from the build environment — do NOT pass it
-# through ARG/ENV (Docker linter flags it and it bakes values into the image).
 RUN npm run build
 
 # Create uploads directory
