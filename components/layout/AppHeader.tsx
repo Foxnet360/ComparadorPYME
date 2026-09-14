@@ -7,6 +7,7 @@ import {
   Library,
   Users,
   BarChart3,
+  RefreshCw,
 } from 'lucide-react';
 import type { UserProfile } from '../../types';
 import type { AppView } from '../../hooks/useAnalysisFlow';
@@ -18,6 +19,7 @@ interface AppHeaderProps {
   chatOpen: boolean;
   onNavigateDashboard: () => void;
   onOpenClients: () => void;
+  onOpenPortfolio: () => void;
   onOpenAnalytics: () => void;
   onOpenUsers: () => void;
   onOpenClauseAdmin: () => void;
@@ -33,6 +35,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   chatOpen,
   onNavigateDashboard,
   onOpenClients,
+  onOpenPortfolio,
   onOpenAnalytics,
   onOpenUsers,
   onOpenClauseAdmin,
@@ -86,6 +89,19 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             title="Gestión de Clientes y Auditorías"
           >
             <Users size={20} />
+          </button>
+
+          {/* Portafolio de Renovaciones (renovacion-polizas) */}
+          <button
+            onClick={onOpenPortfolio}
+            className={`p-2 rounded-full transition-colors ${
+              currentView === 'PORTFOLIO' || currentView === 'RENEWAL_DETAIL'
+                ? 'bg-indigo-100 text-indigo-700 font-semibold'
+                : 'text-slate-500 hover:bg-indigo-100 hover:text-indigo-600'
+            }`}
+            title="Portafolio de Renovaciones"
+          >
+            <RefreshCw size={20} />
           </button>
 
           {/* Analítica Ejecutiva (RBAC) */}

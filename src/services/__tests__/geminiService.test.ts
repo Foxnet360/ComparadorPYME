@@ -103,6 +103,68 @@ describe('analyzeQuotesWithGemini', () => {
     );
   });
 
+  it('sends no renewal fields on the default path (XC-3 byte-identical request)', async () => {
+    vi.mocked(apiClient.fetch).mockResolvedValue({
+      json: vi.fn().mockResolvedValue({ quotes: [] }),
+    } as unknown as Response);
+
+    await analyzeQuotesWithGemini([createFile('q.pdf')], [], 'Cliente N');
+
+    const body = vi.mocked(apiClient.fetch).mock.calls[0]![1].body as FormData;
+
+    expect(body.get('analysisType')).toBeNull();
+    expect(body.get('policyId')).toBeNull();
+    expect(body.get('renewalId')).toBeNull();
+  });
+
+  it('forwards analysisType and portfolio links in renewal mode (R5.1/R5.4)', async () => {
+    vi.mocked(apiClient.fetch).mockResolvedValue({
+      json: vi.fn().mockResolvedValue({ quotes: [] }),
+    } as unknown as Response);
+
+    await analyzeQuotesWithGemini(
+      [createFile('q.pdf')],
+      [],
+      'Cliente R',
+      undefined,
+      undefined,
+      'pyme',
+      'renewal',
+      { policyId: 'pol-1', renewalId: 'ren-1' }
+    );
+
+    const body = vi.mocked(apiClient.fetch).mock.calls[0]![1].body as FormData;
+
+    expect(body.get('analysisType')).toBe('renewal');
+    expect(body.get('policyId')).toBe('pol-1');
+    expect(body.get('renewalId')).toBe('ren-1');
+    // AUTH-2 still holds in renewal mode.
+    expect(body.get('userId')).toBeNull();
+  });
+
+  it('sends no renewal fields when mode is renewal but context is missing', async () => {
+    vi.mocked(apiClient.fetch).mockResolvedValue({
+      json: vi.fn().mockResolvedValue({ quotes: [] }),
+    } as unknown as Response);
+
+    await analyzeQuotesWithGemini(
+      [createFile('q.pdf')],
+      [],
+      'Cliente P',
+      undefined,
+      undefined,
+      'pyme',
+      'renewal',
+      null
+    );
+
+    const body = vi.mocked(apiClient.fetch).mock.calls[0]![1].body as FormData;
+
+    expect(body.get('analysisType')).toBeNull();
+    expect(body.get('policyId')).toBeNull();
+    expect(body.get('renewalId')).toBeNull();
+  });
+
   it('bounds the /analyze call with the 120s timeout (ERR-3)', async () => {
     vi.mocked(apiClient.fetch).mockResolvedValue({
       json: vi.fn().mockResolvedValue({ quotes: [] }),

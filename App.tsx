@@ -2,17 +2,16 @@ import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import { UIProvider, useUI } from './contexts/UIContext';
 import { AnalysisProvider } from './contexts/AnalysisContext';
+import { PortfolioProvider } from './contexts/PortfolioContext';
 import LandingPage from './components/LandingPage';
 import LoginScreen from './components/LoginScreen';
 import RegisterScreen from './components/RegisterScreen';
 import { AppHeader } from './components/layout/AppHeader';
 import { ViewLoadingFallback } from './components/layout/ViewLoadingFallback';
-import { useAnalysisFlow } from './hooks/useAnalysisFlow';
-import type { AppView } from './hooks/useAnalysisFlow';
+import { useAnalysisFlow, type AppView } from './hooks/useAnalysisFlow';
 import { useAuthSession } from './hooks/useAuthSession';
 import AnalyzerPage from './pages/AnalyzerPage';
-import { AppStatus } from './types';
-import type { ExtendedUserProfile, UserProfile } from './types';
+import { AppStatus, type ExtendedUserProfile, type UserProfile } from './types';
 
 // Lazy load heavy pages and components
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
@@ -23,6 +22,9 @@ const UsersPage = lazy(() => import('./pages/UsersPage'));
 const ChatBot = lazy(() => import('./components/ChatBot'));
 const ProfileScreen = lazy(() => import('./components/ProfileScreen'));
 const ClauseAdmin = lazy(() => import('./components/ClauseAdmin'));
+// Renewal portfolio (renovacion-polizas PR-5): lazy-loaded to keep bundle lean (XC-3)
+const PortfolioPage = lazy(() => import('./pages/Portfolio'));
+const RenewalDetailPage = lazy(() => import('./pages/RenewalDetail'));
 
 const AppShell: React.FC = () => {
   // Analyzer state and flow live in AnalysisContext via useAnalysisFlow.
@@ -44,10 +46,10 @@ const AppShell: React.FC = () => {
   } = useUI();
 
   const [currentView, setCurrentView] = useState<AppView>('LANDING');
+  const [activeRenewalId, setActiveRenewalId] = useState<string | null>(null);
   const { status, report } = state;
 
-  // Navigate to the dashboard once the initial Supabase session resolution
-  // completes with an active user (replaces the legacy boot effect).
+  // Navigate to dashboard once initial Supabase session resolution completes with active user.
   const handledBoot = useRef(false);
   useEffect(() => {
     if (!handledBoot.current && bootstrapped) {
@@ -110,6 +112,7 @@ const AppShell: React.FC = () => {
         chatOpen={chatOpen}
         onNavigateDashboard={navigateToDashboard}
         onOpenClients={() => setCurrentView('CLIENTS')}
+        onOpenPortfolio={() => setCurrentView('PORTFOLIO')}
         onOpenAnalytics={() => setCurrentView('ANALYTICS')}
         onOpenUsers={() => setCurrentView('USERS')}
         onOpenClauseAdmin={() => setShowClauseAdmin(true)}
@@ -125,6 +128,30 @@ const AppShell: React.FC = () => {
             <ClientsPage
               onSelectClientForAudit={() => setCurrentView('ANALYZER')}
               onViewReport={() => setCurrentView('REPORT')}
+            />
+          </Suspense>
+        )}
+
+        {/* VIEW: PORTFOLIO (renewal portfolio, PR-5) */}
+        {currentView === 'PORTFOLIO' && (
+          <Suspense fallback={<ViewLoadingFallback />}>
+            <PortfolioProvider>
+              <PortfolioPage
+                onOpenRenewal={(renewalId) => {
+                  setActiveRenewalId(renewalId);
+                  setCurrentView('RENEWAL_DETAIL');
+                }}
+              />
+            </PortfolioProvider>
+          </Suspense>
+        )}
+
+        {/* VIEW: RENEWAL DETAIL (PR-5) */}
+        {currentView === 'RENEWAL_DETAIL' && activeRenewalId && (
+          <Suspense fallback={<ViewLoadingFallback />}>
+            <RenewalDetailPage
+              renewalId={activeRenewalId}
+              onBack={() => setCurrentView('PORTFOLIO')}
             />
           </Suspense>
         )}

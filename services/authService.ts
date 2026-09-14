@@ -18,15 +18,16 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(
-  supabaseUrl ?? 'https://placeholder.supabase.co',
-  supabaseAnonKey ?? 'placeholder-anon-key-not-a-secret',
+  (supabaseUrl && supabaseUrl.trim()) || 'https://placeholder.supabase.co',
+  (supabaseAnonKey && supabaseAnonKey.trim()) || 'placeholder-anon-key-not-a-secret',
   {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-  },
-});
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+    },
+  }
+);
 
 /** ERR-4: build the app profile strictly from the Supabase session/user. No
  * auth data is persisted in localStorage/IndexedDB — the Supabase client
