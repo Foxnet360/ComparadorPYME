@@ -12,7 +12,7 @@ import {
   type FlatComparisonCell,
   type StructuredDeductible,
 } from './comparisonSchema';
-import { parseJsonWithRepair } from '../jsonRepair';
+import { parseJsonWithRepair, stripMarkdownFences } from '../jsonRepair';
 import type { CoverageGraphService } from '../coverageGraphService';
 import type { GraphMapping } from '../../types/templateGraph';
 import type { InsuranceDomain } from '../../types/domain';
@@ -712,11 +712,12 @@ function mapRowLabel(label: string): string | undefined {
 // ---------------------------------------------------------------------------
 
 function detectFormat(raw: string): 'markdown' | 'csv' | 'json' | 'kv' {
-  const trimmed = raw.trim();
+  const trimmed = stripMarkdownFences(raw);
 
   if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
     return 'json';
   }
+
 
   const lines = trimmed
     .split('\n')
@@ -1222,7 +1223,9 @@ function extractCellValueV2(cell: unknown): string {
 }
 
 function parseJsonV2(raw: string): RawTable {
-  const parseResult = parseJsonWithRepair(raw);
+  const cleaned = stripMarkdownFences(raw);
+  const parseResult = parseJsonWithRepair(cleaned);
+
   if (!parseResult.success) {
     throw new Error(parseResult.error || 'JSON parsing failed');
   }
@@ -1472,23 +1475,24 @@ async function buildV2Result(
 
 export class FlatTableParser {
   parse(raw: string, options?: ParseOptions): FlatComparisonResult {
-    const format = detectFormat(raw);
+    const cleaned = stripMarkdownFences(raw);
+    const format = detectFormat(cleaned);
     let rawTable: RawTable;
     const warnings: string[] = [];
 
     try {
       switch (format) {
         case 'json':
-          rawTable = parseJson(raw);
+          rawTable = parseJson(cleaned);
           break;
         case 'markdown':
-          rawTable = parseMarkdown(raw);
+          rawTable = parseMarkdown(cleaned);
           break;
         case 'csv':
-          rawTable = parseCsv(raw);
+          rawTable = parseCsv(cleaned);
           break;
         case 'kv':
-          rawTable = parseKeyValue(raw);
+          rawTable = parseKeyValue(cleaned);
           break;
       }
     } catch (error) {
@@ -1501,7 +1505,8 @@ export class FlatTableParser {
   }
 
   async parseV2(raw: string, options?: ParseOptions): Promise<FlatComparisonResultV2> {
-    const format = detectFormat(raw);
+    const cleaned = stripMarkdownFences(raw);
+    const format = detectFormat(cleaned);
     if (format !== 'json') {
       throw new FlatTableParseError('v2 parser only supports JSON input', []);
     }
@@ -1510,7 +1515,7 @@ export class FlatTableParser {
     const warnings: string[] = [];
 
     try {
-      rawTable = parseJsonV2(raw);
+      rawTable = parseJsonV2(cleaned);
     } catch (error) {
       throw new FlatTableParseError('Failed to parse granular JSON table', [
         { message: error instanceof Error ? error.message : String(error) },
@@ -1519,6 +1524,7 @@ export class FlatTableParser {
 
     return await buildV2Result(rawTable, options, warnings);
   }
+
 }
 
 export const flatTableParser = new FlatTableParser();

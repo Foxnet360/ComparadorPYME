@@ -892,4 +892,54 @@ describe('flatTableParser.parseV2 graph canonicalization', () => {
     expect(graphService.query).not.toHaveBeenCalled();
     expect(graphService.queryDeductible).not.toHaveBeenCalled();
   });
+
+  describe('markdown fence stripping', () => {
+    it('successfully parses v2 JSON wrapped in markdown code fences', async () => {
+      const jsonContent = JSON.stringify({
+        insurers: ['MAPFRE', 'SURAMERICANA'],
+        rows: [
+          {
+            label: 'Edificio',
+            section: 'BIENES ASEGURADOS',
+            cells: [
+              { insurer: 'MAPFRE', value: '$1.000.000.000' },
+              { insurer: 'SURAMERICANA', value: '$1.200.000.000' },
+            ],
+          },
+        ],
+      });
+      const input = `\`\`\`json\n${jsonContent}\n\`\`\``;
+
+      const result = await flatTableParser.parseV2(input, baseOptions);
+
+      expect(result.insurers).toEqual(['MAPFRE', 'SURAMERICANA']);
+      expect(result.rows).toHaveLength(1);
+      expect(result.rows[0].label).toBe('Edificio');
+      expect(result.rows[0].cells[0].value).toBe('$1.000.000.000');
+    });
+
+    it('successfully parses v1 JSON wrapped in markdown code fences without throwing kv format error', () => {
+      const jsonContent = JSON.stringify({
+        insurers: ['MAPFRE', 'SURAMERICANA'],
+        rows: [
+          {
+            label: 'Bienes Asegurados',
+            cells: [
+              { insurer: 'MAPFRE', value: 'Edificio' },
+              { insurer: 'SURAMERICANA', value: 'Contenidos' },
+            ],
+          },
+        ],
+      });
+      const input = `\`\`\`json\n${jsonContent}\n\`\`\``;
+
+      const result = flatTableParser.parse(input, baseOptions);
+
+      expect(result.insurers).toEqual(['MAPFRE', 'SURAMERICANA']);
+      expect(result.rows).toHaveLength(4);
+      expect(result.rows[0].label).toBe('Bienes Asegurados');
+    });
+  });
+
 });
+

@@ -121,10 +121,25 @@ describe('comparisonPromptBuilder.buildV2ComparisonPrompt', () => {
     expect(withEmptyAddons).toBe(generic);
   });
 
-  it('does not inject addons for the flat v1 prompt', () => {
-    const prompt = comparisonPromptBuilder.buildComparisonPrompt({ insurerCount: 2 });
+  describe('correction prompts without arbitrary truncation', () => {
+    it('preserves full response beyond 1000 characters in buildV2CorrectionPrompt', () => {
+      const longPayload = 'A'.repeat(2500);
+      const prompt = comparisonPromptBuilder.buildV2CorrectionPrompt(longPayload, 'SyntaxError');
 
-    expect(prompt).not.toContain('BBVA:');
-    expect(prompt).not.toContain('template');
+      expect(prompt).toContain(longPayload);
+      expect(prompt).toContain('RESPUESTA ANTERIOR:\n' + longPayload);
+      expect(prompt).not.toContain('(parcial)');
+    });
+
+    it('preserves full response beyond 1000 characters in buildCorrectionPrompt', () => {
+      const longPayload = 'B'.repeat(2500);
+      const prompt = comparisonPromptBuilder.buildCorrectionPrompt(longPayload, 'InvalidSchema');
+
+      expect(prompt).toContain(longPayload);
+      expect(prompt).toContain('RESPUESTA ANTERIOR:\n' + longPayload);
+      expect(prompt).not.toContain('(parcial)');
+    });
   });
 });
+
+

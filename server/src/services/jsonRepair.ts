@@ -31,19 +31,33 @@ function getRepairCategory(repairType: string | undefined): string {
 }
 
 /**
+ * Strip markdown code fences (```json ... ```) from raw text
+ */
+export function stripMarkdownFences(raw: string): string {
+  if (!raw) return '';
+  let cleaned = raw.trim();
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```(?:json|jsonc|javascript|markdown)?\s*\n?/i, '');
+    cleaned = cleaned.replace(/\n?```\s*$/i, '');
+  }
+  return cleaned.trim();
+}
+
+/**
  * Attempt to parse JSON, with automatic repair on failure
  */
 export function parseJsonWithRepair(
   jsonText: string,
   options?: JsonRepairOptions
 ): JsonRepairResult {
+  const sanitized = stripMarkdownFences(jsonText);
   // First, try standard parsing
   try {
-    const data = JSON.parse(jsonText);
+    const data = JSON.parse(sanitized);
     return {
       success: true,
       data,
-      wasRepaired: false,
+      wasRepaired: sanitized !== jsonText,
     };
   } catch (initialError) {
     // Try various repair strategies
@@ -57,8 +71,8 @@ export function parseJsonWithRepair(
 
     for (const strategy of repairStrategies) {
       try {
-        const repaired = strategy(jsonText);
-        if (repaired !== jsonText) {
+        const repaired = strategy(sanitized);
+        if (repaired !== sanitized) {
           const data = JSON.parse(repaired);
           const repairType = strategy.name;
           options?.onRepairUsed?.(getRepairCategory(repairType));
@@ -76,7 +90,7 @@ export function parseJsonWithRepair(
 
     // All strategies failed, try partial extraction
     try {
-      const partialData = extractPartialData(jsonText);
+      const partialData = extractPartialData(sanitized);
       if (partialData && Object.keys(partialData).length > 0) {
         options?.onRepairUsed?.(getRepairCategory('partial_extraction'));
         return {
@@ -98,6 +112,7 @@ export function parseJsonWithRepair(
     };
   }
 }
+
 
 /**
  * Repair unterminated strings by adding missing closing quotes
@@ -148,23 +163,62 @@ function repairTrailingCommas(json: string): string {
 }
 
 /**
- * Repair truncated JSON by closing open brackets
+ * Repair truncated JSON by closing open brackets in correct LIFO order
  */
 function repairTruncatedJson(json: string): string {
-  let repaired = json;
-  const openBraces = (repaired.match(/\{/g) || []).length;
-  const closeBraces = (repaired.match(/\}/g) || []).length;
-  const openBrackets = (repaired.match(/\[/g) || []).length;
-  const closeBrackets = (repaired.match(/\]/g) || []).length;
+  let repaired = json.trim();
+  // Strip trailing commas, colons, or incomplete fragments
+  repaired = repaired.replace(/[,:\s]+$/, '');
 
-  // Add missing closing braces
-  for (let i = 0; i < openBraces - closeBraces; i++) {
-    repaired += '}';
+  const stack: string[] = [];
+  let inString = false;
+  let escapeNext = false;
+
+  for (let i = 0; i < repaired.length; i++) {
+    const char = repaired[i];
+    if (escapeNext) {
+      escapeNext = false;
+      continue;
+    }
+    if (char === '\\') {
+      escapeNext = true;
+      continue;
+    }
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+
+    if (char === '{' || char === '[') {
+      stack.push(char);
+    } else if (char === '}') {
+      if (stack[stack.length - 1] === '{') {
+        stack.pop();
+      }
+    } else if (char === ']') {
+      if (stack[stack.length - 1] === '[') {
+        stack.pop();
+      }
+    }
   }
 
-  // Add missing closing brackets
-  for (let i = 0; i < openBrackets - closeBrackets; i++) {
-    repaired += ']';
+  // If we ended inside an open string, close it
+  if (inString) {
+    repaired += '"';
+  }
+
+  // Strip trailing commas or colons before closing structures
+  repaired = repaired.replace(/[,:\s]+$/, '');
+
+  // Close remaining open brackets and braces in reverse order (LIFO)
+  while (stack.length > 0) {
+    const openChar = stack.pop();
+    if (openChar === '{') {
+      repaired += '}';
+    } else if (openChar === '[') {
+      repaired += ']';
+    }
   }
 
   return repaired;
@@ -194,6 +248,9 @@ interface PartialQuoteData {
   currency?: string;
   validityPeriod?: string;
   priceAnnual?: number;
+  insurers?: string[];
+  quoteMetadata?: unknown[];
+  rows?: unknown[];
   coverages?: Array<{
     name: string;
     value: string;
@@ -208,12 +265,68 @@ interface PartialQuoteData {
 function extractPartialData(json: string): PartialQuoteData | null {
   const result: Record<string, unknown> = {};
 
+  // Support V2 granular comparison table extraction
+  if (json.includes('"rows"') || json.includes('"insurers"')) {
+    try {
+      const insurersMatch = json.match(/"insurers"\s*:\s*(\[[\s\S]*?\])/);
+      if (insurersMatch) {
+        try {
+          result.insurers = JSON.parse(insurersMatch[1]!);
+        } catch {
+          // Ignore
+        }
+      }
+      const quoteMetadataMatch = json.match(/"quoteMetadata"\s*:\s*(\[[\s\S]*?\])/);
+      if (quoteMetadataMatch) {
+        try {
+          result.quoteMetadata = JSON.parse(quoteMetadataMatch[1]!);
+        } catch {
+          // Ignore
+        }
+      }
+      const rowsMatch = json.match(/"rows"\s*:\s*(\[[\s\S]*?\])\s*[},]?/);
+      if (rowsMatch) {
+        try {
+          result.rows = JSON.parse(rowsMatch[1]!);
+        } catch {
+          // Try regex-based row recovery
+        }
+      }
+
+      if (!result.rows) {
+        const rows: unknown[] = [];
+        const rowPattern = /\{\s*"label"\s*:\s*"([^"]*)"[\s\S]*?"cells"\s*:\s*(\[[\s\S]*?\])\s*\}/g;
+        let rMatch;
+        while ((rMatch = rowPattern.exec(json)) !== null) {
+          try {
+            rows.push({
+              label: rMatch[1]!,
+              cells: JSON.parse(rMatch[2]!),
+            });
+          } catch {
+            // Ignore single malformed row
+          }
+        }
+        if (rows.length > 0) {
+          result.rows = rows;
+        }
+      }
+
+      if (result.rows || result.insurers) {
+        return result as PartialQuoteData;
+      }
+    } catch {
+      // Continue to single-quote extraction
+    }
+  }
+
   // Try to extract string values for known keys
   const keyValuePattern = /"(insurerName|policyName|currency|validityPeriod)"\s*:\s*"([^"]*)"/g;
   let match;
   while ((match = keyValuePattern.exec(json)) !== null) {
     result[match[1]!] = match[2]!;
   }
+
 
   // Try to extract numeric values
   const numericPattern = /"(priceAnnual)"\s*:\s*(\d+)/g;
