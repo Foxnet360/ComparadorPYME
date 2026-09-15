@@ -27,10 +27,16 @@ describe('promptStrategyFactory', () => {
   });
 
   it('falls back to pyme for unknown domains', () => {
-    const strategy = getStrategy('hogar' as InsuranceDomain);
+    const strategy = getStrategy('unsupported_domain' as unknown as InsuranceDomain);
     const prompt = strategy.buildPromptForFamily('TABLE-INTEGRATED');
     const baseline = buildPymePromptForFamily('TABLE-INTEGRATED');
     expect(prompt).toBe(baseline);
+  });
+
+  it('returns the hogar strategy for hogar domain', () => {
+    const strategy = getStrategy('hogar');
+    const prompt = strategy.buildPromptForFamily('TABLE-INTEGRATED');
+    expect(prompt).toContain('Hogar y Vivienda');
   });
 
   it('exposes the same strategies through the object-style factory', () => {

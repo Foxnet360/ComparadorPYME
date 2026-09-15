@@ -912,7 +912,7 @@ describe('flatTableParser.parseV2 graph canonicalization', () => {
 
       const result = await flatTableParser.parseV2(input, baseOptions);
 
-      expect(result.insurers).toEqual(['MAPFRE', 'SURAMERICANA']);
+      expect(result.insurers).toEqual(['MAPFRE', 'SURA']);
       expect(result.rows).toHaveLength(1);
       expect(result.rows[0].label).toBe('Edificio');
       expect(result.rows[0].cells[0].value).toBe('$1.000.000.000');
@@ -935,7 +935,7 @@ describe('flatTableParser.parseV2 graph canonicalization', () => {
 
       const result = flatTableParser.parse(input, baseOptions);
 
-      expect(result.insurers).toEqual(['MAPFRE', 'SURAMERICANA']);
+      expect(result.insurers).toEqual(['MAPFRE', 'SURA']);
       expect(result.rows).toHaveLength(4);
       expect(result.rows[0].label).toBe('Bienes Asegurados');
     });

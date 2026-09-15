@@ -5,6 +5,7 @@ import {
   CheckCircle,
   Info,
   Shield,
+  ShieldAlert,
   FileText,
   Sparkles,
   Loader2,
@@ -162,11 +163,11 @@ export const AuditSection: React.FC<AuditSectionProps> = ({ quotes, viewMode }) 
       {/* Enrichment Button */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-slate-800">Auditoría de Riesgos</h2>
+          <h2 className="text-xl font-bold text-slate-800">Análisis de Letra Chica y Brechas</h2>
           <p className="text-sm text-slate-500">
             {isEnriched
-              ? 'Análisis enriquecido con clausulados'
-              : 'Análisis basado en datos de cotización'}
+              ? 'Análisis profundo enriquecido con clausulados contractuales'
+              : 'Auditoría consultiva basada en datos de cotización'}
           </p>
         </div>
 
@@ -211,6 +212,21 @@ export const AuditSection: React.FC<AuditSectionProps> = ({ quotes, viewMode }) 
             )}
           </button>
         )}
+      </div>
+
+      {/* Consultative Value Banner */}
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/80 rounded-xl p-4 flex items-start gap-3 shadow-sm">
+        <div className="p-2 bg-amber-100 rounded-lg text-amber-700 mt-0.5 shrink-0">
+          <ShieldAlert size={18} />
+        </div>
+        <div className="space-y-1">
+          <h4 className="text-sm font-semibold text-amber-900">
+            Detección de Letra Chica, Exclusiones Ocultas y Brechas de Cobertura
+          </h4>
+          <p className="text-xs text-amber-800 leading-relaxed">
+            Identifica trampas contractuales, garantías obligatorias no divulgadas, infraseguro y diferencias críticas de deducibles entre aseguradoras para asesorar con máxima certeza a tu cliente antes de la contratación.
+          </p>
+        </div>
       </div>
 
       {/* Auto-enrichment loading indicator with progress */}

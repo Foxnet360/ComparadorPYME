@@ -171,7 +171,7 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
             className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm font-medium"
           >
             <ShieldAlert size={16} />
-            Ver Riesgos
+            Ver Letra Chica y Brechas
             <ArrowRight size={14} />
           </button>
         </div>

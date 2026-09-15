@@ -38,16 +38,38 @@ const INSURER_NAME_MAPPINGS: Record<string, string> = {
   'MAPFRE SEGUROS': 'MAPFRE',
   'MAPFRE COLOMBIA': 'MAPFRE',
   'MAPFRE SEGUROS GENERALES': 'MAPFRE',
+
+  // ALLIANZ variations
+  'ALLIANZ SEGUROS S.A.': 'ALLIANZ',
+  'ALLIANZ SEGUROS': 'ALLIANZ',
+  'ALLIANZ COLOMBIA': 'ALLIANZ',
+  ALLIANZ: 'ALLIANZ',
+
+  // SURA variations
+  'SEGUROS GENERALES SURAMERICANA S.A.': 'SURA',
+  'SEGUROS SURA': 'SURA',
+  SURAMERICANA: 'SURA',
+  SURA: 'SURA',
+
+  // BOLÍVAR variations
+  'COMPAÑÍA DE SEGUROS BOLÍVAR S.A.': 'BOLÍVAR',
+  'SEGUROS BOLIVAR': 'BOLÍVAR',
+  'SEGUROS BOLÍVAR': 'BOLÍVAR',
+  BOLIVAR: 'BOLÍVAR',
+  BOLÍVAR: 'BOLÍVAR',
 };
 
 // Short name aliases for fuzzy matching
 const SHORT_NAME_ALIASES: Record<string, string[]> = {
-  SBS: ['sbs', 'seguros bolivar', 'bolivar'],
+  SBS: ['sbs'],
   'AXA Colpatria': ['axa', 'colpatria'],
   BBVA: ['bbva', 'bbva seguros'],
   CHUBB: ['chubb', 'chubb seguros'],
   HDI: ['hdi', 'hdi seguros'],
   MAPFRE: ['mapfre', 'mapfre seguros'],
+  ALLIANZ: ['allianz', 'allianz seguros'],
+  SURA: ['sura', 'suramericana', 'segurossura'],
+  BOLÍVAR: ['bolivar', 'bolívar', 'seguros bolivar', 'seguros bolívar'],
 };
 
 // In-memory telemetry for unmapped insurer names

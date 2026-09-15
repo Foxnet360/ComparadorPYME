@@ -221,9 +221,10 @@ export class UnifiedComparisonEngine {
       const promptContext = {
         insurerCount: pdfPaths.length,
         hasClauses: false,
+        domain,
       };
       const prompt = granularEnabled
-        ? comparisonPromptBuilder.buildV2ComparisonPrompt(promptContext, templateAddons)
+        ? comparisonPromptBuilder.buildV2ComparisonPrompt(promptContext, templateAddons, domain)
         : comparisonPromptBuilder.buildComparisonPrompt(promptContext);
 
       // 4. Call Gemini with structured output

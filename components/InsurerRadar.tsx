@@ -8,6 +8,7 @@ import {
   PolarRadiusAxis,
   Legend,
   Tooltip,
+  ResponsiveContainer,
 } from 'recharts';
 import DeferredChart from './DeferredChart';
 import { X, Radar as RadarIcon } from 'lucide-react';
@@ -166,40 +167,42 @@ export const InsurerRadar: React.FC<InsurerRadarProps> = ({
           {/* Radar Chart */}
           <div className="h-[400px] w-full">
             <DeferredChart>
-              <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-                <PolarGrid stroke="#e2e8f0" />
-                <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 12 }} />
-                <PolarRadiusAxis angle={30} domain={[0, 10]} tick={false} axisLine={false} />
-                {quotes.map(
-                  (quote, idx) =>
-                    selected.has(quote.insurerName) && (
-                      <Radar
-                        key={idx}
-                        name={quote.insurerName}
-                        dataKey={quote.insurerName}
-                        stroke={CHART_COLORS[idx % CHART_COLORS.length]}
-                        fill={CHART_COLORS[idx % CHART_COLORS.length]}
-                        fillOpacity={0.2}
-                        strokeWidth={2}
-                      />
-                    )
-                )}
-                <Legend
-                  wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }}
-                  formatter={(value: string) => {
-                    // Truncate long insurer names
-                    const maxLength = 15;
-                    return value.length > maxLength ? value.substring(0, maxLength) + '...' : value;
-                  }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: '8px',
-                    border: 'none',
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                  }}
-                />
-              </RadarChart>
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                  <PolarGrid stroke="#e2e8f0" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 12 }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 10]} tick={false} axisLine={false} />
+                  {quotes.map(
+                    (quote, idx) =>
+                      selected.has(quote.insurerName) && (
+                        <Radar
+                          key={idx}
+                          name={quote.insurerName}
+                          dataKey={quote.insurerName}
+                          stroke={CHART_COLORS[idx % CHART_COLORS.length]}
+                          fill={CHART_COLORS[idx % CHART_COLORS.length]}
+                          fillOpacity={0.2}
+                          strokeWidth={2}
+                        />
+                      )
+                  )}
+                  <Legend
+                    wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }}
+                    formatter={(value: string) => {
+                      // Truncate long insurer names
+                      const maxLength = 15;
+                      return value.length > maxLength ? value.substring(0, maxLength) + '...' : value;
+                    }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: '8px',
+                      border: 'none',
+                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                    }}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
             </DeferredChart>
           </div>
 

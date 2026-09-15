@@ -340,10 +340,10 @@ describe('analysisController - matrixRowsToComparisonReport', () => {
 });
 
 describe('analysisController - resolveAnalysisUserId', () => {
-  it('returns undefined for unauthenticated requests so anonymous traffic is not bucketed to hash 75', () => {
+  it('returns anonymous for unauthenticated requests', () => {
     const req = { user: undefined, body: {} } as AuthenticatedRequest;
 
-    expect(resolveAnalysisUserId(req)).toBeUndefined();
+    expect(resolveAnalysisUserId(req)).toBe('anonymous');
   });
 
   it('returns the authenticated user id when present', () => {
@@ -355,6 +355,6 @@ describe('analysisController - resolveAnalysisUserId', () => {
   it('ignores body userId on the optional-auth /api/analyze endpoint', () => {
     const req = { user: undefined, body: { userId: 'body-user-123' } } as AuthenticatedRequest;
 
-    expect(resolveAnalysisUserId(req)).toBeUndefined();
+    expect(resolveAnalysisUserId(req)).toBe('anonymous');
   });
 });

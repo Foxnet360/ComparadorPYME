@@ -7,12 +7,13 @@ import { quoteScorer, type ScoringResult, type ScoreBreakdown } from '../service
 import { type NarrativeResult } from '../services/narrativeService';
 import { type ValidationResult } from '../services/quoteValidator';
 import { type ConfidenceResult, type ConfidenceBreakdown } from '../services/confidenceScorer';
-import { type ClauseValidationSummary } from '../services/clauseCoverageValidator';
+import { type ClauseValidationSummary, checkClauseDocumentExists } from '../services/clauseCoverageValidator';
 import { type DualExtractionResult } from '../services/dualExtractionService';
 import { isMultimodalEnabled } from '../services/quoteProcessingService';
 import { comparisonEngineAdapter } from '../services/unifiedComparison/comparisonEngineAdapter';
 import { AnalysisType } from '../services/unifiedComparison/comparisonSchema';
 import { FINANCIAL_SECTION_ID } from '../services/unifiedComparison/matrixTransformer';
+import { extractCanonicalInsurerName } from '../services/unifiedComparison/insurerSanitizer';
 import { semanticMatcher } from '../services/semanticMatcher';
 
 import { saveAnalysisHistory, getAnalysisHistoryByUser } from '../repositories/analysisRepository';
@@ -637,10 +638,7 @@ export async function matrixRowsToComparisonReport(
 ): Promise<UnifiedComparisonReport> {
   const domain = options?.domain ?? 'pyme';
   // Get insurer names from quote files
-  const insurerNames = quoteFiles.map((f) => {
-    const name = f.originalname.replace(/COTIZACION.*?-\s*/i, '').replace(/\.pdf$/i, '');
-    return name || 'Desconocido';
-  });
+  const insurerNames = quoteFiles.map((f) => extractCanonicalInsurerName(f.originalname));
 
   // The unified engine builds matrix cells in the order returned by the LLM
   // (result.insurers), which may differ from the upload order. Align cells to
@@ -822,8 +820,10 @@ export async function matrixRowsToComparisonReport(
 
       // Actualizar la propiedad confidence en cada elemento de coverages para la matriz UI
       coverages.forEach((c, idx) => {
-        const confScore = realConfidences[idx] ?? avgCellConfidence;
-        c.confidence = confScore > 1 ? confScore / 100 : confScore;
+        if (typeof c.confidence !== 'number') {
+          const confScore = realConfidences[idx] ?? avgCellConfidence;
+          c.confidence = confScore > 1 ? confScore / 100 : confScore;
+        }
       });
 
       const parsedQuote: ParsedQuote = {
@@ -939,6 +939,8 @@ export async function matrixRowsToComparisonReport(
         });
       }
 
+      const hasClauseDocument = await checkClauseDocumentExists(iq.insurerName);
+
       return {
         insurerName: iq.insurerName,
         policyName: iq.policyName,
@@ -955,7 +957,7 @@ export async function matrixRowsToComparisonReport(
         score: scoringResult.totalScore,
         dataQualityScore: scoringResult.dataQualityScore,
         verificationConfidence: scoringResult.verificationConfidence,
-        isRagAvailable: false,
+        isRagAvailable: hasClauseDocument,
         parseConfidence: iq.avgCellConfidence,
         dualExtractionValidation: [],
         specialConditions: combinedAlerts.map((a) => a.description),
@@ -978,7 +980,7 @@ export async function matrixRowsToComparisonReport(
           ).length,
         },
         clauseValidation: {
-          hasClauseDocument: false,
+          hasClauseDocument,
           verifiedCount: 0,
           phantomCount: 0,
           mandatoryMissingCount: 0,

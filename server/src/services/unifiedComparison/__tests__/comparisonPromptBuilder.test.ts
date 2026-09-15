@@ -139,6 +139,31 @@ describe('comparisonPromptBuilder.buildV2ComparisonPrompt', () => {
       expect(prompt).toContain('RESPUESTA ANTERIOR:\n' + longPayload);
       expect(prompt).not.toContain('(parcial)');
     });
+
+    it('generates domain-specific sections and percentage resolution rule for hogar', () => {
+      const prompt = comparisonPromptBuilder.buildV2ComparisonPrompt(
+        { insurerCount: 3 },
+        undefined,
+        'hogar'
+      );
+
+      expect(prompt).toContain('Hogar y Vivienda');
+      expect(prompt).toContain('Edificio / Estructura');
+      expect(prompt).toContain('Contenidos / Muebles y Enseres');
+      expect(prompt).toContain('REGLA CRÍTICA DE AMPAROS PORCENTUALES');
+      expect(prompt).toContain('REGLA CRÍTICA DE IDENTIFICACIÓN DE ASEGURADORAS');
+      expect(prompt).toContain('No Cotizado');
+      expect(prompt).toContain('Sin deducible');
+    });
+
+    it('enforces corporate insurer naming and prohibits client/product concatenation in pyme and hogar', () => {
+      const pymePrompt = comparisonPromptBuilder.buildV2ComparisonPrompt({ insurerCount: 2 });
+      expect(pymePrompt).toContain('REGLA CRÍTICA DE IDENTIFICACIÓN DE ASEGURADORAS');
+      expect(pymePrompt).toContain('ALLIANZ');
+
+      const flatPrompt = comparisonPromptBuilder.buildComparisonPrompt({ insurerCount: 2 });
+      expect(flatPrompt).toContain('REGLA CRÍTICA DE IDENTIFICACIÓN DE ASEGURADORAS');
+    });
   });
 });
 

@@ -13,6 +13,7 @@ import {
   type StructuredDeductible,
 } from './comparisonSchema';
 import { parseJsonWithRepair, stripMarkdownFences } from '../jsonRepair';
+import { extractCanonicalInsurerName } from './insurerSanitizer';
 import type { CoverageGraphService } from '../coverageGraphService';
 import type { GraphMapping } from '../../types/templateGraph';
 import type { InsuranceDomain } from '../../types/domain';
@@ -961,7 +962,9 @@ function extractCellValue(cell: unknown): string {
 }
 
 function parseJsonWithInsurersArray(data: Record<string, unknown>): RawTable {
-  const insurers = (data.insurers as unknown[]).map((item) => String(item).trim()).filter(Boolean);
+  const insurers = (data.insurers as unknown[])
+    .map((item) => extractCanonicalInsurerName(String(item).trim()))
+    .filter(Boolean);
   const inputRows = Array.isArray(data.rows) ? (data.rows as unknown[]) : [];
 
   const rows = new Map<string, RowValues>();
@@ -984,7 +987,9 @@ function parseJsonWithInsurersArray(data: Record<string, unknown>): RawTable {
           (cell) =>
             typeof cell === 'object' &&
             cell !== null &&
-            String((cell as { insurer?: unknown }).insurer).trim() === insurer
+            (String((cell as { insurer?: unknown }).insurer).trim() === insurer ||
+              extractCanonicalInsurerName(String((cell as { insurer?: unknown }).insurer).trim()) ===
+                insurer)
         );
         if (matched != null) {
           return extractCellValue(matched);
@@ -1242,7 +1247,7 @@ function parseJsonV2(raw: string): RawTable {
 
   const insurers = Array.isArray((data as Record<string, unknown>).insurers)
     ? ((data as Record<string, unknown>).insurers as unknown[])
-        .map((item) => String(item).trim())
+        .map((item) => extractCanonicalInsurerName(String(item).trim()))
         .filter(Boolean)
     : [];
   const inputRows = Array.isArray((data as Record<string, unknown>).rows)
@@ -1266,7 +1271,9 @@ function parseJsonV2(raw: string): RawTable {
           (cell) =>
             typeof cell === 'object' &&
             cell !== null &&
-            String((cell as { insurer?: unknown }).insurer).trim() === insurer
+            (String((cell as { insurer?: unknown }).insurer).trim() === insurer ||
+              extractCanonicalInsurerName(String((cell as { insurer?: unknown }).insurer).trim()) ===
+                insurer)
         );
         if (matched != null) {
           return extractCellValueV2(matched);
@@ -1281,7 +1288,10 @@ function parseJsonV2(raw: string): RawTable {
   }
 
   const quoteMetadata = Array.isArray((data as Record<string, unknown>).quoteMetadata)
-    ? ((data as Record<string, unknown>).quoteMetadata as any[])
+    ? ((data as Record<string, unknown>).quoteMetadata as any[]).map((meta) => ({
+        ...meta,
+        insurer: extractCanonicalInsurerName(String(meta?.insurer || '')),
+      }))
     : undefined;
 
   return { insurers, rows, extraRows, quoteMetadata };

@@ -138,10 +138,12 @@ export const clauseCoverageValidator = {
   },
 };
 
+import { insurerNameNormalizer } from './insurerNameNormalizer';
+
 /**
  * Check if clause document exists for insurer
  */
-async function checkClauseDocumentExists(insurerName: string): Promise<boolean> {
+export async function checkClauseDocumentExists(insurerName: string): Promise<boolean> {
   try {
     const { data, error } = await supabase
       .from('document_insurer_view')
@@ -150,12 +152,28 @@ async function checkClauseDocumentExists(insurerName: string): Promise<boolean> 
       .eq('is_active', true)
       .limit(1);
 
-    if (error) {
-      console.error('❌ [clauseCoverageValidator] Error checking clause document:', error);
-      return false;
+    if (!error && data && data.length > 0) {
+      return true;
     }
 
-    return data && data.length > 0;
+    const normalized = insurerNameNormalizer.normalize(insurerName);
+    if (normalized && normalized !== insurerName) {
+      const { data: normData, error: normError } = await supabase
+        .from('document_insurer_view')
+        .select('id')
+        .eq('insurer_name', normalized)
+        .eq('is_active', true)
+        .limit(1);
+
+      if (!normError && normData && normData.length > 0) {
+        return true;
+      }
+    }
+
+    if (error) {
+      console.error('❌ [clauseCoverageValidator] Error checking clause document:', error);
+    }
+    return false;
   } catch (error) {
     console.error('❌ [clauseCoverageValidator] Exception checking clause document:', error);
     return false;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { AlertCircle, AlertTriangle, CheckCircle, Shield, TrendingUp } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import DeferredChart from './DeferredChart';
 import { QuoteAnalysis, CrossInsurerRisk } from '../types';
 
@@ -246,31 +246,33 @@ export const AuditDashboard: React.FC<AuditDashboardProps> = ({
       )}
 
       {/* Stacked Bar Chart */}
-      {chartData.length > 0 && viewMode === 'technical' && (
+      {chartData.length > 0 && (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
           <h3 className="font-bold text-slate-800 mb-4">Distribución de Riesgos por Aseguradora</h3>
           <div className="h-[250px]">
             <DeferredChart>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fill: '#64748b', fontSize: 12 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: '8px',
-                    border: 'none',
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                  }}
-                />
-                <Bar dataKey="Críticos" stackId="a" fill={COLORS.critical} radius={[0, 0, 4, 4]} />
-                <Bar dataKey="Advertencias" stackId="a" fill={COLORS.warning} />
-                <Bar dataKey="Destacados" stackId="a" fill={COLORS.good} radius={[4, 4, 0, 0]} />
-              </BarChart>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fill: '#64748b', fontSize: 12 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: '8px',
+                      border: 'none',
+                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                    }}
+                  />
+                  <Bar dataKey="Críticos" stackId="a" fill={COLORS.critical} radius={[0, 0, 4, 4]} />
+                  <Bar dataKey="Advertencias" stackId="a" fill={COLORS.warning} />
+                  <Bar dataKey="Destacados" stackId="a" fill={COLORS.good} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </DeferredChart>
           </div>
         </div>
