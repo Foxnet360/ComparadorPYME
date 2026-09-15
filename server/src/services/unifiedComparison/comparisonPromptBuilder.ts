@@ -193,12 +193,16 @@ ${context.hasClauses ? 'También se proporcionan clausulados para validación; �
    * Build correction prompt for retry on malformed output
    */
   buildCorrectionPrompt(originalResponse: string, errorMessage: string): string {
+    const trimmedResponse = originalResponse.trim();
+    const formattedResponse =
+      trimmedResponse.length > 40000 ? trimmedResponse.substring(0, 40000) : trimmedResponse;
+
     return `Tu respuesta anterior no cumplió el schema de tabla plana requerido.
 
 ERROR: ${errorMessage}
 
-RESPUESTA ANTERIOR (parcial):
-${originalResponse.substring(0, 1000)}
+RESPUESTA ANTERIOR:
+${formattedResponse}
 
 Por favor genera el JSON completo y válido con EXACTAMENTE estas filas:
 1. Bienes Asegurados
@@ -219,12 +223,16 @@ Responde ÚNICAMENTE con el JSON corregido.`;
    * Build v2 correction prompt for retry on malformed granular output
    */
   buildV2CorrectionPrompt(originalResponse: string, errorMessage: string): string {
+    const trimmedResponse = originalResponse.trim();
+    const formattedResponse =
+      trimmedResponse.length > 40000 ? trimmedResponse.substring(0, 40000) : trimmedResponse;
+
     return `Tu respuesta anterior no cumplió el schema de tabla granular requerido.
 
 ERROR: ${errorMessage}
 
-RESPUESTA ANTERIOR (parcial):
-${originalResponse.substring(0, 1000)}
+RESPUESTA ANTERIOR:
+${formattedResponse}
 
 Por favor genera el JSON completo y válido con este schema:
 {
@@ -233,6 +241,7 @@ Por favor genera el JSON completo y válido con este schema:
     {
       "insurer": "Aseguradora A",
       "cliente": "...",
+
       "tipoSeguro": "...",
       "ubicacionRiesgo": "...",
       "anoConstruccion": "...",

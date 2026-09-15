@@ -238,7 +238,8 @@ export class UnifiedComparisonEngine {
         correlationId,
         granularEnabled,
         graphEnabled,
-        domain
+        domain,
+        uploadedFiles
       );
 
       // 6. Add runtime metadata
@@ -581,7 +582,8 @@ export class UnifiedComparisonEngine {
     correlationId: string,
     granularEnabled: boolean,
     graphEnabled?: boolean,
-    domain: InsuranceDomain = 'pyme'
+    domain: InsuranceDomain = 'pyme',
+    uploadedFiles?: GeminiFile[]
   ): Promise<FlatComparisonResult> {
     let retries = 0;
     let lastError: string | null = null;
@@ -626,13 +628,26 @@ export class UnifiedComparisonEngine {
             `🔄 [UnifiedComparison] Retrying with ${granularEnabled ? 'v2' : 'v1'} correction prompt... [${correlationId}]`
           );
 
+          const retryContents = [
+            ...(uploadedFiles
+              ? uploadedFiles.map((file) => ({
+                  fileData: {
+                    fileUri: file.uri,
+                    mimeType: 'application/pdf',
+                  },
+                }))
+              : []),
+            { text: correctionPrompt },
+          ];
+
           const ai = getGenAI();
           const retryResult = await ai.models.generateContent({
             model: this.config.model,
-            contents: [{ text: correctionPrompt }],
+            contents: retryContents,
             config: {
               thinkingConfig: { thinkingLevel: ThinkingLevel[this.config.thinkingLevel] },
               responseMimeType: this.config.responseMimeType,
+              maxOutputTokens: 16384,
             },
           });
 

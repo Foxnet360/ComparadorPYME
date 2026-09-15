@@ -38,15 +38,16 @@ describe('jsonRepair', () => {
     });
 
     it('should extract partial data when all repairs fail', () => {
-      const json = '{"insurerName": "Test", "priceAnnual": 5000000, "coverages": [';
+      const json = '{"insurerName": "Test", "priceAnnual": 5000000, >>>corrupted token<<<';
       const result = parseJsonWithRepair(json);
 
       expect(result.success).toBe(true);
       expect(result.wasRepaired).toBe(true);
       expect(result.repairType).toBe('partial_extraction');
-      expect(result.data.insurerName).toBe('Test');
-      expect(result.data.priceAnnual).toBe(5000000);
+      expect((result.data as any).insurerName).toBe('Test');
+      expect((result.data as any).priceAnnual).toBe(5000000);
     });
+
 
     it('should handle completely invalid JSON', () => {
       const json = 'not json at all';

@@ -199,8 +199,17 @@ describe('UnifiedComparisonEngine (flat table)', () => {
     expect(mockGemini.models.generateContent).toHaveBeenCalledTimes(2);
 
     const secondCall = mockGemini.models.generateContent.mock.calls[1][0];
-    expect(secondCall.contents[0].text).toContain('ERROR:');
-    expect(secondCall.contents[0].text).toContain('Bienes Asegurados');
+    expect(secondCall.contents).toHaveLength(3); // 2 files + 1 prompt
+    expect(secondCall.contents[0]).toEqual({
+      fileData: { fileUri: 'uri://test', mimeType: 'application/pdf' },
+    });
+    expect(secondCall.contents[1]).toEqual({
+      fileData: { fileUri: 'uri://test', mimeType: 'application/pdf' },
+    });
+    const retryPromptContent = secondCall.contents[secondCall.contents.length - 1];
+    expect(retryPromptContent.text).toContain('ERROR:');
+    expect(retryPromptContent.text).toContain('Bienes Asegurados');
+    expect(secondCall.config.maxOutputTokens).toBe(16384);
   });
 
   it('should expose correlationId and reason on UnifiedComparisonError', async () => {
