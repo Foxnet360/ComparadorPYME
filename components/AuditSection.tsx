@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   AlertCircle,
   AlertTriangle,
@@ -121,14 +121,23 @@ export const AuditSection: React.FC<AuditSectionProps> = ({ quotes, viewMode }) 
   } = useAuditEnrichment();
 
   const clausesAvailable = hasClauses || (quotes && quotes.some((q) => q.isRagAvailable));
+  const hasAttemptedEnrichRef = useRef(false);
 
-  // Auto-enrich on mount when clauses are available
+  // Auto-enrich on mount when clauses are available (at most once)
   useEffect(() => {
-    if (clausesAvailable && !isEnriched && !isLoading && quotes.length > 0) {
+    if (
+      clausesAvailable &&
+      !isEnriched &&
+      !isLoading &&
+      !error &&
+      !hasAttemptedEnrichRef.current &&
+      quotes.length > 0
+    ) {
+      hasAttemptedEnrichRef.current = true;
       console.log('🔄 [AuditSection] Auto-enriching with clauses...');
       enrich(quotes);
     }
-  }, [clausesAvailable, isEnriched, isLoading, quotes, enrich]);
+  }, [clausesAvailable, isEnriched, isLoading, error, quotes, enrich]);
 
   // Defensive check for undefined quotes
   if (!quotes || !Array.isArray(quotes)) {

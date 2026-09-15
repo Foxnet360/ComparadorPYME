@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { API_BASE_URL } from '../services/apiConfig';
+import { apiClient } from '../services/apiClient';
 import { EnrichedAlert, CrossInsurerRisk, QuoteAnalysis } from '../types';
 
 export interface AuditEnrichmentState {
@@ -58,7 +58,7 @@ export const useAuditEnrichment = () => {
     }));
 
     try {
-      const response = await fetch(`${API_BASE_URL}/audit/enrich`, {
+      const response = await apiClient.fetch('/audit/enrich', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -67,6 +67,9 @@ export const useAuditEnrichment = () => {
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Inicia sesión para enriquecer con clausulados.');
+        }
         if (response.status === 413) {
           throw new Error(
             'El reporte es demasiado grande para enriquecer. Intenta con menos cotizaciones o recarga la página.'
