@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { matrixRowsToComparisonReport, resolveAnalysisUserId } from '../analysisController';
-import { FINANCIAL_SECTION_ID } from '../../services/unifiedComparison/matrixTransformer';
+import { FINANCIAL_SECTION_ID, isFinancialRowLabel } from '../../services/unifiedComparison/matrixTransformer';
 import { semanticMatcher } from '../../services/semanticMatcher';
 import { MatrixRow } from '../../types';
 import { AuthenticatedRequest } from '../../middleware/auth';
@@ -233,6 +233,77 @@ describe('analysisController - matrixRowsToComparisonReport', () => {
 
     const report = await matrixRowsToComparisonReport(matrixRows, quoteFiles);
     expect(report.quotes[0].priceAnnual).toBe(0); // maintains original/default value
+  });
+
+  it('disambiguates insured sum (Valor Total Asegurado) from policy premium (Valor a pagar)', async () => {
+    const matrixRows: MatrixRow[] = [
+      {
+        type: 'header',
+        id: 'financial_header',
+        label: 'PRIMAS Y COSTOS',
+        sectionId: FINANCIAL_SECTION_ID,
+        cells: [],
+      },
+      {
+        type: 'data',
+        id: 'asset_total_row',
+        label: 'VALOR TOTAL ASEGURADO',
+        sectionId: FINANCIAL_SECTION_ID,
+        cells: [{ value: '$ 2.629.400.000', isExcluded: false, isWinner: false }],
+      },
+      {
+        type: 'data',
+        id: 'premium_row',
+        label: 'VALOR A PAGAR',
+        sectionId: FINANCIAL_SECTION_ID,
+        cells: [{ value: '$ 4.333.254', isExcluded: false, isWinner: false }],
+      },
+    ];
+
+    const quoteFiles = [{ originalname: 'COTIZACION-MAPFRE.pdf' }] as Express.Multer.File[];
+    const report = await matrixRowsToComparisonReport(matrixRows, quoteFiles, { domain: 'hogar' });
+
+    expect(report.quotes[0].priceAnnual).toBe(4333254);
+  });
+
+  it('rejects sum insured values exceeding Hogar sanity threshold (> 100M COP)', async () => {
+    const matrixRows: MatrixRow[] = [
+      {
+        type: 'header',
+        id: 'financial_header',
+        label: 'PRIMAS Y COSTOS',
+        sectionId: FINANCIAL_SECTION_ID,
+        cells: [],
+      },
+      {
+        type: 'data',
+        id: 'fallback_row',
+        label: 'Prima Total',
+        sectionId: FINANCIAL_SECTION_ID,
+        cells: [{ value: '$ 2.509.400.000', isExcluded: false, isWinner: false }],
+      },
+    ];
+
+    const quoteFiles = [{ originalname: 'COTIZACION-ALLIANZ.pdf' }] as Express.Multer.File[];
+    const report = await matrixRowsToComparisonReport(matrixRows, quoteFiles, { domain: 'hogar' });
+
+    // Exceeds 100M COP in residential Hogar; must not be assigned as annual premium
+    expect(report.quotes[0].priceAnnual).toBe(0);
+  });
+
+  it('isFinancialRowLabel excludes property and coverage labels containing total', () => {
+    expect(isFinancialRowLabel('VALOR TOTAL ASEGURADO')).toBe(false);
+    expect(isFinancialRowLabel('SUMA ASEGURADA TOTAL')).toBe(false);
+    expect(isFinancialRowLabel('Edificio')).toBe(false);
+    expect(isFinancialRowLabel('Contenidos')).toBe(false);
+    expect(isFinancialRowLabel('Pérdida Total')).toBe(false);
+
+    expect(isFinancialRowLabel('Total')).toBe(true);
+    expect(isFinancialRowLabel('TOTAL A PAGAR')).toBe(true);
+    expect(isFinancialRowLabel('Valor a pagar')).toBe(true);
+    expect(isFinancialRowLabel('Prima total')).toBe(true);
+    expect(isFinancialRowLabel('Prima con IVA')).toBe(true);
+    expect(isFinancialRowLabel('Gastos de expedición')).toBe(true);
   });
 
   it('correctly maps raw rows using ontology mapping and excludes unmapped billing rows', async () => {

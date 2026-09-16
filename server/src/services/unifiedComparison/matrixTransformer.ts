@@ -124,8 +124,9 @@ export function isFinancialRowLabel(label: string): boolean {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
 
-  // Common coverage terms that happen to contain financial substrings
-  // (e.g. "Pérdida Total" contains "total") must not be misclassified.
+  // Common coverage and asset terms that happen to contain financial substrings
+  // (e.g. "Pérdida Total" contains "total", "Valor Total Asegurado" contains "total")
+  // must not be misclassified as financial rows.
   const coverageTerms = [
     'perdida total',
     'perdida parcial',
@@ -147,8 +148,23 @@ export function isFinancialRowLabel(label: string): boolean {
     'conductor adicional',
     'menores de 25',
     'hurto de partes',
+    'asegurad',
+    'asegurable',
+    'suma asegurada',
+    'valor asegurable',
+    'edificio',
+    'contenido',
+    'bienes',
+    'maquinaria',
+    'mercancia',
+    'predio',
   ];
   if (coverageTerms.some((term) => normalized.includes(term))) return false;
+
+  // Single-word exact total match
+  if (normalized === 'total' || normalized === 'total:' || normalized === 'gran total') {
+    return true;
+  }
 
   return [
     'prima',
@@ -156,7 +172,9 @@ export function isFinancialRowLabel(label: string): boolean {
     'prima neta',
     'total a pagar',
     'total prima',
-    'total',
+    'valor a pagar',
+    'total liquidacion',
+    'total poliza',
     'pago',
     'forma de pago',
     'gastos',

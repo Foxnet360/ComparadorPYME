@@ -872,18 +872,36 @@ export async function matrixRowsToComparisonReport(
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '');
+
+    // Exclude any rows describing insured asset values, building, contents, or coverage limits
+    if (
+      norm.includes('asegurad') ||
+      norm.includes('asegurable') ||
+      norm.includes('suma asegurada') ||
+      norm.includes('valor asegurable') ||
+      norm.includes('limite') ||
+      norm.includes('edificio') ||
+      norm.includes('contenido') ||
+      norm.includes('bienes') ||
+      norm.includes('mercancia')
+    ) {
+      return false;
+    }
+
     return [
       'total a pagar',
       'valor a pagar',
       'total liquidacion',
+      'total liquidación',
       'total poliza',
+      'total póliza',
       'prima con iva',
       'total prima',
       'prima total',
-      'costo total',
-      'valor total',
-      'total propuesta',
+      'costo total de la poliza',
+      'costo total poliza',
       'total anual',
+      'total propuesta',
       'valor de la poliza',
     ].some((kw) => norm.includes(kw));
   };
@@ -897,11 +915,19 @@ export async function matrixRowsToComparisonReport(
       norm.includes('iva') ||
       norm.includes('gasto') ||
       norm.includes('expedicion') ||
-      norm.includes('forma de pago')
+      norm.includes('forma de pago') ||
+      norm.includes('asegurad') ||
+      norm.includes('asegurable') ||
+      norm.includes('suma asegurada') ||
+      norm.includes('valor asegurable') ||
+      norm.includes('limite') ||
+      norm.includes('edificio') ||
+      norm.includes('contenido') ||
+      norm.includes('bienes')
     ) {
       return false;
     }
-    return norm.includes('prima') || norm === 'total' || norm.startsWith('total ');
+    return norm.includes('prima') || norm === 'total' || norm === 'total anual';
   };
 
   const hasDefinitivePremium = new Array(insurerNames.length).fill(false);
@@ -919,6 +945,11 @@ export async function matrixRowsToComparisonReport(
 
       const numericValue = parseColombianCurrency(cell.value);
       if (numericValue !== null && numericValue > 0) {
+        // Sanity guard: residential hogar premiums never exceed $100M COP; values in billions
+        // represent total insured capital (Edificio + Contenidos) and must not overwrite premium.
+        if (domain === 'hogar' && numericValue > 100_000_000) {
+          continue;
+        }
         intermediateQuotes[i]!.priceAnnual = numericValue;
         intermediateQuotes[i]!.parsedQuote.priceAnnual = numericValue;
         intermediateQuotes[i]!.priceMonthly = Math.round(numericValue / 12);
@@ -941,6 +972,9 @@ export async function matrixRowsToComparisonReport(
 
       const numericValue = parseColombianCurrency(cell.value);
       if (numericValue !== null && numericValue > 0) {
+        if (domain === 'hogar' && numericValue > 100_000_000) {
+          continue;
+        }
         intermediateQuotes[i]!.priceAnnual = numericValue;
         intermediateQuotes[i]!.parsedQuote.priceAnnual = numericValue;
         intermediateQuotes[i]!.priceMonthly = Math.round(numericValue / 12);

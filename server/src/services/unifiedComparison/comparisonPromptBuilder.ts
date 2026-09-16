@@ -157,13 +157,17 @@ ${context.hasClauses ? 'También se proporcionan clausulados para validación; �
    - Terremoto y Sismo: suele expresarse como % del valor asegurable o % de la pérdida con mínimo en SMMLV.
    - Daños por agua, Anegación y Hurto: suele ser % de la pérdida con mínimo en SMMLV.
    - RCE y Asistencia Domiciliaria: si no aplican copago o deducible, reporta textualmente "Sin deducible". NUNCA uses "No Incluido" en la sección de deducibles si el amparo no tiene deducible; usa "Sin deducible".
-4. FINANCIAL: Extrae Prima con IVA incluido, Gastos de expedición, IVA, Total prima, y Forma de pago. Para Allianz y aseguradoras que rotulan el valor total a pagar como "Valor a pagar", "Total liquidación" o "Total póliza", extrae obligatoriamente dicho monto bruto en una fila "Total a pagar" o "Total prima" con su valor exacto en COP.`
+4. FINANCIAL: Extrae Prima con IVA incluido, Gastos de expedición, IVA, Total prima, y Forma de pago.
+   - REGLA CRÍTICA DE SEPARACIÓN PATRIMONIAL VS PRIMA: NUNCA confundas el "Valor Asegurado", "Suma Asegurada" o "Valor Total Asegurado" (que son sumas del inmueble/bienes del orden de cientos o miles de millones de COP) con la Prima o Valor a pagar de la póliza (que para Hogar suele ser de unos pocos millones de COP, ej. $1.000.000 a $15.000.000 COP).
+   - La sección FINANCIAL DEBE contener ÚNICA Y EXCLUSIVAMENTE los costos o primas comerciales a pagar por el cliente. Jamás traslades valores de bienes o sumas aseguradas a esta sección ni a la fila "Total a pagar" o "Total prima".
+   - Para Allianz: ubica la prima comercial del plan cotizado (ej. "Hogar Esencial", "Hogar Plus") o el "Valor a pagar" / "Total liquidación", extrayendo dicho monto exacto (ej. $3.962.567) en la fila "Total a pagar" o "Total prima".
+   - Para Mapfre: ubica la "Prima Total" o "Total a pagar" con IVA incluido (ej. $4.333.254) y repórtala en "Total a pagar" o "Total prima".`
       : `Reglas de Negocio para Secciones:
 1. BIENES ASEGURADOS: Extrae las sumas aseguradas o descripciones de Mercancías, Muebles y enseres, Maquinaria y equipo, Equipo eléctrico y electrónico, y Asistencia.
 2. COBERTURAS: Extrae límites, amparos y condiciones de cobertura para Amparo básico todo riesgo, Terremoto, Responsabilidad Civil Extracontractual (RCE), Lucro Cesante, Rotura de Maquinaria, Equipos eléctricos y electrónicos, Gastos médicos, Asistencia, Vidrios, Manejo global / Infidelidad, Transporte de mercancías, Daños por agua / Anegación, HMACC-AMIT, y RC en proceso civil.
 3. DEDUCIBLES: Extrae los deducibles específicos para Todo Riesgo Incendio, Anegación / Cobertura Extendida, Terremoto, HMACC-AMIT, RCE, Lucro Cesante, Rotura de Maquinaria, Equipos eléctricos y electrónicos, Vidrios, Manejo global / Infidelidad, Transporte de mercancías, Daños por agua / Anegación, y Sustracción con Violencia. Debes incluir una fila por cada deducible que aparezca textualmente en las cotizaciones; no omitas deducibles. Si un amparo no tiene deducible, usa "Sin deducible".
 4. SUSTRACCIÓN: Extrae límites y condiciones para Sustracción con Violencia.
-5. FINANCIAL: Extrae Prima con IVA incluido, Gastos de expedición, IVA, Total prima, y Forma de pago.`;
+5. FINANCIAL: Extrae Prima con IVA incluido, Gastos de expedición, IVA, Total prima, y Forma de pago. NUNCA coloques sumas aseguradas ni valores de bienes en esta sección; solo costos o primas de la póliza.`;
 
     const percentageRule = isHogar
       ? `\n- REGLA CRÍTICA DE AMPAROS PORCENTUALES (SURA Y SIMILARES): Si una cotización expresa el valor o límite de una cobertura como un porcentaje (ej. "100%", "10% hasta 50 SMMLV"), DEBES calcular y mostrar el valor monetario real en pesos con base en la suma asegurada del bien correspondiente (Edificio o Contenidos) y reportarlo como "$XXX.XXX.XXX (YY%)". NUNCA dejes únicamente "100%" sin el valor monetario absoluto si la cotización indica el valor asegurable del bien.`

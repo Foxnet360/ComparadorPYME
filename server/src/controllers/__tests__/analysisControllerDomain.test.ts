@@ -50,7 +50,7 @@ describe('resolveAnalysisDomain', () => {
   });
 
   it('returns an error for invalid domains', () => {
-    const result = resolveAnalysisDomain('salud');
+    const result = resolveAnalysisDomain('unknown_domain');
     expect(result.domain).toBe('pyme');
     expect(result.error).toContain('Invalid domain');
   });
@@ -84,7 +84,7 @@ describe('analysisController.uploadAndAnalyze - domain contract', () => {
 
   it('returns 400 for an invalid domain before running the engine', async () => {
     const req = makeReq({
-      body: { domain: 'salud' },
+      body: { domain: 'unknown_domain' },
       files: {
         quotes: [{ path: tmpFile, originalname: 'COTIZACION-TEST.pdf' }],
       },
