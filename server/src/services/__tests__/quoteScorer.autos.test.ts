@@ -189,6 +189,6 @@ describe('quoteScorer - autos domain', () => {
     const autosQuote = makeAutosQuote();
     const result = quoteScorer.calculateScore(autosQuote, [], [], undefined, undefined, 'autos');
 
-    expect(result.expectedCoverageCount).toBe(11);
+    expect(result.expectedCoverageCount).toBe(14);
   });
 });

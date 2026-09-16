@@ -108,7 +108,8 @@ describe('coverageNormalizer graph integration', () => {
 
       const result = await mapRawToCanonical('Cobertura Desconocida', 'pyme');
 
-      expect(result.canonicalName).toBeNull();
+      expect(result.canonicalName).toBe('Cobertura Desconocida');
+      expect(result.method).toBe('derived');
       expect(coverageGraphService.query).not.toHaveBeenCalled();
     });
 

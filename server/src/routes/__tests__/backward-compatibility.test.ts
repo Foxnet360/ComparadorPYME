@@ -133,6 +133,7 @@ vi.mock('../../services/clauseCoverageValidator', () => ({
       optionalMissingCount: 0,
     })),
   },
+  checkClauseDocumentExists: vi.fn(async () => true),
 }));
 
 vi.mock('../../services/deductibleAnalyzer', () => ({

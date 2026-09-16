@@ -8,11 +8,7 @@ export interface FeatureFlags {
   structuredClauseExtraction: boolean;
   semanticCoverageOntology: boolean;
   variableComparisonEngine: boolean;
-  deductibleSemanticParser: boolean;
-  tripleSourceChat: boolean;
   learningEngine: boolean;
-  queryExpansion: boolean;
-  hybridSearchV2: boolean;
 
   // Multimodal V2 extraction (deprecated runtime opt-out; false forces legacy)
   enableMultimodalExtraction: boolean;
@@ -60,11 +56,7 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   structuredClauseExtraction: true,
   semanticCoverageOntology: true,
   variableComparisonEngine: true,
-  deductibleSemanticParser: true,
-  tripleSourceChat: true,
   learningEngine: redisAvailable, // Only enable if Redis is configured
-  queryExpansion: true,
-  hybridSearchV2: true,
 
   // Multimodal V2 extraction: default true; set ENABLE_MULTIMODAL_EXTRACTION=false for emergency legacy-only fallback
   enableMultimodalExtraction: true,
@@ -135,11 +127,7 @@ export const PRODUCTION_ROLLOUT_FLAGS: FeatureFlags = {
   structuredClauseExtraction: true,
   semanticCoverageOntology: true,
   variableComparisonEngine: true,
-  deductibleSemanticParser: true,
-  tripleSourceChat: true,
   learningEngine: true,
-  queryExpansion: true,
-  hybridSearchV2: true,
   useTemplateGraphPipeline: false,
   templateBbvaV1: false,
   templateSbsV1: false,
@@ -163,11 +151,7 @@ const ENV_FLAG_MAP: Record<string, keyof FeatureFlags> = {
   FEATURE_STRUCTURED_CLAUSE_EXTRACTION: 'structuredClauseExtraction',
   FEATURE_SEMANTIC_COVERAGE_ONTOLOGY: 'semanticCoverageOntology',
   FEATURE_VARIABLE_COMPARISON_ENGINE: 'variableComparisonEngine',
-  FEATURE_DEDUCTIBLE_SEMANTIC_PARSER: 'deductibleSemanticParser',
-  FEATURE_TRIPLE_SOURCE_CHAT: 'tripleSourceChat',
   FEATURE_LEARNING_ENGINE: 'learningEngine',
-  FEATURE_QUERY_EXPANSION: 'queryExpansion',
-  FEATURE_HYBRID_SEARCH_V2: 'hybridSearchV2',
   ENABLE_MULTIMODAL_EXTRACTION: 'enableMultimodalExtraction',
   // Legacy alias kept for backward compatibility; prefer USE_UNIFIED_ENGINE.
   FEATURE_USE_UNIFIED_COMPARISON_ENGINE: 'useUnifiedComparisonEngine',

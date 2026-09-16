@@ -4,7 +4,7 @@ import { quoteParser, ParsedQuote } from '../quoteParser';
 import { buildCanonicalCoverages } from '../coverageNormalizer';
 import { variableComparator } from '../variableComparator';
 import { quoteScorer } from '../quoteScorer';
-import { deductibleParser } from '../deductibleParser';
+import { hybridDeductibleParser } from '../hybridDeductibleParser';
 
 // Mock external services with realistic delays
 vi.mock('../gemini', () => ({
@@ -192,7 +192,7 @@ describe('Load Tests', () => {
 
       const start = performance.now();
 
-      const results = await Promise.all(deductibles.map((d) => deductibleParser.parse(d)));
+      const results = await Promise.all(deductibles.map((d) => hybridDeductibleParser.parse(d)));
 
       const duration = performance.now() - start;
 
@@ -287,7 +287,7 @@ describe('Load Tests', () => {
 
       const promises = Array(100)
         .fill(null)
-        .map((_, i) => deductibleParser.parse(`${(i % 20) + 1}%`));
+        .map((_, i) => hybridDeductibleParser.parse(`${(i % 20) + 1}%`));
 
       const results = await Promise.all(promises);
       const duration = performance.now() - start;

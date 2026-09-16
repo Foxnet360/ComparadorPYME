@@ -3,7 +3,7 @@ import type { Response } from 'express';
 import fs from 'fs';
 
 // config/env.ts validates taxonomy constants at module load.
-process.env.SMMLV_VALUE = process.env.SMMLV_VALUE || '1300000';
+process.env.SMMLV_VALUE = process.env.SMMLV_VALUE || '1423500';
 process.env.UVT_VALUE = process.env.UVT_VALUE || '42412';
 
 const getAnalysisHistoryByUser = vi.fn(async (_userId: string): Promise<unknown[]> => []);

@@ -140,13 +140,11 @@ describe('UnifiedCoverageMatrix', () => {
     expect(bajaBadges.length).toBe(1);
   });
 
-  it('renders v1 quotes when no rows prop is provided', () => {
+  it('renders empty state when no rows prop is provided', () => {
     renderWithProvider(<UnifiedCoverageMatrix quotes={baseQuotes} />);
 
-    // The header appears once in the business section and once in the DEDUCIBLES section
-    expect(
-      screen.getAllByText('AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL').length
-    ).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('No hay datos para mostrar')).toBeTruthy();
+    expect(screen.getByText(/La matriz de coberturas está vacía/)).toBeTruthy();
   });
 
   it('shows a helpful empty state when matrix has no rows', () => {
@@ -328,7 +326,7 @@ describe('UnifiedCoverageMatrix', () => {
     expect(screen.queryByText('Incendio')).toBeNull();
   });
 
-  it('falls back to V1 layout when schemaVersion is 1, ignoring provided rows', () => {
+  it('renders provided rows consistently across schema versions', () => {
     const v2Rows: MatrixRow[] = [
       {
         type: 'header',
@@ -350,11 +348,8 @@ describe('UnifiedCoverageMatrix', () => {
       <UnifiedCoverageMatrix quotes={baseQuotes} rows={v2Rows} schemaVersion={1} />
     );
 
-    // V1 fallback should render the canonical category header from taxonomy, not the V2 row label
-    expect(
-      screen.getAllByText('AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL').length
-    ).toBeGreaterThanOrEqual(1);
-    expect(screen.queryByText('Responsabilidad Civil (RCE)')).toBeNull();
+    expect(screen.getByText('COBERTURAS')).toBeTruthy();
+    expect(screen.getByText('Responsabilidad Civil (RCE)')).toBeTruthy();
   });
 
   it('uses V2 rows when schemaVersion is 2', () => {

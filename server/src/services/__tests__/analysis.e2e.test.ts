@@ -4,7 +4,7 @@ import { buildCanonicalCoverages } from '../coverageNormalizer';
 import { variableComparator } from '../variableComparator';
 import { quoteScorer } from '../quoteScorer';
 import { structuredClauseExtractor } from '../structuredClauseExtractor';
-import { deductibleParser } from '../deductibleParser';
+import { parseDeductible } from '../unifiedComparison/flatTableParser';
 import { getDomainConstants } from '../../config/domainConstants';
 import { CrossReferenceResult } from '../crossReferenceEngine';
 
@@ -228,26 +228,16 @@ CONDICIONES ESPECIALES:
       expect(extracted.coverages.length).toBeGreaterThan(0);
     });
 
-    it('should parse deductibles correctly', async () => {
-      const testCases = [
-        { text: '10%', expectedPercentage: 10 },
-        { text: '5 SMMLV', expectedMin: 5 * getDomainConstants().smmlv },
-        { text: 'sin deducible', expectedZero: true },
-      ];
+    it('should parse deductibles correctly', () => {
+      const res10 = parseDeductible('10%');
+      expect(res10.percentage).toBe(10);
 
-      for (const testCase of testCases) {
-        const result = await deductibleParser.parse(testCase.text);
+      const resSmmlv = parseDeductible('5 SMMLV');
+      expect(resSmmlv.minimum).toBe(5);
 
-        if (testCase.expectedPercentage) {
-          expect(result.normalized.percentage).toBe(testCase.expectedPercentage);
-        }
-        if (testCase.expectedMin) {
-          expect(result.normalized.minAmount).toBe(testCase.expectedMin);
-        }
-        if (testCase.expectedZero) {
-          expect(result.semantics.isZero).toBe(true);
-        }
-      }
+      const resZero = parseDeductible('sin deducible');
+      expect(resZero.percentage).toBe(0);
+      expect(resZero.copay).toBe(0);
     });
   });
 

@@ -20,10 +20,6 @@ vi.mock('../../../components/DeductiblesComparisonTable', () => ({
   DeductiblesComparisonTable: () => <div>Deductibles Table</div>,
 }));
 
-vi.mock('../../../components/DeductibleSummaryTable', () => ({
-  DeductibleSummaryTable: () => <div>Deductible Summary</div>,
-}));
-
 vi.mock('../../../components/AuditSection', () => ({
   AuditSection: () => <div>Audit Section</div>,
 }));

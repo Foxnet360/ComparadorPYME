@@ -70,7 +70,7 @@ function isWithinDrift(a: number, b: number, threshold = 0.01): boolean {
 /**
  * Validates consistency between environment variables and taxonomy metadata
  */
-function checkEnvTaxonomyConsistency(config: EnvConfig): void {
+export function checkEnvTaxonomyConsistency(config: EnvConfig): void {
   let metadata: TaxonomyMetadata | undefined;
   try {
     const taxonomy = loadDomainJson<{ metadata: TaxonomyMetadata }>('pyme', 'taxonomy.json');
@@ -173,8 +173,8 @@ function validateEnv(): EnvConfig {
     GEMINI_EMBEDDING_MODEL: process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-2',
 
     REGION: process.env.REGION || 'CO',
-    SMMLV_VALUE: parseInt(process.env.SMMLV_VALUE || '1750905', 10),
-    UVT_VALUE: parseInt(process.env.UVT_VALUE || '52374', 10),
+    SMMLV_VALUE: parseInt(process.env.SMMLV_VALUE || '1423500', 10),
+    UVT_VALUE: parseInt(process.env.UVT_VALUE || '49799', 10),
     CURRENCY: process.env.CURRENCY || 'COP',
 
     CLAUSE_PAGES_BUCKET: process.env.CLAUSE_PAGES_BUCKET || 'clause-pages',

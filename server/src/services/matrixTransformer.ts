@@ -205,6 +205,9 @@ export function formatMatrixValue(val: string | undefined | null): string {
 
 export function getCategoryConfigsForDomain(domain: string = 'pyme'): CategoryConfig[] {
   const d = (domain || 'pyme').toLowerCase();
+  if (d === 'pyme') {
+    return CATEGORY_CONFIGS;
+  }
 
   try {
     if (hasDomainSpecificFile(d, 'taxonomy.json')) {

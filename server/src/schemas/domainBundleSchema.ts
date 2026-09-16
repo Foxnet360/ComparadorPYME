@@ -5,7 +5,7 @@ import { z } from 'zod';
 // ---------------------------------------------------------------------------
 
 export const TaxonomyCategorySchema = z.object({
-  id: z.union([z.number(), z.string()]),
+  id: z.union([z.number().nonnegative(), z.string()]),
   name: z.string().min(1),
   aliases: z.array(z.string().min(1)).optional().default([]),
 });

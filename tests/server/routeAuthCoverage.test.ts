@@ -42,7 +42,7 @@ function collectRouterRoutes(prefix: string, router: Router, out: RouteEntry[]):
 
 // config/env.ts validates taxonomy constants at module load; set them before
 // importing the app so the coverage test can run without a full .env.
-process.env.SMMLV_VALUE = process.env.SMMLV_VALUE || '1300000';
+process.env.SMMLV_VALUE = process.env.SMMLV_VALUE || '1423500';
 process.env.UVT_VALUE = process.env.UVT_VALUE || '42412';
 
 const { app, apiRouterMounts } = (await import('../../server/src/index')) as unknown as {

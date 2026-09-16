@@ -15,8 +15,8 @@ describe('insurerNameNormalizer', () => {
       expect(insurerNameNormalizer.normalize('sbs seguros')).toBe('SBS');
     });
 
-    it('returns "SBS" for alias inclusion "Seguros Bolivar"', () => {
-      expect(insurerNameNormalizer.normalize('Seguros Bolivar')).toBe('SBS');
+    it('returns "BOLÍVAR" for alias inclusion "Seguros Bolivar"', () => {
+      expect(insurerNameNormalizer.normalize('Seguros Bolivar')).toBe('BOLÍVAR');
     });
 
     it('returns original name for unknown insurer', () => {

@@ -1,9 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { QuoteAnalysis } from '../../../types';
 import {
   formatMatrixValue,
   buildExportNotes,
-  transformQuotesToMatrix,
   CATEGORY_CONFIGS,
 } from '../../../components/UnifiedCoverageMatrix';
 
@@ -108,120 +106,6 @@ describe('UnifiedCoverageMatrix - Pure Functions', () => {
       const incendio = CATEGORY_CONFIGS.find((c) => c.id === 1);
       expect(incendio).toBeDefined();
       expect(incendio?.canonicalName).toBe('Incendio (Edificio y Contenidos)');
-    });
-
-    it('should group exclusive coverages semantically when similarity is >= 0.70', () => {
-      const mockQuotes = [
-        {
-          insurerName: 'Insurer A',
-          coverages: [
-            {
-              name: 'Robo con Violencia',
-              categoryId: null,
-              value: '$10.000.000',
-              deductible: '10%',
-            },
-          ],
-        },
-        {
-          insurerName: 'Insurer B',
-          coverages: [
-            {
-              name: 'Robo con Biolencia',
-              categoryId: null,
-              value: '$8.000.000',
-              deductible: '15%',
-            },
-          ],
-        },
-      ] as unknown as QuoteAnalysis[];
-
-      const matrix = transformQuotesToMatrix(mockQuotes);
-
-      const exclusiveRows = matrix.filter((r) => r.sectionId === 99 && r.type === 'data');
-
-      expect(exclusiveRows).toHaveLength(1);
-      expect(exclusiveRows[0].label).toBe('Robo con Violencia');
-      expect(exclusiveRows[0].cells[0].value).toBe('$10.000.000 (Ded: 10%)');
-      expect(exclusiveRows[0].cells[1].value).toBe('$8.000.000 (Ded: 15%)');
-    });
-
-    it('should NOT group exclusive coverages when similarity is < 0.70', () => {
-      const mockQuotes = [
-        {
-          insurerName: 'Insurer A',
-          coverages: [
-            {
-              name: 'Robo con Violencia',
-              categoryId: null,
-              value: '$10.000.000',
-            },
-          ],
-        },
-        {
-          insurerName: 'Insurer B',
-          coverages: [
-            {
-              name: 'Daños por Agua Raros',
-              categoryId: null,
-              value: 'Incluido',
-            },
-          ],
-        },
-      ] as unknown as QuoteAnalysis[];
-
-      const matrix = transformQuotesToMatrix(mockQuotes);
-
-      const exclusiveRows = matrix.filter((r) => r.sectionId === 99 && r.type === 'data');
-
-      expect(exclusiveRows).toHaveLength(2);
-      expect(exclusiveRows.map((r) => r.label)).toContain('Robo con Violencia');
-      expect(exclusiveRows.map((r) => r.label)).toContain('Daños por Agua Raros');
-    });
-
-    it('groups deductible rows into a dedicated DEDUCIBLES section in V1 mode', () => {
-      const mockQuotes = [
-        {
-          insurerName: 'Insurer A',
-          coverages: [
-            {
-              name: 'Incendio (Edificio y Contenidos)',
-              canonicalName: 'Incendio (Edificio y Contenidos)',
-              categoryId: 1,
-              value: '$100.000.000',
-              deductible: '10% PERD - Min 1 SMMLV',
-            },
-          ],
-        },
-        {
-          insurerName: 'Insurer B',
-          coverages: [
-            {
-              name: 'Incendio (Edificio y Contenidos)',
-              canonicalName: 'Incendio (Edificio y Contenidos)',
-              categoryId: 1,
-              value: '$120.000.000',
-              deductible: 'No aplica',
-            },
-          ],
-        },
-      ] as unknown as QuoteAnalysis[];
-
-      const matrix = transformQuotesToMatrix(mockQuotes);
-
-      const deductibleSectionHeader = matrix.find(
-        (r) => r.type === 'header' && r.label === 'DEDUCIBLES'
-      );
-      expect(deductibleSectionHeader).toBeDefined();
-
-      const deductibleRow = matrix.find(
-        (r) =>
-          r.type === 'data' &&
-          r.id.startsWith('deductible_') &&
-          r.cells.some((c) => c.value === '10% PERD - Min 1 SMMLV')
-      );
-      expect(deductibleRow).toBeDefined();
-      expect(deductibleRow!.cells.some((c) => c.value === 'No aplica')).toBe(true);
     });
   });
 });

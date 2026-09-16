@@ -50,10 +50,12 @@ describe('DeductibleMatrix', () => {
     render(<DeductibleMatrix quotes={quotes} />);
 
     // Two insurers have unspecified deductibles
-    expect(screen.getByText('2 aseguradoras con deducibles no especificados')).toBeTruthy();
+    expect(
+      screen.getByText('2 aseguradoras con deducibles sujetos a verificación o no informados')
+    ).toBeTruthy();
     // Aseguradora A is the only one with a specified deductible, so it should appear in the summary
     expect(screen.getAllByText('Aseguradora A').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Mejor Opción').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Menor deducible').length).toBeGreaterThan(0);
   });
 
   it('normalizes S.M.M.L.V. dotted variations to SMMLV in display', () => {
@@ -70,7 +72,9 @@ describe('DeductibleMatrix', () => {
 
     render(<DeductibleMatrix quotes={quotes} />);
 
-    expect(screen.getByText('1 aseguradora con deducibles no especificados')).toBeTruthy();
+    expect(
+      screen.getByText('1 aseguradora con deducibles sujetos a verificación o no informados')
+    ).toBeTruthy();
   });
 
   it('omits rows where every quote has an unspecified deductible', () => {
@@ -83,6 +87,8 @@ describe('DeductibleMatrix', () => {
 
     // The table body should not render the coverage row, only the summary panel
     expect(screen.queryByText(CATEGORY_NAME)).toBeNull();
-    expect(screen.getByText('2 aseguradoras con deducibles no especificados')).toBeTruthy();
+    expect(
+      screen.getByText('2 aseguradoras con deducibles sujetos a verificación o no informados')
+    ).toBeTruthy();
   });
 });

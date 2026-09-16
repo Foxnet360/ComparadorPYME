@@ -264,12 +264,18 @@ export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes, matr
       : 0;
   const bestQuote = quotes[bestQuoteIdx];
 
-  const quotesWithUnspecified = quotes.filter((_, qIdx) =>
-    finalRows.some((r) => {
-      const entry = r.entries.find((e) => e.quoteIdx === qIdx);
-      return !entry || isUnspecifiedDeductible(entry.deductible);
-    })
-  );
+  const quotesWithUnspecified = quotes.filter((q, qIdx) => {
+    if (finalRows.length > 0) {
+      return finalRows.some((r) => {
+        const entry = r.entries.find((e) => e.quoteIdx === qIdx);
+        return !entry || isUnspecifiedDeductible(entry.deductible);
+      });
+    }
+    const hasAnyDeductible = q.coverages?.some(
+      (c) => c.deductible && !isUnspecifiedDeductible(c.deductible)
+    );
+    return !hasAnyDeductible;
+  });
 
   return (
     <div className="space-y-6">

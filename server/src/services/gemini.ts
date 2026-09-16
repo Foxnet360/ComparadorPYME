@@ -465,7 +465,7 @@ export const geminiService = {
     }
     try {
       const ai = getGenAI();
-      const model = params.model || process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+      const model = params.model || process.env.GEMINI_MODEL || 'gemini-3.7-flash';
       const cacheConfig = {
         model,
         contents: params.contents as any,
@@ -614,7 +614,7 @@ export const geminiService = {
   performOcrOnImage: async (imageBuffer: Buffer, mimeType = 'image/png'): Promise<string> => {
     try {
       const ai = getGenAI();
-      const extractionModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+      const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.7-flash';
 
       const result = await ai.models.generateContent({
         model: extractionModel,
@@ -650,7 +650,7 @@ export const geminiService = {
   ): Promise<DeductibleStructure> => {
     try {
       const ai = getGenAI();
-      const extractionModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+      const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.7-flash';
 
       const prompt = `Analiza este deducible de seguro de una póliza en Colombia y extrae su estructura detallada:
             
@@ -750,7 +750,7 @@ Instrucciones para el análisis:
     while (true) {
       try {
         const ai = getGenAI();
-        const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+        const modelName = process.env.GEMINI_MODEL || 'gemini-3.7-flash';
         const result = await ai.models.generateContent({
           model: modelName,
           contents: [{ text: prompt }, { text: `\n\n--- DOCUMENTO ---\n\n${text}` }],
@@ -815,7 +815,7 @@ Instrucciones para el análisis:
     while (true) {
       try {
         const ai = getGenAI();
-        const extractionModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+        const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.7-flash';
         console.log(`🤖 [Gemini] Using model: ${extractionModel} for extraction`);
         const result = await ai.models.generateContent({
           model: extractionModel,

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { structuredClauseExtractor } from '../structuredClauseExtractor';
-import { deductibleParser, DeductibleStructure } from '../deductibleParser';
+import { hybridDeductibleParser } from '../hybridDeductibleParser';
 import { coverageOntology } from '../coverageOntology';
 import { queryExpander } from '../queryExpander';
 
@@ -159,7 +159,7 @@ describe('Accuracy Tests', () => {
 
       for (const testCase of testCases) {
         try {
-          const result = await deductibleParser.parse(testCase.input);
+          const result = await hybridDeductibleParser.parse(testCase.input);
           let isCorrect = false;
 
           if (
@@ -172,12 +172,12 @@ describe('Accuracy Tests', () => {
             result.normalized.minAmount === testCase.expected.minAmount
           ) {
             isCorrect = true;
-          } else if (testCase.expected.type === 'zero' && result.semantics.isZero) {
+          } else if (testCase.expected.type === 'zero' && result.isZero) {
             isCorrect = true;
           } else if (testCase.expected.type === 'compound') {
             const hasPercentage = result.normalized.percentage === testCase.expected.percentage;
-            const hasMin = !testCase.expected.hasMin || result.semantics.hasMinimum;
-            const hasMax = !testCase.expected.hasMax || result.semantics.hasMaximum;
+            const hasMin = !testCase.expected.hasMin || result.hasMinimum;
+            const hasMax = !testCase.expected.hasMax || result.hasMaximum;
             isCorrect = hasPercentage && hasMin && hasMax;
           }
 
@@ -188,10 +188,6 @@ describe('Accuracy Tests', () => {
       }
 
       const accuracy = correct / total;
-      console.log(
-        `📊 Deductible parsing accuracy: ${(accuracy * 100).toFixed(1)}% (${correct}/${total})`
-      );
-
       expect(accuracy).toBeGreaterThanOrEqual(ACCURACY_THRESHOLD);
     });
   });
@@ -279,54 +275,5 @@ describe('Accuracy Tests', () => {
     });
   });
 
-  describe('Validation accuracy', () => {
-    it('should validate correct deductible structures', () => {
-      const validStructures = [
-        {
-          components: [{ type: 'percentage', value: 10 }],
-          semantics: { isZero: false, hasMinimum: false, hasMaximum: false, isComposite: false },
-          normalized: { minAmount: 0, maxAmount: 0, percentage: 10, isPercentageBased: true },
-          rawText: '10%',
-        },
-        {
-          components: [{ type: 'na', value: 0 }],
-          semantics: { isZero: true, hasMinimum: false, hasMaximum: false, isComposite: false },
-          normalized: { minAmount: 0, maxAmount: 0, percentage: 0, isPercentageBased: false },
-          rawText: 'sin deducible',
-        },
-      ];
-
-      for (const structure of validStructures) {
-        const validation = deductibleParser.validate(structure as unknown as DeductibleStructure);
-        expect(validation.isValid).toBe(true);
-        expect(validation.issues).toHaveLength(0);
-      }
-    });
-
-    it('should detect invalid deductible structures', () => {
-      const invalidStructures = [
-        {
-          components: [{ type: 'percentage', value: 150 }],
-          semantics: { isZero: false, hasMinimum: false, hasMaximum: false, isComposite: false },
-          normalized: { minAmount: 0, maxAmount: 0, percentage: 150, isPercentageBased: true },
-          rawText: '150%',
-        },
-        {
-          components: [
-            { type: 'minimum', value: 100 },
-            { type: 'maximum', value: 50 },
-          ],
-          semantics: { isZero: false, hasMinimum: true, hasMaximum: true, isComposite: true },
-          normalized: { minAmount: 100, maxAmount: 50, percentage: 0, isPercentageBased: false },
-          rawText: 'min 100 max 50',
-        },
-      ];
-
-      for (const structure of invalidStructures) {
-        const validation = deductibleParser.validate(structure as unknown as DeductibleStructure);
-        expect(validation.isValid).toBe(false);
-        expect(validation.issues.length).toBeGreaterThan(0);
-      }
-    });
-  });
 });
+

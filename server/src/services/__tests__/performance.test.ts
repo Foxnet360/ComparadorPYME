@@ -4,7 +4,7 @@ import { quoteParser, ParsedQuote } from '../quoteParser';
 import { buildCanonicalCoverages } from '../coverageNormalizer';
 import { variableComparator } from '../variableComparator';
 import { quoteScorer } from '../quoteScorer';
-import { deductibleParser } from '../deductibleParser';
+import { hybridDeductibleParser } from '../hybridDeductibleParser';
 import { queryExpander } from '../queryExpander';
 
 // Mock external services
@@ -150,7 +150,7 @@ describe('Performance Tests', () => {
       const start = performance.now();
 
       for (let i = 0; i < 100; i++) {
-        await deductibleParser.parse(deductibles[i % deductibles.length]);
+        await hybridDeductibleParser.parse(deductibles[i % deductibles.length]);
       }
 
       const duration = performance.now() - start;

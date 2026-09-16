@@ -7,7 +7,7 @@ import { errorHandler } from '../../middleware/errorHandler';
 
 // config/env.ts validates taxonomy constants at module load; set them before
 // the app import in the wiring tests.
-process.env.SMMLV_VALUE = process.env.SMMLV_VALUE || '1300000';
+process.env.SMMLV_VALUE = process.env.SMMLV_VALUE || '1423500';
 process.env.UVT_VALUE = process.env.UVT_VALUE || '42412';
 
 /**

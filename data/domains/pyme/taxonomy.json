@@ -4,6 +4,9 @@
   "metadata": {
     "region": "Colombia",
     "currency": "COP",
+    "salaryReference": "SMMLV",
+    "salaryValue2024": 1423500,
+    "uvtValue2024": 49799,
     "source": "Pólizas Multiriesgo PYME — Circular 050/2013 SFC · Condicionados FASECOLDA · Normas ISO 31000",
     "regulatory": {
       "framework": "Circular Externa 050 de 2013 — Superintendencia Financiera de Colombia",

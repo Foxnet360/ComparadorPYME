@@ -224,7 +224,7 @@ Responde ÚNICAMENTE con el JSON. No incluyas explicaciones.`;
     console.log(`🤖 [DeepClauseValidator] Calling Gemini for validation [${correlationId}]`);
 
     const result = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
+      model: process.env.GEMINI_CLAUSE_MODEL || process.env.GEMINI_MODEL || 'gemini-3.7-flash',
       contents,
       config: {
         thinkingConfig: {

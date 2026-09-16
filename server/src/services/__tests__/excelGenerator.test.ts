@@ -326,7 +326,11 @@ describe('excelGenerator', () => {
       coveragesSheet!.eachRow((row) => {
         const cellA = row.getCell(1);
         const val = String(cellA.value || '');
-        if (val.includes('AMPARO BÁSICO') || val.includes('BIENES ASEGURADOS')) {
+        if (
+          val.includes('AMPARO BÁSICO') ||
+          val.includes('BIENES ASEGURADOS') ||
+          val.includes('DAÑOS MATERIALES')
+        ) {
           foundHeader = true;
         }
       });

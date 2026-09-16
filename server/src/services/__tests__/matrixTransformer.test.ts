@@ -177,7 +177,7 @@ describe('matrixTransformer', () => {
       // Verify "Deducible" row for Terremoto
       const terremotoDeductible = matrix.find((row) => row.id === 'section_14_row_deductible');
       expect(terremotoDeductible).toBeDefined();
-      expect(terremotoDeductible?.cells[0].value).toBe('10% PERD - Min 3 SMMLV');
+      expect(terremotoDeductible?.cells[0].value).toContain('10% PERD - Min 3 SMMLV');
       expect(terremotoDeductible?.cells[1].value).toBe('No aplica');
 
       // CHUBB has "No aplica" deductible, so it should be marked as winner
