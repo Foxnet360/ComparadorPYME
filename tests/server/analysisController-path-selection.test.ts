@@ -91,7 +91,7 @@ describe('analysisController adapter integration', () => {
 
     expect(response.status).toBe(200);
     expect(generateComparison).toHaveBeenCalledTimes(1);
-    expect(response.body.quotes[0].insurerName).toBe('quote-sbs');
+    expect(response.body.quotes[0].insurerName).toBe('SBS');
   });
 
   it('returns fallback engine metadata when adapter falls back', async () => {

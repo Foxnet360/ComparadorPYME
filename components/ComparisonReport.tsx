@@ -169,7 +169,11 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
       {activeTab === 'deducibles' && (
         <div className="animate-in fade-in duration-300 space-y-6">
           {/* Deductible Matrix - Structured Comparison */}
-          <DeductibleMatrix quotes={report.quotes} />
+          <DeductibleMatrix
+            quotes={report.quotes}
+            matrix={report.matrix}
+            metadata={report.quoteMetadata}
+          />
         </div>
       )}
 

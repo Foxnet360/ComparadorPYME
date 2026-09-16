@@ -94,7 +94,7 @@ export const ReportCharts: React.FC<ReportChartsProps> = ({ quotes }) => {
         <div className="h-[300px] w-full min-h-[300px]" style={{ minWidth: '300px' }}>
           {quotes.length > 0 && radarData.some((d) => Object.keys(d).length > 2) ? (
             <DeferredChart>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
                 <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                   <PolarGrid stroke="#e2e8f0" />
                   <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 11 }} />
@@ -153,7 +153,7 @@ export const ReportCharts: React.FC<ReportChartsProps> = ({ quotes }) => {
         <div className="h-[300px] w-full mt-4 min-h-[300px]" style={{ minWidth: '300px' }}>
           {priceData.length > 0 && priceData.some((d) => d.fullPrice > 0) ? (
             <DeferredChart>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
                 <BarChart data={priceData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                   <XAxis

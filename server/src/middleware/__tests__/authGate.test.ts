@@ -7,7 +7,7 @@ import { isPublicPath } from '../authGate';
  * /health is not under /api, so it never reaches the gate.
  */
 describe('isPublicPath (AUTH-1 allowlist semantics)', () => {
-  it.each(['/analyze', '/history'])('allows exact public path %s', (path) => {
+  it.each(['/analyze', '/history', '/audit/enrich'])('allows exact public path %s', (path) => {
     expect(isPublicPath(path)).toBe(true);
   });
 
@@ -31,7 +31,6 @@ describe('isPublicPath (AUTH-1 allowlist semantics)', () => {
     '/analyze-rag',
     '/chat',
     '/search',
-    '/audit/enrich',
     '/templates/registry',
     '/monitoring',
     '/features',

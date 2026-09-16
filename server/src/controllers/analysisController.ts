@@ -12,7 +12,7 @@ import { type DualExtractionResult } from '../services/dualExtractionService';
 import { isMultimodalEnabled } from '../services/quoteProcessingService';
 import { comparisonEngineAdapter } from '../services/unifiedComparison/comparisonEngineAdapter';
 import { AnalysisType } from '../services/unifiedComparison/comparisonSchema';
-import { FINANCIAL_SECTION_ID } from '../services/unifiedComparison/matrixTransformer';
+import { FINANCIAL_SECTION_ID, isFinancialRowLabel } from '../services/unifiedComparison/matrixTransformer';
 import { extractCanonicalInsurerName } from '../services/unifiedComparison/insurerSanitizer';
 import { semanticMatcher } from '../services/semanticMatcher';
 
@@ -864,20 +864,53 @@ export async function matrixRowsToComparisonReport(
 
   const allParsedQuotes = intermediateQuotes.map((iq) => iq.parsedQuote);
 
-  // Extract annual premium from V2 financial rows. The V2 prompt uses labels like
-  // "Total prima", "Prima con IVA incluido", etc., so the legacy check for
-  // "TOTAL A PAGAR" alone leaves priceAnnual as 0.
-  const premiumRowLabels = [
-    'total a pagar',
-    'total prima',
-    'prima con iva incluido',
-    'prima total',
-    'prima',
-  ];
+  // Extract annual premium from financial rows. Colombian insurers label gross totals
+  // variously: Allianz uses "Valor a pagar" or "Total liquidación", SBS uses "Total prima",
+  // SURA uses "Total a pagar" / "Prima total con IVA", etc.
+  const isHighPriorityPremiumLabel = (label: string): boolean => {
+    const norm = label
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    return [
+      'total a pagar',
+      'valor a pagar',
+      'total liquidacion',
+      'total poliza',
+      'prima con iva',
+      'total prima',
+      'prima total',
+      'costo total',
+      'valor total',
+      'total propuesta',
+      'total anual',
+      'valor de la poliza',
+    ].some((kw) => norm.includes(kw));
+  };
+
+  const isFallbackPremiumLabel = (label: string): boolean => {
+    const norm = label
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    if (
+      norm.includes('iva') ||
+      norm.includes('gasto') ||
+      norm.includes('expedicion') ||
+      norm.includes('forma de pago')
+    ) {
+      return false;
+    }
+    return norm.includes('prima') || norm === 'total' || norm.startsWith('total ');
+  };
+
+  const hasDefinitivePremium = new Array(insurerNames.length).fill(false);
+
+  // Pass 1: look for high-priority definitive total rows (e.g. "Valor a pagar", "Total prima")
   for (const row of matrixRows) {
-    if (row.type !== 'data' || row.sectionId !== FINANCIAL_SECTION_ID) continue;
-    const normalizedLabel = row.label.toLowerCase();
-    if (!premiumRowLabels.some((label) => normalizedLabel.includes(label))) continue;
+    if (row.type !== 'data') continue;
+    if (row.sectionId !== FINANCIAL_SECTION_ID && !isFinancialRowLabel(row.label)) continue;
+    if (!isHighPriorityPremiumLabel(row.label)) continue;
 
     for (let i = 0; i < insurerNames.length; i++) {
       const cellIdx = indexMap[i] ?? -1;
@@ -889,6 +922,29 @@ export async function matrixRowsToComparisonReport(
         intermediateQuotes[i]!.priceAnnual = numericValue;
         intermediateQuotes[i]!.parsedQuote.priceAnnual = numericValue;
         intermediateQuotes[i]!.priceMonthly = Math.round(numericValue / 12);
+        hasDefinitivePremium[i] = true;
+      }
+    }
+  }
+
+  // Pass 2: look for fallback rows (e.g. "Prima") only for insurers still missing a premium
+  for (const row of matrixRows) {
+    if (row.type !== 'data') continue;
+    if (row.sectionId !== FINANCIAL_SECTION_ID && !isFinancialRowLabel(row.label)) continue;
+    if (!isFallbackPremiumLabel(row.label)) continue;
+
+    for (let i = 0; i < insurerNames.length; i++) {
+      if (hasDefinitivePremium[i]) continue;
+      const cellIdx = indexMap[i] ?? -1;
+      const cell = row.cells[cellIdx];
+      if (!cell) continue;
+
+      const numericValue = parseColombianCurrency(cell.value);
+      if (numericValue !== null && numericValue > 0) {
+        intermediateQuotes[i]!.priceAnnual = numericValue;
+        intermediateQuotes[i]!.parsedQuote.priceAnnual = numericValue;
+        intermediateQuotes[i]!.priceMonthly = Math.round(numericValue / 12);
+        hasDefinitivePremium[i] = true;
       }
     }
   }

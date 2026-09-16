@@ -153,10 +153,11 @@ ${context.hasClauses ? 'También se proporcionan clausulados para validación; �
    - Extrae también valores de Contenidos Especiales (joyas, arte) y Equipo Eléctrico/Electrónico si figuran en la propuesta.
 2. COBERTURAS: Extrae límites, amparos y condiciones para Incendio/Rayo/Explosión, Terremoto/Temblor/Erupción, Daños por Agua/Anegación, Granizo/Vendaval, Sustracción con Violencia dentro del predio, RCE Familiar y Asistencia Domiciliaria. Si una cobertura opcional no fue contratada, usa "No Incluido".
 3. DEDUCIBLES: Extrae los deducibles específicos por amparo textualmente:
+   - Considera la tipología contratada: si un bien no está cotizado (ej. Edificio en póliza solo contenidos), los deducibles asociados a dicho bien deben reportar "No Aplica (Edificio no cotizado)". Si Contenidos no está cotizado (ej. póliza solo edificio), reporta "No Aplica (Contenidos no cotizados)".
    - Terremoto y Sismo: suele expresarse como % del valor asegurable o % de la pérdida con mínimo en SMMLV.
    - Daños por agua, Anegación y Hurto: suele ser % de la pérdida con mínimo en SMMLV.
    - RCE y Asistencia Domiciliaria: si no aplican copago o deducible, reporta textualmente "Sin deducible". NUNCA uses "No Incluido" en la sección de deducibles si el amparo no tiene deducible; usa "Sin deducible".
-4. FINANCIAL: Extrae Prima con IVA incluido, Gastos de expedición, IVA, Total prima, y Forma de pago.`
+4. FINANCIAL: Extrae Prima con IVA incluido, Gastos de expedición, IVA, Total prima, y Forma de pago. Para Allianz y aseguradoras que rotulan el valor total a pagar como "Valor a pagar", "Total liquidación" o "Total póliza", extrae obligatoriamente dicho monto bruto en una fila "Total a pagar" o "Total prima" con su valor exacto en COP.`
       : `Reglas de Negocio para Secciones:
 1. BIENES ASEGURADOS: Extrae las sumas aseguradas o descripciones de Mercancías, Muebles y enseres, Maquinaria y equipo, Equipo eléctrico y electrónico, y Asistencia.
 2. COBERTURAS: Extrae límites, amparos y condiciones de cobertura para Amparo básico todo riesgo, Terremoto, Responsabilidad Civil Extracontractual (RCE), Lucro Cesante, Rotura de Maquinaria, Equipos eléctricos y electrónicos, Gastos médicos, Asistencia, Vidrios, Manejo global / Infidelidad, Transporte de mercancías, Daños por agua / Anegación, HMACC-AMIT, y RC en proceso civil.
@@ -182,6 +183,7 @@ Reglas Generales:
   * Usa "No Cotizado" cuando un bien patrimonial (ej. Edificio o Contenido) no fue incluido en el alcance de la cotización.
   * Usa "No Incluido" cuando una cobertura u opción ofrecida por el producto no fue contratada en esta propuesta.
   * Usa "Sin deducible" en la sección de deducibles cuando el amparo no tenga copago a cargo del asegurado.
+  * Usa "No Aplica (Edificio no cotizado)" o "No Aplica (Contenidos no cotizados)" en deducibles cuando el bien base no forma parte del seguro.
 - REGLA CRÍTICA DE COMPLETITUD: DEBES EXTRAER EL 100% DE LAS COBERTURAS, BIENES, DEDUCIBLES Y CONDICIONES PRESENTES EN LAS COTIZACIONES. NO OMITAS NINGUNA FILA POR RESUMEN O LÍMITE DE ESPACIO. SI EXISTEN 30 O 40 AMPAROS, GENERA LAS 30 O 40 FILAS EN EL JSON.
 - REGLA DE INTEGRIDAD NUMÉRICA: Conserva intactos los montos, monedas (COP/USD), símbolos y separadores de miles/decimales. Si una cifra dice "$ 15.000.000,00" o "$ 15,000,000.00", déjala tal cual sin alterar ni mover los puntos o comas.${percentageRule}
 - CITA DE PÁGINA: Extrae obligatoriamente en pageNumber el número de página exacto (1-indexado) donde figura la información dentro de la cotización.

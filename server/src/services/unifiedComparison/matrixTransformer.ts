@@ -16,11 +16,35 @@ import { getCanonicalCoverageOrder } from './flatTableParser';
 import { InsuranceDomain } from '../../types/domain';
 import { domainTaxonomyRegistry } from '../domainTaxonomyRegistry';
 
-const HEADER_SECTION_ID = 0;
-const COVERAGE_SECTION_ID = 1;
+export const HEADER_SECTION_ID = 0;
+export const COVERAGE_SECTION_ID = 1;
+export const DEDUCTIBLE_SECTION_ID = 50;
 export const FINANCIAL_SECTION_ID = 100;
+export const ADDITIONAL_SECTION_ID = 101;
 
-const FINANCIAL_SECTION_LABEL = 'PRIMAS Y COSTOS';
+export const FINANCIAL_SECTION_LABEL = 'PRIMAS Y COSTOS';
+
+export function getSectionId(sectionName: string): number {
+  const norm = sectionName
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  if (norm.includes('PRIMA') || norm.includes('COSTO') || norm === FINANCIAL_SECTION_LABEL) {
+    return FINANCIAL_SECTION_ID;
+  }
+  if (norm.includes('DEDUCIBLE')) {
+    return DEDUCTIBLE_SECTION_ID;
+  }
+  if (
+    norm.includes('CONDICION') ||
+    norm.includes('OBSERVACION') ||
+    norm.includes('ALERTA') ||
+    norm.includes('ADICIONAL')
+  ) {
+    return ADDITIONAL_SECTION_ID;
+  }
+  return COVERAGE_SECTION_ID;
+}
 
 function getDomainHeaderLabel(domain: InsuranceDomain = 'pyme'): string {
   return domain === 'pyme' ? 'PYME' : domain.toUpperCase();
@@ -94,7 +118,7 @@ function getSectionOrder(domain: InsuranceDomain = 'pyme'): string[] {
   return sections;
 }
 
-function isFinancialRowLabel(label: string): boolean {
+export function isFinancialRowLabel(label: string): boolean {
   const normalized = label
     .toLowerCase()
     .normalize('NFD')
@@ -427,12 +451,12 @@ export function flatResultToMatrixRowsV2(
 
   let sectionIndex = 0;
   for (const [section, rows] of sortedSections) {
-    const isFinancialSection = section === FINANCIAL_SECTION_LABEL;
+    const currentSectionId = getSectionId(section);
     matrix.push({
       type: 'header',
       id: `section_${sectionIndex}`,
       label: section,
-      sectionId: isFinancialSection ? FINANCIAL_SECTION_ID : COVERAGE_SECTION_ID,
+      sectionId: currentSectionId,
       cells: emptyCells(numInsurers),
     });
 
@@ -441,7 +465,7 @@ export function flatResultToMatrixRowsV2(
         type: 'data',
         id: `section_${sectionIndex}_row_${rowIndex}`,
         label: row.label,
-        sectionId: section === FINANCIAL_SECTION_LABEL ? FINANCIAL_SECTION_ID : COVERAGE_SECTION_ID,
+        sectionId: currentSectionId,
         canonicalName: row.canonicalName,
         canonicalId: row.canonicalId,
         matchConfidence: row.matchConfidence,
@@ -461,14 +485,14 @@ export function flatResultToMatrixRowsV2(
       type: 'spacer',
       id: 'spacer_warnings',
       label: '',
-      sectionId: FINANCIAL_SECTION_ID,
+      sectionId: ADDITIONAL_SECTION_ID,
       cells: emptyCells(numInsurers),
     });
     matrix.push({
       type: 'header',
       id: 'warnings',
       label: '⚠️ ALERTAS',
-      sectionId: FINANCIAL_SECTION_ID,
+      sectionId: ADDITIONAL_SECTION_ID,
       cells: emptyCells(numInsurers),
     });
     result.warnings.forEach((warning, index) => {
@@ -476,7 +500,7 @@ export function flatResultToMatrixRowsV2(
         type: 'data',
         id: `warning_${index}`,
         label: warning,
-        sectionId: FINANCIAL_SECTION_ID,
+        sectionId: ADDITIONAL_SECTION_ID,
         cells: emptyCells(numInsurers),
       });
     });

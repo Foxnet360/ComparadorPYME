@@ -26,7 +26,7 @@ import { AuthenticatedRequest, authMiddleware, optionalAuthMiddleware } from './
  * DELETE /api/chat/threads/:id) stay protected — POST /documents also
  * enforces upload ownership via requireUser().
  */
-const PUBLIC_EXACT_PATHS: ReadonlySet<string> = new Set(['/analyze', '/history']);
+const PUBLIC_EXACT_PATHS: ReadonlySet<string> = new Set(['/analyze', '/history', '/audit/enrich']);
 
 const PUBLIC_PREFIXES: readonly string[] = ['/comparison'];
 

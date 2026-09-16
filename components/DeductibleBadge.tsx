@@ -22,6 +22,21 @@ export const parseDeductibleForBadge = (deductible: string): BadgeConfig => {
   const normalizedValue = normalizeDeductibleBadgeValue(deductible);
   const upperValue = normalizedValue?.toUpperCase().trim() || '';
 
+  // Not quoted asset (e.g. Edificio no cotizado)
+  if (
+    upperValue.includes('NO COTIZADO') ||
+    upperValue.includes('NO COTIZADA') ||
+    (upperValue.includes('NO APLICA') && upperValue.includes('COTIZAD'))
+  ) {
+    return {
+      color: 'text-slate-600',
+      bgColor: 'bg-slate-100',
+      label: 'No Aplica (No cotizado)',
+      recommendation: 'El bien base de este amparo no fue cotizado en esta póliza.',
+      riskLevel: 'none',
+    };
+  }
+
   // No deductible
   if (
     !upperValue ||

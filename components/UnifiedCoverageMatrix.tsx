@@ -1037,7 +1037,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
 
   // Partition matrix rows according to active tabs
   const filteredRows = fullMatrix.filter((row) => {
-    if (activeTab === 'coverages') return row.sectionId < 100;
+    if (activeTab === 'coverages') return row.sectionId < 100 && row.sectionId !== 50;
     if (activeTab === 'financials') return row.sectionId === 100;
     return row.sectionId === 101;
   });
@@ -1137,7 +1137,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
           }`}
         >
           <ShieldCheck size={16} />
-          Coberturas y Deducibles
+          Bienes y Coberturas
         </button>
         <button
           onClick={() => setActiveTab('financials')}

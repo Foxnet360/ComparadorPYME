@@ -37,7 +37,11 @@ const DeferredChart: React.FC<DeferredChartProps> = ({ children, className }) =>
   }, [ready]);
 
   return (
-    <div ref={ref} className={className} style={{ width: '100%', height: '100%' }}>
+    <div
+      ref={ref}
+      className={className}
+      style={{ width: '100%', height: '100%', minHeight: '200px', minWidth: '100px' }}
+    >
       {ready ? children : null}
     </div>
   );

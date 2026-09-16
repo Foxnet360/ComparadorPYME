@@ -251,7 +251,7 @@ export const AuditDashboard: React.FC<AuditDashboardProps> = ({
           <h3 className="font-bold text-slate-800 mb-4">Distribución de Riesgos por Aseguradora</h3>
           <div className="h-[250px]">
             <DeferredChart>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                   <XAxis
