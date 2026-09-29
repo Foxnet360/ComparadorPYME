@@ -272,6 +272,100 @@ export const saveCorrection = async (req: Request, res: Response): Promise<void>
   }
 };
 
+/**
+ * 1-Click disambiguation endpoint for uncertain coverage mappings (Phase 2)
+ */
+export const disambiguateCoverage = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { rawName, insurerName, canonicalGroupId, action, domain } = req.body;
+
+    if (!rawName || !action) {
+      res.status(400).json({ error: 'rawName and action are required' });
+      return;
+    }
+
+    if (action === 'confirm' || action === 'reassign') {
+      const targetCanonical = canonicalGroupId;
+      if (!targetCanonical) {
+        res.status(400).json({ error: 'canonicalGroupId is required when action is confirm or reassign' });
+        return;
+      }
+
+      // Save to learningEngine to update embeddings, thesaurus, and cache
+      const correctionId = await learningEngine.saveCorrection({
+        rawName,
+        insurerName,
+        systemMapping: 'AMBIGUOUS',
+        userCorrection: targetCanonical,
+        correctionType: 'coverage_mapping',
+        domain: domain || 'pyme',
+      });
+
+      // Update coverage_mappings in Supabase to mark human review as satisfied
+      try {
+        await (supabase.from('coverage_mappings') as any)
+          .upsert(
+            {
+              raw_name: rawName,
+              insurer_name: insurerName || '',
+              canonical_name: targetCanonical,
+              confidence: 0.98,
+              needs_human_review: false,
+              user_corrected: true,
+            },
+            { onConflict: 'raw_name,insurer_name' }
+          );
+      } catch (dbErr) {
+        console.warn('⚠️ [disambiguateCoverage] DB upsert warning:', dbErr);
+      }
+
+      res.json({
+        success: true,
+        action,
+        rawName,
+        resolvedGroupId: targetCanonical,
+        correctionId,
+      });
+      return;
+    }
+
+    if (action === 'keep_autonomous') {
+      try {
+        await (supabase.from('coverage_mappings') as any)
+          .upsert(
+            {
+              raw_name: rawName,
+              insurer_name: insurerName || '',
+              canonical_name: 'EXCLUSIVE',
+              confidence: 0.2,
+              needs_human_review: false,
+              user_corrected: true,
+            },
+            { onConflict: 'raw_name,insurer_name' }
+          );
+      } catch (dbErr) {
+        console.warn('⚠️ [disambiguateCoverage] DB upsert warning:', dbErr);
+      }
+
+      res.json({
+        success: true,
+        action: 'keep_autonomous',
+        rawName,
+        resolvedGroupId: 'EXCLUSIVE',
+      });
+      return;
+    }
+
+    res.status(400).json({ error: `Invalid action: ${action}` });
+  } catch (error) {
+    console.error('❌ [disambiguateCoverage] Error:', error);
+    res.status(500).json({
+      error: 'Internal server error while disambiguating coverage',
+      details: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+};
+
 export const getLearningMetrics = async (req: Request, res: Response): Promise<void> => {
   const metrics = await learningEngine.getMetrics();
   res.json(metrics);

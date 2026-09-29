@@ -19,6 +19,7 @@ import {
   storeStructuredClause,
   compareVariables,
   saveCorrection,
+  disambiguateCoverage,
   getLearningMetrics,
   getMonthlyReport,
   batchRetrain,
@@ -39,6 +40,7 @@ router.post('/extract-structured-clause', asyncHandler(extractStructuredClause))
 router.post('/store-structured-clause', asyncHandler(storeStructuredClause));
 router.post('/compare-variables', asyncHandler(compareVariables));
 router.post('/correction', asyncHandler(saveCorrection));
+router.post('/disambiguate-coverage', asyncHandler(disambiguateCoverage));
 router.get('/learning-metrics', asyncHandler(getLearningMetrics));
 router.get('/monthly-report', asyncHandler(getMonthlyReport));
 router.post('/batch-retrain', asyncHandler(batchRetrain));

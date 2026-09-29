@@ -22,6 +22,21 @@ export interface OntologyNode {
   riskType: string;
 }
 
+export type OntologyCertaintyBand = 'trusted' | 'ambiguous' | 'autonomous';
+
+export function resolveCertaintyBand(
+  confidence: number,
+  isExclusive: boolean = false
+): OntologyCertaintyBand {
+  if (isExclusive || confidence < 0.50) {
+    return 'autonomous';
+  }
+  if (confidence >= 0.85) {
+    return 'trusted';
+  }
+  return 'ambiguous';
+}
+
 export interface CoverageMapping {
   rawName: string;
   insurerName?: string;
@@ -32,6 +47,7 @@ export interface CoverageMapping {
   isComposite: boolean;
   components?: string[];
   confidence: number;
+  certaintyBand?: OntologyCertaintyBand;
   needsHumanReview?: boolean;
   rawTextSnippet?: string;
   justification?: string;
@@ -596,6 +612,7 @@ export const coverageOntology = {
             groups: [{ groupId: node.id, confidence: 1.0 }],
             isComposite: false,
             confidence: 1.0,
+            certaintyBand: 'trusted',
             needsHumanReview: false,
             justification: `Deterministic insurer profile override for ${insurerName}: "${rawName}" -> "${node.name}"`,
           };
@@ -618,13 +635,15 @@ export const coverageOntology = {
       console.log(
         `⚡ [Ontology LocalMatch] Hit for "${rawName}" -> "${localMatch.groupId}" (${Math.round(localMatch.confidence * 100)}%)`
       );
+      const band = resolveCertaintyBand(localMatch.confidence);
       const mapping: CoverageMapping = {
         rawName,
         insurerName,
         groups: [{ groupId: localMatch.groupId, confidence: localMatch.confidence }],
         isComposite: false,
         confidence: localMatch.confidence,
-        needsHumanReview: false,
+        certaintyBand: band,
+        needsHumanReview: band === 'ambiguous',
         justification: localMatch.justification,
       };
       // Cache it for future fast lookups
@@ -645,15 +664,20 @@ export const coverageOntology = {
         const record = data[0] as unknown as Record<string, unknown>;
         console.log(`📦 [Ontology DB] Hit for "${rawName}" -> "${record.canonical_name}"`);
 
+        const conf = Number(record.confidence);
+        const isExcl = !record.canonical_name || record.canonical_name === 'EXCLUSIVE';
+        const band = resolveCertaintyBand(conf, isExcl);
+
         const mapping: CoverageMapping = {
           rawName,
           insurerName,
           groups: record.canonical_name
-            ? [{ groupId: record.canonical_name as string, confidence: Number(record.confidence) }]
+            ? [{ groupId: record.canonical_name as string, confidence: conf }]
             : [],
           isComposite: Boolean(record.is_composite),
-          confidence: Number(record.confidence),
-          needsHumanReview: Boolean(record.needs_human_review),
+          confidence: conf,
+          certaintyBand: band,
+          needsHumanReview: Boolean(record.needs_human_review) || band === 'ambiguous',
           rawTextSnippet: record.raw_text_snippet as string | undefined,
           justification: record.ai_justification as string | undefined,
           pageNumber: record.page_number as number | undefined,
@@ -673,16 +697,20 @@ export const coverageOntology = {
 
     if (isComposite) {
       const match = compositePatterns.find((p) => p.pattern.test(rawName));
-      const mapping = {
+      const conf = match!.confidence;
+      const band = resolveCertaintyBand(conf);
+      const mapping: CoverageMapping = {
         rawName,
         insurerName,
         groups: match!.components.map((id) => ({
           groupId: id,
-          confidence: match!.confidence,
+          confidence: conf,
         })),
         isComposite: true,
         components: match!.components,
-        confidence: match!.confidence,
+        confidence: conf,
+        certaintyBand: band,
+        needsHumanReview: band === 'ambiguous',
       };
 
       await setCachedCoverageMapping(rawName, mapping, insurerName);
@@ -695,6 +723,9 @@ export const coverageOntology = {
       console.log(
         `🌐 [Ontology Graph] Hit for "${rawName}" -> "${graphMapping.groups[0]?.groupId}" (${Math.round(graphMapping.confidence * 100)}%)`
       );
+      if (!graphMapping.certaintyBand) {
+        graphMapping.certaintyBand = resolveCertaintyBand(graphMapping.confidence);
+      }
       await setCachedCoverageMapping(rawName, graphMapping, insurerName);
       return graphMapping;
     }
@@ -707,13 +738,16 @@ export const coverageOntology = {
       groups = [{ groupId: consensus.groupId, confidence: consensus.confidence }];
     }
 
+    const band = resolveCertaintyBand(consensus.confidence, consensus.groupId === 'EXCLUSIVE');
+
     const mapping: CoverageMapping = {
       rawName,
       insurerName,
       groups,
       isComposite: false,
       confidence: consensus.groupId === 'EXCLUSIVE' ? 0 : consensus.confidence,
-      needsHumanReview: consensus.needsHumanReview,
+      certaintyBand: band,
+      needsHumanReview: band === 'ambiguous' || consensus.needsHumanReview,
       justification: consensus.justification,
     };
 

@@ -22,6 +22,7 @@ import { EvidenceCard } from './EvidenceCard';
 import { useAuditEnrichment } from '../hooks/useAuditEnrichment';
 import { RiskHeatmap } from './RiskHeatmap';
 import { InsurerRadar } from './InsurerRadar';
+import { DisambiguationCard } from './report/DisambiguationCard';
 
 interface AuditSectionProps {
   quotes: QuoteAnalysis[];
@@ -359,6 +360,9 @@ export const AuditSection: React.FC<AuditSectionProps> = ({ quotes, viewMode }) 
             businessContextAnalysis={businessContextAnalysis}
             viewMode={viewMode}
           />
+
+          {/* Active Ontology Disambiguation Banner (Phase 2) */}
+          <DisambiguationCard quotes={quotes} />
 
           {/* Alertas Detalladas */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
