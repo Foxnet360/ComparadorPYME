@@ -348,7 +348,7 @@ function isRetryableError(error: unknown): boolean {
 }
 
 // Initialize Gemini lazily
-const getGenAI = () => {
+export const getGenAI = () => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY is not set in environment');
@@ -396,7 +396,7 @@ const buildSectionText = (clauses: ClauseDocument[]): string => {
   return parts.join('\n');
 };
 
-interface UploadedFile {
+export interface UploadedFile {
   name: string;
   uri: string;
   state?: string;

@@ -217,6 +217,11 @@ export type StructuredClauseValidated = z.infer<typeof StructuredClauseSchema>;
 export type ReconciliationStatus = z.infer<typeof ReconciliationStatusSchema>;
 export type ReconciliationThresholdConfig = z.infer<typeof ReconciliationThresholdConfigSchema>;
 export type ReconciliationResult = z.infer<typeof ReconciliationResultSchema>;
+export type RawCoverage = z.infer<typeof RawCoverageSchema>;
+export type SubLimit = z.infer<typeof SubLimitSchema>;
+export type GeneralDeductible = z.infer<typeof GeneralDeductibleSchema>;
+export type PremiumBreakdown = z.infer<typeof PremiumSchema>;
+export type InsuredAsset = z.infer<typeof InsuredAssetSchema>;
 
 // -----------------------------------------------------------------------------
 // Normalization helpers

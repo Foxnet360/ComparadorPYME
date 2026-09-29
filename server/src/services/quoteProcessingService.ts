@@ -5,6 +5,7 @@
  */
 
 import { geminiService } from './gemini';
+import { twoStageExtractionOrchestrator } from './twoStageExtraction/twoStageExtractionOrchestrator';
 import { pdfExtractor, PDFExtractionResult } from './pdfExtractor';
 import { quoteParser, ParsedQuote } from './quoteParser';
 import { quoteScorer, ScoringResult } from './quoteScorer';
@@ -521,20 +522,35 @@ async function processQuoteMultimodalInternal(
     try {
       const result = await extractWithZodValidation<QuoteExtractionV2>(
         () =>
-          geminiService.extractFromPdfWithVision(
-            quoteFile.path,
-            extractionPrompt,
-            quoteFile.originalname,
-            nativeText,
-            {
-              skipValidation: true,
-              onRepairUsed: (category) => {
-                repairUsed = true;
-                repairType = category;
-                repairAttempts++;
-              },
-            }
-          ),
+          featureFlags.isEnabled('enableTwoStageExtraction')
+            ? twoStageExtractionOrchestrator.extractTwoStage(
+                quoteFile.path,
+                extractionPrompt,
+                quoteFile.originalname,
+                nativeText,
+                {
+                  skipValidation: true,
+                  onRepairUsed: (category) => {
+                    repairUsed = true;
+                    repairType = category;
+                    repairAttempts++;
+                  },
+                }
+              )
+            : geminiService.extractFromPdfWithVision(
+                quoteFile.path,
+                extractionPrompt,
+                quoteFile.originalname,
+                nativeText,
+                {
+                  skipValidation: true,
+                  onRepairUsed: (category) => {
+                    repairUsed = true;
+                    repairType = category;
+                    repairAttempts++;
+                  },
+                }
+              ),
         validateQuoteExtractionV2,
         'Multimodal'
       );

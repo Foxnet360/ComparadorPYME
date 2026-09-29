@@ -46,6 +46,16 @@ export interface FeatureFlags {
 
   // Gemini context caching for large document analysis (>32k tokens)
   enableGeminiContextCaching: boolean;
+
+  // Financial audit & simulation (Phase 1)
+  enablePremiumEquationAudit: boolean;
+  enableClaimDeductibleSimulator: boolean;
+
+  // Active ontology & disambiguation (Phase 2)
+  enableActiveOntologyDisambiguation: boolean;
+
+  // Two-stage multimodal extraction (Phase 3)
+  enableTwoStageExtraction: boolean;
 }
 
 // Check if Redis is configured
@@ -111,6 +121,16 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
 
   // Gemini context caching: default false unless ENABLE_GEMINI_CONTEXT_CACHING=true
   enableGeminiContextCaching: process.env.ENABLE_GEMINI_CONTEXT_CACHING === 'true',
+
+  // Financial audit & claim simulation (enabled by default, can be disabled via env)
+  enablePremiumEquationAudit: process.env.ENABLE_PREMIUM_EQUATION_AUDIT !== 'false',
+  enableClaimDeductibleSimulator: process.env.ENABLE_CLAIM_DEDUCTIBLE_SIMULATOR !== 'false',
+
+  // Active ontology & disambiguation (Phase 2, enabled by default, can be disabled via env)
+  enableActiveOntologyDisambiguation: process.env.ENABLE_ACTIVE_ONTOLOGY_DISAMBIGUATION !== 'false',
+
+  // Two-stage multimodal extraction (Phase 3, disabled by default, opt-in via env)
+  enableTwoStageExtraction: process.env.ENABLE_TWO_STAGE_EXTRACTION === 'true',
 };
 
 // Development configuration - for testing
@@ -119,6 +139,10 @@ export const DEVELOPMENT_FLAGS: FeatureFlags = {
   learningEngine: false, // Disable in dev to avoid side effects
   granularComparisonSchema: true, // Keep disabled by default until verified
   deepClauseValidation: false, // Not ready for general use even in dev
+  enablePremiumEquationAudit: true,
+  enableClaimDeductibleSimulator: true,
+  enableActiveOntologyDisambiguation: true,
+  enableTwoStageExtraction: true,
 };
 
 // Production rollout configuration - gradual activation
@@ -143,6 +167,10 @@ export const PRODUCTION_ROLLOUT_FLAGS: FeatureFlags = {
   useLegacyChatOnlyRAG: false,
   granularComparisonSchema: true,
   deepClauseValidation: false,
+  enablePremiumEquationAudit: true,
+  enableClaimDeductibleSimulator: true,
+  enableActiveOntologyDisambiguation: true,
+  enableTwoStageExtraction: false,
 };
 
 // Maps recognized env var names to FeatureFlags keys. Fixes the old key
@@ -172,6 +200,10 @@ const ENV_FLAG_MAP: Record<string, keyof FeatureFlags> = {
   USE_UNIFIED_TEMPLATE_HINTS_MAPFRE: 'useUnifiedTemplateHintsMapfre',
   ENABLE_DEEP_CLAUSE_VALIDATION: 'deepClauseValidation',
   ENABLE_GEMINI_CONTEXT_CACHING: 'enableGeminiContextCaching',
+  ENABLE_PREMIUM_EQUATION_AUDIT: 'enablePremiumEquationAudit',
+  ENABLE_CLAIM_DEDUCTIBLE_SIMULATOR: 'enableClaimDeductibleSimulator',
+  ENABLE_ACTIVE_ONTOLOGY_DISAMBIGUATION: 'enableActiveOntologyDisambiguation',
+  ENABLE_TWO_STAGE_EXTRACTION: 'enableTwoStageExtraction',
 };
 
 /**
