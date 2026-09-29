@@ -1,7 +1,7 @@
 schema: spec-driven
 
 context: |
-  Tech stack: TypeScript, React 19, Vite 8, Express 5, Node.js >=18
+  Tech stack: TypeScript, React 19, Vite, Express 5, Node.js >=18
   Database: Supabase (PostgreSQL) with pgvector, Redis (ioredis)
   AI/ML: Google Gemini API, Groq, semantic search, embeddings
   Styling: Tailwind CSS 3.4, PostCSS, Lucide React
@@ -10,6 +10,21 @@ context: |
   Domain: Insurance comparison platform (PYME) for Colombian market
   Deployment: Railway (frontend + backend), Supabase for data
   Conventions: Conventional commits, feature branch workflow, husky + lint-staged (tsc --noEmit)
+
+projects:
+  - path: .
+    stack: TypeScript, React 19, Express 5, Vite, Vitest
+    test: npm test
+    framework: vitest
+    layers:
+      unit: true
+      integration: true
+      e2e: false
+    coverage: npm run coverage
+    quality:
+      linter: npm run lint
+      typecheck: npm run typecheck:frontend && npm run typecheck:backend
+      formatter: npm run format:check
 
 rules:
   proposal:
@@ -38,10 +53,11 @@ rules:
     - Preserve feature flag backward compatibility
 
 testing:
-  strict_tdd: true
+  strict_tdd: false
   runner: vitest
+  command: npm test
   environment: jsdom
-  coverage: false
+  coverage: true
   layers:
     unit: true
     integration: true

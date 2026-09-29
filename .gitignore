@@ -51,3 +51,6 @@ Ejemplos/
 # CodeGraph index
 .codegraph/
 
+# Gentle AI / Pi caches
+.pi/
+
