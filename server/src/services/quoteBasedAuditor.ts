@@ -5,6 +5,8 @@
  */
 
 import { ScoringBreakdown } from '../types';
+import { featureFlags } from '../config/featureFlags';
+import { auditPremiumEquation } from './financialAudit/premiumAuditor';
 
 // Local type definitions to avoid importing from outside rootDir
 interface CoverageItem {
@@ -38,6 +40,14 @@ interface QuoteAnalysis {
   technicalAnalysis?: string;
   score?: number;
   deductibles?: string;
+  premium?: {
+    netPremium?: number | null;
+    fees?: number | null;
+    taxes?: number | null;
+    otherCharges?: number | null;
+    totalPayable?: number | null;
+    currency?: string;
+  };
 }
 
 // Canonical categories for PYME insurance
@@ -691,6 +701,19 @@ export const auditQuote = (
   const missingCoverages = detectMissingCoverages(quote);
   const specialConditions = extractSpecialConditions(quote);
   const alerts = generateAlerts(deductibleRisks, missingCoverages, specialConditions);
+
+  // Financial audit check: Premium equation validation (Phase 1)
+  if (featureFlags.isEnabled('enablePremiumEquationAudit') && quote.premium) {
+    const premiumAudit = auditPremiumEquation(quote.premium, quote.insurerName);
+    if (premiumAudit.alert) {
+      alerts.push({
+        level: premiumAudit.alert.level,
+        title: premiumAudit.alert.title,
+        description: premiumAudit.alert.description,
+        sourceDocument: quote.insurerName,
+      });
+    }
+  }
   const negotiationPoints = detectNegotiationPoints(quote, allQuotes);
   const competitiveAdvantages = detectCompetitiveAdvantages(quote, allQuotes);
   const profileRecommendations = detectProfileRecommendations(quote);

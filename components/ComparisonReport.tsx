@@ -13,6 +13,7 @@ import { useReportCorrections } from '../hooks/useReportCorrections';
 import { usePdfExport } from '../hooks/usePdfExport';
 import { isAdvancedAnalysisEnabled } from '../config/features';
 import { useCellNotes } from '../contexts/AnalysisContext';
+import { ClaimSimulatorPanel } from './report/ClaimSimulatorPanel';
 import type { ComparisonReport as ReportType } from '../types';
 
 // Renewal-mode (schemaVersion 3) extras: lazy-loaded so the NEW-mode bundle
@@ -168,6 +169,9 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
       {/* --- TAB CONTENT: DEDUCIBLES --- */}
       {activeTab === 'deducibles' && (
         <div className="animate-in fade-in duration-300 space-y-6">
+          {/* Claim Simulator Panel - Interactive calculation */}
+          <ClaimSimulatorPanel quotes={report.quotes} />
+
           {/* Deductible Matrix - Structured Comparison */}
           <DeductibleMatrix
             quotes={report.quotes}

@@ -29,6 +29,20 @@ export interface CoverageItem {
   needsHumanReview?: boolean;
   justification?: string;
   calculatedPage?: number;
+  deductibleStructure?: {
+    components?: Array<{
+      type: string;
+      value: number;
+      currency?: string;
+    }>;
+    normalized?: {
+      minAmount?: number;
+      maxAmount?: number;
+      percentage?: number;
+      isPercentageBased?: boolean;
+    };
+    rawText?: string;
+  };
 }
 
 export type AlertLevel = 'CRITICAL' | 'WARNING' | 'GOOD' | 'INFO';
