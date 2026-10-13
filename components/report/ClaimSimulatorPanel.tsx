@@ -4,6 +4,8 @@ import type { QuoteAnalysis, CoverageItem } from '../../types';
 
 interface ClaimSimulatorPanelProps {
   quotes: QuoteAnalysis[];
+  compact?: boolean;
+  onNavigate?: (tab: 'resumen' | 'coberturas' | 'deducibles' | 'auditoria') => void;
 }
 
 const SMMLV_CURRENT = 1423500; // SMMLV 2025 COP canonical reference
@@ -15,7 +17,11 @@ const PRESET_AMOUNTS = [
   { label: '$250M COP', value: 250_000_000 },
 ];
 
-export const ClaimSimulatorPanel: React.FC<ClaimSimulatorPanelProps> = ({ quotes }) => {
+export const ClaimSimulatorPanel: React.FC<ClaimSimulatorPanelProps> = ({
+  quotes,
+  compact = false,
+  onNavigate,
+}) => {
   const [claimAmount, setClaimAmount] = useState<number>(50_000_000);
 
   // Extract amparo básico / main deductible per quote
@@ -104,28 +110,41 @@ export const ClaimSimulatorPanel: React.FC<ClaimSimulatorPanelProps> = ({ quotes
   const formatCOP = (val: number) => `$${Math.round(val).toLocaleString('es-CO')} COP`;
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-4">
+    <div className={`bg-white rounded-xl border border-slate-200 shadow-sm ${compact ? 'p-5 space-y-4' : 'p-6 space-y-6'}`}>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-slate-100 pb-3">
         <div>
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-              <Calculator size={20} />
+            <div className={`rounded-lg ${compact ? 'p-1.5 bg-indigo-50 text-indigo-600' : 'p-2 bg-indigo-50 text-indigo-600'}`}>
+              <Calculator size={compact ? 18 : 20} />
             </div>
-            <h3 className="text-lg font-bold text-slate-900">
-              Simulador Interactivo de Siniestro (Deducibles)
+            <h3 className={`font-bold text-slate-900 ${compact ? 'text-base' : 'text-lg'}`}>
+              {compact ? 'Impacto de Deducibles en Siniestro Real' : 'Simulador Interactivo de Siniestro (Deducibles)'}
             </h3>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Calculá en tiempo real el desembolso que asumiría el cliente ante una pérdida hipotética en Amparo Básico.
+            {compact
+              ? 'Compará cuánto dinero real de bolsillo asume el asegurado frente a la misma pérdida.'
+              : 'Calculá en tiempo real el desembolso que asumiría el cliente ante una pérdida hipotética en Amparo Básico.'}
           </p>
         </div>
 
-        {savings > 0 && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 flex items-center gap-2 text-emerald-800 text-xs font-semibold">
-            <TrendingDown size={16} className="text-emerald-600" />
-            <span>Ahorro máximo: {formatCOP(savings)} con {bestInsurer}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2 self-stretch md:self-auto justify-between md:justify-end">
+          {savings > 0 && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 text-emerald-800 text-xs font-semibold">
+              <TrendingDown size={14} className="text-emerald-600" />
+              <span>Ahorro máx: {formatCOP(savings)} con {bestInsurer}</span>
+            </div>
+          )}
+
+          {compact && onNavigate && (
+            <button
+              onClick={() => onNavigate('deducibles')}
+              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50/80 hover:bg-indigo-100 px-3 py-1.5 rounded-lg border border-indigo-200 transition-colors whitespace-nowrap cursor-pointer"
+            >
+              Ver matriz completa →
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Controls: Presets and Slider */}

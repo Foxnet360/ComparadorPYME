@@ -3,6 +3,7 @@ import { Check } from 'lucide-react';
 import { ExecutiveSummary } from '../ExecutiveSummary';
 import { QuoteScoreCard, type QuoteCorrection } from './QuoteScoreCard';
 import { ReportCharts } from './ReportCharts';
+import { ClaimSimulatorPanel } from './ClaimSimulatorPanel';
 import type { QuoteAnalysis } from '../../types';
 
 interface SummaryTabProps {
@@ -54,6 +55,9 @@ export const SummaryTab: React.FC<SummaryTabProps> = ({
       </div>
 
       <ReportCharts quotes={quotes} />
+
+      {/* Interactive Deductible Impact Widget */}
+      <ClaimSimulatorPanel quotes={quotes} compact={true} onNavigate={onNavigate} />
 
       {/* Recommendation Text */}
       <div className="bg-slate-800 text-white p-6 rounded-xl shadow-lg">
