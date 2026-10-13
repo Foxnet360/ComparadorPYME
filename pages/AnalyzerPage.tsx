@@ -98,6 +98,10 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
                   onRemoveFile={removeQuoteFile}
                   variant="primary"
                   disabled={false}
+                  domain={domain}
+                  onDomainChange={(newDomain) =>
+                    dispatch({ type: 'SET_DOMAIN', payload: newDomain })
+                  }
                   onFocusClientSelection={() => setClientSelectorOpen(true)}
                 />
               </div>

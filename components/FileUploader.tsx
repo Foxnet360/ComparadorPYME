@@ -17,6 +17,86 @@ interface FileUploaderProps {
   onFocusClientSelection?: () => void;
 }
 
+interface DomainSuggestion {
+  domain: InsuranceDomain;
+  label: string;
+  matchedKeyword: string;
+}
+
+const DOMAIN_KEYWORD_RULES: Array<{
+  domain: InsuranceDomain;
+  label: string;
+  keywords: string[];
+}> = [
+  {
+    domain: 'autos',
+    label: 'Seguro de Autos',
+    keywords: ['auto', 'automovil', 'vehicul', 'placa', 'chasis', 'flota', 'fasecolda', 'liviano', 'pesado'],
+  },
+  {
+    domain: 'copropiedades',
+    label: 'Copropiedades',
+    keywords: ['copropiedad', 'ley 675', 'conjunto', 'edificio', 'areas comunes', 'zonas comunes', 'ph '],
+  },
+  {
+    domain: 'salud',
+    label: 'Salud / Medicina Prepagada',
+    keywords: ['salud', 'prepagada', 'medicina', 'res 244', 'hospitaliz', 'ambulatori'],
+  },
+  {
+    domain: 'vida_grupo',
+    label: 'Vida Grupo / Colectivo',
+    keywords: ['vida grupo', 'vida colectiv', 'invalidez', 'sobrevivencia', 'amparos adicionales'],
+  },
+  {
+    domain: 'cumplimiento',
+    label: 'Cumplimiento y Fianzas',
+    keywords: ['cumplimiento', 'seriedad', 'anticipo', 'estatal', 'ley 80', 'fianza', 'garantia unica'],
+  },
+  {
+    domain: 'transporte',
+    label: 'Transporte de Mercancías',
+    keywords: ['transporte', 'mercancia', 'carga', 'flete', 'despacho', 'incoterm'],
+  },
+  {
+    domain: 'hogar',
+    label: 'Seguro de Hogar',
+    keywords: ['hogar', 'habitacion', 'vivienda', 'enseres', 'casa'],
+  },
+  {
+    domain: 'equipo_maquinaria',
+    label: 'Maquinaria y Equipo',
+    keywords: ['maquinaria', 'equipo amarillo', 'rotura', 'contratista', 'c.co 1083'],
+  },
+  {
+    domain: 'casco_embarcacion',
+    label: 'Casco Embarcación',
+    keywords: ['embarcacion', 'casco', 'maritimo', 'fluvial', 'dimar', 'institute time'],
+  },
+];
+
+const detectSuggestedDomain = (
+  fileList: File[],
+  currentDomain: InsuranceDomain
+): DomainSuggestion | null => {
+  for (const file of fileList) {
+    const nameLower = file.name.toLowerCase();
+    for (const rule of DOMAIN_KEYWORD_RULES) {
+      if (rule.domain === currentDomain) continue;
+      for (const kw of rule.keywords) {
+        if (nameLower.includes(kw)) {
+          return {
+            domain: rule.domain,
+            label: rule.label,
+            matchedKeyword: kw,
+          };
+        }
+      }
+    }
+  }
+  return null;
+};
+
 const FileUploader: React.FC<FileUploaderProps> = ({
   files,
   onFilesSelected,
@@ -32,6 +112,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   onFocusClientSelection,
 }) => {
   const [domain, setDomain] = useState<InsuranceDomain>(propDomain || 'pyme');
+  const [suggestion, setSuggestion] = useState<DomainSuggestion | null>(null);
 
   useEffect(() => {
     if (propDomain !== undefined) {
@@ -41,10 +122,22 @@ const FileUploader: React.FC<FileUploaderProps> = ({
 
   const handleDomainChange = (newDomain: InsuranceDomain) => {
     setDomain(newDomain);
+    setSuggestion(null);
     if (onDomainChange) {
       onDomainChange(newDomain);
     }
   };
+
+  const handleFilesAdded = useCallback(
+    (newFiles: File[]) => {
+      onFilesSelected(newFiles);
+      const detected = detectSuggestedDomain(newFiles, domain);
+      if (detected) {
+        setSuggestion(detected);
+      }
+    },
+    [domain, onFilesSelected]
+  );
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -55,16 +148,16 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         (f) => f.type.startsWith('image/') || f.type === 'application/pdf'
       );
       if (validFiles.length > 0) {
-        onFilesSelected(validFiles);
+        handleFilesAdded(validFiles);
       }
     },
-    [onFilesSelected, disabled]
+    [handleFilesAdded, disabled]
   );
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && !disabled) {
       const selectedFiles = Array.from(e.target.files);
-      onFilesSelected(selectedFiles);
+      handleFilesAdded(selectedFiles);
     }
   };
 
@@ -83,6 +176,40 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       {shouldDisplayDomainSelector && (
         <DomainSelector selectedDomain={domain} onChange={handleDomainChange} disabled={disabled} />
       )}
+
+      {/* Smart Domain Sniffing Alert Banner (UX Hallazgo 4) */}
+      {suggestion && (
+        <div className="bg-amber-50 border border-amber-300 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-300 shadow-sm">
+          <div className="flex items-start gap-2.5">
+            <span className="text-lg">💡</span>
+            <div className="text-xs">
+              <span className="font-bold text-amber-900 block">
+                ¿Estas cotizaciones corresponden al ramo "{suggestion.label}"?
+              </span>
+              <span className="text-amber-800">
+                Detectamos el patrón <em>"{suggestion.matchedKeyword}"</em> en los archivos. Podés cambiar el ramo ahora para aplicar la taxonomía especializada.
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+            <button
+              type="button"
+              onClick={() => handleDomainChange(suggestion.domain)}
+              className="text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg transition-colors shadow-xs cursor-pointer"
+            >
+              Cambiar a {suggestion.label}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSuggestion(null)}
+              className="text-xs text-amber-700 hover:text-amber-900 px-2 py-1.5 rounded-lg hover:bg-amber-100 transition-colors cursor-pointer"
+            >
+              Ignorar
+            </button>
+          </div>
+        </div>
+      )}
+
       <div
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
