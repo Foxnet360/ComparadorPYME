@@ -26,7 +26,11 @@ import {
   flatResultToMatrixRowsV2,
   flatResultToMatrixRowsV3,
   quotesToMatrixRows,
+  unifiedResultToMatrixRows,
 } from './matrixTransformer';
+import { deepClauseValidator } from './deepClauseValidator';
+import { UnifiedComparisonResult } from '../../types/unifiedComparison';
+import { getCachedUnifiedResult, setCachedUnifiedResult } from '../cache/redisCache';
 import {
   resolveComparisonSchemaVersion,
   FlatComparisonResultV2,
@@ -245,7 +249,11 @@ export class ComparisonEngineAdapter {
   /**
    * Validate comparison with clauses (deep mode)
    */
-  async validateWithClauses(comparisonId: string, clausePaths: string[]): Promise<MatrixRow[]> {
+  async validateWithClauses(
+    comparisonId: string,
+    clausePaths: string[],
+    domain: InsuranceDomain = 'pyme'
+  ): Promise<MatrixRow[]> {
     console.log(`🔍 [Adapter] Deep mode validation for comparison ${comparisonId}`);
 
     if (!clausePaths || clausePaths.length === 0) {
@@ -253,20 +261,20 @@ export class ComparisonEngineAdapter {
     }
 
     try {
-      // FOLLOW-UP(tech-debt-remediation/DEV-4): deep mode is a placeholder — the
-      // original comparison must be retrieved from the database before the
-      // engine call below can be enabled. Tracked with the V1/V2 pipeline
-      // sunset plan (Informe_deuda.md, MEDIA/Arquitectura).
+      const cached = await getCachedUnifiedResult<UnifiedComparisonResult>(comparisonId);
+      if (!cached) {
+        throw new Error(
+          `Comparison "${comparisonId}" not found in cache. Deep mode requires an active comparison session.`
+        );
+      }
 
-      // Call unified engine deep mode
-      // const result = await unifiedComparisonEngine.validateWithClauses(
-      //   originalComparison,
-      //   clausePaths
-      // );
+      const validatedResult = await deepClauseValidator.validateWithClauses(cached, clausePaths);
+      if (validatedResult?.validatedComparison) {
+        await setCachedUnifiedResult(comparisonId, validatedResult.validatedComparison);
+        return unifiedResultToMatrixRows(validatedResult.validatedComparison, domain);
+      }
 
-      // return this.toMatrixRows(result);
-
-      throw new Error('Deep mode not yet fully implemented');
+      return unifiedResultToMatrixRows(cached, domain);
     } catch (error) {
       console.error(
         `❌ [Adapter] Deep mode failed:`,

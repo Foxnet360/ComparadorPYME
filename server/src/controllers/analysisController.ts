@@ -819,7 +819,7 @@ export async function matrixRowsToComparisonReport(
         // 2. Semantic matching certainty and method weight
         const matchConf = typeof c.matchConfidence === 'number' ? c.matchConfidence : 0.8;
         let methodMultiplier = 0.85;
-        if (c.matchMethod === 'thesaurus' || c.matchMethod === 'graph') {
+        if (c.matchMethod === 'thesaurus' || (c.matchMethod as string) === 'graph') {
           methodMultiplier = 1.0;
         } else if (c.matchMethod === 'fuzzy') {
           methodMultiplier = 0.9;

@@ -5,6 +5,9 @@
 
 import { deepClauseValidator } from '../deepClauseValidator';
 import { UnifiedComparisonResult } from '../../types/unifiedComparison';
+import { unifiedResultToMatrixRows } from '../matrixTransformer';
+import { comparisonEngineAdapter } from '../comparisonEngineAdapter';
+import { setCachedUnifiedResult } from '../../cache/redisCache';
 import * as fs from 'fs';
 
 interface DeepClauseValidatorWithApply {
@@ -229,6 +232,67 @@ describe('Deep Mode Validation', () => {
 
       // Comparison should remain unchanged
       expect(comparison.coverageMatrix[0].rows[1].cells[0].value).toBe('10% - Ver condiciones');
+    });
+  });
+
+  describe('unifiedResultToMatrixRows', () => {
+    it('should correctly transform UnifiedComparisonResult into MatrixRow[]', () => {
+      const rows = unifiedResultToMatrixRows(mockComparison, 'pyme');
+      expect(rows.length).toBeGreaterThan(0);
+
+      // Verify header row
+      const headerRow = rows.find((r) => r.type === 'header' && r.id === 'client_info');
+      expect(headerRow).toBeDefined();
+      expect(headerRow?.label).toContain('TestInsurer A, TestInsurer B');
+
+      // Verify category row
+      const categoryRow = rows.find((r) => r.type === 'header' && r.label === 'INCENDIO');
+      expect(categoryRow).toBeDefined();
+
+      // Verify data row
+      const dataRow = rows.find((r) => r.type === 'data' && r.label === 'Suma Asegurada');
+      expect(dataRow).toBeDefined();
+      expect(dataRow?.cells[0].value).toBe('$500.000.000');
+      expect(dataRow?.cells[1].value).toBe('$450.000.000');
+
+      // Verify financial rows
+      const netPremiumRow = rows.find((r) => r.label === 'Prima Neta');
+      expect(netPremiumRow).toBeDefined();
+      expect(netPremiumRow?.cells.length).toBe(2);
+    });
+  });
+
+  describe('comparisonEngineAdapter.validateWithClauses', () => {
+    it('should throw if clause files array is empty', async () => {
+      await expect(
+        comparisonEngineAdapter.validateWithClauses('test-id', [])
+      ).rejects.toThrow('No clause files provided');
+    });
+
+    it('should throw descriptive error if comparison is not in cache', async () => {
+      await expect(
+        comparisonEngineAdapter.validateWithClauses('non-existent-id', ['/tmp/clause.pdf'])
+      ).rejects.toThrow('not found in cache');
+    });
+
+    it('should successfully validate and return MatrixRow[] when cached', async () => {
+      const comparisonId = 'valid-test-comp-id';
+      await setCachedUnifiedResult(comparisonId, mockComparison);
+
+      // Mock deepClauseValidator.validateWithClauses to avoid real Gemini call
+      vi.spyOn(deepClauseValidator, 'validateWithClauses').mockResolvedValueOnce({
+        originalComparison: mockComparison,
+        validatedComparison: mockComparison,
+        validations: [],
+        discrepancies: [],
+      });
+
+      const matrix = await comparisonEngineAdapter.validateWithClauses(comparisonId, [
+        '/tmp/clause.pdf',
+      ]);
+      expect(matrix).toBeDefined();
+      expect(matrix.length).toBeGreaterThan(0);
+      expect(matrix[0].type).toBe('header');
     });
   });
 });

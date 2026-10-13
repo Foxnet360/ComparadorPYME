@@ -817,7 +817,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                               onClick={() => toggleParent(row.id)}
                               className="ml-auto text-[10px] bg-blue-50 text-blue-600 font-bold px-1.5 py-0.5 rounded-full border border-blue-200/60 hover:bg-blue-100 transition-colors cursor-pointer whitespace-nowrap"
                             >
-                              {childSublimits.length} sublímites
+                              {childSublimits?.length ?? 0} sublímites
                             </button>
                           )}
                         </div>

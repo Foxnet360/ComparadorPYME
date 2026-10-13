@@ -97,7 +97,7 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
                   onFilesSelected={addQuoteFiles}
                   onRemoveFile={removeQuoteFile}
                   variant="primary"
-                  disabled={status === AppStatus.ANALYZING}
+                  disabled={false}
                   onFocusClientSelection={() => setClientSelectorOpen(true)}
                 />
               </div>
@@ -123,7 +123,7 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
                       onRemoveFile={removeClauseFile}
                       variant="secondary"
                       icon={<BookOpen className="w-6 h-6 text-slate-600" />}
-                      disabled={status === AppStatus.ANALYZING}
+                      disabled={false}
                     />
                   </div>
                 )}
@@ -143,7 +143,7 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
               )}
               <button
                 onClick={handleAnalyze}
-                disabled={quoteFiles.length === 0 || status === AppStatus.ANALYZING}
+                disabled={quoteFiles.length === 0}
                 className="group relative flex items-center justify-center space-x-2 bg-indigo-600 text-white px-8 py-3 rounded-full font-semibold shadow-lg shadow-indigo-200 hover:bg-indigo-700 disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed transition-all w-full sm:w-auto overflow-hidden"
               >
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>

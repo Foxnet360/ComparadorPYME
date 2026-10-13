@@ -11,6 +11,7 @@ import {
   StructuredDeductible,
   SchemaSection,
 } from './comparisonSchema';
+import { UnifiedComparisonResult } from '../../types/unifiedComparison';
 import { ParsedQuote } from '../quoteParser';
 import { getCanonicalCoverageOrder } from './flatTableParser';
 import { InsuranceDomain } from '../../types/domain';
@@ -1426,6 +1427,100 @@ export function transformQuotesToMatrix(
       return { value: dateStr, isExcluded: false, isWinner: false };
     }),
   });
+
+  return matrix;
+}
+
+/**
+ * Convert a UnifiedComparisonResult (e.g. from Deep Mode validation) into MatrixRow[].
+ */
+export function unifiedResultToMatrixRows(
+  result: UnifiedComparisonResult,
+  domain: InsuranceDomain = 'pyme'
+): MatrixRow[] {
+  const numInsurers = result.insurers?.length || 0;
+  const matrix: MatrixRow[] = [];
+
+  // Header row
+  const insurerNames = result.insurers?.map((i) => i.name).join(', ') || 'Aseguradoras';
+  matrix.push({
+    type: 'header',
+    id: 'client_info',
+    label: `Cotizaciones ${getDomainHeaderLabel(domain)} - ${insurerNames}`,
+    sectionId: HEADER_SECTION_ID,
+    cells: emptyCells(numInsurers),
+  });
+
+  // Coverage categories and rows
+  result.coverageMatrix?.forEach((category, catIdx) => {
+    matrix.push({
+      type: 'header',
+      id: `section_cat_${catIdx}`,
+      label: category.category,
+      sectionId: COVERAGE_SECTION_ID,
+      cells: emptyCells(numInsurers),
+    });
+
+    category.rows?.forEach((row, rowIdx) => {
+      matrix.push({
+        type: 'data',
+        id: `cov_${catIdx}_${rowIdx}`,
+        label: row.label,
+        sectionId: row.type === 'deductible' ? DEDUCTIBLE_SECTION_ID : COVERAGE_SECTION_ID,
+        cells: row.cells.map((cell) => {
+          const val = cell.value;
+          const isMissing = !val || val === 'No incluido' || val === 'N/A' || val === 'No informado';
+          return {
+            value: isMissing ? 'No informado' : val,
+            rawText: cell.rawText,
+            notes: cell.notes,
+            confidence: cell.confidence ?? (cell.isAmbiguous ? 0.5 : 0.85),
+            isExcluded: isMissing,
+            isWinner: false,
+          };
+        }),
+      });
+    });
+  });
+
+  // Financial section (if present)
+  if (result.financials?.premiums?.length) {
+    matrix.push({
+      type: 'header',
+      id: 'section_financials',
+      label: FINANCIAL_SECTION_LABEL,
+      sectionId: FINANCIAL_SECTION_ID,
+      cells: emptyCells(numInsurers),
+    });
+
+    const netPremiums = result.financials.premiums.map((p) =>
+      p.netPremium !== null && p.netPremium !== undefined ? formatCurrency(p.netPremium) : 'No disponible'
+    );
+    matrix.push({
+      type: 'data',
+      id: 'fin_net_premium',
+      label: 'Prima Neta',
+      sectionId: FINANCIAL_SECTION_ID,
+      cells: netPremiums.map((val) => ({
+        ...cellFromFlatValue(val, val === 'No disponible'),
+        confidence: 0.95,
+      })),
+    });
+
+    const totalPremiums = result.financials.premiums.map((p) =>
+      p.total !== null && p.total !== undefined ? formatCurrency(p.total) : 'No disponible'
+    );
+    matrix.push({
+      type: 'data',
+      id: 'fin_total_premium',
+      label: 'Prima Total (Inc. IVA)',
+      sectionId: FINANCIAL_SECTION_ID,
+      cells: totalPremiums.map((val) => ({
+        ...cellFromFlatValue(val, val === 'No disponible'),
+        confidence: 0.95,
+      })),
+    });
+  }
 
   return matrix;
 }
