@@ -12,6 +12,8 @@ import {
   Download,
   Award,
   ChevronDown,
+  ChevronRight,
+  Layers,
   Check,
   AlertCircle,
   Eye,
@@ -189,6 +191,32 @@ export function isExcludedValue(val: string | undefined | null): boolean {
     normalized === 'excluida' ||
     normalized === 'no contratado' ||
     normalized === ''
+  );
+}
+
+export function isSublimitRow(row: MatrixRow): boolean {
+  if (row.type !== 'data') return false;
+  const label = (row.label || '').trim();
+  if (
+    label.startsWith('↳') ||
+    label.startsWith('- ') ||
+    label.startsWith('· ') ||
+    label.startsWith('– ')
+  ) {
+    return true;
+  }
+  const lower = label.toLowerCase();
+  return (
+    lower.includes('sublímite') ||
+    lower.includes('sub-límite') ||
+    lower.includes('sublimite') ||
+    lower.includes('rider') ||
+    lower.includes('extensión') ||
+    lower.includes('extension') ||
+    lower.includes('(gastos)') ||
+    lower.startsWith('sublímite:') ||
+    lower.startsWith('sub-límite:') ||
+    lower.startsWith('sublimite:')
   );
 }
 
@@ -378,6 +406,61 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
     return row.sectionId === 101;
   });
 
+  // Sublimit folding state
+  const [collapsedParentIds, setCollapsedParentIds] = useState<Set<string>>(new Set());
+
+  // Compute parent-sublimit relationships
+  const { parentToSublimits, sublimitToParent, totalSublimits } = React.useMemo(() => {
+    const parentMap = new Map<string, string[]>();
+    const childMap = new Map<string, string>();
+    let currentParentId: string | null = null;
+    let count = 0;
+
+    for (const r of filteredRows) {
+      if (r.type === 'header' || r.type === 'spacer') {
+        currentParentId = null;
+        continue;
+      }
+      if (isSublimitRow(r)) {
+        if (currentParentId) {
+          const list = parentMap.get(currentParentId) || [];
+          list.push(r.id);
+          parentMap.set(currentParentId, list);
+          childMap.set(r.id, currentParentId);
+          count++;
+        }
+      } else {
+        currentParentId = r.id;
+      }
+    }
+
+    return { parentToSublimits: parentMap, sublimitToParent: childMap, totalSublimits: count };
+  }, [filteredRows]);
+
+  const toggleParent = (parentId: string) => {
+    setCollapsedParentIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(parentId)) {
+        next.delete(parentId);
+      } else {
+        next.add(parentId);
+      }
+      return next;
+    });
+  };
+
+  const allSublimitsCollapsed =
+    parentToSublimits.size > 0 &&
+    Array.from(parentToSublimits.keys()).every((id) => collapsedParentIds.has(id));
+
+  const toggleAllSublimits = () => {
+    if (allSublimitsCollapsed) {
+      setCollapsedParentIds(new Set());
+    } else {
+      setCollapsedParentIds(new Set(parentToSublimits.keys()));
+    }
+  };
+
   const getConfidenceBadgeColor = (confidence: number | undefined) => {
     if (confidence === undefined || confidence === null)
       return 'bg-slate-100 text-slate-500 border-slate-200';
@@ -462,41 +545,58 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
         )}
       </div>
 
-      {/* Segmented Premium Tab Controls */}
-      <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200 max-w-lg shadow-inner">
-        <button
-          onClick={() => setActiveTab('coverages')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs md:text-sm font-semibold transition-all ${
-            activeTab === 'coverages'
-              ? 'bg-white text-blue-700 shadow-sm border border-slate-200'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-          }`}
-        >
-          <ShieldCheck size={16} />
-          Bienes y Coberturas
-        </button>
-        <button
-          onClick={() => setActiveTab('financials')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs md:text-sm font-semibold transition-all ${
-            activeTab === 'financials'
-              ? 'bg-white text-blue-700 shadow-sm border border-slate-200'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-          }`}
-        >
-          <DollarSign size={16} />
-          Primas y Costos
-        </button>
-        <button
-          onClick={() => setActiveTab('additional')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs md:text-sm font-semibold transition-all ${
-            activeTab === 'additional'
-              ? 'bg-white text-blue-700 shadow-sm border border-slate-200'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-          }`}
-        >
-          <Calendar size={16} />
-          Información Adicional
-        </button>
+      {/* Segmented Premium Tab Controls & Sublimit Folding Toolbar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200 max-w-lg shadow-inner">
+          <button
+            onClick={() => setActiveTab('coverages')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs md:text-sm font-semibold transition-all ${
+              activeTab === 'coverages'
+                ? 'bg-white text-blue-700 shadow-sm border border-slate-200'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <ShieldCheck size={16} />
+            Bienes y Coberturas
+          </button>
+          <button
+            onClick={() => setActiveTab('financials')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs md:text-sm font-semibold transition-all ${
+              activeTab === 'financials'
+                ? 'bg-white text-blue-700 shadow-sm border border-slate-200'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <DollarSign size={16} />
+            Primas y Costos
+          </button>
+          <button
+            onClick={() => setActiveTab('additional')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs md:text-sm font-semibold transition-all ${
+              activeTab === 'additional'
+                ? 'bg-white text-blue-700 shadow-sm border border-slate-200'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <Calendar size={16} />
+            Información Adicional
+          </button>
+        </div>
+
+        {totalSublimits > 0 && activeTab === 'coverages' && (
+          <button
+            onClick={toggleAllSublimits}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all shadow-sm active:scale-95 cursor-pointer"
+            title="Plegar o desplegar sublímites agrupados bajo coberturas principales"
+          >
+            <Layers size={15} className="text-blue-600" />
+            <span>
+              {allSublimitsCollapsed
+                ? `Expandir sublímites (${totalSublimits})`
+                : `Plegar sublímites (${totalSublimits})`}
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Header Metadata Card */}
@@ -669,19 +769,58 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                     );
                   }
 
+                  // Check if this row is a folded sublimit
+                  const parentId = sublimitToParent.get(row.id);
+                  if (parentId && collapsedParentIds.has(parentId)) {
+                    return null;
+                  }
+
+                  const childSublimits = parentToSublimits.get(row.id);
+                  const hasSublimits = Boolean(childSublimits && childSublimits.length > 0);
+                  const isCollapsed = collapsedParentIds.has(row.id);
+                  const isSublimit = Boolean(parentId);
+
                   // Standard Data Row
                   return (
                     <tr
                       key={row.id}
-                      className="hover:bg-slate-50/70 transition-colors group"
+                      className={`hover:bg-slate-50/70 transition-colors group ${
+                        isSublimit ? 'bg-slate-50/30' : ''
+                      }`}
                       role="row"
                     >
                       {/* Concept Label (Column A) */}
                       <td
                         role="gridcell"
-                        className="px-6 py-3.5 text-xs md:text-sm font-semibold text-slate-700 bg-[#F8FAFC] sticky left-0 border-r border-slate-100 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)] z-10 group-hover:bg-[#F1F5F9]/80"
+                        className={`px-6 py-3.5 text-xs md:text-sm font-semibold text-slate-700 bg-[#F8FAFC] sticky left-0 border-r border-slate-100 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)] z-10 group-hover:bg-[#F1F5F9]/80 ${
+                          isSublimit ? 'pl-10 text-slate-600 font-normal bg-slate-50/50' : ''
+                        }`}
                       >
-                        {row.label}
+                        <div className="flex items-center gap-2">
+                          {hasSublimits && (
+                            <button
+                              type="button"
+                              onClick={() => toggleParent(row.id)}
+                              className="p-1 -ml-1 rounded hover:bg-slate-200 text-slate-500 transition-colors cursor-pointer"
+                              title={isCollapsed ? 'Desplegar sublímites' : 'Plegar sublímites'}
+                            >
+                              {isCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                            </button>
+                          )}
+                          {isSublimit && (
+                            <span className="text-slate-400 font-mono text-xs select-none">↳</span>
+                          )}
+                          <span>{row.label}</span>
+                          {hasSublimits && (
+                            <button
+                              type="button"
+                              onClick={() => toggleParent(row.id)}
+                              className="ml-auto text-[10px] bg-blue-50 text-blue-600 font-bold px-1.5 py-0.5 rounded-full border border-blue-200/60 hover:bg-blue-100 transition-colors cursor-pointer whitespace-nowrap"
+                            >
+                              {childSublimits.length} sublímites
+                            </button>
+                          )}
+                        </div>
                       </td>
 
                       {/* Insurer Cells */}

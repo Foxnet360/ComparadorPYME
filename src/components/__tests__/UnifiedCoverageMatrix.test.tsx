@@ -409,4 +409,56 @@ describe('UnifiedCoverageMatrix', () => {
     expect(screen.getByText('10% PERD - Min 1 SMMLV')).toBeTruthy();
     expect(screen.getByText('No aplica')).toBeTruthy();
   });
+
+  it('supports collapsible sublimit folding under parent coverages', () => {
+    const rowsWithSublimits: MatrixRow[] = [
+      {
+        type: 'data',
+        id: 'cov_main',
+        label: 'Incendio y Rayo',
+        sectionId: 1,
+        cells: [{ value: '$ 500.000.000', isExcluded: false, isWinner: false }],
+      },
+      {
+        type: 'data',
+        id: 'cov_sub1',
+        label: '↳ Gastos de Extinción',
+        sectionId: 1,
+        cells: [{ value: '$ 50.000.000', isExcluded: false, isWinner: false }],
+      },
+      {
+        type: 'data',
+        id: 'cov_sub2',
+        label: '↳ Remoción de Escombros',
+        sectionId: 1,
+        cells: [{ value: '$ 25.000.000', isExcluded: false, isWinner: false }],
+      },
+    ];
+
+    renderWithProvider(
+      <UnifiedCoverageMatrix quotes={baseQuotes} rows={rowsWithSublimits} />
+    );
+
+    // Initial state: parent shows sublimit count badge
+    expect(screen.getByText('Incendio y Rayo')).toBeTruthy();
+    expect(screen.getByText('2 sublímites')).toBeTruthy();
+    expect(screen.getByText('↳ Gastos de Extinción')).toBeTruthy();
+    expect(screen.getByText('↳ Remoción de Escombros')).toBeTruthy();
+
+    // Click to fold parent
+    const foldButton = screen.getByTitle('Plegar sublímites');
+    fireEvent.click(foldButton);
+
+    // Sublimits should now be hidden
+    expect(screen.queryByText('↳ Gastos de Extinción')).toBeNull();
+    expect(screen.queryByText('↳ Remoción de Escombros')).toBeNull();
+
+    // Click to unfold parent
+    const unfoldButton = screen.getByTitle('Desplegar sublímites');
+    fireEvent.click(unfoldButton);
+
+    // Sublimits should reappear
+    expect(screen.getByText('↳ Gastos de Extinción')).toBeTruthy();
+    expect(screen.getByText('↳ Remoción de Escombros')).toBeTruthy();
+  });
 });
