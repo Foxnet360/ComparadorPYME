@@ -96,6 +96,36 @@ export class ComparisonEngineAdapter {
       `🚩 [Adapter] Unified engine ${flagEnabled ? 'ENABLED' : 'DISABLED'} for user ${userId || 'anonymous'} domain=${domain} [${correlationId}]`
     );
 
+    const preferTwoStage = featureFlags.isEnabled('preferTwoStagePipeline');
+    if (preferTwoStage) {
+      console.log(
+        `🚀 [Adapter] Prioritizing Two-Stage per-quote extraction pipeline as PRIMARY engine [${correlationId}] domain=${domain}`
+      );
+      try {
+        const matrix = await this.runPerQuoteBatch(
+          pdfPaths,
+          'primary_two_stage_pipeline',
+          correlationId,
+          domain
+        );
+        return {
+          matrix,
+          engine: 'unified',
+          schemaVersion: v2Schema ? 2 : 1,
+          correlationId,
+          graphEnabled: false,
+          templateHintsEnabled: false,
+          domain,
+        };
+      } catch (twoStageError) {
+        const reason =
+          twoStageError instanceof Error ? twoStageError.message : String(twoStageError);
+        console.warn(
+          `⚠️ [Adapter] Primary two-stage pipeline failed [${correlationId}]: ${reason}. Falling back to single-shot unified comparison engine.`
+        );
+      }
+    }
+
     if (!flagEnabled) {
       console.log(
         `📦 [Adapter] Routing to legacy batch service (flag disabled) [${correlationId}]`
@@ -247,8 +277,25 @@ export class ComparisonEngineAdapter {
   }
 
   /**
+   * Run the per-quote extraction pipeline (with Two-Stage Multimodal Extraction)
+   * and convert the results to the shared MatrixRow[] shape.
+   */
+  public async runPerQuoteBatch(
+    pdfPaths: string[],
+    reason: string,
+    correlationId: string,
+    domain: InsuranceDomain = 'pyme'
+  ): Promise<MatrixRow[]> {
+    console.log(
+      `🔄 [Adapter] Executing per-quote Two-Stage extraction pipeline [${correlationId}], reason=${reason}, domain=${domain}`
+    );
+    const quotes = await processQuotesBatch(pdfPaths, { concurrencyLimit: 2, domain });
+    return quotesToMatrixRows(quotes, domain);
+  }
+
+  /**
    * Run the legacy per-quote batch service and convert the results to the
-   * shared MatrixRow[] shape.
+   * shared MatrixRow[] shape. Backwards compatible alias for existing tests and callers.
    */
   private async runLegacyBatch(
     pdfPaths: string[],
@@ -256,11 +303,7 @@ export class ComparisonEngineAdapter {
     correlationId: string,
     domain: InsuranceDomain = 'pyme'
   ): Promise<MatrixRow[]> {
-    console.log(
-      `🔄 [Adapter] Falling back to legacy batch service [${correlationId}], reason=${reason}, domain=${domain}`
-    );
-    const quotes = await processQuotesBatch(pdfPaths, { concurrencyLimit: 2, domain });
-    return quotesToMatrixRows(quotes, domain);
+    return this.runPerQuoteBatch(pdfPaths, reason, correlationId, domain);
   }
 }
 

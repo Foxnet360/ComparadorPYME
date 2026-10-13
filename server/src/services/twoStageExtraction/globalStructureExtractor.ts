@@ -91,16 +91,44 @@ export const GlobalStructureJsonSchema = {
   required: ['insurerName', 'policyName', 'premium', 'formatFamily'],
 };
 
+export function getDomainDescription(domain?: string): string {
+  switch (domain?.toLowerCase()) {
+    case 'autos':
+      return 'seguros de automóviles y vehículos en Colombia';
+    case 'copropiedades':
+      return 'seguros de copropiedades y zonas comunes (Ley 675) en Colombia';
+    case 'salud':
+      return 'seguros de salud y planes de medicina prepagada en Colombia';
+    case 'vida_grupo':
+      return 'seguros de vida grupo y vida colectivo en Colombia';
+    case 'cumplimiento':
+      return 'seguros de cumplimiento y fianzas en Colombia';
+    case 'transporte':
+      return 'seguros de transporte de mercancías y carga en Colombia';
+    case 'hogar':
+      return 'seguros de hogar y vivienda en Colombia';
+    case 'equipo_maquinaria':
+      return 'seguros de equipo y maquinaria en Colombia';
+    case 'casco_embarcacion':
+      return 'seguros de casco y embarcaciones en Colombia';
+    case 'pyme':
+    default:
+      return 'seguros comerciales y empresariales en Colombia';
+  }
+}
+
 export class GlobalStructureExtractor {
   public async extract(
     uploadedFile: UploadedFile,
     filename: string,
-    extractedText?: string
+    extractedText?: string,
+    domain?: string
   ): Promise<GlobalStructureExtraction> {
     const ai = getGenAI();
     const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.7-flash';
 
-    let prompt = `Eres un extractor experto de seguros comerciales PYME en Colombia.
+    const domainDesc = getDomainDescription(domain);
+    let prompt = `Eres un extractor experto de ${domainDesc}.
 Tu objetivo en esta FASE 1 (Estructura Global) es analizar el documento completo y extraer únicamente:
 1. Metadatos generales: Aseguradora, Nombre de la Póliza/Producto, Vigencia y Familia de Formato.
 2. Desglose económico de prima: Prima neta, Gastos de expedición, IVA, Otros cargos y Total a pagar (en COP o USD).

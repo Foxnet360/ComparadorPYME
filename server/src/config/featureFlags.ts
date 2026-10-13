@@ -56,6 +56,9 @@ export interface FeatureFlags {
 
   // Two-stage multimodal extraction (Phase 3)
   enableTwoStageExtraction: boolean;
+
+  // Prefer per-quote two-stage extraction pipeline over single-shot unified engine
+  preferTwoStagePipeline: boolean;
 }
 
 // Check if Redis is configured
@@ -129,8 +132,11 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   // Active ontology & disambiguation (Phase 2, enabled by default, can be disabled via env)
   enableActiveOntologyDisambiguation: process.env.ENABLE_ACTIVE_ONTOLOGY_DISAMBIGUATION !== 'false',
 
-  // Two-stage multimodal extraction (Phase 3, disabled by default, opt-in via env)
-  enableTwoStageExtraction: process.env.ENABLE_TWO_STAGE_EXTRACTION === 'true',
+  // Two-stage multimodal extraction (Phase 3, enabled by default, can be disabled via env)
+  enableTwoStageExtraction: process.env.ENABLE_TWO_STAGE_EXTRACTION !== 'false',
+
+  // Prioritize two-stage extraction per quote as primary comparison route
+  preferTwoStagePipeline: process.env.PREFER_TWO_STAGE_PIPELINE === 'true',
 };
 
 // Development configuration - for testing
@@ -143,6 +149,7 @@ export const DEVELOPMENT_FLAGS: FeatureFlags = {
   enableClaimDeductibleSimulator: true,
   enableActiveOntologyDisambiguation: true,
   enableTwoStageExtraction: true,
+  preferTwoStagePipeline: false,
 };
 
 // Production rollout configuration - gradual activation
@@ -170,7 +177,8 @@ export const PRODUCTION_ROLLOUT_FLAGS: FeatureFlags = {
   enablePremiumEquationAudit: true,
   enableClaimDeductibleSimulator: true,
   enableActiveOntologyDisambiguation: true,
-  enableTwoStageExtraction: false,
+  enableTwoStageExtraction: process.env.ENABLE_TWO_STAGE_EXTRACTION !== 'false',
+  preferTwoStagePipeline: process.env.PREFER_TWO_STAGE_PIPELINE === 'true',
 };
 
 // Maps recognized env var names to FeatureFlags keys. Fixes the old key
@@ -204,6 +212,7 @@ const ENV_FLAG_MAP: Record<string, keyof FeatureFlags> = {
   ENABLE_CLAIM_DEDUCTIBLE_SIMULATOR: 'enableClaimDeductibleSimulator',
   ENABLE_ACTIVE_ONTOLOGY_DISAMBIGUATION: 'enableActiveOntologyDisambiguation',
   ENABLE_TWO_STAGE_EXTRACTION: 'enableTwoStageExtraction',
+  PREFER_TWO_STAGE_PIPELINE: 'preferTwoStagePipeline',
 };
 
 /**

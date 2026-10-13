@@ -479,7 +479,8 @@ export function generateComparison(
   clauseValidationResults?: Map<number, ClauseValidationSummary | null>,
   advancedAnalysisResults?: Map<number, Record<string, unknown> | null>,
   dualExtractionResults?: Map<number, DualExtractionResult[]>,
-  insurersWithClauses?: Map<string, boolean>
+  insurersWithClauses?: Map<string, boolean>,
+  domain?: InsuranceDomain | string
 ) {
   const quotesWithScores = quotes.map((quote, index) => {
     const scoring = scoringResults.get(index);
@@ -582,7 +583,8 @@ export function generateComparison(
             deductibles: quote.coverages.map((c) => c.deductible).join('; '),
             rawText: quote.rawText,
           } as unknown as QuoteAnalysis,
-          quotes as unknown as QuoteAnalysis[]
+          quotes as unknown as QuoteAnalysis[],
+          domain
         );
         return {
           deductibleRisks: audit.deductibleRisks,
@@ -826,9 +828,14 @@ export async function matrixRowsToComparisonReport(
         }
       });
 
+      const defaultPolicyName =
+        domain === 'pyme'
+          ? 'Cotización PYME'
+          : `Cotización ${domain.charAt(0).toUpperCase() + domain.slice(1).replace('_', ' ')}`;
+
       const parsedQuote: ParsedQuote = {
         insurerName,
-        policyName: 'Cotización PYME',
+        policyName: defaultPolicyName,
         priceAnnual,
         currency: 'COP',
         coverages: coverages.map((c, idx) => ({
@@ -849,7 +856,7 @@ export async function matrixRowsToComparisonReport(
 
       return {
         insurerName,
-        policyName: 'Cotización PYME',
+        policyName: defaultPolicyName,
         priceAnnual,
         priceMonthly: Math.round(priceAnnual / 12),
         currency: 'COP',
@@ -1010,7 +1017,8 @@ export async function matrixRowsToComparisonReport(
           deductibles: iq.deductibles,
           rawText: '',
         } as unknown as QuoteAnalysis,
-        intermediateQuotes as unknown as QuoteAnalysis[]
+        intermediateQuotes as unknown as QuoteAnalysis[],
+        domain
       );
 
       const combinedAlerts = [...iq.alerts];

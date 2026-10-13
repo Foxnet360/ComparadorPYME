@@ -86,9 +86,7 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
           </div>
 
           {/* 2. File Uploaders */}
-          <div
-            className={`bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden transition-all duration-300 ${!selectedClient ? 'opacity-50 grayscale pointer-events-none' : 'opacity-100'}`}
-          >
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden transition-all duration-300 opacity-100">
             <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
               {/* Left: Quotes */}
               <div className="p-8">
@@ -99,7 +97,7 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
                   onFilesSelected={addQuoteFiles}
                   onRemoveFile={removeQuoteFile}
                   variant="primary"
-                  disabled={!selectedClient}
+                  disabled={status === AppStatus.ANALYZING}
                   onFocusClientSelection={() => setClientSelectorOpen(true)}
                 />
               </div>
@@ -125,18 +123,28 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
                       onRemoveFile={removeClauseFile}
                       variant="secondary"
                       icon={<BookOpen className="w-6 h-6 text-slate-600" />}
-                      disabled={!selectedClient}
+                      disabled={status === AppStatus.ANALYZING}
                     />
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end">
+            <div className="p-6 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+              {!selectedClient ? (
+                <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                  <span className="font-semibold">Modo Rápido:</span>
+                  <span>Sin cliente asignado (se registrará como cotización de mercado)</span>
+                </div>
+              ) : (
+                <div className="text-xs text-slate-500">
+                  Cliente asignado: <span className="font-semibold text-slate-700">{selectedClient.name}</span>
+                </div>
+              )}
               <button
                 onClick={handleAnalyze}
-                disabled={quoteFiles.length === 0 || !selectedClient}
-                className="group relative flex items-center justify-center space-x-2 bg-indigo-600 text-white px-8 py-3 rounded-full font-semibold shadow-lg shadow-indigo-200 hover:bg-indigo-700 disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed transition-all w-full md:w-auto overflow-hidden"
+                disabled={quoteFiles.length === 0 || status === AppStatus.ANALYZING}
+                className="group relative flex items-center justify-center space-x-2 bg-indigo-600 text-white px-8 py-3 rounded-full font-semibold shadow-lg shadow-indigo-200 hover:bg-indigo-700 disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed transition-all w-full sm:w-auto overflow-hidden"
               >
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                 <Sparkles size={20} className="relative z-10" />

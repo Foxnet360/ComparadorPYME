@@ -6,7 +6,7 @@ import {
   formatMatrixValue,
   enrichSmmlvDeductible,
   isExcludedValue,
-} from './matrixTransformer';
+} from './unifiedComparison/matrixTransformer';
 
 interface ClientInfo {
   name?: string;

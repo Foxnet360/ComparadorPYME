@@ -7,6 +7,8 @@
 import { ScoringBreakdown } from '../types';
 import { featureFlags } from '../config/featureFlags';
 import { auditPremiumEquation } from './financialAudit/premiumAuditor';
+import { InsuranceDomain, isInsuranceDomain } from '../types/domain';
+import { domainTaxonomyRegistry } from './domainTaxonomyRegistry';
 
 // Local type definitions to avoid importing from outside rootDir
 interface CoverageItem {
@@ -215,11 +217,41 @@ const analyzeDeductible = (coverage: CoverageItem): DeductibleRisk => {
 /**
  * Detect missing canonical coverages
  */
-const detectMissingCoverages = (quote: QuoteAnalysis): MissingCoverage[] => {
+export const detectMissingCoverages = (
+  quote: QuoteAnalysis,
+  domain?: string
+): MissingCoverage[] => {
   const missing: MissingCoverage[] = [];
   const coverageNames = (quote.coverages || []).map((c) => c.name?.toLowerCase() || '');
 
-  for (const category of CANONICAL_CATEGORIES) {
+  let categoriesToUse: Array<{
+    id: number;
+    name: string;
+    isRequired?: boolean;
+    synonyms?: string[];
+    aliases?: string[];
+  }> = CANONICAL_CATEGORIES;
+  let isDynamicTaxonomy = false;
+
+  if (domain && domain !== 'pyme' && isInsuranceDomain(domain)) {
+    try {
+      const taxonomy = domainTaxonomyRegistry.getTaxonomy(domain);
+      if (taxonomy && Array.isArray(taxonomy.categories) && taxonomy.categories.length > 0) {
+        categoriesToUse = taxonomy.categories.map((c, idx) => ({
+          id: typeof c.id === 'number' ? c.id : (parseInt(String(c.id), 10) || idx + 1),
+          name: c.name,
+          isRequired: c.isRequired,
+          synonyms: c.synonyms,
+          aliases: c.aliases,
+        }));
+        isDynamicTaxonomy = true;
+      }
+    } catch {
+      categoriesToUse = CANONICAL_CATEGORIES;
+    }
+  }
+
+  for (const category of categoriesToUse) {
     const categoryNameLower = category.name.toLowerCase();
 
     // Check if any coverage matches this category
@@ -227,21 +259,35 @@ const detectMissingCoverages = (quote: QuoteAnalysis): MissingCoverage[] => {
       // Direct match
       if (name.includes(categoryNameLower)) return true;
 
-      // Common abbreviations
-      const aliases: Record<string, string[]> = {
-        'responsabilidad civil (rce)': ['rc', 'rce', 'responsabilidad civil'],
-        'incendio (edificio y contenidos)': ['incendio', 'edificio', 'contenidos'],
-        'equipo eléctrico y electrónico': [
-          'equipo electronico',
-          'equipo electrico',
-          'corto circuito',
-        ],
-        'huelga, motín, asonada (hmacc)': ['huelga', 'motin', 'asonada', 'hmacc'],
-        'terremoto y eventos catastróficos': ['terremoto', 'catastroficos', 'sismo'],
-      };
+      // Common abbreviations / synonyms
+      const extraKeywords = [
+        ...(category.synonyms || []),
+        ...(category.aliases || []),
+      ];
+      if (extraKeywords.length > 0) {
+        if (extraKeywords.some((kw) => name.includes(kw.toLowerCase()))) {
+          return true;
+        }
+      }
 
-      const categoryAliases = aliases[categoryNameLower] || [];
-      return categoryAliases.some((alias: string) => name.includes(alias));
+      if (!isDynamicTaxonomy) {
+        const aliases: Record<string, string[]> = {
+          'responsabilidad civil (rce)': ['rc', 'rce', 'responsabilidad civil'],
+          'incendio (edificio y contenidos)': ['incendio', 'edificio', 'contenidos'],
+          'equipo eléctrico y electrónico': [
+            'equipo electronico',
+            'equipo electrico',
+            'corto circuito',
+          ],
+          'huelga, motín, asonada (hmacc)': ['huelga', 'motin', 'asonada', 'hmacc'],
+          'terremoto y eventos catastróficos': ['terremoto', 'catastroficos', 'sismo'],
+        };
+
+        const categoryAliases = aliases[categoryNameLower] || [];
+        return categoryAliases.some((alias: string) => name.includes(alias));
+      }
+
+      return false;
     });
 
     if (!hasCoverage) {
@@ -252,10 +298,14 @@ const detectMissingCoverages = (quote: QuoteAnalysis): MissingCoverage[] => {
         'Sustracción / Hurto',
       ];
 
+      const impact: 'HIGH' | 'MEDIUM' = isDynamicTaxonomy
+        ? (category.isRequired ? 'HIGH' : 'MEDIUM')
+        : (highImpactCategories.includes(category.name) ? 'HIGH' : 'MEDIUM');
+
       missing.push({
         categoryName: category.name,
         categoryId: category.id,
-        impact: highImpactCategories.includes(category.name) ? 'HIGH' : 'MEDIUM',
+        impact,
         reason: `Cobertura canónica #${category.id} no incluida en la cotización`,
       });
     }
@@ -408,7 +458,8 @@ const generateAlerts = (
  */
 const detectNegotiationPoints = (
   quote: QuoteAnalysis,
-  allQuotes: QuoteAnalysis[]
+  allQuotes: QuoteAnalysis[],
+  domain?: string
 ): NegotiationPoint[] => {
   const points: NegotiationPoint[] = [];
 
@@ -444,7 +495,7 @@ const detectNegotiationPoints = (
   }
 
   // 3. Missing critical coverages
-  const missing = detectMissingCoverages(quote);
+  const missing = detectMissingCoverages(quote, domain);
   const highImpactMissing = missing.filter((m) => m.impact === 'HIGH');
   if (highImpactMissing.length > 0) {
     points.push({
@@ -695,10 +746,11 @@ const detectProfileRecommendations = (quote: QuoteAnalysis): ProfileRecommendati
  */
 export const auditQuote = (
   quote: QuoteAnalysis,
-  allQuotes: QuoteAnalysis[] = []
+  allQuotes: QuoteAnalysis[] = [],
+  domain?: string
 ): QuoteAuditResult => {
   const deductibleRisks = (quote.coverages || []).map(analyzeDeductible);
-  const missingCoverages = detectMissingCoverages(quote);
+  const missingCoverages = detectMissingCoverages(quote, domain);
   const specialConditions = extractSpecialConditions(quote);
   const alerts = generateAlerts(deductibleRisks, missingCoverages, specialConditions);
 
@@ -714,7 +766,7 @@ export const auditQuote = (
       });
     }
   }
-  const negotiationPoints = detectNegotiationPoints(quote, allQuotes);
+  const negotiationPoints = detectNegotiationPoints(quote, allQuotes, domain);
   const competitiveAdvantages = detectCompetitiveAdvantages(quote, allQuotes);
   const profileRecommendations = detectProfileRecommendations(quote);
 
@@ -833,4 +885,5 @@ export default {
   auditQuote,
   compareDeductibles,
   analyzeDeductible,
+  detectMissingCoverages,
 };

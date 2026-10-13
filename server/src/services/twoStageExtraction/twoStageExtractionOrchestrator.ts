@@ -7,6 +7,7 @@ import { focalizedCoverageExtractor, FocalizedCoverageExtractor } from './focali
 export interface TwoStageOrchestratorOptions {
   skipValidation?: boolean;
   onRepairUsed?: (category: string) => void;
+  domain?: string;
 }
 
 export class TwoStageExtractionOrchestrator {
@@ -44,7 +45,12 @@ export class TwoStageExtractionOrchestrator {
 
       // Step 2: Stage 1 - Global Structure Extraction
       console.log(`   [1/2] Executing Stage 1: Global structure & financial breakdown...`);
-      const stage1 = await this.globalExtractor.extract(uploadedFile, filename, extractedText);
+      const stage1 = await this.globalExtractor.extract(
+        uploadedFile,
+        filename,
+        extractedText,
+        options?.domain
+      );
 
       // Step 3: Stage 2 - Focalized Coverage Extraction
       console.log(`   [2/2] Executing Stage 2: Focalized coverage & deductible mapping...`);
@@ -52,7 +58,8 @@ export class TwoStageExtractionOrchestrator {
         uploadedFile,
         filename,
         stage1.coverageSections ?? undefined,
-        extractedText
+        extractedText,
+        options?.domain
       );
 
       if (!stage2.rawCoverages || stage2.rawCoverages.length === 0) {

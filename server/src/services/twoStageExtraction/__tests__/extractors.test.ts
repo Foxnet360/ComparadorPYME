@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GlobalStructureSchema, FocalizedCoverageSchema } from '../../../types/twoStageExtraction';
+import { getDomainDescription } from '../globalStructureExtractor';
 
 describe('TwoStageExtraction Schemas and Validators', () => {
   it('validates a valid GlobalStructureExtraction object', () => {
@@ -102,5 +103,20 @@ describe('TwoStageExtraction Schemas and Validators', () => {
       ],
     };
     expect(FocalizedCoverageSchema.safeParse(missingSnippet).success).toBe(false);
+  });
+});
+
+describe('Domain description mapping for two-stage extractors', () => {
+  it('maps known domains to Colombian insurance descriptions and falls back to PYME/general', () => {
+    expect(getDomainDescription('autos')).toBe('seguros de automóviles y vehículos en Colombia');
+    expect(getDomainDescription('copropiedades')).toBe('seguros de copropiedades y zonas comunes (Ley 675) en Colombia');
+    expect(getDomainDescription('salud')).toBe('seguros de salud y planes de medicina prepagada en Colombia');
+    expect(getDomainDescription('vida_grupo')).toBe('seguros de vida grupo y vida colectivo en Colombia');
+    expect(getDomainDescription('cumplimiento')).toBe('seguros de cumplimiento y fianzas en Colombia');
+    expect(getDomainDescription('transporte')).toBe('seguros de transporte de mercancías y carga en Colombia');
+    expect(getDomainDescription('hogar')).toBe('seguros de hogar y vivienda en Colombia');
+    expect(getDomainDescription('pyme')).toBe('seguros comerciales y empresariales en Colombia');
+    expect(getDomainDescription(undefined)).toBe('seguros comerciales y empresariales en Colombia');
+    expect(getDomainDescription('unknown_domain')).toBe('seguros comerciales y empresariales en Colombia');
   });
 });

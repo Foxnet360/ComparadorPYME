@@ -530,6 +530,7 @@ async function processQuoteMultimodalInternal(
                 nativeText,
                 {
                   skipValidation: true,
+                  domain,
                   onRepairUsed: (category) => {
                     repairUsed = true;
                     repairType = category;

@@ -408,6 +408,28 @@ describe('analysisController - matrixRowsToComparisonReport', () => {
     await matrixRowsToComparisonReport(matrixRows, quoteFiles, { domain: 'autos' });
     expect(semanticMatcher.matchCoverage).toHaveBeenCalledWith('Domain Test Coverage', 'autos');
   });
+
+  it('generates domain-aware policyName in parsed quotes', async () => {
+    const matrixRows: MatrixRow[] = [
+      {
+        type: 'data',
+        id: 'r1',
+        label: 'Responsabilidad Civil',
+        sectionId: 1,
+        cells: [{ value: 'Incluido', isExcluded: false, isWinner: false, confidence: 0.8 }],
+      },
+    ];
+    const quoteFiles = [{ originalname: 'COTIZACION-MAPFRE.pdf' }] as Express.Multer.File[];
+
+    const reportPyme = await matrixRowsToComparisonReport(matrixRows, quoteFiles, { domain: 'pyme' });
+    expect(reportPyme.quotes[0].policyName).toBe('Cotización PYME');
+
+    const reportAutos = await matrixRowsToComparisonReport(matrixRows, quoteFiles, { domain: 'autos' });
+    expect(reportAutos.quotes[0].policyName).toBe('Cotización Autos');
+
+    const reportSalud = await matrixRowsToComparisonReport(matrixRows, quoteFiles, { domain: 'salud' });
+    expect(reportSalud.quotes[0].policyName).toBe('Cotización Salud');
+  });
 });
 
 describe('analysisController - resolveAnalysisUserId', () => {

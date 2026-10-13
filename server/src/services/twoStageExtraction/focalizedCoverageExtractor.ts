@@ -6,6 +6,7 @@ import {
   FocalizedCoverageExtraction,
   FocalizedCoverageSchema,
 } from '../../types/twoStageExtraction';
+import { getDomainDescription } from './globalStructureExtractor';
 
 const SchemaType = Type;
 
@@ -86,12 +87,14 @@ export class FocalizedCoverageExtractor {
     uploadedFile: UploadedFile,
     filename: string,
     coverageSections?: CoverageSectionHint[],
-    extractedText?: string
+    extractedText?: string,
+    domain?: string
   ): Promise<FocalizedCoverageExtraction> {
     const ai = getGenAI();
     const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.7-flash';
 
-    let prompt = `Eres un extractor especialista en clausulado y tablas de coberturas para seguros comerciales PYME en Colombia.
+    const domainDesc = getDomainDescription(domain);
+    let prompt = `Eres un extractor especialista en clausulado y tablas de coberturas para ${domainDesc}.
 Tu objetivo en esta FASE 2 (Extracción Focalizada de Coberturas) es extraer TODAS y cada una de las coberturas, amparos, sublímites y deducibles del documento con máxima precisión y anclaje posicional.
 
 INSTRUCCIONES CLAVE:

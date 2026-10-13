@@ -143,11 +143,12 @@ describe('TwoStageExtractionOrchestrator', () => {
     );
 
     expect(geminiService.uploadFile).toHaveBeenCalledWith('/tmp/quote.pdf', 'application/pdf', 'quote.pdf');
-    expect(mockGlobalExtractor.extract).toHaveBeenCalledWith(sampleUploadedFile, 'quote.pdf', undefined);
+    expect(mockGlobalExtractor.extract).toHaveBeenCalledWith(sampleUploadedFile, 'quote.pdf', undefined, undefined);
     expect(mockCoverageExtractor.extract).toHaveBeenCalledWith(
       sampleUploadedFile,
       'quote.pdf',
       sampleStage1Output.coverageSections,
+      undefined,
       undefined
     );
 
@@ -160,6 +161,35 @@ describe('TwoStageExtractionOrchestrator', () => {
 
     expect(geminiService.deleteFile).toHaveBeenCalledWith(sampleUploadedFile.name);
     expect(geminiService.extractFromPdfWithVision).not.toHaveBeenCalled();
+  });
+
+  it('propagates domain option to both global and focalized coverage extractors', async () => {
+    (featureFlags.isEnabled as any).mockReturnValue(true);
+    (mockGlobalExtractor.extract as any).mockResolvedValue(sampleStage1Output);
+    (mockCoverageExtractor.extract as any).mockResolvedValue(sampleStage2Output);
+
+    const result = await orchestrator.extractTwoStage(
+      '/tmp/quote-autos.pdf',
+      'Autos prompt',
+      'quote-autos.pdf',
+      'Texto nativo autos',
+      { domain: 'autos' }
+    );
+
+    expect(mockGlobalExtractor.extract).toHaveBeenCalledWith(
+      sampleUploadedFile,
+      'quote-autos.pdf',
+      'Texto nativo autos',
+      'autos'
+    );
+    expect(mockCoverageExtractor.extract).toHaveBeenCalledWith(
+      sampleUploadedFile,
+      'quote-autos.pdf',
+      sampleStage1Output.coverageSections,
+      'Texto nativo autos',
+      'autos'
+    );
+    expect(result.insurerName).toBe('SURA');
   });
 
   it('triggers transparent fallback to single-stage when Stage 2 returns 0 coverages', async () => {

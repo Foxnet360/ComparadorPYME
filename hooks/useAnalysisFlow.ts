@@ -41,7 +41,7 @@ export const useAnalysisFlow = () => {
     dispatch({ type: 'SET_STATUS', payload: AppStatus.ANALYZING });
 
     try {
-      const clientName = state.selectedClient?.name || 'Cliente Desconocido';
+      const clientName = state.selectedClient?.name || 'Prospecto General';
       // Pass clauseIds when using library mode
       const clauseIdsToUse = state.clauseMode === 'library' ? state.selectedClauseIds : undefined;
       const result = await analyzeQuotesWithGemini(

@@ -496,4 +496,39 @@ describe('ComparisonEngineAdapter', () => {
       expect(result.templateHintsEnabled).toBe(false);
     });
   });
+
+  describe('preferTwoStagePipeline routing', () => {
+    it('prioritizes Two-Stage per-quote extraction pipeline as primary when preferTwoStagePipeline is true', async () => {
+      featureFlags.updateFlag('preferTwoStagePipeline', true);
+
+      const result = await comparisonEngineAdapter.generateComparison(['a.pdf', 'b.pdf'], {
+        userId: 'test-user',
+        domain: 'autos',
+      });
+
+      expect(batchSpy).toHaveBeenCalledWith(['a.pdf', 'b.pdf'], {
+        concurrencyLimit: 2,
+        domain: 'autos',
+      });
+      expect(compareSpy).not.toHaveBeenCalled();
+      expect(result.engine).toBe('unified');
+      expect(result.domain).toBe('autos');
+      expect(result.matrix.length).toBeGreaterThan(0);
+    });
+
+    it('falls back to unified engine when primary two-stage pipeline fails', async () => {
+      featureFlags.updateFlag('preferTwoStagePipeline', true);
+      batchSpy.mockRejectedValueOnce(new Error('PDF extraction corrupt'));
+      compareSpy.mockResolvedValue(makeFlatResult());
+
+      const result = await comparisonEngineAdapter.generateComparison(['a.pdf', 'b.pdf'], {
+        userId: 'test-user',
+        domain: 'autos',
+      });
+
+      expect(batchSpy).toHaveBeenCalled();
+      expect(compareSpy).toHaveBeenCalled();
+      expect(result.engine).toBe('unified');
+    });
+  });
 });
