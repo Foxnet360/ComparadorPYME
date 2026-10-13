@@ -454,5 +454,75 @@ describe('excelGenerator', () => {
         spy.mockRestore();
       }
     });
+
+    it('should preserve sublimit and conditional text in coverage cells instead of stripping to raw numbers', async () => {
+      const customMatrix = [
+        {
+          type: 'data' as const,
+          id: 'sublimit_cov_row',
+          label: 'Gastos de Extinción (Sublímite)',
+          sectionId: 1,
+          cells: [
+            { value: '$50.000.000 (Sublímite 10%)', isExcluded: false, isWinner: false },
+            { value: '$40.000.000 - Ver cláusula 3', isExcluded: false, isWinner: false },
+          ],
+        },
+      ];
+
+      const buffer = await generateExcelBuffer(mockQuotes, undefined, undefined, undefined, 'pyme', {
+        matrix: customMatrix,
+      });
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+
+      const coveragesSheet = workbook.getWorksheet('Matriz Coberturas');
+      expect(coveragesSheet).toBeDefined();
+
+      let cellValueA: any;
+      let cellValueB: any;
+      coveragesSheet!.eachRow((row) => {
+        const cellLabel = row.getCell(1).value;
+        if (cellLabel === 'Gastos de Extinción (Sublímite)') {
+          cellValueA = row.getCell(2).value;
+          cellValueB = row.getCell(3).value;
+        }
+      });
+
+      expect(cellValueA).toContain('Sublímite 10%');
+      expect(cellValueB).toContain('Ver cláusula 3');
+    });
+
+    it('should route deductible rows to Matriz Deducibles sheet using sectionId and semantic detection', async () => {
+      const customMatrix = [
+        {
+          type: 'data' as const,
+          id: 'deductible_section_row',
+          label: 'Deducible Terremoto',
+          sectionId: 50,
+          cells: [
+            { value: '10% de la pérdida mín 5 SMMLV', isExcluded: false, isWinner: false },
+            { value: '5% del valor aseg mín 3 SMMLV', isExcluded: false, isWinner: false },
+          ],
+        },
+      ];
+
+      const buffer = await generateExcelBuffer(mockQuotes, undefined, undefined, undefined, 'pyme', {
+        matrix: customMatrix,
+      });
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+
+      const dedSheet = workbook.getWorksheet('Matriz Deducibles');
+      expect(dedSheet).toBeDefined();
+
+      let foundDeductible = false;
+      dedSheet!.eachRow((row) => {
+        if (row.getCell(1).value === 'Deducible Terremoto') {
+          foundDeductible = true;
+          expect(String(row.getCell(2).value)).toContain('10%');
+        }
+      });
+      expect(foundDeductible).toBe(true);
+    });
   });
 });

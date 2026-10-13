@@ -6,7 +6,23 @@ import {
   formatMatrixValue,
   enrichSmmlvDeductible,
   isExcludedValue,
+  HEADER_SECTION_ID,
+  COVERAGE_SECTION_ID,
+  DEDUCTIBLE_SECTION_ID,
+  FINANCIAL_SECTION_ID,
 } from './unifiedComparison/matrixTransformer';
+
+function isDeductibleMatrixRow(row: MatrixRow): boolean {
+  if (row.sectionId === DEDUCTIBLE_SECTION_ID) return true;
+  const idLower = (row.id || '').toLowerCase();
+  if (idLower.includes('deductible') || idLower.includes('deducible')) return true;
+  const labelLower = (row.label || '').toLowerCase();
+  return labelLower.includes('deducible') && !labelLower.includes('cobertura');
+}
+
+function isFinancialMatrixRow(row: MatrixRow): boolean {
+  return row.sectionId >= FINANCIAL_SECTION_ID;
+}
 
 interface ClientInfo {
   name?: string;
@@ -357,10 +373,9 @@ export async function generateExcelBuffer(
   // Filter matrix rows for coverages tab (exclude standalone deductible section rows & financial rows)
   const coverageMatrixRows = matrix.filter(
     (row) =>
-      row.sectionId < 100 &&
-      !row.id.includes('_row_deductible') &&
-      !row.id.startsWith('deductible_') &&
-      row.id !== 'section_group_deductibles'
+      row.sectionId !== HEADER_SECTION_ID &&
+      !isFinancialMatrixRow(row) &&
+      !isDeductibleMatrixRow(row)
   );
 
   let currentCovRow = 5;
@@ -394,11 +409,22 @@ export async function generateExcelBuffer(
         const numericVal = parseNumericValue(valStr);
         const isWinner = cell.isWinner;
 
+        // Preserve qualitative text, sublimits and conditions instead of stripping to raw number
+        const hasConditions =
+          valStr.includes('(') ||
+          valStr.includes(')') ||
+          valStr.toLowerCase().includes('sublímite') ||
+          valStr.toLowerCase().includes('mín') ||
+          valStr.toLowerCase().includes('días') ||
+          valStr.toLowerCase().includes('evento') ||
+          valStr.includes('%') ||
+          valStr.includes('-');
+
         if (excluded) {
           xlCell.value = 'No incluida';
           xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE8E8' } }; // Soft red pastel
           xlCell.font = { name: FONT_NAME, size: 10, italic: true, color: { argb: 'FF9B1C1C' } };
-        } else if (numericVal > 0) {
+        } else if (numericVal > 0 && !hasConditions) {
           xlCell.value = numericVal;
           xlCell.numFmt = '$#,##0';
           xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDEF7EC' } }; // Soft green pastel
@@ -470,12 +496,9 @@ export async function generateExcelBuffer(
     insHeader.alignment = { horizontal: 'center' };
   });
 
-  // Filter matrix for deductible rows or build from matrix
+  // Filter matrix for deductible rows
   const deductibleMatrixRows = matrix.filter(
-    (row) =>
-      row.id.includes('_row_deductible') ||
-      row.id.startsWith('deductible_') ||
-      row.id === 'section_group_deductibles'
+    (row) => isDeductibleMatrixRow(row)
   );
 
   let currentDedRow = 5;
@@ -588,13 +611,28 @@ export async function generateExcelBuffer(
     insHeader.alignment = { horizontal: 'center' };
   });
 
-  const netPremiums = quotes.map((q) => q.priceAnnual || 0);
-  const expenses = quotes.map((q) => {
-    if (q.priceAnnual === 0) return 0;
-    if (q.insurerName.toLowerCase().includes('mapfre')) return 10000;
-    if (q.insurerName.toLowerCase().includes('chubb')) return 12000;
-    return 0;
-  });
+  const financialMatrixRows = matrix.filter(
+    (row) => isFinancialMatrixRow(row) && row.type === 'data'
+  );
+
+  const netRow = financialMatrixRows.find(
+    (r) => r.label.toLowerCase().includes('prima neta') || r.label.toLowerCase().includes('net')
+  );
+  const expRow = financialMatrixRows.find(
+    (r) =>
+      r.label.toLowerCase().includes('gasto') || r.label.toLowerCase().includes('expedici')
+  );
+
+  const netPremiums = netRow
+    ? netRow.cells.map((c) => parseNumericValue(c.value) || 0)
+    : quotes.map((q) => q.priceAnnual || 0);
+
+  const expenses = expRow
+    ? expRow.cells.map((c) => parseNumericValue(c.value) || 0)
+    : quotes.map((q) => {
+        if (q.priceAnnual === 0) return 0;
+        return (q as any).expenses || (q as any).fees || 0;
+      });
 
   const addFinRow = (
     label: string,

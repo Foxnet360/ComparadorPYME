@@ -1188,10 +1188,11 @@ export function transformQuotesToMatrix(
   const netPremiums = quotes.map((q) => q.priceAnnual || 0);
   const expenses = quotes.map((q) => {
     if (q.priceAnnual === 0) return 0;
-    // Map standard expense mock data
+    if ((q as any).expenses !== undefined) return (q as any).expenses;
+    if ((q as any).fees !== undefined) return (q as any).fees;
     if (q.insurerName.toLowerCase().includes('mapfre')) return 10000;
     if (q.insurerName.toLowerCase().includes('chubb')) return 12000;
-    return 0; // Default
+    return 0;
   });
   const subtotals = netPremiums.map((net, idx) => net + expenses[idx]!);
   const ivas = subtotals.map((sub) => Math.round(sub * 0.19));
@@ -1419,12 +1420,12 @@ export function transformQuotesToMatrix(
     label: 'Fecha cotización:',
     sectionId: 101,
     cells: quotes.map((q) => {
-      // Mock quote dates to match inspect excel
-      let dateStr = '05-feb-2026';
-      if (q.insurerName.toLowerCase().includes('chubb')) dateStr = '27-ene-2026';
-      else if (q.insurerName.toLowerCase().includes('bbva')) dateStr = '14-ene-2026';
-      else if (q.insurerName.toLowerCase().includes('axa')) dateStr = '28-ene-2026';
-      return { value: dateStr, isExcluded: false, isWinner: false };
+      const dateStr =
+        (q as any).quoteDate ||
+        (q as any).metadata?.quoteDate ||
+        (q as any).date ||
+        'No informada';
+      return { value: dateStr, isExcluded: dateStr === 'No informada', isWinner: false };
     }),
   });
 
