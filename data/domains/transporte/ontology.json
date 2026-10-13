@@ -1,0 +1,574 @@
+{
+  "version": "1.0.0",
+  "domain": "transporte",
+  "nodes": [
+    {
+      "id": "danos-perdidas-carga",
+      "name": "Daño Físico y Pérdidas de la Carga",
+      "level": 1,
+      "childrenIds": [
+        "dano-material-carga",
+        "perdida-total-carga",
+        "robo-hurto-carga",
+        "robo-parcial-pillaje-carga"
+      ],
+      "aliases": [
+        "COBERTURAS PRINCIPALES",
+        "Daño Material Mercancía",
+        "Pérdida en Tránsito"
+      ],
+      "riskType": "cargo"
+    },
+    {
+      "id": "maritimas-multimodal",
+      "name": "Coberturas Marítimas y Multimodales",
+      "level": 1,
+      "childrenIds": [
+        "averia-particular-gruesa",
+        "transporte-multimodal",
+        "clausula-abandono-maritima"
+      ],
+      "aliases": [
+        "COBERTURAS MARÍTIMAS",
+        "MODALIDADES DE TRANSPORTE",
+        "Marítimo y Aéreo"
+      ],
+      "riskType": "marine"
+    },
+    {
+      "id": "responsabilidad-transporte",
+      "name": "Responsabilidad Civil del Transportador",
+      "level": 1,
+      "childrenIds": [
+        "rc-transportador"
+      ],
+      "aliases": [
+        "COBERTURAS DE RESPONSABILIDAD",
+        "RC Transportador",
+        "Daños a Cargas Terceros"
+      ],
+      "riskType": "liability"
+    },
+    {
+      "id": "cargas-especiales",
+      "name": "Cargas Especiales, Perecederas y Peligrosas",
+      "level": 1,
+      "childrenIds": [
+        "refrigeracion-cadena-frio",
+        "carga-granel-peligrosa"
+      ],
+      "aliases": [
+        "COBERTURAS ESPECIALES",
+        "Refrigerados",
+        "Graneles y Mercancías Peligrosas"
+      ],
+      "riskType": "special"
+    },
+    {
+      "id": "condiciones-gastos-transporte",
+      "name": "Valor Asegurado, Gastos Consecuenciales y Condiciones",
+      "level": 1,
+      "childrenIds": [
+        "cobertura-fletes-impuestos",
+        "dano-perdida-contenedor",
+        "demora-lucro-cesante",
+        "deducibles-franquicias-transporte",
+        "vigencia-tipo-poliza-transporte",
+        "marco-normativo-transporte"
+      ],
+      "aliases": [
+        "VALOR ASEGURADO",
+        "COBERTURAS COMPLEMENTARIAS",
+        "COBERTURAS CONSECUENCIALES",
+        "CONDICIONES DE LA COBERTURA",
+        "CONDICIONES GENERALES",
+        "CUMPLIMIENTO NORMATIVO"
+      ],
+      "riskType": "condition"
+    },
+    {
+      "id": "dano-material-carga",
+      "name": "Daño Material a la Carga (Todo Riesgo / Named Perils)",
+      "level": 2,
+      "parentId": "danos-perdidas-carga",
+      "childrenIds": [
+        "mojadura-humedad-carga"
+      ],
+      "aliases": [
+        "Daño Material a la Carga (Todo Riesgo / Named Perils)",
+        "daño material",
+        "todo riesgo",
+        "riesgos nominados",
+        "named perils",
+        "daños físicos a la carga",
+        "avería de la mercancía",
+        "deterioro de carga",
+        "daño en tránsito",
+        "Daño material",
+        "Todo riesgo",
+        "Riesgos nominados",
+        "Named perils",
+        "Daños físicos a la carga",
+        "Avería de la mercancía",
+        "Deterioro de carga",
+        "Daño en tránsito"
+      ],
+      "riskType": "cargo",
+      "typicalDeductible": "10% del despacho"
+    },
+    {
+      "id": "perdida-total-carga",
+      "name": "Pérdida Total de la Carga (Hurto, Extravío, Siniestro Total)",
+      "level": 2,
+      "parentId": "danos-perdidas-carga",
+      "childrenIds": [],
+      "aliases": [
+        "Pérdida Total de la Carga (Hurto, Extravío, Siniestro Total)",
+        "pérdida total",
+        "hurto total",
+        "extravío",
+        "desaparición de carga",
+        "siniestro total",
+        "pérdida completa",
+        "total loss",
+        "no entrega",
+        "Pérdida total",
+        "Hurto total",
+        "Extravío",
+        "Desaparición de carga",
+        "Siniestro total",
+        "Pérdida completa",
+        "Total loss",
+        "No entrega"
+      ],
+      "riskType": "cargo",
+      "typicalDeductible": "10% del despacho"
+    },
+    {
+      "id": "averia-particular-gruesa",
+      "name": "Avería Particular y Avería Gruesa (Marítima)",
+      "level": 2,
+      "parentId": "maritimas-multimodal",
+      "childrenIds": [],
+      "aliases": [
+        "Avería Particular y Avería Gruesa (Marítima)",
+        "avería particular",
+        "avería gruesa",
+        "general average",
+        "particular average",
+        "contribución de avería gruesa",
+        "salvamento marítimo",
+        "contribución de salvamento",
+        "sacrificio deliberado",
+        "Avería particular",
+        "Avería gruesa",
+        "General average",
+        "Particular average",
+        "Contribución de avería gruesa",
+        "Salvamento marítimo",
+        "Contribución de salvamento"
+      ],
+      "riskType": "marine",
+      "typicalDeductible": "10% min 1 SMMLV"
+    },
+    {
+      "id": "rc-transportador",
+      "name": "Responsabilidad Civil del Transportador",
+      "level": 2,
+      "parentId": "responsabilidad-transporte",
+      "childrenIds": [],
+      "aliases": [
+        "Responsabilidad Civil del Transportador",
+        "responsabilidad civil del transportador",
+        "RC del transportador",
+        "responsabilidad del operador",
+        "liability del transportista",
+        "responsabilidad legal",
+        "carrier liability",
+        "daños al remitente",
+        "responsabilidad contractual del transporte",
+        "Responsabilidad civil del transportador",
+        "Responsabilidad del operador",
+        "Liability del transportista",
+        "Responsabilidad legal",
+        "Carrier liability",
+        "Daños al remitente"
+      ],
+      "riskType": "liability",
+      "typicalDeductible": "10% min 2 SMMLV"
+    },
+    {
+      "id": "robo-hurto-carga",
+      "name": "Robo y Hurto (Con y Sin Violencia)",
+      "level": 2,
+      "parentId": "danos-perdidas-carga",
+      "childrenIds": [
+        "pirateria-terrestre-asalto"
+      ],
+      "aliases": [
+        "Robo y Hurto (Con y Sin Violencia)",
+        "robo",
+        "hurto",
+        "hurto con violencia",
+        "hurto sin violencia",
+        "asalto",
+        "piratería terrestre",
+        "robo parcial",
+        "hurto calificado",
+        "Robo",
+        "Hurto",
+        "Hurto con violencia",
+        "Hurto sin violencia",
+        "Asalto",
+        "Piratería terrestre",
+        "Robo parcial",
+        "Hurto calificado"
+      ],
+      "riskType": "theft",
+      "typicalDeductible": "15% min 2 SMMLV"
+    },
+    {
+      "id": "refrigeracion-cadena-frio",
+      "name": "Refrigeración y Carga Perecedera (Cadena de Frío)",
+      "level": 2,
+      "parentId": "cargas-especiales",
+      "childrenIds": [],
+      "aliases": [
+        "Refrigeración y Carga Perecedera (Cadena de Frío)",
+        "refrigeración",
+        "cadena de frío",
+        "carga perecedera",
+        "alimentos perecederos",
+        "falla de refrigeración",
+        "temperatura controlada",
+        "cold chain",
+        "carga congelada",
+        "Refrigeración",
+        "Cadena de frío",
+        "Carga perecedera",
+        "Alimentos perecederos",
+        "Falla de refrigeración",
+        "Temperatura controlada",
+        "Cold chain",
+        "Carga congelada"
+      ],
+      "riskType": "special",
+      "typicalDeductible": "10% min 2 SMMLV"
+    },
+    {
+      "id": "carga-granel-peligrosa",
+      "name": "Carga a Granel y Carga Peligrosa (ADR / IMDG / IATA)",
+      "level": 2,
+      "parentId": "cargas-especiales",
+      "childrenIds": [],
+      "aliases": [
+        "Carga a Granel y Carga Peligrosa (ADR / IMDG / IATA)",
+        "carga a granel",
+        "carga peligrosa",
+        "mercancías peligrosas",
+        "ADR",
+        "IMDG",
+        "IATA",
+        "materiales peligrosos",
+        "hazmat",
+        "químicos",
+        "explosivos",
+        "inflamables",
+        "Carga a granel",
+        "Carga peligrosa",
+        "Mercancías peligrosas",
+        "Materiales peligrosos",
+        "Hazmat",
+        "Químicos"
+      ],
+      "riskType": "special",
+      "typicalDeductible": "10% min 2 SMMLV"
+    },
+    {
+      "id": "transporte-multimodal",
+      "name": "Transporte Multimodal (Terrestre, Aéreo y Marítimo)",
+      "level": 2,
+      "parentId": "maritimas-multimodal",
+      "childrenIds": [],
+      "aliases": [
+        "Transporte Multimodal (Terrestre, Aéreo y Marítimo)",
+        "transporte multimodal",
+        "transporte terrestre",
+        "transporte aéreo",
+        "transporte marítimo",
+        "transporte fluvial",
+        "combinado de modos",
+        "multimodal",
+        "intermodal",
+        "flete terrestre",
+        "flete aéreo",
+        "flete marítimo",
+        "Transporte multimodal",
+        "Transporte terrestre",
+        "Transporte aéreo",
+        "Transporte marítimo",
+        "Transporte fluvial",
+        "Multimodal",
+        "Intermodal",
+        "TN",
+        "TI"
+      ],
+      "riskType": "marine",
+      "typicalDeductible": "10% del despacho"
+    },
+    {
+      "id": "cobertura-fletes-impuestos",
+      "name": "Cobertura de Fletes e Impuestos según Incoterm (CIF / FOB / DAP / DDP)",
+      "level": 2,
+      "parentId": "condiciones-gastos-transporte",
+      "childrenIds": [],
+      "aliases": [
+        "Cobertura de Fletes e Impuestos según Incoterm (CIF / FOB / DAP / DDP)",
+        "fletes",
+        "impuestos",
+        "Incoterm",
+        "CIF",
+        "FOB",
+        "DAP",
+        "DDP",
+        "valor asegurado",
+        "valor de la carga",
+        "precio de venta",
+        "valor comercial",
+        "margen de beneficio",
+        "Fletes",
+        "Impuestos",
+        "Valor asegurado",
+        "Valor de la carga"
+      ],
+      "riskType": "cargo",
+      "typicalDeductible": "0%"
+    },
+    {
+      "id": "dano-perdida-contenedor",
+      "name": "Daño o Pérdida del Contenedor / Embalaje",
+      "level": 2,
+      "parentId": "condiciones-gastos-transporte",
+      "childrenIds": [],
+      "aliases": [
+        "Daño o Pérdida del Contenedor / Embalaje",
+        "contenedor",
+        "embalaje",
+        "daño al contenedor",
+        "pérdida del contenedor",
+        "packaging",
+        "daño al embalaje",
+        "pallets",
+        "cajas",
+        "container damage",
+        "Contenedor",
+        "Embalaje",
+        "Daño al contenedor",
+        "Pérdida del contenedor",
+        "Packaging",
+        "Daño al embalaje",
+        "Container damage"
+      ],
+      "riskType": "property",
+      "typicalDeductible": "10% min 1 SMMLV"
+    },
+    {
+      "id": "demora-lucro-cesante",
+      "name": "Demora en la Entrega y Lucro Cesante",
+      "level": 2,
+      "parentId": "condiciones-gastos-transporte",
+      "childrenIds": [],
+      "aliases": [
+        "Demora en la Entrega y Lucro Cesante",
+        "demora en la entrega",
+        "retraso",
+        "lucro cesante",
+        "pérdida de mercado",
+        "delay",
+        "pérdidas consecuenciales",
+        "daño emergente",
+        "penalidades por demora",
+        "Demora en la entrega",
+        "Retraso",
+        "Lucro cesante",
+        "Pérdida de mercado",
+        "Delay",
+        "Pérdidas consecuenciales"
+      ],
+      "riskType": "consequential",
+      "typicalDeductible": "5 días deducible"
+    },
+    {
+      "id": "deducibles-franquicias-transporte",
+      "name": "Deducibles y Franquicias",
+      "level": 2,
+      "parentId": "condiciones-gastos-transporte",
+      "childrenIds": [],
+      "aliases": [
+        "Deducibles y Franquicias",
+        "deducible",
+        "franquicia",
+        "coaseguro",
+        "deducible por siniestro",
+        "deducible mínimo",
+        "deducible porcentual",
+        "exceso de pérdida",
+        "retention",
+        "Deducible",
+        "Franquicia",
+        "Coaseguro",
+        "Deducible por siniestro",
+        "Deducible mínimo",
+        "Retention"
+      ],
+      "riskType": "condition",
+      "typicalDeductible": "Según tipo de carga"
+    },
+    {
+      "id": "vigencia-tipo-poliza-transporte",
+      "name": "Vigencia y Tipo de Póliza (Flotante / Por Viaje / Abierta)",
+      "level": 2,
+      "parentId": "condiciones-gastos-transporte",
+      "childrenIds": [],
+      "aliases": [
+        "Vigencia y Tipo de Póliza (Flotante / Por Viaje / Abierta)",
+        "vigencia",
+        "póliza flotante",
+        "póliza por viaje",
+        "póliza abierta",
+        "cobertura automática",
+        "periodo de seguros",
+        "declaración de embarque",
+        "blanket policy",
+        "open cover",
+        "Vigencia",
+        "Póliza flotante",
+        "Póliza por viaje",
+        "Póliza abierta",
+        "Cobertura automática",
+        "Open cover"
+      ],
+      "riskType": "condition",
+      "typicalDeductible": "Póliza abierta / viaje"
+    },
+    {
+      "id": "marco-normativo-transporte",
+      "name": "Marco Normativo (Decreto 1079/2015 · Código de Comercio · Incoterms 2020)",
+      "level": 2,
+      "parentId": "condiciones-gastos-transporte",
+      "childrenIds": [],
+      "aliases": [
+        "Marco Normativo (Decreto 1079/2015 · Código de Comercio · Incoterms 2020)",
+        "Decreto 1079",
+        "Código de Comercio",
+        "Incoterms 2020",
+        "normatividad transporte",
+        "SuperTransporte",
+        "regulación colombiana de transporte",
+        "Ley 336/1996",
+        "ICC cargo clauses",
+        "cláusulas de carga ICC",
+        "Cláusulas de carga ICC"
+      ],
+      "riskType": "regulatory",
+      "typicalDeductible": "Dec 1079 / Incoterms"
+    },
+    {
+      "id": "robo-parcial-pillaje-carga",
+      "name": "Robo Parcial, Pillaje y Saqueo de la Carga",
+      "level": 2,
+      "parentId": "danos-perdidas-carga",
+      "childrenIds": [],
+      "aliases": [
+        "Robo Parcial, Pillaje y Saqueo de la Carga",
+        "robo parcial",
+        "pillaje",
+        "saqueo",
+        "hurto parcial de carga",
+        "robo de parte de la carga",
+        "pilferage",
+        "saqueo en tránsito",
+        "robo de contenido parcial",
+        "Robo parcial",
+        "Pillaje",
+        "Saqueo",
+        "Hurto parcial de carga",
+        "Pilferage"
+      ],
+      "riskType": "theft",
+      "typicalDeductible": "15% min 2 SMMLV"
+    },
+    {
+      "id": "clausula-abandono-maritima",
+      "name": "Cláusula de Abandono y Pérdida Total Constructiva (Marítima)",
+      "level": 2,
+      "parentId": "maritimas-multimodal",
+      "childrenIds": [],
+      "aliases": [
+        "Cláusula de Abandono y Pérdida Total Constructiva (Marítima)",
+        "cláusula de abandono",
+        "pérdida total constructiva",
+        "constructive total loss",
+        "abandono de carga",
+        "CTL",
+        "pérdida total constructiva marítima",
+        "aviso de abandono",
+        "notice of abandonment",
+        "Cláusula de abandono",
+        "Pérdida total constructiva",
+        "Constructive total loss",
+        "Abandono de carga"
+      ],
+      "riskType": "marine",
+      "typicalDeductible": "10% del embarque"
+    },
+    {
+      "id": "mojadura-humedad-carga",
+      "name": "Mojadura y Daños por Agua Dulce o Salada",
+      "level": 3,
+      "parentId": "dano-material-carga",
+      "childrenIds": [],
+      "aliases": [
+        "Mojadura",
+        "Agua de mar",
+        "Humedad en bodega"
+      ],
+      "riskType": "cargo",
+      "typicalDeductible": "10% del despacho"
+    },
+    {
+      "id": "pirateria-terrestre-asalto",
+      "name": "Piratería Terrestre y Asalto en Carretera",
+      "level": 3,
+      "parentId": "robo-hurto-carga",
+      "childrenIds": [],
+      "aliases": [
+        "Piratería terrestre",
+        "Atraco en carretera",
+        "Retén ilegal"
+      ],
+      "riskType": "theft",
+      "typicalDeductible": "15% min 2 SMMLV"
+    }
+  ],
+  "compositePatterns": [
+    {
+      "pattern": "todo\\s+riesgo.*(transporte|carga)|institute\\s+cargo\\s+clauses\\s*(?[aA])?",
+      "components": [
+        "dano-material-carga",
+        "perdida-total-carga",
+        "robo-hurto-carga",
+        "averia-particular-gruesa"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "pattern": "p[eé]rdida\\s+total.*(hurto|extrav[ií]o|carga)",
+      "components": [
+        "perdida-total-carga",
+        "clausula-abandono-maritima"
+      ],
+      "confidence": 0.85
+    }
+  ]
+}

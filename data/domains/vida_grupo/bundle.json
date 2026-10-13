@@ -1,0 +1,9 @@
+{
+  "version": "1.0.0",
+  "domain": "vida_grupo",
+  "files": [
+    "taxonomy.json",
+    "ontology.json",
+    "thesaurus.json"
+  ]
+}

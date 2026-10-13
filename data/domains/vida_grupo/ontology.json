@@ -1,0 +1,400 @@
+{
+  "version": "1.0.0",
+  "domain": "vida_grupo",
+  "nodes": [
+    {
+      "id": "coberturas-principales-vida",
+      "name": "Coberturas Principales de Vida e Invalidez",
+      "level": 1,
+      "childrenIds": [
+        "amparo-basico-muerte",
+        "incapacidad-total-permanente"
+      ],
+      "aliases": [
+        "Coberturas Principales",
+        "Amparo Básico Vida",
+        "Muerte e Incapacidad"
+      ],
+      "riskType": "life"
+    },
+    {
+      "id": "accidentes-e-incapacidad",
+      "name": "Accidentes Personales e Incapacidades",
+      "level": 1,
+      "childrenIds": [
+        "muerte-accidental-desmembracion",
+        "exoneracion-pago-primas",
+        "doble-indemnizacion-transito",
+        "incapacidad-parcial-permanente"
+      ],
+      "aliases": [
+        "Accidentes e Incapacidad",
+        "COBERTURAS DE INCAPACIDAD",
+        "Muerte Accidental"
+      ],
+      "riskType": "accident"
+    },
+    {
+      "id": "salud-enfermedades-vida",
+      "name": "Enfermedades Graves y Rentas Hospitalarias",
+      "level": 1,
+      "childrenIds": [
+        "enfermedades-graves-vida",
+        "renta-diaria-hospitalizacion",
+        "anticipo-enfermedad-terminal"
+      ],
+      "aliases": [
+        "Salud y Enfermedades",
+        "Enfermedades de Alto Costo Vida"
+      ],
+      "riskType": "health"
+    },
+    {
+      "id": "auxilios-beneficios-familiares",
+      "name": "Auxilios Económicos y de Apoyo Familiar",
+      "level": 1,
+      "childrenIds": [
+        "auxilio-funerario-sepelio",
+        "auxilio-educativo-hijos",
+        "auxilio-canasta-familiar",
+        "auxilio-hijos-enfermedades-congenitas"
+      ],
+      "aliases": [
+        "Auxilios y Beneficios",
+        "Beneficios al Empleado / Familia"
+      ],
+      "riskType": "assistance"
+    },
+    {
+      "id": "condiciones-amparos-adicionales",
+      "name": "Condiciones Especiales y Amparos Complementarios",
+      "level": 1,
+      "childrenIds": [
+        "condiciones-ingreso-permanencia",
+        "cobertura-suicidio",
+        "renta-desempleo-involuntario"
+      ],
+      "aliases": [
+        "Condiciones Especiales",
+        "COBERTURAS COMPLEMENTARIAS",
+        "Suicidio y Desempleo"
+      ],
+      "riskType": "condition"
+    },
+    {
+      "id": "amparo-basico-muerte",
+      "name": "Amparo Básico por Muerte (Cualquier Causa)",
+      "level": 2,
+      "parentId": "coberturas-principales-vida",
+      "childrenIds": [],
+      "aliases": [
+        "Amparo Básico por Muerte (Cualquier Causa)",
+        "Muerte por cualquier causa",
+        "Amparo básico de vida",
+        "Vida grupo",
+        "Fallecimiento",
+        "Muerte natural o accidental",
+        "Capital básico asegurado"
+      ],
+      "riskType": "life",
+      "typicalDeductible": "0% sin deducible"
+    },
+    {
+      "id": "incapacidad-total-permanente",
+      "name": "Incapacidad Total y Permanente (ITP)",
+      "level": 2,
+      "parentId": "coberturas-principales-vida",
+      "childrenIds": [],
+      "aliases": [
+        "Incapacidad Total y Permanente (ITP)",
+        "ITP",
+        "Incapacidad total y permanente",
+        "Invalidéz por enfermedad o accidente",
+        "Pérdida de capacidad laboral 50% o más",
+        "Anticipo por incapacidad permanente",
+        "Invalidez por enfermedad o accidente"
+      ],
+      "riskType": "life",
+      "typicalDeductible": "0% sin deducible"
+    },
+    {
+      "id": "muerte-accidental-desmembracion",
+      "name": "Muerte Accidental y Desmembración (MAyD)",
+      "level": 2,
+      "parentId": "accidentes-e-incapacidad",
+      "childrenIds": [
+        "desmembracion-accidental"
+      ],
+      "aliases": [
+        "Muerte Accidental y Desmembración (MAyD)",
+        "MAyD",
+        "Muerte accidental",
+        "Desmembración",
+        "Indemnización adicional por accidente",
+        "Pérdida de miembros o visión por accidente",
+        "MA"
+      ],
+      "riskType": "accident",
+      "typicalDeductible": "0% sin deducible"
+    },
+    {
+      "id": "enfermedades-graves-vida",
+      "name": "Enfermedades Graves",
+      "level": 2,
+      "parentId": "salud-enfermedades-vida",
+      "childrenIds": [],
+      "aliases": [
+        "Enfermedades Graves",
+        "Enfermedades de alto costo",
+        "Anticipo por cáncer, infarto o derrame",
+        "Amparo adicional enfermedades graves",
+        "Enfermedades catastróficas",
+        "EGM"
+      ],
+      "riskType": "health",
+      "typicalDeductible": "Carencia 90 días"
+    },
+    {
+      "id": "auxilio-funerario-sepelio",
+      "name": "Auxilio Funerario / Gastos de Sepelio",
+      "level": 2,
+      "parentId": "auxilios-beneficios-familiares",
+      "childrenIds": [],
+      "aliases": [
+        "Auxilio Funerario / Gastos de Sepelio",
+        "Auxilio funerario",
+        "Gastos exequiales",
+        "Servicios exequiales",
+        "Auxilio para sepelio",
+        "Gastos de entierro"
+      ],
+      "riskType": "assistance",
+      "typicalDeductible": "0% sin deducible"
+    },
+    {
+      "id": "renta-diaria-hospitalizacion",
+      "name": "Renta Diaria por Hospitalización / Incapacidad",
+      "level": 2,
+      "parentId": "salud-enfermedades-vida",
+      "childrenIds": [],
+      "aliases": [
+        "Renta Diaria por Hospitalización / Incapacidad",
+        "Renta por hospitalización",
+        "Renta diaria por incapacidad temporal",
+        "Auxilio diario de hospitalización",
+        "Subsidio por estancia hospitalaria"
+      ],
+      "riskType": "health",
+      "typicalDeductible": "Deducible 24-48 horas"
+    },
+    {
+      "id": "exoneracion-pago-primas",
+      "name": "Exoneración de Pago de Primas por Incapacidad",
+      "level": 2,
+      "parentId": "accidentes-e-incapacidad",
+      "childrenIds": [],
+      "aliases": [
+        "Exoneración de Pago de Primas por Incapacidad",
+        "Exoneración de primas",
+        "Liberación de pago de primas",
+        "Exención de prima por invalidez",
+        "Perdón de primas por incapacidad"
+      ],
+      "riskType": "accident",
+      "typicalDeductible": "0% sin deducible"
+    },
+    {
+      "id": "condiciones-ingreso-permanencia",
+      "name": "Condiciones de Ingreso y Permanencia",
+      "level": 2,
+      "parentId": "condiciones-amparos-adicionales",
+      "childrenIds": [],
+      "aliases": [
+        "Condiciones de Ingreso y Permanencia",
+        "Edad de ingreso",
+        "Edad límite de permanencia",
+        "Requisitos de asegurabilidad",
+        "Declaración de salud",
+        "Carencias y preexistencias"
+      ],
+      "riskType": "condition",
+      "typicalDeductible": "Edad máxima pactada"
+    },
+    {
+      "id": "cobertura-suicidio",
+      "name": "Cobertura de Suicidio (Carencia / Día 1)",
+      "level": 2,
+      "parentId": "condiciones-amparos-adicionales",
+      "childrenIds": [],
+      "aliases": [
+        "Cobertura de Suicidio (Carencia / Día 1)",
+        "Suicidio desde el primer día",
+        "Carencia para suicidio",
+        "Amparo de suicidio",
+        "Suicidio sin período de espera"
+      ],
+      "riskType": "condition",
+      "typicalDeductible": "Carencia 1 año o día 1"
+    },
+    {
+      "id": "auxilio-educativo-hijos",
+      "name": "Auxilio Educativo para Hijos",
+      "level": 2,
+      "parentId": "auxilios-beneficios-familiares",
+      "childrenIds": [],
+      "aliases": [
+        "Auxilio Educativo para Hijos",
+        "Beca educativa para beneficiarios",
+        "Auxilio de educación",
+        "Seguro educacional por orfandad",
+        "Renta de estudios para hijos"
+      ],
+      "riskType": "assistance",
+      "typicalDeductible": "0% sin deducible"
+    },
+    {
+      "id": "auxilio-canasta-familiar",
+      "name": "Auxilio de Canasta / Mantenimiento Familiar",
+      "level": 2,
+      "parentId": "auxilios-beneficios-familiares",
+      "childrenIds": [],
+      "aliases": [
+        "Auxilio de Canasta / Mantenimiento Familiar",
+        "Renta de canasta familiar",
+        "Auxilio de canasta mensual",
+        "Sostenimiento familiar post-mortem",
+        "Subsidio alimentario para beneficiarios"
+      ],
+      "riskType": "assistance",
+      "typicalDeductible": "0% sin deducible"
+    },
+    {
+      "id": "anticipo-enfermedad-terminal",
+      "name": "Anticipo por Enfermedad Terminal",
+      "level": 2,
+      "parentId": "salud-enfermedades-vida",
+      "childrenIds": [],
+      "aliases": [
+        "Anticipo por Enfermedad Terminal",
+        "Anticipo enfermedad terminal",
+        "Adelanto por fase terminal",
+        "Pago anticipado por expectativa de vida limitada",
+        "Amparo de estado terminal"
+      ],
+      "riskType": "health",
+      "typicalDeductible": "50% del amparo básico"
+    },
+    {
+      "id": "doble-indemnizacion-transito",
+      "name": "Doble Indemnización por Accidente de Tránsito",
+      "level": 2,
+      "parentId": "accidentes-e-incapacidad",
+      "childrenIds": [],
+      "aliases": [
+        "Doble Indemnización por Accidente de Tránsito",
+        "Doble indemnización accidente vehicular",
+        "Accidente en transporte público",
+        "Muerte accidental en tránsito",
+        "Doble capital por accidente automovilístico"
+      ],
+      "riskType": "accident",
+      "typicalDeductible": "0% sin deducible"
+    },
+    {
+      "id": "auxilio-hijos-enfermedades-congenitas",
+      "name": "Auxilio por Hijos con Enfermedades Congénitas",
+      "level": 2,
+      "parentId": "auxilios-beneficios-familiares",
+      "childrenIds": [],
+      "aliases": [
+        "Auxilio por Hijos con Enfermedades Congénitas",
+        "Nacimiento con enfermedad congénita",
+        "Auxilio hijos con malformación",
+        "Cobertura de alteración congénita",
+        "Subsidio por malformación al nacer"
+      ],
+      "riskType": "assistance",
+      "typicalDeductible": "0% sin deducible"
+    },
+    {
+      "id": "incapacidad-parcial-permanente",
+      "name": "Incapacidad Parcial Permanente (IPP)",
+      "level": 2,
+      "parentId": "accidentes-e-incapacidad",
+      "childrenIds": [],
+      "aliases": [
+        "Incapacidad Parcial Permanente (IPP)",
+        "incapacidad parcial permanente",
+        "IPP",
+        "invalidez parcial",
+        "pérdida parcial de capacidad laboral",
+        "porcentaje de invalidez menor 50%",
+        "dictamen de IPP",
+        "pérdida anatómica parcial",
+        "Incapacidad parcial permanente",
+        "Invalidez parcial",
+        "Pérdida parcial de capacidad laboral",
+        "Porcentaje de invalidez menor 50%"
+      ],
+      "riskType": "accident",
+      "typicalDeductible": "Tabla indemnizaciones"
+    },
+    {
+      "id": "renta-desempleo-involuntario",
+      "name": "Renta por Desempleo Involuntario",
+      "level": 2,
+      "parentId": "condiciones-amparos-adicionales",
+      "childrenIds": [],
+      "aliases": [
+        "Renta por Desempleo Involuntario",
+        "desempleo involuntario",
+        "renta por desempleo",
+        "pérdida de empleo",
+        "desvinculación laboral",
+        "amparo desempleo",
+        "renta mensual desempleo",
+        "protección ante desempleo",
+        "Desempleo involuntario",
+        "Renta por desempleo",
+        "Pérdida de empleo",
+        "Desvinculación laboral",
+        "Amparo desempleo"
+      ],
+      "riskType": "condition",
+      "typicalDeductible": "Carencia 60 días"
+    },
+    {
+      "id": "desmembracion-accidental",
+      "name": "Pérdida de Miembros o Desmembración Accidental",
+      "level": 3,
+      "parentId": "muerte-accidental-desmembracion",
+      "childrenIds": [],
+      "aliases": [
+        "Desmembración",
+        "Pérdida anatómica"
+      ],
+      "riskType": "accident",
+      "typicalDeductible": "0%"
+    }
+  ],
+  "compositePatterns": [
+    {
+      "pattern": "vida\\s+grupo\\s+integral|vida\\s+colectivo|vida\\s+deudores",
+      "components": [
+        "amparo-basico-muerte",
+        "incapacidad-total-permanente",
+        "muerte-accidental-desmembracion",
+        "enfermedades-graves-vida"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "pattern": "muerte\\s+accidental.*desmembraci[oó]n|mayd",
+      "components": [
+        "muerte-accidental-desmembracion",
+        "doble-indemnizacion-transito"
+      ],
+      "confidence": 0.85
+    }
+  ]
+}

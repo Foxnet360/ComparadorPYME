@@ -1,0 +1,574 @@
+{
+  "version": "1.0.0",
+  "domain": "salud",
+  "nodes": [
+    {
+      "id": "coberturas-hospitalarias-cirugia",
+      "name": "Coberturas Hospitalarias y Quirúrgicas",
+      "level": 1,
+      "childrenIds": [
+        "hospitalizacion-cirugia",
+        "urgencias-salud",
+        "hospitalizacion-domiciliaria"
+      ],
+      "aliases": [
+        "COBERTURAS HOSPITALARIAS",
+        "COBERTURAS DE URGENCIAS",
+        "Cirugía y Hospitalización"
+      ],
+      "riskType": "hospitalization"
+    },
+    {
+      "id": "coberturas-ambulatorias-medicas",
+      "name": "Coberturas Ambulatorias y Medicamentos",
+      "level": 1,
+      "childrenIds": [
+        "plan-beneficios-base",
+        "consulta-especialistas-telemedicina",
+        "medicamentos-ambulatorios-hospitalarios",
+        "medicina-preventiva-bienestar"
+      ],
+      "aliases": [
+        "ESTRUCTURA DEL PLAN",
+        "COBERTURAS AMBULATORIAS",
+        "COBERTURAS PREVENTIVAS",
+        "Consultas y Exámenes"
+      ],
+      "riskType": "ambulatory"
+    },
+    {
+      "id": "enfermedades-alto-costo-especiales",
+      "name": "Enfermedades de Alto Costo y Especialidades",
+      "level": 1,
+      "childrenIds": [
+        "oncologia-alto-costo",
+        "maternidad-neonatologia",
+        "salud-mental-psiquiatria"
+      ],
+      "aliases": [
+        "ENFERMEDADES DE ALTO COSTO",
+        "COBERTURAS ESPECIALES",
+        "Cáncer y Maternidad"
+      ],
+      "riskType": "catastrophic_illness"
+    },
+    {
+      "id": "coberturas-complementarias-viaje",
+      "name": "Coberturas Complementarias y Asistencia Internacional",
+      "level": 1,
+      "childrenIds": [
+        "cobertura-internacional-viaje",
+        "odontologia-salud",
+        "optometria-oftalmologia"
+      ],
+      "aliases": [
+        "COBERTURAS COMPLEMENTARIAS",
+        "COBERTURAS DE VIAJE",
+        "Odontología y Óptica"
+      ],
+      "riskType": "supplemental"
+    },
+    {
+      "id": "red-asistencial-condiciones",
+      "name": "Red de Prestadores y Condiciones Operativas",
+      "level": 1,
+      "childrenIds": [
+        "enfermedades-preexistentes",
+        "red-prestadores-ips",
+        "copagos-deducibles-cuotas",
+        "portabilidad-carencias"
+      ],
+      "aliases": [
+        "CONDICIONES DE ASEGURABILIDAD",
+        "RED ASISTENCIAL",
+        "ESTRUCTURA DE COSTOS COMPARTIDOS",
+        "CUMPLIMIENTO NORMATIVO"
+      ],
+      "riskType": "condition"
+    },
+    {
+      "id": "plan-beneficios-base",
+      "name": "Plan de Beneficios Base (Complemento o Sustitución del PBS)",
+      "level": 2,
+      "parentId": "coberturas-ambulatorias-medicas",
+      "childrenIds": [],
+      "aliases": [
+        "Plan de Beneficios Base (Complemento o Sustitución del PBS)",
+        "plan de beneficios",
+        "plan complementario",
+        "plan sustitutivo",
+        "PBS",
+        "POS",
+        "cobertura base",
+        "plan básico",
+        "beneficios cubiertos",
+        "Plan de beneficios",
+        "Plan complementario",
+        "Plan sustitutivo",
+        "Cobertura base",
+        "Plan básico"
+      ],
+      "riskType": "ambulatory",
+      "typicalDeductible": "Copago fijo o cuota"
+    },
+    {
+      "id": "hospitalizacion-cirugia",
+      "name": "Hospitalización y Cirugía",
+      "level": 2,
+      "parentId": "coberturas-hospitalarias-cirugia",
+      "childrenIds": [
+        "cuidados-intensivos-uci",
+        "honorarios-quirurgicos"
+      ],
+      "aliases": [
+        "Hospitalización y Cirugía",
+        "hospitalización",
+        "internación",
+        "cirugía",
+        "procedimientos quirúrgicos",
+        "sala de operaciones",
+        "habitación privada",
+        "UCI",
+        "unidad de cuidados intensivos",
+        "días de hospitalización",
+        "Hospitalización",
+        "Internación",
+        "Cirugía",
+        "Procedimientos quirúrgicos",
+        "Sala de operaciones",
+        "Habitación privada",
+        "Unidad de cuidados intensivos"
+      ],
+      "riskType": "hospitalization",
+      "typicalDeductible": "100% cubierto o copago"
+    },
+    {
+      "id": "consulta-especialistas-telemedicina",
+      "name": "Consulta Médica Especialista y Telemedicina",
+      "level": 2,
+      "parentId": "coberturas-ambulatorias-medicas",
+      "childrenIds": [],
+      "aliases": [
+        "Consulta Médica Especialista y Telemedicina",
+        "consulta especialista",
+        "consulta médica",
+        "médico especialista",
+        "telemedicina",
+        "teleconsulta",
+        "consulta ambulatoria",
+        "copago consulta",
+        "red de médicos",
+        "Consulta especialista",
+        "Consulta médica",
+        "Médico especialista",
+        "Telemedicina",
+        "Teleconsulta",
+        "Consulta ambulatoria"
+      ],
+      "riskType": "ambulatory",
+      "typicalDeductible": "Bono / cuota moderadora"
+    },
+    {
+      "id": "medicamentos-ambulatorios-hospitalarios",
+      "name": "Medicamentos (Ambulatorios y Hospitalarios)",
+      "level": 2,
+      "parentId": "coberturas-ambulatorias-medicas",
+      "childrenIds": [],
+      "aliases": [
+        "Medicamentos (Ambulatorios y Hospitalarios)",
+        "medicamentos",
+        "fármacos",
+        "drogas",
+        "medicación ambulatoria",
+        "medicación hospitalaria",
+        "cobertura farmacéutica",
+        "lista de medicamentos",
+        "formulario de medicamentos",
+        "Medicamentos",
+        "Fármacos",
+        "Drogas",
+        "Medicación ambulatoria",
+        "Medicación hospitalaria",
+        "Cobertura farmacéutica"
+      ],
+      "riskType": "ambulatory",
+      "typicalDeductible": "Copago según vademécum"
+    },
+    {
+      "id": "urgencias-salud",
+      "name": "Urgencias (Nacional e Internacional)",
+      "level": 2,
+      "parentId": "coberturas-hospitalarias-cirugia",
+      "childrenIds": [],
+      "aliases": [
+        "Urgencias (Nacional e Internacional)",
+        "urgencias",
+        "emergencias",
+        "urgencias nacionales",
+        "urgencias internacionales",
+        "sala de urgencias",
+        "atención de emergencia",
+        "internación urgente",
+        "Urgencias",
+        "Emergencias",
+        "Urgencias nacionales",
+        "Urgencias internacionales",
+        "Sala de urgencias",
+        "Atención de emergencia"
+      ],
+      "riskType": "hospitalization",
+      "typicalDeductible": "Bono de urgencias"
+    },
+    {
+      "id": "oncologia-alto-costo",
+      "name": "Oncología (Tratamientos de Alto Costo)",
+      "level": 2,
+      "parentId": "enfermedades-alto-costo-especiales",
+      "childrenIds": [],
+      "aliases": [
+        "Oncología (Tratamientos de Alto Costo)",
+        "oncología",
+        "cáncer",
+        "quimioterapia",
+        "radioterapia",
+        "inmunoterapia",
+        "tratamiento oncológico",
+        "diagnóstico de cáncer",
+        "enfermedades catastróficas",
+        "alto costo",
+        "Oncología",
+        "Cáncer",
+        "Quimioterapia",
+        "Radioterapia",
+        "Inmunoterapia",
+        "Tratamiento oncológico",
+        "Alto costo"
+      ],
+      "riskType": "catastrophic_illness",
+      "typicalDeductible": "0% cubierto al 100%"
+    },
+    {
+      "id": "maternidad-neonatologia",
+      "name": "Maternidad y Neonatología",
+      "level": 2,
+      "parentId": "enfermedades-alto-costo-especiales",
+      "childrenIds": [],
+      "aliases": [
+        "Maternidad y Neonatología",
+        "maternidad",
+        "embarazo",
+        "parto",
+        "neonatología",
+        "recién nacido",
+        "RN patológico",
+        "control prenatal",
+        "semanas de carencia maternidad",
+        "lactancia",
+        "Maternidad",
+        "Embarazo",
+        "Parto",
+        "Neonatología",
+        "Recién nacido",
+        "AMP"
+      ],
+      "riskType": "catastrophic_illness",
+      "typicalDeductible": "Carencia 300 días"
+    },
+    {
+      "id": "cobertura-internacional-viaje",
+      "name": "Cobertura Internacional y Repatriación",
+      "level": 2,
+      "parentId": "coberturas-complementarias-viaje",
+      "childrenIds": [],
+      "aliases": [
+        "Cobertura Internacional y Repatriación",
+        "cobertura internacional",
+        "emergencia en el exterior",
+        "repatriación",
+        "evacuación médica",
+        "atención médica en el exterior",
+        "viaje internacional",
+        "asistencia viajes",
+        "Cobertura internacional",
+        "Emergencia en el exterior",
+        "Repatriación",
+        "Evacuación médica",
+        "Asistencia viajes"
+      ],
+      "riskType": "supplemental",
+      "typicalDeductible": "US$ 50 - 100 deducible"
+    },
+    {
+      "id": "salud-mental-psiquiatria",
+      "name": "Salud Mental y Psiquiatría",
+      "level": 2,
+      "parentId": "enfermedades-alto-costo-especiales",
+      "childrenIds": [],
+      "aliases": [
+        "Salud Mental y Psiquiatría",
+        "salud mental",
+        "psiquiatría",
+        "psicología",
+        "internación psiquiátrica",
+        "terapia psicológica",
+        "sesiones de psicología",
+        "trastornos mentales",
+        "ansiedad",
+        "depresión",
+        "Salud mental",
+        "Psiquiatría",
+        "Psicología",
+        "Internación psiquiátrica",
+        "Terapia psicológica"
+      ],
+      "riskType": "ambulatory",
+      "typicalDeductible": "Límite sesiones/año"
+    },
+    {
+      "id": "odontologia-salud",
+      "name": "Odontología (Preventiva, Restaurativa y Ortodoncia)",
+      "level": 2,
+      "parentId": "coberturas-complementarias-viaje",
+      "childrenIds": [],
+      "aliases": [
+        "Odontología (Preventiva, Restaurativa y Ortodoncia)",
+        "odontología",
+        "dental",
+        "ortodoncia",
+        "prótesis dental",
+        "implantes",
+        "profilaxis",
+        "limpieza dental",
+        "endodoncia",
+        "exodoncia",
+        "cobertura dental",
+        "Odontología",
+        "Dental",
+        "Ortodoncia",
+        "Prótesis dental",
+        "Profilaxis",
+        "Endodoncia"
+      ],
+      "riskType": "supplemental",
+      "typicalDeductible": "Copago según red"
+    },
+    {
+      "id": "optometria-oftalmologia",
+      "name": "Optometría y Oftalmología",
+      "level": 2,
+      "parentId": "coberturas-complementarias-viaje",
+      "childrenIds": [],
+      "aliases": [
+        "Optometría y Oftalmología",
+        "optometría",
+        "oftalmología",
+        "gafas",
+        "monturas",
+        "lentes de contacto",
+        "cirugía refractiva",
+        "LASIK",
+        "examen visual",
+        "auxilio óptico",
+        "Optometría",
+        "Oftalmología",
+        "Gafas",
+        "Monturas",
+        "Lentes de contacto",
+        "Cirugía refractiva"
+      ],
+      "riskType": "supplemental",
+      "typicalDeductible": "Bono anual o copago"
+    },
+    {
+      "id": "enfermedades-preexistentes",
+      "name": "Enfermedades Preexistentes (Declaración y Exclusiones)",
+      "level": 2,
+      "parentId": "red-asistencial-condiciones",
+      "childrenIds": [],
+      "aliases": [
+        "Enfermedades Preexistentes (Declaración y Exclusiones)",
+        "preexistencias",
+        "enfermedades preexistentes",
+        "condiciones previas",
+        "declaración de salud",
+        "exclusiones preexistentes",
+        "aceptación de preexistencias",
+        "cobertura preexistentes",
+        "Preexistencias",
+        "Enfermedades preexistentes",
+        "Condiciones previas",
+        "Declaración de salud"
+      ],
+      "riskType": "condition",
+      "typicalDeductible": "Exclusión o extraprima"
+    },
+    {
+      "id": "red-prestadores-ips",
+      "name": "Red de Prestadores (IPS, Clínicas y Cobertura Geográfica)",
+      "level": 2,
+      "parentId": "red-asistencial-condiciones",
+      "childrenIds": [],
+      "aliases": [
+        "Red de Prestadores (IPS, Clínicas y Cobertura Geográfica)",
+        "red de IPS",
+        "red de clínicas",
+        "red de prestadores",
+        "red propia",
+        "red complementaria",
+        "cobertura geográfica",
+        "hospitales disponibles",
+        "libre escogencia IPS",
+        "Red de IPS",
+        "Red de clínicas",
+        "Red de prestadores",
+        "Red propia",
+        "Hospitales disponibles"
+      ],
+      "riskType": "condition",
+      "typicalDeductible": "Red abierta / cerrada"
+    },
+    {
+      "id": "copagos-deducibles-cuotas",
+      "name": "Copagos, Deducibles y Cuotas Moderadoras",
+      "level": 2,
+      "parentId": "red-asistencial-condiciones",
+      "childrenIds": [],
+      "aliases": [
+        "Copagos, Deducibles y Cuotas Moderadoras",
+        "copago",
+        "deducible",
+        "cuota moderadora",
+        "coaseguro",
+        "tope anual",
+        "desembolso de bolsillo",
+        "límite copago",
+        "franquicia",
+        "Copago",
+        "Deducible",
+        "Cuota moderadora",
+        "Coaseguro",
+        "Tope anual"
+      ],
+      "riskType": "condition",
+      "typicalDeductible": "Estructura tarifaria"
+    },
+    {
+      "id": "portabilidad-carencias",
+      "name": "Portabilidad y Carencias Regulatorias (Res. 244/2019 · Ley 1438)",
+      "level": 2,
+      "parentId": "red-asistencial-condiciones",
+      "childrenIds": [],
+      "aliases": [
+        "Portabilidad y Carencias Regulatorias (Res. 244/2019 · Ley 1438)",
+        "portabilidad",
+        "período de carencia",
+        "carencia obligatoria",
+        "Resolución 244",
+        "PVS",
+        "plan voluntario de salud",
+        "portabilidad entre ciudades",
+        "cambio de aseguradora",
+        "continuidad cobertura",
+        "Ley 1438",
+        "Portabilidad",
+        "Período de carencia",
+        "Carencia obligatoria"
+      ],
+      "riskType": "regulatory",
+      "typicalDeductible": "Ley 1438 / Res 244"
+    },
+    {
+      "id": "hospitalizacion-domiciliaria",
+      "name": "Hospitalización Domiciliaria y Atención en Casa",
+      "level": 2,
+      "parentId": "coberturas-hospitalarias-cirugia",
+      "childrenIds": [],
+      "aliases": [
+        "Hospitalización Domiciliaria y Atención en Casa",
+        "hospitalización domiciliaria",
+        "atención en casa",
+        "home care",
+        "internación domiciliaria",
+        "enfermería domiciliaria",
+        "equipos médicos en casa",
+        "cuidado en el hogar",
+        "hospital en casa",
+        "Hospitalización domiciliaria",
+        "Atención en casa",
+        "Home care",
+        "Enfermería domiciliaria"
+      ],
+      "riskType": "hospitalization",
+      "typicalDeductible": "100% cubierto"
+    },
+    {
+      "id": "medicina-preventiva-bienestar",
+      "name": "Medicina Preventiva, Vacunación y Programas de Bienestar",
+      "level": 2,
+      "parentId": "coberturas-ambulatorias-medicas",
+      "childrenIds": [],
+      "aliases": [
+        "Medicina Preventiva, Vacunación y Programas de Bienestar",
+        "medicina preventiva",
+        "vacunación",
+        "bienestar",
+        "wellness",
+        "chequeo médico",
+        "examen ejecutivo",
+        "tamizaje",
+        "prevención de enfermedades",
+        "programas de salud",
+        "control médico anual",
+        "vacunas adultos",
+        "Medicina preventiva",
+        "Vacunación",
+        "Bienestar",
+        "Wellness",
+        "Chequeo médico"
+      ],
+      "riskType": "ambulatory",
+      "typicalDeductible": "0% cubierto al 100%"
+    },
+    {
+      "id": "cuidados-intensivos-uci",
+      "name": "Unidad de Cuidados Intensivos (UCI)",
+      "level": 3,
+      "parentId": "hospitalizacion-cirugia",
+      "childrenIds": [],
+      "aliases": [
+        "UCI",
+        "Cuidados intensivos",
+        "UCE"
+      ],
+      "riskType": "hospitalization",
+      "typicalDeductible": "0%"
+    },
+    {
+      "id": "honorarios-quirurgicos",
+      "name": "Honorarios Quirúrgicos y de Anestesia",
+      "level": 3,
+      "parentId": "hospitalizacion-cirugia",
+      "childrenIds": [],
+      "aliases": [
+        "Honorarios cirujano",
+        "Cirugía",
+        "Anestesiología"
+      ],
+      "riskType": "hospitalization",
+      "typicalDeductible": "Copago plan"
+    }
+  ],
+  "compositePatterns": [
+    {
+      "pattern": "medicina\\s+prepagada\\s+total|plan\\s+integral\\s+salud|cobertura\\s+m[eé]dica\\s+completa",
+      "components": [
+        "hospitalizacion-cirugia",
+        "consulta-especialistas-telemedicina",
+        "medicamentos-ambulatorios-hospitalarios",
+        "oncologia-alto-costo",
+        "urgencias-salud"
+      ],
+      "confidence": 0.9
+    }
+  ]
+}

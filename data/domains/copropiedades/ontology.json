@@ -1,0 +1,521 @@
+{
+  "version": "1.0.0",
+  "domain": "copropiedades",
+  "nodes": [
+    {
+      "id": "bienes-comunes-danos",
+      "name": "Daños Materiales sobre Bienes Comunes (Ley 675)",
+      "level": 1,
+      "childrenIds": [
+        "incendio-bienes-comunes",
+        "rotura-vidrios-fachadas",
+        "todo-riesgo-copropiedades",
+        "danos-agua-copropiedades"
+      ],
+      "aliases": [
+        "COBERTURAS OBLIGATORIAS LEY 675",
+        "DAÑOS MATERIALES",
+        "Daños a Edificios y Áreas Comunes"
+      ],
+      "riskType": "property"
+    },
+    {
+      "id": "catastroficos-fenomenos",
+      "name": "Terremoto y Fenómenos de la Naturaleza",
+      "level": 1,
+      "childrenIds": [
+        "terremoto-bienes-comunes",
+        "amit-terrorismo-copropiedades",
+        "granizo-vientos-copropiedades"
+      ],
+      "aliases": [
+        "FENÓMENOS NATURALES",
+        "Eventos de la Naturaleza",
+        "Catastróficos PH"
+      ],
+      "riskType": "catastrophe"
+    },
+    {
+      "id": "responsabilidad-civil-ph",
+      "name": "Responsabilidad Civil y Profesional de Copropiedades",
+      "level": 1,
+      "childrenIds": [
+        "rce-areas-comunes",
+        "rce-directores-administradores",
+        "rc-patronal-copropiedades",
+        "manejo-infidelidad-copropiedades"
+      ],
+      "aliases": [
+        "RESPONSABILIDAD CIVIL",
+        "RESPONSABILIDAD PROFESIONAL",
+        "RC Zonas Comunes"
+      ],
+      "riskType": "liability"
+    },
+    {
+      "id": "maquinaria-equipos-comunes",
+      "name": "Equipos, Maquinaria y Seguridad de Áreas Comunes",
+      "level": 1,
+      "childrenIds": [
+        "equipo-maquinaria-comunes",
+        "sustraccion-bienes-comunes"
+      ],
+      "aliases": [
+        "Maquinaria Común",
+        "Equipos Eléctricos Zonas Comunes",
+        "Seguridad PH"
+      ],
+      "riskType": "equipment"
+    },
+    {
+      "id": "gastos-consecuenciales-asistencia",
+      "name": "Gastos Consecuenciales y Asistencias Copropiedad",
+      "level": 1,
+      "childrenIds": [
+        "remocion-escombros-copropiedades",
+        "perdida-expensas-administracion",
+        "asistencia-areas-comunes"
+      ],
+      "aliases": [
+        "GASTOS COMPLEMENTARIOS",
+        "PÉRDIDAS CONSECUENCIALES",
+        "SERVICIOS Y ASISTENCIAS"
+      ],
+      "riskType": "assistance"
+    },
+    {
+      "id": "incendio-bienes-comunes",
+      "name": "Incendio, Rayo y Explosión sobre Bienes Comunes",
+      "level": 2,
+      "parentId": "bienes-comunes-danos",
+      "childrenIds": [],
+      "aliases": [
+        "Incendio, Rayo y Explosión sobre Bienes Comunes",
+        "Incendio (Edificio y Contenidos)",
+        "Amparo Básico Incendio",
+        "Incendio y Rayo",
+        "Incendio y Líneas Aliadas (ILA)",
+        "Edificios y Áreas Comunes",
+        "incendio copropiedad",
+        "incendio zonas comunes",
+        "Todo Riesgo Incendio",
+        "Incendio y Rayo Edificios",
+        "Incendio copropiedad",
+        "Incendio zonas comunes"
+      ],
+      "riskType": "property",
+      "typicalDeductible": "10% min 2 SMMLV"
+    },
+    {
+      "id": "terremoto-bienes-comunes",
+      "name": "Terremoto, Temblor y Erupción Volcánica sobre Bienes Comunes",
+      "level": 2,
+      "parentId": "catastroficos-fenomenos",
+      "childrenIds": [],
+      "aliases": [
+        "Terremoto, Temblor y Erupción Volcánica sobre Bienes Comunes",
+        "Terremoto",
+        "Terremoto y Eventos Catastróficos",
+        "Terremoto, Temblor y Erupción (TTEV)",
+        "terremoto bienes comunes",
+        "sismo copropiedad",
+        "TTEV",
+        "Terremoto, Temblor y Erupción Volcánica",
+        "Terremoto bienes comunes",
+        "Sismo copropiedad"
+      ],
+      "riskType": "catastrophe",
+      "typicalDeductible": "10% min 5 SMMLV"
+    },
+    {
+      "id": "rce-areas-comunes",
+      "name": "Responsabilidad Civil Extracontractual Áreas Comunes",
+      "level": 2,
+      "parentId": "responsabilidad-civil-ph",
+      "childrenIds": [
+        "rc-parqueaderos-copropiedad",
+        "rc-zonas-humedas-piscinas"
+      ],
+      "aliases": [
+        "Responsabilidad Civil Extracontractual Áreas Comunes",
+        "Responsabilidad Civil Extracontractual",
+        "Responsabilidad Civil Extracontractual (PL)",
+        "Responsabilidad Civil Extracontractual (RCE)",
+        "RCE",
+        "RC áreas comunes",
+        "responsabilidad civil copropiedad",
+        "RCE zonas comunes",
+        "RC en proceso civil",
+        "Responsabilidad Civil Extracontractual en Proceso Civil y Gastos de Defensa",
+        "Responsabilidad Civil en Proceso Civil",
+        "Gastos de Defensa RCE",
+        "Predios, Labores y Operaciones",
+        "PL",
+        "PLO",
+        "Responsabilidad civil copropiedad"
+      ],
+      "riskType": "liability",
+      "typicalDeductible": "10% min 1 SMMLV"
+    },
+    {
+      "id": "rce-directores-administradores",
+      "name": "RC Directores y Administradores (D&O Copropiedades)",
+      "level": 2,
+      "parentId": "responsabilidad-civil-ph",
+      "childrenIds": [],
+      "aliases": [
+        "RC Directores y Administradores (D&O Copropiedades)",
+        "Responsabilidad Civil Directores y Administradores (D&O)",
+        "D&O",
+        "D&O copropiedades",
+        "RC administrador",
+        "responsabilidad directores",
+        "RC consejo de administración",
+        "directors and officers",
+        "Responsabilidad directores",
+        "Directors and Officers",
+        "Responsabilidad Civil Administradores y Miembros del Consejo"
+      ],
+      "riskType": "liability",
+      "typicalDeductible": "10% min 2 SMMLV"
+    },
+    {
+      "id": "rc-patronal-copropiedades",
+      "name": "Responsabilidad Civil Patronal (Empleados de Zonas Comunes)",
+      "level": 2,
+      "parentId": "responsabilidad-civil-ph",
+      "childrenIds": [],
+      "aliases": [
+        "Responsabilidad Civil Patronal (Empleados de Zonas Comunes)",
+        "RC patronal",
+        "accidente de trabajo empleados",
+        "responsabilidad empleador copropiedad",
+        "RC Patronal Porteros y Vigilantes",
+        "employer liability",
+        "Responsabilidad Civil Patronal",
+        "RC Patronal",
+        "Accidente de trabajo empleados",
+        "Responsabilidad empleador copropiedad",
+        "Employer Liability"
+      ],
+      "riskType": "liability",
+      "typicalDeductible": "10% min 1 SMMLV"
+    },
+    {
+      "id": "equipo-maquinaria-comunes",
+      "name": "Equipo Eléctrico y Maquinaria de Zonas Comunes",
+      "level": 2,
+      "parentId": "maquinaria-equipos-comunes",
+      "childrenIds": [],
+      "aliases": [
+        "Equipo Eléctrico y Maquinaria de Zonas Comunes",
+        "Equipo Eléctrico y Electrónico",
+        "Equipos eléctricos y electrónicos",
+        "Rotura de Maquinaria",
+        "Maquinaria y equipo",
+        "ascensores",
+        "planta eléctrica",
+        "bombas de agua",
+        "equipo eléctrico zonas comunes",
+        "Rotura de Maquinaria y Equipo Eléctrico",
+        "Equipo Eléctrico y Electrónico y Rotura de Maquinaria",
+        "Ascensores",
+        "Planta eléctrica",
+        "Bombas de agua",
+        "Equipo eléctrico zonas comunes"
+      ],
+      "riskType": "equipment",
+      "typicalDeductible": "10% min 1.5 SMMLV"
+    },
+    {
+      "id": "sustraccion-bienes-comunes",
+      "name": "Sustracción y Hurto de Bienes Comunes",
+      "level": 2,
+      "parentId": "maquinaria-equipos-comunes",
+      "childrenIds": [],
+      "aliases": [
+        "Sustracción y Hurto de Bienes Comunes",
+        "Sustracción / Hurto",
+        "Sustracción con Violencia",
+        "Sustracción con Violencia e Infidelidad",
+        "hurto zonas comunes",
+        "sustracción bienes comunes",
+        "robo copropiedad",
+        "Títulos valores y dinero en efectivo",
+        "Sustracción y Hurto",
+        "Muebles y enseres",
+        "Hurto zonas comunes",
+        "Sustracción bienes comunes",
+        "Robo copropiedad"
+      ],
+      "riskType": "theft",
+      "typicalDeductible": "10% min 1 SMMLV"
+    },
+    {
+      "id": "rotura-vidrios-fachadas",
+      "name": "Rotura de Vidrios, Fachadas y Domos",
+      "level": 2,
+      "parentId": "bienes-comunes-danos",
+      "childrenIds": [],
+      "aliases": [
+        "Rotura de Vidrios, Fachadas y Domos",
+        "Vidrios",
+        "vidrios planos",
+        "rotura vidrios copropiedad",
+        "fachadas",
+        "domos",
+        "cristales zonas comunes",
+        "Rotura de Vidrios",
+        "Vidrios Planos",
+        "Rotura de vidrios copropiedad",
+        "Fachadas y domos",
+        "Cristales zonas comunes"
+      ],
+      "riskType": "property",
+      "typicalDeductible": "10% min 0.5 SMMLV"
+    },
+    {
+      "id": "todo-riesgo-copropiedades",
+      "name": "Todo Riesgo Daño Material Copropiedades",
+      "level": 2,
+      "parentId": "bienes-comunes-danos",
+      "childrenIds": [],
+      "aliases": [
+        "Todo Riesgo Daño Material Copropiedades",
+        "Edificio y Bienes Comunes (Valor Asegurado)",
+        "Todo Riesgo Incendio",
+        "todo riesgo copropiedad",
+        "daño material zonas comunes",
+        "all risk copropiedad",
+        "pérdida o daño físico",
+        "Todo Riesgo Daños Materiales",
+        "Todo riesgo copropiedad",
+        "Daño material zonas comunes",
+        "All risk copropiedad",
+        "Pérdida o daño físico"
+      ],
+      "riskType": "property",
+      "typicalDeductible": "10% min 2 SMMLV"
+    },
+    {
+      "id": "danos-agua-copropiedades",
+      "name": "Daños por Agua, Anegación e Inundación en Áreas Comunes",
+      "level": 2,
+      "parentId": "bienes-comunes-danos",
+      "childrenIds": [],
+      "aliases": [
+        "Daños por Agua, Anegación e Inundación en Áreas Comunes",
+        "Daños por Agua, Anegación e Inundación",
+        "daños por agua copropiedad",
+        "anegación",
+        "inundación zonas comunes",
+        "filtración",
+        "tubería rota",
+        "daños por humedad",
+        "Daños por Agua",
+        "Daños por agua / Anegación",
+        "Anegación / Cobertura Extendida",
+        "Inundación zonas comunes",
+        "Filtración y rotura de tubería"
+      ],
+      "riskType": "property",
+      "typicalDeductible": "10% min 1.5 SMMLV"
+    },
+    {
+      "id": "manejo-infidelidad-copropiedades",
+      "name": "Manejo e Infidelidad de Empleados",
+      "level": 2,
+      "parentId": "responsabilidad-civil-ph",
+      "childrenIds": [],
+      "aliases": [
+        "Manejo e Infidelidad de Empleados",
+        "Manejo Global / Infidelidad de Empleados",
+        "Manejo global / Infidelidad",
+        "infidelidad empleados copropiedad",
+        "manejo empleados",
+        "deshonestidad empleados",
+        "Infidelidad y Riesgos Financieros",
+        "Infidelidad empleados copropiedad",
+        "Manejo empleados",
+        "Deshonestidad empleados"
+      ],
+      "riskType": "fidelity",
+      "typicalDeductible": "10% min 2 SMMLV"
+    },
+    {
+      "id": "amit-terrorismo-copropiedades",
+      "name": "AMIT, Terrorismo y Actos Malintencionados",
+      "level": 2,
+      "parentId": "catastroficos-fenomenos",
+      "childrenIds": [],
+      "aliases": [
+        "AMIT, Terrorismo y Actos Malintencionados",
+        "HMACC-AMIT",
+        "Huelga, Motín, Asonada, Conmoción Civil y Actos Malintencionados de Terceros",
+        "Huelga, Motín y Asonada (HMA / HMACC)",
+        "Huelga, Motín, Asonada y Conmoción Civil",
+        "Actos Malintencionados de Terceros",
+        "AMIT copropiedad",
+        "terrorismo edificio",
+        "actos malintencionados",
+        "vandalismo zonas comunes",
+        "sabotaje",
+        "Terrorismo y actos malintencionados",
+        "Vandalismo zonas comunes",
+        "Sabotaje"
+      ],
+      "riskType": "special",
+      "typicalDeductible": "10% min 3 SMMLV"
+    },
+    {
+      "id": "granizo-vientos-copropiedades",
+      "name": "Granizo, Vientos Fuertes y Tempestades",
+      "level": 2,
+      "parentId": "catastroficos-fenomenos",
+      "childrenIds": [],
+      "aliases": [
+        "Granizo, Vientos Fuertes y Tempestades",
+        "granizo",
+        "vientos fuertes",
+        "tempestad",
+        "vendaval",
+        "lluvia con granizo",
+        "tormenta",
+        "Vientos Fuertes y Granizo",
+        "Granizo",
+        "Vientos fuertes",
+        "Tempestad y vendaval",
+        "Tormenta y huracán"
+      ],
+      "riskType": "catastrophe",
+      "typicalDeductible": "10% min 1 SMMLV"
+    },
+    {
+      "id": "remocion-escombros-copropiedades",
+      "name": "Remoción de Escombros y Gastos de Preservación",
+      "level": 2,
+      "parentId": "gastos-consecuenciales-asistencia",
+      "childrenIds": [
+        "gastos-preservacion-ph"
+      ],
+      "aliases": [
+        "Remoción de Escombros y Gastos de Preservación",
+        "remoción de escombros",
+        "gastos de preservación",
+        "demolición",
+        "gastos adicionales siniestro",
+        "Preservación de Bienes",
+        "Remoción de Escombros",
+        "Gastos de preservación",
+        "Demolición y limpieza",
+        "Gastos adicionales por siniestro"
+      ],
+      "riskType": "assistance",
+      "typicalDeductible": "0%"
+    },
+    {
+      "id": "perdida-expensas-administracion",
+      "name": "Pérdida de Expensas y Cuotas de Administración",
+      "level": 2,
+      "parentId": "gastos-consecuenciales-asistencia",
+      "childrenIds": [],
+      "aliases": [
+        "Pérdida de Expensas y Cuotas de Administración",
+        "Lucro Cesante",
+        "Lucro Cesante / Pérdida de Cánones de Arrendamiento y Gastos Adicionales de Alojamiento",
+        "pérdida de expensas",
+        "cuotas de administración",
+        "ingresos por cuotas",
+        "flujo de caja copropiedad",
+        "administración",
+        "Pérdida de expensas",
+        "Cuotas de administración",
+        "Pérdida de cánones de arrendamiento",
+        "Flujo de caja copropiedad"
+      ],
+      "riskType": "consequential",
+      "typicalDeductible": "3 días deducible"
+    },
+    {
+      "id": "asistencia-areas-comunes",
+      "name": "Asistencia y Mantenimiento de Áreas Comunes",
+      "level": 2,
+      "parentId": "gastos-consecuenciales-asistencia",
+      "childrenIds": [],
+      "aliases": [
+        "Asistencia y Mantenimiento de Áreas Comunes",
+        "asistencia mantenimiento",
+        "mantenimiento zonas comunes",
+        "asistencia técnica copropiedad",
+        "reparaciones urgentes",
+        "Asistencia 24/7 Copropiedades",
+        "Asistencia y mantenimiento",
+        "Asistencia copropiedades",
+        "Mantenimiento zonas comunes",
+        "Plomería, cerrajería y electricidad urgente"
+      ],
+      "riskType": "assistance",
+      "typicalDeductible": "0%"
+    },
+    {
+      "id": "rc-parqueaderos-copropiedad",
+      "name": "RC Parqueaderos y Vigilancia en Copropiedad",
+      "level": 3,
+      "parentId": "rce-areas-comunes",
+      "childrenIds": [],
+      "aliases": [
+        "RC parqueaderos",
+        "Vehículos en parqueadero común",
+        "Vigilancia y portería"
+      ],
+      "riskType": "liability",
+      "typicalDeductible": "10% min 1 SMMLV"
+    },
+    {
+      "id": "rc-zonas-humedas-piscinas",
+      "name": "RC Piscinas, Zonas Húmedas y Ascensores",
+      "level": 3,
+      "parentId": "rce-areas-comunes",
+      "childrenIds": [],
+      "aliases": [
+        "RC piscinas",
+        "RC zonas húmedas",
+        "RC ascensores"
+      ],
+      "riskType": "liability",
+      "typicalDeductible": "10% min 1 SMMLV"
+    },
+    {
+      "id": "gastos-preservacion-ph",
+      "name": "Gastos de Preservación y Mitigación del Siniestro",
+      "level": 3,
+      "parentId": "remocion-escombros-copropiedades",
+      "childrenIds": [],
+      "aliases": [
+        "Preservación de bienes comunes",
+        "Mitigación de daños"
+      ],
+      "riskType": "assistance",
+      "typicalDeductible": "0%"
+    }
+  ],
+  "compositePatterns": [
+    {
+      "pattern": "todo\\s+riesgo.*copropiedad|todo\\s+riesgo.*da[ñn]o\\s+material|zonas\\s+comunes\\s+ley\\s+675",
+      "components": [
+        "incendio-bienes-comunes",
+        "terremoto-bienes-comunes",
+        "rce-areas-comunes",
+        "todo-riesgo-copropiedades"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "pattern": "terremoto.*temblor|erupci[oó]n.*volc[aá]nica",
+      "components": [
+        "terremoto-bienes-comunes"
+      ],
+      "confidence": 0.85
+    }
+  ]
+}

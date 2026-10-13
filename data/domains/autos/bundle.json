@@ -1,0 +1,9 @@
+{
+  "version": "1.0.0",
+  "domain": "autos",
+  "files": [
+    "taxonomy.json",
+    "ontology.json",
+    "thesaurus.json"
+  ]
+}

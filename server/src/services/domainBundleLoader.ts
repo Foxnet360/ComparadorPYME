@@ -32,12 +32,23 @@ export function hasDomainSpecificFile(domain: string, filename: string): boolean
   return resolveDomainBundlePath(domain, filename) !== null;
 }
 
+export interface LoadDomainJsonOptions {
+  /** If false, throws instead of falling back to 'pyme' when the domain file is missing. Defaults to false for ontology.json, true otherwise. */
+  allowFallback?: boolean;
+}
+
 /**
  * Carga y parsea un archivo JSON del bundle de un dominio.
- * Si el archivo no existe para el dominio solicitado, hace fallback al dominio "pyme".
- * Si tampoco existe para "pyme", lanza un error claro.
+ * Si el archivo no existe para el dominio solicitado, se evalúa si se permite fallback a "pyme".
+ * Para ontologías semánticas (ontology.json), NO se aplica fallback silencioso a "pyme"
+ * para evitar contaminación de dominios.
+ * Si tampoco existe para "pyme" o el fallback está deshabilitado, lanza un error claro.
  */
-export function loadDomainJson<T>(domain: string, filename: string): T {
+export function loadDomainJson<T>(
+  domain: string,
+  filename: string,
+  options?: LoadDomainJsonOptions
+): T {
   const bundlePath = resolveDomainBundlePath(domain, filename);
 
   if (bundlePath) {
@@ -49,11 +60,15 @@ export function loadDomainJson<T>(domain: string, filename: string): T {
     }
   }
 
-  if (domain !== 'pyme') {
+  // Prevent silent fallback to PYME for ontology.json to avoid cross-domain pollution
+  const isSemanticFile = filename === 'ontology.json';
+  const shouldFallback = options?.allowFallback ?? !isSemanticFile;
+
+  if (domain !== 'pyme' && shouldFallback) {
     console.warn(
       `[DomainBundle] Missing ${filename} for domain "${domain}", falling back to "pyme"`
     );
-    return loadDomainJson<T>('pyme', filename);
+    return loadDomainJson<T>('pyme', filename, options);
   }
 
   throw new Error(`Domain bundle file not found: ${filename} for domain "${domain}"`);

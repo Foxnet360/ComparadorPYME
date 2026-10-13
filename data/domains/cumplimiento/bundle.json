@@ -1,0 +1,9 @@
+{
+  "version": "1.0.0",
+  "domain": "cumplimiento",
+  "files": [
+    "taxonomy.json",
+    "ontology.json",
+    "thesaurus.json"
+  ]
+}

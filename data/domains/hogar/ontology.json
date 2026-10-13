@@ -1,0 +1,480 @@
+{
+  "version": "1.0.0",
+  "domain": "hogar",
+  "nodes": [
+    {
+      "id": "danos-basicos-vivienda",
+      "name": "Coberturas Básicas y Estructurales de Vivienda",
+      "level": 1,
+      "childrenIds": [
+        "incendio-hogar",
+        "dano-electrico-hogar",
+        "rotura-cristales-hogar"
+      ],
+      "aliases": [
+        "COBERTURAS BÁSICAS DE LA VIVIENDA",
+        "DAÑOS MATERIALES",
+        "EQUIPOS Y ENSERES",
+        "Estructura y Contenidos"
+      ],
+      "riskType": "property"
+    },
+    {
+      "id": "catastroficos-naturaleza-hogar",
+      "name": "Fenómenos Naturales y Eventos Catastróficos Hogar",
+      "level": 1,
+      "childrenIds": [
+        "terremoto-hogar",
+        "danos-agua-hogar",
+        "granizo-vientos-hogar",
+        "hmce-amit-hogar"
+      ],
+      "aliases": [
+        "EVENTOS DE LA NATURALEZA",
+        "EVENTOS DE LA NATURALEZA Y AGUA",
+        "COBERTURAS ESPECIALES",
+        "Sismo y Clima"
+      ],
+      "riskType": "catastrophe"
+    },
+    {
+      "id": "hurto-sustraccion-hogar",
+      "name": "Hurto y Sustracción de Bienes del Hogar",
+      "level": 1,
+      "childrenIds": [
+        "sustraccion-dentro-predio",
+        "sustraccion-fuera-predio",
+        "objetos-valor-joyas-arte"
+      ],
+      "aliases": [
+        "HURTO Y SUSTRACCIÓN",
+        "Robo en Vivienda",
+        "Bienes Personales"
+      ],
+      "riskType": "theft"
+    },
+    {
+      "id": "responsabilidad-civil-familiar",
+      "name": "Responsabilidad Civil Extracontractual y Familiar",
+      "level": 1,
+      "childrenIds": [
+        "rce-hogar-familiar",
+        "rc-patronal-empleados-domesticos"
+      ],
+      "aliases": [
+        "RESPONSABILIDAD CIVIL",
+        "RC Hogar",
+        "RC Familiar y Patronal"
+      ],
+      "riskType": "liability"
+    },
+    {
+      "id": "asistencias-gastos-hogar",
+      "name": "Asistencia Domiciliaria y Gastos por Siniestro",
+      "level": 1,
+      "childrenIds": [
+        "asistencia-domiciliaria-247",
+        "inhabitabilidad-arrendamiento-temporal",
+        "remocion-escombros-hogar",
+        "marco-normativo-hogar-ph",
+        "deducibles-hogar-reglamentarios"
+      ],
+      "aliases": [
+        "ASISTENCIAS Y SERVICIOS",
+        "GASTOS ADICIONALES POR SINIESTRO",
+        "MARCO REGULATORIO Y COORDINACIÓN",
+        "CONDICIONADO ECONÓMICO"
+      ],
+      "riskType": "assistance"
+    },
+    {
+      "id": "incendio-hogar",
+      "name": "Incendio, Rayo y Explosión (Edificio y Contenidos)",
+      "level": 2,
+      "parentId": "danos-basicos-vivienda",
+      "childrenIds": [],
+      "aliases": [
+        "Incendio, Rayo y Explosión (Edificio y Contenidos)",
+        "Incendio",
+        "Incendio y Rayo",
+        "Explosión",
+        "Incendio Edificio",
+        "Incendio Contenidos",
+        "Amparo Básico Hogar",
+        "Incendio y Aliados Hogar",
+        "Fuego y Explosión"
+      ],
+      "riskType": "property",
+      "typicalDeductible": "10% min 1 SMMLV"
+    },
+    {
+      "id": "terremoto-hogar",
+      "name": "Terremoto, Temblor y Erupción Volcánica",
+      "level": 2,
+      "parentId": "catastroficos-naturaleza-hogar",
+      "childrenIds": [],
+      "aliases": [
+        "Terremoto, Temblor y Erupción Volcánica",
+        "Terremoto",
+        "Temblor",
+        "Erupción Volcánica",
+        "Sismo",
+        "Terremoto Hogar",
+        "Terremoto Edificio",
+        "Terremoto Contenidos",
+        "Sismo Vivienda"
+      ],
+      "riskType": "catastrophe",
+      "typicalDeductible": "10% min 3 SMMLV"
+    },
+    {
+      "id": "danos-agua-hogar",
+      "name": "Daños por Agua, Anegación e Inundación",
+      "level": 2,
+      "parentId": "catastroficos-naturaleza-hogar",
+      "childrenIds": [],
+      "aliases": [
+        "Daños por Agua, Anegación e Inundación",
+        "Daños por agua",
+        "Anegación",
+        "Inundación",
+        "Fuga de agua",
+        "Rotura de tuberías",
+        "Desbordamiento",
+        "Filtraciones accesorias",
+        "Agua accidental"
+      ],
+      "riskType": "property",
+      "typicalDeductible": "10% min 1 SMMLV"
+    },
+    {
+      "id": "granizo-vientos-hogar",
+      "name": "Granizo, Vientos Fuertes y Tempestades",
+      "level": 2,
+      "parentId": "catastroficos-naturaleza-hogar",
+      "childrenIds": [],
+      "aliases": [
+        "Granizo, Vientos Fuertes y Tempestades",
+        "Granizo",
+        "Vientos fuertes",
+        "Vendaval",
+        "Tempestad",
+        "Tornados",
+        "Tifón",
+        "Huracán",
+        "Viento y Granizo"
+      ],
+      "riskType": "catastrophe",
+      "typicalDeductible": "10% min 1 SMMLV"
+    },
+    {
+      "id": "sustraccion-dentro-predio",
+      "name": "Sustracción y Hurto Calificado dentro del Predio",
+      "level": 2,
+      "parentId": "hurto-sustraccion-hogar",
+      "childrenIds": [],
+      "aliases": [
+        "Sustracción y Hurto Calificado dentro del Predio",
+        "Hurto dentro del predio",
+        "Sustracción con violencia",
+        "Robo en hogar",
+        "Hurto en vivienda",
+        "Hurto de contenidos",
+        "Sustracción de enseres",
+        "Robo a mano armada en vivienda"
+      ],
+      "riskType": "theft",
+      "typicalDeductible": "10% min 1 SMMLV"
+    },
+    {
+      "id": "sustraccion-fuera-predio",
+      "name": "Sustracción y Hurto fuera del Predio (Bienes Personales)",
+      "level": 2,
+      "parentId": "hurto-sustraccion-hogar",
+      "childrenIds": [],
+      "aliases": [
+        "Sustracción y Hurto fuera del Predio (Bienes Personales)",
+        "Hurto fuera del predio",
+        "Bienes fuera del hogar",
+        "Hurto de celular",
+        "Hurto de portátil",
+        "Hurto de bicicleta",
+        "Efectos personales fuera de casa",
+        "Objetos personales fuera del predio"
+      ],
+      "riskType": "theft",
+      "typicalDeductible": "10% min 1 SMMLV"
+    },
+    {
+      "id": "dano-electrico-hogar",
+      "name": "Daño Eléctrico, Electrónico y Sobretensión",
+      "level": 2,
+      "parentId": "danos-basicos-vivienda",
+      "childrenIds": [],
+      "aliases": [
+        "Daño Eléctrico, Electrónico y Sobretensión",
+        "Daño eléctrico",
+        "Sobretensión",
+        "Equipos electrónicos",
+        "Daños en electrodomésticos",
+        "Cortocircuito",
+        "Sobrecarga eléctrica",
+        "Equipos del hogar"
+      ],
+      "riskType": "equipment",
+      "typicalDeductible": "10% min 1 SMMLV"
+    },
+    {
+      "id": "rce-hogar-familiar",
+      "name": "Responsabilidad Civil Extracontractual Hogar y Familiar (RCE Hogar)",
+      "level": 2,
+      "parentId": "responsabilidad-civil-familiar",
+      "childrenIds": [],
+      "aliases": [
+        "Responsabilidad Civil Extracontractual Hogar y Familiar (RCE Hogar)",
+        "RC Hogar",
+        "RCE Familiar",
+        "RC Predios",
+        "Responsabilidad Civil Extracontractual",
+        "Daños a terceros por agua",
+        "Daños a vecinos",
+        "RC Cabeza de Familia",
+        "Mascotas RCE",
+        "Daños a terceros"
+      ],
+      "riskType": "liability",
+      "typicalDeductible": "10% min 1 SMMLV"
+    },
+    {
+      "id": "rc-patronal-empleados-domesticos",
+      "name": "Responsabilidad Civil Empleados Domésticos / Patronal Hogar",
+      "level": 2,
+      "parentId": "responsabilidad-civil-familiar",
+      "childrenIds": [],
+      "aliases": [
+        "Responsabilidad Civil Empleados Domésticos / Patronal Hogar",
+        "RC Patronal Hogar",
+        "RC Empleados Domésticos",
+        "Accidente laboral servicio doméstico",
+        "RC niñera",
+        "RC empleada del servicio",
+        "Patronal vivienda"
+      ],
+      "riskType": "liability",
+      "typicalDeductible": "10% min 1 SMMLV"
+    },
+    {
+      "id": "asistencia-domiciliaria-247",
+      "name": "Asistencia Domiciliaria de Emergencia 24/7 (Servicios en Especie)",
+      "level": 2,
+      "parentId": "asistencias-gastos-hogar",
+      "childrenIds": [
+        "plomeria-emergencia-hogar",
+        "electricidad-emergencia-hogar",
+        "cerrajeria-emergencia-hogar"
+      ],
+      "aliases": [
+        "Asistencia Domiciliaria de Emergencia 24/7 (Servicios en Especie)",
+        "Asistencia domiciliaria",
+        "Plomería de emergencia",
+        "Cerrajería 24/7",
+        "Electricista de emergencia",
+        "Vidrios y cristalería de emergencia",
+        "Asistencia en casa",
+        "Servicios domiciliarios"
+      ],
+      "riskType": "assistance",
+      "typicalDeductible": "0%"
+    },
+    {
+      "id": "inhabitabilidad-arrendamiento-temporal",
+      "name": "Inhabitabilidad, Arrendamiento Temporal y Gastos de Hotel",
+      "level": 2,
+      "parentId": "asistencias-gastos-hogar",
+      "childrenIds": [],
+      "aliases": [
+        "Inhabitabilidad, Arrendamiento Temporal y Gastos de Hotel",
+        "Arrendamiento temporal",
+        "Gastos de hotel",
+        "Inhabitabilidad del inmueble",
+        "Alojamiento temporal por siniestro",
+        "Pérdida de cánones de arrendamiento",
+        "Gastos de mudanza",
+        "Alojamiento temporal"
+      ],
+      "riskType": "consequential",
+      "typicalDeductible": "0%"
+    },
+    {
+      "id": "hmce-amit-hogar",
+      "name": "HMCE (Huelga, Motín, Conmoción Civil) y AMIT (Actos Malintencionados)",
+      "level": 2,
+      "parentId": "catastroficos-naturaleza-hogar",
+      "childrenIds": [],
+      "aliases": [
+        "HMCE (Huelga, Motín, Conmoción Civil) y AMIT (Actos Malintencionados)",
+        "HMCE",
+        "AMIT",
+        "Actos malintencionados",
+        "Huelga y motín",
+        "Conmoción civil",
+        "Vandalismo",
+        "Terrorismo hogar",
+        "HMACC"
+      ],
+      "riskType": "special",
+      "typicalDeductible": "10% min 2 SMMLV"
+    },
+    {
+      "id": "remocion-escombros-hogar",
+      "name": "Remoción de Escombros y Preservación de Bienes",
+      "level": 2,
+      "parentId": "asistencias-gastos-hogar",
+      "childrenIds": [],
+      "aliases": [
+        "Remoción de Escombros y Preservación de Bienes",
+        "Remoción de escombros",
+        "Limpieza y desmonte",
+        "Preservación de bienes",
+        "Gastos para aminorar el siniestro",
+        "Honorarios de ingenieros y arquitectos"
+      ],
+      "riskType": "assistance",
+      "typicalDeductible": "0%"
+    },
+    {
+      "id": "rotura-cristales-hogar",
+      "name": "Rotura Accidental de Cristales, Vidrios y Loza Sanitaria",
+      "level": 2,
+      "parentId": "danos-basicos-vivienda",
+      "childrenIds": [],
+      "aliases": [
+        "Rotura Accidental de Cristales, Vidrios y Loza Sanitaria",
+        "Rotura de vidrios",
+        "Cristales y espejos",
+        "Loza sanitaria",
+        "Vidrios fijos",
+        "Cristales fijos del predio"
+      ],
+      "riskType": "property",
+      "typicalDeductible": "10% min 0.5 SMMLV"
+    },
+    {
+      "id": "objetos-valor-joyas-arte",
+      "name": "Objetos de Valor, Joyas, Arte y Colecciones Declaradas",
+      "level": 2,
+      "parentId": "hurto-sustraccion-hogar",
+      "childrenIds": [],
+      "aliases": [
+        "Objetos de Valor, Joyas, Arte y Colecciones Declaradas",
+        "Objetos de valor",
+        "Joyas y relojes",
+        "Obras de arte",
+        "Colecciones",
+        "Bienes de alto valor declarados",
+        "Joyas dentro de caja fuerte"
+      ],
+      "riskType": "theft",
+      "typicalDeductible": "10% min 2 SMMLV"
+    },
+    {
+      "id": "marco-normativo-hogar-ph",
+      "name": "Marco Normativo y Coordinación con Propiedad Horizontal (Ley 675/2001 · Ley 1796/2016 · Código de Comercio)",
+      "level": 2,
+      "parentId": "asistencias-gastos-hogar",
+      "childrenIds": [],
+      "aliases": [
+        "Marco Normativo y Coordinación con Propiedad Horizontal (Ley 675/2001 · Ley 1796/2016 · Código de Comercio)",
+        "Ley 675",
+        "Propiedad horizontal en exceso",
+        "Ley de vivienda segura",
+        "Ley 1796",
+        "Colapso de edificación",
+        "Infraseguro Art 1102",
+        "Principio indemnizatorio",
+        "Coordinación de seguro matriz"
+      ],
+      "riskType": "regulatory",
+      "typicalDeductible": "Ley 675 / Ley 1796"
+    },
+    {
+      "id": "deducibles-hogar-reglamentarios",
+      "name": "Deducibles de Hogar (Mínimos en SMMLV, % de pérdida y reglamentación sismo SFC)",
+      "level": 2,
+      "parentId": "asistencias-gastos-hogar",
+      "childrenIds": [],
+      "aliases": [
+        "Deducibles de Hogar (Mínimos en SMMLV, % de pérdida y reglamentación sismo SFC)",
+        "Deducibles de hogar",
+        "Deducible terremoto",
+        "Deducible hurto",
+        "Deducible agua",
+        "Porcentaje de pérdida",
+        "Deducible en SMMLV",
+        "Deducible sismo SFC"
+      ],
+      "riskType": "condition",
+      "typicalDeductible": "Norma SFC"
+    },
+    {
+      "id": "plomeria-emergencia-hogar",
+      "name": "Plomería de Emergencia",
+      "level": 3,
+      "parentId": "asistencia-domiciliaria-247",
+      "childrenIds": [],
+      "aliases": [
+        "Plomería urgente",
+        "Fontanería",
+        "Desatasco de tuberías"
+      ],
+      "riskType": "assistance",
+      "typicalDeductible": "0%"
+    },
+    {
+      "id": "electricidad-emergencia-hogar",
+      "name": "Electricidad de Emergencia",
+      "level": 3,
+      "parentId": "asistencia-domiciliaria-247",
+      "childrenIds": [],
+      "aliases": [
+        "Electricista urgente",
+        "Falla de energía hogar"
+      ],
+      "riskType": "assistance",
+      "typicalDeductible": "0%"
+    },
+    {
+      "id": "cerrajeria-emergencia-hogar",
+      "name": "Cerrajería de Emergencia",
+      "level": 3,
+      "parentId": "asistencia-domiciliaria-247",
+      "childrenIds": [],
+      "aliases": [
+        "Cerrajería urgente",
+        "Apertura de cerradura"
+      ],
+      "riskType": "assistance",
+      "typicalDeductible": "0%"
+    }
+  ],
+  "compositePatterns": [
+    {
+      "pattern": "todo\\s+riesgo\\s+hogar|multirriesgo\\s+hogar|integral\\s+vivienda",
+      "components": [
+        "incendio-hogar",
+        "terremoto-hogar",
+        "sustraccion-dentro-predio",
+        "rce-hogar-familiar",
+        "asistencia-domiciliaria-247"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "pattern": "terremoto.*temblor|erupci[oó]n.*volc[aá]nica",
+      "components": [
+        "terremoto-hogar"
+      ],
+      "confidence": 0.85
+    }
+  ]
+}

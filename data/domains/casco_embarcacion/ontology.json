@@ -1,12 +1,234 @@
 {
+  "version": "1.0.0",
   "domain": "casco_embarcacion",
-  "exclusions": [
-    "Navegación fuera de aguas permitidas por patente de la DIMAR",
-    "Falta de certificado de navegabilidad o clasificación de clase náutica vigente",
-    "Deterioro por corrosión galvánica o faltante de ánodos de sacrificio"
+  "nodes": [
+    {
+      "id": "danos-casco-maquinaria",
+      "name": "Daños Materiales a Casco y Maquinaria",
+      "level": 1,
+      "childrenIds": [
+        "perdida-total-parcial-casco"
+      ],
+      "aliases": [
+        "COBERTURAS PRINCIPALES",
+        "Casco y Maquinaria",
+        "Daño Físico Naval"
+      ],
+      "riskType": "marine_hull"
+    },
+    {
+      "id": "salvamento-averia-maritima",
+      "name": "Avería Gruesa, Salvamento y Remolque",
+      "level": 1,
+      "childrenIds": [
+        "averia-gruesa-salvamento",
+        "remolque-asistencia-nautica"
+      ],
+      "aliases": [
+        "Salvamento Marítimo",
+        "Avería Gruesa",
+        "Asistencia Náutica"
+      ],
+      "riskType": "marine_salvage"
+    },
+    {
+      "id": "responsabilidad-civil-maritima",
+      "name": "Responsabilidad Civil Náutica y P&I",
+      "level": 1,
+      "childrenIds": [
+        "rc-por-abordaje-collision",
+        "proteccion-indemnizacion-pi"
+      ],
+      "aliases": [
+        "COBERTURAS MARÍTIMAS AVANZADAS",
+        "Collision Liability",
+        "Protección e Indemnización"
+      ],
+      "riskType": "marine_liability"
+    },
+    {
+      "id": "riesgos-guerra-maritimos",
+      "name": "Riesgos de Guerra, Piratería y Huelgas Navales",
+      "level": 1,
+      "childrenIds": [
+        "riesgos-guerra-pirateria-maritima"
+      ],
+      "aliases": [
+        "Guerra y Piratería",
+        "War and Strikes Marítimo"
+      ],
+      "riskType": "war_marine"
+    },
+    {
+      "id": "coberturas-maquinaria-auxiliar",
+      "name": "Maquinaria Auxiliar y Asistencias Náuticas",
+      "level": 1,
+      "childrenIds": [
+        "cobertura-motores-fuera-borda"
+      ],
+      "aliases": [
+        "COBERTURAS COMPLEMENTARIAS",
+        "Motores y Asistencia"
+      ],
+      "riskType": "equipment"
+    },
+    {
+      "id": "perdida-total-parcial-casco",
+      "name": "Pérdida Total o Parcial de Casco y Maquinaria (Institute Time Clauses)",
+      "level": 2,
+      "parentId": "danos-casco-maquinaria",
+      "childrenIds": [],
+      "aliases": [
+        "Pérdida Total o Parcial de Casco y Maquinaria (Institute Time Clauses)",
+        "casco y maquinaria",
+        "pérdida total del casco",
+        "daños materiales al casco",
+        "institute time clauses hulls",
+        "itch",
+        "avería del casco",
+        "siniestro de embarcación",
+        "pérdida parcial casco",
+        "institute time clauses - hulls",
+        "pérdida total del buque",
+        "daño en estructura naval"
+      ],
+      "riskType": "marine_hull",
+      "typicalDeductible": "10% del valor del buque"
+    },
+    {
+      "id": "averia-gruesa-salvamento",
+      "name": "Avería Gruesa y Gastos de Salvamento Marítimo",
+      "level": 2,
+      "parentId": "salvamento-averia-maritima",
+      "childrenIds": [],
+      "aliases": [
+        "Avería Gruesa y Gastos de Salvamento Marítimo",
+        "avería gruesa marítima",
+        "gastos de salvamento",
+        "general average",
+        "salvage charges",
+        "asistencia en el mar",
+        "contribución de avería gruesa",
+        "avería gruesa",
+        "gastos de salvamento náutico",
+        "general average contribution",
+        "salvage costs",
+        "asistencia en alta mar"
+      ],
+      "riskType": "marine_salvage",
+      "typicalDeductible": "10% min 2 SMMLV"
+    },
+    {
+      "id": "rc-por-abordaje-collision",
+      "name": "Responsabilidad Civil por Abordaje (Collision Liability 3/4th o 4/4ths)",
+      "level": 2,
+      "parentId": "responsabilidad-civil-maritima",
+      "childrenIds": [],
+      "aliases": [
+        "Responsabilidad Civil por Abordaje (Collision Liability 3/4th o 4/4ths)",
+        "responsabilidad por abordaje",
+        "collision liability",
+        "3/4th collision liability",
+        "4/4ths collision liability",
+        "colisión entre naves",
+        "daños a otros buques por choque",
+        "responsabilidad civil por abordaje",
+        "daños a otros buques",
+        "colisión náutica"
+      ],
+      "riskType": "marine_liability",
+      "typicalDeductible": "10% min 3 SMMLV"
+    },
+    {
+      "id": "proteccion-indemnizacion-pi",
+      "name": "Protección e Indemnización (P&I - Contaminación y Tripulación)",
+      "level": 2,
+      "parentId": "responsabilidad-civil-maritima",
+      "childrenIds": [],
+      "aliases": [
+        "Protección e Indemnización (P&I - Contaminación y Tripulación)",
+        "protection and indemnity",
+        "p&i",
+        "contaminación marina",
+        "responsabilidad por hidrocarburos",
+        "lesiones a tripulantes",
+        "remoción de restos náufragos",
+        "wreck removal",
+        "P&I club",
+        "contaminación por búnker / hidrocarburos",
+        "responsabilidad patronal tripulación"
+      ],
+      "riskType": "marine_liability",
+      "typicalDeductible": "US$ 1,000 - 5,000"
+    },
+    {
+      "id": "riesgos-guerra-pirateria-maritima",
+      "name": "Riesgos de Guerra, Piratería y Huelgas Marítimas",
+      "level": 2,
+      "parentId": "riesgos-guerra-maritimos",
+      "childrenIds": [],
+      "aliases": [
+        "Riesgos de Guerra, Piratería y Huelgas Marítimas",
+        "guerra marítima",
+        "piratería",
+        "institute war and strikes clauses",
+        "huelgas en puertos",
+        "apoderamiento de embarcación",
+        "incautación náutica",
+        "piratería marítima",
+        "guerra naval",
+        "institute war clauses",
+        "huelga portuaria"
+      ],
+      "riskType": "war_marine",
+      "typicalDeductible": "10% deducible guerra"
+    },
+    {
+      "id": "remolque-asistencia-nautica",
+      "name": "Remolque y Asistencia Náutica de Emergencia",
+      "level": 2,
+      "parentId": "salvamento-averia-maritima",
+      "childrenIds": [],
+      "aliases": [
+        "Remolque y Asistencia Náutica de Emergencia",
+        "remolque marítimo",
+        "asistencia náutica",
+        "gastos de remolcador",
+        "auxilio en alta mar",
+        "asistencia en el mar",
+        "remolque náutico de emergencia"
+      ],
+      "riskType": "marine_salvage",
+      "typicalDeductible": "0%"
+    },
+    {
+      "id": "cobertura-motores-fuera-borda",
+      "name": "Cobertura de Motores Fuera de Borda y Maquinaria Auxiliar",
+      "level": 2,
+      "parentId": "coberturas-maquinaria-auxiliar",
+      "childrenIds": [],
+      "aliases": [
+        "Cobertura de Motores Fuera de Borda y Maquinaria Auxiliar",
+        "motores fuera de borda",
+        "maquinaria auxiliar",
+        "generadores marinos",
+        "equipos de navegación radar / sonar",
+        "motor marino auxiliar",
+        "radar sonar náutico"
+      ],
+      "riskType": "equipment",
+      "typicalDeductible": "10% min 1 SMMLV"
+    }
   ],
-  "dependencies": {
-    "cas_02": ["cas_01"],
-    "cas_04": ["cas_01"]
-  }
+  "compositePatterns": [
+    {
+      "pattern": "institute\\s+time\\s+clauses.*hulls|todo\\s+riesgo\\s+casco|p[oó]liza\\s+mar[ií]tima\\s+casco",
+      "components": [
+        "perdida-total-parcial-casco",
+        "averia-gruesa-salvamento",
+        "rc-por-abordaje-collision"
+      ],
+      "confidence": 0.9
+    }
+  ]
 }

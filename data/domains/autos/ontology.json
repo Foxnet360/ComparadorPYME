@@ -1,0 +1,512 @@
+{
+  "version": "1.0.0",
+  "domain": "autos",
+  "nodes": [
+    {
+      "id": "rc-vehicular",
+      "name": "Responsabilidad Civil Extracontractual Vehicular",
+      "level": 1,
+      "childrenIds": [
+        "rce-vehicular"
+      ],
+      "aliases": [
+        "Responsabilidad Civil",
+        "RCE Vehicular",
+        "RC Autos"
+      ],
+      "riskType": "liability"
+    },
+    {
+      "id": "danos-vehiculo",
+      "name": "Daños al Vehículo y Pérdidas",
+      "level": 1,
+      "childrenIds": [
+        "perdida-total",
+        "perdida-parcial",
+        "hurto-partes",
+        "eventos-naturaleza",
+        "perdida-total-definicion"
+      ],
+      "aliases": [
+        "Daños al Vehículo",
+        "Daño Material Vehicular",
+        "Casco Autos"
+      ],
+      "riskType": "property"
+    },
+    {
+      "id": "asistencias-vehiculares",
+      "name": "Asistencias y Servicios al Vehículo",
+      "level": 1,
+      "childrenIds": [
+        "carro-taller",
+        "asistencia-viaje",
+        "gastos-transporte"
+      ],
+      "aliases": [
+        "Asistencias y Servicios",
+        "Asistencia Vehicular",
+        "Auxilio Mecánico"
+      ],
+      "riskType": "assistance"
+    },
+    {
+      "id": "coberturas-personas",
+      "name": "Coberturas de Personas y Conductores",
+      "level": 1,
+      "childrenIds": [
+        "conductor-adicional",
+        "menores-25",
+        "soat-adicional"
+      ],
+      "aliases": [
+        "Coberturas de Personas",
+        "Accidentes Personales Conductor",
+        "Ocupantes"
+      ],
+      "riskType": "personal_accident"
+    },
+    {
+      "id": "coberturas-especiales",
+      "name": "Coberturas Especiales y Deducibles",
+      "level": 1,
+      "childrenIds": [
+        "deducibles-autos",
+        "accesorios-blindaje"
+      ],
+      "aliases": [
+        "COBERTURAS ESPECIALES",
+        "Amparos Adicionales",
+        "Condiciones Particulares"
+      ],
+      "riskType": "special"
+    },
+    {
+      "id": "rce-vehicular",
+      "name": "Responsabilidad Civil Extracontractual Vehicular",
+      "level": 2,
+      "parentId": "rc-vehicular",
+      "childrenIds": [
+        "rce-danos-terceros",
+        "rce-muerte-lesiones-1p",
+        "rce-muerte-lesiones-2p",
+        "rce-amparo-patrimonial"
+      ],
+      "aliases": [
+        "Responsabilidad Civil Extracontractual Vehicular",
+        "RCE vehicular",
+        "RC vehicular",
+        "Responsabilidad Civil Extracontractual",
+        "Daños a terceros",
+        "RC autos",
+        "Responsabilidad civil por daños a terceros",
+        "RCE Vehículos",
+        "Daños a bienes de terceros",
+        "Muerte o lesiones a una persona"
+      ],
+      "riskType": "liability",
+      "typicalDeductible": "10% min 1 SMMLV"
+    },
+    {
+      "id": "perdida-total",
+      "name": "Pérdida Total (hurto, daños, PT)",
+      "level": 2,
+      "parentId": "danos-vehiculo",
+      "childrenIds": [],
+      "aliases": [
+        "Pérdida Total (hurto, daños, PT)",
+        "PT",
+        "Pérdida total",
+        "Hurto total",
+        "Daños totales",
+        "Pérdida total por hurto",
+        "Pérdida total por daños",
+        "Total loss",
+        "PTD",
+        "FNAC"
+      ],
+      "riskType": "property",
+      "typicalDeductible": "10% deducible comercial"
+    },
+    {
+      "id": "perdida-parcial",
+      "name": "Pérdida Parcial (colisión, PP)",
+      "level": 2,
+      "parentId": "danos-vehiculo",
+      "childrenIds": [],
+      "aliases": [
+        "Pérdida Parcial (colisión, PP)",
+        "PP",
+        "Pérdida parcial",
+        "Colisión",
+        "Daños parciales",
+        "Golpes",
+        "Choque",
+        "Partial loss",
+        "Pérdida parcial por daños",
+        "Pérdida parcial por hurto"
+      ],
+      "riskType": "property",
+      "typicalDeductible": "10% min 1 SMMLV"
+    },
+    {
+      "id": "carro-taller",
+      "name": "Carro Taller / Vehículo de Reemplazo",
+      "level": 2,
+      "parentId": "asistencias-vehiculares",
+      "childrenIds": [],
+      "aliases": [
+        "Carro Taller / Vehículo de Reemplazo",
+        "Carro taller",
+        "Vehículo de reemplazo",
+        "Auto de sustitución",
+        "Vehículo sustituto",
+        "Carro de reemplazo",
+        "Movilidad adicional",
+        "Auto sustituto"
+      ],
+      "riskType": "assistance",
+      "typicalDeductible": "0%"
+    },
+    {
+      "id": "asistencia-viaje",
+      "name": "Asistencia en Viaje / Carretera",
+      "level": 2,
+      "parentId": "asistencias-vehiculares",
+      "childrenIds": [
+        "asistencia-grua",
+        "conductor-elegido"
+      ],
+      "aliases": [
+        "Asistencia en Viaje / Carretera",
+        "Asistencia en viaje",
+        "Asistencia en carretera",
+        "Auxilio mecánico",
+        "Grúa 24/7",
+        "Asistencia vial",
+        "Road assistance",
+        "Servicio de grúa",
+        "Asistencia en viaje nacional"
+      ],
+      "riskType": "assistance",
+      "typicalDeductible": "0%"
+    },
+    {
+      "id": "gastos-transporte",
+      "name": "Gastos de Transporte / Peajes / Grúa",
+      "level": 2,
+      "parentId": "asistencias-vehiculares",
+      "childrenIds": [],
+      "aliases": [
+        "Gastos de Transporte / Peajes / Grúa",
+        "Gastos de transporte",
+        "Peajes",
+        "Grúa",
+        "Transporte del vehículo",
+        "Traslado del vehículo",
+        "Gastos de remolque",
+        "Auxilio de transporte"
+      ],
+      "riskType": "assistance",
+      "typicalDeductible": "0%"
+    },
+    {
+      "id": "hurto-partes",
+      "name": "Hurto de Partes y Accesorios",
+      "level": 2,
+      "parentId": "danos-vehiculo",
+      "childrenIds": [],
+      "aliases": [
+        "Hurto de Partes y Accesorios",
+        "Hurto de partes",
+        "Hurto de accesorios",
+        "Robo de espejos",
+        "Robo de rines",
+        "Hurto de equipos",
+        "Pérdida parcial por hurto",
+        "Pérdida parcial por hurto de partes"
+      ],
+      "riskType": "property",
+      "typicalDeductible": "10% min 1 SMMLV"
+    },
+    {
+      "id": "eventos-naturaleza",
+      "name": "Eventos de la Naturaleza (granizo, inundación)",
+      "level": 2,
+      "parentId": "danos-vehiculo",
+      "childrenIds": [],
+      "aliases": [
+        "Eventos de la Naturaleza (granizo, inundación)",
+        "Granizo",
+        "Inundación",
+        "Eventos naturales",
+        "Fenómenos naturales",
+        "Desastres naturales",
+        "Callejón",
+        "Eventos de la naturaleza",
+        "Vendaval"
+      ],
+      "riskType": "catastrophe",
+      "typicalDeductible": "10% min 1 SMMLV"
+    },
+    {
+      "id": "conductor-adicional",
+      "name": "Conductor Adicional",
+      "level": 2,
+      "parentId": "coberturas-personas",
+      "childrenIds": [],
+      "aliases": [
+        "Conductor Adicional",
+        "Conductor adicional",
+        "Conductor ocasional",
+        "Conductor autorizado",
+        "Conductores adicionales",
+        "Conductor elegido"
+      ],
+      "riskType": "personal_accident",
+      "typicalDeductible": "0%"
+    },
+    {
+      "id": "menores-25",
+      "name": "Menores de 25 Años",
+      "level": 2,
+      "parentId": "coberturas-personas",
+      "childrenIds": [],
+      "aliases": [
+        "Menores de 25 Años",
+        "Menores de 25",
+        "Conductores menores de 25 años",
+        "Jóvenes conductores",
+        "Menores de 25 años",
+        "Conductores menores"
+      ],
+      "riskType": "personal_accident",
+      "typicalDeductible": "0%"
+    },
+    {
+      "id": "deducibles-autos",
+      "name": "Deducibles (SMMLV / días de inmovilización / %)",
+      "level": 2,
+      "parentId": "coberturas-especiales",
+      "childrenIds": [],
+      "aliases": [
+        "Deducibles (SMMLV / días de inmovilización / %)",
+        "Deducible SMMLV",
+        "Deducible días",
+        "Deducible porcentaje",
+        "Deducibles",
+        "Franquicia",
+        "Siniestro parcial",
+        "Siniestro parcial deducible"
+      ],
+      "riskType": "condition",
+      "typicalDeductible": "Regulado según póliza"
+    },
+    {
+      "id": "soat-adicional",
+      "name": "SOAT / Seguro Obligatorio de Accidentes de Tránsito",
+      "level": 2,
+      "parentId": "coberturas-personas",
+      "childrenIds": [],
+      "aliases": [
+        "SOAT / Seguro Obligatorio de Accidentes de Tránsito",
+        "SOAT",
+        "seguro obligatorio",
+        "accidentes de tránsito",
+        "lesiones personales obligatorio",
+        "seguro obligatorio vehicular",
+        "SOAT vigente",
+        "Seguro obligatorio",
+        "Accidentes de tránsito",
+        "Lesiones personales obligatorio",
+        "Seguro obligatorio vehicular"
+      ],
+      "riskType": "regulatory",
+      "typicalDeductible": "0%"
+    },
+    {
+      "id": "perdida-total-definicion",
+      "name": "Pérdida Total por Definición (PTD / FNAC)",
+      "level": 2,
+      "parentId": "danos-vehiculo",
+      "childrenIds": [],
+      "aliases": [
+        "Pérdida Total por Definición (PTD / FNAC)",
+        "pérdida total por definición",
+        "PTD",
+        "FNAC",
+        "no constituye pérdida total",
+        "definición de pérdida total",
+        "porcentaje de pérdida total",
+        "75% del valor",
+        "80% del valor asegurado",
+        "Pérdida total por definición",
+        "No constituye pérdida total",
+        "Definición de pérdida total",
+        "Porcentaje de pérdida total"
+      ],
+      "riskType": "property",
+      "typicalDeductible": "10% deducible pactado"
+    },
+    {
+      "id": "accesorios-blindaje",
+      "name": "Accesorios, Lujos y Blindaje",
+      "level": 2,
+      "parentId": "coberturas-especiales",
+      "childrenIds": [
+        "blindaje-rotura"
+      ],
+      "aliases": [
+        "Accesorios, Lujos y Blindaje",
+        "accesorios",
+        "lujos",
+        "blindaje",
+        "equipo adicional",
+        "sistema de sonido",
+        "llantas especiales",
+        "rines",
+        "tracción 4x4",
+        "equipo de seguimiento GPS",
+        "modificaciones al vehículo",
+        "Accesorios",
+        "Lujos",
+        "Blindaje",
+        "Equipo adicional",
+        "Sistema de sonido",
+        "Llantas especiales",
+        "Rines",
+        "Tracción 4x4",
+        "Equipo de seguimiento GPS",
+        "Modificaciones al vehículo"
+      ],
+      "riskType": "special",
+      "typicalDeductible": "10% min 2 SMMLV"
+    },
+    {
+      "id": "rce-danos-terceros",
+      "name": "Daños a Bienes de Terceros",
+      "level": 3,
+      "parentId": "rce-vehicular",
+      "childrenIds": [],
+      "aliases": [
+        "Daños a bienes de terceros",
+        "Bienes de terceros",
+        "Daño a propiedad ajena"
+      ],
+      "riskType": "liability",
+      "typicalDeductible": "10% min 1 SMMLV"
+    },
+    {
+      "id": "rce-muerte-lesiones-1p",
+      "name": "Muerte o Lesiones a una Persona",
+      "level": 3,
+      "parentId": "rce-vehicular",
+      "childrenIds": [],
+      "aliases": [
+        "Lesiones o muerte 1 persona",
+        "Muerte una persona",
+        "Lesiones corporales 1p"
+      ],
+      "riskType": "liability",
+      "typicalDeductible": "0%"
+    },
+    {
+      "id": "rce-muerte-lesiones-2p",
+      "name": "Muerte o Lesiones a dos o más Personas",
+      "level": 3,
+      "parentId": "rce-vehicular",
+      "childrenIds": [],
+      "aliases": [
+        "Lesiones o muerte dos o más personas",
+        "Muerte múltiples personas",
+        "Límite global personas"
+      ],
+      "riskType": "liability",
+      "typicalDeductible": "0%"
+    },
+    {
+      "id": "rce-amparo-patrimonial",
+      "name": "Amparo Patrimonial / Asistencia Penal y Civil",
+      "level": 3,
+      "parentId": "rce-vehicular",
+      "childrenIds": [],
+      "aliases": [
+        "Amparo patrimonial",
+        "Defensa jurídica penal",
+        "Asistencia legal penal"
+      ],
+      "riskType": "liability",
+      "typicalDeductible": "0%"
+    },
+    {
+      "id": "asistencia-grua",
+      "name": "Servicio de Grúa y Remolque",
+      "level": 3,
+      "parentId": "asistencia-viaje",
+      "childrenIds": [],
+      "aliases": [
+        "Grúa",
+        "Remolque por varada o siniestro",
+        "Traslado de vehículo"
+      ],
+      "riskType": "assistance",
+      "typicalDeductible": "0%"
+    },
+    {
+      "id": "conductor-elegido",
+      "name": "Conductor Elegido / Ángel Guardián",
+      "level": 3,
+      "parentId": "asistencia-viaje",
+      "childrenIds": [],
+      "aliases": [
+        "Conductor elegido",
+        "Ángel guardián",
+        "Servicio de conductor"
+      ],
+      "riskType": "assistance",
+      "typicalDeductible": "0%"
+    },
+    {
+      "id": "blindaje-rotura",
+      "name": "Blindaje y Cristales Especiales",
+      "level": 3,
+      "parentId": "accesorios-blindaje",
+      "childrenIds": [],
+      "aliases": [
+        "Blindaje automotriz",
+        "Vidrios blindados",
+        "Reposición de blindaje"
+      ],
+      "riskType": "special",
+      "typicalDeductible": "10% min 2 SMMLV"
+    }
+  ],
+  "compositePatterns": [
+    {
+      "pattern": "todo\\s+riesgo|plan\\s+integral|auto\\s+todo\\s+riesgo",
+      "components": [
+        "rce-vehicular",
+        "perdida-total",
+        "perdida-parcial",
+        "asistencia-viaje"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "pattern": "p[eé]rdida\\s+total.*(da[ñn]o|hurto)|ptd|fnac",
+      "components": [
+        "perdida-total",
+        "perdida-total-definicion"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "pattern": "p[eé]rdida\\s+parcial.*(da[ñn]o|hurto)",
+      "components": [
+        "perdida-parcial",
+        "hurto-partes"
+      ],
+      "confidence": 0.85
+    }
+  ]
+}

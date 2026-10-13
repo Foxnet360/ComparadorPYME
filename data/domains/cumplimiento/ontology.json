@@ -1,0 +1,544 @@
+{
+  "version": "1.0.0",
+  "domain": "cumplimiento",
+  "nodes": [
+    {
+      "id": "garantias-precontractuales",
+      "name": "Garantías Precontractuales",
+      "level": 1,
+      "childrenIds": [
+        "seriedad-oferta"
+      ],
+      "aliases": [
+        "GARANTÍAS PRECONTRACTUALES",
+        "Precontractual",
+        "Licitaciones"
+      ],
+      "riskType": "surety"
+    },
+    {
+      "id": "garantias-ejecucion",
+      "name": "Garantías de Ejecución de Contrato",
+      "level": 1,
+      "childrenIds": [
+        "cumplimiento-contrato",
+        "correcta-inversion-anticipo",
+        "salarios-prestaciones-laborales"
+      ],
+      "aliases": [
+        "GARANTÍAS DE EJECUCIÓN",
+        "Ejecución Contractual",
+        "Amparos de Cumplimiento"
+      ],
+      "riskType": "surety"
+    },
+    {
+      "id": "garantias-postcontractuales",
+      "name": "Garantías Post-Contractuales y Calidad",
+      "level": 1,
+      "childrenIds": [
+        "estabilidad-calidad-obra",
+        "calidad-bien-servicio",
+        "garantia-mantenimiento"
+      ],
+      "aliases": [
+        "GARANTÍAS POST-CONTRACTUALES",
+        "Postcontractual",
+        "Estabilidad y Calidad"
+      ],
+      "riskType": "surety"
+    },
+    {
+      "id": "responsabilidad-contractual",
+      "name": "Garantías de Responsabilidad y Daños a Terceros",
+      "level": 1,
+      "childrenIds": [
+        "pago-danos-terceros",
+        "rce-durante-ejecucion"
+      ],
+      "aliases": [
+        "GARANTÍAS DE RESPONSABILIDAD",
+        "RC en Contratos",
+        "Daños en Ejecución"
+      ],
+      "riskType": "liability"
+    },
+    {
+      "id": "garantias-manejo-normativa",
+      "name": "Garantías de Manejo, Fidelidad y Cumplimiento Normativo Estatal",
+      "level": 1,
+      "childrenIds": [
+        "buen-manejo-bienes",
+        "trc-trm-obra",
+        "manejo-empleados-fidelidad",
+        "manejo-individual-forgery",
+        "vigencia-condiciones-amparo",
+        "garantia-unica-estatal"
+      ],
+      "aliases": [
+        "GARANTÍAS DE MANEJO",
+        "COBERTURAS DE OBRA",
+        "CUMPLIMIENTO NORMATIVO ESTATAL",
+        "CONDICIONES GENERALES"
+      ],
+      "riskType": "surety"
+    },
+    {
+      "id": "seriedad-oferta",
+      "name": "Seriedad de Oferta",
+      "level": 2,
+      "parentId": "garantias-precontractuales",
+      "childrenIds": [],
+      "aliases": [
+        "Seriedad de Oferta",
+        "seriedad de oferta",
+        "garantía de oferta",
+        "bid bond",
+        "propuesta",
+        "licitación",
+        "concurso",
+        "valor de la oferta",
+        "sostenimiento de la oferta",
+        "Seriedad de oferta",
+        "Garantía de oferta",
+        "Bid bond",
+        "Propuesta",
+        "Licitación",
+        "Concurso",
+        "Valor de la oferta",
+        "Sostenimiento de la oferta"
+      ],
+      "riskType": "surety",
+      "typicalDeductible": "0% sin deducible"
+    },
+    {
+      "id": "cumplimiento-contrato",
+      "name": "Cumplimiento de Contrato",
+      "level": 2,
+      "parentId": "garantias-ejecucion",
+      "childrenIds": [
+        "multas-sanciones-contractuales"
+      ],
+      "aliases": [
+        "Cumplimiento de Contrato",
+        "cumplimiento de contrato",
+        "performance bond",
+        "ejecución del contrato",
+        "obligaciones contractuales",
+        "incumplimiento",
+        "amparo de cumplimiento",
+        "garantía de ejecución",
+        "Cumplimiento de contrato",
+        "Performance bond",
+        "Ejecución del contrato",
+        "Obligaciones contractuales",
+        "Incumplimiento",
+        "Amparo de cumplimiento",
+        "Garantía de ejecución",
+        "Cumplimiento del contrato u orden de compra"
+      ],
+      "riskType": "surety",
+      "typicalDeductible": "0% sin deducible"
+    },
+    {
+      "id": "estabilidad-calidad-obra",
+      "name": "Estabilidad y Calidad de Obra",
+      "level": 2,
+      "parentId": "garantias-postcontractuales",
+      "childrenIds": [],
+      "aliases": [
+        "Estabilidad y Calidad de Obra",
+        "estabilidad de obra",
+        "calidad de obra",
+        "estabilidad y calidad",
+        "vicios ocultos",
+        "defectos de construcción",
+        "post-entrega",
+        "garantía de obra",
+        "mantenimiento de obra",
+        "Estabilidad de obra",
+        "Calidad de obra",
+        "Estabilidad y calidad",
+        "Vicios ocultos",
+        "Defectos de construcción",
+        "Post-entrega obra",
+        "Garantía de obra",
+        "Mantenimiento de obra"
+      ],
+      "riskType": "surety",
+      "typicalDeductible": "0% sin deducible"
+    },
+    {
+      "id": "correcta-inversion-anticipo",
+      "name": "Correcta Inversión del Anticipo",
+      "level": 2,
+      "parentId": "garantias-ejecucion",
+      "childrenIds": [
+        "anticipo-devolucion-saldos"
+      ],
+      "aliases": [
+        "Correcta Inversión del Anticipo",
+        "anticipo",
+        "correcta inversión del anticipo",
+        "advance payment bond",
+        "inversión del anticipo",
+        "devolución de anticipo",
+        "manejo del anticipo",
+        "pago anticipado",
+        "Anticipo",
+        "BMA",
+        "Correcta inversión del anticipo",
+        "Advance payment bond",
+        "Inversión del anticipo",
+        "Devolución de anticipo",
+        "Manejo del anticipo",
+        "Pago anticipado"
+      ],
+      "riskType": "surety",
+      "typicalDeductible": "0% sin deducible"
+    },
+    {
+      "id": "salarios-prestaciones-laborales",
+      "name": "Salarios, Prestaciones e Indemnizaciones Laborales",
+      "level": 2,
+      "parentId": "garantias-ejecucion",
+      "childrenIds": [],
+      "aliases": [
+        "Salarios, Prestaciones e Indemnizaciones Laborales",
+        "salarios",
+        "prestaciones sociales",
+        "indemnizaciones laborales",
+        "obligaciones laborales",
+        "parafiscales",
+        "seguridad social",
+        "labor bond",
+        "nómina",
+        "contratistas empleados",
+        "SPS",
+        "Salarios",
+        "Prestaciones sociales",
+        "Indemnizaciones laborales",
+        "Obligaciones laborales",
+        "Parafiscales",
+        "Seguridad social",
+        "Labor bond",
+        "Nómina y prestaciones"
+      ],
+      "riskType": "surety",
+      "typicalDeductible": "0% sin deducible"
+    },
+    {
+      "id": "pago-danos-terceros",
+      "name": "Pago de Daños a Terceros (RC Contractual)",
+      "level": 2,
+      "parentId": "responsabilidad-contractual",
+      "childrenIds": [],
+      "aliases": [
+        "Pago de Daños a Terceros (RC Contractual)",
+        "pago de daños a terceros",
+        "responsabilidad civil contractual",
+        "RC contractual",
+        "daños a terceros",
+        "afectación a terceros",
+        "perjuicios a terceros",
+        "daños durante ejecución",
+        "Pago de daños a terceros",
+        "Responsabilidad civil contractual",
+        "Daños a terceros",
+        "Afectación a terceros",
+        "Perjuicios a terceros",
+        "Daños durante ejecución"
+      ],
+      "riskType": "liability",
+      "typicalDeductible": "10% min 2 SMMLV"
+    },
+    {
+      "id": "calidad-bien-servicio",
+      "name": "Calidad del Bien o Servicio",
+      "level": 2,
+      "parentId": "garantias-postcontractuales",
+      "childrenIds": [],
+      "aliases": [
+        "Calidad del Bien o Servicio",
+        "calidad del bien",
+        "calidad del servicio",
+        "garantía de calidad",
+        "producto defectuoso",
+        "servicio deficiente",
+        "post-entrega bienes",
+        "quality bond",
+        "Calidad del bien",
+        "Calidad del servicio",
+        "Garantía de calidad",
+        "Producto defectuoso",
+        "Servicio deficiente",
+        "Post-entrega bienes",
+        "Quality bond"
+      ],
+      "riskType": "surety",
+      "typicalDeductible": "0% sin deducible"
+    },
+    {
+      "id": "buen-manejo-bienes",
+      "name": "Buen Manejo y Correcta Inversión de Bienes",
+      "level": 2,
+      "parentId": "garantias-manejo-normativa",
+      "childrenIds": [],
+      "aliases": [
+        "Buen Manejo y Correcta Inversión de Bienes",
+        "buen manejo de bienes",
+        "correcta inversión de bienes",
+        "bienes entregados",
+        "manejo de recursos",
+        "custodia de bienes",
+        "administración de bienes",
+        "depósito bienes",
+        "Buen manejo de bienes",
+        "Correcta inversión de bienes",
+        "Bienes entregados",
+        "Manejo de recursos",
+        "Custodia de bienes",
+        "Administración de bienes",
+        "Depósito bienes"
+      ],
+      "riskType": "surety",
+      "typicalDeductible": "0% sin deducible"
+    },
+    {
+      "id": "rce-durante-ejecucion",
+      "name": "Responsabilidad Civil Extracontractual (RC durante ejecución)",
+      "level": 2,
+      "parentId": "responsabilidad-contractual",
+      "childrenIds": [],
+      "aliases": [
+        "Responsabilidad Civil Extracontractual (RC durante ejecución)",
+        "responsabilidad civil extracontractual",
+        "RCE",
+        "RC durante ejecución",
+        "daños extracontractuales",
+        "terceros afectados",
+        "daños a personas o bienes de terceros",
+        "liability insurance",
+        "Responsabilidad civil extracontractual",
+        "Daños extracontractuales",
+        "Terceros afectados",
+        "Daños a personas o bienes de terceros",
+        "Liability insurance"
+      ],
+      "riskType": "liability",
+      "typicalDeductible": "10% min 2 SMMLV"
+    },
+    {
+      "id": "trc-trm-obra",
+      "name": "Todo Riesgo Construcción / Montaje (TRC / TRM)",
+      "level": 2,
+      "parentId": "garantias-manejo-normativa",
+      "childrenIds": [],
+      "aliases": [
+        "Todo Riesgo Construcción / Montaje (TRC / TRM)",
+        "todo riesgo construcción",
+        "TRC",
+        "todo riesgo montaje",
+        "TRM",
+        "obra en construcción",
+        "equipos de construcción",
+        "daños a la obra",
+        "CAR insurance",
+        "constructor all risk",
+        "Todo riesgo construcción",
+        "Todo riesgo montaje",
+        "Obra en construcción",
+        "Equipos de construcción",
+        "Daños a la obra",
+        "Constructor all risk"
+      ],
+      "riskType": "special",
+      "typicalDeductible": "10% min 3 SMMLV"
+    },
+    {
+      "id": "manejo-empleados-fidelidad",
+      "name": "Manejo de Empleados (Fidelidad Colectiva)",
+      "level": 2,
+      "parentId": "garantias-manejo-normativa",
+      "childrenIds": [],
+      "aliases": [
+        "Manejo de Empleados (Fidelidad Colectiva)",
+        "manejo de empleados",
+        "fidelidad colectiva",
+        "deshonestidad de empleados",
+        "actos deshonestos",
+        "blanket bond",
+        "employee fidelity",
+        "hurto por empleados",
+        "fraude interno",
+        "Manejo de empleados",
+        "Fidelidad colectiva",
+        "Deshonestidad de empleados",
+        "Actos deshonestos",
+        "Blanket bond",
+        "Employee fidelity",
+        "Hurto por empleados",
+        "Fraude interno"
+      ],
+      "riskType": "fidelity",
+      "typicalDeductible": "10% min 1 SMMLV"
+    },
+    {
+      "id": "manejo-individual-forgery",
+      "name": "Manejo Individual (Fidelidad / Forgery)",
+      "level": 2,
+      "parentId": "garantias-manejo-normativa",
+      "childrenIds": [],
+      "aliases": [
+        "Manejo Individual (Fidelidad / Forgery)",
+        "manejo individual",
+        "fidelidad individual",
+        "forgery",
+        "falsificación",
+        "empleado específico",
+        "tesorero",
+        "cajero",
+        "manejo de fondos individuales",
+        "individual fidelity bond",
+        "Manejo individual",
+        "Fidelidad individual",
+        "Forgery",
+        "Falsificación",
+        "Empleado específico",
+        "Tesorero",
+        "Cajero",
+        "Manejo de fondos individuales"
+      ],
+      "riskType": "fidelity",
+      "typicalDeductible": "10% min 1 SMMLV"
+    },
+    {
+      "id": "vigencia-condiciones-amparo",
+      "name": "Vigencia, Plazo y Condiciones del Amparo",
+      "level": 2,
+      "parentId": "garantias-manejo-normativa",
+      "childrenIds": [],
+      "aliases": [
+        "Vigencia, Plazo y Condiciones del Amparo",
+        "vigencia",
+        "plazo",
+        "duración del amparo",
+        "prórroga automática",
+        "renovación",
+        "término del contrato",
+        "vencimiento",
+        "fecha inicio",
+        "fecha fin",
+        "Vigencia",
+        "Plazo",
+        "Duración del amparo",
+        "Prórroga automática",
+        "Renovación",
+        "Término del contrato",
+        "Vencimiento"
+      ],
+      "riskType": "condition",
+      "typicalDeductible": "Según pliegos"
+    },
+    {
+      "id": "garantia-unica-estatal",
+      "name": "Garantía Única de Cumplimiento (Contratación Estatal — Ley 80/1993 · Decreto 1082/2015)",
+      "level": 2,
+      "parentId": "garantias-manejo-normativa",
+      "childrenIds": [],
+      "aliases": [
+        "Garantía Única de Cumplimiento (Contratación Estatal — Ley 80/1993 · Decreto 1082/2015)",
+        "garantía única de cumplimiento",
+        "Ley 80",
+        "contratación estatal",
+        "entidad pública",
+        "SECOP",
+        "Decreto 1082",
+        "contrato estatal",
+        "póliza de cumplimiento estatal",
+        "amparo único",
+        "contratación pública colombiana",
+        "Garantía única de cumplimiento",
+        "Contratación estatal",
+        "Entidad pública",
+        "Contrato estatal",
+        "Póliza de cumplimiento estatal"
+      ],
+      "riskType": "surety",
+      "typicalDeductible": "0% sin deducible"
+    },
+    {
+      "id": "garantia-mantenimiento",
+      "name": "Garantía de Mantenimiento (Post-Obra / Post-Contrato)",
+      "level": 2,
+      "parentId": "garantias-postcontractuales",
+      "childrenIds": [],
+      "aliases": [
+        "Garantía de Mantenimiento (Post-Obra / Post-Contrato)",
+        "garantía de mantenimiento",
+        "mantenimiento post-obra",
+        "post-entrega",
+        "mantenimiento correctivo",
+        "mantenimiento preventivo contractual",
+        "garantía de servicio post-contrato",
+        "maintenance bond",
+        "Garantía de mantenimiento",
+        "Mantenimiento post-obra",
+        "Post-entrega",
+        "Mantenimiento correctivo",
+        "Mantenimiento preventivo contractual",
+        "Maintenance bond"
+      ],
+      "riskType": "surety",
+      "typicalDeductible": "0% sin deducible"
+    },
+    {
+      "id": "multas-sanciones-contractuales",
+      "name": "Multas y Cláusula Penal en Contrato",
+      "level": 3,
+      "parentId": "cumplimiento-contrato",
+      "childrenIds": [],
+      "aliases": [
+        "Multas",
+        "Cláusula penal pecuniaria",
+        "Sanciones contractuales"
+      ],
+      "riskType": "surety",
+      "typicalDeductible": "0%"
+    },
+    {
+      "id": "anticipo-devolucion-saldos",
+      "name": "Devolución de Saldos no Amortizados de Anticipo",
+      "level": 3,
+      "parentId": "correcta-inversion-anticipo",
+      "childrenIds": [],
+      "aliases": [
+        "Saldos no amortizados",
+        "Reintegro de anticipo"
+      ],
+      "riskType": "surety",
+      "typicalDeductible": "0%"
+    }
+  ],
+  "compositePatterns": [
+    {
+      "pattern": "garant[ií]a\\s+[uú]nica|cumplimiento\\s+estatal|ley\\s+80|decreto\\s+1082",
+      "components": [
+        "cumplimiento-contrato",
+        "correcta-inversion-anticipo",
+        "salarios-prestaciones-laborales",
+        "estabilidad-calidad-obra",
+        "garantia-unica-estatal"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "pattern": "calidad\\s+y\\s+estabilidad|estabilidad\\s+de\\s+la?\\s*obra",
+      "components": [
+        "estabilidad-calidad-obra",
+        "calidad-bien-servicio"
+      ],
+      "confidence": 0.85
+    }
+  ]
+}

@@ -1,12 +1,207 @@
 {
+  "version": "1.0.0",
   "domain": "equipo_maquinaria",
-  "exclusions": [
-    "Desgaste natural y paulatino por uso normal",
-    "Falta de mantenimiento preventivo según manual de fabricante",
-    "Deterioro por corrosión o cavitación no accidental"
+  "nodes": [
+    {
+      "id": "danos-materiales-maquinaria",
+      "name": "Daños Físicos, Rotura y Hurto de Maquinaria",
+      "level": 1,
+      "childrenIds": [
+        "dano-fisico-accidental-maquinaria",
+        "rotura-mecanica-implosion",
+        "sustraccion-robo-maquinaria"
+      ],
+      "aliases": [
+        "COBERTURAS PRINCIPALES",
+        "Daño Físico Maquinaria",
+        "Rotura Mecánica"
+      ],
+      "riskType": "equipment_damage"
+    },
+    {
+      "id": "responsabilidad-operacion-maquinaria",
+      "name": "Responsabilidad Civil por Operación de Maquinaria",
+      "level": 1,
+      "childrenIds": [
+        "rc-operacion-maquinaria"
+      ],
+      "aliases": [
+        "RC Maquinaria",
+        "RC Extracontractual Operación"
+      ],
+      "riskType": "liability"
+    },
+    {
+      "id": "gastos-consecuenciales-movilizacion",
+      "name": "Gastos Extraordinarios, Tránsito y Pérdidas Consecuenciales",
+      "level": 1,
+      "childrenIds": [
+        "gastos-extraordinarios-fletes",
+        "perdida-beneficios-paralizacion",
+        "transito-movilizacion-maquinaria"
+      ],
+      "aliases": [
+        "COBERTURAS COMPLEMENTARIAS",
+        "Gastos y Tránsito"
+      ],
+      "riskType": "consequential"
+    },
+    {
+      "id": "dano-fisico-accidental-maquinaria",
+      "name": "Daño Físico Accidental a Maquinaria y Equipo",
+      "level": 2,
+      "parentId": "danos-materiales-maquinaria",
+      "childrenIds": [],
+      "aliases": [
+        "Daño Físico Accidental a Maquinaria y Equipo",
+        "daño físico accidental",
+        "daño material a maquinaria",
+        "todo riesgo equipo contratista",
+        "daños accidentales equipo pesado",
+        "destrucción accidental",
+        "daños por causa externa",
+        "daño físico",
+        "daños materiales por causa externa",
+        "todo riesgo maquinaria",
+        "amparo básico maquinaria",
+        "daño accidental"
+      ],
+      "riskType": "equipment_damage",
+      "typicalDeductible": "10% min 2 SMMLV"
+    },
+    {
+      "id": "rotura-mecanica-implosion",
+      "name": "Rotura Mecánica e Implosión / Falla Eléctrica",
+      "level": 2,
+      "parentId": "danos-materiales-maquinaria",
+      "childrenIds": [],
+      "aliases": [
+        "Rotura Mecánica e Implosión / Falla Eléctrica",
+        "rotura de maquinaria",
+        "falla mecánica",
+        "falla eléctrica",
+        "implosión de caldera",
+        "avería mecánica",
+        "desgaste prematuro por falla",
+        "rotura interna",
+        "falla interna",
+        "implosión",
+        "corto circuito en motores",
+        "sobretensión en maquinaria"
+      ],
+      "riskType": "equipment_damage",
+      "typicalDeductible": "10% min 2 SMMLV"
+    },
+    {
+      "id": "sustraccion-robo-maquinaria",
+      "name": "Sustracción, Robo Calificado y Hurtos",
+      "level": 2,
+      "parentId": "danos-materiales-maquinaria",
+      "childrenIds": [],
+      "aliases": [
+        "Sustracción, Robo Calificado y Hurtos",
+        "sustracción",
+        "robo calificado",
+        "hurto de maquinaria",
+        "robo de equipo pesado",
+        "sustracción con violencia",
+        "hurto agravado",
+        "hurto de maquinaria amarilla",
+        "robo de equipo de construcción"
+      ],
+      "riskType": "theft",
+      "typicalDeductible": "15% min 3 SMMLV"
+    },
+    {
+      "id": "rc-operacion-maquinaria",
+      "name": "Responsabilidad Civil Extracontractual por Operación",
+      "level": 2,
+      "parentId": "responsabilidad-operacion-maquinaria",
+      "childrenIds": [],
+      "aliases": [
+        "Responsabilidad Civil Extracontractual por Operación",
+        "responsabilidad civil operación",
+        "RCE maquinaria",
+        "daños a terceros por maquinaria",
+        "lesiones a terceros por equipo",
+        "RCE maquinaria amarilla",
+        "RCE operación maquinaria",
+        "daños a terceros por grúa / excavadora",
+        "responsabilidad civil extracontractual"
+      ],
+      "riskType": "liability",
+      "typicalDeductible": "10% min 2 SMMLV"
+    },
+    {
+      "id": "gastos-extraordinarios-fletes",
+      "name": "Gastos Extraordinarios y Fletes Aéreos de Repuestos",
+      "level": 2,
+      "parentId": "gastos-consecuenciales-movilizacion",
+      "childrenIds": [],
+      "aliases": [
+        "Gastos Extraordinarios y Fletes Aéreos de Repuestos",
+        "gastos extraordinarios",
+        "flete aéreo repuestos",
+        "trabajo nocturno repuestos",
+        "trabajo en días festivos",
+        "fletes express",
+        "flete aéreo de repuestos",
+        "gastos de aceleración de reparación",
+        "horas extras de mecánicos"
+      ],
+      "riskType": "consequential",
+      "typicalDeductible": "0%"
+    },
+    {
+      "id": "perdida-beneficios-paralizacion",
+      "name": "Pérdida de Beneficios por Paralización (Lucro Cesante)",
+      "level": 2,
+      "parentId": "gastos-consecuenciales-movilizacion",
+      "childrenIds": [],
+      "aliases": [
+        "Pérdida de Beneficios por Paralización (Lucro Cesante)",
+        "pérdida de beneficios",
+        "lucro cesante por paralización",
+        "paralización de obra",
+        "interrupción de negocio maquinaria",
+        "business interruption",
+        "lucro cesante paralización",
+        "pérdida de utilidades por avería de máquina",
+        "interrupción de producción"
+      ],
+      "riskType": "consequential",
+      "typicalDeductible": "3 - 5 días deducible"
+    },
+    {
+      "id": "transito-movilizacion-maquinaria",
+      "name": "Tránsito y Movilización Terrestre de Maquinaria",
+      "level": 2,
+      "parentId": "gastos-consecuenciales-movilizacion",
+      "childrenIds": [],
+      "aliases": [
+        "Tránsito y Movilización Terrestre de Maquinaria",
+        "tránsito de maquinaria",
+        "movilización terrestre",
+        "traslado entre obras",
+        "transporte de equipo pesado",
+        "movilización entre frentes de obra",
+        "tránsito terrestre de equipos",
+        "traslado en cama baja"
+      ],
+      "riskType": "equipment_damage",
+      "typicalDeductible": "10% min 2 SMMLV"
+    }
   ],
-  "dependencies": {
-    "eqm_05": ["eqm_01", "eqm_02"],
-    "eqm_06": ["eqm_01", "eqm_02"]
-  }
+  "compositePatterns": [
+    {
+      "pattern": "todo\\s+riesgo\\s+maquinaria|p[oó]liza\\s+cpm|equipo\\s+y\\s+maquinaria\\s+amarilla",
+      "components": [
+        "dano-fisico-accidental-maquinaria",
+        "rotura-mecanica-implosion",
+        "sustraccion-robo-maquinaria",
+        "rc-operacion-maquinaria"
+      ],
+      "confidence": 0.9
+    }
+  ]
 }
