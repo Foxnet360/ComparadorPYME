@@ -839,7 +839,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                         const isEditingNote =
                           editingNote?.rowId === row.id && editingNote?.colIdx === colIdx;
 
-                        const cellClass = `px-6 py-3.5 text-sm align-middle text-center relative border-r border-slate-50 transition-all ${
+                        const cellClass = `px-6 py-3.5 text-sm align-middle text-center relative border-r border-slate-50 transition-all cursor-pointer group/cell ${
                           isWinner
                             ? 'bg-amber-50/60 font-semibold text-amber-900 border border-amber-200/50'
                             : ''
@@ -853,7 +853,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                             : ''
                         } ${needsReview ? 'ring-2 ring-red-300/50 ring-inset' : ''} ${
                           isSaving ? 'opacity-70' : ''
-                        }`;
+                        } hover:ring-1 hover:ring-blue-400 hover:ring-inset`;
 
                         if (isEditingNote) {
                           return (
@@ -891,6 +891,16 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                                 title={`Nota: ${cellNote.content.substring(0, 50)}...`}
                               >
                                 <Pin size={12} />
+                              </span>
+                            )}
+
+                            {/* Hover Audit Affordance Hint (Double Click Prompt) */}
+                            {!cellNote && (
+                              <span
+                                className="absolute top-1 right-1.5 text-slate-300 group-hover/cell:text-blue-500 opacity-0 group-hover/cell:opacity-100 transition-all text-[10px] pointer-events-none"
+                                title="Doble clic para ver en PDF o agregar nota"
+                              >
+                                🔍
                               </span>
                             )}
 
@@ -1164,25 +1174,33 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
         )}
       </div>
 
-      {/* Methodology Alert Note */}
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-start gap-3 shadow-inner">
-        <Info className="text-slate-500 mt-0.5 flex-shrink-0" size={16} />
-        <div className="text-xs text-slate-500 leading-relaxed">
-          {viewMode === 'client' ? (
-            <>
-              <span className="font-semibold text-slate-700">Nota:</span> La correspondencia en esta
-              matriz horizontal ha sido alineada por nuestro motor de análisis. El contenido
-              coincide de manera exacta con el reporte de cotizaciones.
-            </>
-          ) : (
-            <>
-              <span className="font-semibold text-slate-700">Nota técnica:</span> La correspondencia
-              en esta matriz horizontal ha sido alineada determinísticamente por nuestro
-              transformador. El contenido coincide de manera exacta y paritaria con el reporte Excel
-              monocromático de 3 pestañas.
-            </>
-          )}
+      {/* Methodology Alert Note & Ergonomic Shortcuts */}
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-inner">
+        <div className="flex items-start gap-3">
+          <Info className="text-blue-600 mt-0.5 flex-shrink-0" size={16} />
+          <div className="text-xs text-slate-600 leading-relaxed">
+            {viewMode === 'client' ? (
+              <>
+                <span className="font-semibold text-slate-800">Nota:</span> La correspondencia en esta
+                matriz horizontal ha sido alineada por nuestro motor de análisis. El contenido
+                coincide de manera exacta con el reporte de cotizaciones.
+              </>
+            ) : (
+              <>
+                <span className="font-semibold text-slate-800">Nota técnica:</span> La correspondencia
+                en esta matriz horizontal ha sido alineada determinísticamente por nuestro
+                transformador. El contenido coincide de manera exacta y paritaria con el reporte Excel
+                monocromático de 3 pestañas.
+              </>
+            )}
+          </div>
         </div>
+
+        {viewMode === 'technical' && (
+          <div className="flex items-center gap-2 text-[11px] text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-200 whitespace-nowrap self-start md:self-auto">
+            <span>💡 <strong>Tip:</strong> Doble clic en cualquier celda para contrastar con el PDF original o añadir notas</span>
+          </div>
+        )}
       </div>
 
       {/* PdfViewer Lazy Loaded */}
