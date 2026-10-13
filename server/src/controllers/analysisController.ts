@@ -808,17 +808,52 @@ export async function matrixRowsToComparisonReport(
       }
 
       const realConfidences = coverages.map((c) => {
-        const matchConf = Math.round((c.matchConfidence ?? 0.85) * 100);
-        const hasVal =
-          c.value !== undefined && c.value !== null && String(c.value).trim().length > 0 ? 10 : 0;
-        const hasDed = c.deductible && c.deductible.trim().length > 0 ? 5 : 0;
-        return Math.min(100, matchConf + hasVal + hasDed);
+        // 1. Empirical extraction / OCR certainty
+        const extractionCertainty =
+          typeof c.confidence === 'number'
+            ? c.confidence > 1
+              ? c.confidence / 100
+              : c.confidence
+            : 0.8;
+
+        // 2. Semantic matching certainty and method weight
+        const matchConf = typeof c.matchConfidence === 'number' ? c.matchConfidence : 0.8;
+        let methodMultiplier = 0.85;
+        if (c.matchMethod === 'thesaurus' || c.matchMethod === 'graph') {
+          methodMultiplier = 1.0;
+        } else if (c.matchMethod === 'fuzzy') {
+          methodMultiplier = 0.9;
+        } else if (c.matchMethod === 'embedding') {
+          methodMultiplier = 0.85;
+        } else if (c.matchMethod === 'llm') {
+          methodMultiplier = 0.75;
+        }
+
+        const semanticScore = matchConf * methodMultiplier;
+
+        // 3. Document evidence (valid extracted value / deductible)
+        const hasValidValue =
+          c.value !== undefined &&
+          c.value !== null &&
+          String(c.value).trim().length > 0 &&
+          !['No informado', 'N.C.', 'NO ESPECIFICADO'].includes(String(c.value).trim());
+        const hasValidDeductible =
+          c.deductible &&
+          c.deductible.trim().length > 0 &&
+          !['No especificado', 'NO ESPECIFICADO', 'N/A'].includes(c.deductible.trim());
+
+        const evidenceScore = (hasValidValue ? 0.7 : 0.3) + (hasValidDeductible ? 0.3 : 0.0);
+
+        // Grounded weighted confidence: 45% extraction certainty, 40% semantic grounding, 15% concrete evidence
+        const weightedScore =
+          extractionCertainty * 0.45 + semanticScore * 0.4 + evidenceScore * 0.15;
+        return Math.round(Math.min(100, Math.max(10, weightedScore * 100)));
       });
 
       const avgCellConfidence =
         realConfidences.length > 0
           ? Math.round(realConfidences.reduce((sum, val) => sum + val, 0) / realConfidences.length)
-          : 90;
+          : 85;
 
       // Actualizar la propiedad confidence en cada elemento de coverages para la matriz UI
       coverages.forEach((c, idx) => {
@@ -1061,9 +1096,28 @@ export async function matrixRowsToComparisonReport(
         specialConditions: combinedAlerts.map((a) => a.description),
         extractionConfidence: iq.avgCellConfidence,
         confidenceBreakdown: {
-          ocrAccuracy: iq.avgCellConfidence,
+          ocrAccuracy: Math.round(
+            iq.coverages.reduce(
+              (sum, c) =>
+                sum +
+                (typeof c.confidence === 'number'
+                  ? c.confidence > 1
+                    ? c.confidence
+                    : c.confidence * 100
+                  : iq.avgCellConfidence),
+              0
+            ) / (iq.coverages.length || 1)
+          ),
           layoutCertainty: iq.avgCellConfidence,
-          fieldVerification: iq.avgCellConfidence,
+          fieldVerification: Math.round(
+            (iq.coverages.filter(
+              (c) =>
+                c.value &&
+                !['No informado', 'N.C.', 'NO ESPECIFICADO'].includes(String(c.value).trim())
+            ).length /
+              (iq.coverages.length || 1)) *
+              100
+          ),
         },
         needsReview: iq.avgCellConfidence < 70,
         isCritical: iq.avgCellConfidence < 50,

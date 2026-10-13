@@ -430,6 +430,36 @@ describe('analysisController - matrixRowsToComparisonReport', () => {
     const reportSalud = await matrixRowsToComparisonReport(matrixRows, quoteFiles, { domain: 'salud' });
     expect(reportSalud.quotes[0].policyName).toBe('Cotización Salud');
   });
+
+  it('grounds confidence scoring based on extraction certainty, method weight, and document evidence without artificial inflation', async () => {
+    const matrixRows: MatrixRow[] = [
+      {
+        type: 'data',
+        id: 'r_high_evidence',
+        label: 'Incendio',
+        sectionId: 1,
+        cells: [{ value: '$ 500.000.000', notes: '10% min 2 SMMLV', isExcluded: false, isWinner: false, confidence: 0.95 }],
+      },
+      {
+        type: 'data',
+        id: 'r_low_evidence',
+        label: 'Cobertura Incierta',
+        sectionId: 1,
+        cells: [{ value: 'No informado', isExcluded: true, isWinner: false, confidence: 0.40 }],
+      },
+    ];
+    const quoteFiles = [{ originalname: 'COTIZACION-MAPFRE.pdf' }] as Express.Multer.File[];
+
+    const report = await matrixRowsToComparisonReport(matrixRows, quoteFiles, { domain: 'pyme' });
+    const highCov = report.quotes[0].coverages.find((c) => c.name === 'Incendio');
+    const lowCov = report.quotes[0].coverages.find((c) => c.name === 'Cobertura Incierta');
+
+    expect(highCov).toBeDefined();
+    expect(lowCov).toBeDefined();
+    // High evidence coverage with valid value and deductible has high confidence
+    expect(highCov!.confidence).toBeGreaterThan(lowCov!.confidence);
+    expect(lowCov!.confidence).toBeLessThan(0.70);
+  });
 });
 
 describe('analysisController - resolveAnalysisUserId', () => {
