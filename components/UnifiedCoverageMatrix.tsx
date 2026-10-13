@@ -311,6 +311,25 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
   const [openDropdown, setOpenDropdown] = useState<{ rowId: string; colIdx: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Side-by-side comparison pinning (UX Hallazgo 2)
+  const [pinnedColumns, setPinnedColumns] = useState<Set<number>>(new Set());
+
+  const togglePinnedColumn = (idx: number) => {
+    setPinnedColumns((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) {
+        next.delete(idx);
+      } else {
+        // If clicking a 3rd when 2 are pinned, replace to keep a 2-column face-off
+        if (next.size >= 2) {
+          next.clear();
+        }
+        next.add(idx);
+      }
+      return next;
+    });
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -583,20 +602,44 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
           </button>
         </div>
 
-        {totalSublimits > 0 && activeTab === 'coverages' && (
-          <button
-            onClick={toggleAllSublimits}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all shadow-sm active:scale-95 cursor-pointer"
-            title="Plegar o desplegar sublímites agrupados bajo coberturas principales"
-          >
-            <Layers size={15} className="text-blue-600" />
-            <span>
-              {allSublimitsCollapsed
-                ? `Expandir sublímites (${totalSublimits})`
-                : `Plegar sublímites (${totalSublimits})`}
-            </span>
-          </button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {quotes.length >= 3 && (
+            <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200 text-xs shadow-sm">
+              <span className="text-slate-500 font-medium px-2 flex items-center gap-1">
+                <Pin size={12} className="text-indigo-600" />
+                Frente a Frente:
+              </span>
+              {pinnedColumns.size > 0 ? (
+                <button
+                  onClick={() => setPinnedColumns(new Set())}
+                  className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 font-semibold hover:bg-indigo-100 transition-colors cursor-pointer"
+                  title="Restablecer vista completa de todas las aseguradoras"
+                >
+                  Ver todas ({quotes.length}) ✕
+                </button>
+              ) : (
+                <span className="text-slate-400 text-[11px] pr-2">
+                  (Haz clic en 📌 de la cabecera para aislar)
+                </span>
+              )}
+            </div>
+          )}
+
+          {totalSublimits > 0 && activeTab === 'coverages' && (
+            <button
+              onClick={toggleAllSublimits}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all shadow-sm active:scale-95 cursor-pointer"
+              title="Plegar o desplegar sublímites agrupados bajo coberturas principales"
+            >
+              <Layers size={15} className="text-blue-600" />
+              <span>
+                {allSublimitsCollapsed
+                  ? `Expandir sublímites (${totalSublimits})`
+                  : `Plegar sublímites (${totalSublimits})`}
+              </span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Header Metadata Card */}
@@ -732,19 +775,50 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                   >
                     Concepto / Variable
                   </th>
-                  {quotes.map((q, i) => (
-                    <th
-                      key={i}
-                      role="columnheader"
-                      className="px-6 py-4 min-w-[200px] md:min-w-[240px] whitespace-nowrap text-center text-[#0066CC] border-b border-blue-100"
-                    >
-                      {q.insurerName}
-                    </th>
-                  ))}
+                  {quotes.map((q, i) => {
+                    const isPinned = pinnedColumns.has(i);
+                    const isHiddenByPinning = pinnedColumns.size > 0 && !isPinned;
+                    if (isHiddenByPinning) return null;
+
+                    return (
+                      <th
+                        key={i}
+                        role="columnheader"
+                        className={`px-6 py-4 min-w-[200px] md:min-w-[240px] whitespace-nowrap text-center text-[#0066CC] border-b border-blue-100 relative group/th ${
+                          isPinned ? 'bg-indigo-100/70 border-x border-indigo-200 shadow-sm' : ''
+                        }`}
+                      >
+                        <div className="flex items-center justify-center gap-1.5">
+                          <span>{q.insurerName}</span>
+                          {quotes.length >= 3 && (
+                            <button
+                              type="button"
+                              onClick={() => togglePinnedColumn(i)}
+                              className={`p-1 rounded transition-colors cursor-pointer ${
+                                isPinned
+                                  ? 'text-indigo-700 bg-white shadow-xs'
+                                  : 'text-slate-400 hover:text-indigo-600 hover:bg-blue-100/50'
+                              }`}
+                              title={
+                                isPinned
+                                  ? 'Quitar de la comparativa frente a frente'
+                                  : 'Fijar para comparar frente a frente'
+                              }
+                            >
+                              <Pin size={12} className={isPinned ? 'fill-indigo-600' : ''} />
+                            </button>
+                          )}
+                        </div>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredRows.map((row) => {
+                  const effectiveColumnCount =
+                    pinnedColumns.size > 0 ? pinnedColumns.size + 1 : quotes.length + 1;
+
                   if (row.type === 'header') {
                     const displayLabel =
                       viewMode === 'client' ? simplifyHeaderLabel(row.label) : row.label;
@@ -752,7 +826,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                       <tr key={row.id} className="bg-[#E6F0FA]/40 font-bold" role="row">
                         <td
                           role="gridcell"
-                          colSpan={quotes.length + 1}
+                          colSpan={effectiveColumnCount}
                           className="px-6 py-3 text-xs md:text-sm text-blue-800 uppercase tracking-wide border-y border-blue-50/50"
                         >
                           {displayLabel}
@@ -764,7 +838,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                   if (row.type === 'spacer') {
                     return (
                       <tr key={row.id} className="bg-white h-4" role="row">
-                        <td role="gridcell" colSpan={quotes.length + 1} className="py-2"></td>
+                        <td role="gridcell" colSpan={effectiveColumnCount} className="py-2"></td>
                       </tr>
                     );
                   }
@@ -825,6 +899,10 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
 
                       {/* Insurer Cells */}
                       {row.cells.map((cell, colIdx) => {
+                        const isPinned = pinnedColumns.has(colIdx);
+                        const isHiddenByPinning = pinnedColumns.size > 0 && !isPinned;
+                        if (isHiddenByPinning) return null;
+
                         const isWinner = cell.isWinner;
                         const excluded = cell.isExcluded;
                         const hasDetails =

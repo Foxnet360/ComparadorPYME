@@ -38,8 +38,18 @@ export const SummaryTab: React.FC<SummaryTabProps> = ({
         viewMode={viewMode}
       />
 
-      {/* Scoring Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Scoring Cards - Dynamic Responsive Grid */}
+      <div
+        className={`grid gap-6 ${
+          quotes.length === 1
+            ? 'grid-cols-1 max-w-md'
+            : quotes.length === 2
+              ? 'grid-cols-1 sm:grid-cols-2'
+              : quotes.length === 3
+                ? 'grid-cols-1 md:grid-cols-3'
+                : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+        }`}
+      >
         {quotes.map((q, idx) => {
           const isBest = q.insurerName === bestQuote.insurerName;
           return (
