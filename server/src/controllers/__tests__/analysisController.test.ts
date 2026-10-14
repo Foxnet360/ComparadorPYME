@@ -150,6 +150,13 @@ describe('analysisController - matrixRowsToComparisonReport', () => {
     expect(chubb).toBeDefined();
     expect(mapfre!.priceAnnual).toBe(5_000_000);
     expect(chubb!.priceAnnual).toBe(6_000_000);
+
+    // Verify report.matrix columns are aligned to report.quotes order 1:1
+    const premiumRow = report.matrix.find((r) => r.id === 'premium_total');
+    expect(premiumRow).toBeDefined();
+    const quote0 = report.quotes[0];
+    const expectedQuote0Val = quote0.insurerName === 'MAPFRE' ? '$ 5.000.000' : '$ 6.000.000';
+    expect(premiumRow!.cells[0].value).toBe(expectedQuote0Val);
   });
 
   it('maps cell notes to coverage deductible', async () => {

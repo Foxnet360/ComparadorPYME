@@ -524,5 +524,52 @@ describe('excelGenerator', () => {
       });
       expect(foundDeductible).toBe(true);
     });
+
+    it('aligns matrix cells to match quotes order in Excel output when reportData.matrix has inverted column order', async () => {
+      // mockQuotes has [MAPFRE, CHUBB]
+      // Inverted matrix has [CHUBB, MAPFRE]
+      const invertedMatrix: MatrixRow[] = [
+        {
+          type: 'header',
+          id: 'client_info',
+          label: 'Cotizaciones PYME - CHUBB, MAPFRE',
+          sectionId: 0,
+          cells: [],
+        },
+        {
+          type: 'data',
+          id: 'cov_incendio',
+          label: 'Incendio y Terremoto',
+          sectionId: 1,
+          cells: [
+            { value: '$ 200.000.000', isExcluded: false, isWinner: false }, // CHUBB is col 0 in raw matrix
+            { value: '$ 100.000.000', isExcluded: false, isWinner: false }, // MAPFRE is col 1 in raw matrix
+          ],
+        },
+      ];
+
+      const buffer = await generateExcelBuffer(mockQuotes, undefined, undefined, undefined, 'pyme', {
+        matrix: invertedMatrix,
+      });
+
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+
+      const covSheet = workbook.getWorksheet('Matriz Coberturas');
+      expect(covSheet).toBeDefined();
+
+      // Column B header is quotes[0] = MAPFRE
+      expect(covSheet!.getCell(4, 2).value).toBe('MAPFRE');
+      // Column C header is quotes[1] = CHUBB
+      expect(covSheet!.getCell(4, 3).value).toBe('CHUBB');
+
+      // Row 5 should have Incendio y Terremoto
+      const row5 = covSheet!.getRow(5);
+      expect(row5.getCell(1).value).toBe('Incendio y Terremoto');
+      // Column B (MAPFRE) MUST have 100M (MAPFRE's value), NOT 200M (CHUBB's value)!
+      expect(row5.getCell(2).value).toBe(100000000);
+      // Column C (CHUBB) MUST have 200M (CHUBB's value)!
+      expect(row5.getCell(3).value).toBe(200000000);
+    });
   });
 });

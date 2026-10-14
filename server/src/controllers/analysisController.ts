@@ -12,7 +12,14 @@ import { type DualExtractionResult } from '../services/dualExtractionService';
 import { isMultimodalEnabled } from '../services/quoteProcessingService';
 import { comparisonEngineAdapter } from '../services/unifiedComparison/comparisonEngineAdapter';
 import { AnalysisType } from '../services/unifiedComparison/comparisonSchema';
-import { FINANCIAL_SECTION_ID, isFinancialRowLabel } from '../services/unifiedComparison/matrixTransformer';
+import {
+  FINANCIAL_SECTION_ID,
+  isFinancialRowLabel,
+  alignMatrixRowsToQuotes,
+  extractMatrixInsurers,
+  alignInsurerIndices,
+  normalizeInsurerName,
+} from '../services/unifiedComparison/matrixTransformer';
 import { extractCanonicalInsurerName } from '../services/unifiedComparison/insurerSanitizer';
 import { semanticMatcher } from '../services/semanticMatcher';
 
@@ -300,7 +307,7 @@ export const analysisController = {
         domain,
       })) as unknown as ComparisonResult;
 
-      comparisonResult.matrix = matrixRows;
+      comparisonResult.matrix = comparisonResult.matrix || matrixRows;
       comparisonResult.quoteMetadata = adapterResult.quoteMetadata;
       comparisonResult.schemaVersion = adapterResult.schemaVersion;
       comparisonResult.domain = domain;
@@ -1160,9 +1167,12 @@ export async function matrixRowsToComparisonReport(
   quotes.sort((a, b) => b.score - a.score);
   const bestQuote = quotes[0];
 
+  // Align matrix rows cells with quotes sorted order for 100% parity across Web and Excel
+  const alignedMatrixRows = alignMatrixRowsToQuotes(matrixRows, quotes, domain);
+
   return {
     quotes,
-    matrix: matrixRows,
+    matrix: alignedMatrixRows,
     recommendation: bestQuote
       ? `Mejor opción: ${bestQuote.insurerName} con score de ${bestQuote.score}/100. Análisis generado por el Motor Unificado de Comparación.`
       : 'No se pudieron analizar las cotizaciones',
@@ -1179,78 +1189,6 @@ export async function matrixRowsToComparisonReport(
 }
 
 // ---------------------------------------------------------------------------
-// Insurer alignment helpers
+// Insurer alignment helpers (re-exported from matrixTransformer for backward compatibility)
 // ---------------------------------------------------------------------------
-
-/**
- * Extract the ordered insurer names encoded in the matrix header row.
- * The unified engine emits a top header of the form:
- *   "Cotizaciones PYME - Insurer A, Insurer B"
- */
-function extractMatrixInsurers(matrixRows: MatrixRow[]): string[] {
-  const header = matrixRows.find((row) => row.type === 'header' && row.id === 'client_info');
-  if (!header?.label) return [];
-  const separator = ' - ';
-  const idx = header.label.indexOf(separator);
-  if (idx < 0) return [];
-  return header.label
-    .slice(idx + separator.length)
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
-function normalizeInsurerName(name: string): string {
-  return name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]/g, '');
-}
-
-function longestCommonSubstringLength(a: string, b: string): number {
-  if (a.length === 0 || b.length === 0) return 0;
-  const matrix: number[][] = Array.from({ length: a.length + 1 }, () =>
-    Array(b.length + 1).fill(0)
-  );
-  let max = 0;
-
-  for (let i = 1; i <= a.length; i++) {
-    for (let j = 1; j <= b.length; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        matrix[i]![j] = matrix[i - 1]![j - 1]! + 1;
-        max = Math.max(max, matrix[i]![j]!);
-      }
-    }
-  }
-
-  return max;
-}
-
-/**
- * Map each quote-file insurer to the index of the matching matrix column.
- * Returns -1 when no reasonable match is found.
- */
-function alignInsurerIndices(quoteInsurers: string[], matrixInsurers: string[]): number[] {
-  const normalizedMatrix = matrixInsurers.map((name) => normalizeInsurerName(name));
-
-  return quoteInsurers.map((quoteName) => {
-    const normalizedQuote = normalizeInsurerName(quoteName);
-    let bestIndex = -1;
-    let bestScore = 0;
-
-    for (let i = 0; i < normalizedMatrix.length; i++) {
-      const matrixName = normalizedMatrix[i]!;
-      if (matrixName === normalizedQuote) {
-        return i;
-      }
-      const score = longestCommonSubstringLength(normalizedQuote, matrixName);
-      if (score > bestScore && score >= 3) {
-        bestScore = score;
-        bestIndex = i;
-      }
-    }
-
-    return bestIndex;
-  });
-}
+export { extractMatrixInsurers, normalizeInsurerName, alignInsurerIndices };

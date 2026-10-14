@@ -49,7 +49,7 @@ export function getSectionId(sectionName: string): number {
   return COVERAGE_SECTION_ID;
 }
 
-function getDomainHeaderLabel(domain: InsuranceDomain = 'pyme'): string {
+export function getDomainHeaderLabel(domain: InsuranceDomain = 'pyme'): string {
   return domain === 'pyme' ? 'PYME' : domain.toUpperCase();
 }
 
@@ -1525,3 +1525,134 @@ export function unifiedResultToMatrixRows(
 
   return matrix;
 }
+
+// ---------------------------------------------------------------------------
+// Insurer and Matrix Column Alignment Utilities
+// ---------------------------------------------------------------------------
+
+/**
+ * Extract the ordered insurer names encoded in the matrix header row.
+ * The unified engine emits a top header of the form:
+ *   "Cotizaciones PYME - Insurer A, Insurer B"
+ */
+export function extractMatrixInsurers(matrixRows: MatrixRow[]): string[] {
+  const header = matrixRows.find((row) => row.type === 'header' && row.id === 'client_info');
+  if (!header?.label) return [];
+  const separator = ' - ';
+  const idx = header.label.indexOf(separator);
+  if (idx < 0) return [];
+  return header.label
+    .slice(idx + separator.length)
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+export function normalizeInsurerName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '');
+}
+
+export function longestCommonSubstringLength(a: string, b: string): number {
+  if (a.length === 0 || b.length === 0) return 0;
+  const matrix: number[][] = Array.from({ length: a.length + 1 }, () =>
+    Array(b.length + 1).fill(0)
+  );
+  let max = 0;
+
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        matrix[i]![j] = matrix[i - 1]![j - 1]! + 1;
+        max = Math.max(max, matrix[i]![j]!);
+      }
+    }
+  }
+
+  return max;
+}
+
+/**
+ * Map each quote-file insurer to the index of the matching matrix column.
+ * Returns -1 when no reasonable match is found.
+ */
+export function alignInsurerIndices(quoteInsurers: string[], matrixInsurers: string[]): number[] {
+  const normalizedMatrix = matrixInsurers.map((name) => normalizeInsurerName(name));
+
+  return quoteInsurers.map((quoteName) => {
+    const normalizedQuote = normalizeInsurerName(quoteName);
+    let bestIndex = -1;
+    let bestScore = 0;
+
+    for (let i = 0; i < normalizedMatrix.length; i++) {
+      const matrixName = normalizedMatrix[i]!;
+      if (matrixName === normalizedQuote) {
+        return i;
+      }
+      const score = longestCommonSubstringLength(normalizedQuote, matrixName);
+      if (score > bestScore && score >= 3) {
+        bestScore = score;
+        bestIndex = i;
+      }
+    }
+
+    return bestIndex;
+  });
+}
+
+/**
+ * Align matrix cells to match the exact sequence of quotes.
+ * Ensures 1:1 parity between quote columns (scorecard/summary) and matrix columns across Web and Excel.
+ */
+export function alignMatrixRowsToQuotes(
+  matrixRows: MatrixRow[],
+  quotes: Array<{ insurerName: string }>,
+  domain: InsuranceDomain = 'pyme'
+): MatrixRow[] {
+  if (!matrixRows || matrixRows.length === 0 || !quotes || quotes.length === 0) {
+    return matrixRows;
+  }
+
+  const matrixInsurers = extractMatrixInsurers(matrixRows);
+  if (matrixInsurers.length === 0) {
+    return matrixRows;
+  }
+
+  const quoteInsurers = quotes.map((q) => q.insurerName);
+  const indices = alignInsurerIndices(quoteInsurers, matrixInsurers);
+
+  // If already identically aligned, return unchanged
+  const isMisaligned = indices.some((srcIdx, targetIdx) => srcIdx !== targetIdx);
+  if (!isMisaligned) {
+    return matrixRows;
+  }
+
+  const headerPrefix = `Cotizaciones ${getDomainHeaderLabel(domain)} - `;
+
+  return matrixRows.map((row) => {
+    if (!row.cells || row.cells.length === 0) return row;
+
+    const reorderedCells = indices.map((srcIdx) =>
+      srcIdx >= 0 && row.cells[srcIdx]
+        ? row.cells[srcIdx]!
+        : { value: '', isExcluded: false, isWinner: false }
+    );
+
+    if (row.type === 'header' && row.id === 'client_info') {
+      return {
+        ...row,
+        label: `${headerPrefix}${quotes.map((q) => q.insurerName).join(', ')}`,
+        cells: reorderedCells,
+      };
+    }
+
+    return {
+      ...row,
+      cells: reorderedCells,
+    };
+  });
+}
+

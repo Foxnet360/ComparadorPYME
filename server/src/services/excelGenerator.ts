@@ -10,6 +10,7 @@ import {
   COVERAGE_SECTION_ID,
   DEDUCTIBLE_SECTION_ID,
   FINANCIAL_SECTION_ID,
+  alignMatrixRowsToQuotes,
 } from './unifiedComparison/matrixTransformer';
 
 function isDeductibleMatrixRow(row: MatrixRow): boolean {
@@ -73,7 +74,7 @@ export async function generateExcelBuffer(
   // Obtain ground-truth matrix rows from reportData or build using matrixTransformer
   const matrix: MatrixRow[] =
     reportData?.matrix && Array.isArray(reportData.matrix) && reportData.matrix.length > 0
-      ? reportData.matrix
+      ? alignMatrixRowsToQuotes(reportData.matrix, quotes, domain as any)
       : transformQuotesToMatrix(quotes, domain);
 
   // Client Info

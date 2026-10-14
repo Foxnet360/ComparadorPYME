@@ -110,6 +110,7 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
               <div className="p-8 bg-slate-50/50">
                 <ClauseSelector
                   mode={clauseMode}
+                  domain={domain}
                   onModeChange={(mode) => dispatch({ type: 'SET_CLAUSE_MODE', payload: mode })}
                   onClausesSelected={(ids) =>
                     dispatch({ type: 'SET_SELECTED_CLAUSE_IDS', payload: ids })
