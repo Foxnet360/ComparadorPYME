@@ -331,7 +331,9 @@ export interface UserProfile {
   id?: string;
   name: string;
   email: string;
-  role: 'TECHNICAL' | 'ADMIN';
+  role: 'TECHNICAL' | 'ADMIN' | UserRole;
+  allyId?: string;
+  allyName?: string;
   avatarUrl?: string;
   intermediaryName?: string;
   registrationNumber?: string;

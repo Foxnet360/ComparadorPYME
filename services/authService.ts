@@ -36,11 +36,22 @@ function profileFromUser(user: User): UserProfile {
   const metadata = (user.user_metadata ?? {}) as Record<string, unknown>;
   const name = (metadata.name as string | undefined) || user.email?.split('@')[0] || 'Usuario';
 
+  const role = (metadata.role ?? 'ally_technical') as UserProfile['role'];
+
   return {
     id: user.id,
     email: user.email || '',
     name,
-    role: (metadata.role ?? 'USER') as UserProfile['role'],
+    role,
+    allyId:
+      (metadata.ally_id as string | undefined) ||
+      (metadata.allyId as string | undefined) ||
+      (role === 'super_admin' ? 'csa-global' : 'ally-100'),
+    allyName:
+      (metadata.ally_name as string | undefined) ||
+      (metadata.allyName as string | undefined) ||
+      (metadata.intermediary_name as string | undefined) ||
+      (role === 'super_admin' ? 'Plataforma Global CSA' : 'Correduría Andina de Seguros S.A.'),
     avatarUrl:
       (metadata.avatar_url as string | undefined) ||
       `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=4f46e5&color=fff`,

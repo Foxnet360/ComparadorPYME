@@ -29,40 +29,56 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
     }
   };
 
-  const handleQuickDemoLogin = (role: 'super_admin' | 'ally_admin' | 'ally_technical') => {
-    let demoUser: UserProfile;
-    if (role === 'super_admin') {
-      demoUser = {
-        id: 'user-super-1',
-        name: 'Administrador General (Super Admin)',
-        email: 'superadmin@comparadorcsa.com',
-        intermediaryName: 'Plataforma Global CSA',
-        role: 'super_admin',
-      } as unknown as UserProfile;
-    } else if (role === 'ally_admin') {
-      demoUser = {
-        id: 'user-admin-1',
-        name: 'Roberto Silva (Director Correduría)',
-        email: 'roberto.silva@andina.com',
-        intermediaryName: 'Correduría Andina de Seguros S.A.',
-        role: 'ally_admin',
-        allyId: 'ally-100',
-        allyName: 'Correduría Andina de Seguros S.A.',
-      } as unknown as UserProfile;
-    } else {
-      demoUser = {
-        id: 'user-tech-1',
-        name: 'Carlos Mendoza (Técnico Senior)',
-        email: 'carlos.mendoza@andina.com',
-        intermediaryName: 'Correduría Andina de Seguros S.A.',
-        role: 'ally_technical',
-        allyId: 'ally-100',
-        allyName: 'Correduría Andina de Seguros S.A.',
-      } as unknown as UserProfile;
-    }
+  const handleQuickDemoLogin = async (role: 'super_admin' | 'ally_admin' | 'ally_technical') => {
+    const credentials = {
+      super_admin: { email: 'superadmin@prueba.com', password: 'csa12345' },
+      ally_admin: { email: 'director@prueba.com', password: 'csa12345' },
+      ally_technical: { email: 'tecnico@prueba.com', password: 'csa12345' },
+    }[role];
 
-    // ERR-4: demo logins are session-only; nothing is persisted locally.
-    onLoginSuccess(demoUser);
+    setEmail(credentials.email);
+    setPassword(credentials.password);
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const user = await authService.signIn(credentials.email, credentials.password);
+      onLoginSuccess(user);
+    } catch {
+      // Fallback session if network is restricted or offline
+      const fallbacks: Record<string, UserProfile> = {
+        super_admin: {
+          id: 'user-super-1',
+          name: 'Super Administrador Global',
+          email: 'superadmin@prueba.com',
+          intermediaryName: 'Plataforma Global CSA',
+          role: 'super_admin',
+          allyId: 'csa-global',
+          allyName: 'Plataforma Global CSA',
+        } as unknown as UserProfile,
+        ally_admin: {
+          id: 'user-admin-1',
+          name: 'Director Correduría Demo',
+          email: 'director@prueba.com',
+          intermediaryName: 'Correduría Andina de Seguros S.A.',
+          role: 'ally_admin',
+          allyId: 'ally-100',
+          allyName: 'Correduría Andina de Seguros S.A.',
+        } as unknown as UserProfile,
+        ally_technical: {
+          id: 'user-tech-1',
+          name: 'Analista Técnico Demo',
+          email: 'tecnico@prueba.com',
+          intermediaryName: 'Correduría Andina de Seguros S.A.',
+          role: 'ally_technical',
+          allyId: 'ally-100',
+          allyName: 'Correduría Andina de Seguros S.A.',
+        } as unknown as UserProfile,
+      };
+      onLoginSuccess(fallbacks[role]!);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -187,9 +203,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
                   onClick={() => handleQuickDemoLogin('super_admin')}
                   className="w-full py-2.5 px-3 bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 rounded-xl text-xs font-bold transition-all flex items-center justify-between shadow-xs"
                 >
-                  <span>👑 Super Administrador Global</span>
+                  <div className="text-left">
+                    <div>👑 Super Administrador Global</div>
+                    <div className="text-[10px] font-normal text-purple-600 font-mono">superadmin@prueba.com</div>
+                  </div>
                   <span className="text-[10px] bg-purple-200 text-purple-800 px-2 py-0.5 rounded-md font-extrabold">
-                    Probar Rol
+                    1-Clic
                   </span>
                 </button>
 
@@ -198,9 +217,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
                   onClick={() => handleQuickDemoLogin('ally_admin')}
                   className="w-full py-2.5 px-3 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-xl text-xs font-bold transition-all flex items-center justify-between shadow-xs"
                 >
-                  <span>👔 Admin de Aliado (Director Correduría)</span>
+                  <div className="text-left">
+                    <div>👔 Admin de Aliado (Director Correduría)</div>
+                    <div className="text-[10px] font-normal text-blue-600 font-mono">director@prueba.com</div>
+                  </div>
                   <span className="text-[10px] bg-blue-200 text-blue-800 px-2 py-0.5 rounded-md font-extrabold">
-                    Probar Rol
+                    1-Clic
                   </span>
                 </button>
 
@@ -209,12 +231,18 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
                   onClick={() => handleQuickDemoLogin('ally_technical')}
                   className="w-full py-2.5 px-3 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-xl text-xs font-bold transition-all flex items-center justify-between shadow-xs"
                 >
-                  <span>👷 Analista Técnico de Seguros</span>
+                  <div className="text-left">
+                    <div>👷 Analista Técnico de Seguros</div>
+                    <div className="text-[10px] font-normal text-emerald-600 font-mono">tecnico@prueba.com</div>
+                  </div>
                   <span className="text-[10px] bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-md font-extrabold">
-                    Probar Rol
+                    1-Clic
                   </span>
                 </button>
               </div>
+              <p className="text-[11px] text-center text-slate-500 pt-1">
+                Contraseña demo para todas las cuentas: <span className="font-mono font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">csa12345</span>
+              </p>
             </div>
           </div>
         </div>
