@@ -19,6 +19,8 @@ import quoteBasedAuditor from '../quoteBasedAuditor';
 
 import { MatrixRow, QuoteAnalysis } from '../../types';
 import { InsuranceDomain } from '../../types/domain';
+import { buildRegulatoryBackingPayload } from '../regulatoryAuditService';
+import type { RegulatoryCheckResult } from '../../types';
 import { AnalysisType } from './comparisonSchema';
 
 export interface UnifiedQuote {
@@ -71,6 +73,16 @@ export interface UnifiedComparisonReport {
   analysisType?: AnalysisType;
   policyId?: string;
   renewalId?: string;
+  domain?: string;
+  regulatoryBacking?: {
+    domain: string;
+    displayName: string;
+    tagline: string;
+    primaryLaws: Array<{ code: string; title: string; summary: string }>;
+    thesaurusHighlights: string[];
+    advisoryIntroForClient?: string;
+    perQuoteCompliance?: Record<string, RegulatoryCheckResult[]>;
+  };
 }
 
 /**
@@ -623,14 +635,17 @@ export async function matrixRowsToComparisonReport(
   const bestQuote = quotes[0];
 
   const alignedMatrixRows = alignMatrixRowsToQuotes(matrixRows, quotes, domain);
+  const regulatoryBacking = buildRegulatoryBackingPayload(quotes as any, domain);
 
   return {
     quotes,
     matrix: alignedMatrixRows,
+    domain,
+    regulatoryBacking,
     recommendation: bestQuote
       ? `Mejor opción: ${bestQuote.insurerName} con score de ${bestQuote.score}/100. Análisis generado por el Motor Unificado de Comparación.`
       : 'No se pudieron analizar las cotizaciones',
-    marketAnalysis: `Se analizaron ${quotes.length} cotizaciones de seguros PYME usando el Motor Unificado. ${
+    marketAnalysis: `Se analizaron ${quotes.length} cotizaciones de seguros ${domain.toUpperCase()} usando el Motor Unificado. ${
       bestQuote ? `Prima anual: ${formatCOP(bestQuote.priceAnnual)} COP` : ''
     }`,
     deductibleComparison: quotes.map((q) => ({

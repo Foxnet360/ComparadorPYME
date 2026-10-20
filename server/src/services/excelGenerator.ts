@@ -1261,6 +1261,112 @@ export async function generateExcelBuffer(
     });
   }
 
+  // -------------------------------------------------------------
+  // Pestaña 6: Respaldo Normativo y Auditoría Legal en Colombia
+  // -------------------------------------------------------------
+  const legalSheet = workbook.addWorksheet('Respaldo Normativo y Legal');
+  legalSheet.views = [{ showGridLines: false }];
+
+  legalSheet.getColumn(1).width = 28;
+  legalSheet.getColumn(2).width = 32;
+  legalSheet.getColumn(3).width = 24;
+  legalSheet.getColumn(4).width = 45;
+  legalSheet.getColumn(5).width = 45;
+
+  legalSheet.mergeCells('A1:E2');
+  const legalTitle = legalSheet.getCell('A1');
+  legalTitle.value = `MARCO NORMATIVO Y AUDITORÍA DE CONFORMIDAD REGULATORIA · ${regulatoryProfile.displayName.toUpperCase()}`;
+  legalTitle.font = { name: FONT_NAME, size: 13, bold: true, color: { argb: 'FF1E3A8A' } };
+
+  legalSheet.mergeCells('A3:E3');
+  const taglineCell = legalSheet.getCell('A3');
+  taglineCell.value = regulatoryProfile.tagline;
+  taglineCell.font = { name: FONT_NAME, size: 10, italic: true, color: { argb: 'FF475569' } };
+
+  // Sección 1: Normas Principales Vigentes
+  legalSheet.getRow(5).height = 24;
+  const lawHeader = legalSheet.getCell('A5');
+  lawHeader.value = 'LEGISLACIÓN Y NORMAS COLOMBIANAS INYECTADAS EN ESTE RAMO';
+  lawHeader.font = { name: FONT_NAME, size: 11, bold: true, color: { argb: 'FF0F172A' } };
+
+  let lRowIdx = 6;
+  regulatoryProfile.primaryLaws.forEach((law) => {
+    legalSheet.getRow(lRowIdx).height = 22;
+    const codeCell = legalSheet.getCell(lRowIdx, 1);
+    codeCell.value = law.code;
+    codeCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF1E40AF' } };
+
+    const titleCell = legalSheet.getCell(lRowIdx, 2);
+    titleCell.value = law.title;
+    titleCell.font = { name: FONT_NAME, size: 10, bold: true };
+
+    legalSheet.mergeCells(lRowIdx, 3, lRowIdx, 5);
+    const summaryCell = legalSheet.getCell(lRowIdx, 3);
+    summaryCell.value = law.summary;
+    summaryCell.font = { name: FONT_NAME, size: 9.5, color: { argb: 'FF334155' } };
+
+    lRowIdx++;
+  });
+
+  // Sección 2: Matriz de Verificación Automática por Aseguradora
+  lRowIdx += 2;
+  legalSheet.getRow(lRowIdx).height = 26;
+  const matrixAuditHeader = legalSheet.getCell(lRowIdx, 1);
+  matrixAuditHeader.value = 'DICTAMEN DE CONFORMIDAD DE AMPAROS OBLIGATORIOS POR ASEGURADORA';
+  matrixAuditHeader.font = { name: FONT_NAME, size: 11, bold: true, color: { argb: 'FF0F172A' } };
+
+  lRowIdx++;
+  legalSheet.getRow(lRowIdx).height = 26;
+  const auditHeaders = [
+    'Aseguradora',
+    'Amparo Mandatorio',
+    'Estado de Conformidad',
+    'Base Legal / Normativa',
+    'Detalle de Auditoría',
+  ];
+  auditHeaders.forEach((h, idx) => {
+    const cell = legalSheet.getCell(lRowIdx, idx + 1);
+    cell.value = h;
+    cell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+    cell.alignment = { horizontal: idx === 2 ? 'center' : 'left' };
+  });
+
+  lRowIdx++;
+  const { auditReportCompliance } = await import('./regulatoryAuditService');
+  const reportCompliance = auditReportCompliance(quotes, domain);
+
+  quotes.forEach((q) => {
+    const checks = reportCompliance[q.insurerName] || [];
+    checks.forEach((chk) => {
+      legalSheet.getRow(lRowIdx).height = 22;
+
+      legalSheet.getCell(lRowIdx, 1).value = q.insurerName;
+      legalSheet.getCell(lRowIdx, 2).value = chk.title;
+
+      const statusCell = legalSheet.getCell(lRowIdx, 3);
+      if (chk.status === 'COMPLIANT') {
+        statusCell.value = 'CONFORME';
+        statusCell.font = { name: FONT_NAME, size: 9.5, bold: true, color: { argb: 'FF065F46' } };
+        statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
+      } else if (chk.status === 'NON_COMPLIANT') {
+        statusCell.value = 'NO CONFORME (CRÍTICO)';
+        statusCell.font = { name: FONT_NAME, size: 9.5, bold: true, color: { argb: 'FF991B1B' } };
+        statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } };
+      } else {
+        statusCell.value = 'ADVERTENCIA (REVISAR)';
+        statusCell.font = { name: FONT_NAME, size: 9.5, bold: true, color: { argb: 'FF854D0E' } };
+        statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF9C3' } };
+      }
+      statusCell.alignment = { horizontal: 'center' };
+
+      legalSheet.getCell(lRowIdx, 4).value = chk.legalBasis;
+      legalSheet.getCell(lRowIdx, 5).value = chk.details;
+
+      lRowIdx++;
+    });
+  });
+
   // Generate Buffer
   const buffer = await workbook.xlsx.writeBuffer();
   return buffer as unknown as Buffer;

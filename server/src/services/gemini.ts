@@ -1002,27 +1002,32 @@ Instrucciones para el análisis:
   },
 
   /**
-   * Generate narrative text (recommendation, analysis) using Gemini
+   * Generate narrative text (recommendation, analysis) using Gemini grounded in Colombian insurance regulation.
    * This is the only place where we use Gemini for text generation
    */
   generateNarrative: async (
-    analysisData: Record<string, unknown>
+    analysisData: Record<string, unknown>,
+    domain: string = 'pyme'
   ): Promise<{ recommendation: string; marketAnalysis: string }> => {
-    const prompt = `Basado en el siguiente análisis de cotizaciones de seguros PYME, genera una recomendación profesional y un análisis de mercado.
+    const { getDomainLegalPromptContext } = await import('./regulatoryAuditService');
+    const legalContext = getDomainLegalPromptContext(domain);
+    const prompt = `Basado en el siguiente análisis de cotizaciones de seguros en Colombia para el ramo "${domain.toUpperCase()}", genera una recomendación profesional respaldada en la normativa legal vigente y un análisis de mercado técnico.
+
+${legalContext}
 
 DATOS DEL ANÁLISIS:
 ${JSON.stringify(analysisData, null, 2)}
 
 REGLAS:
 1. recommendation (máximo 1500 caracteres):
-   - Recomienda la mejor cotización y explica por qué
-   - Menciona pros y contras de cada opción
-   - Sé específico y actionable
+   - Recomienda la mejor cotización considerando precio, solidez técnica y cumplimiento de las normas obligatorias del ramo
+   - Menciona pros y contras de cada opción, alertando si alguna incumple amparos mandatorios o presenta deducibles gravosos
+   - Sé específico, pedagógico y fundamentado legalmente
 
 2. marketAnalysis (máximo 1500 caracteres):
-   - Describe tendencias observadas en el mercado
-   - Comenta rangos de precios
-   - Menciona coberturas estándar vs diferenciadoras
+   - Describe tendencias observadas en las ofertas de las aseguradoras
+   - Comenta rangos de precios y estructura de deducibles
+   - Menciona coberturas estándar vs diferenciadoras conforme a las prácticas de mercado en Colombia
 
 Responde SOLO con el siguiente formato:
 

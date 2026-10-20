@@ -5,7 +5,7 @@ import { QuoteScoreCard, type QuoteCorrection } from './QuoteScoreCard';
 import { ReportCharts } from './ReportCharts';
 import { ClaimSimulatorPanel } from './ClaimSimulatorPanel';
 import { RegulatoryBackingPanel } from './RegulatoryBackingPanel';
-import type { QuoteAnalysis } from '../../types';
+import type { QuoteAnalysis, RegulatoryCheckResult } from '../../types';
 
 interface SummaryTabProps {
   quotes: QuoteAnalysis[];
@@ -13,6 +13,7 @@ interface SummaryTabProps {
   recommendation: string;
   viewMode: 'technical' | 'client';
   domain?: string;
+  perQuoteCompliance?: Record<string, RegulatoryCheckResult[]>;
   onCorrection: (quote: QuoteAnalysis, correction: QuoteCorrection) => void;
   onNavigate: (tab: 'resumen' | 'coberturas' | 'deducibles' | 'auditoria') => void;
 }
@@ -28,6 +29,7 @@ export const SummaryTab: React.FC<SummaryTabProps> = ({
   recommendation,
   viewMode,
   domain,
+  perQuoteCompliance,
   onCorrection,
   onNavigate,
 }) => {
@@ -74,7 +76,7 @@ export const SummaryTab: React.FC<SummaryTabProps> = ({
       <ClaimSimulatorPanel quotes={quotes} compact={true} onNavigate={onNavigate} />
 
       {/* Respaldo Normativo y Regulatorio por Ramo con Verificación de Reglas Legales */}
-      <RegulatoryBackingPanel domain={domain} quotes={quotes} />
+      <RegulatoryBackingPanel domain={domain} quotes={quotes} perQuoteCompliance={perQuoteCompliance} />
 
       {/* Recommendation Text */}
       <div className="bg-slate-800 text-white p-6 rounded-xl shadow-lg">

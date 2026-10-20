@@ -149,6 +149,14 @@ export interface QuoteMetadata {
   vigencia?: string | null;
 }
 
+export interface RegulatoryCheckResult {
+  ruleId: string;
+  title: string;
+  legalBasis: string;
+  status: 'COMPLIANT' | 'WARNING' | 'NON_COMPLIANT';
+  details: string;
+}
+
 export interface ComparisonReport {
   quotes: QuoteAnalysis[];
   recommendation: string;
@@ -160,6 +168,17 @@ export interface ComparisonReport {
   matrix?: MatrixRow[]; // Synced backend rows
   quoteMetadata?: QuoteMetadata[]; // Extracted risk details
   schemaVersion?: 1 | 2 | 3;
+  domain?: string;
+  regulatoryBacking?: {
+    domain: string;
+    displayName: string;
+    tagline: string;
+    source?: string;
+    primaryLaws: Array<{ code: string; title: string; summary: string }>;
+    thesaurusHighlights: string[];
+    advisoryIntroForClient?: string;
+    perQuoteCompliance?: Record<string, RegulatoryCheckResult[]>;
+  };
 }
 
 export type QuoteStatus = 'DRAFT' | 'SENT' | 'SOLD' | 'LOST';

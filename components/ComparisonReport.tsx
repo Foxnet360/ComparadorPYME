@@ -147,6 +147,7 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
           recommendation={report.recommendation}
           viewMode={viewMode}
           domain={report.domain}
+          perQuoteCompliance={report.regulatoryBacking?.perQuoteCompliance}
           onCorrection={(q, correction) => handleApplyCorrection(q.id || q.insurerName, correction)}
           onNavigate={setActiveTab}
         />

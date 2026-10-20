@@ -591,6 +591,86 @@ export const generatePDF = (
     currentY += 4 + splitLaw.length * 3.8 + 4;
   });
 
+  // Tabla de Verificación de Conformidad Regulatoria por Aseguradora
+  if (quotes && quotes.length > 0 && regProfile.mandatoryVerificationRules.length > 0) {
+    if (currentY > 210) {
+      doc.addPage();
+      currentY = addHeader('Auditoría de Conformidad Regulatoria');
+    }
+
+    doc.setFontSize(10.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 41, 59);
+    doc.text('Dictamen de Conformidad Normativa por Aseguradora', 14, currentY);
+    currentY += 4;
+
+    const auditRows: string[][] = [];
+    quotes.forEach((q) => {
+      const coverages = q.coverages || [];
+      regProfile.mandatoryVerificationRules.forEach((rule) => {
+        const matched = coverages.find((cov) => {
+          const label = `${cov.name || ''} ${cov.canonicalName || ''}`.toLowerCase();
+          const val = String(cov.value || '').toLowerCase();
+          const isIncluded =
+            cov.isPositive !== false &&
+            val.length > 0 &&
+            !['no incluido', 'no incluida', 'no informado', 'excluido', 'no cubre', 'n.c.'].includes(val);
+          return isIncluded && rule.keywords.some((kw) => label.includes(kw.toLowerCase()));
+        });
+
+        const status = matched
+          ? 'CONFORME'
+          : rule.severityIfMissing === 'CRITICAL'
+            ? 'NO CONFORME'
+            : 'ADVERTENCIA';
+
+        const detail = matched
+          ? `Verificado: ${matched.name}`
+          : `Requiere verificación (${rule.legalBasis})`;
+
+        auditRows.push([q.insurerName, rule.title, rule.legalBasis, status, detail]);
+      });
+    });
+
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Aseguradora', 'Amparo Mandatorio', 'Base Legal', 'Estado', 'Detalle']],
+      body: auditRows,
+      theme: 'grid',
+      headStyles: {
+        fillColor: PRIMARY_COLOR,
+        fontSize: 7.5,
+        fontStyle: 'bold',
+        halign: 'left',
+      },
+      styles: {
+        fontSize: 7,
+        cellPadding: 2,
+      },
+      columnStyles: {
+        0: { cellWidth: 26, fontStyle: 'bold' },
+        1: { cellWidth: 42 },
+        2: { cellWidth: 38 },
+        3: { cellWidth: 24, fontStyle: 'bold', halign: 'center' },
+        4: { cellWidth: 50 },
+      },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 3) {
+          if (data.cell.raw === 'CONFORME') {
+            data.cell.styles.textColor = [5, 150, 105];
+          } else if (data.cell.raw === 'NO CONFORME') {
+            data.cell.styles.textColor = [220, 38, 38];
+          } else {
+            data.cell.styles.textColor = [217, 119, 6];
+          }
+        }
+      },
+      margin: { left: 14, right: 14 },
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 8;
+  }
+
   // Numeración de páginas
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {

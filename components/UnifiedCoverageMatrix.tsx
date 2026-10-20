@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, lazy, Suspense, memo } from 'react';
+import React, { useState, useRef, useEffect, lazy, Suspense, memo, useMemo, useCallback } from 'react';
 import { QuoteAnalysis, MatrixRow, MatrixCell, CoverageItem, QuoteMetadata } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
 import {
@@ -19,7 +19,9 @@ import {
   Eye,
   Loader2,
   Pin,
+  Scale,
 } from 'lucide-react';
+import { getDomainRegulatoryProfile } from '@shared/domainRegulatoryKnowledge';
 import { DeductibleBadge } from './DeductibleBadge';
 import { PedagogicalTooltip } from './common/PedagogicalTooltip';
 import { InsurerLogo } from './common/InsurerLogo';
@@ -331,6 +333,55 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
       return next;
     });
   };
+
+  // Regulatory Profile and Mandatory Verification Rules for active domain
+  const regulatoryProfile = useMemo(() => getDomainRegulatoryProfile(domain), [domain]);
+
+  // Compute compliance scorecard per insurer for column headers
+  const complianceByInsurer = useMemo(() => {
+    const map = new Map<
+      string,
+      { compliantCount: number; totalCount: number; isFullyCompliant: boolean; details: string }
+    >();
+    const total = regulatoryProfile.mandatoryVerificationRules.length;
+
+    for (const quote of quotes) {
+      const coverages = quote.coverages || [];
+      let compliant = 0;
+      for (const rule of regulatoryProfile.mandatoryVerificationRules) {
+        const matched = coverages.find((cov) => {
+          const label = `${cov.name || ''} ${cov.canonicalName || ''}`.toLowerCase();
+          const val = String(cov.value || '').toLowerCase();
+          const isIncluded =
+            cov.isPositive !== false &&
+            val.length > 0 &&
+            !['no incluido', 'no incluida', 'no informado', 'excluido', 'no cubre', 'n.c.'].includes(
+              val
+            );
+          return isIncluded && rule.keywords.some((kw) => label.includes(kw.toLowerCase()));
+        });
+        if (matched) compliant++;
+      }
+      map.set(quote.insurerName, {
+        compliantCount: compliant,
+        totalCount: total,
+        isFullyCompliant: compliant === total,
+        details: `${compliant}/${total} normas legales verificadas en este ramo (${regulatoryProfile.displayName})`,
+      });
+    }
+    return map;
+  }, [quotes, regulatoryProfile]);
+
+  // Match row label to mandatory regulatory rule
+  const getMatchingRegulatoryRule = useCallback(
+    (rowLabel: string) => {
+      const norm = (rowLabel || '').toLowerCase();
+      return regulatoryProfile.mandatoryVerificationRules.find((rule) =>
+        rule.keywords.some((kw) => norm.includes(kw.toLowerCase()))
+      );
+    },
+    [regulatoryProfile]
+  );
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -853,6 +904,28 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                             </button>
                           )}
                         </div>
+                        {/* Regulatory Compliance Scorecard */}
+                        {(() => {
+                          const comp = complianceByInsurer.get(q.insurerName);
+                          if (!comp || comp.totalCount === 0) return null;
+                          return (
+                            <div className="mt-1.5 flex items-center justify-center">
+                              <span
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${
+                                  comp.isFullyCompliant
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300/70'
+                                    : 'bg-amber-50 text-amber-700 border-amber-300/70'
+                                }`}
+                                title={comp.details}
+                              >
+                                <Scale size={11} />
+                                <span>
+                                  {comp.compliantCount}/{comp.totalCount} Reglas Legales
+                                </span>
+                              </span>
+                            </div>
+                          );
+                        })()}
                       </th>
                     );
                   })}
@@ -930,6 +1003,19 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                           )}
                           <span>{row.label}</span>
                           <PedagogicalTooltip label={row.label} />
+                          {(() => {
+                            const matchingRule = getMatchingRegulatoryRule(row.label);
+                            if (!matchingRule || isSublimit) return null;
+                            return (
+                              <span
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80 shrink-0 cursor-help"
+                                title={`Amparo de verificación obligatoria en Colombia:\n${matchingRule.title} (${matchingRule.legalBasis})\n${matchingRule.description}`}
+                              >
+                                <Scale size={11} className="text-indigo-600" />
+                                <span className="hidden sm:inline">Obligatorio</span>
+                              </span>
+                            );
+                          })()}
                           {hasSublimits && (
                             <button
                               type="button"
