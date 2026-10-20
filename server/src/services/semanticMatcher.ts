@@ -24,6 +24,8 @@ export interface SemanticMatchResult {
   method: 'thesaurus' | 'fuzzy' | 'embedding' | 'llm' | 'graph' | null;
 }
 
+export type CoverageMatch = SemanticMatchResult;
+
 export interface ProbabilisticMatch {
   categoryId: number | string | null;
   canonicalName: string;
@@ -81,13 +83,35 @@ async function initializeCategoryEmbeddings(domain: string = 'pyme'): Promise<vo
     );
     const cache = new Map<number | string, number[]>();
     const categoryTexts = categories.map((c) => c.name);
-    const categoryEmbeddings = await embeddingService.generateEmbeddingsBatch(categoryTexts);
+    const categoryEmbeddings =
+      typeof embeddingService.generateEmbeddingsBatch === 'function'
+        ? await embeddingService.generateEmbeddingsBatch(categoryTexts)
+        : undefined;
 
     let successCount = 0;
-    for (let i = 0; i < categories.length; i++) {
-      if (categoryEmbeddings[i]?.embedding) {
-        cache.set(categories[i]!.id, categoryEmbeddings[i]!.embedding);
-        successCount++;
+    if (Array.isArray(categoryEmbeddings) && categoryEmbeddings.length > 0) {
+      for (let i = 0; i < categories.length; i++) {
+        if (categoryEmbeddings[i]?.embedding) {
+          cache.set(categories[i]!.id, categoryEmbeddings[i]!.embedding);
+          successCount++;
+        }
+      }
+    } else if (typeof embeddingService.generateEmbedding === 'function') {
+      const individualResults = await Promise.all(
+        categories.map(async (cat) => {
+          try {
+            const emb = await embeddingService.generateEmbedding(cat.name);
+            return { id: cat.id, embedding: emb };
+          } catch {
+            return { id: cat.id, embedding: undefined };
+          }
+        })
+      );
+      for (const item of individualResults) {
+        if (item.embedding && item.embedding.length > 0) {
+          cache.set(item.id, item.embedding);
+          successCount++;
+        }
       }
     }
 
@@ -374,7 +398,10 @@ async function matchByLLM(
 
     const prompt = `Clasifica la siguiente cobertura de seguro en una de estas categorías:\n\nCATEGORÍAS:\n${categoryList}\n\nCOBERTURA A CLASIFICAR: "${coverageName}"\n\nResponde ÚNICAMENTE con el número de la categoría y un score de confianza (0-1).\nFormato: "CATEGORIA: [número]\nCONFIANZA: [score]"\nSi no estás seguro, responde: "CATEGORIA: 0\nCONFIANZA: 0"`;
 
-    const response = await geminiService.extractText('', prompt);
+    const response = await geminiService.extractText('', prompt, {
+      model: process.env.GEMINI_CHAT_MODEL || process.env.GEMINI_MODEL || 'gemini-3.7-flash',
+      thinkingLevel: 'low',
+    });
 
     const categoryMatch = response.match(/CATEGORIA:\s*(\d+)/i);
     const confidenceMatch = response.match(/CONFIANZA:\s*([\d.]+)/i);
@@ -399,6 +426,104 @@ async function matchByLLM(
     return null;
   } catch (error) {
     console.error(`❌ [SemanticMatcher] LLM matching failed for "${coverageName}":`, error);
+    return null;
+  }
+}
+
+const BatchCoverageClassificationSchema = {
+  type: 'ARRAY',
+  description: 'Batch classification of insurance coverage names into canonical category IDs',
+  items: {
+    type: 'OBJECT',
+    properties: {
+      rawName: { type: 'STRING', description: 'Original coverage name' },
+      categoryId: {
+        type: 'NUMBER',
+        description: '1-based canonical category number, or 0 if no match',
+      },
+      confidence: { type: 'NUMBER', description: 'Confidence score between 0 and 1' },
+    },
+    required: ['rawName', 'categoryId', 'confidence'],
+  },
+} as const;
+
+interface BatchLlmClassificationItem {
+  rawName: string;
+  categoryId: number | string;
+  confidence: number;
+}
+
+async function matchByLLMBatch(
+  items: Array<{ rawName: string; effectiveName: string }>,
+  domain: string = 'pyme'
+): Promise<Map<string, SemanticMatchResult | null> | null> {
+  if (typeof geminiService.extractStructured !== 'function') {
+    return null;
+  }
+
+  try {
+    const categories = loadCanonicalCategories(domain);
+    const categoryList = categories.map((c, idx) => `${idx + 1}. ${c.name}`).join('\n');
+    const itemsList = items
+      .map((item, idx) => `${idx + 1}. "${item.rawName}" (${item.effectiveName})`)
+      .join('\n');
+
+    const prompt = `Clasifica cada una de las siguientes coberturas de seguro en una de las categorías canónicas listadas.\n\nCATEGORÍAS:\n${categoryList}\n\nCOBERTURAS A CLASIFICAR:\n${itemsList}\n\nPara cada cobertura devuelve un objeto con:\n- rawName: el nombre exacto de la cobertura original entre comillas\n- categoryId: número de la categoría (o 0 si no coincide con ninguna)\n- confidence: score de confianza entre 0 y 1`;
+
+    const response = await geminiService.extractStructured<
+      BatchLlmClassificationItem[] | { matches?: BatchLlmClassificationItem[] }
+    >('', prompt, 1, {
+      model: process.env.GEMINI_CHAT_MODEL || process.env.GEMINI_MODEL || 'gemini-3.7-flash',
+      thinkingLevel: 'low',
+      maxOutputTokens: 2048,
+      responseSchema: BatchCoverageClassificationSchema,
+    });
+
+    const parsedList = Array.isArray(response)
+      ? response
+      : response && typeof response === 'object' && Array.isArray(response.matches)
+        ? response.matches
+        : null;
+
+    if (!parsedList) {
+      return null;
+    }
+
+    const batchMap = new Map<string, SemanticMatchResult | null>();
+    for (const item of items) {
+      const entry = parsedList.find(
+        (p) =>
+          p.rawName === item.rawName ||
+          p.rawName === item.effectiveName ||
+          normalizeText(p.rawName || '') === normalizeText(item.rawName)
+      );
+
+      if (entry) {
+        const numericId =
+          typeof entry.categoryId === 'number'
+            ? entry.categoryId
+            : parseInt(String(entry.categoryId), 10);
+        const confidence = Number(entry.confidence) || 0;
+        const category = categories.find(
+          (c, idx) => c.id === entry.categoryId || c.id === numericId || idx + 1 === numericId
+        );
+
+        if (category && confidence >= CONFIDENCE_THRESHOLDS.LLM_MIN) {
+          batchMap.set(item.rawName, {
+            categoryId: category.id,
+            canonicalName: category.name,
+            confidence,
+            method: 'llm',
+          });
+          continue;
+        }
+      }
+      batchMap.set(item.rawName, null);
+    }
+
+    return batchMap;
+  } catch (error) {
+    console.warn('⚠️ [SemanticMatcher] Batch LLM classification failed, falling back:', error);
     return null;
   }
 }
@@ -616,6 +741,90 @@ export const semanticMatcher = {
     }
 
     return results;
+  },
+
+  /**
+   * Match múltiples coberturas deduplicando nombres y agrupando el fallback LLM en una sola llamada estructurada
+   */
+  matchCoveragesBatch: async (
+    coverageNames: string[],
+    domain: string = 'pyme'
+  ): Promise<Map<string, SemanticMatchResult>> => {
+    const d = domain ?? 'pyme';
+    const resultMap = new Map<string, SemanticMatchResult>();
+    const uniqueNames = Array.from(new Set(coverageNames));
+    const unresolvedForLlm: Array<{ rawName: string; effectiveName: string }> = [];
+
+    for (const rawName of uniqueNames) {
+      if (!rawName || rawName.trim().length === 0) {
+        resultMap.set(rawName, {
+          categoryId: null,
+          canonicalName: null,
+          confidence: 0,
+          method: null,
+        });
+        continue;
+      }
+
+      const effectiveName = acronymExpander.expand(rawName);
+
+      // Layer 1: Thesaurus
+      let thesaurusResult = matchByThesaurus(effectiveName, d);
+      if (!thesaurusResult && effectiveName !== rawName) {
+        thesaurusResult = matchByThesaurus(rawName, d);
+      }
+      if (thesaurusResult) {
+        resultMap.set(rawName, thesaurusResult);
+        continue;
+      }
+
+      // Layer 2: Fuzzy
+      let fuzzyResult = matchByFuzzy(effectiveName, d);
+      if (!fuzzyResult && effectiveName !== rawName) {
+        fuzzyResult = matchByFuzzy(rawName, d);
+      }
+      if (fuzzyResult) {
+        resultMap.set(rawName, fuzzyResult);
+        continue;
+      }
+
+      // Layer 3: Embedding
+      const embeddingResult = await matchByEmbedding(effectiveName, d);
+      if (embeddingResult) {
+        resultMap.set(rawName, embeddingResult);
+        continue;
+      }
+
+      unresolvedForLlm.push({ rawName, effectiveName });
+    }
+
+    if (unresolvedForLlm.length >= 2) {
+      const batchLlmResults = await matchByLLMBatch(unresolvedForLlm, d);
+      if (batchLlmResults) {
+        for (const item of unresolvedForLlm) {
+          const llmMatch = batchLlmResults.get(item.rawName);
+          if (llmMatch) {
+            resultMap.set(item.rawName, llmMatch);
+          } else {
+            resultMap.set(item.rawName, {
+              categoryId: null,
+              canonicalName: null,
+              confidence: 0,
+              method: null,
+            });
+          }
+        }
+        return resultMap;
+      }
+    }
+
+    // Fallback for single unresolved coverage or when batch structured LLM is not mocked/available
+    for (const item of unresolvedForLlm) {
+      const singleResult = await semanticMatcher.matchCoverage(item.rawName, d);
+      resultMap.set(item.rawName, singleResult);
+    }
+
+    return resultMap;
   },
 
   /**

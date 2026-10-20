@@ -1,5 +1,5 @@
 import { Type } from '@google/genai';
-import { getGenAI, UploadedFile } from '../gemini';
+import { getGenAI, UploadedFile, extractHighSignalReferenceText } from '../gemini';
 import { parseJsonWithRepair } from '../jsonRepair';
 import {
   CoverageSectionHint,
@@ -88,7 +88,8 @@ export class FocalizedCoverageExtractor {
     filename: string,
     coverageSections?: CoverageSectionHint[],
     extractedText?: string,
-    domain?: string
+    domain?: string,
+    cachedContent?: string | null
   ): Promise<FocalizedCoverageExtraction> {
     const ai = getGenAI();
     const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.7-flash';
@@ -114,32 +115,46 @@ INSTRUCCIONES CLAVE:
     }
 
     if (extractedText && extractedText.trim().length > 0) {
+      const highSignalText =
+        typeof extractHighSignalReferenceText === 'function'
+          ? extractHighSignalReferenceText(extractedText, 45000)
+          : extractedText.slice(0, 45000);
       prompt += `\n\n=== TEXTO NATIVO DE REFERENCIA ===\n`;
-      prompt += `${extractedText.slice(0, 100000)}`;
+      prompt += `${highSignalText}`;
     }
 
     console.log(`🔎 [TwoStage:Coverages] Extracting focalized coverages for ${filename}...`);
 
+    const activeCache = cachedContent ?? uploadedFile.cachedContent ?? null;
+    const contents = activeCache
+      ? [{ text: prompt }]
+      : [
+          { text: prompt },
+          {
+            fileData: {
+              fileUri: uploadedFile.uri,
+              mimeType: 'application/pdf',
+            },
+          },
+        ];
+
+    const config: Record<string, unknown> = {
+      temperature: 0.1,
+      maxOutputTokens: 65536,
+      responseMimeType: 'application/json',
+      responseSchema: FocalizedCoverageJsonSchema as unknown,
+      thinkingConfig: {
+        thinkingLevel: (process.env.GEMINI_THINKING_LEVEL || 'medium') as any,
+      },
+    };
+    if (activeCache) {
+      config.cachedContent = activeCache;
+    }
+
     const result = await ai.models.generateContent({
       model: extractionModel,
-      contents: [
-        { text: prompt },
-        {
-          fileData: {
-            fileUri: uploadedFile.uri,
-            mimeType: 'application/pdf',
-          },
-        },
-      ],
-      config: {
-        temperature: 0.1,
-        maxOutputTokens: 65536,
-        responseMimeType: 'application/json',
-        responseSchema: FocalizedCoverageJsonSchema as unknown,
-        thinkingConfig: {
-          thinkingLevel: (process.env.GEMINI_THINKING_LEVEL || 'low') as any,
-        },
-      },
+      contents,
+      config,
     });
 
     const responseText = result.text;

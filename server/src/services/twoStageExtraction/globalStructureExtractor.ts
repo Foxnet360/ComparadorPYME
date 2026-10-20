@@ -1,5 +1,5 @@
 import { Type } from '@google/genai';
-import { getGenAI, UploadedFile } from '../gemini';
+import { getGenAI, UploadedFile, extractHighSignalReferenceText } from '../gemini';
 import { parseJsonWithRepair } from '../jsonRepair';
 import {
   GlobalStructureExtraction,
@@ -122,7 +122,8 @@ export class GlobalStructureExtractor {
     uploadedFile: UploadedFile,
     filename: string,
     extractedText?: string,
-    domain?: string
+    domain?: string,
+    cachedContent?: string | null
   ): Promise<GlobalStructureExtraction> {
     const ai = getGenAI();
     const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.7-flash';
@@ -139,33 +140,47 @@ Tu objetivo en esta FASE 1 (Estructura Global) es analizar el documento completo
 NO extraigas el listado individual y exhaustivo de cada cobertura en esta fase; eso se realizará en la Fase 2. Concéntrate en la precisión de las primas y el mapa general.`;
 
     if (extractedText && extractedText.trim().length > 0) {
+      const highSignalText =
+        typeof extractHighSignalReferenceText === 'function'
+          ? extractHighSignalReferenceText(extractedText, 35000)
+          : extractedText.slice(0, 35000);
       prompt += `\n\n=== TEXTO EXTRAÍDO NATIVAMENTE (REFERENCIA DE ALTA FIDELIDAD) ===\n`;
       prompt += `Utiliza el siguiente texto extraído del PDF como referencia para validar cifras de primas y nombres:\n\n`;
-      prompt += `${extractedText.slice(0, 80000)}`;
+      prompt += `${highSignalText}`;
     }
 
     console.log(`🧭 [TwoStage:Global] Extracting global structure for ${filename}...`);
 
+    const activeCache = cachedContent ?? uploadedFile.cachedContent ?? null;
+    const contents = activeCache
+      ? [{ text: prompt }]
+      : [
+          { text: prompt },
+          {
+            fileData: {
+              fileUri: uploadedFile.uri,
+              mimeType: 'application/pdf',
+            },
+          },
+        ];
+
+    const config: Record<string, unknown> = {
+      temperature: 0.1,
+      maxOutputTokens: 16384,
+      responseMimeType: 'application/json',
+      responseSchema: GlobalStructureJsonSchema as unknown,
+      thinkingConfig: {
+        thinkingLevel: 'low' as any,
+      },
+    };
+    if (activeCache) {
+      config.cachedContent = activeCache;
+    }
+
     const result = await ai.models.generateContent({
       model: extractionModel,
-      contents: [
-        { text: prompt },
-        {
-          fileData: {
-            fileUri: uploadedFile.uri,
-            mimeType: 'application/pdf',
-          },
-        },
-      ],
-      config: {
-        temperature: 0.1,
-        maxOutputTokens: 16384,
-        responseMimeType: 'application/json',
-        responseSchema: GlobalStructureJsonSchema as unknown,
-        thinkingConfig: {
-          thinkingLevel: (process.env.GEMINI_THINKING_LEVEL || 'low') as any,
-        },
-      },
+      contents,
+      config,
     });
 
     const responseText = result.text;

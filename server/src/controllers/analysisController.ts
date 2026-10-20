@@ -694,6 +694,38 @@ export async function matrixRowsToComparisonReport(
     string,
     ReturnType<typeof semanticMatcher.matchCoverage>
   >();
+
+  // Pre-warm matchCoverageCache using batch coverage matching when available
+  // so multiple novel coverages are resolved in at most ONE structured LLM call.
+  if (typeof semanticMatcher.matchCoveragesBatch === 'function') {
+    const graphEnabled = options?.graphEnabled ?? false;
+    const uniqueLabelsToMatch = Array.from(
+      new Set(
+        matrixRows
+          .filter(
+            (row) =>
+              row.type === 'data' &&
+              row.sectionId !== FINANCIAL_SECTION_ID &&
+              !row.id?.startsWith('warning_')
+          )
+          .map((row) =>
+            graphEnabled && row.canonicalName ? row.canonicalName : row.label || 'Cobertura'
+          )
+      )
+    );
+
+    if (uniqueLabelsToMatch.length > 0) {
+      const batchResults = await semanticMatcher.matchCoveragesBatch(uniqueLabelsToMatch, domain);
+      if (batchResults instanceof Map) {
+        for (const [label, matchResult] of batchResults.entries()) {
+          if (matchResult) {
+            matchCoverageCache.set(`${domain}:${label}`, Promise.resolve(matchResult));
+          }
+        }
+      }
+    }
+  }
+
   const getCachedCoverageMatch = (coverageLabel: string) => {
     const cacheKey = `${domain}:${coverageLabel}`;
     let pending = matchCoverageCache.get(cacheKey);

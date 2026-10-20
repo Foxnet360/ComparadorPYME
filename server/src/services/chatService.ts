@@ -10,8 +10,10 @@ import { structuredClauseExtractor } from './structuredClauseExtractor';
 import { chatRepository } from '../repositories/chatRepository';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-const GEMINI_CHAT_MODEL = process.env.GEMINI_CHAT_MODEL || 'gemini-2.5-flash-lite';
+const GEMINI_CHAT_MODEL = process.env.GEMINI_CHAT_MODEL || 'gemini-3.7-flash';
 const MAX_PROMPT_TOKENS = 12000;
+export const MAX_HISTORY_MESSAGES = 8;
+export const MAX_HISTORY_MESSAGE_CHARS = 1500;
 
 if (!GEMINI_API_KEY) {
   console.error('❌ [chatService] GEMINI_API_KEY not configured');
@@ -171,11 +173,20 @@ class ContextWindowManager {
 
     // Add history (lower priority, truncated if needed)
     if (history.length > 0) {
+      const formatHistoryEntry = (msg: ChatMessage): string => {
+        const speaker = msg.role === 'user' ? 'Usuario' : 'Asistente';
+        const content =
+          msg.role === 'model' && msg.text.length > MAX_HISTORY_MESSAGE_CHARS
+            ? `${msg.text.slice(0, MAX_HISTORY_MESSAGE_CHARS)}...`
+            : msg.text;
+        return `${speaker}: ${content}\n`;
+      };
+
       let historyText = '\n\n=== HISTORIAL RECIENTE ===\n';
-      const recentHistory = history.slice(-6); // Last 6 messages max
+      const recentHistory = history.slice(-MAX_HISTORY_MESSAGES); // Last 8 messages max
 
       recentHistory.forEach((msg) => {
-        historyText += `${msg.role === 'user' ? 'Usuario' : 'Asistente'}: ${msg.text}\n`;
+        historyText += formatHistoryEntry(msg);
       });
 
       const historyTokens = this.estimateTokens(historyText);
@@ -187,13 +198,13 @@ class ContextWindowManager {
         currentTokens += historyTokens;
       } else {
         // Only include last 2 messages if budget is tight
-        const minimalHistory = '\n\n=== ÚLTIMOS MENSAJES ===\n';
+        let minimalHistory = '\n\n=== ÚLTIMOS MENSAJES ===\n';
         const lastTwo = history.slice(-2);
         lastTwo.forEach((msg) => {
-          historyText += `${msg.role === 'user' ? 'Usuario' : 'Asistente'}: ${msg.text}\n`;
+          minimalHistory += formatHistoryEntry(msg);
         });
-        prompt += minimalHistory + historyText;
-        currentTokens += this.estimateTokens(minimalHistory + historyText);
+        prompt += minimalHistory;
+        currentTokens += this.estimateTokens(minimalHistory);
       }
     }
 
@@ -345,29 +356,30 @@ class SourcePrioritizer {
     insurerNames: string[]
   ): Promise<ChatCitation[]> {
     try {
-      const allClauses: ChatCitation[] = [];
+      const perInsurerClauses = await Promise.all(
+        insurerNames.map(async (insurerName) => {
+          const structured = await structuredClauseExtractor.searchClause(insurerName);
 
-      for (const insurerName of insurerNames) {
-        const structured = await structuredClauseExtractor.searchClause(insurerName);
+          if (structured) {
+            const relevantCoverage = structured.coverages.find((c) =>
+              message.toLowerCase().includes(c.name.toLowerCase())
+            );
 
-        if (structured) {
-          const relevantCoverage = structured.coverages.find((c) =>
-            message.toLowerCase().includes(c.name.toLowerCase())
-          );
-
-          if (relevantCoverage) {
-            allClauses.push({
-              id: `structured-${insurerName}`,
-              insurerName,
-              content: `${relevantCoverage.name}: ${relevantCoverage.description}\nDeducible: ${JSON.stringify(relevantCoverage.deductible)}`,
-              pageNumber: relevantCoverage.sourcePage,
-              similarityScore: 0.95,
-            });
+            if (relevantCoverage) {
+              return {
+                id: `structured-${insurerName}`,
+                insurerName,
+                content: `${relevantCoverage.name}: ${relevantCoverage.description}\nDeducible: ${JSON.stringify(relevantCoverage.deductible)}`,
+                pageNumber: relevantCoverage.sourcePage,
+                similarityScore: 0.95,
+              } as ChatCitation;
+            }
           }
-        }
-      }
+          return null;
+        })
+      );
 
-      return allClauses;
+      return perInsurerClauses.filter((c): c is ChatCitation => c !== null);
     } catch (error) {
       console.error('❌ [SourcePrioritizer] Structured clause search error:', error);
       return [];
@@ -376,31 +388,29 @@ class SourcePrioritizer {
 
   private async searchRAG(message: string, insurerNames: string[]): Promise<ChatCitation[]> {
     try {
-      const allClauses: ChatCitation[] = [];
+      const perInsurerResults = await Promise.all(
+        insurerNames.map(async (insurerName) => {
+          const results = await ragRetrievalService.search(message, {
+            insurerName,
+            limit: 3,
+          });
 
-      for (const insurerName of insurerNames) {
-        const results = await ragRetrievalService.search(message, {
-          insurerName,
-          limit: 3,
-        });
+          const filteredResults = results.filter((r) => r.similarity >= 0.62);
+          const rankedResults = await ragRetrievalService.reRankResults(message, filteredResults, {
+            topK: 2,
+          });
 
-        const filteredResults = results.filter((r) => r.similarity >= 0.62);
-        const rankedResults = await ragRetrievalService.reRankResults(message, filteredResults, {
-          topK: 2,
-        });
-
-        rankedResults.forEach((clause) => {
-          allClauses.push({
+          return rankedResults.map((clause) => ({
             id: clause.id,
             insurerName: clause.insurerName,
             content: clause.content,
             pageNumber: clause.pageNumber,
             similarityScore: clause.similarity,
-          });
-        });
-      }
+          }));
+        })
+      );
 
-      return allClauses;
+      return perInsurerResults.flat();
     } catch (error) {
       console.error('❌ [SourcePrioritizer] RAG search error:', error);
       return [];
@@ -505,7 +515,7 @@ export const processChatMessage = async (
     });
 
     // Get conversation history from database
-    const dbHistory = await chatRepository.getHistory(activeThreadId, 10);
+    const dbHistory = await chatRepository.getHistory(activeThreadId, MAX_HISTORY_MESSAGES);
     const history: ChatMessage[] = dbHistory.map((msg) => ({
       role: msg.role as 'user' | 'model',
       text: msg.content,
@@ -544,6 +554,12 @@ export const processChatMessage = async (
       const model = await genAI.models.generateContent({
         model: GEMINI_CHAT_MODEL,
         contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+        config: {
+          maxOutputTokens: 2048,
+          thinkingConfig: {
+            thinkingLevel: 'low' as any,
+          },
+        },
       });
       responseText = model.text || 'Lo siento, no pude generar una respuesta.';
     } catch (llmError: unknown) {

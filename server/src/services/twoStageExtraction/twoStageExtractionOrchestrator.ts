@@ -43,24 +43,59 @@ export class TwoStageExtractionOrchestrator {
       uploadedFile = await geminiService.uploadFile(pdfPath, 'application/pdf', filename);
       await geminiService.waitForFilesActive([uploadedFile]);
 
+      let contextCacheName: string | null = null;
+      if (
+        featureFlags.isEnabled('enableGeminiContextCaching') &&
+        typeof geminiService.getOrCreateContextCache === 'function'
+      ) {
+        contextCacheName =
+          (await geminiService.getOrCreateContextCache({
+            contents: [
+              {
+                fileData: {
+                  fileUri: uploadedFile.uri,
+                  mimeType: 'application/pdf',
+                },
+              },
+            ],
+          })) ?? null;
+      }
+
       // Step 2: Stage 1 - Global Structure Extraction
       console.log(`   [1/2] Executing Stage 1: Global structure & financial breakdown...`);
-      const stage1 = await this.globalExtractor.extract(
-        uploadedFile,
-        filename,
-        extractedText,
-        options?.domain
-      );
+      const stage1 = contextCacheName
+        ? await this.globalExtractor.extract(
+            uploadedFile,
+            filename,
+            extractedText,
+            options?.domain,
+            contextCacheName
+          )
+        : await this.globalExtractor.extract(
+            uploadedFile,
+            filename,
+            extractedText,
+            options?.domain
+          );
 
       // Step 3: Stage 2 - Focalized Coverage Extraction
       console.log(`   [2/2] Executing Stage 2: Focalized coverage & deductible mapping...`);
-      const stage2 = await this.coverageExtractor.extract(
-        uploadedFile,
-        filename,
-        stage1.coverageSections ?? undefined,
-        extractedText,
-        options?.domain
-      );
+      const stage2 = contextCacheName
+        ? await this.coverageExtractor.extract(
+            uploadedFile,
+            filename,
+            stage1.coverageSections ?? undefined,
+            extractedText,
+            options?.domain,
+            contextCacheName
+          )
+        : await this.coverageExtractor.extract(
+            uploadedFile,
+            filename,
+            stage1.coverageSections ?? undefined,
+            extractedText,
+            options?.domain
+          );
 
       if (!stage2.rawCoverages || stage2.rawCoverages.length === 0) {
         throw new Error('Stage 2 returned 0 coverages; triggering fallback to standard extraction');

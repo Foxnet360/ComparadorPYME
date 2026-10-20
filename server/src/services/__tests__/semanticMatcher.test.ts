@@ -40,6 +40,7 @@ vi.mock('../vector/embeddingService', () => ({
 vi.mock('../gemini', () => ({
   geminiService: {
     extractText: vi.fn(),
+    extractStructured: vi.fn(),
   },
 }));
 
@@ -420,6 +421,37 @@ describe('semanticMatcher', () => {
       expect(result.matches).toHaveLength(1);
       expect(result.matches[0].categoryId).toBeNull(); // Should be null, not 0
       expect(result.matches[0].canonicalName).toBe('unknown_ontology_id');
+    });
+  });
+
+  describe('matchCoveragesBatch', () => {
+    it('deduplicates coverage names and resolves multiple novel coverages in a single structured LLM call', async () => {
+      vi.mocked(embeddingService.generateEmbedding).mockRejectedValue(
+        new Error('Skip embedding layer')
+      );
+      vi.mocked(geminiService.extractStructured).mockResolvedValue([
+        { rawName: 'Amparo Especial Cibernético XYZ', categoryId: 4, confidence: 0.88 },
+        { rawName: 'Protección Jurídica Integral QRS', categoryId: 12, confidence: 0.82 },
+      ] as any);
+
+      const batchMap = await semanticMatcher.matchCoveragesBatch([
+        'Incendio (Edificio y Contenidos)',
+        'Incendio (Edificio y Contenidos)', // duplicate
+        'Amparo Especial Cibernético XYZ',
+        'Protección Jurídica Integral QRS',
+        'Amparo Especial Cibernético XYZ', // duplicate
+      ]);
+
+      expect(batchMap.size).toBe(3);
+      expect(batchMap.get('Incendio (Edificio y Contenidos)')?.method).toBe('thesaurus');
+      expect(batchMap.get('Amparo Especial Cibernético XYZ')?.method).toBe('llm');
+      expect(batchMap.get('Amparo Especial Cibernético XYZ')?.categoryId).toBe(4);
+      expect(batchMap.get('Protección Jurídica Integral QRS')?.method).toBe('llm');
+      expect(batchMap.get('Protección Jurídica Integral QRS')?.categoryId).toBe(12);
+
+      // Both unresolved coverages were batched into a single structured LLM call
+      expect(geminiService.extractStructured).toHaveBeenCalledTimes(1);
+      expect(geminiService.extractText).not.toHaveBeenCalled();
     });
   });
 });

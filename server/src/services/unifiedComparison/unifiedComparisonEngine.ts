@@ -460,45 +460,44 @@ export class UnifiedComparisonEngine {
   }
 
   /**
-   * Upload PDF files to Gemini File API
+   * Upload PDF files to Gemini File API in parallel
    */
   private async uploadFiles(filePaths: string[]): Promise<GeminiFile[]> {
     const ai = getGenAI();
-    const uploadedFiles = [];
 
-    for (const filePath of filePaths) {
-      try {
-        const uploadedFile = await ai.files.upload({
-          file: filePath,
-          config: {
-            mimeType: 'application/pdf',
-            displayName: filePath.split('/').pop() || 'quote.pdf',
-          },
-        });
+    return Promise.all(
+      filePaths.map(async (filePath) => {
+        try {
+          const uploadedFile = await ai.files.upload({
+            file: filePath,
+            config: {
+              mimeType: 'application/pdf',
+              displayName: filePath.split('/').pop() || 'quote.pdf',
+            },
+          });
 
-        // Wait for processing
-        const fileName = uploadedFile.name || '';
-        let file = await ai.files.get({ name: fileName });
-        while (file.state === 'PROCESSING') {
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-          file = await ai.files.get({ name: fileName });
+          // Wait for processing
+          const fileName = uploadedFile.name || '';
+          let file = await ai.files.get({ name: fileName });
+          while (file.state === 'PROCESSING') {
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            file = await ai.files.get({ name: fileName });
+          }
+
+          if (file.state !== 'ACTIVE') {
+            throw new Error(`File ${fileName} failed to process`);
+          }
+
+          return file;
+        } catch (error) {
+          console.error(
+            `❌ [UnifiedComparison] Failed to upload ${filePath}:`,
+            error instanceof Error ? error.message : String(error)
+          );
+          throw error;
         }
-
-        if (file.state !== 'ACTIVE') {
-          throw new Error(`File ${fileName} failed to process`);
-        }
-
-        uploadedFiles.push(file);
-      } catch (error) {
-        console.error(
-          `❌ [UnifiedComparison] Failed to upload ${filePath}:`,
-          error instanceof Error ? error.message : String(error)
-        );
-        throw error;
-      }
-    }
-
-    return uploadedFiles;
+      })
+    );
   }
 
   /**

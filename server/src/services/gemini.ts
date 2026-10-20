@@ -400,11 +400,78 @@ export interface UploadedFile {
   name: string;
   uri: string;
   state?: string;
+  cachedContent?: string | null;
+}
+
+export interface GeminiGenerationOptions {
+  model?: string;
+  thinkingLevel?: 'low' | 'medium' | 'high';
+  temperature?: number;
+  maxOutputTokens?: number;
+  responseSchema?: unknown;
+}
+
+const HIGH_SIGNAL_LINE_REGEX =
+  /\d|%|\$|\b(?:cop|usd|smmlv|smlmv|uvt|pesos|millones|deducible|subl[ií]mite|amparo|cobertura|prima|iva|valor\s+asegurado|suma\s+asegurada|siniestro|m[ií]nimo|m[aá]ximo|exclu|garant[ií]a|incendio|terremoto|sustracci[oó]n|hurto|responsabilidad\s+civil|lucro\s+cesante|maquinaria|equipo\s+electr[oó]nico|vidrios|transporte|asistencia|huelga|mot[ií]n|asonada|hmacc|rce|rc)\b/i;
+
+/**
+ * Extracts high-signal reference text from native PDF text while bounding token usage.
+ * Preserves the header/cover page/premium summary and filters remaining lines to prioritize
+ * numeric, currency, deductible, and coverage rows with 1 line of surrounding context.
+ */
+export function extractHighSignalReferenceText(rawText: string, maxChars = 45000): string {
+  if (!rawText || rawText.length <= maxChars) {
+    return rawText || '';
+  }
+
+  const headerBudget = Math.min(12000, Math.floor(maxChars * 0.35));
+  const header = rawText.slice(0, headerBudget);
+  const remainder = rawText.slice(headerBudget);
+  const lines = remainder.split('\n');
+
+  const selectedIndices = new Set<number>();
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+    if (HIGH_SIGNAL_LINE_REGEX.test(line)) {
+      if (i > 0) selectedIndices.add(i - 1);
+      selectedIndices.add(i);
+      if (i + 1 < lines.length) selectedIndices.add(i + 1);
+    }
+  }
+
+  const remainingBudget = maxChars - header.length - 1;
+  if (remainingBudget <= 0) {
+    return header.slice(0, maxChars);
+  }
+
+  const selectedLines: string[] = [];
+  let accumulatedChars = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    if (!selectedIndices.has(i)) continue;
+    const line = lines[i]!;
+    if (accumulatedChars + line.length + 1 > remainingBudget) {
+      const spaceLeft = remainingBudget - accumulatedChars;
+      if (spaceLeft > 0) {
+        selectedLines.push(line.slice(0, spaceLeft));
+      }
+      break;
+    }
+    selectedLines.push(line);
+    accumulatedChars += line.length + 1;
+  }
+
+  if (selectedLines.length === 0) {
+    return rawText.slice(0, maxChars);
+  }
+
+  return `${header}\n${selectedLines.join('\n')}`.slice(0, maxChars);
 }
 
 export const geminiService = {
-  // Export buildSectionText for use in controller
+  // Export buildSectionText and extractHighSignalReferenceText for use in callers
   buildSectionText,
+  extractHighSignalReferenceText,
 
   uploadFile: async (
     filePath: string,
@@ -521,7 +588,7 @@ export const geminiService = {
           if (extractedText && extractedText.trim().length > 0) {
             finalPrompt += `\n\n=== TEXTO EXTRAÍDO NATIVAMENTE (REFERENCIA DE ALTA FIDELIDAD) ===\n`;
             finalPrompt += `Utiliza el siguiente texto extraído del PDF como referencia exacta de caracteres para nombres de coberturas, sumas aseguradas y deducibles. Evita perder detalles en la maquetación visual:\n\n`;
-            finalPrompt += `${extractedText.slice(0, 120000)}`;
+            finalPrompt += `${extractHighSignalReferenceText(extractedText, 45000)}`;
           }
 
           const result = await ai.models.generateContent({
@@ -743,21 +810,31 @@ Instrucciones para el análisis:
    * @param prompt - The extraction prompt
    * @returns Raw text response from Gemini
    */
-  extractText: async (text: string, prompt: string): Promise<string> => {
+  extractText: async (
+    text: string,
+    prompt: string,
+    options?: GeminiGenerationOptions
+  ): Promise<string> => {
     let retries = 0;
     const maxRetries = 3;
 
     while (true) {
       try {
         const ai = getGenAI();
-        const modelName = process.env.GEMINI_MODEL || 'gemini-3.7-flash';
+        const modelName = options?.model || process.env.GEMINI_MODEL || 'gemini-3.7-flash';
+        const config: Record<string, unknown> = {
+          temperature: options?.temperature ?? 0.1,
+          maxOutputTokens: options?.maxOutputTokens ?? 32768,
+        };
+        if (options?.thinkingLevel) {
+          config.thinkingConfig = {
+            thinkingLevel: options.thinkingLevel as any,
+          };
+        }
         const result = await ai.models.generateContent({
           model: modelName,
           contents: [{ text: prompt }, { text: `\n\n--- DOCUMENTO ---\n\n${text}` }],
-          config: {
-            temperature: 0.1,
-            maxOutputTokens: 32768,
-          },
+          config,
         });
 
         const responseText = result.text;
@@ -798,11 +875,12 @@ Instrucciones para el análisis:
    * @param prompt - The extraction prompt with few-shot examples
    * @returns Structured quote data
    */
-  extractStructured: async (
+  extractStructured: async <T = QuoteExtraction>(
     text: string,
     prompt: string,
-    pageCount: number = 1
-  ): Promise<QuoteExtraction> => {
+    pageCount: number = 1,
+    options?: GeminiGenerationOptions
+  ): Promise<T> => {
     let retries = 0;
     const maxRetries = 3;
 
@@ -815,17 +893,23 @@ Instrucciones para el análisis:
     while (true) {
       try {
         const ai = getGenAI();
-        const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.7-flash';
+        const extractionModel = options?.model || process.env.GEMINI_MODEL || 'gemini-3.7-flash';
         console.log(`🤖 [Gemini] Using model: ${extractionModel} for extraction`);
+        const config: Record<string, unknown> = {
+          temperature: options?.temperature ?? 0.1,
+          maxOutputTokens: options?.maxOutputTokens ?? 32768,
+          responseMimeType: 'application/json',
+          responseSchema: (options?.responseSchema ?? QuoteExtractionSchema) as unknown,
+        };
+        if (options?.thinkingLevel) {
+          config.thinkingConfig = {
+            thinkingLevel: options.thinkingLevel as any,
+          };
+        }
         const result = await ai.models.generateContent({
           model: extractionModel,
           contents: [{ text: prompt }, { text: `\n\n--- DOCUMENTO ---\n\n${preprocessed.text}` }],
-          config: {
-            temperature: 0.1,
-            maxOutputTokens: 32768,
-            responseMimeType: 'application/json',
-            responseSchema: QuoteExtractionSchema as unknown,
-          },
+          config,
         });
 
         const responseText = result.text;
@@ -839,6 +923,10 @@ Instrucciones para el análisis:
         if (parseResult.success) {
           if (parseResult.wasRepaired) {
             console.log(`🔧 [JSON Repair] Fixed using ${parseResult.repairType}`);
+          }
+
+          if (options?.responseSchema) {
+            return parseResult.data as T;
           }
 
           type MutableExtractionData = QuoteExtraction & {
@@ -877,7 +965,7 @@ Instrucciones para el análisis:
           console.log(
             `📄 [Gemini] Structured extraction: ${validated.insurerName}, ${validated.coverages?.length || 0} coverages, premium: ${validated.priceAnnual || 0}`
           );
-          return validated;
+          return validated as unknown as T;
         } else {
           throw new Error(`JSON parsing failed: ${parseResult.error}`);
         }
