@@ -83,13 +83,24 @@ export const pdfRenderer = {
             continue;
           }
 
-          // Leer el archivo generado
-          if (!fs.existsSync(tempFilePath)) {
-            console.warn(`⚠️ [PDF Renderer] Rendered file not found: ${tempFilePath}`);
+          // Leer el archivo generado (pdf2pic puede nombrar como result.path o page-${pageNum}.${pageNum}.png)
+          const actualFilePath =
+            result.path && fs.existsSync(result.path)
+              ? result.path
+              : fs.existsSync(tempFilePath)
+                ? tempFilePath
+                : result.name && fs.existsSync(path.join(TEMP_DIR, result.name))
+                  ? path.join(TEMP_DIR, result.name)
+                  : null;
+
+          if (!actualFilePath) {
+            console.warn(
+              `⚠️ [PDF Renderer] Rendered file not found: tempFilePath=${tempFilePath}, result.path=${result.path}, result.name=${result.name}`
+            );
             continue;
           }
 
-          const imageBuffer = fs.readFileSync(tempFilePath);
+          const imageBuffer = fs.readFileSync(actualFilePath);
 
           // Optimizar imagen con sharp
           const optimizedBuffer = await sharp(imageBuffer)
@@ -129,7 +140,12 @@ export const pdfRenderer = {
 
           // Limpiar archivo temporal
           try {
-            fs.unlinkSync(tempFilePath);
+            if (fs.existsSync(actualFilePath)) {
+              fs.unlinkSync(actualFilePath);
+            }
+            if (fs.existsSync(tempFilePath)) {
+              fs.unlinkSync(tempFilePath);
+            }
           } catch (_e) {
             // Ignorar errores de limpieza
           }
@@ -176,18 +192,32 @@ export const pdfRenderer = {
         return null;
       }
 
-      if (!fs.existsSync(tempFilePath)) {
+      const actualFilePath =
+        result.path && fs.existsSync(result.path)
+          ? result.path
+          : fs.existsSync(tempFilePath)
+            ? tempFilePath
+            : result.name && fs.existsSync(path.join(TEMP_DIR, result.name))
+              ? path.join(TEMP_DIR, result.name)
+              : null;
+
+      if (!actualFilePath) {
         return null;
       }
 
-      const imageBuffer = fs.readFileSync(tempFilePath);
+      const imageBuffer = fs.readFileSync(actualFilePath);
 
       // Optimizar
       const optimizedBuffer = await sharp(imageBuffer).png({ quality: 90 }).toBuffer();
 
       // Limpiar temporal
       try {
-        fs.unlinkSync(tempFilePath);
+        if (fs.existsSync(actualFilePath)) {
+          fs.unlinkSync(actualFilePath);
+        }
+        if (fs.existsSync(tempFilePath)) {
+          fs.unlinkSync(tempFilePath);
+        }
       } catch (_e) {
         // Ignorar
       }

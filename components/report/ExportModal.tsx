@@ -170,7 +170,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             className="w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 shadow-xs"
           >
             <FileDown size={16} />
-            <span>Generar Reporte PDF</span>
+            <span>Generar PDF</span>
           </button>
 
           <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">

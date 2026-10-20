@@ -79,6 +79,69 @@ const GRANULAR_SECTIONS = [
   },
 ] as const;
 
+export const COPROPIEDADES_GRANULAR_SECTIONS = [
+  {
+    section: 'BIENES Y ÁREAS COMUNES (LEY 675)',
+    rows: [
+      'Edificio / Estructura y Áreas Comunes',
+      'Cimentación y Sótanos',
+      'Maquinaria y Equipos Comunitarios (Ascensores, Subestación, Bombas)',
+      'Equipos Eléctricos y Electrónicos Comunales',
+      'Obras Civiles, Cerramientos y Vías Internas',
+      'Salón Comunal y Zonas Recreativas',
+    ],
+  },
+  {
+    section: 'COBERTURAS OBLIGATORIAS Y PRINCIPALES',
+    rows: [
+      'Incendio, Rayo y/o Explosión (Bienes Comunes)',
+      'Terremoto, Temblor y Erupción Volcánica (TTEV)',
+      'Responsabilidad Civil Extracontractual Áreas Comunes (PLO)',
+      'RCE Directores y Administradores (D&O Copropiedades)',
+      'RCE Parqueaderos y Garajes',
+      'RCE Patronal y Contratistas',
+      'Daños por Agua, Anegación e Inundación',
+      'Granizo, Vientos Fuertes, Tempestades y Huracán',
+      'Actos Malintencionados de Terceros (AMIT) y Terrorismo',
+      'HMACC (Huelga, Motín, Asonada, Conmoción Civil)',
+      'Sustracción y Hurto de Bienes Comunes (Con y Sin Violencia)',
+      'Rotura de Maquinaria y Equipos Comunitarios',
+      'Equipos Electrónicos y Plantas Eléctricas',
+      'Rotura de Vidrios, Fachadas y Domos Comunales',
+      'Pérdida de Expensas y Cuotas de Administración',
+      'Gastos de Remoción de Escombros y Preservación',
+      'Asistencia y Mantenimiento de Zonas Comunes (24/7)',
+    ],
+  },
+  {
+    section: 'DEDUCIBLES',
+    rows: [
+      'Terremoto, Temblor y Erupción Volcánica',
+      'Incendio, Rayo y Todo Riesgo Daño Material',
+      'Daños por Agua, Anegación e Inundación',
+      'Granizo, Vientos Fuertes y Huracán',
+      'AMIT y HMACC',
+      'Responsabilidad Civil Extracontractual (PLO)',
+      'RCE Directores y Administradores (D&O)',
+      'RCE Parqueaderos',
+      'Sustracción con y sin Violencia',
+      'Rotura de Maquinaria y Ascensores',
+      'Equipos Eléctricos y Electrónicos',
+      'Rotura de Vidrios y Cristales Comunales',
+    ],
+  },
+  {
+    section: 'FINANCIAL',
+    rows: [
+      'Prima Neta Anual',
+      'Gastos de Expedición',
+      'IVA (19%)',
+      'Total a Pagar / Prima Total Anual',
+      'Forma de Pago',
+    ],
+  },
+] as const;
+
 export class ComparisonPromptBuilder {
   /**
    * Build the main flat-table comparison prompt.
@@ -132,8 +195,13 @@ ${context.hasClauses ? 'También se proporcionan clausulados para validación; �
   ): string {
     const effectiveDomain = domain ?? context.domain ?? 'pyme';
     const isHogar = effectiveDomain === 'hogar';
+    const isCopropiedades = effectiveDomain === 'copropiedades';
 
-    const sectionsToUse = isHogar ? HOGAR_GRANULAR_SECTIONS : GRANULAR_SECTIONS;
+    const sectionsToUse = isHogar
+      ? HOGAR_GRANULAR_SECTIONS
+      : isCopropiedades
+        ? COPROPIEDADES_GRANULAR_SECTIONS
+        : GRANULAR_SECTIONS;
     const sectionList = sectionsToUse
       .map((section, sIdx) => {
         const rows = section.rows.map((row, rIdx) => `    ${rIdx + 1}. ${row}`).join('\n');
@@ -143,7 +211,9 @@ ${context.hasClauses ? 'También se proporcionan clausulados para validación; �
 
     const roleDescription = isHogar
       ? `Eres un analista experto en seguros de Hogar y Vivienda en Colombia.`
-      : `Eres un analista de seguros PYME en Colombia.`;
+      : isCopropiedades
+        ? `Eres un analista experto en seguros de Copropiedades y Propiedad Horizontal en Colombia (Ley 675 de 2001 y NSR-10).`
+        : `Eres un analista de seguros PYME en Colombia.`;
 
     const sectionRules = isHogar
       ? `Reglas de Negocio para Secciones de Hogar:
@@ -162,7 +232,17 @@ ${context.hasClauses ? 'También se proporcionan clausulados para validación; �
    - La sección FINANCIAL DEBE contener ÚNICA Y EXCLUSIVAMENTE los costos o primas comerciales a pagar por el cliente. Jamás traslades valores de bienes o sumas aseguradas a esta sección ni a la fila "Total a pagar" o "Total prima".
    - Para Allianz: ubica la prima comercial del plan cotizado (ej. "Hogar Esencial", "Hogar Plus") o el "Valor a pagar" / "Total liquidación", extrayendo dicho monto exacto (ej. $3.962.567) en la fila "Total a pagar" o "Total prima".
    - Para Mapfre: ubica la "Prima Total" o "Total a pagar" con IVA incluido (ej. $4.333.254) y repórtala en "Total a pagar" o "Total prima".`
-      : `Reglas de Negocio para Secciones:
+      : isCopropiedades
+        ? `Reglas de Negocio para Secciones de Copropiedades (Ley 675 de 2001 y NSR-10):
+1. BIENES Y ÁREAS COMUNES: Extrae los valores asegurados (valor de reposición o reconstrucción a nuevo) para Edificio / Estructura Común, Cimentación y Sótanos, Maquinaria Comunitaria (Ascensores, Subestaciones, Bombas de Agua, Equipos Hidroneumáticos), Equipos Eléctricos y Electrónicos, Cerramientos y Zonas Recreativas.
+2. COBERTURAS: Extrae límites y condiciones para Incendio, Terremoto (obligatorios bajo Ley 675), RCE Áreas Comunes, RCE para Directores y Administradores (D&O Copropiedades), RCE Parqueaderos, Daños por Agua / Anegación, Granizo / Vientos Fuertes, AMIT / HMACC, Sustracción de bienes comunes, Rotura de Maquinaria y Asistencia de Áreas Comunes.
+3. DEDUCIBLES: REGLA DE ORO DE DEDUCIBLES: Extrae con total detalle todos los deducibles estipulados en cada cotización. No omitas ningún deducible:
+   - Terremoto: extrae textualmente la fórmula (% sobre valor asegurado de la edificación o % de la pérdida con mínimo en SMMLV).
+   - Daños por Agua / Anegación: extrae % de la pérdida y mínimo en SMMLV.
+   - RCE y D&O: extrae % de la pérdida y mínimo en SMMLV, o "Sin deducible" si no aplica copago.
+   - Si una cobertura no tiene deducible a cargo de la copropiedad, usa textualmente "Sin deducible".
+4. FINANCIAL: Extrae Prima Neta, Gastos de Expedición, IVA (19%) y Total a Pagar / Prima Total Anual. NUNCA confundas la suma asegurada de los edificios con la prima a pagar de la póliza.`
+        : `Reglas de Negocio para Secciones:
 1. BIENES ASEGURADOS: Extrae las sumas aseguradas o descripciones de Mercancías, Muebles y enseres, Maquinaria y equipo, Equipo eléctrico y electrónico, y Asistencia.
 2. COBERTURAS: Extrae límites, amparos y condiciones de cobertura para Amparo básico todo riesgo, Terremoto, Responsabilidad Civil Extracontractual (RCE), Lucro Cesante, Rotura de Maquinaria, Equipos eléctricos y electrónicos, Gastos médicos, Asistencia, Vidrios, Manejo global / Infidelidad, Transporte de mercancías, Daños por agua / Anegación, HMACC-AMIT, y RC en proceso civil.
 3. DEDUCIBLES: Extrae los deducibles específicos para Todo Riesgo Incendio, Anegación / Cobertura Extendida, Terremoto, HMACC-AMIT, RCE, Lucro Cesante, Rotura de Maquinaria, Equipos eléctricos y electrónicos, Vidrios, Manejo global / Infidelidad, Transporte de mercancías, Daños por agua / Anegación, y Sustracción con Violencia. Debes incluir una fila por cada deducible que aparezca textualmente en las cotizaciones; no omitas deducibles. Si un amparo no tiene deducible, usa "Sin deducible".

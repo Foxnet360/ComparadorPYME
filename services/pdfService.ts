@@ -5,6 +5,10 @@ import { PLANTILLA_ITEMS } from '../constants';
 import { formatCOPMillions, formatCOP } from '../utils/formatCurrency';
 import { normalizeText } from '../utils/textUtils';
 import { findColombianInsurerProfile } from '../src/shared/colombianInsurersCatalog';
+import {
+  getDomainRegulatoryProfile,
+  findPedagogicalExplanation,
+} from '../src/shared/domainRegulatoryKnowledge';
 
 function hexToRgb(hex?: string): [number, number, number] {
   if (!hex) return [30, 41, 59];
@@ -76,6 +80,8 @@ export const generatePDF = (
 ) => {
   const doc = new jsPDF();
   const today = new Date().toLocaleDateString('es-ES');
+  const domain = report.domain || 'pyme';
+  const regProfile = getDomainRegulatoryProfile(domain);
 
   // --- COLORS ---
   const PRIMARY_COLOR: [number, number, number] = options?.primaryColor || [79, 70, 229]; // Default Indigo
@@ -99,34 +105,58 @@ export const generatePDF = (
     }
 
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18);
+    doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    const displayTitle = options?.customTitle || title;
-    doc.text(displayTitle.substring(0, 45), 14, 18);
+    const displayTitle = options?.customTitle || `Reporte Ejecutivo de Seguros · ${regProfile.displayName}`;
+    doc.text(displayTitle.substring(0, 50), 14, 18);
 
-    doc.setFontSize(9);
+    doc.setFontSize(8.5);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Informe generado el ${today}`, 14, 25);
+    doc.text(`Ramo: ${regProfile.displayName}  |  Informe generado el ${today}`, 14, 25);
 
     // Reset text color for body
     doc.setTextColor(30, 41, 59);
     return 36; // New Y position
   };
 
-  // --- PAGE 1: RESUMEN EJECUTIVO ---
-  let currentY = addHeader('Resumen Ejecutivo y Recomendación');
+  const quotes = report.quotes || [];
+
+  // Extraer metadatos de riesgo y cliente para la portada ejecutiva
+  const firstMeta = report.quoteMetadata?.[0];
+  const clientName =
+    report.clientInfo?.name ||
+    firstMeta?.cliente ||
+    (quotes.find((q) => (q as any).clientName) as any)?.clientName ||
+    'Cliente / Tomador';
+  const riskAddress =
+    report.clientInfo?.address ||
+    report.clientInfo?.location ||
+    firstMeta?.ubicacionRiesgo ||
+    'Ubicación según póliza';
+  const riskCity = report.clientInfo?.city || 'Colombia';
+  const buildingDetails = [
+    firstMeta?.anoConstruccion ? `Año: ${firstMeta.anoConstruccion}` : null,
+    firstMeta?.pisos ? `Pisos: ${firstMeta.pisos}` : null,
+    firstMeta?.actividadOcupacion ? `Ocupación: ${firstMeta.actividadOcupacion}` : null,
+    firstMeta?.vigencia ? `Vigencia: ${firstMeta.vigencia}` : null,
+  ]
+    .filter(Boolean)
+    .join('  •  ');
+
+  // --- PAGE 1: RESUMEN EJECUTIVO Y PERFIL DEL RIESGO ---
+  let currentY = addHeader('Resumen Ejecutivo y Ficha Técnica');
 
   // Intermediary / Broker Banner if available
   const broker = options?.brokerInfo;
   if (broker && (broker.intermediaryName || broker.name)) {
     doc.setFillColor(248, 250, 252);
     doc.setDrawColor(226, 232, 240);
-    doc.roundedRect(14, currentY, 182, 22, 2, 2, 'FD');
+    doc.roundedRect(14, currentY, 182, 20, 2, 2, 'FD');
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(79, 70, 229);
-    doc.text(broker.intermediaryName || 'INTERMEDIARIO DE SEGUROS', 18, currentY + 7);
+    doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.text(broker.intermediaryName || 'INTERMEDIARIO DE SEGUROS', 18, currentY + 6.5);
 
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
@@ -134,45 +164,76 @@ export const generatePDF = (
 
     const line1 = [
       broker.name ? `Asesor: ${broker.name}` : null,
-      broker.registrationNumber ? `Reg: ${broker.registrationNumber}` : null,
+      broker.registrationNumber ? `Reg. SFC: ${broker.registrationNumber}` : null,
     ]
       .filter(Boolean)
       .join('  |  ');
-    doc.text(line1 || '', 18, currentY + 13);
+    doc.text(line1 || '', 18, currentY + 12);
 
     const line2 = [
       broker.phone ? `Tel: ${broker.phone}` : null,
       broker.email ? `Email: ${broker.email}` : null,
-      broker.city ? `Ubicación: ${broker.city}` : null,
+      broker.city ? `Ciudad: ${broker.city}` : null,
     ]
       .filter(Boolean)
       .join('  |  ');
-    doc.text(line2 || '', 18, currentY + 18);
+    doc.text(line2 || '', 18, currentY + 16.5);
 
-    currentY += 28;
+    currentY += 25;
   }
 
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(30, 41, 59);
-  doc.text('Dictamen del Auditor', 14, currentY);
-  currentY += 8;
+  // Ficha Técnica del Riesgo / Copropiedad
+  doc.setFillColor(241, 245, 249);
+  doc.setDrawColor(203, 213, 225);
+  doc.roundedRect(14, currentY, 182, 24, 2, 2, 'FD');
 
   doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(15, 23, 42);
+  doc.text(`Asegurado / Copropiedad: ${clientName.toUpperCase()}`, 18, currentY + 7);
+
+  doc.setFontSize(8.5);
   doc.setFont('helvetica', 'normal');
+  doc.setTextColor(51, 65, 85);
+  doc.text(`Dirección del Riesgo: ${riskAddress} (${riskCity})  |  Ramo: ${regProfile.displayName}`, 18, currentY + 13);
+  doc.text(buildingDetails || `Marco Legal: ${regProfile.tagline}`, 18, currentY + 19);
+
+  currentY += 30;
+
+  // Propósito Asesor y Marco Normativo
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(30, 41, 59);
+  doc.text('Propósito del Estudio y Marco Normativo', 14, currentY);
+  currentY += 6;
+
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(71, 85, 105);
+  const introText = doc.splitTextToSize(regProfile.advisoryIntroForClient, 182);
+  doc.text(introText, 14, currentY);
+  currentY += introText.length * 4.5 + 8;
+
+  // Dictamen del Auditor
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(30, 41, 59);
+  doc.text('Dictamen y Recomendación del Auditor de Seguros', 14, currentY);
+  currentY += 6;
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(30, 41, 59);
   const splitRecommendation = doc.splitTextToSize(
-    report.recommendation || 'Sin recomendación.',
-    180
+    report.recommendation || 'Sin recomendación registrada.',
+    182
   );
   doc.text(splitRecommendation, 14, currentY);
+  currentY += splitRecommendation.length * 4.5 + 10;
 
-  currentY += splitRecommendation.length * 5 + 10;
-
-  // New Section: Análisis por Perfil en el PDF
-  const quotes = report.quotes || [];
-
+  // Resumen comparativo de aseguradoras
   quotes.forEach((q) => {
-    if (currentY > 250) {
+    if (currentY > 245) {
       doc.addPage();
       currentY = addHeader('Resumen Ejecutivo (Cont.)');
     }
@@ -180,134 +241,236 @@ export const generatePDF = (
     const profile = findColombianInsurerProfile(q.insurerName);
     const [r, g, b] = hexToRgb(profile?.primaryColor || '#0033A0');
     doc.setFillColor(r, g, b);
-    doc.roundedRect(14, currentY, 18, 9, 2, 2, 'F');
+    doc.roundedRect(14, currentY, 18, 8, 2, 2, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
     doc.setTextColor(255, 255, 255);
-    doc.text(profile?.monogram || q.insurerName.slice(0, 3).toUpperCase(), 16, currentY + 6);
+    doc.text(profile?.monogram || q.insurerName.slice(0, 3).toUpperCase(), 16, currentY + 5.5);
 
-    doc.setFillColor(245, 247, 250);
-    doc.roundedRect(34, currentY, 162, 9, 2, 2, 'F');
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(34, currentY, 162, 8, 2, 2, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(15, 23, 42);
-    doc.text(`${q.insurerName} ${profile?.nit ? `• NIT: ${profile.nit}` : ''}`, 37, currentY + 6);
-    currentY += 13;
-
     doc.setFontSize(9);
+    doc.setTextColor(15, 23, 42);
+    doc.text(
+      `${q.insurerName} ${profile?.nit ? `• NIT: ${profile.nit}` : ''}  |  Score Técnico: ${q.score || 0}/100`,
+      37,
+      currentY + 5.5
+    );
+    currentY += 12;
+
+    doc.setFontSize(8.5);
     doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 41, 59);
     doc.text('Enfoque Cliente (Beneficios):', 16, currentY);
-    currentY += 5;
+    currentY += 4.5;
 
     doc.setFont('helvetica', 'normal');
-    const clientText = doc.splitTextToSize(q.clientAnalysis || 'N/A', 175);
+    doc.setTextColor(71, 85, 105);
+    const clientText = doc.splitTextToSize(q.clientAnalysis || 'Cobertura conforme a condiciones cotizadas.', 175);
     doc.text(clientText, 16, currentY);
-    currentY += clientText.length * 4 + 6;
+    currentY += clientText.length * 4 + 4;
 
     doc.setFont('helvetica', 'bold');
-    doc.text('Enfoque Técnico (Riesgos y Clausulado):', 16, currentY);
-    currentY += 5;
+    doc.setTextColor(30, 41, 59);
+    doc.text('Enfoque Técnico (Riesgos y Cláusulas):', 16, currentY);
+    currentY += 4.5;
 
     doc.setFont('helvetica', 'normal');
-    const techText = doc.splitTextToSize(q.technicalAnalysis || 'N/A', 175);
+    doc.setTextColor(71, 85, 105);
+    const techText = doc.splitTextToSize(q.technicalAnalysis || 'Sin observaciones técnicas adicionales.', 175);
     doc.text(techText, 16, currentY);
-    currentY += techText.length * 4 + 10;
+    currentY += techText.length * 4 + 8;
   });
 
-  // --- PAGE 2: PLANTILLA PYME (COBERTURAS) ---
+  // --- PAGE 2: MATRIZ COMPARATIVA DE COBERTURAS DINÁMICA POR RAMO ---
   doc.addPage();
-  currentY = addHeader('Matriz Comparativa Normalizada (PYME)');
+  currentY = addHeader(`Matriz Comparativa de Coberturas (${regProfile.displayName})`);
 
   const insurers = quotes.map((q) => q.insurerName || 'Aseguradora');
-  const hasNotes = cellNotes && Object.keys(cellNotes).length > 0;
-  const tableHead = hasNotes
-    ? [['Rubro Estandarizado', ...insurers, 'Insights del Consultor']]
-    : [['Rubro Estandarizado', ...insurers]];
-
+  const tableHead = [['Amparo / Cobertura y Alcance Legal', ...insurers]];
   const tableBody: string[][] = [];
 
-  PLANTILLA_ITEMS.forEach((standardItem, _itemIndex) => {
-    const row: string[] = [standardItem];
-    quotes.forEach((q, _quoteIndex) => {
-      const coverages = Array.isArray(q.coverages) ? q.coverages : [];
-      // Robust matching
-      const found = coverages.find((c) => {
-        if (!c.name) return false;
-        const nItem = normalizeText(standardItem);
-        const nName = normalizeText(c.name);
-        return nName === nItem || nName.includes(nItem) || nItem.includes(nName);
+  // Obtener filas de datos desde la matriz unificada o recolectar de quotes
+  const matrixDataRows = (report.matrix || []).filter(
+    (r) =>
+      r.type === 'data' &&
+      !['prima', 'total a pagar', 'iva', 'gastos', 'forma de pago', 'financiero'].some((k) =>
+        r.label.toLowerCase().includes(k)
+      )
+  );
+
+  if (matrixDataRows.length > 0) {
+    matrixDataRows.forEach((row) => {
+      const explanation = findPedagogicalExplanation(row.label);
+      const labelText = `${row.label}\n\n• ${explanation.whatItCovers}`;
+      const rowCells: string[] = [labelText];
+
+      quotes.forEach((_q, colIdx) => {
+        const cell = row.cells[colIdx];
+        if (!cell || cell.isExcluded || cell.value === 'No incluida' || cell.value === 'No Cotizado') {
+          rowCells.push('No cotizado');
+        } else {
+          let cellText = formatCoverageValuePDF(cell.value);
+          if (cell.notes && cell.notes !== cell.value && !['No cotizado', 'No incluida'].includes(cell.notes)) {
+            cellText += `\n[Nota: ${cell.notes}]`;
+          }
+          rowCells.push(cellText);
+        }
       });
 
-      let cellValue = found ? formatCoverageValuePDF(found.value) : 'NO ESPECIFICADO';
-      if (cellValue.length > 50) cellValue = cellValue.substring(0, 50) + '...';
-
-      row.push(cellValue);
+      tableBody.push(rowCells);
     });
+  } else {
+    // Si no hay matrix precomputada, construir desde quotes dinámicamente
+    const uniqueCoverageNames = Array.from(
+      new Set(quotes.flatMap((q) => (q.coverages || []).map((c) => c.name)).filter(Boolean))
+    );
 
-    // Add notes column if notes exist
-    if (hasNotes) {
-      const cellId = `coverage-${standardItem}`;
-      const note = cellNotes?.[cellId];
-      row.push(note ? (note.length > 60 ? note.substring(0, 60) + '...' : note) : '');
-    }
+    const itemsToProcess =
+      uniqueCoverageNames.length > 0
+        ? uniqueCoverageNames
+        : PLANTILLA_ITEMS;
 
-    tableBody.push(row);
-  });
+    itemsToProcess.forEach((itemName) => {
+      const explanation = findPedagogicalExplanation(itemName);
+      const labelText = `${itemName}\n\n• ${explanation.whatItCovers}`;
+      const rowCells: string[] = [labelText];
+
+      quotes.forEach((q) => {
+        const coverages = Array.isArray(q.coverages) ? q.coverages : [];
+        const normItem = normalizeText(itemName);
+        const found = coverages.find((c) => {
+          if (!c.name) return false;
+          const normName = normalizeText(c.name);
+          return normName === normItem || normName.includes(normItem) || normItem.includes(normName);
+        });
+
+        if (found) {
+          let cellVal = formatCoverageValuePDF(found.value);
+          if (found.deductible && found.deductible !== found.value) {
+            cellVal += `\n[Ded: ${found.deductible}]`;
+          }
+          rowCells.push(cellVal);
+        } else {
+          rowCells.push('No cotizado');
+        }
+      });
+
+      tableBody.push(rowCells);
+    });
+  }
 
   autoTable(doc, {
     startY: currentY,
     head: tableHead,
     body: tableBody,
     theme: 'grid',
-    headStyles: { fillColor: [51, 65, 85], fontSize: 9, halign: 'center' },
-    bodyStyles: { fontSize: 8, cellPadding: 3 },
-    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 50 } },
+    headStyles: { fillColor: PRIMARY_COLOR, fontSize: 8.5, halign: 'center' },
+    bodyStyles: { fontSize: 7.5, cellPadding: 2.5, valign: 'middle' },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 62 } },
     alternateRowStyles: { fillColor: LIGHT_GRAY },
   });
 
-  // --- PAGE 3: DEDUCIBLES ---
+  // --- PAGE 3: ANÁLISIS DE DEDUCIBLES Y GUÍA PEDAGÓGICA ---
   doc.addPage();
-  currentY = addHeader('Análisis de Estructura de Deducibles');
+  currentY = addHeader('Estructura de Deducibles y Guía Pedagógica');
 
-  const deducRows: Array<[string, string]> = [];
-  if (report.deductibleComparison && report.deductibleComparison.length > 0) {
-    report.deductibleComparison.forEach((d) => deducRows.push([d.insurer, d.deductibleText]));
+  // Tabla detallada de deducibles por aseguradora
+  const deducHead = [['Concepto / Amparo', ...insurers, 'Criterio Técnico del Deducible']];
+  const deducBody: string[][] = [];
+
+  // Buscar deducibles en matrix o en report.deductibleComparison
+  const deductibleRows = (report.matrix || []).filter(
+    (r) =>
+      r.type === 'data' &&
+      (r.label.toLowerCase().includes('deducible') ||
+        (r.cells && r.cells.some((c) => c.notes && c.notes.toLowerCase().includes('deducible'))))
+  );
+
+  if (deductibleRows.length > 0) {
+    deductibleRows.forEach((r) => {
+      const explanation = findPedagogicalExplanation(r.label, undefined, 'deductible');
+      const rowCells: string[] = [r.label];
+      quotes.forEach((_q, colIdx) => {
+        const cell = r.cells[colIdx];
+        const val = cell?.notes || cell?.value || 'Según amparo';
+        rowCells.push(val);
+      });
+      rowCells.push(explanation.comparisonTip);
+      deducBody.push(rowCells);
+    });
   } else {
-    quotes.forEach((q) => deducRows.push([q.insurerName, q.deductibles]));
+    // Usar deductibleComparison o lista de deducibles de quotes
+    quotes.forEach((q) => {
+      const explanation = findPedagogicalExplanation('Deducibles Generales', q.deductibles, 'deductible');
+      deducBody.push([
+        `Deducibles ${q.insurerName}`,
+        q.deductibles || 'Ver condicionado particular',
+        ...quotes.map((other) => (other.insurerName === q.insurerName ? 'Declarado' : '-')),
+        explanation.comparisonTip,
+      ]);
+    });
   }
 
-  deducRows.forEach((row) => {
-    if (currentY > 250) {
-      doc.addPage();
-      currentY = addHeader('Análisis de Estructura de Deducibles (Cont.)');
-    }
+  if (deducBody.length > 0) {
+    autoTable(doc, {
+      startY: currentY,
+      head: deducHead,
+      body: deducBody,
+      theme: 'grid',
+      headStyles: { fillColor: [51, 65, 85], fontSize: 8, halign: 'center' },
+      bodyStyles: { fontSize: 7.5, cellPadding: 2.5 },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 45 } },
+      alternateRowStyles: { fillColor: LIGHT_GRAY },
+    });
+    currentY = (doc as any).lastAutoTable.finalY + 10;
+  }
 
-    doc.setFillColor(241, 245, 249);
-    doc.rect(14, currentY, 182, 8, 'F');
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text(row[0] as string, 16, currentY + 5.5);
-    currentY += 12;
+  // Cuadro Pedagógico para el Cliente sobre Deducibles en Colombia
+  if (currentY > 200) {
+    doc.addPage();
+    currentY = addHeader('Guía Pedagógica de Deducibles para el Asegurado');
+  }
 
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    const splitDed = doc.splitTextToSize(row[1] as string, 175);
-    doc.text(splitDed, 16, currentY);
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+  doc.roundedRect(14, currentY, 182, 60, 2, 2, 'FD');
 
-    currentY += splitDed.length * 4 + 10;
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+  doc.text('GUÍA PEDAGÓGICA: ¿Cómo interpretar los Deducibles en Colombia?', 18, currentY + 7);
+
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(51, 65, 85);
+
+  const pedagogicalPoints = [
+    '• ¿Qué es el Deducible? (Art. 1103 Código de Comercio): Es la participación económica fija o porcentual que asume el asegurado en caso de siniestro. A menor deducible, mayor es el traslado real del riesgo a la aseguradora.',
+    '• Salario Mínimo Mensual Legal Vigente (SMMLV): En Colombia equivale a $1.423.500 COP. Cuando una póliza indica "10% mín. 2 SMMLV", el asegurado pagará el 10% del daño, pero nunca menos de $2.847.000 COP.',
+    '• Terremoto: ¿% sobre Valor Asegurado vs % sobre la Pérdida?: REGLA CRÍTICA. Si el deducible es 2% sobre el VALOR ASEGURADO en un edificio de $10.000 millones, los primeros $200 millones los asume la copropiedad independientemente del tamaño del daño. Si es sobre la PÉRDIDA, solo asume el 2% del daño efectivamente tasado.',
+    '• Coaseguro e Infraseguro (Art. 1102 Co.Co.): Si el valor asegurado es inferior al valor real de reposición a nuevo, la aseguradora aplicará la regla proporcional reduciendo la indemnización.',
+  ];
+
+  let pY = currentY + 14;
+  pedagogicalPoints.forEach((point) => {
+    const splitPoint = doc.splitTextToSize(point, 174);
+    doc.text(splitPoint, 18, pY);
+    pY += splitPoint.length * 3.8 + 2;
   });
 
-  // --- PAGE 4: AUDITORÍA DE RIESGOS (INSIGHTS) ---
+  // --- PAGE 4: MATRIZ DE HALLAZGOS Y AUDITORÍA DE RIESGOS ---
   doc.addPage();
-  currentY = addHeader('Matriz de Hallazgos y Riesgos');
+  currentY = addHeader('Matriz de Hallazgos y Auditoría Técnica');
 
   quotes.forEach((q) => {
-    if (currentY > 240) {
+    if (currentY > 230) {
       doc.addPage();
-      currentY = addHeader('Matriz de Hallazgos (Cont.)');
+      currentY = addHeader('Matriz de Hallazgos y Auditoría (Cont.)');
     }
 
-    doc.setDrawColor(200, 200, 200);
+    doc.setDrawColor(203, 213, 225);
     doc.line(14, currentY, 196, currentY);
     currentY += 5;
 
@@ -320,15 +483,15 @@ export const generatePDF = (
     doc.setTextColor(255, 255, 255);
     doc.text(profile?.monogram || q.insurerName.slice(0, 3).toUpperCase(), 15.5, currentY + 4.2);
 
-    doc.setFontSize(13);
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(15, 23, 42);
-    doc.text(`${q.insurerName} (Score Técnico: ${q.score}/100)`, 30, currentY + 4.8);
+    doc.text(`${q.insurerName} · Score Técnico: ${q.score}/100`, 30, currentY + 4.8);
     currentY += 9;
 
     if (q.alerts && q.alerts.length > 0) {
       q.alerts.forEach((alert) => {
-        if (currentY > 270) {
+        if (currentY > 265) {
           doc.addPage();
           currentY = addHeader('Matriz de Hallazgos (Cont.)');
         }
@@ -349,34 +512,96 @@ export const generatePDF = (
 
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(color[0], color[1], color[2]);
-        doc.setFontSize(9);
+        doc.setFontSize(8.5);
         doc.text(`[${label}] ${alert.title}`, 14, currentY);
 
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(70, 70, 70);
+        doc.setTextColor(71, 85, 105);
         const desc = doc.splitTextToSize(alert.description, 170);
         doc.text(desc, 14, currentY + 4);
 
-        currentY += 4 + desc.length * 4 + 4;
+        currentY += 4 + desc.length * 3.8 + 4;
       });
     } else {
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setTextColor(100, 100, 100);
-      doc.text('Sin hallazgos relevantes.', 14, currentY);
-      currentY += 10;
+      doc.text('Sin alertas de riesgo restrictivas en el análisis.', 14, currentY);
+      currentY += 8;
     }
-    currentY += 10;
+    currentY += 6;
   });
 
+  // --- PAGE 5: RESUMEN ECONÓMICO Y RESPALDO NORMATIVO ---
+  doc.addPage();
+  currentY = addHeader('Resumen Económico y Cumplimiento Normativo');
+
+  // Tabla Financiera
+  const financialHead = [['Concepto Financiero', ...insurers]];
+  const financialRows: string[][] = [
+    [
+      'Prima Anual (Total a Pagar)',
+      ...quotes.map((q) => (q.priceAnnual && q.priceAnnual > 0 ? formatCOP(q.priceAnnual) : 'No informada')),
+    ],
+  ];
+
+  if (quotes.some((q) => q.priceMonthly && q.priceMonthly > 0)) {
+    financialRows.push([
+      'Cuota Mensual Estimada',
+      ...quotes.map((q) => (q.priceMonthly && q.priceMonthly > 0 ? formatCOP(q.priceMonthly) : 'N/A')),
+    ]);
+  }
+
+  autoTable(doc, {
+    startY: currentY,
+    head: financialHead,
+    body: financialRows,
+    theme: 'grid',
+    headStyles: { fillColor: PRIMARY_COLOR, fontSize: 8.5, halign: 'center' },
+    bodyStyles: { fontSize: 8, fontStyle: 'bold', cellPadding: 3 },
+    columnStyles: { 0: { cellWidth: 60 } },
+    alternateRowStyles: { fillColor: LIGHT_GRAY },
+  });
+
+  currentY = (doc as any).lastAutoTable.finalY + 12;
+
+  // Respaldo Normativo y Leyes Aplicables
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(30, 41, 59);
+  doc.text(`Marco Regulatorio Aplicable en Colombia (${regProfile.displayName})`, 14, currentY);
+  currentY += 7;
+
+  regProfile.primaryLaws.forEach((law) => {
+    if (currentY > 265) {
+      doc.addPage();
+      currentY = addHeader('Cumplimiento Normativo (Cont.)');
+    }
+
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.text(`${law.code}: ${law.title}`, 14, currentY);
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(71, 85, 105);
+    const splitLaw = doc.splitTextToSize(law.summary, 180);
+    doc.text(splitLaw, 14, currentY + 4);
+
+    currentY += 4 + splitLaw.length * 3.8 + 4;
+  });
+
+  // Numeración de páginas
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    doc.setFontSize(8);
+    doc.setFontSize(7.5);
     doc.setTextColor(150, 150, 150);
     doc.text(`Página ${i} de ${pageCount}`, 190, 290, { align: 'right' });
   }
 
-  doc.save('Reporte_Analisis_PYME.pdf');
+  const safeDomain = (domain || 'Seguros').replace(/[^a-zA-Z0-9_-]/g, '_');
+  doc.save(`Reporte_Ejecutivo_${safeDomain.toUpperCase()}.pdf`);
 };
 
 export const generatePerformanceReport = (

@@ -25,7 +25,7 @@ import { PedagogicalTooltip } from './common/PedagogicalTooltip';
 import { InsurerLogo } from './common/InsurerLogo';
 import { formatPercentage } from '../utils/formatCurrency';
 import { useOptimisticCorrection } from '../hooks/useOptimisticCorrection';
-import { usePdfViewer, useCellNotes } from '../contexts/AnalysisContext';
+import { usePdfViewer, useCellNotes, useAnalysis } from '../contexts/AnalysisContext';
 import { InlineNoteEditor } from './InlineNoteEditor';
 import { apiClient } from '../services/apiClient';
 import { useToasts, ToastContainer } from './ToastNotification';
@@ -344,7 +344,8 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
   }, []);
 
   const { submitCorrection } = useOptimisticCorrection();
-  const { openPdfViewer } = usePdfViewer();
+  const { openPdfViewer, pdfViewer, closePdfViewer } = usePdfViewer();
+  const { state: analysisState } = useAnalysis();
   const { cellNotes, setCellNote, getCellNote } = useCellNotes();
   const { toasts, addToast, removeToast, success, error } = useToasts();
   const [savingCorrections, setSavingCorrections] = useState<Set<string>>(new Set());
@@ -388,8 +389,28 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
 
   const handleOpenPdfEvidence = (cell: MatrixCell, quote: QuoteAnalysis) => {
     if (cell.calculatedPage || cell.pageNumber) {
+      let resolvedPdfUrl = `/api/quotes/${quote.insurerName}/pdf`;
+      // Prioritize uploaded file blob URL if available in context
+      if (analysisState?.quoteFiles && analysisState.quoteFiles.length > 0) {
+        const normQuoteInsurer = quote.insurerName.toLowerCase().trim();
+        const matchingFile =
+          analysisState.quoteFiles.find((f) => {
+            const fName = f.name.toLowerCase();
+            return (
+              fName.includes(normQuoteInsurer) ||
+              ((quote as any).metadata?.filename && f.name === (quote as any).metadata.filename)
+            );
+          }) ||
+          analysisState.quoteFiles[quotes.findIndex((q) => q.insurerName === quote.insurerName)] ||
+          analysisState.quoteFiles[0];
+
+        if (matchingFile) {
+          resolvedPdfUrl = URL.createObjectURL(matchingFile);
+        }
+      }
+
       openPdfViewer({
-        pdfUrl: `/api/quotes/${quote.insurerName}/pdf`,
+        pdfUrl: resolvedPdfUrl,
         targetPage: cell.calculatedPage || cell.pageNumber || 1,
         searchText: cell.rawTextSnippet,
         title: `Evidencia - ${quote.insurerName}`,
@@ -1306,9 +1327,18 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
       </div>
 
       {/* PdfViewer Lazy Loaded */}
-      <Suspense fallback={null}>
-        <PdfViewer />
-      </Suspense>
+      {pdfViewer?.isOpen && (
+        <Suspense fallback={null}>
+          <PdfViewer
+            isOpen={pdfViewer.isOpen}
+            pdfUrl={pdfViewer.pdfUrl}
+            targetPage={pdfViewer.targetPage}
+            searchText={pdfViewer.searchText}
+            title={pdfViewer.title}
+            onClose={closePdfViewer}
+          />
+        </Suspense>
+      )}
 
       <ToastContainer toasts={toasts} onClose={removeToast} />
     </div>

@@ -13,12 +13,14 @@ import {
 } from 'lucide-react';
 import { QuoteAnalysis } from '../types';
 import { formatCOP } from '../utils/formatCurrency';
+import { getDomainRegulatoryProfile } from '../src/shared/domainRegulatoryKnowledge';
 
 export interface ExecutiveSummaryProps {
   quotes: QuoteAnalysis[];
   recommendation: string;
   onNavigate: (tab: 'resumen' | 'coberturas' | 'deducibles' | 'auditoria') => void;
   viewMode?: 'technical' | 'client';
+  domain?: string;
 }
 
 export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
@@ -26,8 +28,11 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
   recommendation,
   onNavigate,
   viewMode = 'technical',
+  domain = 'pyme',
 }) => {
   if (!quotes || quotes.length === 0) return null;
+
+  const regProfile = getDomainRegulatoryProfile(domain);
 
   // Find best option
   const bestQuote = quotes.reduce((prev, current) =>
@@ -78,9 +83,16 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
       <div className="p-6 md:p-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold">
-              {isClientView ? 'Resumen Ejecutivo de Decisión Comercial' : 'Resumen Ejecutivo'}
-            </h2>
+            <div className="flex items-center gap-2 mb-1">
+              <h2 className="text-2xl font-bold">
+                {isClientView ? 'Resumen Ejecutivo de Decisión Comercial' : 'Resumen Ejecutivo'}
+              </h2>
+              {domain && domain !== 'pyme' && (
+                <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                  {regProfile.displayName}
+                </span>
+              )}
+            </div>
             <p className="text-indigo-200 mt-1">
               {isClientView
                 ? 'Recomendación estratégica para la toma de decisión del asegurado'
@@ -266,7 +278,7 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
                         </span>
                         <span className="text-indigo-200">
                           {missing
-                            ? `Omite amparos clave (${missing}) que trasladarían riesgo financiero directo a la empresa.`
+                            ? `Omite amparos clave (${missing}) que trasladarían riesgo financiero directo al asegurado.`
                             : critCount > 0
                               ? `${critCount} condiciones contractuales restrictivas que limitan la indemnización.`
                               : 'Condiciones de deducible y alcance menos competitivas.'}

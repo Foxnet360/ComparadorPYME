@@ -177,10 +177,10 @@ describe('UnifiedCoverageMatrix', () => {
       <UnifiedCoverageMatrix quotes={baseQuotes} rows={v2MatrixRows} analysisId="abc-123" />
     );
 
-    const exportButton = screen.getByText('Descargar Excel Comparativo');
+    const exportButton = screen.getByText('Excel Técnico (Auditoría)');
     fireEvent.click(exportButton);
 
-    expect(screen.getByText('Generando Excel...')).toBeTruthy();
+    expect(exportButton.closest('button')?.hasAttribute('disabled')).toBe(true);
 
     await waitFor(() => {
       expect(apiClient.fetch).toHaveBeenCalledWith(
@@ -203,7 +203,7 @@ describe('UnifiedCoverageMatrix', () => {
       <UnifiedCoverageMatrix quotes={baseQuotes} rows={v2MatrixRows} analysisId="abc-123" />
     );
 
-    fireEvent.click(screen.getByText('Descargar Excel Comparativo'));
+    fireEvent.click(screen.getByText('Excel Técnico (Auditoría)'));
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toBeTruthy();

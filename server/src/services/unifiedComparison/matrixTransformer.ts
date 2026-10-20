@@ -193,8 +193,18 @@ export function isFinancialRowLabel(label: string): boolean {
   ].some((keyword) => normalized.includes(keyword));
 }
 
-function formatDeductible(deductible: StructuredDeductible | undefined): string | undefined {
+function formatDeductible(deductible: StructuredDeductible | any | undefined): string | undefined {
   if (!deductible) return undefined;
+  if (typeof deductible === 'string') return deductible.trim();
+  if (typeof deductible.description === 'string' && deductible.description.trim()) {
+    return deductible.description.trim();
+  }
+  if (typeof deductible.rawText === 'string' && deductible.rawText.trim()) {
+    return deductible.rawText.trim();
+  }
+  if (typeof deductible.text === 'string' && deductible.text.trim()) {
+    return deductible.text.trim();
+  }
   if (deductible.type === 'not_applicable') return 'No aplica';
   if (deductible.type === 'see_conditions') return 'Ver condiciones';
   const parts: string[] = [];
@@ -472,14 +482,20 @@ export function flatResultToMatrixRowsV2(
       canonicalId: row.canonicalId,
       matchConfidence: row.matchConfidence,
       matchMethod: row.canonicalSource ?? null,
-      cells: row.cells.map((cell) => ({
-        value: cell.value,
-        notFound: cell.notFound,
-        confidence: cell.confidence,
-        notes: cell.rawText ?? formatDeductible(cell.deductible),
-        rawTextSnippet: cell.rawText,
-        pageNumber: (cell as any).pageNumber,
-      })),
+      cells: row.cells.map((cell) => {
+        const formattedDed = formatDeductible(cell.deductible);
+        const cellNotes = formattedDed
+          ? (cell.rawText && !cell.rawText.includes(formattedDed) ? `${formattedDed} • ${cell.rawText}` : formattedDed)
+          : cell.rawText;
+        return {
+          value: cell.value,
+          notFound: cell.notFound,
+          confidence: cell.confidence,
+          notes: cellNotes,
+          rawTextSnippet: cell.rawText,
+          pageNumber: (cell as any).pageNumber,
+        };
+      }),
     });
   }
 
@@ -497,14 +513,20 @@ export function flatResultToMatrixRowsV2(
       canonicalId: row.canonicalId,
       matchConfidence: row.matchConfidence,
       matchMethod: row.canonicalSource ?? null,
-      cells: row.cells.map((cell) => ({
-        value: cell.value,
-        notFound: cell.notFound,
-        confidence: cell.confidence,
-        notes: cell.rawText ?? formatDeductible(cell.deductible),
-        rawTextSnippet: cell.rawText,
-        pageNumber: (cell as any).pageNumber,
-      })),
+      cells: row.cells.map((cell) => {
+        const formattedDed = formatDeductible(cell.deductible);
+        const cellNotes = formattedDed
+          ? (cell.rawText && !cell.rawText.includes(formattedDed) ? `${formattedDed} • ${cell.rawText}` : formattedDed)
+          : cell.rawText;
+        return {
+          value: cell.value,
+          notFound: cell.notFound,
+          confidence: cell.confidence,
+          notes: cellNotes,
+          rawTextSnippet: cell.rawText,
+          pageNumber: (cell as any).pageNumber,
+        };
+      }),
     });
   }
 

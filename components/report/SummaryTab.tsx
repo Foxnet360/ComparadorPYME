@@ -39,6 +39,7 @@ export const SummaryTab: React.FC<SummaryTabProps> = ({
         recommendation={recommendation}
         onNavigate={onNavigate}
         viewMode={viewMode}
+        domain={domain}
       />
 
       {/* Scoring Cards - Dynamic Responsive Grid */}
