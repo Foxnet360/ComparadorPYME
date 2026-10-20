@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import * as ExcelJS from 'exceljs';
 import { generateExcelBuffer, formatRatioCell } from '../excelGenerator';
 import * as matrixTransformer from '../matrixTransformer';
-import { QuoteAnalysis } from '../../types';
+import { QuoteAnalysis, MatrixRow } from '../../types';
 
 describe('excelGenerator', () => {
   describe('formatRatioCell', () => {

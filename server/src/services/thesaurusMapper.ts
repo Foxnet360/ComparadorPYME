@@ -39,9 +39,12 @@ function findThesaurusPaths(domain: string = 'pyme'): {
 } {
   const possiblePaths = [
     process.cwd(),
+    path.join(process.cwd(), 'docs'),
     path.resolve(process.cwd(), '..'),
+    path.resolve(process.cwd(), '..', 'docs'),
     path.resolve(process.cwd(), '..', '..'),
     path.resolve(__dirname, '..', '..'),
+    path.resolve(__dirname, '..', '..', 'docs'),
     path.resolve(__dirname, '..'),
   ];
 

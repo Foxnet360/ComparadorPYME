@@ -192,6 +192,24 @@ vi.mock('../../services/narrativeService', () => ({
   },
 }));
 
+vi.mock('../../services/semanticMatcher', () => ({
+  semanticMatcher: {
+    matchCoverage: vi.fn(async (label: string) => ({
+      categoryId: 1,
+      canonicalName: label,
+      confidence: 95,
+      method: 'thesaurus',
+    })),
+    matchCoveragesBatch: vi.fn(async (labels: string[]) => {
+      const map = new Map();
+      for (const l of labels) {
+        map.set(l, { categoryId: 1, canonicalName: l, confidence: 95, method: 'thesaurus' });
+      }
+      return map;
+    }),
+  },
+}));
+
 vi.mock('../../services/quoteValidator', () => ({
   validateQuote: vi.fn(() => ({
     coverageCount: 1,

@@ -127,10 +127,12 @@ async function initializeCategoryEmbeddings(domain: string = 'pyme'): Promise<vo
   }
 }
 
-// Start initialization immediately for default domain when module loads
-initializeCategoryEmbeddings('pyme').catch((err) => {
-  console.error('❌ [SemanticMatcher] Initialization error:', err);
-});
+// Start initialization immediately for default domain when module loads (skip during unit tests)
+if (process.env.NODE_ENV !== 'test') {
+  initializeCategoryEmbeddings('pyme').catch((err) => {
+    console.error('❌ [SemanticMatcher] Initialization error:', err);
+  });
+}
 
 // Stop words comunes en español para matching
 const STOP_WORDS = new Set([

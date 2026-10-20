@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { findPedagogicalExplanation } from '../src/shared/domainRegulatoryKnowledge';
+import { findPedagogicalExplanation } from '@shared/domainRegulatoryKnowledge';
 
 interface DeductibleBadgeProps {
   deductible: string;

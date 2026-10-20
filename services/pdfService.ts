@@ -4,11 +4,11 @@ import { ComparisonReport, UserProfile, DashboardStats, HistoryEntry } from '../
 import { PLANTILLA_ITEMS } from '../constants';
 import { formatCOPMillions, formatCOP } from '../utils/formatCurrency';
 import { normalizeText } from '../utils/textUtils';
-import { findColombianInsurerProfile } from '../src/shared/colombianInsurersCatalog';
+import { findColombianInsurerProfile } from '@shared/colombianInsurersCatalog';
 import {
   getDomainRegulatoryProfile,
   findPedagogicalExplanation,
-} from '../src/shared/domainRegulatoryKnowledge';
+} from '@shared/domainRegulatoryKnowledge';
 
 function hexToRgb(hex?: string): [number, number, number] {
   if (!hex) return [30, 41, 59];

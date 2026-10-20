@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { HelpCircle, ShieldCheck, Scale, Sparkles, BookOpen } from 'lucide-react';
-import { findPedagogicalExplanation } from '../../src/shared/domainRegulatoryKnowledge';
+import { findPedagogicalExplanation } from '@shared/domainRegulatoryKnowledge';
 
 interface PedagogicalTooltipProps {
   label: string;

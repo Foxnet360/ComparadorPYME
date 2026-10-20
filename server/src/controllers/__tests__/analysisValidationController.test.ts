@@ -149,7 +149,8 @@ describe('analysisValidationController - exportAnalysisExcel', () => {
       undefined,
       expect.anything(),
       'pyme',
-      expect.anything()
+      expect.anything(),
+      'technical'
     );
   });
 });

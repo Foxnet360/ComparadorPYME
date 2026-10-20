@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useOptimisticCorrection } from './useOptimisticCorrection';
-import { CorrectionQueue } from '../services/correctionQueue';
-import { apiClient } from '../services/apiClient';
+import { useOptimisticCorrection } from '../useOptimisticCorrection';
+import { CorrectionQueue } from '../../services/correctionQueue';
+import { apiClient } from '../../services/apiClient';
 
-vi.mock('../services/apiClient', () => ({
+vi.mock('../../services/apiClient', () => ({
   apiClient: {
     fetch: vi.fn(),
   },
 }));
 
-vi.mock('../services/correctionQueue', () => ({
+vi.mock('../../services/correctionQueue', () => ({
   CorrectionQueue: {
     add: vi.fn().mockReturnValue('queue-id-1'),
   },

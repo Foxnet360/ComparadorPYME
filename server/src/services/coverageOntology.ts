@@ -1,5 +1,6 @@
 import { supabase } from '../config/database';
-import { GoogleGenAI, Type } from '@google/genai';
+import { Type } from '@google/genai';
+import { getGenAI } from './geminiClient';
 import { env } from '../config/env';
 import { embeddingService } from './vector/embeddingService';
 import { getCachedCoverageMapping, setCachedCoverageMapping } from './cache/redisCache';
@@ -7,9 +8,6 @@ import { calculateSimilarity } from '../utils/stringUtils';
 import { mapCoverageName } from './thesaurusMapper';
 import { coverageGraphService } from './coverageGraphService';
 import { insurerProfileService } from './insurerProfileService';
-
-const GEMINI_API_KEY = env.GEMINI_API_KEY || '';
-const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 export interface OntologyNode {
   id: string;
@@ -336,7 +334,7 @@ async function runConsensus(
   justification: string;
   needsHumanReview: boolean;
 }> {
-  if (!GEMINI_API_KEY) {
+  if (!env.GEMINI_API_KEY) {
     return {
       groupId: 'EXCLUSIVE',
       confidence: 0,
@@ -413,7 +411,7 @@ Tu respuesta debe ser un JSON válido, sin bloques de código markdown, solo el 
     };
 
     // Call Agent A
-    const agentAResult = await genAI.models.generateContent({
+    const agentAResult = await getGenAI().models.generateContent({
       model: modelName,
       contents: taxonomistPrompt,
       config: {
@@ -470,7 +468,7 @@ Tu respuesta debe ser un JSON válido, sin bloques de código markdown, solo el 
 
     console.log(`🤖 [Consensus] Agent B (Critic) auditing proposal: "${proposedGroupId}"`);
 
-    const agentBResult = await genAI.models.generateContent({
+    const agentBResult = await getGenAI().models.generateContent({
       model: modelName,
       contents: criticPrompt,
       config: {

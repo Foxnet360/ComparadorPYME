@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { QuoteAnalysis } from '../types';
 import { formatCOP } from '../utils/formatCurrency';
-import { getDomainRegulatoryProfile } from '../src/shared/domainRegulatoryKnowledge';
+import { getDomainRegulatoryProfile } from '@shared/domainRegulatoryKnowledge';
 
 export interface ExecutiveSummaryProps {
   quotes: QuoteAnalysis[];

@@ -347,14 +347,8 @@ function isRetryableError(error: unknown): boolean {
   );
 }
 
-// Initialize Gemini lazily
-export const getGenAI = () => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not set in environment');
-  }
-  return new GoogleGenAI({ apiKey });
-};
+import { getGenAI, resetGenAI } from './geminiClient';
+export { getGenAI, resetGenAI };
 
 /**
  * Build optimized text from clause sections (not full text)

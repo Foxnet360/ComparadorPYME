@@ -31,7 +31,7 @@ const RenewalDetailPage = lazy(() => import('./pages/RenewalDetail'));
 
 const AppShell: React.FC = () => {
   // Analyzer state and flow live in AnalysisContext via useAnalysisFlow.
-  const { state, analyze, resetFlow, retry, viewReport } = useAnalysisFlow();
+  const { state, resetFlow, viewReport } = useAnalysisFlow();
   // Session state lives in AuthContext, resolved by authService.
   const { currentUser, bootstrapped, updateUser, handleLogin, handleSessionLogout } =
     useAuthSession({
@@ -63,7 +63,6 @@ const AppShell: React.FC = () => {
 
   const handleReset = () => {
     resetFlow();
-    // Don't change view here if we are just resetting for a new analysis within the tool
     if (currentView === 'REPORT') setCurrentView('ANALYZER');
   };
 
@@ -76,8 +75,6 @@ const AppShell: React.FC = () => {
     handleReset();
     setCurrentView('DASHBOARD');
   };
-
-  // --- RENDER ---
 
   if (currentView === 'LANDING') {
     return (
@@ -106,6 +103,8 @@ const AppShell: React.FC = () => {
     );
   }
 
+  const extendedUser = currentUser as unknown as ExtendedUserProfile | null;
+
   return (
     <div className="min-h-screen bg-slate-50 font-sans selection:bg-indigo-100 selection:text-indigo-900">
       <AppHeader
@@ -126,7 +125,6 @@ const AppShell: React.FC = () => {
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* VIEW: CLIENTS */}
         {currentView === 'CLIENTS' && (
           <Suspense fallback={<ViewLoadingFallback />}>
             <ClientsPage
@@ -136,7 +134,6 @@ const AppShell: React.FC = () => {
           </Suspense>
         )}
 
-        {/* VIEW: PORTFOLIO (renewal portfolio, PR-5) */}
         {currentView === 'PORTFOLIO' && (
           <Suspense fallback={<ViewLoadingFallback />}>
             <PortfolioProvider>
@@ -150,7 +147,6 @@ const AppShell: React.FC = () => {
           </Suspense>
         )}
 
-        {/* VIEW: RENEWAL DETAIL (PR-5) */}
         {currentView === 'RENEWAL_DETAIL' && activeRenewalId && (
           <Suspense fallback={<ViewLoadingFallback />}>
             <RenewalDetailPage
@@ -160,7 +156,6 @@ const AppShell: React.FC = () => {
           </Suspense>
         )}
 
-        {/* VIEW: DASHBOARD */}
         {currentView === 'DASHBOARD' && (
           <Suspense fallback={<ViewLoadingFallback />}>
             <DashboardPage
@@ -173,41 +168,32 @@ const AppShell: React.FC = () => {
           </Suspense>
         )}
 
-        {/* VIEW: ANALYTICS (RBAC) */}
         {currentView === 'ANALYTICS' && (
           <Suspense fallback={<ViewLoadingFallback />}>
             <AnalyticsPage onBackToDashboard={() => setCurrentView('DASHBOARD')} />
           </Suspense>
         )}
 
-        {/* VIEW: USERS (RBAC Management) */}
         {currentView === 'USERS' && (
           <Suspense fallback={<ViewLoadingFallback />}>
             <UsersPage
-              currentUserRole={
-                (currentUser as unknown as ExtendedUserProfile | null)?.role || 'super_admin'
-              }
-              currentAllyId={
-                (currentUser as unknown as ExtendedUserProfile | null)?.allyId || 'ally-100'
-              }
+              currentUserRole={extendedUser?.role || 'super_admin'}
+              currentAllyId={extendedUser?.allyId || 'ally-100'}
               onClose={() => setCurrentView('DASHBOARD')}
             />
           </Suspense>
         )}
 
-        {/* VIEW: INSURERS (CRUD & Automation Connectors) */}
         {currentView === 'INSURERS' && (
           <Suspense fallback={<ViewLoadingFallback />}>
             <InsurerManager onBack={() => setCurrentView('ANALYZER')} />
           </Suspense>
         )}
 
-        {/* VIEW: ANALYZER (Upload) */}
         {currentView === 'ANALYZER' && status !== AppStatus.COMPLETED && (
           <AnalyzerPage onAnalysisComplete={() => setCurrentView('REPORT')} />
         )}
 
-        {/* VIEW: REPORT */}
         {currentView === 'REPORT' && report && (
           <ReportPage
             onBackToDashboard={() => setCurrentView('DASHBOARD')}
@@ -216,7 +202,6 @@ const AppShell: React.FC = () => {
         )}
       </main>
 
-      {/* Profile Modal */}
       {showProfile && currentUser && (
         <Suspense fallback={null}>
           <ProfileScreen
@@ -227,14 +212,12 @@ const AppShell: React.FC = () => {
         </Suspense>
       )}
 
-      {/* Clause Library Admin Modal */}
       {showClauseAdmin && (
         <Suspense fallback={null}>
           <ClauseAdmin currentUser={currentUser} onClose={() => setShowClauseAdmin(false)} />
         </Suspense>
       )}
 
-      {/* Chat Interface */}
       <Suspense fallback={null}>
         <ChatBot
           reportContext={report || undefined}

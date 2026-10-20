@@ -4,11 +4,8 @@
  * Flags discrepancies >20% for manual review
  */
 
-import { GoogleGenAI } from '@google/genai';
+import { getGenAI } from './geminiClient';
 import { env } from '../config/env';
-
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 export interface DualExtractionResult {
   coverageName: string;
@@ -167,7 +164,7 @@ RESPUESTA (solo JSON):`;
 
   try {
     const modelName = env.GEMINI_MODEL || 'gemini-4-argon';
-    const result = await genAI.models.generateContent({
+    const result = await getGenAI().models.generateContent({
       model: modelName,
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: {

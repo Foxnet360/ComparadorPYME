@@ -4,8 +4,8 @@ import {
   findColombianInsurerProfile,
   buildInsurerSvgDataUri,
   type ColombianInsurerProfile,
-} from '../src/shared/colombianInsurersCatalog';
-import { InsuranceDomainType } from '../src/shared/insuranceDomain';
+} from '@shared/colombianInsurersCatalog';
+import { InsuranceDomainType } from '@shared/insuranceDomain';
 
 export interface InsurerEntity extends ColombianInsurerProfile {
   svgBadgeUri?: string;

@@ -9,7 +9,7 @@ import {
   ChevronUp,
   Sparkles,
 } from 'lucide-react';
-import { getDomainRegulatoryProfile } from '../../src/shared/domainRegulatoryKnowledge';
+import { getDomainRegulatoryProfile } from '@shared/domainRegulatoryKnowledge';
 import type { QuoteAnalysis, RegulatoryCheckResult } from '../../types';
 
 interface RegulatoryBackingPanelProps {

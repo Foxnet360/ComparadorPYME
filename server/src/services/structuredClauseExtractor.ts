@@ -1,4 +1,5 @@
-import { GoogleGenAI, Type } from '@google/genai';
+import { Type } from '@google/genai';
+import { getGenAI } from './geminiClient';
 import { supabase } from '../config/database';
 import { env } from '../config/env';
 import {
@@ -7,8 +8,6 @@ import {
   StructuredClauseValidated,
 } from '../schemas/extractionSchemas';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 const SchemaType = Type;
 
 // JSON Schema for structured clause extraction (enforced at inference time)
@@ -166,7 +165,7 @@ export const structuredClauseExtractor = {
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        const result = await genAI.models.generateContent({
+        const result = await getGenAI().models.generateContent({
           model: modelName,
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
           config: {

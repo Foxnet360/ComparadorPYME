@@ -423,6 +423,16 @@ export async function generateExcelBuffer(
     insHeader.alignment = { horizontal: 'center' };
   });
 
+  if (hasNotes) {
+    const notesColIdx = quotes.length + 2;
+    coveragesSheet.getColumn(notesColIdx).width = 40;
+    const notesHeader = coveragesSheet.getCell(4, notesColIdx);
+    notesHeader.value = 'INSIGHTS DEL CONSULTOR';
+    notesHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+    notesHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6D28D9' } };
+    notesHeader.alignment = { horizontal: 'center' };
+  }
+
   const guideColIdx = quotes.length + (hasNotes ? 2 : 1) + 1;
   if (mode === 'client') {
     coveragesSheet.getColumn(guideColIdx).width = 48;

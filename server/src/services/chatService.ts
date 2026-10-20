@@ -4,22 +4,15 @@
  * Always-on RAG with clear source attribution
  */
 
-import { GoogleGenAI } from '@google/genai';
+import { getGenAI } from './geminiClient';
 import { ragRetrievalService } from './ragRetrievalService';
 import { structuredClauseExtractor } from './structuredClauseExtractor';
 import { chatRepository } from '../repositories/chatRepository';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const GEMINI_CHAT_MODEL = process.env.GEMINI_CHAT_MODEL || 'gemini-3.8-flash';
 const MAX_PROMPT_TOKENS = 12000;
 export const MAX_HISTORY_MESSAGES = 8;
 export const MAX_HISTORY_MESSAGE_CHARS = 1500;
-
-if (!GEMINI_API_KEY) {
-  console.error('❌ [chatService] GEMINI_API_KEY not configured');
-}
-
-const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 export interface ChatMessage {
   role: 'user' | 'model';
@@ -551,7 +544,7 @@ export const processChatMessage = async (
     // Call Gemini with graceful fallback
     let responseText = '';
     try {
-      const model = await genAI.models.generateContent({
+      const model = await getGenAI().models.generateContent({
         model: GEMINI_CHAT_MODEL,
         contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
         config: {

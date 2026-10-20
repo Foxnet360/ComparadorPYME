@@ -1,6 +1,13 @@
+import path from 'path';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, '.'),
+      '@shared': path.resolve(__dirname, 'server/src/shared'),
+    },
+  },
   test: {
     projects: [
       {
@@ -69,7 +76,18 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       reportsDirectory: './coverage',
-      include: ['server/src/**/*.ts', 'src/**/*.ts', 'src/**/*.tsx', 'hooks/**/*.ts'],
+      include: [
+        'server/src/**/*.ts',
+        'src/**/*.ts',
+        'src/**/*.tsx',
+        'components/**/*.tsx',
+        'components/**/*.ts',
+        'pages/**/*.tsx',
+        'services/**/*.ts',
+        'contexts/**/*.tsx',
+        'hooks/**/*.ts',
+        'utils/**/*.ts',
+      ],
       exclude: [
         '**/*.test.ts',
         '**/*.test.tsx',

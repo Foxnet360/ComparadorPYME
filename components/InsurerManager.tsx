@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { insurerService, type InsurerEntity } from '../services/insurerService';
 import { InsurerLogo } from './common/InsurerLogo';
-import { InsuranceDomain, type InsuranceDomainType } from '../src/shared/insuranceDomain';
+import { InsuranceDomain, type InsuranceDomainType } from '@shared/insuranceDomain';
 
 interface InsurerManagerProps {
   onBack?: () => void;

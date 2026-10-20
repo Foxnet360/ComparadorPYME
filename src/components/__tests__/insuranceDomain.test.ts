@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { InsuranceDomain, type InsuranceDomainType } from '../../../src/shared/insuranceDomain';
+import { InsuranceDomain, type InsuranceDomainType } from '@shared/insuranceDomain';
 
 const EXPECTED_DOMAINS: Record<string, string> = {
   PYME: 'pyme',

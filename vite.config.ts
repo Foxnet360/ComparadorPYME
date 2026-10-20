@@ -25,7 +25,6 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [react()],
     define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY),
       // Supabase anon credentials for the browser client (authService.ts).
       // loadEnv picks them up from .env.local (dev) and from the build
       // environment (Railway Dockerfile ARGs) for production builds.
@@ -39,6 +38,7 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
+        '@shared': path.resolve(__dirname, 'server/src/shared'),
       },
     },
     optimizeDeps: {

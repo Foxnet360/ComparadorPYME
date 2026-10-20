@@ -57,7 +57,7 @@ export function extractCanonicalInsurerName(raw: string): string {
   const cleaned = raw
     .replace(/^COTIZACION.*?-\s*/i, '')
     .replace(/\.pdf$/i, '')
-    .replace(/[_\-]+/g, ' ')
+    .replace(/[_-]+/g, ' ')
     .replace(/\b(HOGAR|PYME|COPROPIEDADES|AUTOS|SALUD|VIDA|SEGUROS|POLIZA|COTIZACION)\b/gi, '')
     .replace(/\s+/g, ' ')
     .trim();
