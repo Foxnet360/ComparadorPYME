@@ -55,9 +55,9 @@ interface GeminiFile {
   state?: string;
 }
 
-// Default configuration following Gemini 4 Argon best practices for JSON schema extraction
+// Default configuration following Gemini 3.8 Flash best practices for JSON schema extraction
 const DEFAULT_CONFIG: ComparisonEngineConfig = {
-  model: process.env.GEMINI_MODEL || 'gemini-4-argon',
+  model: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
   thinkingLevel: (process.env.GEMINI_THINKING_LEVEL?.toUpperCase() as any) || 'LOW',
   responseMimeType: 'application/json',
   responseSchema: {},
@@ -528,8 +528,8 @@ export class UnifiedComparisonEngine {
 
     try {
       // Add configurable timeout to prevent hanging; V2 granular schema with multiple
-      // PDFs can legitimately take longer than the old 45-second default.
-      const TIMEOUT_MS = parseInt(process.env.GEMINI_UNIFIED_TIMEOUT_MS || '120000', 10);
+      // PDFs can legitimately take up to 2-3 minutes on large packages.
+      const TIMEOUT_MS = parseInt(process.env.GEMINI_UNIFIED_TIMEOUT_MS || '240000', 10);
 
       const config: Record<string, unknown> = {
         thinkingConfig: {

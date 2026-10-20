@@ -22,6 +22,7 @@ export interface EnvConfig {
   GEMINI_MODEL: string;
   GEMINI_THINKING_LEVEL: string;
   GEMINI_CHAT_MODEL: string;
+  GEMINI_FAST_MODEL?: string;
   GEMINI_CLAUSE_MODEL: string;
   GEMINI_EMBEDDING_MODEL: string;
 
@@ -149,7 +150,7 @@ function validateEnv(): EnvConfig {
     }
   }
 
-  function sanitizeGeminiModelName(modelName?: string, defaultModel = 'gemini-4-argon'): string {
+  function sanitizeGeminiModelName(modelName?: string, defaultModel = 'gemini-3.8-flash'): string {
     if (!modelName) return defaultModel;
     return modelName;
   }
@@ -163,9 +164,10 @@ function validateEnv(): EnvConfig {
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || '',
     SUPABASE_JWT_SECRET: process.env.SUPABASE_JWT_SECRET || '',
     GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
-    GEMINI_MODEL: sanitizeGeminiModelName(process.env.GEMINI_MODEL, 'gemini-4-argon'),
+    GEMINI_MODEL: sanitizeGeminiModelName(process.env.GEMINI_MODEL, 'gemini-3.8-flash'),
     GEMINI_THINKING_LEVEL: process.env.GEMINI_THINKING_LEVEL || 'low',
     GEMINI_CHAT_MODEL: sanitizeGeminiModelName(process.env.GEMINI_CHAT_MODEL, 'gemini-3.8-flash'),
+    GEMINI_FAST_MODEL: sanitizeGeminiModelName(process.env.GEMINI_FAST_MODEL, 'gemini-3.8-flash'),
     GEMINI_CLAUSE_MODEL: sanitizeGeminiModelName(
       process.env.GEMINI_CLAUSE_MODEL,
       'gemini-3.8-flash'

@@ -373,6 +373,29 @@ function sortByCanonicalId<T extends { canonicalId?: string }>(
   );
 }
 
+export function formatCoverageValueColombian(value: string | number | null | undefined): string {
+  if (value === null || value === undefined) return 'No informado';
+  const str = String(value).trim();
+  if (
+    str === '' ||
+    ['No informado', 'N.C.', 'NO ESPECIFICADO', 'No incluido', 'No aplica', 'APLICA', 'INCLUIDO'].includes(
+      str
+    )
+  ) {
+    return str === '' ? 'No informado' : str;
+  }
+  // If it already starts with $ or has formatted text with currency symbol or %
+  if (str.startsWith('$') || str.endsWith('%')) {
+    return str;
+  }
+  // Try parsing pure numbers and applying Colombian currency thousand separators
+  const parsed = parseColombianCurrency(str);
+  if (parsed !== null && parsed > 0 && /^\d+([.,]\d+)?$/.test(str.replace(/\s/g, ''))) {
+    return formatCOP(Math.round(parsed));
+  }
+  return str;
+}
+
 function cellFromFlatValueV2(
   value: string | null,
   notFound?: boolean,
@@ -382,8 +405,10 @@ function cellFromFlatValueV2(
   pageNumber?: number
 ) {
   const isMissing = value === null || value === undefined || notFound === true;
+  const rawValue = isMissing ? 'No informado' : value;
+  const formattedValue = isMissing ? 'No informado' : formatCoverageValueColombian(rawValue);
   const cell: Record<string, unknown> = {
-    value: isMissing ? 'No informado' : value,
+    value: formattedValue,
     isExcluded: isMissing,
     isWinner: false,
     confidence: isMissing ? 0 : typeof confidence === 'number' ? confidence : 0,
@@ -564,10 +589,11 @@ function cellFromQuoteCoverage(coverage: ParsedQuote['coverages'][number] | unde
   if (!coverage) {
     return { value: 'No informado', isExcluded: true, isWinner: false };
   }
-  const value = coverage.value ?? 'No informado';
-  const isExcluded = value === 'No informado' || value === 'NO ESPECIFICADO' || value === '';
+  const formattedValue = formatCoverageValueColombian(coverage.value);
+  const isExcluded =
+    formattedValue === 'No informado' || formattedValue === 'NO ESPECIFICADO' || formattedValue === '';
   return {
-    value,
+    value: formattedValue,
     isExcluded,
     isWinner: false,
     notes: coverage.deductible,

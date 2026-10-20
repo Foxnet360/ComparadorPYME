@@ -390,7 +390,7 @@ Instrucciones de clasificación:
 
 Tu respuesta debe ser un JSON válido, sin bloques de código markdown, solo el objeto JSON.`;
 
-    const modelName = env.GEMINI_MODEL || 'gemini-3.5-flash';
+    const modelName = env.GEMINI_FAST_MODEL || env.GEMINI_CHAT_MODEL || 'gemini-3.8-flash';
     console.log(`🤖 [Consensus] Agent A (Taxonomist) evaluating: "${rawName}" using ${modelName}`);
 
     const TaxonomistResponseSchema = {
@@ -420,6 +420,9 @@ Tu respuesta debe ser un JSON válido, sin bloques de código markdown, solo el 
         temperature: 0.1,
         responseMimeType: 'application/json',
         responseSchema: TaxonomistResponseSchema,
+        thinkingConfig: {
+          thinkingLevel: 'low' as any,
+        },
       },
     });
 
@@ -474,6 +477,9 @@ Tu respuesta debe ser un JSON válido, sin bloques de código markdown, solo el 
         temperature: 0.3,
         responseMimeType: 'application/json',
         responseSchema: CriticResponseSchema,
+        thinkingConfig: {
+          thinkingLevel: 'low' as any,
+        },
       },
     });
 

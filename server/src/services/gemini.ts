@@ -530,9 +530,12 @@ export const geminiService = {
     if (!featureFlags.isEnabled('enableGeminiContextCaching')) {
       return null;
     }
+    const model = params.model || process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+    if (model.includes('argon')) {
+      return null;
+    }
     try {
       const ai = getGenAI();
-      const model = params.model || process.env.GEMINI_MODEL || 'gemini-4-argon';
       const cacheConfig = {
         model,
         contents: params.contents as any,
@@ -573,7 +576,7 @@ export const geminiService = {
       console.log(`✅ [Gemini] File ready: ${uploadedFile.name}`);
 
       const ai = getGenAI();
-      const extractionModel = process.env.GEMINI_MODEL || 'gemini-4-argon';
+      const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 
       let retries = 0;
       const maxRetries = 3;
@@ -681,7 +684,7 @@ export const geminiService = {
   performOcrOnImage: async (imageBuffer: Buffer, mimeType = 'image/png'): Promise<string> => {
     try {
       const ai = getGenAI();
-      const extractionModel = process.env.GEMINI_MODEL || 'gemini-4-argon';
+      const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 
       const result = await ai.models.generateContent({
         model: extractionModel,
@@ -750,11 +753,16 @@ Instrucciones para el análisis:
 
       const parseResult = parseJsonWithRepair(responseText);
       if (parseResult.success) {
+        const parsedData = parseResult.data && typeof parseResult.data === 'object' ? parseResult.data : {};
+        const dataToValidate = {
+          rawText: deductibleText,
+          ...parsedData,
+        };
         if (options?.skipValidation) {
-          return parseResult.data as DeductibleStructure;
+          return dataToValidate as DeductibleStructure;
         }
         return validateGeminiOutput<DeductibleStructure>(
-          parseResult.data,
+          dataToValidate,
           validateDeductibleStructure,
           'Deductible'
         );
@@ -822,7 +830,7 @@ Instrucciones para el análisis:
     while (true) {
       try {
         const ai = getGenAI();
-        const modelName = options?.model || process.env.GEMINI_MODEL || 'gemini-4-argon';
+        const modelName = options?.model || process.env.GEMINI_MODEL || 'gemini-3.8-flash';
         const config: Record<string, unknown> = {
           temperature: options?.temperature ?? 0.1,
           maxOutputTokens: options?.maxOutputTokens ?? 32768,
@@ -894,7 +902,7 @@ Instrucciones para el análisis:
     while (true) {
       try {
         const ai = getGenAI();
-        const extractionModel = options?.model || process.env.GEMINI_MODEL || 'gemini-4-argon';
+        const extractionModel = options?.model || process.env.GEMINI_MODEL || 'gemini-3.8-flash';
         console.log(`🤖 [Gemini] Using model: ${extractionModel} for extraction`);
         const config: Record<string, unknown> = {
           temperature: options?.temperature ?? 0.1,
