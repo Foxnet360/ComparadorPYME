@@ -20,9 +20,9 @@ RUN npm ci
 # Copy application code
 COPY . .
 
-# Copy tesauro files explicitly to ensure they're in the Docker image
-COPY tesauro(pyme).md /app/
-COPY tesauro-extensiones.md /app/
+# Copy tesauro files explicitly to ensure they're available at /app/ and /app/docs/
+COPY docs/tesauro(pyme).md /app/
+COPY docs/tesauro-extensiones.md /app/
 
 # Build-time client config for frontend bundle (Supabase anon credentials are
 # public by design; RLS enforces authorization). Declaring ARGs allows Docker to

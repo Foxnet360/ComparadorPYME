@@ -39,6 +39,8 @@ server/src/**/__tests__
 # Documentation (no necesaria en producción)
 *.md
 !README.md
+!docs/tesauro(pyme).md
+!docs/tesauro-extensiones.md
 !tesauro(pyme).md
 !tesauro-extensiones.md
 
