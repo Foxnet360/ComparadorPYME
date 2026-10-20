@@ -165,21 +165,21 @@ describe('analyzeQuotesWithGemini', () => {
     expect(body.get('renewalId')).toBeNull();
   });
 
-  it('bounds the /analyze call with the 120s timeout (ERR-3)', async () => {
+  it('bounds the /analyze call with the 300s timeout (ERR-3)', async () => {
     vi.mocked(apiClient.fetch).mockResolvedValue({
       json: vi.fn().mockResolvedValue({ quotes: [] }),
     } as unknown as Response);
 
     await analyzeQuotesWithGemini([createFile('q.pdf')], [], 'Cliente F');
 
-    expect(vi.mocked(apiClient.fetch).mock.calls[0][1].timeoutMs).toBe(120_000);
+    expect(vi.mocked(apiClient.fetch).mock.calls[0][1].timeoutMs).toBe(300_000);
   });
 
   it('maps an ApiTimeoutError to a friendly timeout message (ERR-3)', async () => {
     const { ApiTimeoutError } = await vi.importActual<typeof import('../../../services/apiClient')>(
       '../../../services/apiClient'
     );
-    vi.mocked(apiClient.fetch).mockRejectedValue(new ApiTimeoutError(120_000));
+    vi.mocked(apiClient.fetch).mockRejectedValue(new ApiTimeoutError(300_000));
 
     await expect(analyzeQuotesWithGemini([createFile('q.pdf')], [], 'Cliente G')).rejects.toThrow(
       'El análisis excedió el tiempo máximo permitido'

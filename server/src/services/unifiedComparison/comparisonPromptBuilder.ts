@@ -96,7 +96,7 @@ Genera una tabla comparativa con UNA columna por aseguradora y EXACTAMENTE estas
 ${rowList}
 
 Reglas:
-- REGLA CRÍTICA DE IDENTIFICACIÓN DE ASEGURADORAS: El array "insurers" DEBE contener ÚNICA Y EXCLUSIVAMENTE el nombre corporativo de la aseguradora (ejemplos: "ALLIANZ", "SBS", "SURA", "MAPFRE", "BOLÍVAR", "AXA COLPATRIA", "CHUBB", "SEGUROS DEL ESTADO"). NUNCA concatenes el nombre del cliente/asegurado ni el producto en "insurers" ni en "cells[].insurer".
+- REGLA CRÍTICA DE IDENTIFICACIÓN DE ASEGURADORAS: El array "insurers" DEBE contener ÚNICA Y EXCLUSIVAMENTE el nombre corporativo de la aseguradora (ejemplos: "ALLIANZ", "SBS", "SURA", "MAPFRE", "BOLÍVAR", "AXA COLPATRIA", "CHUBB", "HDI", "ZURICH", "SEGUROS DEL ESTADO"). NUNCA concatenes el nombre del cliente/asegurado ni el producto en "insurers" ni en "cells[].insurer". Si una cotización en Colombia menciona tanto a "HDI" como a "Liberty Seguros" (debido a la adquisición de Liberty por parte de HDI), identifícala como "HDI" a menos que sea exclusivamente una póliza antigua de Liberty sin marca HDI.
 - Copia los valores textualmente como aparecen en cada cotización.
 - No agrupes, no normalices a coberturas canónicas y no inventes datos.
 - Si una fila no aparece en una cotización, usa "No informado".
@@ -182,7 +182,7 @@ ${sectionList}
 ${sectionRules}
 
 Reglas Generales:
-- REGLA CRÍTICA DE IDENTIFICACIÓN DE ASEGURADORAS: El array "insurers" DEBE contener ÚNICA Y EXCLUSIVAMENTE el nombre corporativo de la aseguradora (ejemplos: "ALLIANZ", "SBS", "SURA", "MAPFRE", "BOLÍVAR", "AXA COLPATRIA", "CHUBB", "SEGUROS DEL ESTADO"). NUNCA concatenes el nombre del cliente/asegurado (ej. "ISABEL CRISTINA VASCO") ni el ramo/producto ("HOGAR", "PYME") dentro de "insurers" ni en el campo "insurer" de las celdas.
+- REGLA CRÍTICA DE IDENTIFICACIÓN DE ASEGURADORAS: El array "insurers" DEBE contener ÚNICA Y EXCLUSIVAMENTE el nombre corporativo de la aseguradora (ejemplos: "ALLIANZ", "SBS", "SURA", "MAPFRE", "BOLÍVAR", "AXA COLPATRIA", "CHUBB", "HDI", "ZURICH", "SEGUROS DEL ESTADO"). NUNCA concatenes el nombre del cliente/asegurado (ej. "ISABEL CRISTINA VASCO") ni el ramo/producto ("HOGAR", "PYME") dentro de "insurers" ni en el campo "insurer" de las celdas. Si una cotización en Colombia menciona tanto a "HDI" como a "Liberty Seguros" (debido a la adquisición de Liberty por parte de HDI), identifícala como "HDI" a menos que sea exclusivamente una póliza antigua de Liberty sin marca HDI.
 - HOMOGENEIZACIÓN DE CONCEPTOS:
   * Usa "No Cotizado" cuando un bien patrimonial (ej. Edificio o Contenido) no fue incluido en el alcance de la cotización.
   * Usa "No Incluido" cuando una cobertura u opción ofrecida por el producto no fue contratada en esta propuesta.

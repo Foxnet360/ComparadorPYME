@@ -20,7 +20,10 @@ const KNOWN_INSURERS: KnownBrand[] = [
   { brand: 'SEGUROS DEL ESTADO', patterns: [/\bdel\s+estado\b/i, /\bseguros\s+estado\b/i] },
   { brand: 'LA PREVISORA', patterns: [/\bprevisora\b/i] },
   { brand: 'SOLIDARIA', patterns: [/\bsolidaria\b/i] },
-  { brand: 'HDI', patterns: [/\bhdi\b/i, /\bhdi\s+seguros\b/i] },
+  {
+    brand: 'HDI',
+    patterns: [/\bhdi\b/i, /\bhdi\s+seguros\b/i, /pdfpolizaprima/i],
+  },
   { brand: 'LIBERTY', patterns: [/\bliberty\b/i] },
   { brand: 'ZURICH', patterns: [/\bzurich\b/i] },
   { brand: 'POSITIVA', patterns: [/\bpositiva\b/i] },
@@ -58,4 +61,13 @@ export function extractCanonicalInsurerName(raw: string): string {
     .trim();
 
   return cleaned || raw.trim();
+}
+
+/**
+ * Returns true when `name` matches one of the known canonical corporate brand names.
+ */
+export function isKnownCanonicalInsurer(name: string): boolean {
+  if (!name || typeof name !== 'string') return false;
+  const normalized = name.trim().toUpperCase();
+  return KNOWN_INSURERS.some((item) => item.brand.toUpperCase() === normalized);
 }

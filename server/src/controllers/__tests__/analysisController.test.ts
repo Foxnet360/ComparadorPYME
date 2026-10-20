@@ -467,6 +467,100 @@ describe('analysisController - matrixRowsToComparisonReport', () => {
     expect(highCov!.confidence).toBeGreaterThan(lowCov!.confidence);
     expect(lowCov!.confidence).toBeLessThan(0.70);
   });
+
+  it('deduplicates semanticMatcher.matchCoverage calls across multiple insurers for the same coverage row', async () => {
+    vi.mocked(semanticMatcher.matchCoverage).mockClear();
+
+    const matrixRows: MatrixRow[] = [
+      {
+        type: 'header',
+        id: 'client_info',
+        label: 'Cotizaciones PYME - HDI, BOLÍVAR, ALLIANZ',
+        sectionId: 0,
+        cells: [],
+      },
+      {
+        type: 'data',
+        id: 'cov_1',
+        label: 'Incendio Edificio',
+        sectionId: 1,
+        cells: [
+          { value: '$ 100.000.000', isExcluded: false, isWinner: false },
+          { value: '$ 120.000.000', isExcluded: false, isWinner: false },
+          { value: '$ 150.000.000', isExcluded: false, isWinner: false },
+        ],
+      },
+      {
+        type: 'data',
+        id: 'cov_2',
+        label: 'Bienes bajo tierra',
+        sectionId: 1,
+        cells: [
+          { value: '$ 10.000.000', isExcluded: false, isWinner: false },
+          { value: '$ 12.000.000', isExcluded: false, isWinner: false },
+          { value: '$ 15.000.000', isExcluded: false, isWinner: false },
+        ],
+      },
+    ];
+
+    const quoteFiles = [
+      { originalname: 'PdfPolizaPrima (2).pdf' },
+      { originalname: 'COTIZACION_BOLIVAR.pdf' },
+      { originalname: 'COTIZACION_ALLIANZ.pdf' },
+    ] as Express.Multer.File[];
+
+    const report = await matrixRowsToComparisonReport(matrixRows, quoteFiles);
+
+    // 2 unique coverage labels across 3 insurers -> only 2 matchCoverage calls instead of 6
+    expect(semanticMatcher.matchCoverage).toHaveBeenCalledTimes(2);
+    const hdiQuote = report.quotes.find((q) => q.insurerName === 'HDI');
+    expect(hdiQuote).toBeDefined();
+    expect(hdiQuote!.coverages.length).toBe(2);
+  });
+
+  it('replaces generic/unmapped filename with canonical insurer extracted from the aligned matrix column', async () => {
+    const matrixRows: MatrixRow[] = [
+      {
+        type: 'header',
+        id: 'client_info',
+        label: 'Cotizaciones PYME - HDI, BOLÍVAR',
+        sectionId: 0,
+        cells: [],
+      },
+      {
+        type: 'data',
+        id: 'cov_1',
+        label: 'Incendio Edificio',
+        sectionId: 1,
+        cells: [
+          { value: '$ 300.000.000', isExcluded: false, isWinner: false },
+          { value: '$ 250.000.000', isExcluded: false, isWinner: false },
+        ],
+      },
+      {
+        type: 'data',
+        id: 'premium_total',
+        label: 'TOTAL A PAGAR',
+        sectionId: FINANCIAL_SECTION_ID,
+        cells: [
+          { value: '$ 4.200.000', isExcluded: false, isWinner: false },
+          { value: '$ 4.800.000', isExcluded: false, isWinner: false },
+        ],
+      },
+    ];
+
+    const quoteFiles = [
+      { originalname: 'propuesta_cliente_1.pdf' },
+      { originalname: 'COTIZACION_BOLIVAR.pdf' },
+    ] as Express.Multer.File[];
+
+    const report = await matrixRowsToComparisonReport(matrixRows, quoteFiles);
+
+    const hdiQuote = report.quotes.find((q) => q.insurerName === 'HDI');
+    expect(hdiQuote).toBeDefined();
+    expect(hdiQuote!.priceAnnual).toBe(4_200_000);
+    expect(hdiQuote!.coverages.length).toBe(1);
+  });
 });
 
 describe('analysisController - resolveAnalysisUserId', () => {

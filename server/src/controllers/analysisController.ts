@@ -20,7 +20,10 @@ import {
   alignInsurerIndices,
   normalizeInsurerName,
 } from '../services/unifiedComparison/matrixTransformer';
-import { extractCanonicalInsurerName } from '../services/unifiedComparison/insurerSanitizer';
+import {
+  extractCanonicalInsurerName,
+  isKnownCanonicalInsurer,
+} from '../services/unifiedComparison/insurerSanitizer';
 import { semanticMatcher } from '../services/semanticMatcher';
 
 import { saveAnalysisHistory, getAnalysisHistoryByUser } from '../repositories/analysisRepository';
@@ -214,10 +217,30 @@ export const analysisController = {
   ): Promise<void> => {
     const startTime = Date.now();
 
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+    const quoteFiles = files?.['quotes'] || [];
+    const clauseFiles = files?.['clauses'] || [];
+    const allUploadedFiles = [...quoteFiles, ...clauseFiles];
+    let filesCleanedUp = false;
+    const cleanupUploadedFiles = () => {
+      if (filesCleanedUp) return;
+      filesCleanedUp = true;
+      allUploadedFiles.forEach((f) => {
+        try {
+          if (f && f.path) {
+            fs.unlinkSync(f.path);
+          }
+        } catch (e) {
+          logger.warn({ err: e }, `Failed to delete temp file ${f.path}`);
+        }
+      });
+    };
+
     try {
       // AUTH-2: ownership is derived from the authenticated session; a
       // client-supplied userId is a spoofing vector and is rejected.
       if ((req.body as Record<string, unknown> | undefined)?.userId !== undefined) {
+        cleanupUploadedFiles();
         res.status(400).json({
           success: false,
           error: 'userId is derived from the authenticated session; do not send it',
@@ -227,16 +250,15 @@ export const analysisController = {
 
       const userId = resolveAnalysisUserId(req);
 
-      const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
-      const quoteFiles = files?.['quotes'] || [];
-
       if (quoteFiles.length === 0) {
+        cleanupUploadedFiles();
         res.status(400).json({ success: false, error: 'No quote files uploaded' });
         return;
       }
 
       const domainResolution = resolveAnalysisDomain(req.body?.domain);
       if (domainResolution.error) {
+        cleanupUploadedFiles();
         res.status(400).json({ success: false, error: domainResolution.error });
         return;
       }
@@ -308,7 +330,13 @@ export const analysisController = {
       })) as unknown as ComparisonResult;
 
       comparisonResult.matrix = comparisonResult.matrix || matrixRows;
-      comparisonResult.quoteMetadata = adapterResult.quoteMetadata;
+      comparisonResult.quoteMetadata = Array.isArray(adapterResult.quoteMetadata)
+        ? adapterResult.quoteMetadata.map((m: any) =>
+            m && typeof m.insurer === 'string'
+              ? { ...m, insurer: extractCanonicalInsurerName(m.insurer) }
+              : m
+          )
+        : adapterResult.quoteMetadata;
       comparisonResult.schemaVersion = adapterResult.schemaVersion;
       comparisonResult.domain = domain;
       if (analysisType) {
@@ -397,30 +425,14 @@ export const analysisController = {
         // handler via next(error) — temp files are cleaned up either way.
         logger.error({ err: saveError }, '❌ [Supabase] Exception saving analysis');
 
-        quoteFiles.forEach((f) => {
-          try {
-            if (f && f.path) {
-              fs.unlinkSync(f.path);
-            }
-          } catch (e) {
-            logger.warn({ err: e }, `Failed to delete temp file ${f.path}`);
-          }
-        });
+        cleanupUploadedFiles();
 
         next(toHttpError(saveError));
         return;
       }
 
       // Cleanup temp files
-      quoteFiles.forEach((f) => {
-        try {
-          if (f && f.path) {
-            fs.unlinkSync(f.path);
-          }
-        } catch (e) {
-          logger.warn({ err: e }, `Failed to delete temp file ${f.path}`);
-        }
-      });
+      cleanupUploadedFiles();
 
       const duration = Date.now() - startTime;
       logger.info(`✅ Analysis completed in ${duration}ms`);
@@ -428,6 +440,7 @@ export const analysisController = {
       const auditEnvelope = auditGroundedComparison(comparisonResult);
       res.json(auditEnvelope.result);
     } catch (error: unknown) {
+      cleanupUploadedFiles();
       // ERR-1: forward to the central error handler instead of sending a raw
       // response from the controller — the handler attaches the traceId.
       logger.error({ err: error }, 'Controller Error: uploadAndAnalyze failed');
@@ -647,7 +660,7 @@ export async function matrixRowsToComparisonReport(
 ): Promise<UnifiedComparisonReport> {
   const domain = options?.domain ?? 'pyme';
   // Get insurer names from quote files
-  const insurerNames = quoteFiles.map((f) => extractCanonicalInsurerName(f.originalname));
+  const rawFileInsurers = quoteFiles.map((f) => extractCanonicalInsurerName(f.originalname));
 
   // The unified engine builds matrix cells in the order returned by the LLM
   // (result.insurers), which may differ from the upload order. Align cells to
@@ -656,8 +669,40 @@ export async function matrixRowsToComparisonReport(
   const matrixInsurers = extractMatrixInsurers(matrixRows);
   const indexMap =
     matrixInsurers.length > 0
-      ? alignInsurerIndices(insurerNames, matrixInsurers)
-      : insurerNames.map((_, idx) => idx);
+      ? alignInsurerIndices(rawFileInsurers, matrixInsurers)
+      : rawFileInsurers.map((_, idx) => idx);
+
+  // When a file has a generic/unmapped name (e.g., "cotizacion_1.pdf") and the
+  // matrix header has the LLM-extracted insurer name for that aligned column,
+  // adopt the canonicalized matrix insurer name.
+  const insurerNames = rawFileInsurers.map((fileInsurer, idx) => {
+    const cellIdx = indexMap[idx] ?? -1;
+    const matrixInsurer = cellIdx >= 0 ? matrixInsurers[cellIdx] : undefined;
+    if (!isKnownCanonicalInsurer(fileInsurer) && matrixInsurer) {
+      const canonicalFromMatrix = extractCanonicalInsurerName(matrixInsurer);
+      if (canonicalFromMatrix && canonicalFromMatrix !== 'Desconocido') {
+        return canonicalFromMatrix;
+      }
+    }
+    return fileInsurer;
+  });
+
+  // Memoize semanticMatcher.matchCoverage by (domain, label) within this report
+  // generation so concurrent insurer loops share a single in-flight lookup/LLM call
+  // per unique coverage row instead of repeating it N times.
+  const matchCoverageCache = new Map<
+    string,
+    ReturnType<typeof semanticMatcher.matchCoverage>
+  >();
+  const getCachedCoverageMatch = (coverageLabel: string) => {
+    const cacheKey = `${domain}:${coverageLabel}`;
+    let pending = matchCoverageCache.get(cacheKey);
+    if (!pending) {
+      pending = semanticMatcher.matchCoverage(coverageLabel, domain);
+      matchCoverageCache.set(cacheKey, pending);
+    }
+    return pending;
+  };
 
   // Build intermediate quotes array in a first pass
   const intermediateQuotes = await Promise.all(
@@ -743,13 +788,10 @@ export async function matrixRowsToComparisonReport(
 
         let categoryId: number | string | null = null;
         if (graphMapping) {
-          const categoryMatch = await semanticMatcher.matchCoverage(
-            graphMapping.canonicalName,
-            domain
-          );
+          const categoryMatch = await getCachedCoverageMatch(graphMapping.canonicalName);
           categoryId = categoryMatch?.categoryId ?? null;
         } else {
-          const matchResult = await semanticMatcher.matchCoverage(r.label, domain);
+          const matchResult = await getCachedCoverageMatch(r.label);
           categoryId = matchResult?.categoryId ?? null;
           graphMapping ??= {
             canonicalName: matchResult?.canonicalName ?? r.label,

@@ -18,6 +18,8 @@ import { InsuranceDomain } from '../../types/domain';
 import { domainTaxonomyRegistry } from '../domainTaxonomyRegistry';
 import { getCanonicalCoverageNames } from '../../config/domainConstants';
 import { hasDomainSpecificFile, loadDomainJson } from '../domainBundleLoader';
+import { parseColombianCurrency } from '../../utils/currencyParser';
+import { extractCanonicalInsurerName, isKnownCanonicalInsurer } from './insurerSanitizer';
 
 export const HEADER_SECTION_ID = 0;
 export const COVERAGE_SECTION_ID = 1;
@@ -901,8 +903,13 @@ export function isExcludedValue(val: string | undefined | null): boolean {
 
 export function parseNumericValue(val: string | undefined | null): number {
   if (!val || isExcludedValue(val)) return 0;
-  // Extract numbers, ignoring formatting. e.g. "$ 119.600.000" -> 119600000
-  const cleaned = val.replace(/[^0-9]/g, '');
+  const parsedCurrency = parseColombianCurrency(val);
+  if (parsedCurrency !== null && parsedCurrency > 0) {
+    return Math.round(parsedCurrency);
+  }
+  // Extract numbers, ignoring formatting and stripping trailing decimal cents (.00 / ,00)
+  const withoutTrailingCents = val.replace(/[,.]\d{1,2}(?!\d)/g, '');
+  const cleaned = withoutTrailingCents.replace(/[^0-9]/g, '');
   if (!cleaned) return 0;
   return parseInt(cleaned, 10);
 }
@@ -1577,30 +1584,83 @@ export function longestCommonSubstringLength(a: string, b: string): number {
 
 /**
  * Map each quote-file insurer to the index of the matching matrix column.
- * Returns -1 when no reasonable match is found.
+ * Falls back to positional assignment for unclaimed columns when a filename is generic.
  */
 export function alignInsurerIndices(quoteInsurers: string[], matrixInsurers: string[]): number[] {
-  const normalizedMatrix = matrixInsurers.map((name) => normalizeInsurerName(name));
+  if (matrixInsurers.length === 0) {
+    return quoteInsurers.map(() => -1);
+  }
 
-  return quoteInsurers.map((quoteName) => {
-    const normalizedQuote = normalizeInsurerName(quoteName);
+  const normalizedMatrix = matrixInsurers.map((name) => normalizeInsurerName(name));
+  const canonicalMatrix = matrixInsurers.map((name) => extractCanonicalInsurerName(name));
+  const normalizedQuotes = quoteInsurers.map((name) => normalizeInsurerName(name));
+  const canonicalQuotes = quoteInsurers.map((name) => extractCanonicalInsurerName(name));
+
+  const result = new Array<number>(quoteInsurers.length).fill(-1);
+  const usedMatrixIndices = new Set<number>();
+
+  // Pass 1: Exact normalized match or canonical insurer brand match
+  for (let qIdx = 0; qIdx < quoteInsurers.length; qIdx++) {
+    const normQuote = normalizedQuotes[qIdx]!;
+    const canonQuote = canonicalQuotes[qIdx]!;
+    const isKnownQuote = isKnownCanonicalInsurer(canonQuote);
+
+    for (let mIdx = 0; mIdx < matrixInsurers.length; mIdx++) {
+      if (usedMatrixIndices.has(mIdx)) continue;
+      if (
+        (normQuote.length > 0 && normalizedMatrix[mIdx] === normQuote) ||
+        (isKnownQuote && canonicalMatrix[mIdx] === canonQuote)
+      ) {
+        result[qIdx] = mIdx;
+        usedMatrixIndices.add(mIdx);
+        break;
+      }
+    }
+  }
+
+  // Pass 2: Longest common substring match (>= 3 chars) on remaining unclaimed columns
+  for (let qIdx = 0; qIdx < quoteInsurers.length; qIdx++) {
+    if (result[qIdx] !== -1) continue;
+    const normQuote = normalizedQuotes[qIdx]!;
     let bestIndex = -1;
     let bestScore = 0;
 
-    for (let i = 0; i < normalizedMatrix.length; i++) {
-      const matrixName = normalizedMatrix[i]!;
-      if (matrixName === normalizedQuote) {
-        return i;
-      }
-      const score = longestCommonSubstringLength(normalizedQuote, matrixName);
+    for (let mIdx = 0; mIdx < normalizedMatrix.length; mIdx++) {
+      if (usedMatrixIndices.has(mIdx)) continue;
+      const matrixName = normalizedMatrix[mIdx]!;
+      const score = longestCommonSubstringLength(normQuote, matrixName);
       if (score > bestScore && score >= 3) {
         bestScore = score;
-        bestIndex = i;
+        bestIndex = mIdx;
       }
     }
 
-    return bestIndex;
-  });
+    if (bestIndex !== -1) {
+      result[qIdx] = bestIndex;
+      usedMatrixIndices.add(bestIndex);
+    }
+  }
+
+  // Pass 3: Positional fallback for generic filenames or unmapped aliases
+  for (let qIdx = 0; qIdx < quoteInsurers.length; qIdx++) {
+    if (result[qIdx] !== -1) continue;
+
+    if (qIdx < matrixInsurers.length && !usedMatrixIndices.has(qIdx)) {
+      result[qIdx] = qIdx;
+      usedMatrixIndices.add(qIdx);
+      continue;
+    }
+
+    for (let mIdx = 0; mIdx < matrixInsurers.length; mIdx++) {
+      if (!usedMatrixIndices.has(mIdx)) {
+        result[qIdx] = mIdx;
+        usedMatrixIndices.add(mIdx);
+        break;
+      }
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -1624,9 +1684,13 @@ export function alignMatrixRowsToQuotes(
   const quoteInsurers = quotes.map((q) => q.insurerName);
   const indices = alignInsurerIndices(quoteInsurers, matrixInsurers);
 
-  // If already identically aligned, return unchanged
+  // If already identically aligned and names match, return unchanged
   const isMisaligned = indices.some((srcIdx, targetIdx) => srcIdx !== targetIdx);
-  if (!isMisaligned) {
+  const isRenamed = quotes.some(
+    (q, idx) =>
+      normalizeInsurerName(q.insurerName) !== normalizeInsurerName(matrixInsurers[idx] || '')
+  );
+  if (!isMisaligned && !isRenamed) {
     return matrixRows;
   }
 

@@ -571,5 +571,109 @@ describe('excelGenerator', () => {
       // Column C (CHUBB) MUST have 200M (CHUBB's value)!
       expect(row5.getCell(3).value).toBe(200000000);
     });
+
+    it('prunes orphaned section headers, includes cell notes, and avoids double-charging 19% IVA on V2 matrix totals', async () => {
+      const v2Matrix = [
+        {
+          type: 'header' as const,
+          id: 'client_info',
+          label: 'Cotizaciones PYME - MAPFRE, CHUBB',
+          sectionId: 0,
+          cells: [],
+        },
+        {
+          type: 'header' as const,
+          id: 'section_cov',
+          label: 'COBERTURAS PRINCIPALES',
+          sectionId: 1,
+          cells: [],
+        },
+        {
+          type: 'data' as const,
+          id: 'cov_1',
+          label: 'Incendio y Rayo',
+          sectionId: 1,
+          cells: [
+            {
+              value: '$ 100.000.000',
+              notes: '10% de la pérdida mín 1 SMMLV',
+              isExcluded: false,
+              isWinner: true,
+            },
+            {
+              value: '$ 80.000.000',
+              notes: '5% del valor asegurado mín 2 SMMLV con condiciones extendidas de reposición',
+              isExcluded: false,
+              isWinner: false,
+            },
+          ],
+        },
+        {
+          type: 'header' as const,
+          id: 'section_orphan',
+          label: 'SECCIÓN HUÉRFANA SIN DATOS',
+          sectionId: 1,
+          cells: [],
+        },
+        {
+          type: 'header' as const,
+          id: 'section_fin',
+          label: 'PRIMAS Y COSTOS',
+          sectionId: 100,
+          cells: [],
+        },
+        {
+          type: 'data' as const,
+          id: 'fin_total',
+          label: 'TOTAL A PAGAR',
+          sectionId: 100,
+          cells: [
+            { value: '$ 5.000.000', isExcluded: false, isWinner: true },
+            { value: '$ 6.000.000', isExcluded: false, isWinner: false },
+          ],
+        },
+      ];
+
+      const buffer = await generateExcelBuffer(mockQuotes, undefined, undefined, undefined, 'pyme', {
+        matrix: v2Matrix,
+      });
+
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+
+      const covSheet = workbook.getWorksheet('Matriz Coberturas')!;
+      const labelsInCovSheet: string[] = [];
+      let covDataRow: ExcelJS.Row | undefined;
+      covSheet.eachRow((row) => {
+        const val = String(row.getCell(1).value || '');
+        labelsInCovSheet.push(val);
+        if (val === 'Incendio y Rayo') {
+          covDataRow = row;
+        }
+      });
+
+      // Orphaned section header must be pruned
+      expect(labelsInCovSheet).toContain('COBERTURAS PRINCIPALES');
+      expect(labelsInCovSheet).not.toContain('SECCIÓN HUÉRFANA SIN DATOS');
+
+      // Cell notes should be rendered alongside coverage value and row height expanded dynamically
+      expect(covDataRow).toBeDefined();
+      expect(String(covDataRow!.getCell(2).value)).toContain('[Deducible/Nota: 10% de la pérdida mín 1 SMMLV]');
+      expect(covDataRow!.height).toBeGreaterThan(24);
+
+      // Primas y Costos should match the V2 TOTAL A PAGAR (5,000,000 and 6,000,000) without adding another 19% IVA
+      const finSheet = workbook.getWorksheet('Primas y Costos')!;
+      let totalRowCellB: any;
+      let totalRowCellC: any;
+      finSheet.eachRow((row) => {
+        if (row.getCell(1).value === 'TOTAL A PAGAR') {
+          totalRowCellB = row.getCell(2).value;
+          totalRowCellC = row.getCell(3).value;
+        }
+      });
+
+      expect(totalRowCellB?.result).toBe(5_000_000);
+      expect(totalRowCellC?.result).toBe(6_000_000);
+    });
   });
 });

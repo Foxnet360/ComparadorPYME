@@ -4,7 +4,7 @@ import {
   apiClient,
   ApiTimeoutError,
   SessionExpiredError,
-  DEFAULT_API_TIMEOUT_MS,
+  ANALYZE_API_TIMEOUT_MS,
 } from './apiClient';
 
 export const analyzeQuotesWithGemini = async (
@@ -53,7 +53,7 @@ export const analyzeQuotesWithGemini = async (
     const response = await apiClient.fetch('/analyze', {
       method: 'POST',
       body: formData,
-      timeoutMs: DEFAULT_API_TIMEOUT_MS,
+      timeoutMs: ANALYZE_API_TIMEOUT_MS,
     });
 
     if (onStatusUpdate) onStatusUpdate('Procesando con Gemini Advanced (RAG)...');

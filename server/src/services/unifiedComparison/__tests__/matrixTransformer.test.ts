@@ -9,6 +9,8 @@ import {
   flatResultToMatrixRows,
   flatResultToMatrixRowsV2,
   quotesToMatrixRows,
+  alignInsurerIndices,
+  parseNumericValue,
   FINANCIAL_SECTION_ID,
 } from '../matrixTransformer';
 import { FlatComparisonResult, FlatComparisonResultV2, SchemaSection } from '../comparisonSchema';
@@ -555,5 +557,28 @@ describe('quotesToMatrixRows', () => {
     const warnings = matrix.filter((r) => r.id.startsWith('warning_'));
     expect(warnings).toHaveLength(2);
     expect(warnings.map((r) => r.label)).toEqual(['Condición especial A', 'Condición especial B']);
+  });
+});
+
+describe('alignInsurerIndices & parseNumericValue', () => {
+  it('assigns unclaimed matrix column positionally when a quote filename is generic/unmapped', () => {
+    const quoteInsurers = ['cotizacion 1', 'BOLÍVAR', 'ALLIANZ'];
+    const matrixInsurers = ['HDI', 'BOLÍVAR', 'ALLIANZ'];
+
+    expect(alignInsurerIndices(quoteInsurers, matrixInsurers)).toEqual([0, 1, 2]);
+  });
+
+  it('assigns remaining unclaimed column when column order is inverted and one filename is generic', () => {
+    const quoteInsurers = ['documento generico', 'MAPFRE', 'SURA'];
+    const matrixInsurers = ['SURA', 'HDI', 'MAPFRE'];
+
+    // MAPFRE -> 2, SURA -> 0, remaining unclaimed is 1 (HDI)
+    expect(alignInsurerIndices(quoteInsurers, matrixInsurers)).toEqual([1, 2, 0]);
+  });
+
+  it('parses Colombian decimal currency strings without multiplying by 100', () => {
+    expect(parseNumericValue('$ 15.000.000,00')).toBe(15_000_000);
+    expect(parseNumericValue('$ 3.962.567,50')).toBe(3_962_568);
+    expect(parseNumericValue('$ 119.600.000')).toBe(119_600_000);
   });
 });

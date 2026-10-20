@@ -62,6 +62,12 @@ function isTokenExpiringSoon(accessToken: string): boolean {
  */
 export const DEFAULT_API_TIMEOUT_MS = 120_000;
 
+/**
+ * Extended timeout for /analyze multimodal PDF extraction + LLM comparison,
+ * aligned with backend UPLOAD_TIMEOUT (300s / 5 minutes).
+ */
+export const ANALYZE_API_TIMEOUT_MS = 300_000;
+
 export class ApiTimeoutError extends Error {
   readonly code = 'API_TIMEOUT';
   readonly timeoutMs: number;

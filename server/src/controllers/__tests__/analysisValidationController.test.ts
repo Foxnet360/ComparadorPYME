@@ -119,4 +119,37 @@ describe('analysisValidationController - exportAnalysisExcel', () => {
     );
     expect(res.send).toHaveBeenCalledWith(Buffer.from('mock-excel'));
   });
+
+  it('prefers updated quotes from req.body over stale DB analysis_result.quotes', async () => {
+    vi.mocked(generateExcelBuffer).mockClear();
+    getAnalysisById.mockResolvedValueOnce({
+      id: 'test-id',
+      user_id: 'test-user-123',
+      client_name: 'Test Client',
+      analysis_result: {
+        quotes: [{ insurerName: 'STALE_INSURER', priceAnnual: 1000, coverages: [], alerts: [] }],
+      },
+    } as any);
+
+    const updatedQuotes = [
+      { insurerName: 'HDI', priceAnnual: 4200000, coverages: [], alerts: [] },
+    ];
+    const req = {
+      params: { id: 'test-id' },
+      user: { id: 'test-user-123' },
+      body: { quotes: updatedQuotes },
+    } as any;
+    const res = createMockRes();
+
+    await exportAnalysisExcel(req, res);
+
+    expect(generateExcelBuffer).toHaveBeenCalledWith(
+      updatedQuotes,
+      expect.anything(),
+      undefined,
+      expect.anything(),
+      'pyme',
+      expect.anything()
+    );
+  });
 });

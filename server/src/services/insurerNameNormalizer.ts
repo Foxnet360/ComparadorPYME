@@ -32,6 +32,46 @@ const INSURER_NAME_MAPPINGS: Record<string, string> = {
   'HDI SEGUROS COLOMBIA S.A.': 'HDI',
   'HDI SEGUROS': 'HDI',
   'HDI COLOMBIA': 'HDI',
+  'HDI (ANTES LIBERTY)': 'HDI',
+  'HDI LIBERTY': 'HDI',
+  HDI: 'HDI',
+
+  // LIBERTY variations
+  'LIBERTY SEGUROS S.A.': 'LIBERTY',
+  'LIBERTY SEGUROS': 'LIBERTY',
+  LIBERTY: 'LIBERTY',
+
+  // ZURICH variations
+  'ZURICH COLOMBIA SEGUROS S.A.': 'ZURICH',
+  'ZURICH SEGUROS': 'ZURICH',
+  ZURICH: 'ZURICH',
+
+  // SOLIDARIA variations
+  'ASEGURADORA SOLIDARIA DE COLOMBIA': 'SOLIDARIA',
+  SOLIDARIA: 'SOLIDARIA',
+
+  // LA PREVISORA variations
+  'LA PREVISORA S.A. COMPAÑÍA DE SEGUROS': 'LA PREVISORA',
+  'PREVISORA SEGUROS': 'LA PREVISORA',
+  'LA PREVISORA': 'LA PREVISORA',
+
+  // SEGUROS DEL ESTADO variations
+  'SEGUROS DEL ESTADO S.A.': 'SEGUROS DEL ESTADO',
+  'SEGUROS DEL ESTADO': 'SEGUROS DEL ESTADO',
+
+  // POSITIVA variations
+  'POSITIVA COMPAÑÍA DE SEGUROS S.A.': 'POSITIVA',
+  'POSITIVA SEGUROS': 'POSITIVA',
+  POSITIVA: 'POSITIVA',
+
+  // BERKLEY variations
+  'BERKLEY INTERNATIONAL SEGUROS COLOMBIA S.A.': 'BERKLEY',
+  'BERKLEY SEGUROS': 'BERKLEY',
+  BERKLEY: 'BERKLEY',
+
+  // LA EQUIDAD variations
+  'LA EQUIDAD SEGUROS': 'LA EQUIDAD',
+  'LA EQUIDAD': 'LA EQUIDAD',
 
   // MAPFRE variations
   'MAPFRE SEGUROS COLOMBIA S.A.': 'MAPFRE',
@@ -65,7 +105,15 @@ const SHORT_NAME_ALIASES: Record<string, string[]> = {
   'AXA Colpatria': ['axa', 'colpatria'],
   BBVA: ['bbva', 'bbva seguros'],
   CHUBB: ['chubb', 'chubb seguros'],
-  HDI: ['hdi', 'hdi seguros'],
+  HDI: ['hdi', 'hdi seguros', 'pdfpolizaprima'],
+  LIBERTY: ['liberty', 'liberty seguros'],
+  ZURICH: ['zurich', 'zurich seguros'],
+  SOLIDARIA: ['solidaria', 'aseguradora solidaria'],
+  'LA PREVISORA': ['previsora', 'la previsora'],
+  'SEGUROS DEL ESTADO': ['seguros del estado', 'del estado', 'seguros estado'],
+  POSITIVA: ['positiva', 'positiva seguros'],
+  BERKLEY: ['berkley', 'berkley seguros'],
+  'LA EQUIDAD': ['equidad', 'la equidad'],
   MAPFRE: ['mapfre', 'mapfre seguros'],
   ALLIANZ: ['allianz', 'allianz seguros'],
   SURA: ['sura', 'suramericana', 'segurossura'],

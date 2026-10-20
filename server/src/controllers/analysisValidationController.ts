@@ -407,7 +407,10 @@ export const exportAnalysisExcel = async (
       return;
     }
 
-    const quotes = analysis?.analysis_result?.quotes || req.body?.quotes || [];
+    const quotes =
+      Array.isArray(req.body?.quotes) && req.body.quotes.length > 0
+        ? req.body.quotes
+        : analysis?.analysis_result?.quotes || [];
     if (!quotes || quotes.length === 0) {
       res.status(404).json({ error: `Analysis with id ${id} not found and no quotes provided` });
       return;

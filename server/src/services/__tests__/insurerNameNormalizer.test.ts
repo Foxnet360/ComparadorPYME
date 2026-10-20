@@ -19,6 +19,21 @@ describe('insurerNameNormalizer', () => {
       expect(insurerNameNormalizer.normalize('Seguros Bolivar')).toBe('BOLÍVAR');
     });
 
+    it('normalizes ZURICH, HDI, LIBERTY, SOLIDARIA, LA PREVISORA, and SEGUROS DEL ESTADO without unmapped warnings', () => {
+      insurerNameNormalizer.clearTelemetry();
+      expect(insurerNameNormalizer.normalize('ZURICH')).toBe('ZURICH');
+      expect(insurerNameNormalizer.normalize('Zurich Colombia Seguros S.A.')).toBe('ZURICH');
+      expect(insurerNameNormalizer.normalize('HDI (ANTES LIBERTY)')).toBe('HDI');
+      expect(insurerNameNormalizer.normalize('HDI Seguros (antes Liberty Seguros)')).toBe('HDI');
+      expect(insurerNameNormalizer.normalize('Liberty Seguros S.A.')).toBe('LIBERTY');
+      expect(insurerNameNormalizer.normalize('Aseguradora Solidaria de Colombia')).toBe(
+        'SOLIDARIA'
+      );
+      expect(insurerNameNormalizer.normalize('La Previsora S.A.')).toBe('LA PREVISORA');
+      expect(insurerNameNormalizer.normalize('Seguros del Estado S.A.')).toBe('SEGUROS DEL ESTADO');
+      expect(insurerNameNormalizer.getUnmappedTelemetry()).toEqual([]);
+    });
+
     it('returns original name for unknown insurer', () => {
       expect(insurerNameNormalizer.normalize('UNKNOWN INSURER XYZ')).toBe('UNKNOWN INSURER XYZ');
     });

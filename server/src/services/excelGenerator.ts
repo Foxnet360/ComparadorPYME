@@ -25,6 +25,59 @@ function isFinancialMatrixRow(row: MatrixRow): boolean {
   return row.sectionId >= FINANCIAL_SECTION_ID;
 }
 
+/**
+ * Remove section header rows that have no data rows before the next header (or end of list),
+ * as well as redundant leading/trailing/consecutive spacer rows.
+ */
+function pruneOrphanedSectionRows(rows: MatrixRow[]): MatrixRow[] {
+  const result: MatrixRow[] = [];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]!;
+    if (row.type === 'header') {
+      let hasDataRow = false;
+      for (let j = i + 1; j < rows.length; j++) {
+        if (rows[j]!.type === 'header') break;
+        if (rows[j]!.type === 'data') {
+          hasDataRow = true;
+          break;
+        }
+      }
+      if (hasDataRow) {
+        result.push(row);
+      }
+    } else if (row.type === 'spacer') {
+      if (result.some((r) => r.type === 'data') && result[result.length - 1]?.type !== 'spacer') {
+        result.push(row);
+      }
+    } else {
+      result.push(row);
+    }
+  }
+  while (result.length > 0 && result[result.length - 1]?.type === 'spacer') {
+    result.pop();
+  }
+  return result;
+}
+
+/**
+ * Compute row height dynamically based on wrapped text lines and explicit line breaks.
+ */
+function calculateDynamicRowHeight(texts: string[], minHeight: number = 24): number {
+  let maxLines = 1;
+  for (const text of texts) {
+    if (!text) continue;
+    const explicitLines = String(text).split('\n');
+    let lineCount = 0;
+    for (const line of explicitLines) {
+      lineCount += Math.max(1, Math.ceil(line.length / 35));
+    }
+    if (lineCount > maxLines) {
+      maxLines = lineCount;
+    }
+  }
+  return Math.max(minHeight, Math.min(96, maxLines * 16 + 8));
+}
+
 interface ClientInfo {
   name?: string;
   activity?: string;
@@ -372,11 +425,14 @@ export async function generateExcelBuffer(
   }
 
   // Filter matrix rows for coverages tab (exclude standalone deductible section rows & financial rows)
-  const coverageMatrixRows = matrix.filter(
-    (row) =>
-      row.sectionId !== HEADER_SECTION_ID &&
-      !isFinancialMatrixRow(row) &&
-      !isDeductibleMatrixRow(row)
+  // and prune any section headers whose data rows were all filtered out.
+  const coverageMatrixRows = pruneOrphanedSectionRows(
+    matrix.filter(
+      (row) =>
+        row.sectionId !== HEADER_SECTION_ID &&
+        !isFinancialMatrixRow(row) &&
+        !isDeductibleMatrixRow(row)
+    )
   );
 
   let currentCovRow = 5;
@@ -392,16 +448,20 @@ export async function generateExcelBuffer(
       secCell.value = row.label;
       secCell.font = { name: FONT_NAME, size: 11, bold: true, color: { argb: 'FF1E3A8A' } };
       secCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+      secCell.alignment = { vertical: 'middle', horizontal: 'left' };
+      coveragesSheet.getRow(currentCovRow).height = 24;
       currentCovRow++;
     } else if (row.type === 'spacer') {
       coveragesSheet.getRow(currentCovRow).height = 8;
       currentCovRow++;
     } else {
-      coveragesSheet.getRow(currentCovRow).height = 22;
       const labelCell = coveragesSheet.getCell(currentCovRow, 1);
       labelCell.value = row.label;
       labelCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF475569' } };
       labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+      labelCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+      const rowTextsForHeight: string[] = [row.label || ''];
 
       row.cells.forEach((cell: MatrixCell, idx: number) => {
         const xlCell = coveragesSheet.getCell(currentCovRow, idx + 2);
@@ -421,17 +481,48 @@ export async function generateExcelBuffer(
           valStr.includes('%') ||
           valStr.includes('-');
 
+        const trimmedNotes = (cell.notes || '').trim();
+        const hasMeaningfulNotes =
+          !excluded &&
+          trimmedNotes.length > 0 &&
+          trimmedNotes.toLowerCase() !== valStr.trim().toLowerCase() &&
+          ![
+            'no cotizado',
+            'no especificado',
+            'no informado',
+            'no incluido',
+            'no incluida',
+            'no aplica',
+            'sin deducible',
+            'n/a',
+            'n.c.',
+          ].includes(trimmedNotes.toLowerCase());
+
         if (excluded) {
           xlCell.value = 'No incluida';
+          rowTextsForHeight.push('No incluida');
           xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE8E8' } }; // Soft red pastel
           xlCell.font = { name: FONT_NAME, size: 10, italic: true, color: { argb: 'FF9B1C1C' } };
-        } else if (numericVal > 0 && !hasConditions) {
+        } else if (numericVal > 0 && !hasConditions && !hasMeaningfulNotes) {
           xlCell.value = numericVal;
           xlCell.numFmt = '$#,##0';
+          rowTextsForHeight.push(valStr);
           xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDEF7EC' } }; // Soft green pastel
           xlCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF03543F' } };
         } else {
-          xlCell.value = formatMatrixValue(valStr);
+          const baseDisplay =
+            numericVal > 0 && !hasConditions
+              ? '$' +
+                numericVal.toLocaleString('es-CO', {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
+                })
+              : formatMatrixValue(valStr);
+          const displayText = hasMeaningfulNotes
+            ? `${baseDisplay}\n[Deducible/Nota: ${trimmedNotes}]`
+            : baseDisplay;
+          xlCell.value = displayText;
+          rowTextsForHeight.push(displayText);
           xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDEF7EC' } }; // Soft green pastel
           xlCell.font = { name: FONT_NAME, size: 10, color: { argb: 'FF03543F' } };
         }
@@ -441,7 +532,7 @@ export async function generateExcelBuffer(
           xlCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF92400E' } };
         }
 
-        xlCell.alignment = { horizontal: 'center', wrapText: true };
+        xlCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
         xlCell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
 
         if (cell.pageNumber) {
@@ -459,10 +550,14 @@ export async function generateExcelBuffer(
         const notesCell = coveragesSheet.getCell(currentCovRow, quotes.length + 2);
         notesCell.value = note || '';
         notesCell.font = { name: FONT_NAME, size: 9, color: { argb: 'FF7C3AED' }, italic: true };
-        if (note)
+        notesCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+        if (note) {
           notesCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3E8FF' } };
+          rowTextsForHeight.push(note);
+        }
       }
 
+      coveragesSheet.getRow(currentCovRow).height = calculateDynamicRowHeight(rowTextsForHeight, 24);
       currentCovRow++;
     }
   }
@@ -497,10 +592,31 @@ export async function generateExcelBuffer(
     insHeader.alignment = { horizontal: 'center' };
   });
 
-  // Filter matrix for deductible rows
-  const deductibleMatrixRows = matrix.filter(
-    (row) => isDeductibleMatrixRow(row)
-  );
+  // Filter matrix for deductible rows, qualifying generic "Deducible" sub-rows with their parent section header
+  // and pruning orphaned headers.
+  let activeParentHeader = '';
+  const rawDeductibleRows: MatrixRow[] = [];
+  for (const row of matrix) {
+    if (row.type === 'header' && row.sectionId !== HEADER_SECTION_ID) {
+      activeParentHeader = row.label || '';
+    }
+    if (isDeductibleMatrixRow(row)) {
+      if (
+        row.type === 'data' &&
+        row.label.trim().toLowerCase() === 'deducible' &&
+        activeParentHeader &&
+        !activeParentHeader.toLowerCase().includes('deducible')
+      ) {
+        rawDeductibleRows.push({
+          ...row,
+          label: `${activeParentHeader} - Deducible`,
+        });
+      } else {
+        rawDeductibleRows.push(row);
+      }
+    }
+  }
+  const deductibleMatrixRows = pruneOrphanedSectionRows(rawDeductibleRows);
 
   let currentDedRow = 5;
 
@@ -512,21 +628,26 @@ export async function generateExcelBuffer(
         cell.value = row.label;
         cell.font = { name: FONT_NAME, size: 11, bold: true, color: { argb: 'FF1E3A8A' } };
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+        cell.alignment = { vertical: 'middle', horizontal: 'left' };
+        deductiblesSheet.getRow(currentDedRow).height = 24;
         currentDedRow++;
       } else if (row.type === 'spacer') {
         deductiblesSheet.getRow(currentDedRow).height = 8;
         currentDedRow++;
       } else {
-        deductiblesSheet.getRow(currentDedRow).height = 24;
         const labelCell = deductiblesSheet.getCell(currentDedRow, 1);
         labelCell.value = row.label;
         labelCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF475569' } };
         labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+        labelCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+        const dedTextsForHeight: string[] = [row.label || ''];
 
         row.cells.forEach((cell: MatrixCell, idx: number) => {
           const xlCell = deductiblesSheet.getCell(currentDedRow, idx + 2);
           const rawDed = cell.value || 'Sin deducible';
           const enrichedDed = enrichSmmlvDeductible(rawDed);
+          dedTextsForHeight.push(enrichedDed);
           const isNoAplica =
             enrichedDed.toLowerCase().includes('no aplica') ||
             enrichedDed.toLowerCase().includes('sin deducible');
@@ -539,9 +660,13 @@ export async function generateExcelBuffer(
             xlCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF03543F' } };
           }
 
-          xlCell.alignment = { horizontal: 'center', wrapText: true };
+          xlCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
           xlCell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
         });
+        deductiblesSheet.getRow(currentDedRow).height = calculateDynamicRowHeight(
+          dedTextsForHeight,
+          24
+        );
         currentDedRow++;
       }
     }
@@ -552,17 +677,20 @@ export async function generateExcelBuffer(
     );
 
     coverageNames.forEach((covName) => {
-      deductiblesSheet.getRow(currentDedRow).height = 24;
       const labelCell = deductiblesSheet.getCell(currentDedRow, 1);
       labelCell.value = covName;
       labelCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF475569' } };
       labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+      labelCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+      const dedTextsForHeight: string[] = [covName || ''];
 
       quotes.forEach((q, qIdx) => {
         const xlCell = deductiblesSheet.getCell(currentDedRow, qIdx + 2);
         const cov = (q.coverages || []).find((c) => c.name === covName);
         const rawDed = cov?.deductible || 'Sin deducible';
         const enrichedDed = enrichSmmlvDeductible(rawDed);
+        dedTextsForHeight.push(enrichedDed);
         const isNoAplica =
           enrichedDed.toLowerCase().includes('no aplica') ||
           enrichedDed.toLowerCase().includes('sin deducible');
@@ -575,9 +703,13 @@ export async function generateExcelBuffer(
           xlCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF03543F' } };
         }
 
-        xlCell.alignment = { horizontal: 'center', wrapText: true };
+        xlCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
         xlCell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
       });
+      deductiblesSheet.getRow(currentDedRow).height = calculateDynamicRowHeight(
+        dedTextsForHeight,
+        24
+      );
       currentDedRow++;
     });
   }
@@ -616,24 +748,113 @@ export async function generateExcelBuffer(
     (row) => isFinancialMatrixRow(row) && row.type === 'data'
   );
 
-  const netRow = financialMatrixRows.find(
-    (r) => r.label.toLowerCase().includes('prima neta') || r.label.toLowerCase().includes('net')
-  );
-  const expRow = financialMatrixRows.find(
-    (r) =>
-      r.label.toLowerCase().includes('gasto') || r.label.toLowerCase().includes('expedici')
+  const normalizeFinLabel = (lbl: string) =>
+    lbl
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+
+  const netRow = financialMatrixRows.find((r) => {
+    const l = normalizeFinLabel(r.label);
+    return (
+      l.includes('prima neta') ||
+      l.includes('prima comercial') ||
+      l.includes('prima sin iva') ||
+      l.includes('prima antes de iva') ||
+      l === 'neto'
+    );
+  });
+  const expRow = financialMatrixRows.find((r) => {
+    const l = normalizeFinLabel(r.label);
+    return l.includes('gasto') || l.includes('expedici');
+  });
+  const ivaRow = financialMatrixRows.find((r) => {
+    const l = normalizeFinLabel(r.label);
+    return (
+      l.includes('iva') &&
+      !l.includes('con iva') &&
+      !l.includes('iva incluido') &&
+      !l.includes('inc. iva') &&
+      !l.includes('inc iva')
+    );
+  });
+  const totalRow = financialMatrixRows.find((r) => {
+    const l = normalizeFinLabel(r.label);
+    return (
+      l.includes('total a pagar') ||
+      l.includes('valor a pagar') ||
+      l.includes('total prima') ||
+      l.includes('prima total') ||
+      l.includes('prima con iva') ||
+      l.includes('total liquidacion') ||
+      l.includes('total poliza') ||
+      l === 'total'
+    );
+  });
+
+  const hasExplicitInputMatrix = Boolean(
+    reportData?.matrix && Array.isArray(reportData.matrix) && reportData.matrix.length > 0
   );
 
-  const netPremiums = netRow
-    ? netRow.cells.map((c) => parseNumericValue(c.value) || 0)
-    : quotes.map((q) => q.priceAnnual || 0);
+  const netPremiums: number[] = [];
+  const expenses: number[] = [];
+  const subtotals: number[] = [];
+  const ivas: number[] = [];
+  const totals: number[] = [];
 
-  const expenses = expRow
-    ? expRow.cells.map((c) => parseNumericValue(c.value) || 0)
-    : quotes.map((q) => {
-        if (q.priceAnnual === 0) return 0;
-        return (q as any).expenses || (q as any).fees || 0;
-      });
+  quotes.forEach((q, idx) => {
+    const rawNet = netRow ? parseNumericValue(netRow.cells[idx]?.value) : 0;
+    const rawExp = expRow
+      ? parseNumericValue(expRow.cells[idx]?.value)
+      : q.priceAnnual === 0
+        ? 0
+        : (q as any).expenses || (q as any).fees || 0;
+    const rawIva = ivaRow ? parseNumericValue(ivaRow.cells[idx]?.value) : 0;
+    const rawTotal = totalRow ? parseNumericValue(totalRow.cells[idx]?.value) : 0;
+    const quotePrice = q.priceAnnual || 0;
+
+    if (hasExplicitInputMatrix && rawNet === 0 && (rawTotal > 0 || quotePrice > 0)) {
+      // V2 unified matrix where priceAnnual / Total already includes IVA (and no separate Prima Neta row exists):
+      // derive Subtotal, IVA, and Prima Neta from Total so we never double-charge 19% IVA over priceAnnual.
+      const totVal = rawTotal > 0 ? rawTotal : quotePrice;
+      const ivaVal =
+        rawIva > 0 && rawIva < totVal ? rawIva : totVal - Math.round(totVal / 1.19);
+      const subVal = Math.max(0, totVal - ivaVal);
+      const expVal = Math.min(rawExp, subVal);
+      const netVal = Math.max(0, subVal - expVal);
+
+      netPremiums.push(netVal);
+      expenses.push(expVal);
+      subtotals.push(subVal);
+      ivas.push(ivaVal);
+      totals.push(totVal);
+    } else if (rawNet > 0 && rawTotal > rawNet) {
+      const netVal = rawNet;
+      const expVal = rawExp;
+      const subVal = netVal + expVal;
+      const ivaVal = rawIva > 0 ? rawIva : Math.max(0, rawTotal - subVal);
+      const totVal = subVal + ivaVal;
+
+      netPremiums.push(netVal);
+      expenses.push(expVal);
+      subtotals.push(subVal);
+      ivas.push(ivaVal);
+      totals.push(totVal);
+    } else {
+      const netVal = rawNet > 0 ? rawNet : quotePrice;
+      const expVal = rawExp;
+      const subVal = netVal + expVal;
+      const ivaVal = rawIva > 0 ? rawIva : Math.round(subVal * 0.19);
+      const totVal = subVal + ivaVal;
+
+      netPremiums.push(netVal);
+      expenses.push(expVal);
+      subtotals.push(subVal);
+      ivas.push(ivaVal);
+      totals.push(totVal);
+    }
+  });
 
   const addFinRow = (
     label: string,
@@ -641,7 +862,7 @@ export async function generateExcelBuffer(
     getValueOrFormula: (
       colLetter: string,
       idx: number
-    ) => { value?: number; formula?: string; isTotal?: boolean; isWinner?: boolean }
+    ) => { value?: number; formula?: string; result?: number; isTotal?: boolean; isWinner?: boolean }
   ) => {
     financialsSheet.getRow(rowNum).height = 22;
     const lCell = financialsSheet.getCell(rowNum, 1);
@@ -655,7 +876,10 @@ export async function generateExcelBuffer(
       const res = getValueOrFormula(colLetter, idx);
 
       if (res.formula) {
-        xlCell.value = { formula: res.formula };
+        xlCell.value =
+          res.result !== undefined
+            ? { formula: res.formula, result: res.result }
+            : { formula: res.formula };
       } else if (res.value !== undefined) {
         xlCell.value = res.value;
       }
@@ -671,8 +895,11 @@ export async function generateExcelBuffer(
     });
   };
 
-  const minNet = Math.min(...netPremiums.filter((n) => n > 0));
-  const maxNet = Math.max(...netPremiums.filter((n) => n > 0));
+  const positiveNets = netPremiums.filter((n) => n > 0);
+  const minNet = positiveNets.length > 0 ? Math.min(...positiveNets) : 0;
+  const positiveTotals = totals.filter((t) => t > 0);
+  const minTotal = positiveTotals.length > 0 ? Math.min(...positiveTotals) : 0;
+  const maxTotal = positiveTotals.length > 0 ? Math.max(...positiveTotals) : 0;
 
   addFinRow('Prima Neta (Anual)', 5, (_, idx) => ({
     value: netPremiums[idx]!,
@@ -684,19 +911,31 @@ export async function generateExcelBuffer(
   }));
 
   // Fórmulas automáticas nativas
-  addFinRow('Subtotal', 7, (colLetter) => ({
+  addFinRow('Subtotal', 7, (colLetter, idx) => ({
     formula: `SUM(${colLetter}5:${colLetter}6)`,
+    result: subtotals[idx]!,
     isTotal: true,
   }));
 
-  addFinRow('IVA (19%)', 8, (colLetter) => ({
-    formula: `ROUND(${colLetter}7*0.19, 0)`,
-  }));
+  addFinRow('IVA (19%)', 8, (colLetter, idx) => {
+    const subVal = subtotals[idx]!;
+    const ivaVal = ivas[idx]!;
+    if (Math.round(subVal * 0.19) === ivaVal) {
+      return {
+        formula: `ROUND(${colLetter}7*0.19, 0)`,
+        result: ivaVal,
+      };
+    }
+    return {
+      value: ivaVal,
+    };
+  });
 
   addFinRow('TOTAL A PAGAR', 9, (colLetter, idx) => ({
     formula: `${colLetter}7+${colLetter}8`,
+    result: totals[idx]!,
     isTotal: true,
-    isWinner: netPremiums[idx]! > 0 && netPremiums[idx]! === minNet,
+    isWinner: totals[idx]! > 0 && totals[idx]! === minTotal,
   }));
 
   // Ratio % sobre Valor Asegurado
@@ -708,8 +947,8 @@ export async function generateExcelBuffer(
   quotes.forEach((q, idx) => {
     const colLetter = String.fromCharCode(66 + idx);
     const xlCell = financialsSheet.getCell(`${colLetter}11`);
-    if (netPremiums[idx]! > 0 && maxAsset > 0) {
-      xlCell.value = { formula: `${colLetter}9/${maxAsset}` };
+    if (totals[idx]! > 0 && maxAsset > 0) {
+      xlCell.value = { formula: `${colLetter}9/${maxAsset}`, result: totals[idx]! / maxAsset };
       xlCell.numFmt = '0.00%';
     } else {
       xlCell.value = 'N/A';
@@ -732,20 +971,20 @@ export async function generateExcelBuffer(
   quotes.forEach((q, idx) => {
     const colLetter = String.fromCharCode(66 + idx);
     const xlCell = financialsSheet.getCell(`${colLetter}14`);
-    const p = netPremiums[idx]!;
+    const p = totals[idx]!;
 
-    if (p > 0 && minNet > 0) {
-      const diffPct = ((p - minNet) / minNet) * 100;
+    if (p > 0 && minTotal > 0) {
+      const diffPct = ((p - minTotal) / minTotal) * 100;
       let barChars = '██████████';
       if (diffPct === 0) barChars = '████ (MÁS ECONÓMICA)';
-      else if (p === maxNet) barChars = '████████████ (MÁS COSTOSA)';
+      else if (p === maxTotal) barChars = '████████████ (MÁS COSTOSA)';
 
       xlCell.value = `${barChars} (+${diffPct.toFixed(1)}%)`;
 
-      if (p === minNet) {
+      if (p === minTotal) {
         xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDEF7EC' } };
         xlCell.font = { name: FONT_NAME, size: 9, bold: true, color: { argb: 'FF03543F' } };
-      } else if (p === maxNet) {
+      } else if (p === maxTotal) {
         xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE8E8' } };
         xlCell.font = { name: FONT_NAME, size: 9, bold: true, color: { argb: 'FF9B1C1C' } };
       } else {
