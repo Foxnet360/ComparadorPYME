@@ -142,6 +142,250 @@ export const COPROPIEDADES_GRANULAR_SECTIONS = [
   },
 ] as const;
 
+export const AUTOS_GRANULAR_SECTIONS = [
+  {
+    section: 'DATOS DEL VEHÍCULO Y BIENES',
+    rows: [
+      'Vehículo Asegurado (Marca / Modelo / Año / Placa)',
+      'Valor Comercial Asegurado (FASECOLDA)',
+      'Accesorios Especiales y Blindaje',
+      'Ciudad de Circulación y Tipo de Uso',
+    ],
+  },
+  {
+    section: 'RESPONSABILIDAD CIVIL Y AMPAROS BÁSICOS',
+    rows: [
+      'RCE Daños a Bienes de Terceros',
+      'RCE Muerte o Lesiones a una Persona',
+      'RCE Muerte o Lesiones a dos o más Personas',
+      'Límite Único Combinado (LUC) RCE',
+      'Pérdida Total por Daños (PTD)',
+      'Pérdida Total por Hurto (PTH)',
+      'Pérdida Parcial por Daños (PPD)',
+      'Pérdida Parcial por Hurto (PPH)',
+      'Terremoto, Eventos de la Naturaleza e Inundación',
+      'Amparo Patrimonial / Asistencia Jurídica en Proceso Penal',
+    ],
+  },
+  {
+    section: 'ASISTENCIAS Y BENEFICIOS',
+    rows: [
+      'Asistencia en Viaje 24/7 y Servicio de Grúa',
+      'Carro Taller y Asistencia Mecánica Ligera',
+      'Vehículo de Reemplazo / Sustituto (Días)',
+      'Conductor Elegido (Eventos por año)',
+      'Accidentes Personales al Conductor y Ocupantes',
+      'Gastos de Transporte por Pérdida Total o Parcial',
+    ],
+  },
+  {
+    section: 'DEDUCIBLES',
+    rows: [
+      'Pérdida Parcial por Daños',
+      'Pérdida Parcial por Hurto',
+      'Pérdida Total por Daños',
+      'Pérdida Total por Hurto',
+      'Responsabilidad Civil Extracontractual (RCE)',
+    ],
+  },
+  {
+    section: 'FINANCIAL',
+    rows: [
+      'Prima Neta Anual',
+      'Gastos de Expedición',
+      'IVA (19%)',
+      'Total a Pagar / Prima Total Anual',
+      'Forma de Pago',
+    ],
+  },
+] as const;
+
+export const SALUD_GRANULAR_SECTIONS = [
+  {
+    section: 'MODALIDAD Y RED DE ATENCIÓN',
+    rows: [
+      'Tipo de Plan (Complementario PBS / Sustitutivo)',
+      'Red de Clínicas e Instituciones Prestadoras (IPS)',
+      'Cobertura Geográfica y Portabilidad Nacional',
+    ],
+  },
+  {
+    section: 'COBERTURAS HOSPITALARIAS Y QUIRÚRGICAS',
+    rows: [
+      'Hospitalización en Habitación Individual',
+      'Unidad de Cuidados Intensivos (UCI / UCE)',
+      'Honorarios Médicos y Procedimientos Quirúrgicos',
+      'Hospitalización Domiciliaria (Home Care)',
+      'Prótesis Quirúrgicas e Insumos Médicos',
+    ],
+  },
+  {
+    section: 'COBERTURAS AMBULATORIAS Y ESPECIALES',
+    rows: [
+      'Consultas Médicas Especializadas sin Remisión',
+      'Exámenes de Laboratorio e Imágenes Diagnósticas',
+      'Terapias de Rehabilitación (Física, Respiratoria, etc.)',
+      'Tratamientos Oncológicos (Quimioterapia y Radioterapia)',
+      'Maternidad, Parto y Cuidados del Recién Nacido',
+      'Salud Mental (Psicología y Psiquiatría)',
+      'Urgencias Odontológicas y Odontología Básica',
+      'Urgencias en el Exterior y Asistencia Médica Internacional',
+    ],
+  },
+  {
+    section: 'DEDUCIBLES, COPAGOS Y CARENCIAS',
+    rows: [
+      'Copago por Consulta Médica Especializada',
+      'Copago por Urgencias Médicas',
+      'Copago por Exámenes de Diagnóstico Especializados',
+      'Períodos de Carencia (Días o Meses de Espera)',
+      'Tratamiento de Enfermedades Preexistentes',
+    ],
+  },
+  {
+    section: 'FINANCIAL',
+    rows: [
+      'Cuota Mensual por Persona',
+      'Prima Anual por Persona o Colectivo',
+      'IVA (19%)',
+      'Total a Pagar / Tarifa Total',
+      'Forma de Pago',
+    ],
+  },
+] as const;
+
+export const CUMPLIMIENTO_GRANULAR_SECTIONS = [
+  {
+    section: 'DATOS DEL CONTRATO GARANTIZADO',
+    rows: [
+      'Tomador / Contratista Afianzado',
+      'Asegurado / Beneficiario (Entidad Estatal o Privada)',
+      'Número y Objeto del Contrato Garantizado',
+      'Valor Total del Contrato en COP',
+      'Plazo y Término de Ejecución',
+    ],
+  },
+  {
+    section: 'GARANTÍAS CONTRACTUALES Y PRECONTRACTUALES',
+    rows: [
+      'Seriedad de la Oferta (% y Límite)',
+      'Buen Manejo y Correcta Inversión del Anticipo (100%)',
+      'Cumplimiento del Contrato (% y Límite)',
+      'Pago de Salarios, Prestaciones Sociales e Indemnizaciones (% y Límite)',
+      'Calidad del Servicio o de los Bienes Suministrados',
+    ],
+  },
+  {
+    section: 'GARANTÍAS POSTCONTRACTUALES Y RESPONSABILIDAD',
+    rows: [
+      'Estabilidad y Calidad de la Obra (% y Años de Vigencia)',
+      'Garantía de Mantenimiento y Correcto Funcionamiento',
+      'Responsabilidad Civil Extracontractual Derivada del Contrato',
+      'Provisión de Repuestos y Accesorios',
+    ],
+  },
+  {
+    section: 'FINANCIAL',
+    rows: [
+      'Prima Neta de Cumplimiento',
+      'Gastos de Expedición',
+      'IVA (19%)',
+      'Total a Pagar de la Póliza',
+      'Tasa Aplicada por Amparo',
+    ],
+  },
+] as const;
+
+export const TRANSPORTE_GRANULAR_SECTIONS = [
+  {
+    section: 'TRAYECTO Y MERCANCÍAS ASEGURADAS',
+    rows: [
+      'Modo de Transporte (Terrestre / Marítimo / Aéreo / Multimodal)',
+      'Ruta y Trayecto (Origen - Destino)',
+      'Naturaleza de la Mercancía Asegurada',
+      'Tipo de Póliza (Flotante / Automática / Por Viaje / Abierta)',
+      'Incoterm Aplicable (CIF, FOB, DAP, etc.) y Sobrevalor (110%)',
+    ],
+  },
+  {
+    section: 'COBERTURAS DE TRÁNSITO Y CARGA',
+    rows: [
+      'Todo Riesgo Daño Material a la Carga',
+      'Pérdida Total por Accidente del Vehículo Transportador',
+      'Hurto Calificado y Hurto Simple de la Carga',
+      'Saqueo, Pillaje y Falta de Entrega por Bulto Entero',
+      'Rotura, Derrame, Contacto con Otras Cargas y Contaminación',
+      'Avería Particular y Avería Gruesa (General Average)',
+      'Cláusulas del Instituto de Londres (ICC A, B o C)',
+      'Falla del Sistema de Refrigeración / Cadena de Frío',
+      'Daños al Contenedor y Material de Embalaje',
+    ],
+  },
+  {
+    section: 'DEDUCIBLES Y REQUISITOS DE SEGURIDAD',
+    rows: [
+      'Deducible Hurto',
+      'Deducible Daño Material',
+      'Deducible Falta de Entrega',
+      'Exigencias de Seguridad (GPS, Escolta, Horario Nocturno)',
+    ],
+  },
+  {
+    section: 'FINANCIAL',
+    rows: [
+      'Prima Neta / Depósito de Transporte',
+      'Gastos de Expedición',
+      'IVA (19%)',
+      'Total a Pagar',
+      'Tasa por Mil Aplicada',
+    ],
+  },
+] as const;
+
+export const VIDA_GRUPO_GRANULAR_SECTIONS = [
+  {
+    section: 'DATOS DEL GRUPO Y ASEGURABILIDAD',
+    rows: [
+      'Grupo Asegurado / Empresa Tomadora',
+      'Número de Asegurados del Colectivo',
+      'Edad Máxima de Ingreso',
+      'Edad Límite de Permanencia',
+      'Límite de No Asegurabilidad / Exámenes Médicos',
+    ],
+  },
+  {
+    section: 'AMPAROS PRINCIPALES DE VIDA',
+    rows: [
+      'Amparo Básico por Muerte (Cualquier Causa)',
+      'Incapacidad Total y Permanente (ITP ≥ 50%)',
+      'Muerte Accidental y Desmembración (MAyD)',
+      'Anticipo o Indemnización por Enfermedades Graves',
+      'Auxilio Funerario / Gastos de Sepelio',
+    ],
+  },
+  {
+    section: 'BENEFICIOS COMPLEMENTARIOS',
+    rows: [
+      'Renta Diaria por Hospitalización / Cirugía',
+      'Auxilio de Canasta Familiar / Mantenimiento',
+      'Auxilio Educativo para Hijos Estudiantes',
+      'Doble Indemnización por Accidente de Tránsito',
+      'Cobertura de Suicidio (Día 1 vs. Carencia de 1 Año)',
+      'Exoneración de Pago de Primas por Invalidez',
+    ],
+  },
+  {
+    section: 'FINANCIAL',
+    rows: [
+      'Prima Neta Mensual por Persona',
+      'Prima Neta Anual Total del Colectivo',
+      'IVA (0% Exento Art. 427 E.T.)',
+      'Total a Pagar de la Póliza',
+      'Forma y Periodicidad de Pago',
+    ],
+  },
+] as const;
+
 export class ComparisonPromptBuilder {
   /**
    * Build the main flat-table comparison prompt.
@@ -196,27 +440,21 @@ ${context.hasClauses ? 'También se proporcionan clausulados para validación; �
     const effectiveDomain = domain ?? context.domain ?? 'pyme';
     const isHogar = effectiveDomain === 'hogar';
     const isCopropiedades = effectiveDomain === 'copropiedades';
+    const isAutos = effectiveDomain === 'autos';
+    const isSalud = effectiveDomain === 'salud';
+    const isCumplimiento = effectiveDomain === 'cumplimiento';
+    const isTransporte = effectiveDomain === 'transporte';
+    const isVidaGrupo = effectiveDomain === 'vida_grupo';
 
-    const sectionsToUse = isHogar
-      ? HOGAR_GRANULAR_SECTIONS
-      : isCopropiedades
-        ? COPROPIEDADES_GRANULAR_SECTIONS
-        : GRANULAR_SECTIONS;
-    const sectionList = sectionsToUse
-      .map((section, sIdx) => {
-        const rows = section.rows.map((row, rIdx) => `    ${rIdx + 1}. ${row}`).join('\n');
-        return `  ${sIdx + 1}. ${section.section}:\n${rows}`;
-      })
-      .join('\n\n');
+    let sectionsToUse: readonly { readonly section: string; readonly rows: readonly string[] }[] =
+      GRANULAR_SECTIONS;
+    let roleDescription = 'Eres un analista de seguros PYME y Daños Materiales en Colombia.';
+    let sectionRules = '';
 
-    const roleDescription = isHogar
-      ? `Eres un analista experto en seguros de Hogar y Vivienda en Colombia.`
-      : isCopropiedades
-        ? `Eres un analista experto en seguros de Copropiedades y Propiedad Horizontal en Colombia (Ley 675 de 2001 y NSR-10).`
-        : `Eres un analista de seguros PYME en Colombia.`;
-
-    const sectionRules = isHogar
-      ? `Reglas de Negocio para Secciones de Hogar:
+    if (isHogar) {
+      sectionsToUse = HOGAR_GRANULAR_SECTIONS;
+      roleDescription = 'Eres un analista experto en seguros de Hogar y Vivienda en Colombia.';
+      sectionRules = `Reglas de Negocio para Secciones de Hogar:
 1. BIENES ASEGURADOS: Identifica la tipología contratada en cada cotización: Solo Edificio/Estructura, Solo Contenidos (Muebles y Enseres) o Integral (Edificio + Contenidos).
    - Si una cotización NO ampara el Edificio (ej. póliza para arrendatario), usa exactamente "No Cotizado" para el Edificio.
    - Si una cotización NO ampara Contenidos (ej. seguro obligatorio hipotecario solo estructura), usa exactamente "No Cotizado" para Contenidos.
@@ -231,9 +469,12 @@ ${context.hasClauses ? 'También se proporcionan clausulados para validación; �
    - REGLA CRÍTICA DE SEPARACIÓN PATRIMONIAL VS PRIMA: NUNCA confundas el "Valor Asegurado", "Suma Asegurada" o "Valor Total Asegurado" (que son sumas del inmueble/bienes del orden de cientos o miles de millones de COP) con la Prima o Valor a pagar de la póliza (que para Hogar suele ser de unos pocos millones de COP, ej. $1.000.000 a $15.000.000 COP).
    - La sección FINANCIAL DEBE contener ÚNICA Y EXCLUSIVAMENTE los costos o primas comerciales a pagar por el cliente. Jamás traslades valores de bienes o sumas aseguradas a esta sección ni a la fila "Total a pagar" o "Total prima".
    - Para Allianz: ubica la prima comercial del plan cotizado (ej. "Hogar Esencial", "Hogar Plus") o el "Valor a pagar" / "Total liquidación", extrayendo dicho monto exacto (ej. $3.962.567) en la fila "Total a pagar" o "Total prima".
-   - Para Mapfre: ubica la "Prima Total" o "Total a pagar" con IVA incluido (ej. $4.333.254) y repórtala en "Total a pagar" o "Total prima".`
-      : isCopropiedades
-        ? `Reglas de Negocio para Secciones de Copropiedades (Ley 675 de 2001 y NSR-10):
+   - Para Mapfre: ubica la "Prima Total" o "Total a pagar" con IVA incluido (ej. $4.333.254) y repórtala en "Total a pagar" o "Total prima".`;
+    } else if (isCopropiedades) {
+      sectionsToUse = COPROPIEDADES_GRANULAR_SECTIONS;
+      roleDescription =
+        'Eres un analista experto en seguros de Copropiedades y Propiedad Horizontal en Colombia (Ley 675 de 2001 y NSR-10).';
+      sectionRules = `Reglas de Negocio para Secciones de Copropiedades (Ley 675 de 2001 y NSR-10):
 1. BIENES Y ÁREAS COMUNES: Extrae los valores asegurados (valor de reposición o reconstrucción a nuevo) para Edificio / Estructura Común, Cimentación y Sótanos, Maquinaria Comunitaria (Ascensores, Subestaciones, Bombas de Agua, Equipos Hidroneumáticos), Equipos Eléctricos y Electrónicos, Cerramientos y Zonas Recreativas.
 2. COBERTURAS: Extrae límites y condiciones para Incendio, Terremoto (obligatorios bajo Ley 675), RCE Áreas Comunes, RCE para Directores y Administradores (D&O Copropiedades), RCE Parqueaderos, Daños por Agua / Anegación, Granizo / Vientos Fuertes, AMIT / HMACC, Sustracción de bienes comunes, Rotura de Maquinaria y Asistencia de Áreas Comunes.
 3. DEDUCIBLES: REGLA DE ORO DE DEDUCIBLES: Extrae con total detalle todos los deducibles estipulados en cada cotización. No omitas ningún deducible:
@@ -241,13 +482,71 @@ ${context.hasClauses ? 'También se proporcionan clausulados para validación; �
    - Daños por Agua / Anegación: extrae % de la pérdida y mínimo en SMMLV.
    - RCE y D&O: extrae % de la pérdida y mínimo en SMMLV, o "Sin deducible" si no aplica copago.
    - Si una cobertura no tiene deducible a cargo de la copropiedad, usa textualmente "Sin deducible".
-4. FINANCIAL: Extrae Prima Neta, Gastos de Expedición, IVA (19%) y Total a Pagar / Prima Total Anual. NUNCA confundas la suma asegurada de los edificios con la prima a pagar de la póliza.`
-        : `Reglas de Negocio para Secciones:
+4. FINANCIAL: Extrae Prima Neta, Gastos de Expedición, IVA (19%) y Total a Pagar / Prima Total Anual. NUNCA confundas la suma asegurada de los edificios con la prima a pagar de la póliza.`;
+    } else if (isAutos) {
+      sectionsToUse = AUTOS_GRANULAR_SECTIONS;
+      roleDescription =
+        'Eres un analista experto en seguros de Automotores y Vehículos en Colombia bajo regulación de la SFC y FASECOLDA.';
+      sectionRules = `Reglas de Negocio para Secciones de Autos:
+1. DATOS DEL VEHÍCULO Y BIENES: Extrae la identificación del automotor (Marca, Modelo, Año, Placa), valor comercial asegurado en guía FASECOLDA, y si ampara accesorios, blindaje o lujos especiales.
+2. RESPONSABILIDAD CIVIL Y AMPAROS BÁSICOS: Extrae límites de RCE Daños a Terceros, RCE Lesiones o Muerte 1 Persona, RCE Lesiones o Muerte 2+ Personas, o Límite Único Combinado (LUC). Extrae condiciones de Pérdida Total Daños (PTD) y Pérdida Total Hurto (PTH) indicando el umbral de pérdida (75% u 80% FASECOLDA), y amparos de Pérdida Parcial Daños (PPD) y Pérdida Parcial Hurto (PPH).
+3. ASISTENCIAS Y BENEFICIOS: Extrae coberturas de Grúa y Asistencia en Viaje 24/7, días de Carro Taller / Vehículo de Reemplazo (ej. 10, 15, 30 días), Conductor Elegido y Accidentes al Conductor/Ocupantes.
+4. DEDUCIBLES: Extrae con exactitud cada deducible en su unidad original: porcentaje con mínimo en SMMLV (ej. 10% mín. 1 SMMLV para PPD/PPH), o "Sin deducible" si la póliza cubre al 100% sin franquicia (especialmente en Pérdida Total o RCE).
+5. FINANCIAL: Extrae Prima Neta, Gastos de Expedición, IVA (19%) y Total a Pagar. Nunca confundas el valor comercial del carro con la prima a pagar.`;
+    } else if (isSalud) {
+      sectionsToUse = SALUD_GRANULAR_SECTIONS;
+      roleDescription =
+        'Eres un analista experto en Planes Voluntarios de Salud (PVS) y Medicina Prepagada en Colombia bajo Res. 244/2019 MinSalud y regulación SFC.';
+      sectionRules = `Reglas de Negocio para Secciones de Salud:
+1. MODALIDAD Y RED DE ATENCIÓN: Identifica si el plan es Complementario al PBS de la EPS o Sustitutivo, la red de clínicas/IPS (propias vs adscritas) y portabilidad nacional.
+2. COBERTURAS HOSPITALARIAS Y QUIRÚRGICAS: Extrae hospitalización en habitación individual sin límite de días, cobertura UCI/UCE, honorarios quirúrgicos y atención domiciliaria (Home Care).
+3. COBERTURAS AMBULATORIAS: Extrae acceso directo a médicos especialistas sin remisión, exámenes diagnósticos de alta complejidad, terapias, tratamientos oncológicos (quimio/radioterapia) y urgencias médicas internacionales (en USD o EUR).
+4. DEDUCIBLES, COPAGOS Y CARENCIAS: Extrae con precisión el valor exacto de copagos por consulta médica especializada en COP (ej. $35.000 COP), copagos por urgencias, períodos de carencia para maternidad o cirugías, y condiciones de preexistencias.
+5. FINANCIAL: Extrae cuota mensual o tarifa anual por persona o colectivo, impuestos y valor total a pagar.`;
+    } else if (isCumplimiento) {
+      sectionsToUse = CUMPLIMIENTO_GRANULAR_SECTIONS;
+      roleDescription =
+        'Eres un analista experto en Seguros de Cumplimiento, Fianzas y Contratación Estatal en Colombia (Ley 80 de 1993 y Decreto 1082 de 2015).';
+      sectionRules = `Reglas de Negocio para Secciones de Cumplimiento:
+1. DATOS DEL CONTRATO GARANTIZADO: Extrae Tomador/Contratista, Entidad Beneficiaria (estatal o privada), Número y Objeto del Contrato, y Valor Total del Contrato en COP.
+2. GARANTÍAS CONTRACTUALES: Extrae porcentajes y sumas aseguradas para Seriedad de la Oferta (mín. 10%), Buen Manejo del Anticipo (100%), Cumplimiento del Contrato (10% a 20%), y Pago de Salarios y Prestaciones Sociales (5% a 15%).
+3. GARANTÍAS POSTCONTRACTUALES: Extrae Estabilidad y Calidad de la Obra (término en años y %), Calidad de Bienes/Servicios, y Mantenimiento.
+4. FINANCIAL: Extrae Prima Neta, Gastos de Expedición, IVA (19%) y Total a Pagar. Registra la tasa aplicada por amparo si está disponible.`;
+    } else if (isTransporte) {
+      sectionsToUse = TRANSPORTE_GRANULAR_SECTIONS;
+      roleDescription =
+        'Eres un analista experto en Seguros de Transporte de Mercancías y Carga en Colombia (Decreto 1079 de 2015 y Código de Comercio Arts. 1117-1124).';
+      sectionRules = `Reglas de Negocio para Secciones de Transporte:
+1. TRAYECTO Y MERCANCÍAS: Extrae modo de transporte (Terrestre, Marítimo, Aéreo, Multimodal), ruta origen-destino, tipo de mercancía y términos Incoterm (con sobre-valor ej. 110%).
+2. COBERTURAS DE TRÁNSITO: Extrae amparos para Todo Riesgo Daño Material, Pérdida Total del vehículo, Hurto Calificado/Simple, Saqueo y Falta de Entrega por bulto entero, Avería Gruesa (General Average), y Cláusulas ICC del Instituto de Londres (A, B o C).
+3. DEDUCIBLES Y SEGURIDAD: Extrae deducibles por amparo (% de la pérdida con mínimo en SMMLV) y requisitos obligatorios de seguridad (monitoreo GPS, escolta armada, horarios de movilización).
+4. FINANCIAL: Extrae Prima Neta o Depósito, Gastos de Expedición, IVA (19%), Total a Pagar y Tasa por Mil aplicada.`;
+    } else if (isVidaGrupo) {
+      sectionsToUse = VIDA_GRUPO_GRANULAR_SECTIONS;
+      roleDescription =
+        'Eres un analista experto en Seguros de Vida Grupo y Vida Colectivo en Colombia (Código de Comercio y regulación SFC).';
+      sectionRules = `Reglas de Negocio para Secciones de Vida Grupo:
+1. DATOS DEL GRUPO Y ASEGURABILIDAD: Extrae Empresa/Tomador, número de asegurados, edades límites (edad máxima de ingreso ej. 65 años, permanencia ej. 75 años) y límites sin examen médico.
+2. AMPAROS PRINCIPALES: Extrae sumas aseguradas de Amparo Básico Muerte Cualquier Causa, Incapacidad Total y Permanente (ITP ≥ 50%), Muerte Accidental (MAyD), Enfermedades Graves y Auxilio Funerario.
+3. BENEFICIOS COMPLEMENTARIOS: Extrae Renta Hospitalaria, Auxilio Educativo, Canasta Familiar, Doble Indemnización en accidente de tránsito, y condiciones del amparo de Suicidio (cobertura desde día 1 vs carencia 1 año según Art. 1158 Co.Co.).
+4. FINANCIAL: Extrae Prima Neta por persona o colectivo, IVA (0% exento en vida bajo Art. 427 Estatuto Tributario) y Total a Pagar.`;
+    } else {
+      sectionsToUse = GRANULAR_SECTIONS;
+      roleDescription = 'Eres un analista de seguros PYME y Daños Materiales en Colombia.';
+      sectionRules = `Reglas de Negocio para Secciones:
 1. BIENES ASEGURADOS: Extrae las sumas aseguradas o descripciones de Mercancías, Muebles y enseres, Maquinaria y equipo, Equipo eléctrico y electrónico, y Asistencia.
 2. COBERTURAS: Extrae límites, amparos y condiciones de cobertura para Amparo básico todo riesgo, Terremoto, Responsabilidad Civil Extracontractual (RCE), Lucro Cesante, Rotura de Maquinaria, Equipos eléctricos y electrónicos, Gastos médicos, Asistencia, Vidrios, Manejo global / Infidelidad, Transporte de mercancías, Daños por agua / Anegación, HMACC-AMIT, y RC en proceso civil.
 3. DEDUCIBLES: Extrae los deducibles específicos para Todo Riesgo Incendio, Anegación / Cobertura Extendida, Terremoto, HMACC-AMIT, RCE, Lucro Cesante, Rotura de Maquinaria, Equipos eléctricos y electrónicos, Vidrios, Manejo global / Infidelidad, Transporte de mercancías, Daños por agua / Anegación, y Sustracción con Violencia. Debes incluir una fila por cada deducible que aparezca textualmente en las cotizaciones; no omitas deducibles. Si un amparo no tiene deducible, usa "Sin deducible".
 4. SUSTRACCIÓN: Extrae límites y condiciones para Sustracción con Violencia.
 5. FINANCIAL: Extrae Prima con IVA incluido, Gastos de expedición, IVA, Total prima, y Forma de pago. NUNCA coloques sumas aseguradas ni valores de bienes en esta sección; solo costos o primas de la póliza.`;
+    }
+
+    const sectionList = sectionsToUse
+      .map((section, sIdx) => {
+        const rows = section.rows.map((row, rIdx) => `    ${rIdx + 1}. ${row}`).join('\n');
+        return `  ${sIdx + 1}. ${section.section}:\n${rows}`;
+      })
+      .join('\n\n');
 
     const percentageRule = isHogar
       ? `\n- REGLA CRÍTICA DE AMPAROS PORCENTUALES (SURA Y SIMILARES): Si una cotización expresa el valor o límite de una cobertura como un porcentaje (ej. "100%", "10% hasta 50 SMMLV"), DEBES calcular y mostrar el valor monetario real en pesos con base en la suma asegurada del bien correspondiente (Edificio o Contenidos) y reportarlo como "$XXX.XXX.XXX (YY%)". NUNCA dejes únicamente "100%" sin el valor monetario absoluto si la cotización indica el valor asegurable del bien.`

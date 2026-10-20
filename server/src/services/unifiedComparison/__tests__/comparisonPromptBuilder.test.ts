@@ -156,6 +156,91 @@ describe('comparisonPromptBuilder.buildV2ComparisonPrompt', () => {
       expect(prompt).toContain('Sin deducible');
     });
 
+    it('generates domain-specific sections and rules for copropiedades', () => {
+      const prompt = comparisonPromptBuilder.buildV2ComparisonPrompt(
+        { insurerCount: 3 },
+        undefined,
+        'copropiedades'
+      );
+
+      expect(prompt).toContain('Copropiedades y Propiedad Horizontal en Colombia (Ley 675 de 2001');
+      expect(prompt).toContain('BIENES Y ÁREAS COMUNES (LEY 675)');
+      expect(prompt).toContain('RCE Directores y Administradores (D&O Copropiedades)');
+      expect(prompt).toContain('REGLA CRÍTICA DE IDENTIFICACIÓN DE ASEGURADORAS');
+    });
+
+    it('generates domain-specific sections and rules for autos', () => {
+      const prompt = comparisonPromptBuilder.buildV2ComparisonPrompt(
+        { insurerCount: 2 },
+        undefined,
+        'autos'
+      );
+
+      expect(prompt).toContain('Automotores y Vehículos en Colombia bajo regulación de la SFC y FASECOLDA');
+      expect(prompt).toContain('DATOS DEL VEHÍCULO Y BIENES');
+      expect(prompt).toContain('Vehículo Asegurado (Marca / Modelo / Año / Placa)');
+      expect(prompt).toContain('Límite Único Combinado (LUC) RCE');
+      expect(prompt).toContain('Pérdida Parcial por Daños (PPD)');
+      expect(prompt).toContain('Carro Taller y Asistencia Mecánica Ligera');
+      expect(prompt).toContain('REGLA CRÍTICA DE IDENTIFICACIÓN DE ASEGURADORAS');
+    });
+
+    it('generates domain-specific sections and rules for salud', () => {
+      const prompt = comparisonPromptBuilder.buildV2ComparisonPrompt(
+        { insurerCount: 2 },
+        undefined,
+        'salud'
+      );
+
+      expect(prompt).toContain('Planes Voluntarios de Salud (PVS) y Medicina Prepagada en Colombia');
+      expect(prompt).toContain('MODALIDAD Y RED DE ATENCIÓN');
+      expect(prompt).toContain('Tipo de Plan (Complementario PBS / Sustitutivo)');
+      expect(prompt).toContain('Hospitalización en Habitación Individual');
+      expect(prompt).toContain('Copago por Consulta Médica Especializada');
+      expect(prompt).toContain('Períodos de Carencia');
+    });
+
+    it('generates domain-specific sections and rules for cumplimiento', () => {
+      const prompt = comparisonPromptBuilder.buildV2ComparisonPrompt(
+        { insurerCount: 2 },
+        undefined,
+        'cumplimiento'
+      );
+
+      expect(prompt).toContain('Seguros de Cumplimiento, Fianzas y Contratación Estatal en Colombia');
+      expect(prompt).toContain('DATOS DEL CONTRATO GARANTIZADO');
+      expect(prompt).toContain('Seriedad de la Oferta (% y Límite)');
+      expect(prompt).toContain('Buen Manejo y Correcta Inversión del Anticipo (100%)');
+      expect(prompt).toContain('Pago de Salarios, Prestaciones Sociales e Indemnizaciones');
+    });
+
+    it('generates domain-specific sections and rules for transporte', () => {
+      const prompt = comparisonPromptBuilder.buildV2ComparisonPrompt(
+        { insurerCount: 2 },
+        undefined,
+        'transporte'
+      );
+
+      expect(prompt).toContain('Seguros de Transporte de Mercancías y Carga en Colombia');
+      expect(prompt).toContain('TRAYECTO Y MERCANCÍAS');
+      expect(prompt).toContain('Avería Gruesa (General Average)');
+      expect(prompt).toContain('Cláusulas ICC del Instituto de Londres');
+      expect(prompt).toContain('requisitos obligatorios de seguridad');
+    });
+
+    it('generates domain-specific sections and rules for vida_grupo', () => {
+      const prompt = comparisonPromptBuilder.buildV2ComparisonPrompt(
+        { insurerCount: 2 },
+        undefined,
+        'vida_grupo'
+      );
+
+      expect(prompt).toContain('Seguros de Vida Grupo y Vida Colectivo en Colombia');
+      expect(prompt).toContain('DATOS DEL GRUPO Y ASEGURABILIDAD');
+      expect(prompt).toContain('Incapacidad Total y Permanente (ITP ≥ 50%)');
+      expect(prompt).toContain('IVA (0% exento en vida bajo Art. 427 Estatuto Tributario)');
+    });
+
     it('enforces corporate insurer naming and prohibits client/product concatenation in pyme and hogar', () => {
       const pymePrompt = comparisonPromptBuilder.buildV2ComparisonPrompt({ insurerCount: 2 });
       expect(pymePrompt).toContain('REGLA CRÍTICA DE IDENTIFICACIÓN DE ASEGURADORAS');
