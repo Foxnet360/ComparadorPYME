@@ -2,6 +2,7 @@ import React from 'react';
 import { MatrixRow, QuoteAnalysis, QuoteMetadata } from '../types';
 import { Shield, AlertTriangle, Award, Building, Home } from 'lucide-react';
 import { DeductibleBadge } from './DeductibleBadge';
+import { InsurerLogo } from './common/InsurerLogo';
 
 interface DeductibleMatrixProps {
   quotes: QuoteAnalysis[];
@@ -400,7 +401,8 @@ export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes, matr
                   const typo = typologies[i]!;
                   return (
                     <th key={i} className="px-4 py-3 text-center min-w-[200px]">
-                      <div className="flex flex-col items-center gap-1">
+                      <div className="flex flex-col items-center gap-1.5">
+                        <InsurerLogo insurerName={q.insurerName} size="xs" />
                         <span className="font-bold text-slate-800">{q.insurerName}</span>
                         <span
                           className={`text-[10px] font-normal px-2 py-0.5 rounded-full ${

@@ -13,6 +13,7 @@ import {
   Filter,
 } from 'lucide-react';
 import { clauseService } from '../services/clauseService';
+import { InsurerLogo } from './common/InsurerLogo';
 
 interface ClauseSelectorProps {
   onClausesSelected: (clauseIds: string[]) => void;
@@ -221,6 +222,15 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
       {/* Library Mode Content */}
       {mode === 'library' && (
         <div className="space-y-3">
+          <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200/60 text-[11px] text-blue-900 flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
+            <span>
+              <strong>Biblioteca Permanente Activa:</strong> Los clausulados subidos se conservan y
+              reutilizan automáticamente sin volver a subirlos, indexados por firma criptográfica y
+              ramo.
+            </span>
+          </div>
+
           {/* Real-time Search Box */}
           <div className="relative">
             <Search className="absolute left-3 top-2.5 text-slate-400" size={14} />
@@ -260,9 +270,7 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
                       <button type="button" className="text-slate-400 hover:text-slate-600">
                         {isExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
                       </button>
-                      <div className="w-6 h-6 rounded-md bg-indigo-100 text-indigo-700 font-bold text-[10px] flex items-center justify-center uppercase">
-                        {insurerName.slice(0, 3)}
-                      </div>
+                      <InsurerLogo insurerName={insurerName} size="xs" />
                       <span className="font-semibold text-xs text-slate-800">{insurerName}</span>
                       <span className="text-[10px] font-medium text-slate-500 bg-white px-2 py-0.5 rounded-full border border-slate-200">
                         {docs.length}

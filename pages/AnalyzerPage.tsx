@@ -4,6 +4,7 @@ import FileUploader from '../components/FileUploader';
 import DomainSelector from '../components/DomainSelector';
 import ClientSelector from '../components/ClientSelector';
 import { ClauseSelector } from '../components/ClauseSelector';
+import { RegulatoryBackingPanel } from '../components/report/RegulatoryBackingPanel';
 import { useAnalysisFlow } from '../hooks/useAnalysisFlow';
 import { useUI } from '../contexts/UIContext';
 import { AppStatus } from '../types';
@@ -70,6 +71,9 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
                 dispatch({ type: 'SET_DOMAIN', payload: newDomain })
               }
             />
+
+            {/* Inyección de Tesauro y Respaldo Normativo Colombiano por Ramo */}
+            <RegulatoryBackingPanel domain={domain} compact={true} />
 
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
               <ClientSelector

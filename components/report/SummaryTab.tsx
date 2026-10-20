@@ -4,6 +4,7 @@ import { ExecutiveSummary } from '../ExecutiveSummary';
 import { QuoteScoreCard, type QuoteCorrection } from './QuoteScoreCard';
 import { ReportCharts } from './ReportCharts';
 import { ClaimSimulatorPanel } from './ClaimSimulatorPanel';
+import { RegulatoryBackingPanel } from './RegulatoryBackingPanel';
 import type { QuoteAnalysis } from '../../types';
 
 interface SummaryTabProps {
@@ -11,6 +12,7 @@ interface SummaryTabProps {
   bestQuote: QuoteAnalysis;
   recommendation: string;
   viewMode: 'technical' | 'client';
+  domain?: string;
   onCorrection: (quote: QuoteAnalysis, correction: QuoteCorrection) => void;
   onNavigate: (tab: 'resumen' | 'coberturas' | 'deducibles' | 'auditoria') => void;
 }
@@ -25,6 +27,7 @@ export const SummaryTab: React.FC<SummaryTabProps> = ({
   bestQuote,
   recommendation,
   viewMode,
+  domain,
   onCorrection,
   onNavigate,
 }) => {
@@ -68,6 +71,9 @@ export const SummaryTab: React.FC<SummaryTabProps> = ({
 
       {/* Interactive Deductible Impact Widget */}
       <ClaimSimulatorPanel quotes={quotes} compact={true} onNavigate={onNavigate} />
+
+      {/* Respaldo Normativo y Regulatorio por Ramo con Verificación de Reglas Legales */}
+      <RegulatoryBackingPanel domain={domain} quotes={quotes} />
 
       {/* Recommendation Text */}
       <div className="bg-slate-800 text-white p-6 rounded-xl shadow-lg">

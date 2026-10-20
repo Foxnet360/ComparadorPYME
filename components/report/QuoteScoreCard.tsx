@@ -1,6 +1,7 @@
 import React from 'react';
 import { formatCOP } from '../../utils/formatCurrency';
 import { CorrectionUI } from '../CorrectionUI';
+import { InsurerLogo } from '../common/InsurerLogo';
 import type { QuoteAnalysis } from '../../types';
 
 export interface QuoteCorrection {
@@ -36,7 +37,13 @@ export const QuoteScoreCard: React.FC<QuoteScoreCardProps> = ({
           MEJOR OPCIÓN
         </div>
       )}
-      <h3 className="text-lg font-bold text-slate-800 mb-1">{q.insurerName}</h3>
+      <div className="flex items-center gap-3 mb-3">
+        <InsurerLogo insurerName={q.insurerName} size="md" />
+        <div>
+          <h3 className="text-lg font-bold text-slate-800 leading-tight">{q.insurerName}</h3>
+          <p className="text-xs text-slate-400 font-medium">{q.policyName}</p>
+        </div>
+      </div>
       <div className="flex items-center justify-between mb-4">
         <div>
           <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">

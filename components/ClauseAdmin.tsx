@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { clauseService } from '../services/clauseService';
 import { SessionExpiredError } from '../services/apiClient';
 import { UserProfile } from '../types';
+import { InsurerLogo } from './common/InsurerLogo';
 import {
   Search,
   Eye,
@@ -514,9 +515,7 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
                     <tr key={doc.id} className="hover:bg-slate-50/70 transition-colors">
                       <td className="px-4 py-3 font-bold text-slate-900">
                         <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold flex items-center justify-center">
-                            {doc.insurer?.name?.slice(0, 2) || 'AS'}
-                          </div>
+                          <InsurerLogo insurerName={doc.insurer?.name} size="xs" />
                           <span>{doc.insurer?.name}</span>
                         </div>
                       </td>

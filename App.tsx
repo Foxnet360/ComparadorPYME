@@ -22,6 +22,9 @@ const UsersPage = lazy(() => import('./pages/UsersPage'));
 const ChatBot = lazy(() => import('./components/ChatBot'));
 const ProfileScreen = lazy(() => import('./components/ProfileScreen'));
 const ClauseAdmin = lazy(() => import('./components/ClauseAdmin'));
+const InsurerManager = lazy(() =>
+  import('./components/InsurerManager').then((m) => ({ default: m.InsurerManager }))
+);
 // Renewal portfolio (renovacion-polizas PR-5): lazy-loaded to keep bundle lean (XC-3)
 const PortfolioPage = lazy(() => import('./pages/Portfolio'));
 const RenewalDetailPage = lazy(() => import('./pages/RenewalDetail'));
@@ -115,6 +118,7 @@ const AppShell: React.FC = () => {
         onOpenPortfolio={() => setCurrentView('PORTFOLIO')}
         onOpenAnalytics={() => setCurrentView('ANALYTICS')}
         onOpenUsers={() => setCurrentView('USERS')}
+        onOpenInsurers={() => setCurrentView('INSURERS')}
         onOpenClauseAdmin={() => setShowClauseAdmin(true)}
         onToggleChat={() => setChatOpen(!chatOpen)}
         onOpenProfile={() => setShowProfile(true)}
@@ -188,6 +192,13 @@ const AppShell: React.FC = () => {
               }
               onClose={() => setCurrentView('DASHBOARD')}
             />
+          </Suspense>
+        )}
+
+        {/* VIEW: INSURERS (CRUD & Automation Connectors) */}
+        {currentView === 'INSURERS' && (
+          <Suspense fallback={<ViewLoadingFallback />}>
+            <InsurerManager onBack={() => setCurrentView('ANALYZER')} />
           </Suspense>
         )}
 

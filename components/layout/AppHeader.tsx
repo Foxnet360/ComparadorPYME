@@ -8,6 +8,7 @@ import {
   Users,
   BarChart3,
   RefreshCw,
+  Building2,
 } from 'lucide-react';
 import type { UserProfile } from '../../types';
 import type { AppView } from '../../hooks/useAnalysisFlow';
@@ -22,6 +23,7 @@ interface AppHeaderProps {
   onOpenPortfolio: () => void;
   onOpenAnalytics: () => void;
   onOpenUsers: () => void;
+  onOpenInsurers: () => void;
   onOpenClauseAdmin: () => void;
   onToggleChat: () => void;
   onOpenProfile: () => void;
@@ -38,6 +40,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onOpenPortfolio,
   onOpenAnalytics,
   onOpenUsers,
+  onOpenInsurers,
   onOpenClauseAdmin,
   onToggleChat,
   onOpenProfile,
@@ -128,6 +131,19 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             title="Gestión de Usuarios y Aliados (RBAC)"
           >
             <ShieldCheck size={20} />
+          </button>
+
+          {/* Gestión de Aseguradoras & RPA */}
+          <button
+            onClick={onOpenInsurers}
+            className={`p-2 rounded-full transition-colors ${
+              currentView === 'INSURERS'
+                ? 'bg-indigo-100 text-indigo-700 font-semibold'
+                : 'text-slate-500 hover:bg-indigo-100 hover:text-indigo-600'
+            }`}
+            title="Gestión de Aseguradoras y Conectores RPA"
+          >
+            <Building2 size={20} />
           </button>
 
           {/* Clause Library Button (Admin) */}

@@ -4,6 +4,15 @@ import { ComparisonReport, UserProfile, DashboardStats, HistoryEntry } from '../
 import { PLANTILLA_ITEMS } from '../constants';
 import { formatCOPMillions, formatCOP } from '../utils/formatCurrency';
 import { normalizeText } from '../utils/textUtils';
+import { findColombianInsurerProfile } from '../src/shared/colombianInsurersCatalog';
+
+function hexToRgb(hex?: string): [number, number, number] {
+  if (!hex) return [30, 41, 59];
+  const clean = hex.replace('#', '');
+  const bigint = parseInt(clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean, 16);
+  if (isNaN(bigint)) return [30, 41, 59];
+  return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
+}
 
 // Helper for robust string matching (ignores accents, case, whitespace)
 
@@ -168,11 +177,22 @@ export const generatePDF = (
       currentY = addHeader('Resumen Ejecutivo (Cont.)');
     }
 
-    doc.setFillColor(240, 240, 240);
-    doc.rect(14, currentY, 182, 8, 'F');
+    const profile = findColombianInsurerProfile(q.insurerName);
+    const [r, g, b] = hexToRgb(profile?.primaryColor || '#0033A0');
+    doc.setFillColor(r, g, b);
+    doc.roundedRect(14, currentY, 18, 9, 2, 2, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.text(q.insurerName, 16, currentY + 5.5);
-    currentY += 12;
+    doc.setFontSize(8);
+    doc.setTextColor(255, 255, 255);
+    doc.text(profile?.monogram || q.insurerName.slice(0, 3).toUpperCase(), 16, currentY + 6);
+
+    doc.setFillColor(245, 247, 250);
+    doc.roundedRect(34, currentY, 162, 9, 2, 2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(15, 23, 42);
+    doc.text(`${q.insurerName} ${profile?.nit ? `• NIT: ${profile.nit}` : ''}`, 37, currentY + 6);
+    currentY += 13;
 
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
@@ -291,11 +311,20 @@ export const generatePDF = (
     doc.line(14, currentY, 196, currentY);
     currentY += 5;
 
-    doc.setFontSize(14);
+    const profile = findColombianInsurerProfile(q.insurerName);
+    const [r, g, b] = hexToRgb(profile?.primaryColor || '#0033A0');
+    doc.setFillColor(r, g, b);
+    doc.roundedRect(14, currentY, 12, 6, 1.5, 1.5, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text(`${q.insurerName} (Score: ${q.score}/100)`, 14, currentY);
-    currentY += 8;
+    doc.setFontSize(7);
+    doc.setTextColor(255, 255, 255);
+    doc.text(profile?.monogram || q.insurerName.slice(0, 3).toUpperCase(), 15.5, currentY + 4.2);
+
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(15, 23, 42);
+    doc.text(`${q.insurerName} (Score Técnico: ${q.score}/100)`, 30, currentY + 4.8);
+    currentY += 9;
 
     if (q.alerts && q.alerts.length > 0) {
       q.alerts.forEach((alert) => {

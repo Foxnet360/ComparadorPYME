@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { generatePDF } from '../../services/pdfService';
 import { storageService } from '../../services/storageService';
+import { apiClient } from '../../services/apiClient';
+import { FileDown, FileSpreadsheet, Loader2 } from 'lucide-react';
 import type { CellNote } from '../../contexts/AnalysisContext';
 import type { ComparisonReport as ReportType } from '../../types';
 
@@ -32,6 +34,47 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   cellNotes,
   onClose,
 }) => {
+  const [exportingExcel, setExportingExcel] = useState<string | null>(null);
+
+  const handleExportExcel = async (exportMode: 'client' | 'technical') => {
+    const analysisId = (report as any).id || (report as any).analysisId;
+    if (!analysisId) {
+      alert('ID de análisis no disponible para exportación.');
+      return;
+    }
+
+    try {
+      setExportingExcel(exportMode);
+      const response = await apiClient.fetch(`/analysis/${analysisId}/export`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          domain: report.domain || 'pyme',
+          quotes: report.quotes,
+          matrix: report.matrix,
+          exportMode,
+        }),
+      });
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download =
+        exportMode === 'client'
+          ? `informe_cliente_${report.domain || 'seguros'}_${analysisId}.xlsx`
+          : `comparativa_tecnica_${analysisId}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      onClose();
+    } catch (err: any) {
+      alert(`Error al exportar Excel: ${err?.message || 'Error desconocido'}`);
+    } finally {
+      setExportingExcel(null);
+    }
+  };
   return (
     <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-50 p-4 animate-in fade-in zoom-in-95 duration-200">
       <div className="flex justify-between items-center mb-4">
@@ -124,10 +167,41 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 onClose();
               });
             }}
-            className="w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors"
+            className="w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 shadow-xs"
           >
-            Generar PDF
+            <FileDown size={16} />
+            <span>Generar Reporte PDF</span>
           </button>
+
+          <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
+            <button
+              onClick={() => handleExportExcel('client')}
+              disabled={!!exportingExcel}
+              className="w-full bg-emerald-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 shadow-xs disabled:opacity-50"
+              title="Excel consultivo enriquecido con guías pedagógicas y resúmenes descriptivos"
+            >
+              {exportingExcel === 'client' ? (
+                <Loader2 size={15} className="animate-spin" />
+              ) : (
+                <FileSpreadsheet size={15} />
+              )}
+              <span>Excel Cliente (Asesoría)</span>
+            </button>
+
+            <button
+              onClick={() => handleExportExcel('technical')}
+              disabled={!!exportingExcel}
+              className="w-full bg-slate-800 text-white py-2 rounded-lg text-xs font-semibold hover:bg-slate-700 transition-colors flex items-center justify-center gap-2 shadow-xs disabled:opacity-50"
+              title="Sábana técnica 1:1 con matrices completas y auditoría de riesgos"
+            >
+              {exportingExcel === 'technical' ? (
+                <Loader2 size={15} className="animate-spin" />
+              ) : (
+                <FileSpreadsheet size={15} />
+              )}
+              <span>Excel Auditoría Técnica</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

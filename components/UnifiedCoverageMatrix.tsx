@@ -21,6 +21,8 @@ import {
   Pin,
 } from 'lucide-react';
 import { DeductibleBadge } from './DeductibleBadge';
+import { PedagogicalTooltip } from './common/PedagogicalTooltip';
+import { InsurerLogo } from './common/InsurerLogo';
 import { formatPercentage } from '../utils/formatCurrency';
 import { useOptimisticCorrection } from '../hooks/useOptimisticCorrection';
 import { usePdfViewer, useCellNotes } from '../contexts/AnalysisContext';
@@ -495,7 +497,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
     return 'Baja';
   };
 
-  const handleExportExcel = async () => {
+  const handleExportExcel = async (exportMode: 'technical' | 'client' = 'technical') => {
     if (!analysisId) {
       addToast('ID de análisis no disponible para exportación.', 'warning');
       return;
@@ -513,6 +515,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
           domain: domain || 'pyme',
           quotes,
           matrix: rows,
+          exportMode,
         }),
       });
 
@@ -520,13 +523,20 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `comparativa_seguros_${analysisId}.xlsx`;
+      a.download =
+        exportMode === 'client'
+          ? `informe_cliente_${domain || 'seguros'}_${analysisId}.xlsx`
+          : `comparativa_tecnica_${analysisId}.xlsx`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      success('Excel descargado correctamente.');
+      success(
+        exportMode === 'client'
+          ? 'Excel para Cliente descargado con éxito.'
+          : 'Excel Técnico descargado correctamente.'
+      );
     } catch (err) {
       console.error('Error al exportar Excel:', err);
       const message =
@@ -553,14 +563,26 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
           </p>
         </div>
         {analysisId && (
-          <button
-            onClick={handleExportExcel}
-            disabled={isExporting}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 font-semibold text-sm transition-all shadow-md active:scale-95 disabled:opacity-50"
-          >
-            {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-            {isExporting ? 'Generando Excel...' : 'Descargar Excel Comparativo'}
-          </button>
+          <div className="flex items-center gap-3 flex-wrap">
+            <button
+              onClick={() => handleExportExcel('client')}
+              disabled={isExporting}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs md:text-sm transition-all shadow-md active:scale-95 disabled:opacity-50"
+              title="Descarga el Excel consultivo para el cliente final, con explicaciones descriptivas del ramo"
+            >
+              {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+              <span>Excel Cliente (Asesoría)</span>
+            </button>
+            <button
+              onClick={() => handleExportExcel('technical')}
+              disabled={isExporting}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs md:text-sm transition-all shadow-md active:scale-95 disabled:opacity-50"
+              title="Descarga la matriz técnica completa con auditoría de riesgos, deducibles y coberturas"
+            >
+              {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+              <span>Excel Técnico (Auditoría)</span>
+            </button>
+          </div>
         )}
       </div>
 
@@ -788,7 +810,8 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                           isPinned ? 'bg-indigo-100/70 border-x border-indigo-200 shadow-sm' : ''
                         }`}
                       >
-                        <div className="flex items-center justify-center gap-1.5">
+                        <div className="flex items-center justify-center gap-2">
+                          <InsurerLogo insurerName={q.insurerName} size="xs" />
                           <span>{q.insurerName}</span>
                           {quotes.length >= 3 && (
                             <button
@@ -885,6 +908,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                             <span className="text-slate-400 font-mono text-xs select-none">↳</span>
                           )}
                           <span>{row.label}</span>
+                          <PedagogicalTooltip label={row.label} />
                           {hasSublimits && (
                             <button
                               type="button"

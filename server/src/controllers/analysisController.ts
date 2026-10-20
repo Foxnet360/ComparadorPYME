@@ -28,6 +28,7 @@ import { semanticMatcher } from '../services/semanticMatcher';
 
 import { saveAnalysisHistory, getAnalysisHistoryByUser } from '../repositories/analysisRepository';
 import { getPolicyById } from '../repositories/policyRepository';
+import { ensureClausePersistedInLibrary } from '../services/documentIndexingService';
 import { formatCOP } from '../utils/formatCurrency';
 import { parseColombianCurrency } from '../utils/currencyParser';
 import { sanitizeDeep } from '../utils/textSanitizer';
@@ -276,6 +277,25 @@ export const analysisController = {
         return;
       }
       const domain = domainResolution.domain;
+
+      // Permanent Clause Library (Issue 8): persist and deduplicate any uploaded clauses
+      if (clauseFiles.length > 0) {
+        for (const cf of clauseFiles) {
+          try {
+            if (cf.path && fs.existsSync(cf.path)) {
+              const buffer = fs.readFileSync(cf.path);
+              await ensureClausePersistedInLibrary(
+                buffer,
+                cf.originalname,
+                req.body?.insurerName || 'Aseguradora',
+                domain
+              );
+            }
+          } catch (clauseErr) {
+            logger.warn({ err: clauseErr, file: cf.originalname }, 'Failed to auto-persist clause in permanent library');
+          }
+        }
+      }
 
       const rawAnalysisType = req.body?.analysisType ?? req.body?.analysis_type;
       const analysisType: AnalysisType | undefined =
