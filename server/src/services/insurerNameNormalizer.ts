@@ -73,6 +73,21 @@ const INSURER_NAME_MAPPINGS: Record<string, string> = {
   'LA EQUIDAD SEGUROS': 'LA EQUIDAD',
   'LA EQUIDAD': 'LA EQUIDAD',
 
+  // QUÁLITAS variations
+  'QUÁLITAS COMPAÑÍA DE SEGUROS COLOMBIA S.A.': 'QUÁLITAS',
+  'QUALITAS COMPAÑIA DE SEGUROS COLOMBIA S.A.': 'QUÁLITAS',
+  'QUÁLITAS COMPAÑÍA DE SEGUROS': 'QUÁLITAS',
+  'QUALITAS COMPAÑIA DE SEGUROS': 'QUÁLITAS',
+  'QUÁLITAS SEGUROS': 'QUÁLITAS',
+  'QUALITAS SEGUROS': 'QUÁLITAS',
+  QUÁLITAS: 'QUÁLITAS',
+  QUALITAS: 'QUÁLITAS',
+
+  // MUNDIAL variations
+  'COMPAÑÍA MUNDIAL DE SEGUROS S.A.': 'MUNDIAL',
+  'SEGUROS MUNDIAL': 'MUNDIAL',
+  MUNDIAL: 'MUNDIAL',
+
   // MAPFRE variations
   'MAPFRE SEGUROS COLOMBIA S.A.': 'MAPFRE',
   'MAPFRE SEGUROS': 'MAPFRE',
@@ -114,6 +129,8 @@ const SHORT_NAME_ALIASES: Record<string, string[]> = {
   POSITIVA: ['positiva', 'positiva seguros'],
   BERKLEY: ['berkley', 'berkley seguros'],
   'LA EQUIDAD': ['equidad', 'la equidad'],
+  QUÁLITAS: ['quálitas', 'qualitas', 'quálitas seguros', 'qualitas seguros'],
+  MUNDIAL: ['mundial', 'seguros mundial', 'compañía mundial'],
   MAPFRE: ['mapfre', 'mapfre seguros'],
   ALLIANZ: ['allianz', 'allianz seguros'],
   SURA: ['sura', 'suramericana', 'segurossura'],

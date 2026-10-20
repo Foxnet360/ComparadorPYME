@@ -31,6 +31,8 @@ const KNOWN_INSURERS: KnownBrand[] = [
   { brand: 'BBVA', patterns: [/\bbbva\b/i] },
   { brand: 'LA EQUIDAD', patterns: [/\bequidad\b/i] },
   { brand: 'PAN AMERICAN', patterns: [/\bpan\s*american\b/i, /\bpalic\b/i] },
+  { brand: 'QUÁLITAS', patterns: [/\bqu[aá]litas\b/i] },
+  { brand: 'MUNDIAL', patterns: [/\bmundial\b/i, /\bseguros\s+mundial\b/i] },
 ];
 
 /**
