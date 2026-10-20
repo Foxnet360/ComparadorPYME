@@ -12,6 +12,11 @@ import {
   FINANCIAL_SECTION_ID,
   alignMatrixRowsToQuotes,
 } from './unifiedComparison/matrixTransformer';
+import {
+  getDomainRegulatoryProfile,
+  findPedagogicalExplanation,
+} from '../shared/domainRegulatoryKnowledge';
+import { findColombianInsurerProfile } from '../shared/colombianInsurersCatalog';
 
 function isDeductibleMatrixRow(row: MatrixRow): boolean {
   if (row.sectionId === DEDUCTIBLE_SECTION_ID) return true;
@@ -22,7 +27,7 @@ function isDeductibleMatrixRow(row: MatrixRow): boolean {
 }
 
 function isFinancialMatrixRow(row: MatrixRow): boolean {
-  return row.sectionId >= FINANCIAL_SECTION_ID;
+  return row.sectionId === FINANCIAL_SECTION_ID;
 }
 
 /**
@@ -113,7 +118,8 @@ export async function generateExcelBuffer(
   cellNotes?: Record<string, string>,
   brokerInfo?: BrokerInfo,
   domain: string = 'pyme',
-  reportData?: any
+  reportData?: any,
+  mode: 'technical' | 'client' = 'technical'
 ): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = brokerInfo?.intermediaryName || 'Agente Comparador CSA';
@@ -123,6 +129,7 @@ export async function generateExcelBuffer(
 
   const hasNotes = cellNotes && Object.keys(cellNotes).length > 0;
   const FONT_NAME = 'Segoe UI';
+  const regulatoryProfile = getDomainRegulatoryProfile(domain);
 
   // Obtain ground-truth matrix rows from reportData or build using matrixTransformer
   const matrix: MatrixRow[] =
@@ -247,41 +254,42 @@ export async function generateExcelBuffer(
     bold: true,
     color: { argb: 'FF1E3A8A' },
   };
-  addInfoRow('Asegurado:', clientName, 11);
-  addInfoRow('Actividad / Ocupación:', clientActivity, 12);
-  addInfoRow('Ubicación del Riesgo:', clientLocation, 13);
-  addInfoRow('Valor Total Bienes:', totalAssetValueStr, 14);
+  addInfoRow('Asegurado (Razón Social):', clientName, 11);
+  addInfoRow('NIT / Identificación:', (clientInfo as any)?.nit || 'No especificado', 12);
+  addInfoRow('Actividad / Ocupación:', clientActivity, 13);
+  addInfoRow('Ubicación del Riesgo:', clientLocation, 14);
+  addInfoRow('Valor Total Bienes:', totalAssetValueStr, 15);
 
-  portada.getCell('B16').value = 'DATOS DEL INTERMEDIARIO / ALIADO TÉCNICO';
-  portada.getCell('B16').font = {
+  portada.getCell('B17').value = 'DATOS DEL INTERMEDIARIO / ALIADO TÉCNICO';
+  portada.getCell('B17').font = {
     name: FONT_NAME,
     size: 11,
     bold: true,
     color: { argb: 'FF1E3A8A' },
   };
-  addInfoRow('Corredoría / Agencia:', brokerInfo?.intermediaryName || 'Agencia Aliada', 17);
-  addInfoRow('Asesor Responsable:', brokerInfo?.name || 'Asesor Técnico de Seguros', 18);
-  addInfoRow('Nº Matrícula / Registro:', brokerInfo?.registrationNumber || 'No especificado', 19);
-  addInfoRow('Contacto / Correo:', brokerInfo?.email || 'contacto@corredor.com', 20);
+  addInfoRow('Corredoría / Agencia:', brokerInfo?.intermediaryName || 'Agencia Aliada', 18);
+  addInfoRow('Asesor Responsable:', brokerInfo?.name || 'Asesor Técnico de Seguros', 19);
+  addInfoRow('Nº Matrícula / Registro:', brokerInfo?.registrationNumber || 'No especificado', 20);
+  addInfoRow('Contacto / Correo:', brokerInfo?.email || 'contacto@corredor.com', 21);
 
   // Scorecard Multidimensional (0 - 100)
-  portada.getCell('B22').value = 'SCORECARD COMPARATIVO DE AUDITORÍA (0 - 100)';
-  portada.getCell('B22').font = {
+  portada.getCell('B23').value = 'SCORECARD COMPARATIVO DE AUDITORÍA (0 - 100)';
+  portada.getCell('B23').font = {
     name: FONT_NAME,
     size: 11,
     bold: true,
     color: { argb: 'FF1E3A8A' },
   };
 
-  portada.getRow(23).height = 26;
-  const colAHeader = portada.getCell('B23');
+  portada.getRow(24).height = 26;
+  const colAHeader = portada.getCell('B24');
   colAHeader.value = 'DIMENSIÓN DE EVALUACIÓN';
   colAHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
   colAHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
 
   quotes.forEach((q, idx) => {
     const colLetter = String.fromCharCode(68 + idx);
-    const hCell = portada.getCell(`${colLetter}23`);
+    const hCell = portada.getCell(`${colLetter}24`);
     hCell.value = q.insurerName.toUpperCase();
     hCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
     hCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
@@ -299,7 +307,7 @@ export async function generateExcelBuffer(
   ];
 
   dimensions.forEach((dim, rIdx) => {
-    const rowNum = 24 + rIdx;
+    const rowNum = 25 + rIdx;
     portada.getRow(rowNum).height = 22;
 
     const isTotal = dim.key === 'total';
@@ -342,8 +350,8 @@ export async function generateExcelBuffer(
   });
 
   // Guía de Navegación
-  portada.getCell('B32').value = 'CONTENIDO Y NAVEGACIÓN DEL INFORME';
-  portada.getCell('B32').font = {
+  portada.getCell('B33').value = 'CONTENIDO Y NAVEGACIÓN DEL INFORME';
+  portada.getCell('B33').font = {
     name: FONT_NAME,
     size: 11,
     bold: true,
@@ -374,7 +382,7 @@ export async function generateExcelBuffer(
   ];
 
   navRows.forEach((item, idx) => {
-    const rIdx = 33 + idx;
+    const rIdx = 34 + idx;
     const cellA = portada.getCell(`B${rIdx}`);
     cellA.value = item.name;
     cellA.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF1E3A8A' } };
@@ -415,13 +423,14 @@ export async function generateExcelBuffer(
     insHeader.alignment = { horizontal: 'center' };
   });
 
-  if (hasNotes) {
-    const notesHeader = coveragesSheet.getCell(4, quotes.length + 2);
-    notesHeader.value = 'INSIGHTS DEL CONSULTOR';
-    notesHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-    notesHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF7C3AED' } };
-    notesHeader.alignment = { horizontal: 'center' };
-    coveragesSheet.getColumn(quotes.length + 2).width = 40;
+  const guideColIdx = quotes.length + (hasNotes ? 2 : 1) + 1;
+  if (mode === 'client') {
+    coveragesSheet.getColumn(guideColIdx).width = 48;
+    const guideHeader = coveragesSheet.getCell(4, guideColIdx);
+    guideHeader.value = 'GUÍA CONSULTIVA PARA EL ASEGURADO';
+    guideHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+    guideHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D9488' } };
+    guideHeader.alignment = { horizontal: 'center' };
   }
 
   // Filter matrix rows for coverages tab (exclude standalone deductible section rows & financial rows)
@@ -557,6 +566,18 @@ export async function generateExcelBuffer(
         }
       }
 
+      if (mode === 'client') {
+        const ped = findPedagogicalExplanation(row.label, '', 'coverage');
+        const guideText = `💡 ¿Qué protege? ${ped.whatItCovers}\n⚡ En caso de siniestro: ${ped.claimImpact}\n🔍 Clave al comparar: ${ped.comparisonTip}${ped.legalReference ? `\n⚖️ Respaldo legal: ${ped.legalReference}` : ''}`;
+        const guideCell = coveragesSheet.getCell(currentCovRow, guideColIdx);
+        guideCell.value = guideText;
+        guideCell.font = { name: FONT_NAME, size: 9, color: { argb: 'FF134E4A' } };
+        guideCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0FDFA' } };
+        guideCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+        guideCell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
+        rowTextsForHeight.push(guideText);
+      }
+
       coveragesSheet.getRow(currentCovRow).height = calculateDynamicRowHeight(rowTextsForHeight, 24);
       currentCovRow++;
     }
@@ -572,8 +593,12 @@ export async function generateExcelBuffer(
   for (let i = 0; i < quotes.length; i++) {
     deductiblesSheet.getColumn(i + 2).width = 38;
   }
+  const dedGuideColIdx = quotes.length + 2;
+  if (mode === 'client') {
+    deductiblesSheet.getColumn(dedGuideColIdx).width = 48;
+  }
 
-  deductiblesSheet.mergeCells(1, 1, 2, quotes.length + 1);
+  deductiblesSheet.mergeCells(1, 1, 2, quotes.length + 1 + (mode === 'client' ? 1 : 0));
   const dedTitle = deductiblesSheet.getCell(1, 1);
   dedTitle.value = 'MATRIZ CONSOLIDADA DE DEDUCIBLES Y RETENCIÓN DE RIESGO';
   dedTitle.font = { name: FONT_NAME, size: 14, bold: true, color: { argb: 'FF1E3A8A' } };
@@ -591,6 +616,14 @@ export async function generateExcelBuffer(
     insHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
     insHeader.alignment = { horizontal: 'center' };
   });
+
+  if (mode === 'client') {
+    const dedGuideHeader = deductiblesSheet.getCell(4, dedGuideColIdx);
+    dedGuideHeader.value = 'GUÍA PRÁCTICA DEL COPAGO';
+    dedGuideHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+    dedGuideHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D9488' } };
+    dedGuideHeader.alignment = { horizontal: 'center' };
+  }
 
   // Filter matrix for deductible rows, qualifying generic "Deducible" sub-rows with their parent section header
   // and pruning orphaned headers.
@@ -663,6 +696,18 @@ export async function generateExcelBuffer(
           xlCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
           xlCell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
         });
+        if (mode === 'client') {
+          const ped = findPedagogicalExplanation(row.label, '', 'deductible');
+          const dedGuideText = `📌 ¿Cómo opera? ${ped.whatItCovers}\n⚠️ En siniestro: ${ped.claimImpact}\n🎯 Ojo al comparar: ${ped.comparisonTip}${ped.legalReference ? `\n⚖️ Base: ${ped.legalReference}` : ''}`;
+          const gCell = deductiblesSheet.getCell(currentDedRow, dedGuideColIdx);
+          gCell.value = dedGuideText;
+          gCell.font = { name: FONT_NAME, size: 9, color: { argb: 'FF134E4A' } };
+          gCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0FDFA' } };
+          gCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+          gCell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
+          dedTextsForHeight.push(dedGuideText);
+        }
+
         deductiblesSheet.getRow(currentDedRow).height = calculateDynamicRowHeight(
           dedTextsForHeight,
           24
@@ -1123,6 +1168,87 @@ export async function generateExcelBuffer(
     const noAlertCell = riskSheet.getCell(`A${rRowIdx}`);
     noAlertCell.value = 'No se detectaron alertas críticas en los documentos analizados.';
     noAlertCell.font = { name: FONT_NAME, size: 10, italic: true, color: { argb: 'FF64748B' } };
+    rRowIdx++;
+  }
+
+  // 1:1 Parity: Auditoría de Coberturas Faltantes, Riesgos en Deducibles y Condiciones Especiales
+  const hasAuditData = quotes.some(
+    (q) =>
+      q.quoteAudit &&
+      ((q.quoteAudit.missingCoverages && q.quoteAudit.missingCoverages.length > 0) ||
+        (q.quoteAudit.deductibleRisks && q.quoteAudit.deductibleRisks.length > 0) ||
+        (q.quoteAudit.specialConditions && q.quoteAudit.specialConditions.length > 0) ||
+        (q.quoteAudit.negotiationPoints && q.quoteAudit.negotiationPoints.length > 0))
+  );
+
+  if (hasAuditData) {
+    rRowIdx += 2;
+    riskSheet.mergeCells(`A${rRowIdx}:E${rRowIdx}`);
+    const auditTitleCell = riskSheet.getCell(`A${rRowIdx}`);
+    auditTitleCell.value = 'AUDITORÍA DETALLADA: COBERTURAS FALTANTES, CONDICIONES Y PUNTOS DE NEGOCIACIÓN';
+    auditTitleCell.font = { name: FONT_NAME, size: 12, bold: true, color: { argb: 'FF1E3A8A' } };
+    auditTitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+    riskSheet.getRow(rRowIdx).height = 26;
+    rRowIdx++;
+
+    quotes.forEach((q) => {
+      const qa = q.quoteAudit;
+      if (!qa) return;
+
+      // Missing coverages
+      if (qa.missingCoverages && qa.missingCoverages.length > 0) {
+        qa.missingCoverages.forEach((mc) => {
+          riskSheet.getRow(rRowIdx).height = 22;
+          const c1 = riskSheet.getCell(rRowIdx, 1);
+          c1.value = mc.impact === 'HIGH' ? 'FALTANTE CRÍTICO' : 'FALTANTE MEDIO';
+          c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: mc.impact === 'HIGH' ? 'FFFDE8E8' : 'FFFEF08A' } };
+          c1.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: mc.impact === 'HIGH' ? 'FF9B1C1C' : 'FF713F12' } };
+          c1.alignment = { horizontal: 'center' };
+
+          riskSheet.getCell(rRowIdx, 2).value = q.insurerName;
+          riskSheet.getCell(rRowIdx, 3).value = mc.categoryName;
+          riskSheet.getCell(rRowIdx, 4).value = mc.reason;
+          riskSheet.getCell(rRowIdx, 5).value = `Obligatorio según estándar ${regulatoryProfile.displayName}`;
+          rRowIdx++;
+        });
+      }
+
+      // Deductible risks
+      if (qa.deductibleRisks && qa.deductibleRisks.length > 0) {
+        qa.deductibleRisks.forEach((dr) => {
+          riskSheet.getRow(rRowIdx).height = 22;
+          const c1 = riskSheet.getCell(rRowIdx, 1);
+          c1.value = `RIESGO DEDUCIBLE (${dr.riskLevel})`;
+          c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: dr.riskLevel === 'HIGH' || dr.riskLevel === 'CRITICAL' ? 'FFFDE8E8' : 'FFFEF08A' } };
+          c1.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: dr.riskLevel === 'HIGH' || dr.riskLevel === 'CRITICAL' ? 'FF9B1C1C' : 'FF713F12' } };
+          c1.alignment = { horizontal: 'center' };
+
+          riskSheet.getCell(rRowIdx, 2).value = q.insurerName;
+          riskSheet.getCell(rRowIdx, 3).value = dr.coverageName;
+          riskSheet.getCell(rRowIdx, 4).value = `${dr.deductible} — ${dr.recommendation}`;
+          riskSheet.getCell(rRowIdx, 5).value = 'Art. 1103 Co.Co. (Retención)';
+          rRowIdx++;
+        });
+      }
+
+      // Negotiation points
+      if (qa.negotiationPoints && qa.negotiationPoints.length > 0) {
+        qa.negotiationPoints.forEach((np) => {
+          riskSheet.getRow(rRowIdx).height = 22;
+          const c1 = riskSheet.getCell(rRowIdx, 1);
+          c1.value = `NEGOCIACIÓN (${np.priority})`;
+          c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF6FF' } };
+          c1.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF1E40AF' } };
+          c1.alignment = { horizontal: 'center' };
+
+          riskSheet.getCell(rRowIdx, 2).value = q.insurerName;
+          riskSheet.getCell(rRowIdx, 3).value = np.title;
+          riskSheet.getCell(rRowIdx, 4).value = np.description;
+          riskSheet.getCell(rRowIdx, 5).value = np.potentialSavings ? `Ahorro est.: ${np.potentialSavings}` : 'Mejora en suscripción';
+          rRowIdx++;
+        });
+      }
+    });
   }
 
   // Generate Buffer

@@ -166,7 +166,7 @@ INSTRUCCIONES:
 RESPUESTA (solo JSON):`;
 
   try {
-    const modelName = env.GEMINI_MODEL || 'gemini-2.5-flash';
+    const modelName = env.GEMINI_MODEL || 'gemini-4-argon';
     const result = await genAI.models.generateContent({
       model: modelName,
       contents: [{ role: 'user', parts: [{ text: prompt }] }],

@@ -251,6 +251,33 @@ export interface QuoteMetadata {
   vigencia?: string | null;
 }
 
+export interface ClientInfoSummary {
+  name?: string;
+  nit?: string;
+  activity?: string;
+  location?: string;
+  address?: string;
+  city?: string;
+  department?: string;
+  contactPerson?: string;
+  email?: string;
+  phone?: string;
+  vigencia?: string;
+  tipoSeguro?: string;
+  anoConstruccion?: string | number;
+  pisos?: string | number;
+  seismicZone?: string;
+  buildingType?: string;
+}
+
+export interface RegulatoryCheckResult {
+  ruleId: string;
+  title: string;
+  legalBasis: string;
+  status: 'COMPLIANT' | 'WARNING' | 'NON_COMPLIANT';
+  details: string;
+}
+
 export interface ComparisonReport {
   id?: string;
   quotes: QuoteAnalysis[];
@@ -267,10 +294,15 @@ export interface ComparisonReport {
   baseline?: RenewalBaseline;
   renewalAnalytics?: CandidateRenewalAnalytics[];
   domain?: string;
-  clientInfo?: {
-    name?: string;
-    activity?: string;
-    location?: string;
+  clientInfo?: ClientInfoSummary;
+  regulatoryBacking?: {
+    domain: string;
+    displayName: string;
+    tagline: string;
+    source?: string;
+    primaryLaws: Array<{ code: string; title: string; summary: string }>;
+    thesaurusHighlights: string[];
+    perQuoteCompliance?: Record<string, RegulatoryCheckResult[]>;
   };
 }
 

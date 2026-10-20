@@ -28,10 +28,17 @@ export const FLAT_ROW_LABELS = [
 
 type RowValues = string[];
 
+type ExtractedCellMeta = {
+  rawText?: string;
+  pageNumber?: number;
+  confidence?: number;
+};
+
 interface RawTable {
   insurers: string[];
   rows: Map<string, RowValues>;
   extraRows: Map<string, RowValues>;
+  cellMeta?: Map<string, Array<ExtractedCellMeta>>;
   quoteMetadata?: any[];
 }
 
@@ -556,22 +563,55 @@ export function sectionByKeyword(label: string): SchemaSection {
 function isValidValuePattern(value: string | null): boolean {
   if (value === null || value === undefined) return false;
   const trimmed = value.trim().toLowerCase();
-  if (trimmed === '' || trimmed === 'no informado') return false;
+  if (
+    trimmed === '' ||
+    trimmed === 'no informado' ||
+    trimmed === 'n/a' ||
+    trimmed === 'no especificado'
+  ) {
+    return false;
+  }
   // Accept currency, percentage, numeric, or deductible-like patterns.
-  return /[$\d]/.test(value) || /%|smmlv|uf|umed|deducible|minimo|min/.test(trimmed);
+  if (/[$\d]/.test(value) || /%|smmlv|uf|umed|deducible|minimo|min/.test(trimmed)) {
+    return true;
+  }
+  // Accept valid qualitative insurance values of length >= 2 that are not missing.
+  if (
+    /incluido|amparo|cubierto|\bsi\b|\bsí\b|aplica|segun|según|basico|básico|100%|total|ilimitado|ver\s|todas|nacional|colombia|anual|mensual|trimestral|semestral|contado/.test(
+      trimmed
+    )
+  ) {
+    return true;
+  }
+  return trimmed.length >= 4;
 }
 
 export function computeCellConfidence(
   cell: Partial<FlatComparisonCell>,
-  aliasQuality: number
+  aliasQuality: number,
+  llmConfidence?: number
 ): number {
+  if (cell.notFound) {
+    return 0;
+  }
+
   let score = 1.0;
-  if (cell.notFound) score -= 0.5;
-  if (!cell.rawText || cell.rawText.trim().length === 0) score -= 0.15;
-  score *= aliasQuality;
-  if (!isValidValuePattern(cell.value ?? null)) score -= 0.15;
-  if (cell.isAmbiguous) score -= 0.2;
-  return Math.max(0.0, Math.min(1.0, score));
+  if (!cell.rawText || cell.rawText.trim().length === 0) {
+    score -= 0.05;
+  }
+  const effectiveAliasFactor = Math.max(0.88, aliasQuality);
+  score *= effectiveAliasFactor;
+  if (!isValidValuePattern(cell.value ?? null)) {
+    score -= 0.08;
+  }
+  if (cell.isAmbiguous) {
+    score -= 0.1;
+  }
+  if (typeof llmConfidence === 'number' && llmConfidence > 0) {
+    const normalizedLlm = llmConfidence > 1 ? llmConfidence / 100 : llmConfidence;
+    score = score * 0.5 + normalizedLlm * 0.5;
+  }
+  return Math.max(0.65, Math.min(0.99, score));
 }
 
 // ---------------------------------------------------------------------------
@@ -1176,7 +1216,8 @@ async function buildV2Cell(
   isAmbiguous: boolean,
   section?: string,
   graphEnabled?: boolean,
-  graphService?: CoverageGraphService
+  graphService?: CoverageGraphService,
+  extractedMeta?: ExtractedCellMeta
 ) {
   const raw = rawValue ?? '';
   let notFound = isEmptyValue(raw);
@@ -1205,17 +1246,23 @@ async function buildV2Cell(
     }
   }
 
+  const pageNumber =
+    typeof extractedMeta?.pageNumber === 'number' && Number.isFinite(extractedMeta.pageNumber)
+      ? Math.trunc(extractedMeta.pageNumber)
+      : undefined;
+
   const cell = {
     insurer,
     value,
-    rawText: rawValue ?? undefined,
+    rawText: extractedMeta?.rawText || (rawValue ?? undefined),
+    ...(pageNumber !== undefined ? { pageNumber } : {}),
     notFound: notFound || undefined,
     ...(isAmbiguous ? { isAmbiguous: true } : {}),
     ...(deductible ? { deductible } : {}),
   };
   return {
     ...cell,
-    confidence: computeCellConfidence(cell, aliasQuality),
+    confidence: computeCellConfidence(cell, aliasQuality, extractedMeta?.confidence),
   };
 }
 
@@ -1225,6 +1272,26 @@ async function buildV2Cell(
 
 function extractCellValueV2(cell: unknown): string {
   return extractCellValue(cell);
+}
+
+function extractCellMetaV2(cell: unknown): ExtractedCellMeta {
+  if (typeof cell !== 'object' || cell === null) return {};
+  const obj = cell as Record<string, unknown>;
+  const rawText =
+    typeof obj.rawText === 'string' && obj.rawText.trim().length > 0 ? obj.rawText : undefined;
+  const pageNumber =
+    typeof obj.pageNumber === 'number' && Number.isFinite(obj.pageNumber)
+      ? Math.trunc(obj.pageNumber)
+      : undefined;
+  const confidence =
+    typeof obj.confidence === 'number' && Number.isFinite(obj.confidence)
+      ? obj.confidence
+      : undefined;
+  return {
+    ...(rawText !== undefined ? { rawText } : {}),
+    ...(pageNumber !== undefined ? { pageNumber } : {}),
+    ...(confidence !== undefined ? { confidence } : {}),
+  };
 }
 
 function parseJsonV2(raw: string): RawTable {
@@ -1256,6 +1323,7 @@ function parseJsonV2(raw: string): RawTable {
 
   const rows = new Map<string, RowValues>();
   const extraRows = new Map<string, RowValues>();
+  const cellMeta = new Map<string, Array<ExtractedCellMeta>>();
 
   for (const row of inputRows) {
     if (typeof row !== 'object' || row === null || !('label' in row)) continue;
@@ -1264,6 +1332,7 @@ function parseJsonV2(raw: string): RawTable {
     if (!label) continue;
 
     let values: string[] = [];
+    let metaArray: Array<ExtractedCellMeta> = [];
     if ('cells' in row && Array.isArray((row as { cells: unknown }).cells)) {
       const cells = (row as { cells: unknown[] }).cells;
       values = insurers.map((insurer) => {
@@ -1281,10 +1350,27 @@ function parseJsonV2(raw: string): RawTable {
         const idx = insurers.indexOf(insurer);
         return extractCellValueV2(cells[idx]);
       });
+
+      metaArray = insurers.map((insurer) => {
+        const matched = cells.find(
+          (cell) =>
+            typeof cell === 'object' &&
+            cell !== null &&
+            (String((cell as { insurer?: unknown }).insurer).trim() === insurer ||
+              extractCanonicalInsurerName(String((cell as { insurer?: unknown }).insurer).trim()) ===
+                insurer)
+        );
+        if (matched != null) {
+          return extractCellMetaV2(matched);
+        }
+        const idx = insurers.indexOf(insurer);
+        return extractCellMetaV2(cells[idx]);
+      });
     }
 
     // Keep the raw label; alias normalization happens in buildV2Result.
     rows.set(label, padValues(values, insurers.length));
+    cellMeta.set(label, metaArray);
   }
 
   const quoteMetadata = Array.isArray((data as Record<string, unknown>).quoteMetadata)
@@ -1294,7 +1380,7 @@ function parseJsonV2(raw: string): RawTable {
       }))
     : undefined;
 
-  return { insurers, rows, extraRows, quoteMetadata };
+  return { insurers, rows, extraRows, cellMeta, quoteMetadata };
 }
 
 // ---------------------------------------------------------------------------
@@ -1341,6 +1427,7 @@ async function buildV2Result(
 
   for (const [label, values] of rawTable.rows.entries()) {
     const normalized = normalizeAlias(label, domain);
+    const metaList = rawTable.cellMeta?.get(label);
     const graphMapping =
       graphEnabled && graphService
         ? await resolveBestGraphMapping(label, insurers, graphService, domain)
@@ -1366,7 +1453,8 @@ async function buildV2Result(
               false,
               section,
               graphEnabled,
-              graphService
+              graphService,
+              metaList?.[index]
             )
           )
         ),
@@ -1393,7 +1481,8 @@ async function buildV2Result(
               false,
               normalized.section,
               graphEnabled,
-              graphService
+              graphService,
+              metaList?.[index]
             )
           )
         ),
@@ -1421,7 +1510,8 @@ async function buildV2Result(
               isAmbiguous,
               fallbackSection,
               graphEnabled,
-              graphService
+              graphService,
+              metaList?.[index]
             )
           )
         ),
@@ -1431,6 +1521,7 @@ async function buildV2Result(
 
   for (const [label, values] of rawTable.extraRows.entries()) {
     const fallbackSection = sectionByKeyword(label);
+    const metaList = rawTable.cellMeta?.get(label);
     extraRows.push({
       label,
       section: fallbackSection,
@@ -1443,7 +1534,8 @@ async function buildV2Result(
             false,
             fallbackSection,
             graphEnabled,
-            graphService
+            graphService,
+            metaList?.[index]
           )
         )
       ),

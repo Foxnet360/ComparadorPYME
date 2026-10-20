@@ -39,6 +39,8 @@ export interface DomainTaxonomyMetadata {
   salaryValue2024?: number;
   uvtValue2024?: number;
   source?: string;
+  changelog?: string;
+  regulatory?: Record<string, string>;
 }
 
 export interface DomainTaxonomy {
@@ -62,6 +64,8 @@ export function isInsuranceDomain(value: unknown): value is InsuranceDomain {
     value === 'salud' ||
     value === 'cumplimiento' ||
     value === 'transporte' ||
-    value === 'hogar'
+    value === 'hogar' ||
+    value === 'equipo_maquinaria' ||
+    value === 'casco_embarcacion'
   );
 }

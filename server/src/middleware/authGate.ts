@@ -40,6 +40,9 @@ const PUBLIC_METHOD_PREFIXES: ReadonlyArray<{
   // Read-only knowledge base: document metadata/content have no ownership
   // checks in the controllers; mutations stay behind the full middleware.
   { prefix: '/documents', methods: ['GET'] },
+  // Read-only insurer catalog: brand logos/profiles are public reference data;
+  // mutations (POST/PUT/DELETE) stay behind the full auth middleware.
+  { prefix: '/insurers', methods: ['GET'] },
 ];
 
 const PUBLIC_PATTERNS: readonly RegExp[] = [/^\/analysis\/[^/]+\/export$/];

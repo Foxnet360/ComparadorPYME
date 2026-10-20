@@ -6,8 +6,14 @@
     "currency": "COP",
     "salaryReference": "SMMLV",
     "salaryValue2024": 1423500,
-    "uvtValue2024": 42412,
-    "source": "SMMLV 2024: Ministerio de Trabajo de Colombia; UVT 2024: DIAN",
+    "uvtValue2024": 49799,
+    "source": "Pólizas de Automóviles y Movilidad — Código de Comercio Arts. 1096, 1127, 1133 · Ley 2251/2022 (Ley Julián Esteban) · Guía de Valores Fasecolda · EOSF Art. 192 (SOAT)",
+    "regulatory": {
+      "framework": "Código de Comercio — Arts. 1127 y 1133 (RCE y Acción Directa de la Víctima) · Art. 1096 (Subrogación Legal)",
+      "trafficLaw": "Ley 2251 de 2022 (Ley Julián Esteban — Art. 16 Choque Simple y conciliación probatoria) · Ley 769 de 2002 (Código Nacional de Tránsito)",
+      "valuationStandard": "Guía de Valores Fasecolda (Indemnización por Pérdida Total a Valor Comercial) · EOSF Art. 192 (SOAT como capa primaria)",
+      "supervisoryBody": "Superintendencia Financiera de Colombia (SFC) · Fasecolda"
+    },
     "changelog": "v2.0.0: Agregadas SOAT (auto_12), PTD/FNAC (auto_13) y Accesorios/Lujos/Blindaje (auto_14)."
   },
   "categories": [

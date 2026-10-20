@@ -377,16 +377,21 @@ function cellFromFlatValueV2(
   value: string | null,
   notFound?: boolean,
   confidence?: number,
-  notes?: string
+  notes?: string,
+  rawTextSnippet?: string,
+  pageNumber?: number
 ) {
   const isMissing = value === null || value === undefined || notFound === true;
-  return {
+  const cell: Record<string, unknown> = {
     value: isMissing ? 'No informado' : value,
     isExcluded: isMissing,
     isWinner: false,
-    confidence: isMissing ? 0 : (confidence ?? 0),
-    notes,
+    confidence: isMissing ? 0 : typeof confidence === 'number' ? confidence : 0,
   };
+  if (notes !== undefined) cell.notes = notes;
+  if (rawTextSnippet !== undefined) cell.rawTextSnippet = rawTextSnippet;
+  if (typeof pageNumber === 'number' && Number.isFinite(pageNumber)) cell.pageNumber = pageNumber;
+  return cell as any;
 }
 
 /**
@@ -417,7 +422,14 @@ export function flatResultToMatrixRowsV2(
       canonicalId?: string;
       matchConfidence?: number;
       matchMethod?: string | null;
-      cells: { value: string | null; notFound?: boolean; confidence?: number; notes?: string }[];
+      cells: {
+        value: string | null;
+        notFound?: boolean;
+        confidence?: number;
+        notes?: string;
+        rawTextSnippet?: string;
+        pageNumber?: number;
+      }[];
     }[]
   >();
 
@@ -440,6 +452,8 @@ export function flatResultToMatrixRowsV2(
         notFound: cell.notFound,
         confidence: cell.confidence,
         notes: cell.rawText ?? formatDeductible(cell.deductible),
+        rawTextSnippet: cell.rawText,
+        pageNumber: (cell as any).pageNumber,
       })),
     });
   }
@@ -463,6 +477,8 @@ export function flatResultToMatrixRowsV2(
         notFound: cell.notFound,
         confidence: cell.confidence,
         notes: cell.rawText ?? formatDeductible(cell.deductible),
+        rawTextSnippet: cell.rawText,
+        pageNumber: (cell as any).pageNumber,
       })),
     });
   }
@@ -484,19 +500,27 @@ export function flatResultToMatrixRowsV2(
     });
 
     rows.forEach((row, rowIndex) => {
-      matrix.push({
+      const dataRow: MatrixRow = {
         type: 'data',
         id: `section_${sectionIndex}_row_${rowIndex}`,
         label: row.label,
         sectionId: currentSectionId,
-        canonicalName: row.canonicalName,
-        canonicalId: row.canonicalId,
-        matchConfidence: row.matchConfidence,
+        ...(row.canonicalName !== undefined ? { canonicalName: row.canonicalName } : {}),
+        ...(row.canonicalId !== undefined ? { canonicalId: row.canonicalId } : {}),
+        ...(row.matchConfidence !== undefined ? { matchConfidence: row.matchConfidence } : {}),
         matchMethod: row.matchMethod,
         cells: row.cells.map((cell) =>
-          cellFromFlatValueV2(cell.value, cell.notFound, cell.confidence, cell.notes)
+          cellFromFlatValueV2(
+            cell.value,
+            cell.notFound,
+            cell.confidence,
+            cell.notes,
+            cell.rawTextSnippet,
+            cell.pageNumber
+          )
         ),
-      });
+      };
+      matrix.push(dataRow);
     });
 
     sectionIndex++;

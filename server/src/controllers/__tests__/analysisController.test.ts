@@ -8,7 +8,7 @@ import { AuthenticatedRequest } from '../../middleware/auth';
 vi.mock('../../services/semanticMatcher', () => ({
   semanticMatcher: {
     matchCoverage: vi.fn(async (coverageName) => {
-      if (coverageName === 'Incendio Edificio') {
+      if (coverageName === 'Incendio Edificio' || coverageName === 'Incendio') {
         return {
           categoryId: 1,
           canonicalName: 'Incendio (Edificio y Contenidos)',

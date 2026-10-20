@@ -10,7 +10,7 @@ import { structuredClauseExtractor } from './structuredClauseExtractor';
 import { chatRepository } from '../repositories/chatRepository';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-const GEMINI_CHAT_MODEL = process.env.GEMINI_CHAT_MODEL || 'gemini-3.7-flash';
+const GEMINI_CHAT_MODEL = process.env.GEMINI_CHAT_MODEL || 'gemini-3.8-flash';
 const MAX_PROMPT_TOKENS = 12000;
 export const MAX_HISTORY_MESSAGES = 8;
 export const MAX_HISTORY_MESSAGE_CHARS = 1500;

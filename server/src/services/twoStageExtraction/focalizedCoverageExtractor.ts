@@ -92,7 +92,7 @@ export class FocalizedCoverageExtractor {
     cachedContent?: string | null
   ): Promise<FocalizedCoverageExtraction> {
     const ai = getGenAI();
-    const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.7-flash';
+    const extractionModel = process.env.GEMINI_MODEL || 'gemini-4-argon';
 
     const domainDesc = getDomainDescription(domain);
     let prompt = `Eres un extractor especialista en clausulado y tablas de coberturas para ${domainDesc}.

@@ -532,7 +532,7 @@ export const geminiService = {
     }
     try {
       const ai = getGenAI();
-      const model = params.model || process.env.GEMINI_MODEL || 'gemini-3.7-flash';
+      const model = params.model || process.env.GEMINI_MODEL || 'gemini-4-argon';
       const cacheConfig = {
         model,
         contents: params.contents as any,
@@ -573,7 +573,7 @@ export const geminiService = {
       console.log(`✅ [Gemini] File ready: ${uploadedFile.name}`);
 
       const ai = getGenAI();
-      const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.7-flash';
+      const extractionModel = process.env.GEMINI_MODEL || 'gemini-4-argon';
 
       let retries = 0;
       const maxRetries = 3;
@@ -681,7 +681,7 @@ export const geminiService = {
   performOcrOnImage: async (imageBuffer: Buffer, mimeType = 'image/png'): Promise<string> => {
     try {
       const ai = getGenAI();
-      const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.7-flash';
+      const extractionModel = process.env.GEMINI_MODEL || 'gemini-4-argon';
 
       const result = await ai.models.generateContent({
         model: extractionModel,
@@ -717,7 +717,8 @@ export const geminiService = {
   ): Promise<DeductibleStructure> => {
     try {
       const ai = getGenAI();
-      const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.7-flash';
+      const extractionModel =
+        process.env.GEMINI_CHAT_MODEL || process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 
       const prompt = `Analiza este deducible de seguro de una póliza en Colombia y extrae su estructura detallada:
             
@@ -821,7 +822,7 @@ Instrucciones para el análisis:
     while (true) {
       try {
         const ai = getGenAI();
-        const modelName = options?.model || process.env.GEMINI_MODEL || 'gemini-3.7-flash';
+        const modelName = options?.model || process.env.GEMINI_MODEL || 'gemini-4-argon';
         const config: Record<string, unknown> = {
           temperature: options?.temperature ?? 0.1,
           maxOutputTokens: options?.maxOutputTokens ?? 32768,
@@ -893,7 +894,7 @@ Instrucciones para el análisis:
     while (true) {
       try {
         const ai = getGenAI();
-        const extractionModel = options?.model || process.env.GEMINI_MODEL || 'gemini-3.7-flash';
+        const extractionModel = options?.model || process.env.GEMINI_MODEL || 'gemini-4-argon';
         console.log(`🤖 [Gemini] Using model: ${extractionModel} for extraction`);
         const config: Record<string, unknown> = {
           temperature: options?.temperature ?? 0.1,

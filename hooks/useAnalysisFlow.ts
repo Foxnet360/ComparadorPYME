@@ -13,6 +13,7 @@ export type AppView =
   | 'ANALYZER'
   | 'REPORT'
   | 'CLIENTS'
+  | 'INSURERS'
   | 'ANALYTICS'
   | 'USERS'
   | 'PORTFOLIO'
@@ -52,7 +53,8 @@ export const useAnalysisFlow = () => {
         clauseIdsToUse,
         state.domain,
         state.mode,
-        state.renewalContext
+        state.renewalContext,
+        state.selectedClient
       );
       // Save to history unconditionally and capture generated ID
       const savedId = await storageService.saveAnalysis(

@@ -1,13 +1,16 @@
-import { supabase } from '../config/database';
+import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import { supabase, handleSupabaseError } from '../config/database';
 import { pdfExtractor } from './pdfExtractor';
 import { semanticChunker, Chunk } from './semanticChunker';
 import { embeddingService } from './vector/embeddingService';
 import { pdfRenderer } from './pdfRenderer';
-import { handleSupabaseError } from '../config/database';
 import { geminiService } from './gemini';
 import { featureFlags } from '../config/featureFlags';
 import { structuredClauseExtractor } from './structuredClauseExtractor';
 import { InsuranceDomain } from '../types/domain';
+import { insurerNameNormalizer } from './insurerNameNormalizer';
 
 export interface DocumentMetadata {
   insurerName: string;
@@ -17,12 +20,16 @@ export interface DocumentMetadata {
   productName?: string;
   uploadedBy?: string;
   domain?: InsuranceDomain;
+  fileHash?: string;
+  isPermanent?: boolean;
 }
 
 export interface IndexingResult {
   success: boolean;
   documentId?: string;
   insurerId?: string;
+  deduplicated?: boolean;
+  fileHash?: string;
   stats: {
     totalPages: number;
     chunksCreated: number;
@@ -41,6 +48,10 @@ export interface IndexingProgress {
 
 export type ProgressCallback = (progress: IndexingProgress) => void;
 
+export function computePdfSha256(fileBuffer: Buffer): string {
+  return crypto.createHash('sha256').update(fileBuffer).digest('hex');
+}
+
 export class DocumentIndexingService {
   private progressCallback?: ProgressCallback;
 
@@ -56,7 +67,134 @@ export class DocumentIndexingService {
   }
 
   /**
+   * Checks if a document with the same SHA-256 file_hash or (insurer_id, document_name) already exists.
+   * Returns deduplicated existing record if identical hash and chunks exist.
+   */
+  async findExistingDeduplicatedDocument(
+    insurerId: string,
+    documentName: string,
+    fileHash?: string,
+    domain?: string
+  ): Promise<{
+    exactHashMatch?: { id: string; insurerId: string; totalPages: number; chunkCount: number };
+    sameNameDiffHashDocId?: string;
+  }> {
+    if (!fileHash) {
+      return {};
+    }
+
+    try {
+      // 1. Check by exact SHA-256 file_hash in documents
+      const hashQuery = supabase
+        .from('documents')
+        .select('id, insurer_id, document_name, total_pages, is_active')
+        .eq('file_hash', fileHash);
+
+      const { data: hashRows } = await (hashQuery as unknown as Promise<{
+        data: Array<{
+          id: string;
+          insurer_id: string;
+          document_name: string;
+          total_pages: number | null;
+          is_active: boolean;
+        }> | null;
+      }>);
+
+      if (Array.isArray(hashRows) && hashRows.length > 0) {
+        const matchedDoc = hashRows[0]!;
+        const { count: chunkCount } = await supabase
+          .from('chunks')
+          .select('*', { count: 'exact', head: true })
+          .eq('document_id', matchedDoc.id);
+
+        if ((chunkCount ?? 0) > 0) {
+          // Reactivate and mark permanent without duplicating
+          try {
+            await supabase
+              .from('documents')
+              .update({
+                is_active: true,
+                is_permanent: true,
+                ...(domain ? { domain } : {}),
+                updated_at: new Date().toISOString(),
+              } as never)
+              .eq('id', matchedDoc.id);
+          } catch {
+            await supabase
+              .from('documents')
+              .update({
+                is_active: true,
+                updated_at: new Date().toISOString(),
+              } as never)
+              .eq('id', matchedDoc.id);
+          }
+
+          return {
+            exactHashMatch: {
+              id: matchedDoc.id,
+              insurerId: matchedDoc.insurer_id || insurerId,
+              totalPages: matchedDoc.total_pages || 1,
+              chunkCount: chunkCount || 1,
+            },
+          };
+        }
+      }
+
+      // 2. Check by (insurer_id, document_name) to avoid duplicate rows
+      const nameQuery = supabase
+        .from('documents')
+        .select('id, file_hash, total_pages, is_active')
+        .eq('insurer_id', insurerId)
+        .eq('document_name', documentName);
+
+      const { data: nameRows } = await (nameQuery as unknown as Promise<{
+        data: Array<{
+          id: string;
+          file_hash: string | null;
+          total_pages: number | null;
+          is_active: boolean;
+        }> | null;
+      }>);
+
+      if (Array.isArray(nameRows) && nameRows.length > 0) {
+        const existingDoc = nameRows[0]!;
+        if (existingDoc.file_hash === fileHash) {
+          const { count: chunkCount } = await supabase
+            .from('chunks')
+            .select('*', { count: 'exact', head: true })
+            .eq('document_id', existingDoc.id);
+
+          if ((chunkCount ?? 0) > 0) {
+            await supabase
+              .from('documents')
+              .update({
+                is_active: true,
+                updated_at: new Date().toISOString(),
+              } as never)
+              .eq('id', existingDoc.id);
+
+            return {
+              exactHashMatch: {
+                id: existingDoc.id,
+                insurerId,
+                totalPages: existingDoc.total_pages || 1,
+                chunkCount: chunkCount || 1,
+              },
+            };
+          }
+        }
+        return { sameNameDiffHashDocId: existingDoc.id };
+      }
+    } catch {
+      // Non-fatal: proceed with standard indexing
+    }
+
+    return {};
+  }
+
+  /**
    * Indexa un documento PDF completo en Supabase usando una transacción atómica
+   * Con deduplicación permanente por SHA-256 file_hash y (insurer_id, document_name)
    */
   async indexDocument(pdfPath: string, metadata: DocumentMetadata): Promise<IndexingResult> {
     const startTime = Date.now();
@@ -69,6 +207,17 @@ export class DocumentIndexingService {
     console.log(`   Document: ${metadata.documentName}`);
 
     try {
+      // Compute SHA-256 hash when real file is on disk or passed in metadata
+      let fileHash = metadata.fileHash;
+      if (!fileHash && pdfPath && fs.existsSync(pdfPath)) {
+        try {
+          const fileBuffer = fs.readFileSync(pdfPath);
+          fileHash = computePdfSha256(fileBuffer);
+        } catch {
+          // Ignore hash error if file cannot be read directly
+        }
+      }
+
       // 1. Extraer texto y metadata del PDF
       this.reportProgress({
         stage: 'extracting',
@@ -97,6 +246,43 @@ export class DocumentIndexingService {
 
       const insurerId = await this.getOrCreateInsurer(metadata.insurerName);
       console.log(`✅ Aseguradora: ${insurerId}`);
+
+      // 2.5 Verificar deduplicación permanente por file_hash o (insurer_id, document_name)
+      if (fileHash) {
+        const dedupCheck = await this.findExistingDeduplicatedDocument(
+          insurerId,
+          metadata.documentName,
+          fileHash,
+          metadata.domain
+        );
+
+        if (dedupCheck.exactHashMatch) {
+          console.log(
+            `♻️ [DocumentIndexingService] Clausulado permanente ya indexado (SHA-256: ${fileHash.slice(0, 12)}...). Reutilizando ${dedupCheck.exactHashMatch.id}`
+          );
+          this.reportProgress({
+            stage: 'complete',
+            message: 'Clausulado permanente verificado en biblioteca (sin duplicación)',
+            percent: 100,
+          });
+          return {
+            success: true,
+            documentId: dedupCheck.exactHashMatch.id,
+            insurerId: dedupCheck.exactHashMatch.insurerId,
+            deduplicated: true,
+            fileHash,
+            stats: {
+              totalPages:
+                dedupCheck.exactHashMatch.totalPages || extractionResult.metadata.pageCount,
+              chunksCreated: dedupCheck.exactHashMatch.chunkCount,
+              imagesUploaded: 0,
+              processingTimeMs: Date.now() - startTime,
+            },
+            errors,
+            warnings,
+          };
+        }
+      }
 
       // 3. Renderizar páginas a imágenes
       this.reportProgress({
@@ -242,6 +428,37 @@ export class DocumentIndexingService {
         throw new Error(`Transacción atómica fallida: ${rpcError.message}`);
       }
 
+      // Stamp file_hash, domain, and is_permanent on the persisted document
+      if (documentId && (fileHash || metadata.domain)) {
+        try {
+          await supabase
+            .from('documents')
+            .update({
+              ...(fileHash ? { file_hash: fileHash } : {}),
+              ...(metadata.domain ? { domain: metadata.domain } : {}),
+              is_permanent: true,
+              is_active: true,
+              updated_at: new Date().toISOString(),
+            } as never)
+            .eq('id', documentId);
+        } catch {
+          try {
+            if (fileHash) {
+              await supabase
+                .from('documents')
+                .update({
+                  file_hash: fileHash,
+                  is_active: true,
+                  updated_at: new Date().toISOString(),
+                } as never)
+                .eq('id', documentId);
+            }
+          } catch {
+            // Non-fatal if mocked in unit tests
+          }
+        }
+      }
+
       console.log(`✅ Documento, imágenes y chunks guardados atómicamente: ${documentId}`);
 
       // 8. Auto-extract structured clauses (gated by feature flag)
@@ -303,6 +520,8 @@ export class DocumentIndexingService {
         success: true,
         documentId,
         insurerId,
+        deduplicated: false,
+        fileHash,
         stats: {
           totalPages: extractionResult.metadata.pageCount,
           chunksCreated: chunksWithEmbeddings.length,
@@ -454,3 +673,81 @@ export class DocumentIndexingService {
 
 // Exportar instancia singleton
 export const documentIndexingService = new DocumentIndexingService();
+
+/**
+ * Ensures an uploaded clause PDF buffer is permanently stored and indexed in the
+ * persistent library without duplicating existing SHA-256 hashes or (insurer_id, document_name) rows.
+ */
+export async function ensureClausePersistedInLibrary(
+  fileBuffer: Buffer,
+  fileName: string,
+  insurerName: string,
+  domain?: string
+): Promise<{
+  documentId?: string;
+  insurerId?: string;
+  deduplicated: boolean;
+  fileHash: string;
+}> {
+  const fileHash = computePdfSha256(fileBuffer);
+  const normalizedInsurer =
+    insurerNameNormalizer.normalize(insurerName || 'Aseguradora') || 'Aseguradora';
+  const cleanDocName =
+    fileName
+      .replace(/\.pdf$/i, '')
+      .replace(/[_-]+/g, ' ')
+      .trim() || 'Clausulado General';
+
+  const insurerId = await documentIndexingService.getOrCreateInsurer(normalizedInsurer);
+
+  // Check if already persisted by SHA-256 hash or (insurer_id, document_name)
+  const existing = await documentIndexingService.findExistingDeduplicatedDocument(
+    insurerId,
+    cleanDocName,
+    fileHash,
+    domain
+  );
+
+  if (existing.exactHashMatch) {
+    return {
+      documentId: existing.exactHashMatch.id,
+      insurerId: existing.exactHashMatch.insurerId,
+      deduplicated: true,
+      fileHash,
+    };
+  }
+
+  const tmpDir = '/tmp/uploads';
+  if (!fs.existsSync(tmpDir)) {
+    fs.mkdirSync(tmpDir, { recursive: true });
+  }
+  const tempPdfPath = path.join(tmpDir, `perm-clause-${fileHash.slice(0, 12)}-${Date.now()}.pdf`);
+
+  try {
+    fs.writeFileSync(tempPdfPath, fileBuffer);
+    const result = await documentIndexingService.indexDocument(tempPdfPath, {
+      insurerName: normalizedInsurer,
+      documentName: cleanDocName,
+      documentType: 'CLAUSULADO_GENERAL',
+      productName: cleanDocName,
+      domain: (domain as InsuranceDomain) || 'pyme',
+      fileHash,
+      isPermanent: true,
+    });
+
+    return {
+      documentId: result.documentId,
+      insurerId: result.insurerId || insurerId,
+      deduplicated: Boolean(result.deduplicated),
+      fileHash,
+    };
+  } finally {
+    if (fs.existsSync(tempPdfPath)) {
+      try {
+        fs.unlinkSync(tempPdfPath);
+      } catch {
+        // Ignore cleanup failure
+      }
+    }
+  }
+}

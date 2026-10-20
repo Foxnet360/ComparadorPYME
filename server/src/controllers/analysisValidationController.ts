@@ -427,11 +427,16 @@ export const exportAnalysisExcel = async (
       .toLowerCase()
       .trim();
 
+    const rawClientInfo =
+      req.body?.clientInfo ||
+      (analysis as any)?.analysis_result?.clientInfo ||
+      {};
+
     const rawClientName =
       (req.query?.clientName as string) ||
       req.body?.clientName ||
+      rawClientInfo.name ||
       analysis?.client_name ||
-      ((analysis as any)?.analysis_result as any)?.clientInfo?.name ||
       'Cliente';
 
     const defaultActivity =
@@ -448,12 +453,27 @@ export const exportAnalysisExcel = async (
         rawClientName !== 'Edificio Alicante' || domain === 'copropiedades'
           ? rawClientName
           : 'Cliente',
+      nit: req.body?.clientNit || rawClientInfo.nit,
       activity:
         (req.query?.clientActivity as string) ||
         req.body?.clientActivity ||
-        ((analysis as any)?.analysis_result as any)?.clientInfo?.activity ||
+        rawClientInfo.activity ||
         defaultActivity,
-      location: 'Bogotá D.C.',
+      location:
+        (req.query?.clientLocation as string) ||
+        req.body?.clientLocation ||
+        rawClientInfo.location ||
+        'Colombia',
+      address: rawClientInfo.address,
+      city: rawClientInfo.city,
+      department: rawClientInfo.department,
+      contactPerson: rawClientInfo.contactPerson,
+      email: rawClientInfo.email,
+      phone: rawClientInfo.phone,
+      vigencia: rawClientInfo.vigencia,
+      tipoSeguro: rawClientInfo.tipoSeguro,
+      anoConstruccion: rawClientInfo.anoConstruccion,
+      pisos: rawClientInfo.pisos,
     };
 
     // Get cell notes and brokerInfo from request body or user session
@@ -478,20 +498,24 @@ export const exportAnalysisExcel = async (
         (analysis?.analysis_result as any)?.matrix ||
         (analysis?.analysis_result as any)?.rows,
     };
+    const exportMode = (req.query?.mode as string) || req.body?.mode || 'technical';
+
     const buffer = await generateExcelBuffer(
       quotes,
       clientInfo,
       cellNotes,
       brokerInfo,
       domain,
-      reportData
+      reportData,
+      exportMode as 'technical' | 'client'
     );
 
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     );
-    res.setHeader('Content-Disposition', `attachment; filename=comparativa_seguros_${id}.xlsx`);
+    const filenamePrefix = exportMode === 'client' ? 'informe_cliente' : 'comparativa_seguros';
+    res.setHeader('Content-Disposition', `attachment; filename=${filenamePrefix}_${id}.xlsx`);
     res.send(buffer);
   } catch (err: unknown) {
     console.error('❌ [exportAnalysisExcel] Error exporting to Excel:', err);

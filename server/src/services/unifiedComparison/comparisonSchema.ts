@@ -59,6 +59,7 @@ export const FlatComparisonCellSchemaV2 = z.object({
   insurer: z.string().min(1),
   value: z.string().nullable(),
   rawText: z.string().optional(),
+  pageNumber: z.number().int().optional(),
   notFound: z.boolean().optional(),
   confidence: z.number().min(0).max(1).optional(),
   isAmbiguous: z.boolean().optional(),

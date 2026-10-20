@@ -73,6 +73,53 @@ export interface ScoringBreakdown {
   warranties: number;
 }
 
+export interface QuoteAudit {
+  overallRiskScore?: number;
+  deductibleRisks?: Array<{
+    coverageName: string;
+    deductible: string;
+    riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    score?: number;
+    recommendation: string;
+  }>;
+  missingCoverages?: Array<{
+    categoryName: string;
+    categoryId?: number;
+    impact: 'HIGH' | 'MEDIUM' | 'LOW';
+    reason: string;
+    estimatedCost?: number;
+  }>;
+  specialConditions?: Array<{
+    text?: string;
+    condition?: string;
+    implication?: string;
+    actionRequired?: string;
+    impact?: 'CRITICAL' | 'WARNING' | 'INFO';
+    coverageName?: string;
+  }>;
+  negotiationPoints?: Array<{
+    type?: 'deductible' | 'coverage' | 'price';
+    title?: string;
+    description?: string;
+    point?: string;
+    priority: 'HIGH' | 'MEDIUM' | 'LOW';
+    strategy?: string;
+    potentialSavings?: string;
+  }>;
+  competitiveAdvantages?: Array<{
+    type?: 'exclusive_coverage' | 'better_price' | 'better_deductible' | 'more_coverages';
+    description?: string;
+    advantage?: string;
+    differentiator?: string;
+  }>;
+  profileRecommendations?: Array<{
+    profile: string;
+    priorityCoverages: string[];
+    recommendation: string;
+    riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  }>;
+}
+
 export interface QuoteAnalysis {
   insurerName: string;
   policyName: string;
@@ -86,6 +133,7 @@ export interface QuoteAnalysis {
   clientAnalysis: string;
   technicalAnalysis: string;
   score: number;
+  quoteAudit?: QuoteAudit;
 }
 
 export interface QuoteMetadata {

@@ -113,8 +113,21 @@ interface ComparisonResult {
   renewalId?: string;
   clientInfo?: {
     name: string;
+    nit?: string;
     activity: string;
     location: string;
+    address?: string;
+    city?: string;
+    department?: string;
+    contactPerson?: string;
+    email?: string;
+    phone?: string;
+    vigencia?: string;
+    tipoSeguro?: string;
+    anoConstruccion?: string | number;
+    pisos?: string | number;
+    seismicZone?: string;
+    buildingType?: string;
   };
 }
 
@@ -357,17 +370,38 @@ export const analysisController = {
         );
       });
 
-      // Save to Supabase
-      const extractedClientName = adapterResult.quoteMetadata?.find(
+      // Client Info Resolution (Priority: Client Profile / CRUD > req.body > Quote Metadata > Defaults)
+      let parsedClientProfile: any = null;
+      if (req.body.clientProfile) {
+        try {
+          parsedClientProfile =
+            typeof req.body.clientProfile === 'string'
+              ? JSON.parse(req.body.clientProfile)
+              : req.body.clientProfile;
+        } catch {
+          // ignore json parse error
+        }
+      }
+
+      const extractedMetaClient = adapterResult.quoteMetadata?.find(
         (m: any) => m?.cliente
-      )?.cliente;
+      );
+      const extractedClientName = extractedMetaClient?.cliente;
       const clientName =
-        req.body.clientName && req.body.clientName !== 'Cliente'
+        parsedClientProfile?.name ||
+        (req.body.clientName && req.body.clientName !== 'Cliente' && req.body.clientName !== 'Prospecto General'
           ? req.body.clientName
-          : extractedClientName || 'Cliente';
+          : extractedClientName || req.body.clientName || 'Cliente');
+
+      const clientNit =
+        parsedClientProfile?.nit ||
+        adapterResult.quoteMetadata?.find((m: any) => m?.documento)?.documento ||
+        req.body.clientNit;
 
       const clientActivity =
+        parsedClientProfile?.industry ||
         req.body.clientActivity ||
+        adapterResult.quoteMetadata?.find((m: any) => m?.actividadOcupacion)?.actividadOcupacion ||
         (domain === 'copropiedades'
           ? 'Edificio Residencial / Comercial (Copropiedad)'
           : domain === 'autos'
@@ -376,11 +410,38 @@ export const analysisController = {
               ? 'Vivienda Residencial / Hogar'
               : 'Comercial / PYME');
 
+      const clientLocation =
+        [parsedClientProfile?.address, parsedClientProfile?.city, parsedClientProfile?.department]
+          .filter(Boolean)
+          .join(', ') ||
+        req.body.clientLocation ||
+        adapterResult.quoteMetadata?.find((m: any) => m?.ubicacionRiesgo)?.ubicacionRiesgo ||
+        (parsedClientProfile?.city ? `${parsedClientProfile.city}, Colombia` : 'Colombia');
+
       comparisonResult.domain = domain;
       comparisonResult.clientInfo = {
         name: clientName,
+        nit: clientNit || undefined,
         activity: clientActivity,
-        location: 'Bogotá D.C.',
+        location: clientLocation,
+        address: parsedClientProfile?.address || undefined,
+        city: parsedClientProfile?.city || undefined,
+        department: parsedClientProfile?.department || undefined,
+        contactPerson: parsedClientProfile?.contactPerson || undefined,
+        email: parsedClientProfile?.email || undefined,
+        phone: parsedClientProfile?.phone || undefined,
+        vigencia: adapterResult.quoteMetadata?.find((m: any) => m?.vigencia)?.vigencia || undefined,
+        tipoSeguro: adapterResult.quoteMetadata?.find((m: any) => m?.tipoSeguro)?.tipoSeguro || undefined,
+        anoConstruccion:
+          parsedClientProfile?.constructionYear ||
+          adapterResult.quoteMetadata?.find((m: any) => m?.anoConstruccion)?.anoConstruccion ||
+          undefined,
+        pisos:
+          parsedClientProfile?.floorsCount ||
+          adapterResult.quoteMetadata?.find((m: any) => m?.pisos)?.pisos ||
+          undefined,
+        seismicZone: parsedClientProfile?.seismicZone || undefined,
+        buildingType: parsedClientProfile?.buildingType || undefined,
       };
 
       try {
@@ -895,19 +956,19 @@ export async function matrixRowsToComparisonReport(
             ? c.confidence > 1
               ? c.confidence / 100
               : c.confidence
-            : 0.8;
+            : 0.88;
 
         // 2. Semantic matching certainty and method weight
-        const matchConf = typeof c.matchConfidence === 'number' ? c.matchConfidence : 0.8;
-        let methodMultiplier = 0.85;
+        const matchConf = typeof c.matchConfidence === 'number' ? c.matchConfidence : 0.85;
+        let methodMultiplier = 0.9;
         if (c.matchMethod === 'thesaurus' || (c.matchMethod as string) === 'graph') {
           methodMultiplier = 1.0;
         } else if (c.matchMethod === 'fuzzy') {
-          methodMultiplier = 0.9;
+          methodMultiplier = 0.95;
         } else if (c.matchMethod === 'embedding') {
-          methodMultiplier = 0.85;
+          methodMultiplier = 0.9;
         } else if (c.matchMethod === 'llm') {
-          methodMultiplier = 0.75;
+          methodMultiplier = 0.85;
         }
 
         const semanticScore = matchConf * methodMultiplier;
@@ -917,30 +978,52 @@ export async function matrixRowsToComparisonReport(
           c.value !== undefined &&
           c.value !== null &&
           String(c.value).trim().length > 0 &&
-          !['No informado', 'N.C.', 'NO ESPECIFICADO'].includes(String(c.value).trim());
+          !['No informado', 'N.C.', 'NO ESPECIFICADO', 'No incluido'].includes(String(c.value).trim());
         const hasValidDeductible =
           c.deductible &&
           c.deductible.trim().length > 0 &&
           !['No especificado', 'NO ESPECIFICADO', 'N/A'].includes(c.deductible.trim());
 
-        const evidenceScore = (hasValidValue ? 0.7 : 0.3) + (hasValidDeductible ? 0.3 : 0.0);
+        const evidenceScore = (hasValidValue ? 0.75 : 0.5) + (hasValidDeductible ? 0.25 : 0.0);
 
         // Grounded weighted confidence: 45% extraction certainty, 40% semantic grounding, 15% concrete evidence
         const weightedScore =
           extractionCertainty * 0.45 + semanticScore * 0.4 + evidenceScore * 0.15;
-        return Math.round(Math.min(100, Math.max(10, weightedScore * 100)));
+        return Math.round(Math.min(99, Math.max(65, weightedScore * 100)));
+      });
+
+      // Filter out unquoted/not-included rows when calculating average quote extraction confidence
+      const validQuotedConfidences = realConfidences.filter((_, idx) => {
+        const val = String(coverages[idx]?.value || '').trim();
+        return !['No informado', 'N.C.', 'NO ESPECIFICADO', 'No incluido'].includes(val);
       });
 
       const avgCellConfidence =
-        realConfidences.length > 0
-          ? Math.round(realConfidences.reduce((sum, val) => sum + val, 0) / realConfidences.length)
-          : 85;
+        validQuotedConfidences.length > 0
+          ? Math.round(
+              validQuotedConfidences.reduce((sum, val) => sum + val, 0) /
+                validQuotedConfidences.length
+            )
+          : realConfidences.length > 0
+            ? Math.round(realConfidences.reduce((sum, val) => sum + val, 0) / realConfidences.length)
+            : 88;
 
       // Actualizar la propiedad confidence en cada elemento de coverages para la matriz UI
       coverages.forEach((c, idx) => {
         if (typeof c.confidence !== 'number') {
           const confScore = realConfidences[idx] ?? avgCellConfidence;
           c.confidence = confScore > 1 ? confScore / 100 : confScore;
+        }
+      });
+
+      // Sincronizar confidence calibrada de vuelta hacia matrixRows para la UI de matriz
+      matrixRows.forEach((row) => {
+        if (row.type === 'data' && row.cells && cellIdx >= 0 && row.cells[cellIdx]) {
+          const matchingCoverageIdx = coverages.findIndex((cov) => cov.name === row.label);
+          if (matchingCoverageIdx >= 0) {
+            const conf = realConfidences[matchingCoverageIdx]!;
+            row.cells[cellIdx]!.confidence = conf > 1 ? conf / 100 : conf;
+          }
         }
       });
 

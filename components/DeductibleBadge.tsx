@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { findPedagogicalExplanation } from '../src/shared/domainRegulatoryKnowledge';
 
 interface DeductibleBadgeProps {
   deductible: string;
+  coverageName?: string;
   className?: string;
 }
 
@@ -121,7 +123,11 @@ export const parseDeductibleForBadge = (deductible: string): BadgeConfig => {
   };
 };
 
-export const DeductibleBadge: React.FC<DeductibleBadgeProps> = ({ deductible, className = '' }) => {
+export const DeductibleBadge: React.FC<DeductibleBadgeProps> = ({
+  deductible,
+  coverageName = '',
+  className = '',
+}) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
   if (deductible && deductible.includes(';')) {
@@ -132,17 +138,23 @@ export const DeductibleBadge: React.FC<DeductibleBadgeProps> = ({ deductible, cl
     return (
       <div className="flex flex-col gap-1 items-center">
         {parts.map((part, idx) => (
-          <DeductibleBadge key={idx} deductible={part} className={className} />
+          <DeductibleBadge
+            key={idx}
+            deductible={part}
+            coverageName={coverageName}
+            className={className}
+          />
         ))}
       </div>
     );
   }
 
   const config = parseDeductibleForBadge(deductible);
+  const pedagogical = findPedagogicalExplanation(coverageName, deductible, 'deductible');
 
   return (
     <span
-      className={`relative inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium ${config.bgColor} ${config.color} ${className}`}
+      className={`relative inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium cursor-help ${config.bgColor} ${config.color} ${className}`}
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
@@ -160,10 +172,24 @@ export const DeductibleBadge: React.FC<DeductibleBadgeProps> = ({ deductible, cl
       <span>{config.label}</span>
 
       {showTooltip && (
-        <div className="absolute z-50 bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-slate-800 text-white text-xs rounded-lg py-1.5 px-2.5 shadow-lg whitespace-nowrap pointer-events-none">
-          <div className="font-semibold">{deductible || 'No especificado'}</div>
-          <div className="text-slate-300 mt-0.5">{config.recommendation}</div>
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-slate-800"></div>
+        <div className="absolute z-50 bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-72 sm:w-80 bg-slate-900 text-white text-xs rounded-xl p-3 shadow-2xl border border-slate-700 text-left whitespace-normal pointer-events-none">
+          <div className="font-bold text-indigo-300 border-b border-slate-700/80 pb-1.5 mb-1.5">
+            {deductible || 'No especificado'}
+          </div>
+          <div className="text-amber-300 font-semibold text-[11px] mb-1.5">
+            {config.recommendation}
+          </div>
+          <div className="space-y-1 text-[11px] text-slate-200 leading-snug">
+            <div>
+              <span className="font-semibold text-emerald-300">Qué significa: </span>
+              {pedagogical.whatItCovers}
+            </div>
+            <div>
+              <span className="font-semibold text-cyan-300">Impacto en reclamo: </span>
+              {pedagogical.claimImpact}
+            </div>
+          </div>
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-slate-900"></div>
         </div>
       )}
     </span>

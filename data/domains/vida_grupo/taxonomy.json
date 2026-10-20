@@ -6,8 +6,14 @@
     "currency": "COP",
     "salaryReference": "SMMLV",
     "salaryValue2024": 1423500,
-    "uvtValue2024": 42412,
-    "source": "Superintendencia Financiera de Colombia; Pólizas Colectivas de Vida Grupo",
+    "uvtValue2024": 49799,
+    "source": "Seguros de Personas, Vida Grupo y Riesgos Laborales — Código de Comercio Arts. 1137–1162 · Ley 100/1993 · Decreto 1295/1994 · Ley 1562/2012 (ARL)",
+    "regulatory": {
+      "framework": "Código de Comercio — Arts. 1137 a 1162 (Seguros de Personas, Interés Asegurable e Incontestabilidad Art. 1158)",
+      "nonProportionalRule": "Código de Comercio Art. 1138 — En seguros de personas no aplica regla proporcional de infraseguro ni límite pecuniario excluyente",
+      "laborRiskSystem": "Ley 100 de 1993 · Decreto Ley 1295 de 1994 · Ley 1562 de 2012 (Sistema General de Riesgos Laborales ARL y PCL >= 50% para ITP)",
+      "supervisoryBody": "Superintendencia Financiera de Colombia (SFC) — Circular Básica Jurídica"
+    },
     "changelog": "v2.0.0: Agregadas IPP (vg_15) — incapacidad parcial < 50% de invalidez — y Renta por Desempleo Involuntario (vg_16)."
   },
   "categories": [

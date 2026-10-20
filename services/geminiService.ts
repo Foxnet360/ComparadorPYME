@@ -1,5 +1,5 @@
 import { ComparisonReport } from '../types';
-import type { AnalysisMode, RenewalAnalysisContext } from '../types';
+import type { AnalysisMode, Client, RenewalAnalysisContext } from '../types';
 import {
   apiClient,
   ApiTimeoutError,
@@ -19,11 +19,24 @@ export const analyzeQuotesWithGemini = async (
   // backend still derives ownership from the session; these fields only
   // discriminate the analysis type and link portfolio rows.
   analysisMode: AnalysisMode = 'new',
-  renewalContext?: RenewalAnalysisContext | null
+  renewalContext?: RenewalAnalysisContext | null,
+  selectedClient?: Client | null
 ): Promise<ComparisonReport> => {
   const formData = new FormData();
   formData.append('clientName', clientName);
   formData.append('domain', domain);
+  if (selectedClient) {
+    formData.append('clientProfile', JSON.stringify(selectedClient));
+    if (selectedClient.industry) {
+      formData.append('clientActivity', selectedClient.industry);
+    }
+    const loc = [selectedClient.address, selectedClient.city, selectedClient.department]
+      .filter(Boolean)
+      .join(', ');
+    if (loc) {
+      formData.append('clientLocation', loc);
+    }
+  }
   // AUTH-2: no userId here — the backend derives it from the Bearer token
   // that apiClient attaches, and rejects client-supplied userId with 400.
 

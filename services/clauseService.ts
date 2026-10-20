@@ -30,6 +30,7 @@ export interface CreateDocumentMetadata {
   documentType: string;
   productName?: string;
   version?: string;
+  domain?: string;
 }
 
 export const clauseService = {
@@ -61,6 +62,7 @@ export const clauseService = {
     formData.append('documentType', metadata.documentType);
     if (metadata.productName) formData.append('productName', metadata.productName);
     if (metadata.version) formData.append('version', metadata.version);
+    if (metadata.domain) formData.append('domain', metadata.domain);
 
     const response = await apiClient.fetch('/documents', {
       method: 'POST',

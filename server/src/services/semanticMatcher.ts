@@ -399,7 +399,7 @@ async function matchByLLM(
     const prompt = `Clasifica la siguiente cobertura de seguro en una de estas categorías:\n\nCATEGORÍAS:\n${categoryList}\n\nCOBERTURA A CLASIFICAR: "${coverageName}"\n\nResponde ÚNICAMENTE con el número de la categoría y un score de confianza (0-1).\nFormato: "CATEGORIA: [número]\nCONFIANZA: [score]"\nSi no estás seguro, responde: "CATEGORIA: 0\nCONFIANZA: 0"`;
 
     const response = await geminiService.extractText('', prompt, {
-      model: process.env.GEMINI_CHAT_MODEL || process.env.GEMINI_MODEL || 'gemini-3.7-flash',
+      model: process.env.GEMINI_CHAT_MODEL || process.env.GEMINI_MODEL || 'gemini-3.8-flash',
       thinkingLevel: 'low',
     });
 
@@ -473,7 +473,7 @@ async function matchByLLMBatch(
     const response = await geminiService.extractStructured<
       BatchLlmClassificationItem[] | { matches?: BatchLlmClassificationItem[] }
     >('', prompt, 1, {
-      model: process.env.GEMINI_CHAT_MODEL || process.env.GEMINI_MODEL || 'gemini-3.7-flash',
+      model: process.env.GEMINI_CHAT_MODEL || process.env.GEMINI_MODEL || 'gemini-3.8-flash',
       thinkingLevel: 'low',
       maxOutputTokens: 2048,
       responseSchema: BatchCoverageClassificationSchema,

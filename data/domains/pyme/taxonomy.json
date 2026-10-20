@@ -7,10 +7,12 @@
     "salaryReference": "SMMLV",
     "salaryValue2024": 1423500,
     "uvtValue2024": 49799,
-    "source": "Pólizas Multiriesgo PYME — Circular 050/2013 SFC · Condicionados FASECOLDA · Normas ISO 31000",
+    "source": "Pólizas Multirriesgo PYME — Código de Comercio Arts. 1072, 1079, 1082, 1088, 1102 y 1127 · Circular Externa 050/2013 SFC · Condicionados FASECOLDA · Normas ISO 31000",
     "regulatory": {
-      "framework": "Circular Externa 050 de 2013 — Superintendencia Financiera de Colombia",
-      "industryBody": "FASECOLDA — Federación de Aseguradores Colombianos"
+      "framework": "Código de Comercio — Arts. 1079, 1082 y 1088 (Principio Indemnizatorio, Daño Emergente y Lucro Cesante)",
+      "underinsuranceRule": "Código de Comercio Art. 1102 — Regla Proporcional por Infraseguro y Coaseguro Pactado",
+      "civilLiability": "Código de Comercio Arts. 1127 a 1133 (RCE Predios, Labores y Operaciones, Patronal y Acción Directa)",
+      "supervisoryBody": "Superintendencia Financiera de Colombia (Circular Externa 050 de 2013) · FASECOLDA"
     },
     "changelog": "v2.0.0: Agregadas Daños por Agua (tra_15) y RC por Productos (tra_16). HMACC separado en HMA y AMIT para scoring independiente."
   },
