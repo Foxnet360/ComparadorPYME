@@ -27,7 +27,7 @@
     "typecheck:frontend": "tsc --noEmit --project tsconfig.json",
     "test:smoke": "./scripts/smoke-tests.sh",
     "evaluate:golden": "cd server && ts-node --transpile-only src/scripts/runEvaluation.ts",
-    "deploy": "node .opencode/skills/railway-deploy/deploy.js",
+    "deploy": "npm run deploy:production",
     "deploy:staging": "./scripts/deploy-staging.sh",
     "deploy:production": "./scripts/deploy-production.sh"
   },

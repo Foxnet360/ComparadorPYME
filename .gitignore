@@ -34,7 +34,8 @@ docs/REDIS_SETUP.md
 *.njsproj
 *.sln
 *.sw?
-server/uploads
+uploads/
+server/uploads/
 
 # ChromaDB data
 chroma_data/
