@@ -4,6 +4,7 @@
  */
 
 import { apiClient } from './apiClient';
+import { supabase } from './authService';
 import { Ally, UserRole } from '../types';
 
 export interface OrganizationMember {
@@ -12,6 +13,17 @@ export interface OrganizationMember {
   user_id: string;
   role: UserRole;
   created_at: string;
+}
+
+export interface DirectoryUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  allyId: string;
+  allyName: string;
+  status: 'ACTIVE' | 'INACTIVE';
+  createdAt: string;
 }
 
 export interface CurrentOrgResponse {
@@ -46,21 +58,89 @@ export const organizationService = {
    */
   listOrganizations: async (): Promise<Ally[]> => {
     try {
-      const res = await apiClient.fetch('/api/organizations');
-      if (!res.ok) {
-        return [];
+      // 1. Direct Supabase query with active user session
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('*')
+        .order('name');
+      if (!error && Array.isArray(data) && data.length > 0) {
+        return data.map((org: any) => ({
+          id: org.id,
+          name: org.name,
+          nit: org.nit || undefined,
+          createdAt: org.created_at ? org.created_at.split('T')[0] : undefined,
+        }));
       }
-      const data = await res.json();
-      return data.map((org: any) => ({
-        id: org.id,
-        name: org.name,
-        nit: org.nit,
-        createdAt: org.created_at ? org.created_at.split('T')[0] : undefined,
-      }));
+    } catch (err) {
+      console.warn('Direct Supabase organizations query failed, trying API fallback', err);
+    }
+
+    try {
+      // 2. Fallback to Express API
+      const res = await apiClient.fetch('/api/organizations');
+      if (res.ok) {
+        const data = await res.json();
+        return data.map((org: any) => ({
+          id: org.id,
+          name: org.name,
+          nit: org.nit,
+          createdAt: org.created_at ? org.created_at.split('T')[0] : undefined,
+        }));
+      }
     } catch (err) {
       console.warn('Failed to list organizations from API', err);
-      return [];
     }
+
+    return [];
+  },
+
+  /**
+   * Get full user directory across organizations.
+   * Super Admins see all users; Ally Admins see only their team.
+   */
+  getDirectory: async (): Promise<DirectoryUser[]> => {
+    try {
+      // 1. Direct Supabase RPC
+      const { data, error } = await supabase.rpc('get_organization_directory');
+      if (!error && Array.isArray(data) && data.length > 0) {
+        return data.map((item: any) => ({
+          id: item.id || item.user_id,
+          name: item.name || item.email?.split('@')[0] || 'Usuario',
+          email: item.email || '',
+          role: item.role as UserRole,
+          allyId: item.org_id,
+          allyName: item.org_name || 'Correduría Aliada',
+          status: (item.status as 'ACTIVE' | 'INACTIVE') || 'ACTIVE',
+          createdAt: item.created_at ? item.created_at.split('T')[0] : '2026-01-01',
+        }));
+      }
+    } catch (err) {
+      console.warn('Direct Supabase RPC directory failed, trying API fallback', err);
+    }
+
+    try {
+      // 2. Fallback to Express API
+      const res = await apiClient.fetch('/api/organizations/directory');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          return data.map((item: any) => ({
+            id: item.id || item.user_id,
+            name: item.name || item.email?.split('@')[0] || 'Usuario',
+            email: item.email || '',
+            role: item.role as UserRole,
+            allyId: item.org_id,
+            allyName: item.org_name || 'Correduría Aliada',
+            status: (item.status as 'ACTIVE' | 'INACTIVE') || 'ACTIVE',
+            createdAt: item.created_at ? item.created_at.split('T')[0] : '2026-01-01',
+          }));
+        }
+      }
+    } catch (err) {
+      console.warn('API directory failed', err);
+    }
+
+    return [];
   },
 
   /**

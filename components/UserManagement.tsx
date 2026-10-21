@@ -40,50 +40,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'USERS' | 'ALLIES'>('USERS');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isLoadingData, setIsLoadingData] = useState(true);
   const [alliesList, setAlliesList] = useState<Ally[]>(DEMO_ALLIES);
-
-  const [usersList, setUsersList] = useState<ManagedUser[]>([
-    {
-      id: 'user-tech-1',
-      name: 'Carlos Mendoza',
-      email: 'carlos.mendoza@andina.com',
-      role: 'ally_technical',
-      allyId: 'ally-100',
-      allyName: 'Correduría Andina de Seguros S.A.',
-      status: 'ACTIVE',
-      createdAt: '2026-01-15',
-    },
-    {
-      id: 'user-tech-2',
-      name: 'Ana María Gómez',
-      email: 'ana.gomez@andina.com',
-      role: 'ally_technical',
-      allyId: 'ally-100',
-      allyName: 'Correduría Andina de Seguros S.A.',
-      status: 'ACTIVE',
-      createdAt: '2026-02-10',
-    },
-    {
-      id: 'user-admin-1',
-      name: 'Roberto Silva (Director)',
-      email: 'roberto.silva@andina.com',
-      role: 'ally_admin',
-      allyId: 'ally-100',
-      allyName: 'Correduría Andina de Seguros S.A.',
-      status: 'ACTIVE',
-      createdAt: '2025-11-01',
-    },
-    {
-      id: 'user-tech-3',
-      name: 'Jorge Rojas',
-      email: 'jorge.rojas@alianza.com',
-      role: 'ally_technical',
-      allyId: 'ally-200',
-      allyName: 'Alianza Corredores PYME Ltda.',
-      status: 'ACTIVE',
-      createdAt: '2026-03-01',
-    },
-  ]);
+  const [usersList, setUsersList] = useState<ManagedUser[]>([]);
 
   // Modal State
   const [showAddModal, setShowAddModal] = useState(false);
@@ -95,38 +54,47 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const [newAllyName, setNewAllyName] = useState('');
   const [newAllyNit, setNewAllyNit] = useState('');
 
-  // Load real organizations and members from backend
+  // Load real organizations and members from Supabase / Backend
   useEffect(() => {
     let isMounted = true;
     const loadData = async () => {
+      setIsLoadingData(true);
       try {
-        if (currentUserRole === 'super_admin') {
-          const orgs = await organizationService.listOrganizations();
-          if (isMounted && orgs.length > 0) {
-            setAlliesList(orgs);
+        // 1. Fetch real organizations
+        const orgs = await organizationService.listOrganizations();
+        if (isMounted && orgs.length > 0) {
+          setAlliesList(orgs);
+          if (!newUserAllyId || newUserAllyId === 'ally-100' || newUserAllyId === 'csa-global') {
+            setNewUserAllyId(orgs[0]?.id || '');
           }
         }
-        if (currentAllyId) {
+
+        // 2. Fetch real users directory
+        const directoryUsers = await organizationService.getDirectory();
+        if (isMounted && directoryUsers.length > 0) {
+          setUsersList(directoryUsers);
+        } else if (currentAllyId && currentAllyId.length === 36) {
+          // Fallback to org members if directory RPC was not available
           const members = await organizationService.listMembers(currentAllyId);
           if (isMounted && members.length > 0) {
+            const orgMap = new Map((orgs.length > 0 ? orgs : alliesList).map((o) => [o.id, o.name]));
             const remoteUsers: ManagedUser[] = members.map((m) => ({
               id: m.id,
               name: m.user_id.includes('@') ? m.user_id.split('@')[0]! : m.user_id,
               email: m.user_id.includes('@') ? m.user_id : `${m.user_id}@correduria.com`,
               role: m.role,
               allyId: m.org_id,
-              allyName: alliesList.find((a) => a.id === m.org_id)?.name || 'Correduría Aliada',
+              allyName: orgMap.get(m.org_id) || 'Correduría Aliada',
               status: 'ACTIVE',
               createdAt: m.created_at ? m.created_at.split('T')[0]! : '2026-01-01',
             }));
-            setUsersList((prev) => {
-              const existingIds = new Set(remoteUsers.map((u) => u.id));
-              return [...remoteUsers, ...prev.filter((u) => !existingIds.has(u.id))];
-            });
+            setUsersList(remoteUsers);
           }
         }
       } catch (err) {
-        console.warn('Could not load organizations from server', err);
+        console.warn('Could not load directory or organizations from server', err);
+      } finally {
+        if (isMounted) setIsLoadingData(false);
       }
     };
     loadData();
@@ -313,116 +281,138 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       {/* VIEW: USERS TABLE */}
       {activeTab === 'USERS' && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-500 font-semibold uppercase text-xs tracking-wider">
-                <tr>
-                  <th className="px-6 py-4">Usuario</th>
-                  <th className="px-6 py-4">Correo</th>
-                  <th className="px-6 py-4">Rol Asignado</th>
-                  <th className="px-6 py-4">Aliado / Correduría</th>
-                  <th className="px-6 py-4">Estado</th>
-                  <th className="px-6 py-4 text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {visibleUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-bold text-slate-900 flex items-center space-x-2">
-                      <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">
-                        {user.name.charAt(0)}
-                      </div>
-                      <span>{user.name}</span>
-                    </td>
-                    <td className="px-6 py-4 text-slate-600 text-xs">{user.email}</td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                          user.role === 'super_admin'
-                            ? 'bg-purple-100 text-purple-700'
-                            : user.role === 'ally_admin'
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-emerald-100 text-emerald-700'
-                        }`}
-                      >
-                        {user.role === 'super_admin'
-                          ? 'Super Admin'
-                          : user.role === 'ally_admin'
-                            ? 'Admin Aliado'
-                            : 'Técnico Analista'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-xs font-medium text-slate-700">
-                      {user.allyName}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                          user.status === 'ACTIVE'
-                            ? 'bg-emerald-50 text-emerald-700'
-                            : 'bg-slate-100 text-slate-500'
-                        }`}
-                      >
-                        {user.status === 'ACTIVE' ? (
-                          <CheckCircle size={12} className="mr-1" />
-                        ) : (
-                          <XCircle size={12} className="mr-1" />
-                        )}
-                        {user.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => toggleUserStatus(user.id)}
-                        className="text-xs font-semibold text-indigo-600 hover:text-indigo-900 underline"
-                      >
-                        {user.status === 'ACTIVE' ? 'Desactivar' : 'Activar'}
-                      </button>
-                    </td>
+          {isLoadingData ? (
+            <div className="p-12 text-center text-slate-400 text-sm">
+              <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-indigo-600 border-t-transparent mb-2"></div>
+              <p>Cargando directorio de usuarios desde la base de datos...</p>
+            </div>
+          ) : visibleUsers.length === 0 ? (
+            <div className="p-12 text-center text-slate-400 text-sm">
+              No se encontraron usuarios registrados en el sistema.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 text-slate-500 font-semibold uppercase text-xs tracking-wider">
+                  <tr>
+                    <th className="px-6 py-4">Usuario</th>
+                    <th className="px-6 py-4">Correo</th>
+                    <th className="px-6 py-4">Rol Asignado</th>
+                    <th className="px-6 py-4">Aliado / Correduría</th>
+                    <th className="px-6 py-4">Estado</th>
+                    <th className="px-6 py-4 text-right">Acciones</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {visibleUsers.map((user) => (
+                    <tr key={user.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4 font-bold text-slate-900 flex items-center space-x-2">
+                        <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">
+                          {user.name.charAt(0)}
+                        </div>
+                        <span>{user.name}</span>
+                      </td>
+                      <td className="px-6 py-4 text-slate-600 text-xs">{user.email}</td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                            user.role === 'super_admin'
+                              ? 'bg-purple-100 text-purple-700'
+                              : user.role === 'ally_admin'
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-emerald-100 text-emerald-700'
+                          }`}
+                        >
+                          {user.role === 'super_admin'
+                            ? 'Super Admin'
+                            : user.role === 'ally_admin'
+                              ? 'Admin Aliado'
+                              : 'Técnico Analista'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-xs font-medium text-slate-700">
+                        {user.allyName}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                            user.status === 'ACTIVE'
+                              ? 'bg-emerald-50 text-emerald-700'
+                              : 'bg-slate-100 text-slate-500'
+                          }`}
+                        >
+                          {user.status === 'ACTIVE' ? (
+                            <CheckCircle size={12} className="mr-1" />
+                          ) : (
+                            <XCircle size={12} className="mr-1" />
+                          )}
+                          {user.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          onClick={() => toggleUserStatus(user.id)}
+                          className="text-xs font-semibold text-indigo-600 hover:text-indigo-900 underline"
+                        >
+                          {user.status === 'ACTIVE' ? 'Desactivar' : 'Activar'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
       {/* VIEW: ALLIES TABLE (Super Admin) */}
       {activeTab === 'ALLIES' && currentUserRole === 'super_admin' && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-500 font-semibold uppercase text-xs tracking-wider">
-                <tr>
-                  <th className="px-6 py-4">Correduría / Aliado</th>
-                  <th className="px-6 py-4">NIT</th>
-                  <th className="px-6 py-4">ID de Sistema</th>
-                  <th className="px-6 py-4">Fecha Alta</th>
-                  <th className="px-6 py-4 text-right">Estado</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {alliesList.map((ally) => (
-                  <tr key={ally.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-bold text-slate-900 flex items-center space-x-2">
-                      <Building className="text-indigo-600" size={18} />
-                      <span>{ally.name}</span>
-                    </td>
-                    <td className="px-6 py-4 text-xs font-mono text-slate-600">{ally.nit}</td>
-                    <td className="px-6 py-4 text-xs font-mono text-slate-400">{ally.id}</td>
-                    <td className="px-6 py-4 text-xs text-slate-500">
-                      {ally.createdAt || '2025-10-01'}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold">
-                        Vigente
-                      </span>
-                    </td>
+          {isLoadingData ? (
+            <div className="p-12 text-center text-slate-400 text-sm">
+              <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-indigo-600 border-t-transparent mb-2"></div>
+              <p>Cargando organizaciones aliadas...</p>
+            </div>
+          ) : alliesList.length === 0 ? (
+            <div className="p-12 text-center text-slate-400 text-sm">
+              No hay organizaciones aliadas registradas.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 text-slate-500 font-semibold uppercase text-xs tracking-wider">
+                  <tr>
+                    <th className="px-6 py-4">Correduría / Aliado</th>
+                    <th className="px-6 py-4">NIT</th>
+                    <th className="px-6 py-4">ID de Sistema</th>
+                    <th className="px-6 py-4">Fecha Alta</th>
+                    <th className="px-6 py-4 text-right">Estado</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {alliesList.map((ally) => (
+                    <tr key={ally.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4 font-bold text-slate-900 flex items-center space-x-2">
+                        <Building className="text-indigo-600" size={18} />
+                        <span>{ally.name}</span>
+                      </td>
+                      <td className="px-6 py-4 text-xs font-mono text-slate-600">{ally.nit}</td>
+                      <td className="px-6 py-4 text-xs font-mono text-slate-400">{ally.id}</td>
+                      <td className="px-6 py-4 text-xs text-slate-500">
+                        {ally.createdAt || '2025-10-01'}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold">
+                          Vigente
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 

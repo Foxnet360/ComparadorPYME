@@ -175,3 +175,23 @@ export async function getUserOrganization(
     role: typedMember.role,
   };
 }
+
+export interface DirectoryMemberRecord {
+  id: string;
+  user_id: string;
+  email: string;
+  name: string;
+  role: 'super_admin' | 'ally_admin' | 'ally_technical';
+  org_id: string;
+  org_name: string;
+  status: string;
+  created_at: string;
+}
+
+export async function getOrganizationDirectory(): Promise<DirectoryMemberRecord[]> {
+  const { data, error } = await supabase.rpc('get_organization_directory');
+  if (error) {
+    handleDbError(error, 'Failed to fetch organization directory');
+  }
+  return (data as unknown as DirectoryMemberRecord[]) || [];
+}

@@ -15,6 +15,7 @@ import {
   listOrganizationMembers,
   removeOrganizationMember,
   getUserOrganization,
+  getOrganizationDirectory,
 } from '../repositories/organizationRepository';
 
 const router = Router();
@@ -42,6 +43,19 @@ router.get(
       role: result.role,
       orgId: result.organization.id,
     });
+  })
+);
+
+/**
+ * GET /api/organizations/directory
+ * List users directory across organizations.
+ */
+router.get(
+  '/directory',
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    requireUser(req);
+    const directory = await getOrganizationDirectory();
+    res.json(directory);
   })
 );
 
