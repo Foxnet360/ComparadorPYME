@@ -6,9 +6,12 @@
 import { Router } from 'express';
 import { AuthenticatedRequest, requireUser, requireRole } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
-import { NotFoundError, ForbiddenError } from '../errors';
+import { NotFoundError, ForbiddenError, AppError } from '../errors';
+import { supabase } from '../config/database';
 import {
   createOrganization,
+  updateOrganization,
+  deleteOrganization,
   getOrganizationById,
   listOrganizations,
   addOrganizationMember,
@@ -109,6 +112,165 @@ router.post(
     });
 
     res.status(201).json(org);
+  })
+);
+
+/**
+ * PUT /api/organizations/:id
+ * Update an organization (Super Admin only).
+ */
+router.put(
+  '/:id',
+  requireRole('super_admin'),
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const orgId = String(req.params.id);
+    const { name, nit, contact_email, phone, status, settings } = req.body;
+
+    const existing = await getOrganizationById(orgId);
+    if (!existing) {
+      throw new NotFoundError('Organization not found');
+    }
+
+    const updated = await updateOrganization(orgId, {
+      name,
+      nit,
+      contact_email,
+      phone,
+      status,
+      settings,
+    });
+
+    res.json(updated);
+  })
+);
+
+/**
+ * DELETE /api/organizations/:id
+ * Delete an organization (Super Admin only).
+ */
+router.delete(
+  '/:id',
+  requireRole('super_admin'),
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const orgId = String(req.params.id);
+    const existing = await getOrganizationById(orgId);
+    if (!existing) {
+      throw new NotFoundError('Organization not found');
+    }
+
+    await deleteOrganization(orgId);
+    res.status(204).end();
+  })
+);
+
+/**
+ * POST /api/organizations/users/invite
+ * Invite or create a user in Supabase Auth and assign to an organization.
+ * Super Admin can invite ally_admin or ally_technical for any organization.
+ * Ally Admin can only invite ally_technical for their own organization.
+ */
+router.post(
+  '/users/invite',
+  requireRole('super_admin', 'ally_admin'),
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const callerId = requireUser(req);
+    const callerRole = req.user?.role || 'ally_admin';
+    const callerOrgId = req.user?.orgId;
+    const { email, name, role, orgId, password } = req.body;
+
+    if (!email || !name || !role || !orgId) {
+      res.status(400).json({
+        error: 'Bad Request',
+        message: 'email, name, role, and orgId are required',
+      });
+      return;
+    }
+
+    // Role-based boundary enforcement
+    if (callerRole === 'ally_admin') {
+      if (role !== 'ally_technical') {
+        throw new ForbiddenError(
+          'Los Administradores Aliados únicamente pueden autorizar o invitar Técnicos Analistas'
+        );
+      }
+      if (callerOrgId && callerOrgId !== orgId) {
+        throw new ForbiddenError(
+          'No está autorizado para agregar usuarios a una correduría distinta a la suya'
+        );
+      }
+    }
+
+    const org = await getOrganizationById(orgId);
+    if (!org) {
+      throw new NotFoundError('La organización aliada seleccionada no existe');
+    }
+
+    // Check if user exists in auth.users
+    const { data: listData } = await supabase.auth.admin.listUsers();
+    let authUser = listData?.users?.find(
+      (u) => u.email?.toLowerCase().trim() === email.toLowerCase().trim()
+    );
+
+    if (!authUser) {
+      const temporaryPassword = password || `Csa${Math.random().toString(36).slice(-8)}!`;
+      const { data: createData, error: createError } = await supabase.auth.admin.createUser({
+        email: email.trim(),
+        password: temporaryPassword,
+        email_confirm: true,
+        user_metadata: {
+          name: name.trim(),
+          role,
+          org_id: org.id,
+          org_name: org.name,
+          intermediary_name: org.name,
+        },
+        app_metadata: {
+          role,
+          org_id: org.id,
+        },
+      });
+
+      if (createError) {
+        throw new AppError(`Error creando usuario en autenticación: ${createError.message}`, 400);
+      }
+      authUser = createData.user;
+    } else {
+      // User already exists in auth: update metadata and link to org
+      await supabase.auth.admin.updateUserById(authUser.id, {
+        user_metadata: {
+          ...authUser.user_metadata,
+          name: name.trim(),
+          role,
+          org_id: org.id,
+          org_name: org.name,
+        },
+        app_metadata: {
+          ...authUser.app_metadata,
+          role,
+          org_id: org.id,
+        },
+      });
+    }
+
+    // Add membership to organization_members
+    const member = await addOrganizationMember({
+      org_id: org.id,
+      user_id: authUser.id,
+      role,
+    });
+
+    res.status(201).json({
+      success: true,
+      user: {
+        id: authUser.id,
+        email: authUser.email,
+        name: name.trim(),
+        role,
+        orgId: org.id,
+        orgName: org.name,
+      },
+      member,
+    });
   })
 );
 

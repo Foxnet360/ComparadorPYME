@@ -167,8 +167,81 @@ export const organizationService = {
       id: data.id,
       name: data.name,
       nit: data.nit,
+      contact_email: data.contact_email,
+      phone: data.phone,
+      status: data.status,
       createdAt: data.created_at ? data.created_at.split('T')[0] : undefined,
     };
+  },
+
+  /**
+   * Update an organization (Super Admin only).
+   */
+  updateOrganization: async (
+    id: string,
+    input: {
+      name?: string;
+      nit?: string;
+      contact_email?: string;
+      phone?: string;
+      status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+    }
+  ): Promise<Ally> => {
+    const res = await apiClient.fetch(`/api/organizations/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+
+    if (!res.ok) {
+      throw new Error('Failed to update organization');
+    }
+
+    const data = await res.json();
+    return {
+      id: data.id,
+      name: data.name,
+      nit: data.nit,
+      contact_email: data.contact_email,
+      phone: data.phone,
+      status: data.status,
+      createdAt: data.created_at ? data.created_at.split('T')[0] : undefined,
+    };
+  },
+
+  /**
+   * Delete an organization (Super Admin only).
+   */
+  deleteOrganization: async (id: string): Promise<boolean> => {
+    const res = await apiClient.fetch(`/api/organizations/${id}`, {
+      method: 'DELETE',
+    });
+
+    return res.ok;
+  },
+
+  /**
+   * Invite or create a user in Supabase Auth & Organization.
+   */
+  inviteUser: async (input: {
+    email: string;
+    name: string;
+    role: UserRole;
+    orgId: string;
+    password?: string;
+  }): Promise<{ user: any; member: any }> => {
+    const res = await apiClient.fetch('/api/organizations/users/invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Error al invitar usuario');
+    }
+
+    return await res.json();
   },
 
   /**

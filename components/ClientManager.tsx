@@ -21,25 +21,17 @@ import {
 import { Client, HistoryEntry, ComparisonReport } from '../types';
 import { storageService } from '../services/storageService';
 import { formatCOP } from '../utils/formatCurrency';
+import {
+  COLOMBIA_DEPARTMENTS,
+  getMunicipalitiesByDepartment,
+  findGeoByCity,
+  SeismicZone,
+} from '../src/data/colombiaGeo';
 
 interface ClientManagerProps {
   onSelectClientForAudit?: (client: Client) => void;
   onViewReport?: (report: ComparisonReport) => void;
 }
-
-const CITY_SEISMIC_ZONES: Record<
-  string,
-  { dept: string; zone: 'Alta' | 'Intermedia' | 'Baja'; lat: number; lng: number }
-> = {
-  Bogotá: { dept: 'Cundinamarca', zone: 'Intermedia', lat: 4.6097, lng: -74.0817 },
-  Medellín: { dept: 'Antioquia', zone: 'Alta', lat: 6.2442, lng: -75.5812 },
-  Cali: { dept: 'Valle del Cauca', zone: 'Alta', lat: 3.4516, lng: -76.532 },
-  Barranquilla: { dept: 'Atlántico', zone: 'Baja', lat: 10.9685, lng: -74.7813 },
-  Bucaramanga: { dept: 'Santander', zone: 'Alta', lat: 7.1254, lng: -73.1198 },
-  Cartagena: { dept: 'Bolívar', zone: 'Baja', lat: 10.3997, lng: -75.5144 },
-  Pereira: { dept: 'Risaralda', zone: 'Alta', lat: 4.8133, lng: -75.6961 },
-  Manizales: { dept: 'Caldas', zone: 'Alta', lat: 5.0689, lng: -75.5174 },
-};
 
 export const ClientManager: React.FC<ClientManagerProps> = ({
   onSelectClientForAudit,
@@ -131,16 +123,33 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
     setIsModalOpen(true);
   };
 
+  const handleDepartmentChange = (deptName: string) => {
+    const municipalities = getMunicipalitiesByDepartment(deptName);
+    const firstCity = municipalities[0];
+    if (firstCity) {
+      setClientForm((prev) => ({
+        ...prev,
+        department: deptName,
+        city: firstCity.name,
+        seismicZone: firstCity.zone,
+        latitude: firstCity.lat,
+        longitude: firstCity.lng,
+      }));
+    } else {
+      setClientForm((prev) => ({ ...prev, department: deptName }));
+    }
+  };
+
   const handleCityChange = (cityName: string) => {
-    const cityData = CITY_SEISMIC_ZONES[cityName];
-    if (cityData) {
+    const geo = findGeoByCity(cityName, clientForm.department);
+    if (geo) {
       setClientForm((prev) => ({
         ...prev,
         city: cityName,
-        department: cityData.dept,
-        seismicZone: cityData.zone,
-        latitude: cityData.lat,
-        longitude: cityData.lng,
+        department: geo.dept,
+        seismicZone: geo.zone,
+        latitude: geo.lat,
+        longitude: geo.lng,
       }));
     } else {
       setClientForm((prev) => ({ ...prev, city: cityName }));
@@ -593,16 +602,16 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
-                      Ciudad
+                      Departamento
                     </label>
                     <select
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white"
-                      value={clientForm.city}
-                      onChange={(e) => handleCityChange(e.target.value)}
+                      value={clientForm.department || 'Bogotá D.C.'}
+                      onChange={(e) => handleDepartmentChange(e.target.value)}
                     >
-                      {Object.keys(CITY_SEISMIC_ZONES).map((c) => (
-                        <option key={c} value={c}>
-                          {c}
+                      {COLOMBIA_DEPARTMENTS.map((d) => (
+                        <option key={d.code} value={d.name}>
+                          {d.name}
                         </option>
                       ))}
                     </select>
@@ -610,14 +619,19 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
 
                   <div>
                     <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
-                      Departamento
+                      Ciudad / Municipio
                     </label>
-                    <input
-                      type="text"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-slate-50"
-                      value={clientForm.department}
-                      onChange={(e) => setClientForm({ ...clientForm, department: e.target.value })}
-                    />
+                    <select
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white"
+                      value={clientForm.city}
+                      onChange={(e) => handleCityChange(e.target.value)}
+                    >
+                      {getMunicipalitiesByDepartment(clientForm.department || 'Bogotá D.C.').map((m) => (
+                        <option key={m.name} value={m.name}>
+                          {m.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>

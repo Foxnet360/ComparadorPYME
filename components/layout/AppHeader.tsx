@@ -94,15 +94,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             <Users size={20} />
           </button>
 
-          {/* Portafolio de Renovaciones (renovacion-polizas) */}
+          {/* Portafolio de Renovaciones (renovacion-polizas) - Inactivo con tooltip Pronto */}
           <button
-            onClick={onOpenPortfolio}
-            className={`p-2 rounded-full transition-colors ${
-              currentView === 'PORTFOLIO' || currentView === 'RENEWAL_DETAIL'
-                ? 'bg-indigo-100 text-indigo-700 font-semibold'
-                : 'text-slate-500 hover:bg-indigo-100 hover:text-indigo-600'
-            }`}
-            title="Portafolio de Renovaciones"
+            disabled
+            className="p-2 rounded-full transition-colors text-slate-300 cursor-not-allowed hover:bg-transparent relative group"
+            title="Pronto"
+            aria-disabled="true"
           >
             <RefreshCw size={20} />
           </button>

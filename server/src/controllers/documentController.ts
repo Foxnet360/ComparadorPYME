@@ -2,7 +2,12 @@ import { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { documentIndexingService, DocumentMetadata } from '../services/documentIndexingService';
+import {
+  documentIndexingService,
+  DocumentMetadata,
+  computePdfSha256,
+} from '../services/documentIndexingService';
+import { insurerNameNormalizer } from '../services/insurerNameNormalizer';
 import { supabase } from '../config/database';
 import { handleSupabaseError } from '../config/database';
 import { AuthenticatedRequest, requireUser } from '../middleware/auth';
@@ -15,8 +20,10 @@ interface DocumentListItem {
   document_type: string;
   version: string | null;
   product_name: string | null;
+  domain?: string | null;
   total_pages: number | null;
   is_active: boolean;
+  is_permanent?: boolean;
   created_at: string;
   insurers: { id: string; name: string } | null;
 }
@@ -151,16 +158,62 @@ export const documentController = {
         return;
       }
 
-      const { insurerName, documentName, documentType, version, productName } = req.body;
+      const { insurerName, documentName, documentType, version, productName, domain } = req.body;
 
       logger.info(`   File: ${req.file.originalname} (${req.file.size} bytes)`);
       logger.info(`   Insurer: ${insurerName}`);
       logger.info(`   Document: ${documentName}`);
       logger.info(`   Type: ${documentType}`);
       logger.info(`   Product: ${productName || 'N/A'}`);
+      logger.info(`   Domain: ${domain || 'pyme'}`);
+
+      // Calculate SHA-256 hash for strict deduplication if file is on disk
+      let fileHash: string | undefined;
+      if (filePath && fs.existsSync(filePath)) {
+        try {
+          const fileBuffer = fs.readFileSync(filePath);
+          fileHash = computePdfSha256(fileBuffer);
+        } catch (err) {
+          logger.warn({ err }, 'Could not read file for SHA-256 hash calculation');
+        }
+      } else if (req.file.buffer) {
+        fileHash = computePdfSha256(req.file.buffer);
+      }
 
       // Obtener o crear aseguradora
       const insurerId = await documentIndexingService.getOrCreateInsurer(insurerName.trim());
+
+      // Verificar deduplicación estricta por SHA-256 file_hash
+      if (fileHash && typeof documentIndexingService.findExistingDeduplicatedDocument === 'function') {
+        const existingMatch = await documentIndexingService.findExistingDeduplicatedDocument(
+          insurerId,
+          documentName.trim(),
+          fileHash,
+          (domain as string) || 'pyme'
+        );
+
+        if (existingMatch?.exactHashMatch) {
+          logger.info(
+            `   ⚡ [Deduplicación] Clausulado idéntico ya existente en repositorio: ${existingMatch.exactHashMatch.id}`
+          );
+          res.status(200).json({
+            success: true,
+            deduplicated: true,
+            message: 'El clausulado ya existe y se encuentra previamente indexado en la biblioteca',
+            documentId: existingMatch.exactHashMatch.id,
+            insurerId: existingMatch.exactHashMatch.insurerId,
+            stats: {
+              totalPages: existingMatch.exactHashMatch.totalPages,
+              chunksCreated: existingMatch.exactHashMatch.chunkCount,
+              imagesUploaded: 0,
+              processingTimeMs: 0,
+            },
+            warnings: [],
+            archivedDocument: null,
+          });
+          return;
+        }
+      }
 
       // Verificar si existe documento activo para esta combinación (insurer + type + product)
       let existingQuery = supabase
@@ -200,13 +253,16 @@ export const documentController = {
         }
       }
 
-      // Preparar metadata
+      // Preparar metadata completa
       const metadata: DocumentMetadata = {
         insurerName: insurerName.trim(),
         documentName: documentName.trim(),
         documentType,
         version: version?.trim(),
         productName: productName?.trim(),
+        domain: (domain as any) || 'pyme',
+        fileHash,
+        isPermanent: true,
         uploadedBy,
       };
 
@@ -259,7 +315,7 @@ export const documentController = {
     console.log('📋 [documentController.listDocuments] Request received');
 
     try {
-      const { insurerId, documentType, isActive, latest, limit = '50', offset = '0' } = req.query;
+      const { insurerId, documentType, domain, isActive, latest, limit = '100', offset = '0' } = req.query;
 
       let query = supabase
         .from('documents')
@@ -270,8 +326,10 @@ export const documentController = {
           document_type,
           version,
           product_name,
+          domain,
           total_pages,
           is_active,
+          is_permanent,
           created_at,
           insurers:insurer_id (id, name)
         `
@@ -298,6 +356,10 @@ export const documentController = {
         query = query.eq('document_type', documentType);
       }
 
+      if (domain) {
+        query = query.eq('domain', domain);
+      }
+
       const { data, error, count } = (await query) as unknown as {
         data: DocumentListItem[] | null;
         error: unknown;
@@ -315,8 +377,10 @@ export const documentController = {
         documentType: doc.document_type,
         version: doc.version,
         productName: doc.product_name,
+        domain: doc.domain,
         totalPages: doc.total_pages,
         isActive: doc.is_active,
+        isPermanent: doc.is_permanent,
         createdAt: doc.created_at,
         insurer: doc.insurers,
       }));
@@ -325,7 +389,7 @@ export const documentController = {
       if (latest === 'true') {
         const seen = new Set<string>();
         documents = documents.filter((doc) => {
-          const key = `${doc.insurer?.id}-${doc.documentType}-${doc.productName}`;
+          const key = `${doc.insurer?.id}-${doc.documentType}-${doc.productName}-${doc.domain}`;
           if (seen.has(key)) return false;
           seen.add(key);
           return doc.isActive === true;
@@ -343,6 +407,112 @@ export const documentController = {
       res.status(500).json({
         success: false,
         error: 'Failed to list documents',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  },
+
+  /**
+   * GET /api/documents/check-existing - Verificar si existe clausulado asociado
+   */
+  checkExistingClause: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { insurerName, domain, productName } = req.query;
+
+      if (!insurerName || typeof insurerName !== 'string') {
+        res.status(400).json({
+          success: false,
+          error: 'insurerName is required',
+        });
+        return;
+      }
+
+      const normalized = insurerNameNormalizer.normalize(insurerName);
+
+      // Query active documents
+      let query = supabase
+        .from('documents')
+        .select(
+          `
+          id,
+          document_name,
+          document_type,
+          version,
+          product_name,
+          domain,
+          total_pages,
+          is_active,
+          created_at,
+          insurers:insurer_id!inner (id, name)
+        `
+        )
+        .eq('is_active', true);
+
+      if (domain && typeof domain === 'string') {
+        query = query.eq('domain', domain);
+      }
+
+      if (productName && typeof productName === 'string') {
+        query = query.ilike('product_name', `%${productName.trim()}%`);
+      }
+
+      const { data, error } = (await query) as unknown as {
+        data: DocumentListItem[] | null;
+        error: unknown;
+      };
+
+      if (error) {
+        throw handleSupabaseError(error);
+      }
+
+      // Filter by normalized insurer name
+      const matches = (data || []).filter((doc) => {
+        if (!doc.insurers?.name) return false;
+        const docInsurerNorm = insurerNameNormalizer.normalize(doc.insurers.name);
+        return (
+          docInsurerNorm === normalized ||
+          docInsurerNorm.includes(normalized) ||
+          normalized.includes(docInsurerNorm)
+        );
+      });
+
+      if (matches.length > 0) {
+        const bestMatch = matches[0]!;
+        res.json({
+          exists: true,
+          count: matches.length,
+          document: {
+            id: bestMatch.id,
+            documentName: bestMatch.document_name,
+            productName: bestMatch.product_name,
+            version: bestMatch.version,
+            domain: bestMatch.domain,
+            totalPages: bestMatch.total_pages,
+            insurer: bestMatch.insurers,
+          },
+          matches: matches.map((m) => ({
+            id: m.id,
+            documentName: m.document_name,
+            productName: m.product_name,
+            version: m.version,
+            domain: m.domain,
+            totalPages: m.total_pages,
+            insurer: m.insurers,
+          })),
+        });
+      } else {
+        res.json({
+          exists: false,
+          count: 0,
+          document: null,
+          matches: [],
+        });
+      }
+    } catch (error: unknown) {
+      console.error('❌ [documentController.checkExistingClause] Error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to check existing clause',
         details: error instanceof Error ? error.message : 'Unknown error',
       });
     }

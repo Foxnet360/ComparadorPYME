@@ -48,6 +48,7 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterByDomain, setFilterByDomain] = useState<boolean>(true);
 
   useEffect(() => {
     if (mode === 'library') {
@@ -109,6 +110,9 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
   // Filter documents by search and optional domain
   const filteredDocuments = useMemo(() => {
     return documents.filter((doc) => {
+      if (filterByDomain && domain && doc.domain) {
+        if (doc.domain.toLowerCase() !== domain.toLowerCase()) return false;
+      }
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase().trim();
         const matchName = doc.documentName?.toLowerCase().includes(query);
@@ -118,7 +122,7 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
       }
       return true;
     });
-  }, [documents, searchQuery]);
+  }, [documents, searchQuery, filterByDomain, domain]);
 
   // Group documents by insurer
   const groupedDocs = useMemo(() => {
@@ -243,6 +247,26 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
             />
           </div>
 
+          {/* Domain Filter Indicator & Toggle */}
+          {domain && (
+            <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs">
+              <div className="flex items-center gap-1.5 text-slate-600">
+                <Filter size={12} className="text-indigo-600 shrink-0" />
+                <span>
+                  Filtro por Ramo:{' '}
+                  <strong className="uppercase text-slate-800">{domain}</strong>
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFilterByDomain(!filterByDomain)}
+                className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 underline transition-colors"
+              >
+                {filterByDomain ? 'Ver todos los ramos' : `Filtrar solo ${domain.toUpperCase()}`}
+              </button>
+            </div>
+          )}
+
           {loading ? (
             <div className="py-8 text-center text-slate-500 text-xs flex flex-col items-center justify-center gap-2">
               <span className="animate-spin rounded-full h-5 w-5 border-2 border-indigo-600 border-t-transparent"></span>
@@ -322,8 +346,17 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
                                     {getDocumentTypeLabel(doc.documentType)}
                                   </span>
                                   {doc.domain && (
-                                    <span className="text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">
+                                    <span
+                                      className={`text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded ${
+                                        domain && doc.domain.toLowerCase() === domain.toLowerCase()
+                                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold'
+                                          : 'bg-slate-100 text-slate-500'
+                                      }`}
+                                    >
                                       {doc.domain}
+                                      {domain &&
+                                        doc.domain.toLowerCase() === domain.toLowerCase() &&
+                                        ' ✓ Coincide con Cotización'}
                                     </span>
                                   )}
                                 </div>

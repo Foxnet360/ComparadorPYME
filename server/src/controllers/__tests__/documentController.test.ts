@@ -6,7 +6,9 @@ vi.mock('../../services/documentIndexingService', () => ({
   documentIndexingService: {
     indexDocument: vi.fn(),
     getOrCreateInsurer: vi.fn().mockResolvedValue('insurer-123'),
+    findExistingDeduplicatedDocument: vi.fn(),
   },
+  computePdfSha256: vi.fn().mockReturnValue('mock-sha256-hash'),
   DocumentIndexingService: vi.fn(),
 }));
 
@@ -239,5 +241,55 @@ describe('documentController.createDocument', () => {
     expect(forwarded.statusCode).toBe(500);
     expect(forwarded.message).toContain('PDF extraction failed');
     expect(statusMock).not.toHaveBeenCalledWith(500);
+  });
+
+  it('should return 200 deduplicated when document hash already exists in repository', async () => {
+    mockReq = createMockRequest('CLAUSULADO_GENERAL');
+    (mockReq as any).file.buffer = Buffer.from('test pdf content');
+
+    (documentIndexingService as any).findExistingDeduplicatedDocument = vi.fn().mockResolvedValue({
+      exactHashMatch: {
+        id: 'existing-doc-999',
+        insurerId: 'insurer-123',
+        documentName: 'Clausulado Todo Riesgo 2026',
+        totalPages: 24,
+        chunkCount: 88,
+        domain: 'pyme',
+      },
+      sameNameMatches: [],
+    });
+
+    await documentController.createDocument(mockReq as Request, mockRes as Response, nextMock);
+
+    if (nextMock.mock.calls.length > 0) {
+      console.log('nextMock error:', nextMock.mock.calls[0][0]);
+    }
+
+    expect(statusMock).toHaveBeenCalledWith(200);
+    expect(jsonMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: true,
+        deduplicated: true,
+        documentId: 'existing-doc-999',
+      })
+    );
+  });
+
+  it('should check existing documents by insurer and domain', async () => {
+    const checkReq = {
+      query: {
+        insurerName: 'AXA COLPATRIA',
+        domain: 'copropiedades',
+      },
+    } as unknown as Request;
+
+    await documentController.checkExistingClause(checkReq, mockRes as Response);
+
+    expect(jsonMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        exists: expect.any(Boolean),
+        matches: expect.any(Array),
+      })
+    );
   });
 });

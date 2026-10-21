@@ -29,6 +29,7 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
 }) => {
   const [role, setRole] = useState<UserRole>(initialRole);
   const [selectedAllyId, setSelectedAllyId] = useState<string>('ally-100');
+  const [simulateDemo, setSimulateDemo] = useState<boolean>(false);
   const [data, setData] = useState<ExecutiveAnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -48,7 +49,7 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
 
   useEffect(() => {
     loadAnalytics();
-  }, [role, selectedAllyId]);
+  }, [role, selectedAllyId, simulateDemo]);
 
   const loadAnalytics = async () => {
     setLoading(true);
@@ -56,7 +57,8 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
       const result = await analyticsService.getExecutiveAnalytics(
         role,
         'user-tech-1',
-        selectedAllyId
+        selectedAllyId,
+        simulateDemo
       );
       setData(result);
     } catch (err) {
@@ -132,6 +134,21 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
           >
             <UserCheck size={14} />
             <span>Técnico Analista</span>
+          </button>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setSimulateDemo(!simulateDemo)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 border ${
+              simulateDemo
+                ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
+                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+            }`}
+            title="Alternar entre métricas de base de datos en vivo y simulación demostrativa"
+          >
+            <Activity size={14} />
+            <span>{simulateDemo ? 'Modo Demo (Activo)' : 'Datos en Vivo'}</span>
           </button>
         </div>
       </div>

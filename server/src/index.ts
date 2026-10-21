@@ -200,6 +200,7 @@ import { searchController } from './controllers/searchController';
 // Document management
 app.post('/api/documents', documentController.uploadMiddleware, documentController.createDocument);
 app.get('/api/documents', documentController.listDocuments);
+app.get('/api/documents/check-existing', documentController.checkExistingClause);
 app.get('/api/documents/:id', documentController.getDocument);
 app.delete('/api/documents/:id', documentController.deleteDocument);
 app.get('/api/documents/:id/chunks', documentController.getDocumentChunks);

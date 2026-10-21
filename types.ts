@@ -519,6 +519,9 @@ export interface Ally {
   id: string;
   name: string;
   nit?: string;
+  contact_email?: string;
+  phone?: string;
+  status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
   createdAt?: string;
 }
 

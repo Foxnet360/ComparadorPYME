@@ -47,12 +47,32 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   // Modal State
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAllyModal, setShowAllyModal] = useState(false);
+  const [showEditAllyModal, setShowEditAllyModal] = useState(false);
+  const [editingAlly, setEditingAlly] = useState<Ally | null>(null);
+
+  // New User State
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
   const [newUserRole, setNewUserRole] = useState<UserRole>('ally_technical');
   const [newUserAllyId, setNewUserAllyId] = useState(currentAllyId);
+
+  // New Ally State
   const [newAllyName, setNewAllyName] = useState('');
   const [newAllyNit, setNewAllyNit] = useState('');
+  const [newAllyEmail, setNewAllyEmail] = useState('');
+  const [newAllyPhone, setNewAllyPhone] = useState('');
+
+  // Edit Ally State
+  const [editAllyName, setEditAllyName] = useState('');
+  const [editAllyNit, setEditAllyNit] = useState('');
+  const [editAllyEmail, setEditAllyEmail] = useState('');
+  const [editAllyPhone, setEditAllyPhone] = useState('');
+  const [editAllyStatus, setEditAllyStatus] = useState<'ACTIVE' | 'INACTIVE' | 'SUSPENDED'>('ACTIVE');
+
+  // Feedback & Action state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   // Load real organizations and members from Supabase / Backend
   useEffect(() => {
@@ -124,57 +144,185 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     const selectedAlly = alliesList.find((a) => a.id === newUserAllyId) || alliesList[0]!;
     const roleToAssign = currentUserRole === 'ally_admin' ? 'ally_technical' : newUserRole;
 
+    setIsSubmitting(true);
+    setFeedback(null);
+
     try {
-      await organizationService.addMember(selectedAlly.id, {
-        user_id: newUserEmail,
+      // Create or invite real user in Supabase Auth & Organization
+      const res = await organizationService.inviteUser({
+        email: newUserEmail.trim(),
+        name: newUserName.trim(),
         role: roleToAssign,
+        orgId: selectedAlly.id,
+        password: newUserPassword.trim() || undefined,
       });
-    } catch (err) {
-      console.warn('Could not persist member to backend, updating local state', err);
+
+      const newUser: ManagedUser = {
+        id: res.user?.id || `user-${Date.now()}`,
+        name: newUserName.trim(),
+        email: newUserEmail.trim(),
+        role: roleToAssign,
+        allyId: selectedAlly.id,
+        allyName: selectedAlly.name,
+        status: 'ACTIVE',
+        createdAt: new Date().toISOString().split('T')[0]!,
+      };
+
+      setUsersList([newUser, ...usersList.filter((u) => u.email !== newUserEmail.trim())]);
+      setFeedback({
+        type: 'success',
+        message: `Usuario ${newUserName} autorizado y registrado exitosamente con rol ${roleToAssign}.`,
+      });
+      setNewUserName('');
+      setNewUserEmail('');
+      setNewUserPassword('');
+      setShowAddModal(false);
+    } catch (err: unknown) {
+      console.warn('Could not invite user via API, attempting member binding fallback', err);
+      try {
+        await organizationService.addMember(selectedAlly.id, {
+          user_id: newUserEmail.trim(),
+          role: roleToAssign,
+        });
+        const newUser: ManagedUser = {
+          id: `user-${Date.now()}`,
+          name: newUserName,
+          email: newUserEmail,
+          role: roleToAssign,
+          allyId: selectedAlly.id,
+          allyName: selectedAlly.name,
+          status: 'ACTIVE',
+          createdAt: new Date().toISOString().split('T')[0]!,
+        };
+        setUsersList([newUser, ...usersList]);
+        setFeedback({
+          type: 'success',
+          message: `Usuario ${newUserName} vinculado a la correduría ${selectedAlly.name}.`,
+        });
+        setNewUserName('');
+        setNewUserEmail('');
+        setShowAddModal(false);
+      } catch (fallbackErr: any) {
+        setFeedback({
+          type: 'error',
+          message: fallbackErr?.message || 'Error registrando usuario en la plataforma',
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const newUser: ManagedUser = {
-      id: `user-${Date.now()}`,
-      name: newUserName,
-      email: newUserEmail,
-      role: roleToAssign,
-      allyId: selectedAlly.id,
-      allyName: selectedAlly.name,
-      status: 'ACTIVE',
-      createdAt: new Date().toISOString().split('T')[0]!,
-    };
-
-    setUsersList([newUser, ...usersList]);
-    setNewUserName('');
-    setNewUserEmail('');
-    setShowAddModal(false);
   };
 
   const handleCreateAlly = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAllyName) return;
 
+    setIsSubmitting(true);
+    setFeedback(null);
+
     let createdAlly: Ally | null = null;
     try {
       createdAlly = await organizationService.createOrganization({
-        name: newAllyName,
-        nit: newAllyNit || undefined,
+        name: newAllyName.trim(),
+        nit: newAllyNit.trim() || undefined,
+        contact_email: newAllyEmail.trim() || undefined,
+        phone: newAllyPhone.trim() || undefined,
       });
-    } catch (err) {
+      setFeedback({
+        type: 'success',
+        message: `Correduría aliada "${newAllyName}" registrada exitosamente.`,
+      });
+    } catch (err: any) {
       console.warn('Could not persist organization to backend, updating local state', err);
+      setFeedback({
+        type: 'error',
+        message: err.message || 'Error al persistir correduría aliada',
+      });
     }
 
     const newAlly: Ally = createdAlly || {
       id: `ally-${Date.now()}`,
-      name: newAllyName,
-      nit: newAllyNit || '900.000.000-0',
+      name: newAllyName.trim(),
+      nit: newAllyNit.trim() || '900.000.000-0',
+      contact_email: newAllyEmail.trim() || undefined,
+      phone: newAllyPhone.trim() || undefined,
+      status: 'ACTIVE',
       createdAt: new Date().toISOString().split('T')[0],
     };
 
     setAlliesList([...alliesList, newAlly]);
     setNewAllyName('');
     setNewAllyNit('');
+    setNewAllyEmail('');
+    setNewAllyPhone('');
     setShowAllyModal(false);
+    setIsSubmitting(false);
+  };
+
+  const handleOpenEditAlly = (ally: Ally) => {
+    setEditingAlly(ally);
+    setEditAllyName(ally.name);
+    setEditAllyNit(ally.nit || '');
+    setEditAllyEmail(ally.contact_email || '');
+    setEditAllyPhone(ally.phone || '');
+    setEditAllyStatus(ally.status || 'ACTIVE');
+    setShowEditAllyModal(true);
+  };
+
+  const handleUpdateAlly = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAlly || !editAllyName) return;
+
+    setIsSubmitting(true);
+    setFeedback(null);
+
+    try {
+      const updated = await organizationService.updateOrganization(editingAlly.id, {
+        name: editAllyName.trim(),
+        nit: editAllyNit.trim() || undefined,
+        contact_email: editAllyEmail.trim() || undefined,
+        phone: editAllyPhone.trim() || undefined,
+        status: editAllyStatus,
+      });
+
+      setAlliesList(alliesList.map((a) => (a.id === editingAlly.id ? { ...a, ...updated } : a)));
+      setFeedback({
+        type: 'success',
+        message: `Correduría "${editAllyName}" actualizada exitosamente.`,
+      });
+      setShowEditAllyModal(false);
+      setEditingAlly(null);
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err.message || 'Error al actualizar información de la correduría',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteAlly = async (allyId: string, allyName: string) => {
+    if (!window.confirm(`¿Está seguro de eliminar la correduría "${allyName}"? Esta acción desvinculará sus registros asociados.`)) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await organizationService.deleteOrganization(allyId);
+      setAlliesList(alliesList.filter((a) => a.id !== allyId));
+      setFeedback({
+        type: 'success',
+        message: `Correduría "${allyName}" eliminada correctamente del sistema.`,
+      });
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err.message || 'Error eliminando correduría',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const toggleUserStatus = (userId: string) => {
@@ -236,6 +384,32 @@ export const UserManagement: React.FC<UserManagementProps> = ({
           )}
         </div>
       </div>
+
+      {/* Feedback Banner */}
+      {feedback && (
+        <div
+          className={`p-4 rounded-xl text-xs font-medium flex items-center justify-between transition-all ${
+            feedback.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+              : 'bg-rose-50 text-rose-800 border border-rose-200'
+          }`}
+        >
+          <div className="flex items-center space-x-2">
+            {feedback.type === 'success' ? (
+              <CheckCircle size={16} className="text-emerald-600 shrink-0" />
+            ) : (
+              <XCircle size={16} className="text-rose-600 shrink-0" />
+            )}
+            <span>{feedback.message}</span>
+          </div>
+          <button
+            onClick={() => setFeedback(null)}
+            className="text-slate-400 hover:text-slate-700 ml-4"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {/* Tabs & Search Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
@@ -385,9 +559,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                   <tr>
                     <th className="px-6 py-4">Correduría / Aliado</th>
                     <th className="px-6 py-4">NIT</th>
-                    <th className="px-6 py-4">ID de Sistema</th>
+                    <th className="px-6 py-4">Contacto / Tel</th>
                     <th className="px-6 py-4">Fecha Alta</th>
-                    <th className="px-6 py-4 text-right">Estado</th>
+                    <th className="px-6 py-4">Estado</th>
+                    <th className="px-6 py-4 text-right">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -395,17 +570,59 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                     <tr key={ally.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4 font-bold text-slate-900 flex items-center space-x-2">
                         <Building className="text-indigo-600" size={18} />
-                        <span>{ally.name}</span>
+                        <div>
+                          <span>{ally.name}</span>
+                          <span className="block text-[10px] font-mono text-slate-400 font-normal">
+                            {ally.id}
+                          </span>
+                        </div>
                       </td>
-                      <td className="px-6 py-4 text-xs font-mono text-slate-600">{ally.nit}</td>
-                      <td className="px-6 py-4 text-xs font-mono text-slate-400">{ally.id}</td>
+                      <td className="px-6 py-4 text-xs font-mono text-slate-600">{ally.nit || '—'}</td>
+                      <td className="px-6 py-4 text-xs text-slate-600">
+                        {ally.contact_email || ally.phone ? (
+                          <div>
+                            <div>{ally.contact_email || ''}</div>
+                            <div className="text-slate-400 text-[11px]">{ally.phone || ''}</div>
+                          </div>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
                       <td className="px-6 py-4 text-xs text-slate-500">
                         {ally.createdAt || '2025-10-01'}
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold">
-                          Vigente
+                      <td className="px-6 py-4">
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                            ally.status === 'INACTIVE'
+                              ? 'bg-slate-100 text-slate-600'
+                              : ally.status === 'SUSPENDED'
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-emerald-100 text-emerald-800'
+                          }`}
+                        >
+                          {ally.status === 'INACTIVE'
+                            ? 'Inactivo'
+                            : ally.status === 'SUSPENDED'
+                              ? 'Suspendido'
+                              : 'Vigente'}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                        <button
+                          onClick={() => handleOpenEditAlly(ally)}
+                          className="px-2.5 py-1 text-xs font-bold text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-lg transition-colors inline-flex items-center space-x-1"
+                        >
+                          <Edit2 size={13} />
+                          <span>Editar</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAlly(ally.id, ally.name)}
+                          className="px-2.5 py-1 text-xs font-bold text-rose-600 hover:text-rose-900 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center space-x-1"
+                        >
+                          <Trash2 size={13} />
+                          <span>Eliminar</span>
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -457,6 +674,22 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                   placeholder="daniel@correduria.com"
                   className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Contraseña Inicial (Opcional)
+                </label>
+                <input
+                  type="password"
+                  value={newUserPassword}
+                  onChange={(e) => setNewUserPassword(e.target.value)}
+                  placeholder="Mínimo 6 caracteres (o se autogenerará)"
+                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Si se omite, se generará una contraseña segura temporal para el usuario.
+                </p>
               </div>
 
               {currentUserRole === 'super_admin' && (
@@ -555,6 +788,32 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 />
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Correo Electrónico de Contacto
+                </label>
+                <input
+                  type="email"
+                  value={newAllyEmail}
+                  onChange={(e) => setNewAllyEmail(e.target.value)}
+                  placeholder="contacto@correduria.com"
+                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Teléfono / Celular
+                </label>
+                <input
+                  type="tel"
+                  value={newAllyPhone}
+                  onChange={(e) => setNewAllyPhone(e.target.value)}
+                  placeholder="+57 300 123 4567"
+                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
               <div className="pt-3 flex justify-end space-x-2">
                 <button
                   type="button"
@@ -565,9 +824,116 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 disabled:opacity-50"
                 >
-                  Guardar Aliado
+                  {isSubmitting ? 'Guardando...' : 'Guardar Aliado'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Editar Aliado (Super Admin) */}
+      {showEditAllyModal && editingAlly && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95">
+            <div className="flex justify-between items-center border-b pb-3">
+              <h3 className="font-bold text-slate-900">Editar Correduría Aliada</h3>
+              <button
+                onClick={() => {
+                  setShowEditAllyModal(false);
+                  setEditingAlly(null);
+                }}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateAlly} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Nombre de la Correduría
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editAllyName}
+                  onChange={(e) => setEditAllyName(e.target.value)}
+                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">NIT</label>
+                <input
+                  type="text"
+                  value={editAllyNit}
+                  onChange={(e) => setEditAllyNit(e.target.value)}
+                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Correo Electrónico
+                </label>
+                <input
+                  type="email"
+                  value={editAllyEmail}
+                  onChange={(e) => setEditAllyEmail(e.target.value)}
+                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Teléfono / Celular
+                </label>
+                <input
+                  type="tel"
+                  value={editAllyPhone}
+                  onChange={(e) => setEditAllyPhone(e.target.value)}
+                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Estado de la Correduría
+                </label>
+                <select
+                  value={editAllyStatus}
+                  onChange={(e) =>
+                    setEditAllyStatus(e.target.value as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED')
+                  }
+                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
+                >
+                  <option value="ACTIVE">Vigente / Activa</option>
+                  <option value="INACTIVE">Inactiva</option>
+                  <option value="SUSPENDED">Suspendida</option>
+                </select>
+              </div>
+
+              <div className="pt-3 flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditAllyModal(false);
+                    setEditingAlly(null);
+                  }}
+                  className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Actualizando...' : 'Guardar Cambios'}
                 </button>
               </div>
             </form>

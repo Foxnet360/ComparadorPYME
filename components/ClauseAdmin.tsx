@@ -60,6 +60,7 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadFeedback, setUploadFeedback] = useState<{ message: string; deduplicated?: boolean } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterInsurer, setFilterInsurer] = useState('');
   const [filterDomain, setFilterDomain] = useState('');
@@ -108,7 +109,8 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
     try {
       setUploading(true);
       setError(null);
-      await clauseService.createDocument(selectedFile, {
+      setUploadFeedback(null);
+      const created = await clauseService.createDocument(selectedFile, {
         insurerName: formData.insurerName,
         documentName: formData.documentName,
         documentType: formData.documentType,
@@ -116,6 +118,18 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
         version: formData.version || undefined,
         domain: formData.domain || undefined,
       });
+
+      if (created.deduplicated) {
+        setUploadFeedback({
+          message: `El documento "${created.documentName}" ya se encontraba indexado con idéntica firma digital (SHA-256). Se vinculó al catálogo sin duplicar almacenamiento.`,
+          deduplicated: true,
+        });
+      } else {
+        setUploadFeedback({
+          message: `Clausulado "${created.documentName}" indexado y registrado exitosamente en la biblioteca.`,
+          deduplicated: false,
+        });
+      }
 
       // Reset form
       setSelectedFile(null);
@@ -264,6 +278,28 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs flex items-center gap-2">
               <span>⚠️</span>
               <span>{error}</span>
+            </div>
+          )}
+
+          {uploadFeedback && (
+            <div
+              className={`px-4 py-3 rounded-xl text-xs flex items-center justify-between gap-2 ${
+                uploadFeedback.deduplicated
+                  ? 'bg-amber-50 border border-amber-200 text-amber-900'
+                  : 'bg-emerald-50 border border-emerald-200 text-emerald-900'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span>{uploadFeedback.deduplicated ? '⚡' : '✅'}</span>
+                <span>{uploadFeedback.message}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUploadFeedback(null)}
+                className="text-slate-400 hover:text-slate-600 font-bold ml-2"
+              >
+                ✕
+              </button>
             </div>
           )}
 

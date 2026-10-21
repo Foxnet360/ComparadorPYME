@@ -98,16 +98,61 @@ export async function listOrganizations(): Promise<OrganizationRecord[]> {
   return (data as unknown as OrganizationRecord[]) || [];
 }
 
+export async function updateOrganization(
+  id: string,
+  input: Partial<CreateOrganizationInput> & { status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' }
+): Promise<OrganizationRecord | null> {
+  const payload: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+  if (input.name !== undefined) payload.name = input.name;
+  if (input.nit !== undefined) payload.nit = input.nit;
+  if (input.contact_email !== undefined) payload.contact_email = input.contact_email;
+  if (input.phone !== undefined) payload.phone = input.phone;
+  if (input.status !== undefined) payload.status = input.status;
+  if (input.settings !== undefined) payload.settings = input.settings;
+
+  const { data, error } = await supabase
+    .from('organizations' as never)
+    .update(payload as never)
+    .eq('id', id)
+    .select(ORG_COLUMNS)
+    .single();
+
+  if (error) {
+    handleDbError(error, 'Failed to update organization');
+  }
+
+  return data as unknown as OrganizationRecord | null;
+}
+
+export async function deleteOrganization(id: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('organizations' as never)
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    handleDbError(error, 'Failed to delete organization');
+  }
+
+  return true;
+}
+
 export async function addOrganizationMember(
   input: AddMemberInput
 ): Promise<OrganizationMemberRecord | null> {
   const { data, error } = await supabase
     .from('organization_members' as never)
-    .insert({
-      org_id: input.org_id,
-      user_id: input.user_id,
-      role: input.role,
-    } as never)
+    .upsert(
+      {
+        org_id: input.org_id,
+        user_id: input.user_id,
+        role: input.role,
+        updated_at: new Date().toISOString(),
+      } as never,
+      { onConflict: 'org_id,user_id' }
+    )
     .select(MEMBER_COLUMNS)
     .single();
 
