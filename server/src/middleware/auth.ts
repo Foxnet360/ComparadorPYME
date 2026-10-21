@@ -7,31 +7,86 @@ interface JwtUserPayload {
   id?: string;
   email?: string;
   role?: string;
-}
-
-export interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email?: string;
+  org_id?: string;
+  orgId?: string;
+  ally_id?: string;
+  allyId?: string;
+  app_metadata?: {
     role?: string;
+    org_id?: string;
+    orgId?: string;
+  };
+  user_metadata?: {
+    role?: string;
+    org_id?: string;
+    orgId?: string;
+    ally_id?: string;
+    allyId?: string;
     name?: string;
-    intermediaryName?: string;
-    registrationNumber?: string;
-    address?: string;
-    city?: string;
-    agentDetails?: {
-      phone?: string;
-      field?: string;
-      bio?: string;
-      registrationNumber?: string;
-      address?: string;
-      city?: string;
-      logoUrl?: string;
-    };
+    intermediary_name?: string;
   };
 }
 
+export type UserRole = 'super_admin' | 'ally_admin' | 'ally_technical' | string;
+
+export interface AuthenticatedUser {
+  id: string;
+  email?: string;
+  role?: UserRole;
+  orgId?: string;
+  name?: string;
+  intermediaryName?: string;
+  registrationNumber?: string;
+  address?: string;
+  city?: string;
+  agentDetails?: {
+    phone?: string;
+    field?: string;
+    bio?: string;
+    registrationNumber?: string;
+    address?: string;
+    city?: string;
+    logoUrl?: string;
+  };
+}
+
+export interface AuthenticatedRequest extends Request {
+  user?: AuthenticatedUser;
+}
+
 const getJwtSecret = (): string => process.env.SUPABASE_JWT_SECRET || '';
+
+/**
+ * Extracts and normalizes the user profile from a decoded JWT payload.
+ */
+function buildUserFromPayload(decoded: JwtUserPayload): AuthenticatedUser {
+  const orgId =
+    decoded.app_metadata?.org_id ||
+    decoded.app_metadata?.orgId ||
+    decoded.org_id ||
+    decoded.orgId ||
+    decoded.user_metadata?.org_id ||
+    decoded.user_metadata?.orgId ||
+    decoded.user_metadata?.ally_id ||
+    decoded.user_metadata?.allyId;
+
+  const role =
+    decoded.app_metadata?.role ||
+    decoded.role ||
+    decoded.user_metadata?.role ||
+    'ally_technical';
+
+  const name = decoded.user_metadata?.name || decoded.email?.split('@')[0];
+
+  return {
+    id: (decoded.sub || decoded.id) as string,
+    email: decoded.email,
+    role,
+    orgId: orgId ? String(orgId) : undefined,
+    name,
+    intermediaryName: decoded.user_metadata?.intermediary_name,
+  };
+}
 
 /**
  * AUTH-2: returns the authenticated user's id or throws.
@@ -44,6 +99,43 @@ export const requireUser = (req: AuthenticatedRequest): string => {
     throw new AuthenticationError('Authentication required');
   }
   return id;
+};
+
+/**
+ * Returns tenant and identity scope for portfolio operations.
+ */
+export const getTenantScope = (
+  req: AuthenticatedRequest
+): { userId: string; orgId?: string; role?: string } => {
+  const userId = requireUser(req);
+  return {
+    userId,
+    orgId: req.user?.orgId,
+    role: req.user?.role,
+  };
+};
+
+/**
+ * RBAC Guard: ensures the authenticated user has one of the allowed roles.
+ */
+export const requireRole = (...allowedRoles: string[]) => {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
+    if (!req.user?.id) {
+      res.status(401).json({ error: 'Unauthorized', message: 'Authentication required' });
+      return;
+    }
+
+    const userRole = req.user.role || 'ally_technical';
+    if (!allowedRoles.includes(userRole)) {
+      res.status(403).json({
+        error: 'Forbidden',
+        message: `Insufficient permissions. Required one of: ${allowedRoles.join(', ')}`,
+      });
+      return;
+    }
+
+    next();
+  };
 };
 
 /**
@@ -84,11 +176,7 @@ export const authMiddleware = (
     if (jwtSecret) {
       try {
         const decoded = jwt.verify(token, jwtSecret) as unknown as JwtUserPayload;
-        req.user = {
-          id: (decoded.sub || decoded.id) as string,
-          email: decoded.email,
-          role: decoded.role,
-        };
+        req.user = buildUserFromPayload(decoded);
       } catch (_jwtError) {
         throw new AuthenticationError('Invalid or expired token');
       }
@@ -97,11 +185,7 @@ export const authMiddleware = (
       // In production, SUPABASE_JWT_SECRET must be set
       const decoded = jwt.decode(token) as unknown as JwtUserPayload;
       if (decoded) {
-        req.user = {
-          id: (decoded.sub || decoded.id) as string,
-          email: decoded.email,
-          role: decoded.role,
-        };
+        req.user = buildUserFromPayload(decoded);
       }
     }
 
@@ -127,22 +211,14 @@ export const optionalAuthMiddleware = (
       if (jwtSecret) {
         try {
           const decoded = jwt.verify(token, jwtSecret) as unknown as JwtUserPayload;
-          req.user = {
-            id: (decoded.sub || decoded.id) as string,
-            email: decoded.email,
-            role: decoded.role,
-          };
+          req.user = buildUserFromPayload(decoded);
         } catch {
           // Invalid token is OK for optional auth
         }
       } else {
         const decoded = jwt.decode(token) as unknown as JwtUserPayload;
         if (decoded) {
-          req.user = {
-            id: (decoded.sub || decoded.id) as string,
-            email: decoded.email,
-            role: decoded.role,
-          };
+          req.user = buildUserFromPayload(decoded);
         }
       }
     }

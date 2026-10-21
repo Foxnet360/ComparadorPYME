@@ -69,7 +69,7 @@ router.get(
       return;
     }
     const userId = requireUser(req);
-    const clients = await listClients(userId);
+    const clients = await listClients(userId, req.user?.orgId);
     res.json(clients);
   })
 );
@@ -81,7 +81,11 @@ router.post(
   validateBody(createClientSchema),
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const userId = requireUser(req);
-    const created = await createClient(userId, req.body as CreateClientInput);
+    const created = await createClient(
+      userId,
+      req.body as CreateClientInput,
+      req.user?.orgId
+    );
     res.status(201).json(created);
   })
 );
@@ -94,7 +98,7 @@ router.get(
       return;
     }
     const userId = requireUser(req);
-    const client = await getClientById(userId, String(req.params.id));
+    const client = await getClientById(userId, String(req.params.id), req.user?.orgId);
     if (!client) {
       throw new NotFoundError('Client not found');
     }
@@ -112,7 +116,8 @@ router.patch(
     const updated = await updateClient(
       userId,
       String(req.params.id),
-      req.body as UpdateClientInput
+      req.body as UpdateClientInput,
+      req.user?.orgId
     );
     if (!updated) {
       throw new NotFoundError('Client not found');
@@ -129,11 +134,11 @@ router.delete(
       return;
     }
     const userId = requireUser(req);
-    const existing = await getClientById(userId, String(req.params.id));
+    const existing = await getClientById(userId, String(req.params.id), req.user?.orgId);
     if (!existing) {
       throw new NotFoundError('Client not found');
     }
-    await deleteClient(userId, String(req.params.id));
+    await deleteClient(userId, String(req.params.id), req.user?.orgId);
     res.status(204).end();
   })
 );

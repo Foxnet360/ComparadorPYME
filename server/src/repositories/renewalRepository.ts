@@ -46,12 +46,20 @@ export type CreateRenewalResult =
   | { kind: 'created'; renewal: RenewalRecord }
   | { kind: 'conflict' };
 
-export async function listRenewals(userId: string, state?: RenewalState): Promise<RenewalRecord[]> {
-  let query = supabase
-    .from('renewals' as never)
-    .select(COLUMNS)
-    .eq('user_id', userId)
-    .order('cycle_start', { ascending: true });
+export async function listRenewals(
+  userId: string,
+  state?: RenewalState,
+  orgId?: string | null
+): Promise<RenewalRecord[]> {
+  let query = supabase.from('renewals' as never).select(COLUMNS);
+
+  if (orgId) {
+    query = query.or(`org_id.eq.${orgId},user_id.eq.${userId}`);
+  } else {
+    query = query.eq('user_id', userId);
+  }
+
+  query = query.order('cycle_start', { ascending: true });
   if (state) {
     query = (query as unknown as { eq: (c: string, v: unknown) => typeof query }).eq(
       'state',
@@ -66,13 +74,20 @@ export async function listRenewals(userId: string, state?: RenewalState): Promis
   return (data as unknown as RenewalRecord[]) || [];
 }
 
-export async function getRenewalById(userId: string, id: string): Promise<RenewalRecord | null> {
-  const { data, error } = await supabase
-    .from('renewals' as never)
-    .select(COLUMNS)
-    .eq('id', id)
-    .eq('user_id', userId)
-    .single();
+export async function getRenewalById(
+  userId: string,
+  id: string,
+  orgId?: string | null
+): Promise<RenewalRecord | null> {
+  let query = supabase.from('renewals' as never).select(COLUMNS).eq('id', id);
+
+  if (orgId) {
+    query = query.or(`org_id.eq.${orgId},user_id.eq.${userId}`);
+  } else {
+    query = query.eq('user_id', userId);
+  }
+
+  const { data, error } = await query.single();
 
   if (error) {
     if (error.code === 'PGRST116') {
@@ -90,16 +105,20 @@ export async function getRenewalById(userId: string, id: string): Promise<Renewa
  */
 export async function createRenewal(
   userId: string,
-  input: { policy_id: string; cycle_start: string }
+  input: { policy_id: string; cycle_start: string },
+  orgId?: string | null
 ): Promise<CreateRenewalResult> {
+  const payload: Record<string, unknown> = {
+    user_id: userId,
+    policy_id: input.policy_id,
+    cycle_start: input.cycle_start,
+    state: 'detected',
+  };
+  if (orgId) payload.org_id = orgId;
+
   const { data, error } = await supabase
     .from('renewals' as never)
-    .insert({
-      user_id: userId,
-      policy_id: input.policy_id,
-      cycle_start: input.cycle_start,
-      state: 'detected',
-    } as never)
+    .insert(payload as never)
     .select(COLUMNS)
     .single();
 

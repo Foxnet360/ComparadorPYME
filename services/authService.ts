@@ -1,5 +1,6 @@
 import { createClient, User } from '@supabase/supabase-js';
 import { UserProfile } from '../types';
+import { organizationService } from './organizationService';
 
 // Supabase anon credentials are public by design (RLS enforces authorization,
 // never the key). They come from the build/dev environment, not from this
@@ -44,10 +45,14 @@ function profileFromUser(user: User): UserProfile {
     name,
     role,
     allyId:
+      (metadata.org_id as string | undefined) ||
+      (metadata.orgId as string | undefined) ||
       (metadata.ally_id as string | undefined) ||
       (metadata.allyId as string | undefined) ||
       (role === 'super_admin' ? 'csa-global' : 'ally-100'),
     allyName:
+      (metadata.org_name as string | undefined) ||
+      (metadata.orgName as string | undefined) ||
       (metadata.ally_name as string | undefined) ||
       (metadata.allyName as string | undefined) ||
       (metadata.intermediary_name as string | undefined) ||
@@ -90,6 +95,7 @@ export const authService = {
           name,
           role,
           intermediary_name: metadata?.intermediaryName || '',
+          org_name: metadata?.intermediaryName || '',
           nit: metadata?.nit || '',
           phone: metadata?.phone || '',
         },
@@ -98,6 +104,19 @@ export const authService = {
 
     if (error) {
       throw new Error(error.message);
+    }
+
+    if (metadata?.intermediaryName && data.user) {
+      try {
+        await organizationService.createOrganization({
+          name: metadata.intermediaryName,
+          nit: metadata.nit,
+          phone: metadata.phone,
+          contact_email: email,
+        });
+      } catch (err) {
+        console.warn('Could not auto-create organization on signup, will sync on login', err);
+      }
     }
 
     return {

@@ -87,7 +87,8 @@ const POLICY_COLUMNS = '*';
 
 export async function createPolicy(
   userId: string,
-  input: CreatePolicyInput
+  input: CreatePolicyInput,
+  orgId?: string | null
 ): Promise<PolicyRecord | null> {
   const payload: Record<string, unknown> = {
     user_id: userId,
@@ -96,6 +97,7 @@ export async function createPolicy(
     insurer: input.insurer,
     provenance: input.provenance ?? 'manual',
   };
+  if (orgId) payload.org_id = orgId;
   if (input.policy_number !== undefined) payload.policy_number = input.policy_number;
   if (input.premium !== undefined) payload.premium = input.premium;
   if (input.start_date !== undefined) payload.start_date = input.start_date;
@@ -118,12 +120,16 @@ export async function createPolicy(
   return data as unknown as PolicyRecord | null;
 }
 
-export async function listPolicies(userId: string): Promise<PolicyRecord[]> {
-  const { data, error } = await supabase
-    .from('policies' as never)
-    .select(POLICY_COLUMNS)
-    .eq('user_id', userId)
-    .order('end_date', { ascending: true });
+export async function listPolicies(userId: string, orgId?: string | null): Promise<PolicyRecord[]> {
+  let query = supabase.from('policies' as never).select(POLICY_COLUMNS);
+
+  if (orgId) {
+    query = query.or(`org_id.eq.${orgId},user_id.eq.${userId}`);
+  } else {
+    query = query.eq('user_id', userId);
+  }
+
+  const { data, error } = await query.order('end_date', { ascending: true });
 
   if (error) {
     handleDbError(error, 'Failed to list policies');
@@ -132,13 +138,20 @@ export async function listPolicies(userId: string): Promise<PolicyRecord[]> {
   return (data as unknown as PolicyRecord[]) || [];
 }
 
-export async function getPolicyById(userId: string, id: string): Promise<PolicyRecord | null> {
-  const { data, error } = await supabase
-    .from('policies' as never)
-    .select(POLICY_COLUMNS)
-    .eq('id', id)
-    .eq('user_id', userId)
-    .single();
+export async function getPolicyById(
+  userId: string,
+  id: string,
+  orgId?: string | null
+): Promise<PolicyRecord | null> {
+  let query = supabase.from('policies' as never).select(POLICY_COLUMNS).eq('id', id);
+
+  if (orgId) {
+    query = query.or(`org_id.eq.${orgId},user_id.eq.${userId}`);
+  } else {
+    query = query.eq('user_id', userId);
+  }
+
+  const { data, error } = await query.single();
 
   if (error) {
     if (error.code === 'PGRST116') {
@@ -153,7 +166,8 @@ export async function getPolicyById(userId: string, id: string): Promise<PolicyR
 export async function updatePolicy(
   userId: string,
   id: string,
-  input: UpdatePolicyInput
+  input: UpdatePolicyInput,
+  orgId?: string | null
 ): Promise<PolicyRecord | null> {
   const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (input.ramo !== undefined) payload.ramo = input.ramo;
@@ -168,13 +182,15 @@ export async function updatePolicy(
   if (input.source_analysis_id !== undefined) payload.source_analysis_id = input.source_analysis_id;
   if (input.ramo_details !== undefined) payload.ramo_details = input.ramo_details;
 
-  const { data, error } = await supabase
-    .from('policies' as never)
-    .update(payload as never)
-    .eq('id', id)
-    .eq('user_id', userId)
-    .select(POLICY_COLUMNS)
-    .single();
+  let query = supabase.from('policies' as never).update(payload as never).eq('id', id);
+
+  if (orgId) {
+    query = query.or(`org_id.eq.${orgId},user_id.eq.${userId}`);
+  } else {
+    query = query.eq('user_id', userId);
+  }
+
+  const { data, error } = await query.select(POLICY_COLUMNS).single();
 
   if (error) {
     if (error.code === 'PGRST116') {
@@ -186,12 +202,20 @@ export async function updatePolicy(
   return data as unknown as PolicyRecord | null;
 }
 
-export async function deletePolicy(userId: string, id: string): Promise<boolean> {
-  const { error } = await supabase
-    .from('policies' as never)
-    .delete()
-    .eq('id', id)
-    .eq('user_id', userId);
+export async function deletePolicy(
+  userId: string,
+  id: string,
+  orgId?: string | null
+): Promise<boolean> {
+  let query = supabase.from('policies' as never).delete().eq('id', id);
+
+  if (orgId) {
+    query = query.or(`org_id.eq.${orgId},user_id.eq.${userId}`);
+  } else {
+    query = query.eq('user_id', userId);
+  }
+
+  const { error } = await query;
 
   if (error) {
     handleDbError(error, 'Failed to delete policy');

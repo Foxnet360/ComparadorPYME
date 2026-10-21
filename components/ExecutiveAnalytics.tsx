@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { UserRole, ExecutiveAnalyticsData } from '../types';
+import { UserRole, ExecutiveAnalyticsData, Ally } from '../types';
 import { analyticsService } from '../services/analyticsService';
 import { formatCOPMillions } from '../utils/formatCurrency';
 import {
@@ -32,7 +32,19 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
   const [data, setData] = useState<ExecutiveAnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const allies = analyticsService.getAvailableAllies();
+  const [allies, setAllies] = useState<Ally[]>(analyticsService.getAvailableAllies());
+
+  useEffect(() => {
+    let isMounted = true;
+    analyticsService.fetchAllies().then((list) => {
+      if (isMounted && list && list.length > 0) {
+        setAllies(list);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     loadAnalytics();

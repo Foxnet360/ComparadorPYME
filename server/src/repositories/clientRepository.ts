@@ -43,9 +43,11 @@ const CLIENT_COLUMNS = '*';
 
 export async function createClient(
   userId: string,
-  input: CreateClientInput
+  input: CreateClientInput,
+  orgId?: string | null
 ): Promise<ClientRecord | null> {
   const payload: Record<string, unknown> = { user_id: userId, name: input.name };
+  if (orgId) payload.org_id = orgId;
   if (input.tax_id !== undefined) payload.tax_id = input.tax_id;
   if (input.contact !== undefined) payload.contact = input.contact;
 
@@ -62,12 +64,16 @@ export async function createClient(
   return data as unknown as ClientRecord | null;
 }
 
-export async function listClients(userId: string): Promise<ClientRecord[]> {
-  const { data, error } = await supabase
-    .from('clients' as never)
-    .select(CLIENT_COLUMNS)
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+export async function listClients(userId: string, orgId?: string | null): Promise<ClientRecord[]> {
+  let query = supabase.from('clients' as never).select(CLIENT_COLUMNS);
+
+  if (orgId) {
+    query = query.or(`org_id.eq.${orgId},user_id.eq.${userId}`);
+  } else {
+    query = query.eq('user_id', userId);
+  }
+
+  const { data, error } = await query.order('created_at', { ascending: false });
 
   if (error) {
     handleDbError(error, 'Failed to list clients');
@@ -76,13 +82,20 @@ export async function listClients(userId: string): Promise<ClientRecord[]> {
   return (data as unknown as ClientRecord[]) || [];
 }
 
-export async function getClientById(userId: string, id: string): Promise<ClientRecord | null> {
-  const { data, error } = await supabase
-    .from('clients' as never)
-    .select(CLIENT_COLUMNS)
-    .eq('id', id)
-    .eq('user_id', userId)
-    .single();
+export async function getClientById(
+  userId: string,
+  id: string,
+  orgId?: string | null
+): Promise<ClientRecord | null> {
+  let query = supabase.from('clients' as never).select(CLIENT_COLUMNS).eq('id', id);
+
+  if (orgId) {
+    query = query.or(`org_id.eq.${orgId},user_id.eq.${userId}`);
+  } else {
+    query = query.eq('user_id', userId);
+  }
+
+  const { data, error } = await query.single();
 
   if (error) {
     if (error.code === 'PGRST116') {
@@ -97,20 +110,23 @@ export async function getClientById(userId: string, id: string): Promise<ClientR
 export async function updateClient(
   userId: string,
   id: string,
-  input: UpdateClientInput
+  input: UpdateClientInput,
+  orgId?: string | null
 ): Promise<ClientRecord | null> {
   const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (input.name !== undefined) payload.name = input.name;
   if (input.tax_id !== undefined) payload.tax_id = input.tax_id;
   if (input.contact !== undefined) payload.contact = input.contact;
 
-  const { data, error } = await supabase
-    .from('clients' as never)
-    .update(payload as never)
-    .eq('id', id)
-    .eq('user_id', userId)
-    .select(CLIENT_COLUMNS)
-    .single();
+  let query = supabase.from('clients' as never).update(payload as never).eq('id', id);
+
+  if (orgId) {
+    query = query.or(`org_id.eq.${orgId},user_id.eq.${userId}`);
+  } else {
+    query = query.eq('user_id', userId);
+  }
+
+  const { data, error } = await query.select(CLIENT_COLUMNS).single();
 
   if (error) {
     if (error.code === 'PGRST116') {
@@ -122,12 +138,20 @@ export async function updateClient(
   return data as unknown as ClientRecord | null;
 }
 
-export async function deleteClient(userId: string, id: string): Promise<boolean> {
-  const { error } = await supabase
-    .from('clients' as never)
-    .delete()
-    .eq('id', id)
-    .eq('user_id', userId);
+export async function deleteClient(
+  userId: string,
+  id: string,
+  orgId?: string | null
+): Promise<boolean> {
+  let query = supabase.from('clients' as never).delete().eq('id', id);
+
+  if (orgId) {
+    query = query.or(`org_id.eq.${orgId},user_id.eq.${userId}`);
+  } else {
+    query = query.eq('user_id', userId);
+  }
+
+  const { error } = await query;
 
   if (error) {
     handleDbError(error, 'Failed to delete client');

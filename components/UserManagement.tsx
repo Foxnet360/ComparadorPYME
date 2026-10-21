@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserRole, Ally } from '../types';
 import { DEMO_ALLIES, DEMO_ANALYSTS } from '../services/analyticsService';
+import { organizationService } from '../services/organizationService';
 import {
   Users,
   Building2,
@@ -94,6 +95,46 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const [newAllyName, setNewAllyName] = useState('');
   const [newAllyNit, setNewAllyNit] = useState('');
 
+  // Load real organizations and members from backend
+  useEffect(() => {
+    let isMounted = true;
+    const loadData = async () => {
+      try {
+        if (currentUserRole === 'super_admin') {
+          const orgs = await organizationService.listOrganizations();
+          if (isMounted && orgs.length > 0) {
+            setAlliesList(orgs);
+          }
+        }
+        if (currentAllyId) {
+          const members = await organizationService.listMembers(currentAllyId);
+          if (isMounted && members.length > 0) {
+            const remoteUsers: ManagedUser[] = members.map((m) => ({
+              id: m.id,
+              name: m.user_id.includes('@') ? m.user_id.split('@')[0]! : m.user_id,
+              email: m.user_id.includes('@') ? m.user_id : `${m.user_id}@correduria.com`,
+              role: m.role,
+              allyId: m.org_id,
+              allyName: alliesList.find((a) => a.id === m.org_id)?.name || 'Correduría Aliada',
+              status: 'ACTIVE',
+              createdAt: m.created_at ? m.created_at.split('T')[0]! : '2026-01-01',
+            }));
+            setUsersList((prev) => {
+              const existingIds = new Set(remoteUsers.map((u) => u.id));
+              return [...remoteUsers, ...prev.filter((u) => !existingIds.has(u.id))];
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load organizations from server', err);
+      }
+    };
+    loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUserRole, currentAllyId]);
+
   // Filter users based on RBAC level
   const visibleUsers = usersList
     .filter((u) => {
@@ -108,17 +149,27 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         u.email.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-  const handleCreateUser = (e: React.FormEvent) => {
+  const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUserName || !newUserEmail) return;
 
     const selectedAlly = alliesList.find((a) => a.id === newUserAllyId) || alliesList[0]!;
+    const roleToAssign = currentUserRole === 'ally_admin' ? 'ally_technical' : newUserRole;
+
+    try {
+      await organizationService.addMember(selectedAlly.id, {
+        user_id: newUserEmail,
+        role: roleToAssign,
+      });
+    } catch (err) {
+      console.warn('Could not persist member to backend, updating local state', err);
+    }
 
     const newUser: ManagedUser = {
       id: `user-${Date.now()}`,
       name: newUserName,
       email: newUserEmail,
-      role: currentUserRole === 'ally_admin' ? 'ally_technical' : newUserRole,
+      role: roleToAssign,
       allyId: selectedAlly.id,
       allyName: selectedAlly.name,
       status: 'ACTIVE',
@@ -131,11 +182,21 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     setShowAddModal(false);
   };
 
-  const handleCreateAlly = (e: React.FormEvent) => {
+  const handleCreateAlly = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAllyName) return;
 
-    const newAlly: Ally = {
+    let createdAlly: Ally | null = null;
+    try {
+      createdAlly = await organizationService.createOrganization({
+        name: newAllyName,
+        nit: newAllyNit || undefined,
+      });
+    } catch (err) {
+      console.warn('Could not persist organization to backend, updating local state', err);
+    }
+
+    const newAlly: Ally = createdAlly || {
       id: `ally-${Date.now()}`,
       name: newAllyName,
       nit: newAllyNit || '900.000.000-0',

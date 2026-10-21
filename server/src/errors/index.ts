@@ -22,6 +22,8 @@ export class AuthorizationError extends AppError {
   }
 }
 
+export { AuthorizationError as ForbiddenError };
+
 export class RateLimitError extends AppError {
   public readonly retryAfter: number;
 

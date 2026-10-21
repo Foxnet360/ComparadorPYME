@@ -1,5 +1,6 @@
 import { HistoryEntry, ExecutiveAnalyticsData, UserRole, AnalystPerformance, Ally } from '../types';
 import { storageService } from './storageService';
+import { organizationService } from './organizationService';
 
 export const DEMO_ALLIES: Ally[] = [
   { id: 'ally-100', name: 'Correduría Andina de Seguros S.A.', nit: '900.543.210-1' },
@@ -14,8 +15,23 @@ export const DEMO_ANALYSTS: Array<{ id: string; name: string; allyId: string }> 
   { id: 'user-tech-4', name: 'Laura Betancur (Analista RC)', allyId: 'ally-300' },
 ];
 
+let cachedAllies: Ally[] = DEMO_ALLIES;
+
 export const analyticsService = {
-  getAvailableAllies: (): Ally[] => DEMO_ALLIES,
+  getAvailableAllies: (): Ally[] => cachedAllies,
+
+  fetchAllies: async (): Promise<Ally[]> => {
+    try {
+      const orgs = await organizationService.listOrganizations();
+      if (orgs && orgs.length > 0) {
+        cachedAllies = orgs;
+        return orgs;
+      }
+    } catch {
+      // fallback to DEMO_ALLIES
+    }
+    return cachedAllies;
+  },
 
   getExecutiveAnalytics: async (
     role: UserRole = 'ally_technical',
