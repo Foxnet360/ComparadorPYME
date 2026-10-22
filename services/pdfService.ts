@@ -9,6 +9,11 @@ import {
   getDomainRegulatoryProfile,
   findPedagogicalExplanation,
 } from '@shared/domainRegulatoryKnowledge';
+import {
+  CommercialPolicies,
+  getEffectiveCommercialPolicies,
+  getStructuredCommercialPolicyEntries,
+} from '../src/data/commercialPolicies';
 
 function hexToRgb(hex?: string): [number, number, number] {
   if (!hex) return [30, 41, 59];
@@ -64,6 +69,7 @@ export interface BrokerInfo {
   address?: string;
   city?: string;
   logoUrl?: string;
+  commercialPolicies?: CommercialPolicies;
 }
 
 interface PDFOptions {
@@ -71,6 +77,7 @@ interface PDFOptions {
   customTitle?: string;
   primaryColor?: [number, number, number];
   brokerInfo?: BrokerInfo;
+  commercialPolicies?: CommercialPolicies;
 }
 
 export const generatePDF = (
@@ -670,6 +677,95 @@ export const generatePDF = (
 
     currentY = (doc as any).lastAutoTable.finalY + 8;
   }
+
+  // --- Dedicated Page: Políticas Comerciales y Condiciones de la Oferta ---
+  doc.addPage();
+  let policyY = addHeader('Políticas Comerciales y Condiciones de la Oferta');
+
+  const effectivePolicies = getEffectiveCommercialPolicies(
+    options?.commercialPolicies || options?.brokerInfo?.commercialPolicies
+  );
+  const structuredPolicies = getStructuredCommercialPolicyEntries(effectivePolicies);
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(30, 41, 59);
+  doc.text('Términos y Condiciones Comerciales de la Propuesta', 14, policyY + 2);
+
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(71, 85, 105);
+  const commercialIntroText =
+    'El presente documento contiene las condiciones comerciales e instrucciones operativas bajo las cuales se presenta el estudio comparativo. ' +
+    'Estas directrices rigen la validez de las cotizaciones, los requisitos de inspección previa, el recaudo de primas y el marco de intermediación en la República de Colombia.';
+  const splitIntro = doc.splitTextToSize(commercialIntroText, 182);
+  doc.text(splitIntro, 14, policyY + 7);
+
+  policyY += 8 + splitIntro.length * 4;
+
+  const policyTableHead = [['Categoría / Condición', 'Detalle y Alcance Operativo']];
+  const policyTableBody = structuredPolicies.map((p) => [
+    `${p.title}\n(${p.category})`,
+    p.detail,
+  ]);
+
+  autoTable(doc, {
+    startY: policyY,
+    head: policyTableHead,
+    body: policyTableBody,
+    theme: 'grid',
+    headStyles: {
+      fillColor: PRIMARY_COLOR,
+      textColor: [255, 255, 255],
+      fontSize: 8.5,
+      fontStyle: 'bold',
+    },
+    bodyStyles: {
+      fontSize: 8,
+      cellPadding: 3,
+      textColor: [30, 41, 59],
+    },
+    columnStyles: {
+      0: { cellWidth: 50, fontStyle: 'bold', fillColor: [248, 250, 252] },
+      1: { cellWidth: 132 },
+    },
+    margin: { left: 14, right: 14 },
+  });
+
+  let afterPolicyY = (doc as any).lastAutoTable.finalY + 8;
+  if (afterPolicyY > 235) {
+    doc.addPage();
+    afterPolicyY = addHeader('Políticas Comerciales · Respaldo y Contacto');
+  }
+
+  // Intermediary identification and regulatory notice box
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(203, 213, 225);
+  doc.roundedRect(14, afterPolicyY, 182, 32, 2, 2, 'FD');
+
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(30, 41, 59);
+  const brokerName =
+    options?.brokerInfo?.intermediaryName ||
+    options?.brokerInfo?.name ||
+    'Corredor / Intermediario de Seguros Aliado';
+  doc.text(`Intermediario Responsable: ${brokerName}`, 18, afterPolicyY + 7);
+
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(71, 85, 105);
+  const brokerReg = options?.brokerInfo?.registrationNumber
+    ? ` | Matrícula/Clave: ${options.brokerInfo.registrationNumber}`
+    : '';
+  const brokerEmail = options?.brokerInfo?.email ? ` | Email: ${options.brokerInfo.email}` : '';
+  const brokerPhone = options?.brokerInfo?.phone ? ` | Tel: ${options.brokerInfo.phone}` : '';
+  doc.text(`Contacto Asesor:${brokerEmail}${brokerPhone}${brokerReg}`, 18, afterPolicyY + 13);
+
+  const legalNotice =
+    'Superintendencia Financiera de Colombia: La actividad de intermediación de seguros se ejerce en cumplimiento del Estatuto Orgánico del Sistema Financiero (Decreto 663 de 1993) y la Circular Básica Jurídica. Las pólizas son contratos de seguro regidos por el Libro IV, Título V del Código de Comercio colombiano.';
+  const splitNotice = doc.splitTextToSize(legalNotice, 174);
+  doc.text(splitNotice, 18, afterPolicyY + 19);
 
   // Numeración de páginas
   const pageCount = doc.getNumberOfPages();

@@ -1,5 +1,6 @@
 export { InsuranceDomain } from '@shared/insuranceDomain';
 export type { InsuranceDomainType } from '@shared/insuranceDomain';
+export type { CommercialPolicies, CommercialPolicyItem } from './src/data/commercialPolicies';
 
 export interface Citation {
   text: string;
@@ -373,6 +374,7 @@ export interface UserProfile {
   city?: string;
   logoUrl?: string;
   password?: string; // Stored locally
+  commercialPolicies?: import('./src/data/commercialPolicies').CommercialPolicies;
   agentDetails?: {
     phone: string;
     field: string; // Ramo
@@ -522,6 +524,11 @@ export interface Ally {
   contact_email?: string;
   phone?: string;
   status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  settings?: {
+    commercial_policies?: import('./src/data/commercialPolicies').CommercialPolicies;
+    [key: string]: unknown;
+  };
+  commercialPolicies?: import('./src/data/commercialPolicies').CommercialPolicies;
   createdAt?: string;
 }
 

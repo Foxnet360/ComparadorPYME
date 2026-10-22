@@ -127,12 +127,12 @@ describe('excelGenerator', () => {
       expect(buffer.length).toBeGreaterThan(0);
     });
 
-    it('should generate a workbook with six worksheets including Respaldo Normativo y Legal', async () => {
+    it('should generate a workbook with seven worksheets including Respaldo Normativo y Legal and Políticas Comerciales', async () => {
       const buffer = await generateExcelBuffer(mockQuotes);
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer);
 
-      expect(workbook.worksheets.length).toBe(6);
+      expect(workbook.worksheets.length).toBe(7);
       expect(workbook.worksheets.map((w) => w.name)).toEqual([
         'Portada y Resumen General',
         'Matriz Coberturas',
@@ -140,6 +140,7 @@ describe('excelGenerator', () => {
         'Primas y Costos',
         'Análisis de Riesgos',
         'Respaldo Normativo y Legal',
+        'Políticas Comerciales',
       ]);
     });
 

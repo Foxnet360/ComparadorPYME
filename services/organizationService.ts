@@ -6,6 +6,11 @@
 import { apiClient } from './apiClient';
 import { supabase } from './authService';
 import { Ally, UserRole } from '../types';
+import {
+  CommercialPolicies,
+  DEFAULT_COMMERCIAL_POLICIES,
+  getEffectiveCommercialPolicies,
+} from '../src/data/commercialPolicies';
 
 export interface OrganizationMember {
   id: string;
@@ -185,6 +190,7 @@ export const organizationService = {
       contact_email?: string;
       phone?: string;
       status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+      settings?: Record<string, unknown>;
     }
   ): Promise<Ally> => {
     const res = await apiClient.fetch(`/api/organizations/${id}`, {
@@ -205,8 +211,58 @@ export const organizationService = {
       contact_email: data.contact_email,
       phone: data.phone,
       status: data.status,
+      settings: data.settings,
+      commercialPolicies: data.settings?.commercial_policies
+        ? getEffectiveCommercialPolicies(data.settings.commercial_policies)
+        : undefined,
       createdAt: data.created_at ? data.created_at.split('T')[0] : undefined,
     };
+  },
+
+  /**
+   * Get effective commercial policies for an ally organization.
+   * Falls back to standard professional Colombian policies if not customized.
+   */
+  getCommercialPolicies: async (orgId?: string): Promise<CommercialPolicies> => {
+    if (!orgId) {
+      return { ...DEFAULT_COMMERCIAL_POLICIES };
+    }
+
+    try {
+      const res = await apiClient.fetch(`/api/organizations/${orgId}/commercial-policies`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.commercialPolicies) {
+          return getEffectiveCommercialPolicies(data.commercialPolicies);
+        }
+      }
+    } catch (err) {
+      console.warn(`Failed to fetch commercial policies for org ${orgId}`, err);
+    }
+
+    return { ...DEFAULT_COMMERCIAL_POLICIES };
+  },
+
+  /**
+   * Update commercial policies for an ally organization.
+   */
+  updateCommercialPolicies: async (
+    orgId: string,
+    policies: CommercialPolicies
+  ): Promise<CommercialPolicies> => {
+    const res = await apiClient.fetch(`/api/organizations/${orgId}/commercial-policies`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ commercialPolicies: policies }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Error al actualizar políticas comerciales');
+    }
+
+    const data = await res.json();
+    return getEffectiveCommercialPolicies(data.commercialPolicies);
   },
 
   /**

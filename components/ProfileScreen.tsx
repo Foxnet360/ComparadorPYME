@@ -13,9 +13,17 @@ import {
   MapPin,
   Image as ImageIcon,
   Upload,
+  FileText,
+  RotateCcw,
 } from 'lucide-react';
 import { storageService } from '../services/storageService';
+import { organizationService } from '../services/organizationService';
 import { UserProfile } from '../types';
+import {
+  CommercialPolicies,
+  DEFAULT_COMMERCIAL_POLICIES,
+  getEffectiveCommercialPolicies,
+} from '../src/data/commercialPolicies';
 
 interface ProfileScreenProps {
   currentUser: UserProfile;
@@ -41,6 +49,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
   const [isLoading, setIsLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [activeTab, setActiveTab] = useState<'profile' | 'policies'>('profile');
+  const [policies, setPolicies] = useState<CommercialPolicies>(() =>
+    getEffectiveCommercialPolicies(currentUser?.commercialPolicies)
+  );
 
   useEffect(() => {
     if (currentUser) {
@@ -58,11 +70,39 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
         avatarUrl: currentUser.avatarUrl || '',
         logoUrl: currentUser.logoUrl || currentUser.agentDetails?.logoUrl || '',
       });
+
+      if (currentUser.commercialPolicies) {
+        setPolicies(getEffectiveCommercialPolicies(currentUser.commercialPolicies));
+      }
     }
+
+    let isMounted = true;
+    if (currentUser?.allyId && currentUser.allyId.length === 36) {
+      organizationService
+        .getCommercialPolicies(currentUser.allyId)
+        .then((loaded) => {
+          if (isMounted && loaded) {
+            setPolicies(loaded);
+          }
+        })
+        .catch((err) => console.warn('Could not load org policies', err));
+    }
+
+    return () => {
+      isMounted = false;
+    };
   }, [currentUser]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handlePolicyChange = (field: keyof CommercialPolicies, value: any) => {
+    setPolicies((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleResetPolicies = () => {
+    setPolicies({ ...DEFAULT_COMMERCIAL_POLICIES });
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,6 +135,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
         address: formData.address,
         city: formData.city,
         logoUrl: formData.logoUrl,
+        commercialPolicies: policies,
         avatarUrl:
           formData.avatarUrl ||
           `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name)}&background=4f46e5&color=fff`,
@@ -110,8 +151,18 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
       };
 
       await storageService.updateProfile(updatedUser);
+
+      // Also persist to organization settings if allyId is a valid UUID
+      if (currentUser?.allyId && currentUser.allyId.length === 36) {
+        try {
+          await organizationService.updateCommercialPolicies(currentUser.allyId, policies);
+        } catch (orgErr) {
+          console.warn('Could not sync policies to organization record', orgErr);
+        }
+      }
+
       onUpdateProfile(updatedUser);
-      setSuccessMsg('Perfil del Aliado actualizado correctamente.');
+      setSuccessMsg('Perfil y políticas comerciales actualizados correctamente.');
 
       setTimeout(() => {
         onClose();
@@ -156,31 +207,61 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
             </button>
           </div>
 
+          {/* Navigation Tabs */}
+          <div className="flex border-b border-slate-200 bg-slate-50 px-4 sm:px-6 pt-3 gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab('profile')}
+              className={`py-2 px-3 text-xs font-bold rounded-t-lg transition-colors flex items-center gap-1.5 border-t border-l border-r ${
+                activeTab === 'profile'
+                  ? 'bg-white text-indigo-700 border-slate-200 -mb-px shadow-xs'
+                  : 'bg-transparent text-slate-500 border-transparent hover:text-slate-800'
+              }`}
+            >
+              <User className="h-4 w-4" />
+              <span>Datos de Correduría</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('policies')}
+              className={`py-2 px-3 text-xs font-bold rounded-t-lg transition-colors flex items-center gap-1.5 border-t border-l border-r ${
+                activeTab === 'policies'
+                  ? 'bg-white text-indigo-700 border-slate-200 -mb-px shadow-xs'
+                  : 'bg-transparent text-slate-500 border-transparent hover:text-slate-800'
+              }`}
+            >
+              <FileText className="h-4 w-4" />
+              <span>Políticas Comerciales (Exportaciones)</span>
+            </button>
+          </div>
+
           <form onSubmit={handleUpdate}>
-            <div className="px-4 py-5 sm:p-6 space-y-6 max-h-[80vh] overflow-y-auto">
-              {/* Role & Hierarchy Badge Banner */}
-              <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3.5 flex items-center justify-between shadow-xs">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-indigo-600 text-white rounded-lg">
-                    <ShieldCheck className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-indigo-900 uppercase tracking-wider">
-                      Rol de Sistema Asignado
+            <div className="px-4 py-5 sm:p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+              {activeTab === 'profile' ? (
+                <>
+                  {/* Role & Hierarchy Badge Banner */}
+                  <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3.5 flex items-center justify-between shadow-xs">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-indigo-600 text-white rounded-lg">
+                        <ShieldCheck className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-indigo-900 uppercase tracking-wider">
+                          Rol de Sistema Asignado
+                        </div>
+                        <div className="text-sm font-extrabold text-indigo-700">
+                          {(currentUser as any).role === 'super_admin'
+                            ? 'SUPER ADMINISTRADOR PLATAFORMA'
+                            : (currentUser as any).role === 'ally_admin'
+                              ? 'ADMINISTRADOR DE ALIADO (DIRECTOR TÉCNICO)'
+                              : 'TÉCNICO ANALISTA DE SEGURIDAD'}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-sm font-extrabold text-indigo-700">
-                      {(currentUser as any).role === 'super_admin'
-                        ? 'SUPER ADMINISTRADOR PLATAFORMA'
-                        : (currentUser as any).role === 'ally_admin'
-                          ? 'ADMINISTRADOR DE ALIADO (DIRECTOR TÉCNICO)'
-                          : 'TÉCNICO ANALISTA DE SEGURIDAD'}
-                    </div>
+                    <span className="px-3 py-1 bg-indigo-600 text-white rounded-full text-xs font-bold uppercase tracking-wider">
+                      {(currentUser as any).allyName || formData.intermediaryName || 'Aliado CSA'}
+                    </span>
                   </div>
-                </div>
-                <span className="px-3 py-1 bg-indigo-600 text-white rounded-full text-xs font-bold uppercase tracking-wider">
-                  {(currentUser as any).allyName || formData.intermediaryName || 'Aliado CSA'}
-                </span>
-              </div>
 
               {/* Asesor & Logo Section */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
@@ -378,6 +459,130 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
                   </div>
                 </div>
               </div>
+                </>
+              ) : (
+                <div className="space-y-5">
+                  <div className="bg-indigo-50/70 border border-indigo-200 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                      <h4 className="text-sm font-bold text-indigo-900 flex items-center gap-1.5">
+                        <FileText className="h-4 w-4 text-indigo-600" />
+                        Políticas Comerciales de la Correduría
+                      </h4>
+                      <p className="text-xs text-indigo-700 mt-1 max-w-xl">
+                        Estas condiciones se inyectan automáticamente en la portada y páginas de respaldo de los reportes PDF y libros Excel exportados para sus clientes.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleResetPolicies}
+                      className="px-3 py-1.5 bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-2xs whitespace-nowrap transition-colors"
+                      title="Restablecer términos sugeridos estándar en Colombia"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      <span>Restablecer Estándar</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Plazo de Validez de la Oferta (Días Calendario)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="90"
+                        value={policies.offerValidityDays}
+                        onChange={(e) =>
+                          handlePolicyChange('offerValidityDays', parseInt(e.target.value) || 15)
+                        }
+                        className="w-full sm:w-48 block border border-slate-300 rounded-md shadow-xs p-2 text-sm focus:ring-indigo-500 focus:border-indigo-500 font-semibold text-slate-800"
+                      />
+                      <span className="text-[11px] text-slate-500 mt-0.5 block">
+                        Días de vigencia garantizada para las cotizaciones presentadas al cliente.
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Condiciones de Recaudo y Financiación
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={policies.paymentConditions}
+                        onChange={(e) => handlePolicyChange('paymentConditions', e.target.value)}
+                        placeholder="Ej. Pago de contado con descuento o cuotas mensuales..."
+                        className="w-full block border border-slate-300 rounded-md shadow-xs p-2.5 text-xs text-slate-800 focus:ring-indigo-500 focus:border-indigo-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Requisitos de Inspección y Suscripción Previa
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={policies.inspectionRequirements}
+                        onChange={(e) => handlePolicyChange('inspectionRequirements', e.target.value)}
+                        placeholder="Ej. Inspección obligatoria para bienes > 500 SMMLV..."
+                        className="w-full block border border-slate-300 rounded-md shadow-xs p-2.5 text-xs text-slate-800 focus:ring-indigo-500 focus:border-indigo-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Requisitos Obligatorios para Expedición
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={policies.issuanceRequirements}
+                        onChange={(e) => handlePolicyChange('issuanceRequirements', e.target.value)}
+                        placeholder="Ej. Orden de expedición firmada, SARLAFT vigente y RUT..."
+                        className="w-full block border border-slate-300 rounded-md shadow-xs p-2.5 text-xs text-slate-800 focus:ring-indigo-500 focus:border-indigo-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Procedimiento de Atención y Notificación de Siniestros (Art. 1075 C.Co.)
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={policies.claimsPolicy}
+                        onChange={(e) => handlePolicyChange('claimsPolicy', e.target.value)}
+                        placeholder="Ej. Aviso dentro de los 3 días hábiles siguientes..."
+                        className="w-full block border border-slate-300 rounded-md shadow-xs p-2.5 text-xs text-slate-800 focus:ring-indigo-500 focus:border-indigo-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Alcance del Asesor / Intermediación
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={policies.intermediationScope}
+                        onChange={(e) => handlePolicyChange('intermediationScope', e.target.value)}
+                        placeholder="Ej. Asesoría técnica integral e imparcial..."
+                        className="w-full block border border-slate-300 rounded-md shadow-xs p-2.5 text-xs text-slate-800 focus:ring-indigo-500 focus:border-indigo-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Notas Especiales / Observaciones Particulares (Opcional)
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={policies.customNotes || ''}
+                        onChange={(e) => handlePolicyChange('customNotes', e.target.value)}
+                        placeholder="Ej. Sujeto a no siniestralidad previa..."
+                        className="w-full block border border-slate-300 rounded-md shadow-xs p-2.5 text-xs text-slate-800 focus:ring-indigo-500 focus:border-indigo-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {successMsg && (
                 <div className="rounded-md bg-green-50 p-4">

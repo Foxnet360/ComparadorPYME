@@ -17,6 +17,11 @@ import {
   findPedagogicalExplanation,
 } from '../shared/domainRegulatoryKnowledge';
 import { findColombianInsurerProfile } from '../shared/colombianInsurersCatalog';
+import {
+  CommercialPolicies,
+  getEffectiveCommercialPolicies,
+  getStructuredCommercialPolicyEntries,
+} from '../shared/commercialPolicies';
 
 function isDeductibleMatrixRow(row: MatrixRow): boolean {
   if (row.sectionId === DEDUCTIBLE_SECTION_ID) return true;
@@ -97,6 +102,7 @@ export interface BrokerInfo {
   email?: string;
   address?: string;
   city?: string;
+  commercialPolicies?: CommercialPolicies;
 }
 
 export function formatRatioCell(val: string | number): { value: string | number; numFmt?: string } {
@@ -379,6 +385,14 @@ export async function generateExcelBuffer(
       name: 'Análisis de Riesgos',
       desc: 'Auditoría técnica de alertas clasificadas y escala de calificación 1 a 10.',
     },
+    {
+      name: 'Respaldo Normativo y Legal',
+      desc: 'Auditoría de cumplimiento regulatorio y jurisprudencia colombiana aplicable.',
+    },
+    {
+      name: 'Políticas Comerciales',
+      desc: 'Condiciones de validez de la oferta, financiación, garantías y procedimiento de siniestros.',
+    },
   ];
 
   navRows.forEach((item, idx) => {
@@ -391,6 +405,22 @@ export async function generateExcelBuffer(
     cellB.value = item.desc;
     cellB.font = { name: FONT_NAME, size: 10, color: { argb: 'FF475569' } };
   });
+
+  const effectivePolicies = getEffectiveCommercialPolicies(brokerInfo?.commercialPolicies);
+
+  // Resumen de Políticas Comerciales en Portada
+  portada.getCell('B42').value = 'CONDICIONES COMERCIALES CLAVE DE LA OFERTA';
+  portada.getCell('B42').font = {
+    name: FONT_NAME,
+    size: 11,
+    bold: true,
+    color: { argb: 'FF1E3A8A' },
+  };
+
+  addInfoRow('Vigencia de la Oferta:', `${effectivePolicies.offerValidityDays} días calendario desde la expedición`, 43);
+  addInfoRow('Forma y Plazo de Pago:', effectivePolicies.paymentConditions, 44);
+  addInfoRow('Requisitos de Emisión:', effectivePolicies.issuanceRequirements, 45);
+  addInfoRow('Atención de Siniestros:', effectivePolicies.claimsPolicy, 46);
 
   // -------------------------------------------------------------
   // Pestaña 2: Matriz Coberturas (Direct Matrix Data Rendering)
@@ -1366,6 +1396,67 @@ export async function generateExcelBuffer(
       lRowIdx++;
     });
   });
+
+  // -------------------------------------------------------------
+  // Pestaña 7: Políticas Comerciales y Términos de la Oferta
+  // -------------------------------------------------------------
+  const commercialPoliciesSheet = workbook.addWorksheet('Políticas Comerciales');
+  commercialPoliciesSheet.views = [{ showGridLines: false }];
+
+  commercialPoliciesSheet.getColumn(1).width = 32;
+  commercialPoliciesSheet.getColumn(2).width = 35;
+  commercialPoliciesSheet.getColumn(3).width = 75;
+
+  commercialPoliciesSheet.mergeCells('A1:C2');
+  const policyTitle = commercialPoliciesSheet.getCell('A1');
+  policyTitle.value = `POLÍTICAS COMERCIALES Y CONDICIONES DE LA OFERTA · ${regulatoryProfile.displayName.toUpperCase()}`;
+  policyTitle.font = { name: FONT_NAME, size: 13, bold: true, color: { argb: 'FF1E3A8A' } };
+
+  commercialPoliciesSheet.mergeCells('A3:C3');
+  const policySubtitle = commercialPoliciesSheet.getCell('A3');
+  policySubtitle.value =
+    'Condiciones operativas y términos comerciales parametrizados por la correduría de seguros para la presentación de propuestas.';
+  policySubtitle.font = { name: FONT_NAME, size: 10, italic: true, color: { argb: 'FF475569' } };
+
+  const structuredPolicies = getStructuredCommercialPolicyEntries(effectivePolicies);
+
+  commercialPoliciesSheet.getRow(5).height = 26;
+  const pHeaders = ['Categoría', 'Término / Condición', 'Detalle y Alcance Operativo'];
+  pHeaders.forEach((h, idx) => {
+    const cell = commercialPoliciesSheet.getCell(5, idx + 1);
+    cell.value = h;
+    cell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+    cell.alignment = { vertical: 'middle', horizontal: 'left' };
+  });
+
+  let pRowIdx = 6;
+  structuredPolicies.forEach((item) => {
+    commercialPoliciesSheet.getRow(pRowIdx).height = 24;
+    const catCell = commercialPoliciesSheet.getCell(pRowIdx, 1);
+    catCell.value = item.category;
+    catCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF1E40AF' } };
+
+    const titleCell = commercialPoliciesSheet.getCell(pRowIdx, 2);
+    titleCell.value = item.title;
+    titleCell.font = { name: FONT_NAME, size: 9.5, bold: true, color: { argb: 'FF334155' } };
+
+    const detailCell = commercialPoliciesSheet.getCell(pRowIdx, 3);
+    detailCell.value = item.detail;
+    detailCell.font = { name: FONT_NAME, size: 9.5, color: { argb: 'FF1E293B' } };
+    detailCell.alignment = { wrapText: true, vertical: 'middle' };
+
+    pRowIdx++;
+  });
+
+  pRowIdx += 2;
+  commercialPoliciesSheet.getRow(pRowIdx).height = 24;
+  const legalNoticeCell = commercialPoliciesSheet.getCell(pRowIdx, 1);
+  commercialPoliciesSheet.mergeCells(pRowIdx, 1, pRowIdx + 2, 3);
+  legalNoticeCell.value =
+    'MARCO LEGAL COLOMBIANO: La intermediación de seguros se ejerce bajo el Estatuto Orgánico del Sistema Financiero (Decreto 663 de 1993) y las instrucciones de la Superintendencia Financiera de Colombia. El contrato de seguro se rige por el Código de Comercio de Colombia (Arts. 1036 y ss). El tomador cuenta con un plazo legal de aviso de siniestro de 3 días hábiles conforme al Art. 1075 C.Co.';
+  legalNoticeCell.font = { name: FONT_NAME, size: 8.5, italic: true, color: { argb: 'FF64748B' } };
+  legalNoticeCell.alignment = { wrapText: true, vertical: 'middle' };
 
   // Generate Buffer
   const buffer = await workbook.xlsx.writeBuffer();

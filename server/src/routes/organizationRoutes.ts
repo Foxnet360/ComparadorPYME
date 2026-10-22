@@ -9,6 +9,11 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { NotFoundError, ForbiddenError, AppError } from '../errors';
 import { supabase } from '../config/database';
 import {
+  DEFAULT_COMMERCIAL_POLICIES,
+  getEffectiveCommercialPolicies,
+  CommercialPolicies,
+} from '../shared/commercialPolicies';
+import {
   createOrganization,
   updateOrganization,
   deleteOrganization,
@@ -116,28 +121,118 @@ router.post(
 );
 
 /**
+ * GET /api/organizations/:id
+ * Get single organization details. Super Admin or members of that org.
+ */
+router.get(
+  '/:id',
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const userId = requireUser(req);
+    const orgId = String(req.params.id);
+    const callerRole = req.user?.role;
+    const callerOrgId = req.user?.orgId;
+
+    if (callerRole !== 'super_admin' && callerOrgId !== orgId) {
+      const membership = await getUserOrganization(userId);
+      if (!membership || membership.organization.id !== orgId) {
+        throw new ForbiddenError('Access to this organization is forbidden');
+      }
+    }
+
+    const org = await getOrganizationById(orgId);
+    if (!org) {
+      throw new NotFoundError('Organization not found');
+    }
+
+    res.json(org);
+  })
+);
+
+/**
+ * GET /api/organizations/:id/commercial-policies
+ * Fetch commercial policies for an organization, falling back to standard Colombian defaults.
+ */
+router.get(
+  '/:id/commercial-policies',
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    requireUser(req);
+    const orgId = String(req.params.id);
+    const org = await getOrganizationById(orgId);
+    if (!org) {
+      throw new NotFoundError('Organization not found');
+    }
+
+    const customPolicies = (org.settings as Record<string, any>)?.commercial_policies;
+    const effective = getEffectiveCommercialPolicies(customPolicies);
+    res.json({ commercialPolicies: effective });
+  })
+);
+
+/**
+ * PUT /api/organizations/:id/commercial-policies
+ * Update commercial policies for an organization (Super Admin or Ally Admin of that org).
+ */
+router.put(
+  '/:id/commercial-policies',
+  requireRole('super_admin', 'ally_admin'),
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const orgId = String(req.params.id);
+    const callerRole = req.user?.role;
+    const callerOrgId = req.user?.orgId;
+
+    if (callerRole === 'ally_admin' && callerOrgId && callerOrgId !== orgId) {
+      throw new ForbiddenError('Solo puede configurar las políticas comerciales de su propia correduría');
+    }
+
+    const org = await getOrganizationById(orgId);
+    if (!org) {
+      throw new NotFoundError('Organization not found');
+    }
+
+    const incoming = req.body?.commercialPolicies as Partial<CommercialPolicies> | undefined;
+    const effective = getEffectiveCommercialPolicies(incoming);
+
+    const newSettings = {
+      ...(org.settings || {}),
+      commercial_policies: effective,
+    };
+
+    await updateOrganization(orgId, { settings: newSettings });
+
+    res.json({ success: true, commercialPolicies: effective });
+  })
+);
+
+/**
  * PUT /api/organizations/:id
- * Update an organization (Super Admin only).
+ * Update an organization (Super Admin, or Ally Admin for their own org).
  */
 router.put(
   '/:id',
-  requireRole('super_admin'),
+  requireRole('super_admin', 'ally_admin'),
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const orgId = String(req.params.id);
-    const { name, nit, contact_email, phone, status, settings } = req.body;
+    const callerRole = req.user?.role;
+    const callerOrgId = req.user?.orgId;
+
+    if (callerRole === 'ally_admin' && callerOrgId && callerOrgId !== orgId) {
+      throw new ForbiddenError('No está autorizado para modificar otra correduría aliada');
+    }
 
     const existing = await getOrganizationById(orgId);
     if (!existing) {
       throw new NotFoundError('Organization not found');
     }
 
+    const { name, nit, contact_email, phone, status, settings } = req.body;
+
     const updated = await updateOrganization(orgId, {
       name,
       nit,
       contact_email,
       phone,
-      status,
-      settings,
+      ...(callerRole === 'super_admin' && status ? { status } : {}),
+      settings: settings !== undefined ? settings : existing.settings,
     });
 
     res.json(updated);

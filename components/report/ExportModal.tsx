@@ -45,6 +45,21 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
     try {
       setExportingExcel(exportMode);
+      const currentUser = await storageService.getCurrentUser();
+      const brokerInfo = currentUser
+        ? {
+            name: currentUser.name,
+            intermediaryName: currentUser.intermediaryName,
+            registrationNumber:
+              currentUser.registrationNumber || currentUser.agentDetails?.registrationNumber,
+            phone: currentUser.agentDetails?.phone,
+            email: currentUser.email,
+            address: currentUser.address || currentUser.agentDetails?.address,
+            city: currentUser.city || currentUser.agentDetails?.city,
+            commercialPolicies: currentUser.commercialPolicies,
+          }
+        : undefined;
+
       const response = await apiClient.fetch(`/analysis/${analysisId}/export`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -53,6 +68,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           quotes: report.quotes,
           matrix: report.matrix,
           exportMode,
+          brokerInfo,
         }),
       });
 
@@ -151,6 +167,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                       address: user.address || user.agentDetails?.address,
                       city: user.city || user.agentDetails?.city,
                       logoUrl: user.logoUrl || user.agentDetails?.logoUrl,
+                      commercialPolicies: user.commercialPolicies,
                     }
                   : undefined;
 
@@ -161,6 +178,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                     logoBase64: brokerInfo?.logoUrl || pdfOptions.logo,
                     primaryColor: pdfOptions.color,
                     brokerInfo,
+                    commercialPolicies: user?.commercialPolicies,
                   },
                   cellNotes as unknown as Record<string, string>
                 );
