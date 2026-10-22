@@ -94,10 +94,14 @@ export const generatePDF = (
   const PRIMARY_COLOR: [number, number, number] = options?.primaryColor || [79, 70, 229]; // Default Indigo
   const LIGHT_GRAY: [number, number, number] = [241, 245, 249]; // Slate 100
 
+  const effectivePolicies = getEffectiveCommercialPolicies(
+    options?.commercialPolicies || options?.brokerInfo?.commercialPolicies
+  );
+
   // Helper to add Title Header on new pages
   const addHeader = (title: string) => {
     doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-    doc.rect(0, 0, 210, 30, 'F');
+    doc.rect(0, 0, 210, 32, 'F');
 
     // Logo Logic (Broker logoUrl or default logoBase64)
     const logoToUse = options?.brokerInfo?.logoUrl || options?.logoBase64;
@@ -105,25 +109,66 @@ export const generatePDF = (
       try {
         const format =
           logoToUse.includes('image/jpeg') || logoToUse.includes('image/jpg') ? 'JPEG' : 'PNG';
-        doc.addImage(logoToUse, format, 160, 4, 35, 22, undefined, 'FAST');
+        doc.addImage(logoToUse, format, 160, 4, 36, 24, undefined, 'FAST');
       } catch (e) {
         console.warn('Failed to add logo', e);
       }
+    } else {
+      // Stylized Ally Corporate Emblem Badge
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(158, 4, 38, 24, 2, 2, 'F');
+
+      const emblemName = (options?.brokerInfo?.intermediaryName || 'CORREDURÍA').slice(0, 14);
+      doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+      doc.circle(167, 16, 5, 'F');
+      doc.setFontSize(6.5);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text(emblemName.slice(0, 3).toUpperCase(), 167, 18, { align: 'center' });
+
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+      doc.text(emblemName, 175, 13);
+
+      doc.setFontSize(6);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 116, 139);
+      doc.text('ALIADO DE SEGUROS', 175, 17.5);
+      doc.text('VIGILADO SFC', 175, 21.5);
     }
 
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(16);
+    doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     const displayTitle = options?.customTitle || `Reporte Ejecutivo de Seguros · ${regProfile.displayName}`;
-    doc.text(displayTitle.substring(0, 50), 14, 18);
+    doc.text(displayTitle.substring(0, 52), 14, 13);
 
-    doc.setFontSize(8.5);
+    doc.setFontSize(7.5);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Ramo: ${regProfile.displayName}  |  Informe generado el ${today}`, 14, 25);
+    doc.text(`Ramo: ${regProfile.displayName}  |  Expedición: ${today}`, 14, 18.5);
+
+    const brokerTitle =
+      options?.brokerInfo?.intermediaryName || options?.brokerInfo?.name || 'Correduría Aliada';
+    const brokerAdvisor = options?.brokerInfo?.name ? `Asesor: ${options.brokerInfo.name}` : '';
+    const brokerReg = options?.brokerInfo?.registrationNumber
+      ? `Matrícula SFC: ${options.brokerInfo.registrationNumber}`
+      : '';
+    const headerLine2 = [brokerTitle, brokerAdvisor, brokerReg].filter(Boolean).join('  |  ');
+    doc.text(headerLine2.substring(0, 85), 14, 24);
+
+    const brokerPhone = options?.brokerInfo?.phone ? `Tel: ${options.brokerInfo.phone}` : '';
+    const brokerEmail = options?.brokerInfo?.email ? `Email: ${options.brokerInfo.email}` : '';
+    const brokerCity = options?.brokerInfo?.city ? `Ciudad: ${options.brokerInfo.city}` : '';
+    const headerLine3 = [brokerPhone, brokerEmail, brokerCity].filter(Boolean).join('  |  ');
+    if (headerLine3) {
+      doc.setFontSize(6.8);
+      doc.text(headerLine3.substring(0, 85), 14, 28.5);
+    }
 
     // Reset text color for body
     doc.setTextColor(30, 41, 59);
-    return 36; // New Y position
+    return 38; // New Y position
   };
 
   const quotes = report.quotes || [];
@@ -153,41 +198,56 @@ export const generatePDF = (
   // --- PAGE 1: RESUMEN EJECUTIVO Y PERFIL DEL RIESGO ---
   let currentY = addHeader('Resumen Ejecutivo y Ficha Técnica');
 
-  // Intermediary / Broker Banner if available
+  // Intermediary / Broker Banner
   const broker = options?.brokerInfo;
-  if (broker && (broker.intermediaryName || broker.name)) {
-    doc.setFillColor(248, 250, 252);
-    doc.setDrawColor(226, 232, 240);
-    doc.roundedRect(14, currentY, 182, 20, 2, 2, 'FD');
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(226, 232, 240);
+  doc.roundedRect(14, currentY, 182, 26, 2, 2, 'FD');
 
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-    doc.text(broker.intermediaryName || 'INTERMEDIARIO DE SEGUROS', 18, currentY + 6.5);
+  const brokerName = broker?.intermediaryName || 'CORREDURÍA DE SEGUROS ALIADA';
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+  doc.text(brokerName, 18, currentY + 6.5);
 
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(71, 85, 105);
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(71, 85, 105);
 
-    const line1 = [
-      broker.name ? `Asesor: ${broker.name}` : null,
-      broker.registrationNumber ? `Reg. SFC: ${broker.registrationNumber}` : null,
-    ]
-      .filter(Boolean)
-      .join('  |  ');
-    doc.text(line1 || '', 18, currentY + 12);
+  const line1 = [
+    broker?.name ? `Asesor Responsable: ${broker.name}` : 'Asesor Técnico de Seguros',
+    broker?.registrationNumber
+      ? `Matrícula SFC: ${broker.registrationNumber}`
+      : 'Inscripción Vigente SFC',
+  ].join('  |  ');
+  doc.text(line1, 18, currentY + 11.5);
 
-    const line2 = [
-      broker.phone ? `Tel: ${broker.phone}` : null,
-      broker.email ? `Email: ${broker.email}` : null,
-      broker.city ? `Ciudad: ${broker.city}` : null,
-    ]
-      .filter(Boolean)
-      .join('  |  ');
-    doc.text(line2 || '', 18, currentY + 16.5);
+  const line2 = [
+    broker?.phone ? `Tel: ${broker.phone}` : null,
+    broker?.email ? `Email: ${broker.email}` : null,
+    broker?.address ? `Dir: ${broker.address}` : null,
+    broker?.city ? `(${broker.city})` : null,
+  ]
+    .filter(Boolean)
+    .join('  |  ');
+  doc.text(line2 || 'Contacto comercial disponible', 18, currentY + 16);
 
-    currentY += 25;
+  const line3 = `Vigencia Oferta: ${effectivePolicies.offerValidityDays} días calendario  |  Intermediación regulada por el Estatuto Orgánico del Sistema Financiero`;
+  doc.setFontSize(7);
+  doc.setTextColor(100, 116, 139);
+  doc.text(line3, 18, currentY + 21);
+
+  // If broker has logo, draw thumbnail on right of card
+  const logoToUse = options?.brokerInfo?.logoUrl || options?.logoBase64;
+  if (logoToUse) {
+    try {
+      const format =
+        logoToUse.includes('image/jpeg') || logoToUse.includes('image/jpg') ? 'JPEG' : 'PNG';
+      doc.addImage(logoToUse, format, 156, currentY + 3, 36, 20, undefined, 'FAST');
+    } catch (_e) {}
   }
+
+  currentY += 31;
 
   // Ficha Técnica del Riesgo / Copropiedad
   doc.setFillColor(241, 245, 249);
@@ -240,31 +300,65 @@ export const generatePDF = (
 
   // Resumen comparativo de aseguradoras
   quotes.forEach((q) => {
-    if (currentY > 245) {
+    if (currentY > 235) {
       doc.addPage();
       currentY = addHeader('Resumen Ejecutivo (Cont.)');
     }
 
     const profile = findColombianInsurerProfile(q.insurerName);
     const [r, g, b] = hexToRgb(profile?.primaryColor || '#0033A0');
-    doc.setFillColor(r, g, b);
-    doc.roundedRect(14, currentY, 18, 8, 2, 2, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255);
-    doc.text(profile?.monogram || q.insurerName.slice(0, 3).toUpperCase(), 16, currentY + 5.5);
+    const [ar, ag, ab] = hexToRgb(profile?.accentColor || '#38BDF8');
 
+    // Insurer Corporate Brand Emblem
+    doc.setFillColor(r, g, b);
+    doc.roundedRect(14, currentY, 26, 12, 2, 2, 'F');
+    doc.setFillColor(ar, ag, ab);
+    doc.rect(14, currentY + 10.5, 26, 1.5, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(255, 255, 255);
+    const monogram = profile?.monogram || q.insurerName.slice(0, 4).toUpperCase();
+    doc.text(monogram, 27, currentY + 7, { align: 'center' });
+
+    // Insurer Corporate Identity Card
     doc.setFillColor(248, 250, 252);
-    doc.roundedRect(34, currentY, 162, 8, 2, 2, 'F');
+    doc.setDrawColor(226, 232, 240);
+    doc.roundedRect(44, currentY, 152, 12, 2, 2, 'FD');
+
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
     doc.setTextColor(15, 23, 42);
-    doc.text(
-      `${q.insurerName} ${profile?.nit ? `• NIT: ${profile.nit}` : ''}  |  Score Técnico: ${q.score || 0}/100`,
-      37,
-      currentY + 5.5
-    );
-    currentY += 12;
+    doc.text(q.insurerName, 48, currentY + 5.5);
+
+    const officialSub = profile?.officialName ? `(${profile.officialName})` : '';
+    if (officialSub) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(100, 116, 139);
+      doc.text(officialSub.substring(0, 45), 50 + doc.getTextWidth(q.insurerName), currentY + 5.5);
+    }
+
+    const subDetails = [
+      profile?.nit ? `NIT: ${profile.nit}` : null,
+      profile?.marketPosition || 'Entidad Aseguradora Vigilada SFC',
+    ]
+      .filter(Boolean)
+      .join('  |  ');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(71, 85, 105);
+    doc.text(subDetails, 48, currentY + 9.5);
+
+    // Score Pill Badge
+    doc.setFillColor(r, g, b);
+    doc.roundedRect(158, currentY + 2.5, 34, 7, 1.5, 1.5, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.text(`Score: ${q.score || 0}/100`, 175, currentY + 7, { align: 'center' });
+
+    currentY += 16;
 
     doc.setFontSize(8.5);
     doc.setFont('helvetica', 'bold');
@@ -274,7 +368,10 @@ export const generatePDF = (
 
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(71, 85, 105);
-    const clientText = doc.splitTextToSize(q.clientAnalysis || 'Cobertura conforme a condiciones cotizadas.', 175);
+    const clientText = doc.splitTextToSize(
+      q.clientAnalysis || 'Cobertura conforme a condiciones cotizadas.',
+      175
+    );
     doc.text(clientText, 16, currentY);
     currentY += clientText.length * 4 + 4;
 
@@ -285,7 +382,10 @@ export const generatePDF = (
 
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(71, 85, 105);
-    const techText = doc.splitTextToSize(q.technicalAnalysis || 'Sin observaciones técnicas adicionales.', 175);
+    const techText = doc.splitTextToSize(
+      q.technicalAnalysis || 'Sin observaciones técnicas adicionales.',
+      175
+    );
     doc.text(techText, 16, currentY);
     currentY += techText.length * 4 + 8;
   });
@@ -294,7 +394,10 @@ export const generatePDF = (
   doc.addPage();
   currentY = addHeader(`Matriz Comparativa de Coberturas (${regProfile.displayName})`);
 
-  const insurers = quotes.map((q) => q.insurerName || 'Aseguradora');
+  const insurers = quotes.map((q) => {
+    const prof = findColombianInsurerProfile(q.insurerName);
+    return prof?.monogram ? `[${prof.monogram}]\n${q.insurerName}` : q.insurerName;
+  });
   const tableHead = [['Amparo / Cobertura y Alcance Legal', ...insurers]];
   const tableBody: string[][] = [];
 
@@ -373,10 +476,24 @@ export const generatePDF = (
     head: tableHead,
     body: tableBody,
     theme: 'grid',
-    headStyles: { fillColor: PRIMARY_COLOR, fontSize: 8.5, halign: 'center' },
+    headStyles: { fillColor: PRIMARY_COLOR, fontSize: 8, halign: 'center' },
     bodyStyles: { fontSize: 7.5, cellPadding: 2.5, valign: 'middle' },
     columnStyles: { 0: { fontStyle: 'bold', cellWidth: 62 } },
     alternateRowStyles: { fillColor: LIGHT_GRAY },
+    didParseCell: (data) => {
+      if (data.section === 'head' && data.column.index > 0 && data.column.index <= quotes.length) {
+        const q = quotes[data.column.index - 1];
+        if (q) {
+          const prof = findColombianInsurerProfile(q.insurerName);
+          if (prof?.primaryColor) {
+            data.cell.styles.fillColor = hexToRgb(prof.primaryColor);
+            data.cell.styles.textColor = [255, 255, 255];
+            data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.halign = 'center';
+          }
+        }
+      }
+    },
   });
 
   // --- PAGE 3: ANÁLISIS DE DEDUCIBLES Y GUÍA PEDAGÓGICA ---
@@ -430,6 +547,20 @@ export const generatePDF = (
       bodyStyles: { fontSize: 7.5, cellPadding: 2.5 },
       columnStyles: { 0: { fontStyle: 'bold', cellWidth: 45 } },
       alternateRowStyles: { fillColor: LIGHT_GRAY },
+      didParseCell: (data) => {
+        if (data.section === 'head' && data.column.index > 0 && data.column.index <= quotes.length) {
+          const q = quotes[data.column.index - 1];
+          if (q) {
+            const prof = findColombianInsurerProfile(q.insurerName);
+            if (prof?.primaryColor) {
+              data.cell.styles.fillColor = hexToRgb(prof.primaryColor);
+              data.cell.styles.textColor = [255, 255, 255];
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.halign = 'center';
+            }
+          }
+        }
+      },
     });
     currentY = (doc as any).lastAutoTable.finalY + 10;
   }
@@ -483,18 +614,24 @@ export const generatePDF = (
 
     const profile = findColombianInsurerProfile(q.insurerName);
     const [r, g, b] = hexToRgb(profile?.primaryColor || '#0033A0');
+    const [ar, ag, ab] = hexToRgb(profile?.accentColor || '#38BDF8');
     doc.setFillColor(r, g, b);
-    doc.roundedRect(14, currentY, 12, 6, 1.5, 1.5, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7);
-    doc.setTextColor(255, 255, 255);
-    doc.text(profile?.monogram || q.insurerName.slice(0, 3).toUpperCase(), 15.5, currentY + 4.2);
+    doc.roundedRect(14, currentY, 20, 8, 1.5, 1.5, 'F');
+    doc.setFillColor(ar, ag, ab);
+    doc.rect(14, currentY + 7, 20, 1, 'F');
 
-    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(255, 255, 255);
+    doc.text(profile?.monogram || q.insurerName.slice(0, 4).toUpperCase(), 24, currentY + 5.2, {
+      align: 'center',
+    });
+
+    doc.setFontSize(10.5);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(15, 23, 42);
-    doc.text(`${q.insurerName} · Score Técnico: ${q.score}/100`, 30, currentY + 4.8);
-    currentY += 9;
+    doc.text(`${q.insurerName} · Score Técnico: ${q.score}/100`, 38, currentY + 5.5);
+    currentY += 10;
 
     if (q.alerts && q.alerts.length > 0) {
       q.alerts.forEach((alert) => {
@@ -682,9 +819,6 @@ export const generatePDF = (
   doc.addPage();
   let policyY = addHeader('Políticas Comerciales y Condiciones de la Oferta');
 
-  const effectivePolicies = getEffectiveCommercialPolicies(
-    options?.commercialPolicies || options?.brokerInfo?.commercialPolicies
-  );
   const structuredPolicies = getStructuredCommercialPolicyEntries(effectivePolicies);
 
   doc.setFontSize(10);
@@ -746,10 +880,6 @@ export const generatePDF = (
   doc.setFontSize(8.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(30, 41, 59);
-  const brokerName =
-    options?.brokerInfo?.intermediaryName ||
-    options?.brokerInfo?.name ||
-    'Corredor / Intermediario de Seguros Aliado';
   doc.text(`Intermediario Responsable: ${brokerName}`, 18, afterPolicyY + 7);
 
   doc.setFontSize(7.5);
@@ -767,13 +897,39 @@ export const generatePDF = (
   const splitNotice = doc.splitTextToSize(legalNotice, 174);
   doc.text(splitNotice, 18, afterPolicyY + 19);
 
-  // Numeración de páginas
+  // --- ENRICHED FOOTER ON EVERY PAGE ---
   const pageCount = doc.getNumberOfPages();
+  const brokerDisplayName =
+    options?.brokerInfo?.intermediaryName ||
+    options?.brokerInfo?.name ||
+    'Correduría de Seguros Aliada';
+  const brokerFooterContact = [
+    options?.brokerInfo?.phone ? `Tel: ${options.brokerInfo.phone}` : '',
+    options?.brokerInfo?.email || '',
+    options?.brokerInfo?.city || '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    doc.setFontSize(7.5);
-    doc.setTextColor(150, 150, 150);
-    doc.text(`Página ${i} de ${pageCount}`, 190, 290, { align: 'right' });
+    // Subtle top border for footer
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.4);
+    doc.line(14, 284, 196, 284);
+
+    // Left: Ally branding & contact
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(51, 65, 85);
+    const leftText = `${brokerDisplayName}${brokerFooterContact ? ` · ${brokerFooterContact}` : ''}`;
+    doc.text(leftText.substring(0, 95), 14, 288.5);
+
+    // Right: Page number and system mark
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(148, 163, 184);
+    doc.text(`Página ${i} de ${pageCount}  |  Comparador CSA`, 196, 288.5, { align: 'right' });
   }
 
   const safeDomain = (domain || 'Seguros').replace(/[^a-zA-Z0-9_-]/g, '_');

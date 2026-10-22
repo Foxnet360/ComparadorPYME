@@ -102,6 +102,7 @@ export interface BrokerInfo {
   email?: string;
   address?: string;
   city?: string;
+  logoUrl?: string;
   commercialPolicies?: CommercialPolicies;
 }
 
@@ -193,11 +194,48 @@ export async function generateExcelBuffer(
     quotes[0]!
   );
 
+  // Intermediary / Ally Commercial Details
+  const brokerName = brokerInfo?.intermediaryName || brokerInfo?.name || 'Correduría de Seguros Aliada';
+  const brokerAdvisor = brokerInfo?.name || 'Asesor Técnico de Seguros';
+  const brokerPhone = brokerInfo?.phone || 'Línea de Asesoría';
+  const brokerEmail = brokerInfo?.email || 'contacto@corredor.com';
+  const brokerReg = brokerInfo?.registrationNumber || 'Inscripción Vigente SFC';
+  const brokerAddress = brokerInfo?.address || '';
+  const brokerCity = brokerInfo?.city || 'Colombia';
+  const todayStr = new Date().toLocaleDateString('es-ES');
+
+  const applySheetHeaderFooter = (ws: ExcelJS.Worksheet, sheetTitle: string) => {
+    ws.headerFooter = {
+      oddHeader: `&L&B${brokerName}&C&"Segoe UI,Bold"${sheetTitle.toUpperCase()}&R${todayStr}`,
+      oddFooter: `&L${brokerName} · Tel: ${brokerPhone} · ${brokerEmail}&R&P de &N`,
+    };
+  };
+
   // -------------------------------------------------------------
   // Pestaña 1: Portada y Resumen General (Look & Feel Ejecutivo)
   // -------------------------------------------------------------
   const portada = workbook.addWorksheet('Portada y Resumen General');
   portada.views = [{ showGridLines: false }];
+  applySheetHeaderFooter(portada, 'Portada y Resumen General');
+
+  // Embed broker logo if provided as base64
+  if (brokerInfo?.logoUrl && brokerInfo.logoUrl.includes('base64,')) {
+    try {
+      const base64Data = brokerInfo.logoUrl.split('base64,')[1];
+      if (base64Data) {
+        const imageId = workbook.addImage({
+          base64: base64Data,
+          extension: brokerInfo.logoUrl.includes('image/jpeg') ? 'jpeg' : 'png',
+        });
+        portada.addImage(imageId, {
+          tl: { col: 4, row: 1 },
+          ext: { width: 130, height: 42 },
+        });
+      }
+    } catch (e) {
+      console.warn('Failed to add broker logo to Excel', e);
+    }
+  }
 
   portada.getColumn(1).width = 4;
   portada.getColumn(2).width = 28;
@@ -273,10 +311,11 @@ export async function generateExcelBuffer(
     bold: true,
     color: { argb: 'FF1E3A8A' },
   };
-  addInfoRow('Corredoría / Agencia:', brokerInfo?.intermediaryName || 'Agencia Aliada', 18);
-  addInfoRow('Asesor Responsable:', brokerInfo?.name || 'Asesor Técnico de Seguros', 19);
-  addInfoRow('Nº Matrícula / Registro:', brokerInfo?.registrationNumber || 'No especificado', 20);
-  addInfoRow('Contacto / Correo:', brokerInfo?.email || 'contacto@corredor.com', 21);
+  addInfoRow('Correduría / Agencia:', brokerName, 18);
+  addInfoRow('Asesor Responsable:', brokerAdvisor, 19);
+  addInfoRow('Nº Matrícula / Registro SFC:', brokerReg, 20);
+  addInfoRow('Contacto / Teléfono:', `${brokerPhone} | ${brokerEmail}`, 21);
+  addInfoRow('Ubicación y Sede:', `${brokerAddress ? brokerAddress + ' · ' : ''}${brokerCity}`, 22);
 
   // Scorecard Multidimensional (0 - 100)
   portada.getCell('B23').value = 'SCORECARD COMPARATIVO DE AUDITORÍA (0 - 100)';
@@ -296,9 +335,13 @@ export async function generateExcelBuffer(
   quotes.forEach((q, idx) => {
     const colLetter = String.fromCharCode(68 + idx);
     const hCell = portada.getCell(`${colLetter}24`);
-    hCell.value = q.insurerName.toUpperCase();
-    hCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-    hCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+    const profile = findColombianInsurerProfile(q.insurerName);
+    const argbColor = profile?.primaryColor
+      ? 'FF' + profile.primaryColor.replace('#', '')
+      : 'FF1E3A8A';
+    hCell.value = `${profile?.monogram ? `[${profile.monogram}] ` : ''}${q.insurerName.toUpperCase()}`;
+    hCell.font = { name: FONT_NAME, size: 9.5, bold: true, color: { argb: 'FFFFFFFF' } };
+    hCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: argbColor } };
     hCell.alignment = { horizontal: 'center' };
   });
 
@@ -427,6 +470,7 @@ export async function generateExcelBuffer(
   // -------------------------------------------------------------
   const coveragesSheet = workbook.addWorksheet('Matriz Coberturas');
   coveragesSheet.views = [{ showGridLines: false }];
+  applySheetHeaderFooter(coveragesSheet, 'Matriz Coberturas');
 
   coveragesSheet.getColumn(1).width = 45;
   for (let i = 0; i < quotes.length; i++) {
@@ -448,9 +492,13 @@ export async function generateExcelBuffer(
   quotes.forEach((q, i) => {
     const insHeader = coveragesSheet.getCell(4, i + 2);
     insHeader.value = q.insurerName.toUpperCase();
+    const profile = findColombianInsurerProfile(q.insurerName);
+    const argbColor = profile?.primaryColor
+      ? 'FF' + profile.primaryColor.replace('#', '')
+      : 'FF1E3A8A';
     insHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-    insHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
-    insHeader.alignment = { horizontal: 'center' };
+    insHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: argbColor } };
+    insHeader.alignment = { horizontal: 'center', vertical: 'middle' };
   });
 
   if (hasNotes) {
@@ -628,6 +676,7 @@ export async function generateExcelBuffer(
   // -------------------------------------------------------------
   const deductiblesSheet = workbook.addWorksheet('Matriz Deducibles');
   deductiblesSheet.views = [{ showGridLines: false }];
+  applySheetHeaderFooter(deductiblesSheet, 'Matriz Deducibles');
 
   deductiblesSheet.getColumn(1).width = 45;
   for (let i = 0; i < quotes.length; i++) {
@@ -652,9 +701,13 @@ export async function generateExcelBuffer(
   quotes.forEach((q, i) => {
     const insHeader = deductiblesSheet.getCell(4, i + 2);
     insHeader.value = q.insurerName.toUpperCase();
+    const profile = findColombianInsurerProfile(q.insurerName);
+    const argbColor = profile?.primaryColor
+      ? 'FF' + profile.primaryColor.replace('#', '')
+      : 'FF1E3A8A';
     insHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-    insHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
-    insHeader.alignment = { horizontal: 'center' };
+    insHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: argbColor } };
+    insHeader.alignment = { horizontal: 'center', vertical: 'middle' };
   });
 
   if (mode === 'client') {
@@ -804,6 +857,7 @@ export async function generateExcelBuffer(
   // -------------------------------------------------------------
   const financialsSheet = workbook.addWorksheet('Primas y Costos');
   financialsSheet.views = [{ showGridLines: false }];
+  applySheetHeaderFooter(financialsSheet, 'Primas y Costos');
 
   financialsSheet.getColumn(1).width = 44;
   for (let i = 0; i < quotes.length; i++) {
@@ -824,9 +878,13 @@ export async function generateExcelBuffer(
   quotes.forEach((q, i) => {
     const insHeader = financialsSheet.getCell(4, i + 2);
     insHeader.value = q.insurerName.toUpperCase();
+    const profile = findColombianInsurerProfile(q.insurerName);
+    const argbColor = profile?.primaryColor
+      ? 'FF' + profile.primaryColor.replace('#', '')
+      : 'FF1E3A8A';
     insHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-    insHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
-    insHeader.alignment = { horizontal: 'center' };
+    insHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: argbColor } };
+    insHeader.alignment = { horizontal: 'center', vertical: 'middle' };
   });
 
   const financialMatrixRows = matrix.filter(
@@ -1087,6 +1145,7 @@ export async function generateExcelBuffer(
   // -------------------------------------------------------------
   const riskSheet = workbook.addWorksheet('Análisis de Riesgos');
   riskSheet.views = [{ showGridLines: false }];
+  applySheetHeaderFooter(riskSheet, 'Análisis de Riesgos');
 
   riskSheet.getColumn(1).width = 24;
   riskSheet.getColumn(2).width = 25;
@@ -1296,6 +1355,7 @@ export async function generateExcelBuffer(
   // -------------------------------------------------------------
   const legalSheet = workbook.addWorksheet('Respaldo Normativo y Legal');
   legalSheet.views = [{ showGridLines: false }];
+  applySheetHeaderFooter(legalSheet, 'Respaldo Normativo y Legal');
 
   legalSheet.getColumn(1).width = 28;
   legalSheet.getColumn(2).width = 32;
@@ -1402,6 +1462,7 @@ export async function generateExcelBuffer(
   // -------------------------------------------------------------
   const commercialPoliciesSheet = workbook.addWorksheet('Políticas Comerciales');
   commercialPoliciesSheet.views = [{ showGridLines: false }];
+  applySheetHeaderFooter(commercialPoliciesSheet, 'Políticas Comerciales');
 
   commercialPoliciesSheet.getColumn(1).width = 32;
   commercialPoliciesSheet.getColumn(2).width = 35;
@@ -1448,6 +1509,15 @@ export async function generateExcelBuffer(
 
     pRowIdx++;
   });
+
+  pRowIdx += 1;
+  commercialPoliciesSheet.getRow(pRowIdx).height = 24;
+  const brokerCardCell = commercialPoliciesSheet.getCell(pRowIdx, 1);
+  commercialPoliciesSheet.mergeCells(pRowIdx, 1, pRowIdx, 3);
+  brokerCardCell.value = `INTERMEDIARIO: ${brokerName} | ASESOR: ${brokerAdvisor} | REG. SFC: ${brokerReg} | TEL: ${brokerPhone} | EMAIL: ${brokerEmail}`;
+  brokerCardCell.font = { name: FONT_NAME, size: 9.5, bold: true, color: { argb: 'FF1E40AF' } };
+  brokerCardCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+  brokerCardCell.alignment = { vertical: 'middle', horizontal: 'left' };
 
   pRowIdx += 2;
   commercialPoliciesSheet.getRow(pRowIdx).height = 24;

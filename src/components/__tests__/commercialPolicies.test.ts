@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import * as ExcelJS from 'exceljs';
 import {
   DEFAULT_COMMERCIAL_POLICIES,
   getEffectiveCommercialPolicies,
@@ -135,6 +136,13 @@ describe('Commercial Policies Module', () => {
         {
           name: 'Carlos Corredor',
           intermediaryName: 'Andina de Seguros S.A.',
+          phone: '+57 300 123 4567',
+          email: 'contacto@andina.com',
+          registrationNumber: 'SFC-98765',
+          address: 'Calle 100 # 15-20',
+          city: 'Bogotá',
+          logoUrl:
+            'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
           commercialPolicies: customPolicies,
         },
         'pyme',
@@ -144,6 +152,39 @@ describe('Commercial Policies Module', () => {
 
       expect(buffer).toBeDefined();
       expect(buffer.length).toBeGreaterThan(1000);
+
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(buffer);
+
+      // Verify Header & Footer enriched with Ally commercial info
+      const portada = wb.getWorksheet('Portada y Resumen General');
+      expect(portada).toBeDefined();
+      expect(portada?.headerFooter.oddHeader).toContain('Andina de Seguros S.A.');
+      expect(portada?.headerFooter.oddFooter).toContain('+57 300 123 4567');
+
+      // Verify embedded logo image in workbook
+      expect(wb.model.media.length).toBeGreaterThanOrEqual(1);
+
+      // Verify Insurer corporate brand color fill on coverages sheet
+      const covSheet = wb.getWorksheet('Matriz Coberturas');
+      expect(covSheet).toBeDefined();
+      const insCell = covSheet?.getCell(4, 2);
+      expect(insCell?.value).toBe('SEGUROS BOLÍVAR');
+      expect((insCell?.fill as any)?.fgColor?.argb).toBe('FF00843D'); // Bolívar official green brand color
+
+      // Verify Políticas Comerciales sheet and commercial card
+      const polSheet = wb.getWorksheet('Políticas Comerciales');
+      expect(polSheet).toBeDefined();
+      let foundBrokerCard = false;
+      polSheet?.eachRow((row) => {
+        const val = String(row.getCell(1).value || '');
+        if (val.includes('INTERMEDIARIO: Andina de Seguros S.A.')) {
+          foundBrokerCard = true;
+          expect(val).toContain('SFC-98765');
+          expect(val).toContain('contacto@andina.com');
+        }
+      });
+      expect(foundBrokerCard).toBe(true);
     });
   });
 });
