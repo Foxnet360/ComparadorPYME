@@ -9,6 +9,8 @@ export type AppView =
   | 'LANDING'
   | 'LOGIN'
   | 'REGISTER'
+  | 'RESET_PASSWORD'
+  | 'LEGAL'
   | 'DASHBOARD'
   | 'ANALYZER'
   | 'REPORT'

@@ -6,12 +6,14 @@ import { PortfolioProvider } from './contexts/PortfolioContext';
 import LandingPage from './components/LandingPage';
 import LoginScreen from './components/LoginScreen';
 import RegisterScreen from './components/RegisterScreen';
+import ResetPasswordScreen from './components/ResetPasswordScreen';
+import LegalPage from './pages/LegalPage';
 import { AppHeader } from './components/layout/AppHeader';
 import { ViewLoadingFallback } from './components/layout/ViewLoadingFallback';
 import { useAnalysisFlow, type AppView } from './hooks/useAnalysisFlow';
 import { useAuthSession } from './hooks/useAuthSession';
 import AnalyzerPage from './pages/AnalyzerPage';
-import { AppStatus, type ExtendedUserProfile, type UserProfile } from './types';
+import { AppStatus, type ExtendedUserProfile } from './types';
 
 // Lazy load heavy pages and components
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
@@ -25,20 +27,16 @@ const ClauseAdmin = lazy(() => import('./components/ClauseAdmin'));
 const InsurerManager = lazy(() =>
   import('./components/InsurerManager').then((m) => ({ default: m.InsurerManager }))
 );
-// Renewal portfolio (renovacion-polizas PR-5): lazy-loaded to keep bundle lean (XC-3)
 const PortfolioPage = lazy(() => import('./pages/Portfolio'));
 const RenewalDetailPage = lazy(() => import('./pages/RenewalDetail'));
 
 const AppShell: React.FC = () => {
-  // Analyzer state and flow live in AnalysisContext via useAnalysisFlow.
   const { state, resetFlow, viewReport } = useAnalysisFlow();
-  // Session state lives in AuthContext, resolved by authService.
   const { currentUser, bootstrapped, updateUser, handleLogin, handleSessionLogout } =
     useAuthSession({
       onLogin: () => setCurrentView('DASHBOARD'),
       onLogout: () => setCurrentView('LANDING'),
     });
-  // Ephemeral UI state lives in UIContext.
   const {
     chatOpen,
     setChatOpen,
@@ -52,9 +50,12 @@ const AppShell: React.FC = () => {
   const [activeRenewalId, setActiveRenewalId] = useState<string | null>(null);
   const { status, report } = state;
 
-  // Navigate to dashboard once initial Supabase session resolution completes with active user.
   const handledBoot = useRef(false);
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash?.includes('type=recovery')) {
+      setCurrentView('RESET_PASSWORD');
+      return;
+    }
     if (!handledBoot.current && bootstrapped) {
       handledBoot.current = true;
       if (currentUser) setCurrentView('DASHBOARD');
@@ -81,26 +82,21 @@ const AppShell: React.FC = () => {
       <LandingPage
         onLoginClick={() => setCurrentView('LOGIN')}
         onRegisterClick={() => setCurrentView('REGISTER')}
+        onOpenLegal={() => setCurrentView('LEGAL')}
       />
     );
   }
-
   if (currentView === 'LOGIN') {
-    return (
-      <LoginScreen
-        onLoginSuccess={(user: UserProfile) => handleLogin(user)}
-        onRegisterClick={() => setCurrentView('REGISTER')}
-      />
-    );
+    return <LoginScreen onLoginSuccess={handleLogin} onRegisterClick={() => setCurrentView('REGISTER')} />;
   }
-
   if (currentView === 'REGISTER') {
-    return (
-      <RegisterScreen
-        onRegisterSuccess={(user: UserProfile) => handleLogin(user)}
-        onBackToLogin={() => setCurrentView('LOGIN')}
-      />
-    );
+    return <RegisterScreen onRegisterSuccess={handleLogin} onBackToLogin={() => setCurrentView('LOGIN')} />;
+  }
+  if (currentView === 'RESET_PASSWORD') {
+    return <ResetPasswordScreen onSuccess={() => setCurrentView('LOGIN')} onBackToLogin={() => setCurrentView('LOGIN')} />;
+  }
+  if (currentView === 'LEGAL') {
+    return <LegalPage onBack={() => setCurrentView(currentUser ? 'DASHBOARD' : 'LANDING')} />;
   }
 
   const extendedUser = currentUser as unknown as ExtendedUserProfile | null;
@@ -121,59 +117,41 @@ const AppShell: React.FC = () => {
         onOpenClauseAdmin={() => setShowClauseAdmin(true)}
         onToggleChat={() => setChatOpen(!chatOpen)}
         onOpenProfile={() => setShowProfile(true)}
+        onOpenLegal={() => setCurrentView('LEGAL')}
         onLogout={handleLogout}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {currentView === 'CLIENTS' && (
           <Suspense fallback={<ViewLoadingFallback />}>
-            <ClientsPage
-              onSelectClientForAudit={() => setCurrentView('ANALYZER')}
-              onViewReport={() => setCurrentView('REPORT')}
-            />
+            <ClientsPage onSelectClientForAudit={() => setCurrentView('ANALYZER')} onViewReport={() => setCurrentView('REPORT')} />
           </Suspense>
         )}
-
         {currentView === 'PORTFOLIO' && (
           <Suspense fallback={<ViewLoadingFallback />}>
             <PortfolioProvider>
-              <PortfolioPage
-                onOpenRenewal={(renewalId) => {
-                  setActiveRenewalId(renewalId);
-                  setCurrentView('RENEWAL_DETAIL');
-                }}
-              />
+              <PortfolioPage onOpenRenewal={(id) => { setActiveRenewalId(id); setCurrentView('RENEWAL_DETAIL'); }} />
             </PortfolioProvider>
           </Suspense>
         )}
-
         {currentView === 'RENEWAL_DETAIL' && activeRenewalId && (
           <Suspense fallback={<ViewLoadingFallback />}>
-            <RenewalDetailPage
-              renewalId={activeRenewalId}
-              onBack={() => setCurrentView('PORTFOLIO')}
-            />
+            <RenewalDetailPage renewalId={activeRenewalId} onBack={() => setCurrentView('PORTFOLIO')} />
           </Suspense>
         )}
-
         {currentView === 'DASHBOARD' && (
           <Suspense fallback={<ViewLoadingFallback />}>
             <DashboardPage
               onNewAnalysis={() => setCurrentView('ANALYZER')}
-              onViewReport={(existingReport) => {
-                viewReport(existingReport);
-                setCurrentView('REPORT');
-              }}
+              onViewReport={(rep) => { viewReport(rep); setCurrentView('REPORT'); }}
             />
           </Suspense>
         )}
-
         {currentView === 'ANALYTICS' && (
           <Suspense fallback={<ViewLoadingFallback />}>
             <AnalyticsPage onBackToDashboard={() => setCurrentView('DASHBOARD')} />
           </Suspense>
         )}
-
         {currentView === 'USERS' && (
           <Suspense fallback={<ViewLoadingFallback />}>
             <UsersPage
@@ -183,47 +161,31 @@ const AppShell: React.FC = () => {
             />
           </Suspense>
         )}
-
         {currentView === 'INSURERS' && (
           <Suspense fallback={<ViewLoadingFallback />}>
             <InsurerManager onBack={() => setCurrentView('ANALYZER')} />
           </Suspense>
         )}
-
         {currentView === 'ANALYZER' && status !== AppStatus.COMPLETED && (
           <AnalyzerPage onAnalysisComplete={() => setCurrentView('REPORT')} />
         )}
-
         {currentView === 'REPORT' && report && (
-          <ReportPage
-            onBackToDashboard={() => setCurrentView('DASHBOARD')}
-            onNewAudit={() => setCurrentView('ANALYZER')}
-          />
+          <ReportPage onBackToDashboard={() => setCurrentView('DASHBOARD')} onNewAudit={() => setCurrentView('ANALYZER')} />
         )}
       </main>
 
       {showProfile && currentUser && (
         <Suspense fallback={null}>
-          <ProfileScreen
-            currentUser={currentUser}
-            onUpdateProfile={updateUser}
-            onClose={() => setShowProfile(false)}
-          />
+          <ProfileScreen currentUser={currentUser} onUpdateProfile={updateUser} onClose={() => setShowProfile(false)} />
         </Suspense>
       )}
-
       {showClauseAdmin && (
         <Suspense fallback={null}>
           <ClauseAdmin currentUser={currentUser} onClose={() => setShowClauseAdmin(false)} />
         </Suspense>
       )}
-
       <Suspense fallback={null}>
-        <ChatBot
-          reportContext={report || undefined}
-          isOpen={chatOpen}
-          onClose={() => setChatOpen(false)}
-        />
+        <ChatBot reportContext={report || undefined} isOpen={chatOpen} onClose={() => setChatOpen(false)} />
       </Suspense>
     </div>
   );

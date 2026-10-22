@@ -82,4 +82,27 @@ describe('authService local persistence removed (ERR-4)', () => {
 
     expect(globalThis.localStorage.getItem('seguro_app_user')).toBeNull();
   });
+
+  it('resetPassword calls supabase.auth.resetPasswordForEmail with dynamic redirect', async () => {
+    mocks.auth.resetPasswordForEmail.mockResolvedValue({ error: null });
+
+    await authService.resetPassword('test@seguros.com');
+
+    expect(mocks.auth.resetPasswordForEmail).toHaveBeenCalledWith(
+      'test@seguros.com',
+      expect.objectContaining({
+        redirectTo: expect.stringContaining('#type=recovery'),
+      })
+    );
+  });
+
+  it('updatePassword calls supabase.auth.updateUser with new password', async () => {
+    mocks.auth.updateUser.mockResolvedValue({ error: null });
+
+    await authService.updatePassword('newPassword123');
+
+    expect(mocks.auth.updateUser).toHaveBeenCalledWith({
+      password: 'newPassword123',
+    });
+  });
 });

@@ -9,6 +9,7 @@ import {
   BarChart3,
   RefreshCw,
   Building2,
+  Scale,
 } from 'lucide-react';
 import type { UserProfile } from '../../types';
 import type { AppView } from '../../hooks/useAnalysisFlow';
@@ -28,6 +29,7 @@ interface AppHeaderProps {
   onToggleChat: () => void;
   onOpenProfile: () => void;
   onLogout: () => void;
+  onOpenLegal?: () => void;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
@@ -45,6 +47,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onToggleChat,
   onOpenProfile,
   onLogout,
+  onOpenLegal,
 }) => {
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
@@ -151,6 +154,21 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           >
             <Library size={20} />
           </button>
+
+          {/* Legal and Compliance */}
+          {onOpenLegal && (
+            <button
+              onClick={onOpenLegal}
+              className={`p-2 rounded-full transition-colors ${
+                currentView === 'LEGAL'
+                  ? 'bg-indigo-100 text-indigo-700 font-semibold'
+                  : 'text-slate-500 hover:bg-indigo-100 hover:text-indigo-600'
+              }`}
+              title="Marco Legal y Privacidad (Ley 1581)"
+            >
+              <Scale size={20} />
+            </button>
+          )}
 
           {showChatButton && (
             <button

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { authService } from '../services/authService';
 import { UserProfile } from '../types';
+import { LegalModal } from './legal/LegalModal';
 
 interface RegisterScreenProps {
   onRegisterSuccess: (user: UserProfile) => void;
@@ -34,6 +35,11 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
     field: '',
     bio: '',
   });
+
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedDataPolicy, setAcceptedDataPolicy] = useState(false);
+  const [showLegalModal, setShowLegalModal] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState<'terms' | 'privacy' | 'security' | 'disclaimer'>('terms');
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -61,12 +67,22 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
       return;
     }
 
+    if (!acceptedTerms || !acceptedDataPolicy) {
+      setError(
+        'Debes aceptar los Términos y Condiciones y la Política de Tratamiento de Datos (Ley 1581 de 2012) para continuar.'
+      );
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const result = await authService.signUp(formData.email, formData.password, formData.name, {
         role: 'ally_admin',
         intermediaryName: formData.intermediaryName,
         nit: formData.nit,
         phone: formData.phone,
+        acceptedTerms,
+        acceptedDataPolicy,
       });
       setSuccessMessage(result.message);
     } catch (err: unknown) {
@@ -277,6 +293,73 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
               </div>
             </div>
 
+            {/* --- Consentimiento de Datos & Términos Legales (Habeas Data) --- */}
+            <div className="pt-4 border-t border-slate-100 space-y-3">
+              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <input
+                    id="accept-terms"
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 border-slate-300 mt-0.5 cursor-pointer"
+                  />
+                  <label htmlFor="accept-terms" className="text-xs text-slate-700 leading-normal select-none">
+                    He leído y acepto los{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLegalModalTab('terms');
+                        setShowLegalModal(true);
+                      }}
+                      className="text-indigo-600 hover:text-indigo-800 font-semibold underline cursor-pointer"
+                    >
+                      Términos y Condiciones de Uso
+                    </button>{' '}
+                    de Comparador CSA.
+                  </label>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <input
+                    id="accept-data-policy"
+                    type="checkbox"
+                    checked={acceptedDataPolicy}
+                    onChange={(e) => setAcceptedDataPolicy(e.target.checked)}
+                    className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 border-slate-300 mt-0.5 cursor-pointer"
+                  />
+                  <label htmlFor="accept-data-policy" className="text-xs text-slate-700 leading-normal select-none">
+                    Autorizo expresamente el tratamiento de mis datos personales conforme a la{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLegalModalTab('privacy');
+                        setShowLegalModal(true);
+                      }}
+                      className="text-indigo-600 hover:text-indigo-800 font-semibold underline cursor-pointer"
+                    >
+                      Política de Privacidad y Habeas Data (Ley 1581 de 2012)
+                    </button>
+                    .
+                  </label>
+                </div>
+
+                <div className="text-[11px] text-slate-500 pt-1 border-t border-slate-200/60 flex items-center justify-between">
+                  <span>Protección certificada de datos en Colombia</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLegalModalTab('security');
+                      setShowLegalModal(true);
+                    }}
+                    className="text-indigo-600 hover:text-indigo-800 font-medium underline"
+                  >
+                    Seguridad de la Información
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {error && (
               <div className="text-red-500 text-sm bg-red-50 p-3 rounded-lg border border-red-100 flex items-center">
                 <span className="font-medium mr-1">Error:</span> {error}
@@ -325,6 +408,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
           </form>
         </div>
       </div>
+
+      <LegalModal
+        isOpen={showLegalModal}
+        onClose={() => setShowLegalModal(false)}
+        initialTab={legalModalTab}
+      />
     </div>
   );
 };

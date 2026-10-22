@@ -30,16 +30,20 @@ import {
   Award,
   Briefcase,
 } from 'lucide-react';
+import { LegalModal } from './legal/LegalModal';
 
 interface LandingPageProps {
   onLoginClick: () => void;
   onRegisterClick: () => void;
+  onOpenLegal?: (tab?: 'terms' | 'privacy' | 'security' | 'disclaimer') => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick, onOpenLegal }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeDomainTab, setActiveDomainTab] = useState<string>('copropiedades');
+  const [showLegalModal, setShowLegalModal] = useState(false);
+  const [legalTab, setLegalTab] = useState<'terms' | 'privacy' | 'security' | 'disclaimer'>('terms');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -997,7 +1001,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
       {/* Footer */}
       <footer className="bg-slate-900 text-slate-400 border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
             {/* Brand */}
             <div className="lg:col-span-1">
               <div className="flex items-center space-x-2 mb-4">
@@ -1046,6 +1050,61 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
               </ul>
             </div>
 
+            {/* Legal y Cumplimiento */}
+            <div>
+              <h4 className="text-white font-semibold mb-4">Marco Legal</h4>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLegalTab('terms');
+                      setShowLegalModal(true);
+                    }}
+                    className="text-slate-400 hover:text-white transition-colors cursor-pointer text-left"
+                  >
+                    Términos y Condiciones
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLegalTab('privacy');
+                      setShowLegalModal(true);
+                    }}
+                    className="text-slate-400 hover:text-white transition-colors cursor-pointer text-left"
+                  >
+                    Privacidad (Ley 1581)
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLegalTab('security');
+                      setShowLegalModal(true);
+                    }}
+                    className="text-slate-400 hover:text-white transition-colors cursor-pointer text-left"
+                  >
+                    Seguridad de Información
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLegalTab('disclaimer');
+                      setShowLegalModal(true);
+                    }}
+                    className="text-slate-400 hover:text-white transition-colors cursor-pointer text-left"
+                  >
+                    Aviso Legal SFC
+                  </button>
+                </li>
+              </ul>
+            </div>
+
             {/* Contacto */}
             <div>
               <h4 className="text-white font-semibold mb-4">Contacto</h4>
@@ -1078,6 +1137,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
           </div>
         </div>
       </footer>
+
+      <LegalModal
+        isOpen={showLegalModal}
+        onClose={() => setShowLegalModal(false)}
+        initialTab={legalTab}
+      />
     </div>
   );
 };

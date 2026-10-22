@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { ShieldCheck, Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
 import { authService } from '../services/authService';
 import { UserProfile } from '../types';
+import { ForgotPasswordModal } from './ForgotPasswordModal';
+import { LegalModal } from './legal/LegalModal';
 
 interface LoginScreenProps {
   onLoginSuccess: (user: UserProfile) => void;
@@ -13,6 +15,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showLegalModal, setShowLegalModal] = useState(false);
+  const [legalTab, setLegalTab] = useState<'terms' | 'privacy' | 'security' | 'disclaimer'>('terms');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,9 +128,18 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700">
-                Contraseña
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label htmlFor="password" className="block text-sm font-medium text-slate-700">
+                  Contraseña
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-slate-400" />
@@ -244,9 +258,70 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
                 Contraseña demo para todas las cuentas: <span className="font-mono font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">csa12345</span>
               </p>
             </div>
+
+            {/* Legal Links Footer */}
+            <div className="mt-6 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-slate-400">
+              <button
+                type="button"
+                onClick={() => {
+                  setLegalTab('terms');
+                  setShowLegalModal(true);
+                }}
+                className="hover:text-indigo-600 underline cursor-pointer"
+              >
+                Términos de Uso
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setLegalTab('privacy');
+                  setShowLegalModal(true);
+                }}
+                className="hover:text-indigo-600 underline cursor-pointer"
+              >
+                Privacidad (Ley 1581)
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setLegalTab('security');
+                  setShowLegalModal(true);
+                }}
+                className="hover:text-indigo-600 underline cursor-pointer"
+              >
+                Seguridad
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setLegalTab('disclaimer');
+                  setShowLegalModal(true);
+                }}
+                className="hover:text-indigo-600 underline cursor-pointer"
+              >
+                Aviso Legal SFC
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+        defaultEmail={email}
+      />
+
+      {/* Legal Modal */}
+      <LegalModal
+        isOpen={showLegalModal}
+        onClose={() => setShowLegalModal(false)}
+        initialTab={legalTab}
+      />
     </div>
   );
 };

@@ -84,9 +84,12 @@ export const authService = {
       nit?: string;
       phone?: string;
       role?: 'super_admin' | 'ally_admin' | 'ally_technical';
+      acceptedTerms?: boolean;
+      acceptedDataPolicy?: boolean;
     }
   ): Promise<{ user: User | null; message: string }> => {
     const role = metadata?.role || 'ally_admin';
+    const nowIso = new Date().toISOString();
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -98,6 +101,9 @@ export const authService = {
           org_name: metadata?.intermediaryName || '',
           nit: metadata?.nit || '',
           phone: metadata?.phone || '',
+          terms_accepted_at: metadata?.acceptedTerms ? nowIso : null,
+          data_policy_accepted_at: metadata?.acceptedDataPolicy ? nowIso : null,
+          consent_version: '2026.1',
         },
       },
     });
@@ -191,8 +197,24 @@ export const authService = {
 
   // Enviar email de recuperación de contraseña
   resetPassword: async (email: string): Promise<void> => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://compapyme.baconhacks.com/reset-password',
+    const origin =
+      typeof window !== 'undefined' && window.location?.origin
+        ? window.location.origin
+        : 'https://comparadorpyme-production.up.railway.app';
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${origin}/#type=recovery`,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  },
+
+  // Actualizar contraseña del usuario activo (usado en flujo de recuperación)
+  updatePassword: async (newPassword: string): Promise<void> => {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
     });
 
     if (error) {
@@ -201,13 +223,15 @@ export const authService = {
   },
 
   // Escuchar cambios de autenticación
-  onAuthStateChange: (callback: (user: UserProfile | null) => void) => {
+  onAuthStateChange: (callback: (user: UserProfile | null, event?: string) => void) => {
     return supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
+      if (event === 'PASSWORD_RECOVERY') {
+        callback(session?.user ? profileFromUser(session.user) : null, 'PASSWORD_RECOVERY');
+      } else if (event === 'SIGNED_IN' && session?.user) {
         // ERR-4: no local persistence — the session lives in the client.
-        callback(profileFromUser(session.user));
+        callback(profileFromUser(session.user), 'SIGNED_IN');
       } else if (event === 'SIGNED_OUT') {
-        callback(null);
+        callback(null, 'SIGNED_OUT');
       }
     });
   },

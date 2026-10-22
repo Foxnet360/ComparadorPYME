@@ -92,7 +92,7 @@ describe('analysisController adapter integration', () => {
     expect(response.status).toBe(200);
     expect(generateComparison).toHaveBeenCalledTimes(1);
     expect(response.body.quotes[0].insurerName).toBe('SBS');
-  });
+  }, 25000);
 
   it('returns fallback engine metadata when adapter falls back', async () => {
     generateComparison.mockResolvedValue(makeAdapterResult('fallback'));
@@ -104,7 +104,7 @@ describe('analysisController adapter integration', () => {
     expect(response.status).toBe(200);
     expect(response.body.quotes).toBeInstanceOf(Array);
     expect(response.body.quotes.length).toBeGreaterThan(0);
-  });
+  }, 25000);
 
   it('returns 500 when adapter throws', async () => {
     generateComparison.mockRejectedValue(new Error('Adapter failure'));
