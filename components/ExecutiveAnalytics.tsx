@@ -196,6 +196,21 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
         )}
       </div>
 
+      {/* Simulated / Benchmark Data Indicator */}
+      {data?.isSimulated && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 px-4 flex items-center justify-between text-xs text-amber-900 shadow-xs">
+          <div className="flex items-center space-x-2">
+            <Activity size={16} className="text-amber-600 shrink-0" />
+            <span>
+              <strong>Datos de referencia / simulación:</strong> No se registraron cotizaciones previas en la base de datos para este perfil. Se visualizan indicadores de referencia (benchmarks) del modelo de negocio.
+            </span>
+          </div>
+          <span className="font-semibold px-2 py-0.5 bg-amber-200/60 text-amber-900 rounded-md text-[10px] uppercase tracking-wide shrink-0 ml-2">
+            Modo Benchmark
+          </span>
+        </div>
+      )}
+
       {loading || !data ? (
         <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center text-slate-400 font-medium">
           Cargando analítica ejecutiva...

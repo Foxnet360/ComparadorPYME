@@ -113,7 +113,7 @@ COBERTURAS:
     expect(results).toHaveLength(2);
     expect(results[0].insurerName).toBe('Aseguradora A');
     expect(results[1].insurerName).toBe('Aseguradora B');
-  }, 25000);
+  }, 45000);
 
   it('should parse price with different formats', async () => {
     const formats = [

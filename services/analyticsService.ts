@@ -195,6 +195,7 @@ export const analyticsService = {
         insurerDistribution,
         analystPerformance,
         aiBenchmarks,
+        isSimulated: false,
       };
     }
 
@@ -296,6 +297,7 @@ export const analyticsService = {
       insurerDistribution,
       analystPerformance,
       aiBenchmarks,
+      isSimulated: true,
     };
   },
 };

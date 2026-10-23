@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { UserRole, Ally } from '../types';
 import { DEMO_ALLIES, DEMO_ANALYSTS } from '../services/analyticsService';
 import { organizationService } from '../services/organizationService';
-import {
-  CommercialPolicies,
-  DEFAULT_COMMERCIAL_POLICIES,
-  getEffectiveCommercialPolicies,
-} from '../src/data/commercialPolicies';
+import { CommercialPolicies } from '../src/data/commercialPolicies';
+import { UserInviteModal } from './users/UserInviteModal';
+import { AllyCreateModal } from './users/AllyCreateModal';
+import { AllyEditModal } from './users/AllyEditModal';
 import {
   Users,
   Building2,
@@ -20,7 +19,6 @@ import {
   Search,
   Building,
   FileText,
-  RotateCcw,
 } from 'lucide-react';
 
 interface ManagedUser {
@@ -56,28 +54,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const [showAllyModal, setShowAllyModal] = useState(false);
   const [showEditAllyModal, setShowEditAllyModal] = useState(false);
   const [editingAlly, setEditingAlly] = useState<Ally | null>(null);
-
-  // New User State
-  const [newUserName, setNewUserName] = useState('');
-  const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserPassword, setNewUserPassword] = useState('');
-  const [newUserRole, setNewUserRole] = useState<UserRole>('ally_technical');
-  const [newUserAllyId, setNewUserAllyId] = useState(currentAllyId);
-
-  // New Ally State
-  const [newAllyName, setNewAllyName] = useState('');
-  const [newAllyNit, setNewAllyNit] = useState('');
-  const [newAllyEmail, setNewAllyEmail] = useState('');
-  const [newAllyPhone, setNewAllyPhone] = useState('');
-
-  // Edit Ally State
-  const [editAllyName, setEditAllyName] = useState('');
-  const [editAllyNit, setEditAllyNit] = useState('');
-  const [editAllyEmail, setEditAllyEmail] = useState('');
-  const [editAllyPhone, setEditAllyPhone] = useState('');
-  const [editAllyStatus, setEditAllyStatus] = useState<'ACTIVE' | 'INACTIVE' | 'SUSPENDED'>('ACTIVE');
-  const [editCommercialPolicies, setEditCommercialPolicies] = useState<CommercialPolicies>(DEFAULT_COMMERCIAL_POLICIES);
-  const [showPoliciesSection, setShowPoliciesSection] = useState(false);
+  const [defaultAllyId, setDefaultAllyId] = useState(currentAllyId);
 
   // Feedback & Action state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -93,8 +70,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         const orgs = await organizationService.listOrganizations();
         if (isMounted && orgs.length > 0) {
           setAlliesList(orgs);
-          if (!newUserAllyId || newUserAllyId === 'ally-100' || newUserAllyId === 'csa-global') {
-            setNewUserAllyId(orgs[0]?.id || '');
+          if (!defaultAllyId || defaultAllyId === 'ally-100' || defaultAllyId === 'csa-global') {
+            setDefaultAllyId(orgs[0]?.id || '');
           }
         }
 
@@ -146,58 +123,55 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         u.email.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newUserName || !newUserEmail) return;
+  const handleInviteUser = async (userData: {
+    name: string;
+    email: string;
+    password?: string;
+    role: UserRole;
+    allyId: string;
+  }) => {
+    const selectedAlly =
+      alliesList.find((a) => a.id === userData.allyId) ||
+      alliesList[0] || { id: userData.allyId, name: 'Correduría General' };
 
-    const selectedAlly = alliesList.find((a) => a.id === newUserAllyId) || alliesList[0]!;
-    const roleToAssign = currentUserRole === 'ally_admin' ? 'ally_technical' : newUserRole;
-
-    setIsSubmitting(true);
     setFeedback(null);
-
     try {
-      // Create or invite real user in Supabase Auth & Organization
       const res = await organizationService.inviteUser({
-        email: newUserEmail.trim(),
-        name: newUserName.trim(),
-        role: roleToAssign,
+        email: userData.email.trim(),
+        name: userData.name.trim(),
+        role: userData.role,
         orgId: selectedAlly.id,
-        password: newUserPassword.trim() || undefined,
+        password: userData.password?.trim() || undefined,
       });
 
       const newUser: ManagedUser = {
         id: res.user?.id || `user-${Date.now()}`,
-        name: newUserName.trim(),
-        email: newUserEmail.trim(),
-        role: roleToAssign,
+        name: userData.name.trim(),
+        email: userData.email.trim(),
+        role: userData.role,
         allyId: selectedAlly.id,
         allyName: selectedAlly.name,
         status: 'ACTIVE',
         createdAt: new Date().toISOString().split('T')[0]!,
       };
 
-      setUsersList([newUser, ...usersList.filter((u) => u.email !== newUserEmail.trim())]);
+      setUsersList([newUser, ...usersList.filter((u) => u.email !== userData.email.trim())]);
       setFeedback({
         type: 'success',
-        message: `Usuario ${newUserName} autorizado y registrado exitosamente con rol ${roleToAssign}.`,
+        message: `Usuario ${userData.name} autorizado y registrado exitosamente con rol ${userData.role}.`,
       });
-      setNewUserName('');
-      setNewUserEmail('');
-      setNewUserPassword('');
-      setShowAddModal(false);
     } catch (err: unknown) {
       console.warn('Could not invite user via API, attempting member binding fallback', err);
       try {
         await organizationService.addMember(selectedAlly.id, {
-          user_id: newUserEmail.trim(),
-          role: roleToAssign,
+          user_id: userData.email.trim(),
+          role: userData.role,
         });
         const newUser: ManagedUser = {
           id: `user-${Date.now()}`,
-          name: newUserName,
-          email: newUserEmail,
-          role: roleToAssign,
+          name: userData.name,
+          email: userData.email,
+          role: userData.role,
           allyId: selectedAlly.id,
           allyName: selectedAlly.name,
           status: 'ACTIVE',
@@ -206,40 +180,36 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         setUsersList([newUser, ...usersList]);
         setFeedback({
           type: 'success',
-          message: `Usuario ${newUserName} vinculado a la correduría ${selectedAlly.name}.`,
+          message: `Usuario ${userData.name} vinculado a la correduría ${selectedAlly.name}.`,
         });
-        setNewUserName('');
-        setNewUserEmail('');
-        setShowAddModal(false);
       } catch (fallbackErr: any) {
         setFeedback({
           type: 'error',
           message: fallbackErr?.message || 'Error registrando usuario en la plataforma',
         });
+        throw fallbackErr;
       }
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
-  const handleCreateAlly = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newAllyName) return;
-
-    setIsSubmitting(true);
+  const handleCreateAlly = async (allyData: {
+    name: string;
+    nit?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+  }) => {
     setFeedback(null);
-
     let createdAlly: Ally | null = null;
     try {
       createdAlly = await organizationService.createOrganization({
-        name: newAllyName.trim(),
-        nit: newAllyNit.trim() || undefined,
-        contact_email: newAllyEmail.trim() || undefined,
-        phone: newAllyPhone.trim() || undefined,
+        name: allyData.name.trim(),
+        nit: allyData.nit?.trim() || undefined,
+        contact_email: allyData.contactEmail?.trim() || undefined,
+        phone: allyData.contactPhone?.trim() || undefined,
       });
       setFeedback({
         type: 'success',
-        message: `Correduría aliada "${newAllyName}" registrada exitosamente.`,
+        message: `Correduría aliada "${allyData.name}" registrada exitosamente.`,
       });
     } catch (err: any) {
       console.warn('Could not persist organization to backend, updating local state', err);
@@ -251,77 +221,67 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 
     const newAlly: Ally = createdAlly || {
       id: `ally-${Date.now()}`,
-      name: newAllyName.trim(),
-      nit: newAllyNit.trim() || '900.000.000-0',
-      contact_email: newAllyEmail.trim() || undefined,
-      phone: newAllyPhone.trim() || undefined,
+      name: allyData.name.trim(),
+      nit: allyData.nit?.trim() || '900.000.000-0',
+      contact_email: allyData.contactEmail?.trim() || undefined,
+      phone: allyData.contactPhone?.trim() || undefined,
       status: 'ACTIVE',
       createdAt: new Date().toISOString().split('T')[0],
     };
 
     setAlliesList([...alliesList, newAlly]);
-    setNewAllyName('');
-    setNewAllyNit('');
-    setNewAllyEmail('');
-    setNewAllyPhone('');
-    setShowAllyModal(false);
-    setIsSubmitting(false);
   };
 
   const handleOpenEditAlly = (ally: Ally) => {
     setEditingAlly(ally);
-    setEditAllyName(ally.name);
-    setEditAllyNit(ally.nit || '');
-    setEditAllyEmail(ally.contact_email || '');
-    setEditAllyPhone(ally.phone || '');
-    setEditAllyStatus(ally.status || 'ACTIVE');
-    setShowPoliciesSection(false);
     setShowEditAllyModal(true);
-
-    // Load commercial policies for this ally
-    organizationService
-      .getCommercialPolicies(ally.id)
-      .then((policies) => setEditCommercialPolicies(policies))
-      .catch((err) => console.warn('Could not load ally policies', err));
   };
 
-  const handleUpdateAlly = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingAlly || !editAllyName) return;
-
-    setIsSubmitting(true);
+  const handleUpdateAlly = async (
+    allyId: string,
+    updates: {
+      name: string;
+      nit?: string;
+      contactPhone?: string;
+      contactEmail?: string;
+      status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+    },
+    commercialPolicies?: CommercialPolicies
+  ) => {
     setFeedback(null);
-
     try {
-      const updated = await organizationService.updateOrganization(editingAlly.id, {
-        name: editAllyName.trim(),
-        nit: editAllyNit.trim() || undefined,
-        contact_email: editAllyEmail.trim() || undefined,
-        phone: editAllyPhone.trim() || undefined,
-        status: editAllyStatus,
-        settings: {
-          ...(editingAlly.settings || {}),
-          commercial_policies: editCommercialPolicies,
-        },
+      const updated = await organizationService.updateOrganization(allyId, {
+        name: updates.name.trim(),
+        nit: updates.nit?.trim() || undefined,
+        contact_email: updates.contactEmail?.trim() || undefined,
+        phone: updates.contactPhone?.trim() || undefined,
+        status: updates.status,
+        settings: commercialPolicies
+          ? {
+              ...(editingAlly?.settings || {}),
+              commercial_policies: commercialPolicies,
+            }
+          : editingAlly?.settings,
       });
 
-      // Also persist to commercial policies route
-      try {
-        await organizationService.updateCommercialPolicies(editingAlly.id, editCommercialPolicies);
-      } catch (policyErr) {
-        console.warn('Could not update ally commercial policies route', policyErr);
+      if (commercialPolicies) {
+        try {
+          await organizationService.updateCommercialPolicies(allyId, commercialPolicies);
+        } catch (policyErr) {
+          console.warn('Could not update ally commercial policies route', policyErr);
+        }
       }
 
       setAlliesList(
         alliesList.map((a) =>
-          a.id === editingAlly.id
-            ? { ...a, ...updated, commercialPolicies: editCommercialPolicies }
+          a.id === allyId
+            ? { ...a, ...updated, ...(commercialPolicies ? { commercialPolicies } : {}) }
             : a
         )
       );
       setFeedback({
         type: 'success',
-        message: `Correduría "${editAllyName}" y sus políticas comerciales actualizadas exitosamente.`,
+        message: `Correduría "${updates.name}" y sus políticas comerciales actualizadas exitosamente.`,
       });
       setShowEditAllyModal(false);
       setEditingAlly(null);
@@ -330,8 +290,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         type: 'error',
         message: err.message || 'Error al actualizar información de la correduría',
       });
-    } finally {
-      setIsSubmitting(false);
+      throw err;
     }
   };
 
@@ -667,449 +626,32 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       )}
 
       {/* Modal: Crear Usuario */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95">
-            <div className="flex justify-between items-center border-b pb-3">
-              <h3 className="font-bold text-slate-900">Registrar Nuevo Usuario</h3>
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateUser} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Nombre Completo
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newUserName}
-                  onChange={(e) => setNewUserName(e.target.value)}
-                  placeholder="Ej: Daniel Restrepo"
-                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Correo Electrónico
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={newUserEmail}
-                  onChange={(e) => setNewUserEmail(e.target.value)}
-                  placeholder="daniel@correduria.com"
-                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Contraseña Inicial (Opcional)
-                </label>
-                <input
-                  type="password"
-                  value={newUserPassword}
-                  onChange={(e) => setNewUserPassword(e.target.value)}
-                  placeholder="Mínimo 6 caracteres (o se autogenerará)"
-                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-                <p className="text-[10px] text-slate-400 mt-0.5">
-                  Si se omite, se generará una contraseña segura temporal para el usuario.
-                </p>
-              </div>
-
-              {currentUserRole === 'super_admin' && (
-                <>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                      Rol de Usuario
-                    </label>
-                    <select
-                      value={newUserRole}
-                      onChange={(e) => setNewUserRole(e.target.value as UserRole)}
-                      className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                      <option value="ally_technical">Técnico Analista</option>
-                      <option value="ally_admin">Administrador de Aliado</option>
-                      <option value="super_admin">Super Administrador Global</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                      Aliado / Correduría Asignada
-                    </label>
-                    <select
-                      value={newUserAllyId}
-                      onChange={(e) => setNewUserAllyId(e.target.value)}
-                      className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                      {alliesList.map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {a.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </>
-              )}
-
-              <div className="pt-3 flex justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700"
-                >
-                  Crear Usuario
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <UserInviteModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        currentUserRole={currentUserRole}
+        alliesList={alliesList}
+        defaultAllyId={defaultAllyId}
+        onInvite={handleInviteUser}
+      />
 
       {/* Modal: Crear Aliado */}
-      {showAllyModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95">
-            <div className="flex justify-between items-center border-b pb-3">
-              <h3 className="font-bold text-slate-900">Registrar Nueva Correduría Aliada</h3>
-              <button
-                onClick={() => setShowAllyModal(false)}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateAlly} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Nombre de la Correduría
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newAllyName}
-                  onChange={(e) => setNewAllyName(e.target.value)}
-                  placeholder="Ej: Seguros del Norte S.A."
-                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">NIT</label>
-                <input
-                  type="text"
-                  value={newAllyNit}
-                  onChange={(e) => setNewAllyNit(e.target.value)}
-                  placeholder="Ej: 901.234.567-8"
-                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Correo Electrónico de Contacto
-                </label>
-                <input
-                  type="email"
-                  value={newAllyEmail}
-                  onChange={(e) => setNewAllyEmail(e.target.value)}
-                  placeholder="contacto@correduria.com"
-                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Teléfono / Celular
-                </label>
-                <input
-                  type="tel"
-                  value={newAllyPhone}
-                  onChange={(e) => setNewAllyPhone(e.target.value)}
-                  placeholder="+57 300 123 4567"
-                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div className="pt-3 flex justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAllyModal(false)}
-                  className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 disabled:opacity-50"
-                >
-                  {isSubmitting ? 'Guardando...' : 'Guardar Aliado'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <AllyCreateModal
+        isOpen={showAllyModal}
+        onClose={() => setShowAllyModal(false)}
+        onCreate={handleCreateAlly}
+      />
 
       {/* Modal: Editar Aliado (Super Admin) */}
-      {showEditAllyModal && editingAlly && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center border-b pb-3">
-              <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                <Building2 className="text-indigo-600" size={18} />
-                <span>Editar Correduría Aliada</span>
-              </h3>
-              <button
-                onClick={() => {
-                  setShowEditAllyModal(false);
-                  setEditingAlly(null);
-                }}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleUpdateAlly} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Nombre de la Correduría
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={editAllyName}
-                  onChange={(e) => setEditAllyName(e.target.value)}
-                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">NIT</label>
-                  <input
-                    type="text"
-                    value={editAllyNit}
-                    onChange={(e) => setEditAllyNit(e.target.value)}
-                    className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                    Teléfono / Celular
-                  </label>
-                  <input
-                    type="tel"
-                    value={editAllyPhone}
-                    onChange={(e) => setEditAllyPhone(e.target.value)}
-                    className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Correo Electrónico
-                </label>
-                <input
-                  type="email"
-                  value={editAllyEmail}
-                  onChange={(e) => setEditAllyEmail(e.target.value)}
-                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Estado de la Correduría
-                </label>
-                <select
-                  value={editAllyStatus}
-                  onChange={(e) =>
-                    setEditAllyStatus(e.target.value as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED')
-                  }
-                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
-                >
-                  <option value="ACTIVE">Vigente / Activa</option>
-                  <option value="INACTIVE">Inactiva</option>
-                  <option value="SUSPENDED">Suspendida</option>
-                </select>
-              </div>
-
-              {/* Políticas Comerciales Accordion */}
-              <div className="border border-indigo-100 rounded-xl bg-indigo-50/50 overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setShowPoliciesSection(!showPoliciesSection)}
-                  className="w-full p-3 flex justify-between items-center text-xs font-bold text-indigo-900 hover:bg-indigo-50 transition-colors"
-                >
-                  <span className="flex items-center gap-1.5">
-                    <FileText size={15} className="text-indigo-600" />
-                    <span>Políticas Comerciales de Oferta ({editCommercialPolicies.offerValidityDays} días)</span>
-                  </span>
-                  <span className="text-[11px] text-indigo-600 underline">
-                    {showPoliciesSection ? 'Ocultar' : 'Configurar'}
-                  </span>
-                </button>
-
-                {showPoliciesSection && (
-                  <div className="p-3.5 border-t border-indigo-100 bg-white space-y-3 animate-in fade-in">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[11px] text-slate-500">
-                        Inyectadas en exportaciones PDF y Excel.
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setEditCommercialPolicies({ ...DEFAULT_COMMERCIAL_POLICIES })}
-                        className="text-[11px] text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1"
-                      >
-                        <RotateCcw size={12} />
-                        <span>Restablecer Estándar</span>
-                      </button>
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 uppercase mb-0.5">
-                        Validez de la Oferta (días)
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="90"
-                        value={editCommercialPolicies.offerValidityDays}
-                        onChange={(e) =>
-                          setEditCommercialPolicies((p) => ({
-                            ...p,
-                            offerValidityDays: parseInt(e.target.value) || 15,
-                          }))
-                        }
-                        className="w-32 border border-slate-300 rounded-lg p-1.5 text-xs font-bold"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 uppercase mb-0.5">
-                        Condiciones de Pago
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={editCommercialPolicies.paymentConditions}
-                        onChange={(e) =>
-                          setEditCommercialPolicies((p) => ({ ...p, paymentConditions: e.target.value }))
-                        }
-                        className="w-full border border-slate-300 rounded-lg p-2 text-xs"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 uppercase mb-0.5">
-                        Requisitos de Inspección
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={editCommercialPolicies.inspectionRequirements}
-                        onChange={(e) =>
-                          setEditCommercialPolicies((p) => ({
-                            ...p,
-                            inspectionRequirements: e.target.value,
-                          }))
-                        }
-                        className="w-full border border-slate-300 rounded-lg p-2 text-xs"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 uppercase mb-0.5">
-                        Requisitos de Emisión
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={editCommercialPolicies.issuanceRequirements}
-                        onChange={(e) =>
-                          setEditCommercialPolicies((p) => ({
-                            ...p,
-                            issuanceRequirements: e.target.value,
-                          }))
-                        }
-                        className="w-full border border-slate-300 rounded-lg p-2 text-xs"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 uppercase mb-0.5">
-                        Atención de Siniestros (Art. 1075 C.Co.)
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={editCommercialPolicies.claimsPolicy}
-                        onChange={(e) =>
-                          setEditCommercialPolicies((p) => ({ ...p, claimsPolicy: e.target.value }))
-                        }
-                        className="w-full border border-slate-300 rounded-lg p-2 text-xs"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 uppercase mb-0.5">
-                        Alcance de Intermediación
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={editCommercialPolicies.intermediationScope}
-                        onChange={(e) =>
-                          setEditCommercialPolicies((p) => ({
-                            ...p,
-                            intermediationScope: e.target.value,
-                          }))
-                        }
-                        className="w-full border border-slate-300 rounded-lg p-2 text-xs"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-3 flex justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowEditAllyModal(false);
-                    setEditingAlly(null);
-                  }}
-                  className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 disabled:opacity-50"
-                >
-                  {isSubmitting ? 'Actualizando...' : 'Guardar Cambios'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <AllyEditModal
+        isOpen={showEditAllyModal}
+        onClose={() => {
+          setShowEditAllyModal(false);
+          setEditingAlly(null);
+        }}
+        ally={editingAlly}
+        onUpdate={handleUpdateAlly}
+      />
     </div>
   );
 };

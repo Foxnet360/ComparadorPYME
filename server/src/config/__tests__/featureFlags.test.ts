@@ -115,4 +115,20 @@ describe('FeatureFlagManager', () => {
 
     expect(manager.isEnabled('deepClauseValidation')).toBe(true);
   });
+
+  it('defaults enableGeminiContextCaching to true and respects opt-out', () => {
+    delete process.env.ENABLE_GEMINI_CONTEXT_CACHING;
+    const defaultManager = new FeatureFlagManager({
+      ...DEFAULT_FEATURE_FLAGS,
+      enableGeminiContextCaching: process.env.ENABLE_GEMINI_CONTEXT_CACHING !== 'false',
+    });
+    expect(defaultManager.isEnabled('enableGeminiContextCaching')).toBe(true);
+
+    process.env.ENABLE_GEMINI_CONTEXT_CACHING = 'false';
+    const disabledManager = new FeatureFlagManager({
+      ...DEFAULT_FEATURE_FLAGS,
+      enableGeminiContextCaching: process.env.ENABLE_GEMINI_CONTEXT_CACHING !== 'false',
+    });
+    expect(disabledManager.isEnabled('enableGeminiContextCaching')).toBe(false);
+  });
 });

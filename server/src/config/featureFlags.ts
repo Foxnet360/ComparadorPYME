@@ -122,8 +122,8 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   //   to callers because the full flow is not yet wired end-to-end.
   deepClauseValidation: false,
 
-  // Gemini context caching: default false unless ENABLE_GEMINI_CONTEXT_CACHING=true
-  enableGeminiContextCaching: process.env.ENABLE_GEMINI_CONTEXT_CACHING === 'true',
+  // Gemini context caching: enabled by default with graceful fallback when <32k tokens
+  enableGeminiContextCaching: process.env.ENABLE_GEMINI_CONTEXT_CACHING !== 'false',
 
   // Financial audit & claim simulation (enabled by default, can be disabled via env)
   enablePremiumEquationAudit: process.env.ENABLE_PREMIUM_EQUATION_AUDIT !== 'false',
@@ -177,6 +177,7 @@ export const PRODUCTION_ROLLOUT_FLAGS: FeatureFlags = {
   enablePremiumEquationAudit: true,
   enableClaimDeductibleSimulator: true,
   enableActiveOntologyDisambiguation: true,
+  enableGeminiContextCaching: process.env.ENABLE_GEMINI_CONTEXT_CACHING !== 'false',
   enableTwoStageExtraction: process.env.ENABLE_TWO_STAGE_EXTRACTION !== 'false',
   preferTwoStagePipeline: process.env.PREFER_TWO_STAGE_PIPELINE === 'true',
 };

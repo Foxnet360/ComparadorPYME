@@ -585,6 +585,7 @@ export interface ExecutiveAnalyticsData {
       estimatedCostUSD: number;
     }>;
   };
+  isSimulated?: boolean;
 }
 
 // --- RENEWAL PORTFOLIO (renovacion-polizas) ---
