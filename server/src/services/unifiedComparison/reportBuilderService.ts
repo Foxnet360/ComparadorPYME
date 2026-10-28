@@ -446,6 +446,10 @@ export async function matrixRowsToComparisonReport(
       'prima con iva',
       'total prima',
       'prima total',
+      'prima minima',
+      'prima mínima',
+      'prima minima anual',
+      'prima mínima anual',
       'costo total de la poliza',
       'costo total poliza',
       'total anual',
@@ -591,6 +595,7 @@ export async function matrixRowsToComparisonReport(
         extractionConfidence: iq.avgCellConfidence,
         needsReview: iq.avgCellConfidence < 70,
         isCritical: iq.avgCellConfidence < 50,
+        isRagAvailable: hasClauseDocument,
         validationFlags: [],
         validationSummary: `Confianza de extracción: ${iq.avgCellConfidence}%. ${iq.coverages.length} coberturas procesadas.`,
         crossReferenceSummary: {

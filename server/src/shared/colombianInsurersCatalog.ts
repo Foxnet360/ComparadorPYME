@@ -516,6 +516,41 @@ export const COLOMBIAN_INSURERS_CATALOG: ColombianInsurerProfile[] = [
     phone: '#533',
     isActive: true,
   },
+  {
+    id: 'bbva',
+    code: 'BBVA',
+    name: 'BBVA',
+    shortName: 'BBVA Seguros',
+    officialName: 'BBVA Seguros Colombia S.A.',
+    nit: '800.226.098-4',
+    domainUrl: 'bbvaseguros.com.co',
+    logoUrl: 'https://www.google.com/s2/favicons?domain=bbvaseguros.com.co&sz=128',
+    primaryColor: '#004481',
+    accentColor: '#1464A5',
+    monogram: 'BBVA',
+    marketPosition: 'Grupo financiero global con portafolio integral en PYME, Hogar y Vida',
+    description:
+      'Compañía de seguros del Grupo BBVA en Colombia, con amplia cobertura en seguros empresariales PYME, todo riesgo daños materiales y soluciones bancaseguros.',
+    integrationInfo: 'Extracción estandarizada multiramo PYME, Daños Materiales y Vida',
+    rpaEnabled: false,
+    apiEnabled: false,
+    supportedDomains: [
+      InsuranceDomain.PYME,
+      InsuranceDomain.HOGAR,
+      InsuranceDomain.VIDA_GRUPO,
+      InsuranceDomain.COPROPIEDADES,
+    ],
+    aliases: [
+      'bbva',
+      'bbva seguros',
+      'bbva seguros colombia',
+      'bbva seguros colombia s a',
+      'bbva colombia',
+    ],
+    contactEmail: 'contacto@bbvaseguros.com.co',
+    phone: '01 8000 912227',
+    isActive: true,
+  },
 ];
 
 function normalizeSearchKey(input: string): string {

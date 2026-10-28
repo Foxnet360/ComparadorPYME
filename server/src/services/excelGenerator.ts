@@ -474,7 +474,238 @@ export async function generateExcelBuffer(
   addInfoRow('Atención de Siniestros:', effectivePolicies.claimsPolicy, 46);
 
   // -------------------------------------------------------------
-  // Pestaña 2: Matriz Coberturas (Direct Matrix Data Rendering)
+  // Pestaña 2: Cuadro Comparativo Resumido ("Cuadro Chico")
+  // -------------------------------------------------------------
+  const summarySheet = workbook.addWorksheet('Cuadro Comparativo Resumido');
+  summarySheet.views = [{ showGridLines: false }];
+  applySheetHeaderFooter(summarySheet, 'Cuadro Comparativo Resumido');
+
+  summarySheet.getColumn(1).width = 42;
+  for (let i = 0; i < quotes.length; i++) {
+    summarySheet.getColumn(i + 2).width = 34;
+  }
+
+  summarySheet.mergeCells(1, 1, 2, quotes.length + 1);
+  const sumTitle = summarySheet.getCell(1, 1);
+  sumTitle.value = 'CUADRO COMPARATIVO RESUMIDO · VISIÓN EJECUTIVA CONDENSADA';
+  sumTitle.font = { name: FONT_NAME, size: 13, bold: true, color: { argb: 'FF1E3A8A' } };
+  sumTitle.alignment = { vertical: 'middle', horizontal: 'left' };
+
+  summarySheet.mergeCells(3, 1, 3, quotes.length + 1);
+  const sumSubtitle = summarySheet.getCell(3, 1);
+  sumSubtitle.value = `Cliente: ${clientName}  |  Ramo: ${regulatoryProfile.displayName}  |  Fecha: ${todayStr}`;
+  sumSubtitle.font = { name: FONT_NAME, size: 9.5, italic: true, color: { argb: 'FF64748B' } };
+  sumSubtitle.alignment = { vertical: 'middle', horizontal: 'left' };
+
+  summarySheet.getRow(5).height = 38;
+  const sumHeaderLabel = summarySheet.getCell(5, 1);
+  sumHeaderLabel.value = 'VARIABLE O CONCEPTO CLAVE';
+  sumHeaderLabel.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+  sumHeaderLabel.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+  sumHeaderLabel.alignment = { vertical: 'middle', horizontal: 'left' };
+
+  quotes.forEach((q, i) => {
+    const headerCell = summarySheet.getCell(5, i + 2);
+    headerCell.value = q.insurerName.toUpperCase();
+    const profile = findColombianInsurerProfile(q.insurerName);
+    const argbColor = profile?.primaryColor
+      ? 'FF' + profile.primaryColor.replace('#', '')
+      : 'FF1E3A8A';
+    headerCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+    headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: argbColor } };
+    headerCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+  });
+
+  const getCoverageSummary = (q: QuoteAnalysis, keywords: string[]): string => {
+    for (const c of q.coverages || []) {
+      const nameNorm = (c.name || c.canonicalName || '').toLowerCase();
+      if (keywords.some((kw) => nameNorm.includes(kw))) {
+        if (c.value && !isExcludedValue(c.value)) {
+          const num = parseNumericValue(c.value);
+          return num > 0 ? '$ ' + num.toLocaleString('es-CO') : formatMatrixValue(c.value);
+        }
+      }
+    }
+    return 'No cotizado';
+  };
+
+  const getDeductibleSummary = (q: QuoteAnalysis, keywords: string[]): string => {
+    for (const c of q.coverages || []) {
+      const nameNorm = (c.name || c.canonicalName || '').toLowerCase();
+      if (keywords.some((kw) => nameNorm.includes(kw))) {
+        if (c.deductible && c.deductible.trim() !== '' && c.deductible.toLowerCase() !== 'no aplica') {
+          return c.deductible;
+        }
+      }
+    }
+    return 'Según condiciones generales';
+  };
+
+  interface CondensedRow {
+    type: 'header' | 'data';
+    label: string;
+    isCurrency?: boolean;
+    getValue?: (q: QuoteAnalysis) => string | number;
+  }
+
+  const condensedRows: CondensedRow[] = [
+    { type: 'header', label: '1. CONDICIONES ECONÓMICAS Y FORMA DE PAGO' },
+    {
+      type: 'data',
+      label: 'Prima Neta Anual',
+      isCurrency: true,
+      getValue: (q) => q.priceAnnual || (q.priceMonthly ? q.priceMonthly * 12 : 0),
+    },
+    {
+      type: 'data',
+      label: 'IVA (19%)',
+      isCurrency: true,
+      getValue: (q) => Math.round((q.priceAnnual || (q.priceMonthly ? q.priceMonthly * 12 : 0)) * 0.19),
+    },
+    {
+      type: 'data',
+      label: 'Total a Pagar (Con IVA)',
+      isCurrency: true,
+      getValue: (q) => {
+        const net = q.priceAnnual || (q.priceMonthly ? q.priceMonthly * 12 : 0);
+        return net > 0 ? Math.round(net * 1.19) : 0;
+      },
+    },
+    {
+      type: 'data',
+      label: 'Forma y Opciones de Pago',
+      getValue: () => 'Anual / Pago a 60 días o Financiado',
+    },
+    { type: 'header', label: '2. VALORES ASEGURADOS PRINCIPALES (LÍMITES)' },
+    {
+      type: 'data',
+      label: 'Todo Riesgo Daños Materiales (Edificio / Contenidos)',
+      getValue: (q) =>
+        getCoverageSummary(q, [
+          'incendio',
+          'edificio',
+          'daño material',
+          'amparo basico',
+          'amparo básico',
+          'todo riesgo',
+        ]),
+    },
+    {
+      type: 'data',
+      label: 'Responsabilidad Civil Extracontractual (RCE / PLO)',
+      getValue: (q) => getCoverageSummary(q, ['responsabilidad civil', 'rce', 'plo']),
+    },
+    {
+      type: 'data',
+      label: 'Terremoto, Temblor y Eventos de la Naturaleza',
+      getValue: (q) => getCoverageSummary(q, ['terremoto', 'ttev', 'temblor']),
+    },
+    {
+      type: 'data',
+      label: 'Sustracción con Violencia (Hurto Calificado)',
+      getValue: (q) => getCoverageSummary(q, ['sustracción', 'sustraccion', 'hurto']),
+    },
+    {
+      type: 'data',
+      label: 'Rotura de Maquinaria / Equipo Eléctrico y Electrónico',
+      getValue: (q) =>
+        getCoverageSummary(q, [
+          'rotura',
+          'maquinaria',
+          'eléctrico',
+          'electrónico',
+          'electronico',
+        ]),
+    },
+    { type: 'header', label: '3. ESTRUCTURA DE DEDUCIBLES' },
+    {
+      type: 'data',
+      label: 'Deducible Todo Riesgo Daño Material',
+      getValue: (q) =>
+        getDeductibleSummary(q, [
+          'incendio',
+          'edificio',
+          'daño material',
+          'amparo basico',
+          'amparo básico',
+          'todo riesgo',
+        ]),
+    },
+    {
+      type: 'data',
+      label: 'Deducible Terremoto',
+      getValue: (q) => getDeductibleSummary(q, ['terremoto', 'ttev', 'temblor']),
+    },
+    {
+      type: 'data',
+      label: 'Deducible Sustracción',
+      getValue: (q) => getDeductibleSummary(q, ['sustracción', 'sustraccion', 'hurto']),
+    },
+    {
+      type: 'data',
+      label: 'Deducible Responsabilidad Civil',
+      getValue: (q) => getDeductibleSummary(q, ['responsabilidad civil', 'rce', 'plo']),
+    },
+    { type: 'header', label: '4. EVALUACIÓN Y DICTAMEN DE ASESORÍA' },
+    {
+      type: 'data',
+      label: 'Calificación Técnica Integral',
+      getValue: (q) => `${q.score || 0} / 100`,
+    },
+    {
+      type: 'data',
+      label: 'Aspecto Clave / Recomendación',
+      getValue: (q) =>
+        q.insurerName === bestQuote.insurerName
+          ? '⭐ Opción más recomendada en balance técnico'
+          : 'Propuesta competitiva de mercado',
+    },
+  ];
+
+  let currentSumRow = 6;
+  for (const cr of condensedRows) {
+    if (cr.type === 'header') {
+      summarySheet.mergeCells(currentSumRow, 1, currentSumRow, quotes.length + 1);
+      const hCell = summarySheet.getCell(currentSumRow, 1);
+      hCell.value = cr.label;
+      hCell.font = { name: FONT_NAME, size: 10.5, bold: true, color: { argb: 'FF1E3A8A' } };
+      hCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+      hCell.alignment = { vertical: 'middle', horizontal: 'left' };
+      summarySheet.getRow(currentSumRow).height = 24;
+      currentSumRow++;
+    } else {
+      const lCell = summarySheet.getCell(currentSumRow, 1);
+      lCell.value = cr.label;
+      lCell.font = { name: FONT_NAME, size: 9.5, bold: true, color: { argb: 'FF475569' } };
+      lCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+      lCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+      summarySheet.getRow(currentSumRow).height = 24;
+
+      quotes.forEach((q, idx) => {
+        const cCell = summarySheet.getCell(currentSumRow, idx + 2);
+        const val = cr.getValue ? cr.getValue(q) : '';
+        if (cr.isCurrency && typeof val === 'number') {
+          cCell.value = val > 0 ? val : 'No informado';
+          if (val > 0) {
+            cCell.numFmt = '$#,##0';
+            cCell.font = { name: FONT_NAME, size: 9.5, bold: true, color: { argb: 'FF03543F' } };
+            cCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDEF7EC' } };
+          } else {
+            cCell.font = { name: FONT_NAME, size: 9.5, color: { argb: 'FF64748B' } };
+          }
+        } else {
+          cCell.value = val;
+          cCell.font = { name: FONT_NAME, size: 9.5, color: { argb: 'FF1E293B' } };
+        }
+        cCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        cCell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
+      });
+      currentSumRow++;
+    }
+  }
+
+  // -------------------------------------------------------------
+  // Pestaña 3: Matriz Coberturas (Direct Matrix Data Rendering)
   // -------------------------------------------------------------
   const coveragesSheet = workbook.addWorksheet('Matriz Coberturas');
   coveragesSheet.views = [{ showGridLines: false }];
@@ -491,7 +722,7 @@ export async function generateExcelBuffer(
   covTitle.font = { name: FONT_NAME, size: 14, bold: true, color: { argb: 'FF1E3A8A' } };
   covTitle.alignment = { vertical: 'middle', horizontal: 'left' };
 
-  coveragesSheet.getRow(4).height = 28;
+  coveragesSheet.getRow(4).height = 38;
   const mainLabelHeader = coveragesSheet.getCell(4, 1);
   mainLabelHeader.value = 'COBERTURA / CONCEPTO CANÓNICO';
   mainLabelHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -506,7 +737,7 @@ export async function generateExcelBuffer(
       : 'FF1E3A8A';
     insHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
     insHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: argbColor } };
-    insHeader.alignment = { horizontal: 'center', vertical: 'middle' };
+    insHeader.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
   });
 
   if (hasNotes) {
@@ -608,7 +839,7 @@ export async function generateExcelBuffer(
           rowTextsForHeight.push('No incluida');
           xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE8E8' } }; // Soft red pastel
           xlCell.font = { name: FONT_NAME, size: 10, italic: true, color: { argb: 'FF9B1C1C' } };
-        } else if (numericVal > 0 && !hasConditions && !hasMeaningfulNotes) {
+        } else if (numericVal > 0 && !hasConditions) {
           xlCell.value = numericVal;
           xlCell.numFmt = '$#,##0';
           rowTextsForHeight.push(valStr);
@@ -623,11 +854,8 @@ export async function generateExcelBuffer(
                   maximumFractionDigits: 0,
                 })
               : formatMatrixValue(valStr);
-          const displayText = hasMeaningfulNotes
-            ? `${baseDisplay}\n[Deducible/Nota: ${trimmedNotes}]`
-            : baseDisplay;
-          xlCell.value = displayText;
-          rowTextsForHeight.push(displayText);
+          xlCell.value = baseDisplay;
+          rowTextsForHeight.push(baseDisplay);
           xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDEF7EC' } }; // Soft green pastel
           xlCell.font = { name: FONT_NAME, size: 10, color: { argb: 'FF03543F' } };
         }
@@ -640,12 +868,18 @@ export async function generateExcelBuffer(
         xlCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
         xlCell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
 
-        if (cell.pageNumber) {
-          xlCell.note = `Fuente original: PDF cotización, Página ${cell.pageNumber}`;
-        }
-        if (cell.confidence !== undefined && cell.confidence !== null) {
-          const confText = `Confianza: ${(cell.confidence * 100).toFixed(0)}%`;
-          xlCell.note = xlCell.note ? `${xlCell.note}\n${confText}` : confText;
+        if (mode === 'technical') {
+          if (cell.pageNumber) {
+            xlCell.note = `Fuente original: PDF cotización, Página ${cell.pageNumber}`;
+          }
+          if (cell.confidence !== undefined && cell.confidence !== null) {
+            const confText = `Confianza: ${(cell.confidence * 100).toFixed(0)}%`;
+            xlCell.note = xlCell.note ? `${xlCell.note}\n${confText}` : confText;
+          }
+          if (hasMeaningfulNotes) {
+            const deducNote = `Nota de extracción: ${trimmedNotes}`;
+            xlCell.note = xlCell.note ? `${xlCell.note}\n${deducNote}` : deducNote;
+          }
         }
       });
 
@@ -700,7 +934,7 @@ export async function generateExcelBuffer(
   dedTitle.value = 'MATRIZ CONSOLIDADA DE DEDUCIBLES Y RETENCIÓN DE RIESGO';
   dedTitle.font = { name: FONT_NAME, size: 14, bold: true, color: { argb: 'FF1E3A8A' } };
 
-  deductiblesSheet.getRow(4).height = 28;
+  deductiblesSheet.getRow(4).height = 38;
   const dedLabelHeader = deductiblesSheet.getCell(4, 1);
   dedLabelHeader.value = 'AMPARO / COBERTURA';
   dedLabelHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -715,7 +949,7 @@ export async function generateExcelBuffer(
       : 'FF1E3A8A';
     insHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
     insHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: argbColor } };
-    insHeader.alignment = { horizontal: 'center', vertical: 'middle' };
+    insHeader.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
   });
 
   if (mode === 'client') {
@@ -877,7 +1111,7 @@ export async function generateExcelBuffer(
   finTitle.value = 'EVALUACIÓN FINANCIERA DE PRIMAS Y COSTOS COMPARATIVOS';
   finTitle.font = { name: FONT_NAME, size: 14, bold: true, color: { argb: 'FF1E3A8A' } };
 
-  financialsSheet.getRow(4).height = 28;
+  financialsSheet.getRow(4).height = 38;
   const finLabelHeader = financialsSheet.getCell(4, 1);
   finLabelHeader.value = 'CONCEPTO FINANCIERO';
   finLabelHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -892,7 +1126,7 @@ export async function generateExcelBuffer(
       : 'FF1E3A8A';
     insHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
     insHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: argbColor } };
-    insHeader.alignment = { horizontal: 'center', vertical: 'middle' };
+    insHeader.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
   });
 
   const financialMatrixRows = matrix.filter(
@@ -1149,9 +1383,10 @@ export async function generateExcelBuffer(
   });
 
   // -------------------------------------------------------------
-  // Pestaña 5: Análisis de Riesgos (CON ESCALA CONDICIONAL GRADIENTE 1 - 10)
+  // Pestaña 5: Análisis de Riesgos (Exclusiva para Modo Técnico / Auditoría)
   // -------------------------------------------------------------
-  const riskSheet = workbook.addWorksheet('Análisis de Riesgos');
+  if (mode === 'technical') {
+    const riskSheet = workbook.addWorksheet('Análisis de Riesgos');
   riskSheet.views = [{ showGridLines: false }];
   applySheetHeaderFooter(riskSheet, 'Análisis de Riesgos');
 
@@ -1357,6 +1592,7 @@ export async function generateExcelBuffer(
       }
     });
   }
+}
 
   // -------------------------------------------------------------
   // Pestaña 6: Respaldo Normativo y Auditoría Legal en Colombia

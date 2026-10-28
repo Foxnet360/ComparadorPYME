@@ -73,6 +73,7 @@ export interface QuoteAnalysis {
   priceMonthly: number;
   priceAnnual: number;
   currency: string;
+  paymentTerms?: string;
   deductibles: string;
   coverages: CoverageItem[];
   alerts: AlertItem[];

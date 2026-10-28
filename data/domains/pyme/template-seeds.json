@@ -40,7 +40,7 @@
       "deductibleColumnIndex": 2,
       "premiumColumnIndex": 3
     },
-    "promptAddon": "Extrae las coberturas del cuadro 'COBERTURAS / DEDUCIBLE'. Para cada fila devuelve rawName, insuredAmount, deductible, premium y subLimits si aplica. No inventes coberturas que no estén en la tabla."
+    "promptAddon": "Extrae las coberturas del cuadro 'COBERTURAS / DEDUCIBLE'. Para cada fila devuelve rawName, insuredAmount, deductible, premium y subLimits si aplica. Si la cotización indica 'Prima Mínima Anual' o valor equivalente (ej. 1 SMMLV sin IVA $1.750.905), extrae el valor monetario explícito para la prima anual y desglose financiero. No inventes coberturas que no estén en la tabla."
   },
   {
     "templateId": "sbs-pyme-v1",

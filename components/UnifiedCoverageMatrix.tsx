@@ -25,7 +25,7 @@ import { getDomainRegulatoryProfile } from '@shared/domainRegulatoryKnowledge';
 import { DeductibleBadge } from './DeductibleBadge';
 import { PedagogicalTooltip } from './common/PedagogicalTooltip';
 import { InsurerLogo } from './common/InsurerLogo';
-import { formatPercentage } from '../utils/formatCurrency';
+import { formatPercentage, parseColombianCurrency } from '../utils/formatCurrency';
 import { useOptimisticCorrection } from '../hooks/useOptimisticCorrection';
 import { usePdfViewer, useCellNotes, useAnalysis } from '../contexts/AnalysisContext';
 import { InlineNoteEditor } from './InlineNoteEditor';
@@ -95,10 +95,8 @@ const CoverageCell = memo(
             >
               {rowLabel === 'Deducible' && cell.value !== 'No aplica' ? (
                 <DeductibleBadge deductible={cell.value} />
-              ) : rowLabel === 'Valor Asegurado' ? (
-                formatMatrixValue(cell.value)
               ) : (
-                cell.value
+                formatMatrixValue(cell.value)
               )}
             </span>
           )}
@@ -250,29 +248,42 @@ export function buildExportNotes(
 
 export function formatMatrixValue(val: string | undefined | null): string {
   if (!val) return 'No informado';
+  const trimmed = val.trim();
   if (
-    val === 'No incluida' ||
-    val === 'NO ESPECIFICADO' ||
-    val === 'No contratado' ||
-    isExcludedValue(val)
+    trimmed === 'No incluida' ||
+    trimmed === 'NO ESPECIFICADO' ||
+    trimmed === 'No contratado' ||
+    isExcludedValue(trimmed)
   ) {
-    return val;
+    return trimmed;
+  }
+  if (trimmed === '0') return '0';
+
+  // 1. Check if it's a simple currency / numeric string:
+  // e.g. "$ 100.000.000,00", "$100.000.000", "100.000.000 COP", "COP 100.000.000", "$ 1.750.905", "100000000"
+  if (/^(?:\$\s*)?[\d.,\s]+(?:\s*COP|\s*USD)?$/i.test(trimmed)) {
+    if (/\d/.test(trimmed) && !trimmed.includes('%')) {
+      const parsed = parseColombianCurrency(trimmed);
+      if (parsed !== null && parsed > 0) {
+        const hasFraction = parsed % 1 !== 0;
+        return `$${parsed.toLocaleString('es-CO', {
+          minimumFractionDigits: hasFraction ? 2 : 0,
+          maximumFractionDigits: hasFraction ? 2 : 0,
+        })}`;
+      } else if (parsed === 0) {
+        return '0';
+      }
+    }
   }
 
-  // Try parsing to see if it represents a number
-  const cleanVal = val.replace(/[^0-9]/g, '');
-  if (!cleanVal) return val; // No digits (e.g. "Incluido", "No aplica")
+  // 2. Clean compound text: strip trailing redundant zero decimals (,00 or .00) and redundant COP mentions
+  const cleanedText = trimmed
+    .replace(/(\$\s*\d{1,3}(?:\.\d{3})+),00\b/g, '$1')
+    .replace(/(\$\s*\d{1,3}(?:,\d{3})+)\.00\b/g, '$1')
+    .replace(/\b(\d{1,3}(?:\.\d{3})+),00\s*COP\b/gi, '$$$1')
+    .replace(/\b(\d{1,3}(?:\.\d{3})+)\s*COP\b/gi, '$$$1');
 
-  const num = parseFloat(cleanVal);
-  if (isNaN(num) || num === 0) return val;
-
-  // Check if it's a simple number representation (only digits, spaces, dots, commas, currency symbol)
-  const isSimpleNumber = /^[$\s\d.,]+$/.test(val);
-  if (isSimpleNumber) {
-    return formatCurrency(num);
-  }
-
-  return val;
+  return cleanedText;
 }
 
 export function simplifyHeaderLabel(label: string): string {
@@ -751,7 +762,10 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
               >
                 <div>
                   <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-2">
-                    <span className="font-extrabold text-blue-800 text-sm">{meta.insurer}</span>
+                    <div className="flex items-center gap-2">
+                      <InsurerLogo insurerName={meta.insurer} size="xs" />
+                      <span className="font-extrabold text-blue-800 text-sm">{meta.insurer}</span>
+                    </div>
                     <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full">
                       Extracción V2
                     </span>
@@ -1155,10 +1169,8 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                                 >
                                   {row.label === 'Deducible' && cell.value !== 'No aplica' ? (
                                     <DeductibleBadge deductible={cell.value} />
-                                  ) : row.label === 'Valor Asegurado' ? (
-                                    formatMatrixValue(cell.value)
                                   ) : (
-                                    cell.value
+                                    formatMatrixValue(cell.value)
                                   )}
                                 </span>
                               )}

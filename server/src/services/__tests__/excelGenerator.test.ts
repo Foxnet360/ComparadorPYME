@@ -127,14 +127,15 @@ describe('excelGenerator', () => {
       expect(buffer.length).toBeGreaterThan(0);
     });
 
-    it('should generate a workbook with seven worksheets including Respaldo Normativo y Legal and Políticas Comerciales', async () => {
+    it('should generate a workbook with eight worksheets including Cuadro Comparativo Resumido, Respaldo Normativo y Legal and Políticas Comerciales', async () => {
       const buffer = await generateExcelBuffer(mockQuotes);
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer);
 
-      expect(workbook.worksheets.length).toBe(7);
+      expect(workbook.worksheets.length).toBe(8);
       expect(workbook.worksheets.map((w) => w.name)).toEqual([
         'Portada y Resumen General',
+        'Cuadro Comparativo Resumido',
         'Matriz Coberturas',
         'Matriz Deducibles',
         'Primas y Costos',
@@ -658,10 +659,10 @@ describe('excelGenerator', () => {
       expect(labelsInCovSheet).toContain('COBERTURAS PRINCIPALES');
       expect(labelsInCovSheet).not.toContain('SECCIÓN HUÉRFANA SIN DATOS');
 
-      // Cell notes should be rendered alongside coverage value and row height expanded dynamically
+      // Finding 4: Cell notes must not corrupt or concatenate into cell values (remains numeric)
       expect(covDataRow).toBeDefined();
-      expect(String(covDataRow!.getCell(2).value)).toContain('[Deducible/Nota: 10% de la pérdida mín 1 SMMLV]');
-      expect(covDataRow!.height).toBeGreaterThan(24);
+      expect(covDataRow!.getCell(2).value).toBe(100000000);
+      expect(String(covDataRow!.getCell(2).note)).toContain('10% de la pérdida mín 1 SMMLV');
 
       // Primas y Costos should match the V2 TOTAL A PAGAR (5,000,000 and 6,000,000) without adding another 19% IVA
       const finSheet = workbook.getWorksheet('Primas y Costos')!;

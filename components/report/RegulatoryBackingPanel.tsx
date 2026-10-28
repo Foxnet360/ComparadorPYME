@@ -10,6 +10,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { getDomainRegulatoryProfile } from '@shared/domainRegulatoryKnowledge';
+import { InsurerLogo } from '../common/InsurerLogo';
 import type { QuoteAnalysis, RegulatoryCheckResult } from '../../types';
 
 interface RegulatoryBackingPanelProps {
@@ -174,7 +175,10 @@ export const RegulatoryBackingPanel: React.FC<RegulatoryBackingPanelProps> = ({
                       className="bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-2.5"
                     >
                       <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                        <span className="font-bold text-sm text-white">{quote.insurerName}</span>
+                        <div className="flex items-center gap-2">
+                          <InsurerLogo insurerName={quote.insurerName} size="xs" />
+                          <span className="font-bold text-sm text-white">{quote.insurerName}</span>
+                        </div>
                         <span
                           className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
                             compliantCount === checks.length

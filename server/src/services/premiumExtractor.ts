@@ -16,10 +16,12 @@ export interface PremiumExtractionResult {
 
 const PREMIUM_PATTERNS = [
   // Line-bounded block matching (up to 4 lines down within the same text block)
+  /prima\s+m[íi]nima(?:\s+anual)?(?:[^\n]*\n){0,4}[^\n]*?(?:\$\s*)?(\d[\d.,]+)/i,
+  /1\s+SMMLV(?:\s+sin\s+i\.?v\.?a\.?)?[:\s]*(?:\$\s*)?(\d[\d.,]+)/i,
   /prima\s+anual\s+incluido\s+iva(?:[^\n]*\n){0,4}[^\n]*?(?:\$\s*)?(\d[\d.,]+)/i,
   /total\s+a\s+pagar(?:[^\n]*\n){0,4}[^\n]*?(?:\$\s*)?(\d[\d.,]+)/i,
   /total\s+prima(?:[^\n]*\n){0,4}[^\n]*?(?:\$\s*)?(\d[\d.,]+)/i,
-  /prima\s+(?:anual|total|neta)[:\s]*(?:\$\s*)?(\d[\d.,]+)/i,
+  /prima\s+(?:anual|total|neta|m[íi]nima)[:\s]*(?:\$\s*)?(\d[\d.,]+)/i,
   /prima[:\s]+(?:\$\s*)?(\d[\d.,]+)/i,
   /valor\s+total(?:\s+\w+){0,5}[:\s]*(?:\$\s*)?(\d[\d.,]+)/i,
   /(?:\$\s*)?(\d[\d.,]+)\s*(?:COP|USD)/i,

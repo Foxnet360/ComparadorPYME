@@ -498,7 +498,11 @@ export const exportAnalysisExcel = async (
         (analysis?.analysis_result as any)?.matrix ||
         (analysis?.analysis_result as any)?.rows,
     };
-    const exportMode = (req.query?.mode as string) || req.body?.mode || 'technical';
+    const exportMode =
+      (req.query?.mode as string) ||
+      (req.body?.mode as string) ||
+      (req.body?.exportMode as string) ||
+      'technical';
 
     const buffer = await generateExcelBuffer(
       quotes,

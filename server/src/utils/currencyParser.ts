@@ -35,8 +35,28 @@ export function parseColombianCurrency(valueStr: string | null | undefined): num
     return null;
   }
 
-  // If there are invalid characters (excluding numbers, dot, comma, minus), unparseable
+  // If there are invalid characters (excluding numbers, dot, comma, minus), try embedded extraction
   if (/[^\d.,\s-]/.test(cleanStr)) {
+    // 1. Attempt to extract an explicit dollar-prefixed amount: e.g. "$1.750.905" or "$ 1.750.905"
+    const explicitDollarMatch = trimmed.match(/\$\s*(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2})?|\d+)/);
+    if (explicitDollarMatch && explicitDollarMatch[1]) {
+      const parsedNested = parseColombianCurrency(explicitDollarMatch[1]);
+      if (parsedNested !== null && parsedNested > 0) {
+        return parsedNested;
+      }
+    }
+
+    // 2. Attempt to extract a formatted thousands number: e.g. "1.750.905" in descriptive text
+    const formattedNumMatch = trimmed.match(
+      /\b(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?)\b/
+    );
+    if (formattedNumMatch && formattedNumMatch[1]) {
+      const parsedNested = parseColombianCurrency(formattedNumMatch[1]);
+      if (parsedNested !== null && parsedNested > 0) {
+        return parsedNested;
+      }
+    }
+
     return null;
   }
 

@@ -46,4 +46,13 @@ describe('currencyParser - parseColombianCurrency', () => {
     expect(parseColombianCurrency('Por confirmar')).toBeNull();
     expect(parseColombianCurrency('abc')).toBeNull();
   });
+
+  it('should parse embedded currency values from descriptive text (e.g. BBVA prima mínima)', () => {
+    expect(parseColombianCurrency('1 SMMLV Sin I.V.A. $1.750.905')).toBe(1750905.0);
+    expect(parseColombianCurrency('Prima Mínima Anual: 1 SMMLV Sin I.V.A. $1.750.905')).toBe(
+      1750905.0
+    );
+    expect(parseColombianCurrency('$ 15.000.000 (Incluye IVA)')).toBe(15000000.0);
+    expect(parseColombianCurrency('Valor COP 100.000.000')).toBe(100000000.0);
+  });
 });

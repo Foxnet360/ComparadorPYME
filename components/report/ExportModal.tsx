@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { generatePDF } from '../../services/pdfService';
 import { storageService } from '../../services/storageService';
 import { apiClient } from '../../services/apiClient';
@@ -36,6 +36,18 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 }) => {
   const [exportingExcel, setExportingExcel] = useState<string | null>(null);
 
+  // Pre-load ally logo from authenticated user profile if not manually set
+  useEffect(() => {
+    void storageService.getCurrentUser().then((user) => {
+      if (user) {
+        const allyLogo = user.logoUrl || user.agentDetails?.logoUrl;
+        if (allyLogo && !pdfOptions.logo) {
+          onPdfOptionsChange({ ...pdfOptions, logo: allyLogo });
+        }
+      }
+    });
+  }, []);
+
   const handleExportExcel = async (exportMode: 'client' | 'technical') => {
     const analysisId = (report as any).id || (report as any).analysisId;
     if (!analysisId) {
@@ -69,6 +81,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           matrix: report.matrix,
           exportMode,
           brokerInfo,
+          cellNotes: cellNotes ? (typeof cellNotes === 'object' ? cellNotes : {}) : {},
         }),
       });
 

@@ -56,6 +56,14 @@
   - `ClientManager.tsx` / `NewClientModal.tsx`: Limpieza de imports de iconos e interfaces no consumidas, e integración del estado `loading` en el listado de copropiedades.
   - `InsurerManager.tsx`: Removidos iconos de Lucide no referenciados. Cero advertencias en toda la capa de administración.
 
+### ✅ 7. Unificación de Clientes y Multi-Tenant RLS en Base de Datos (Migración 031)
+- **Archivos:** `server/supabase/migrations/031_migrate_client_profiles_and_tenant_linkage.sql`, `tests/server/migrations/clientProfilesTenantLinkage.test.ts`
+- **Solución:**
+  - Migración exitosa de los 4 clientes de `client_profiles` a la tabla canónica `clients`, vinculándolos automáticamente a su firma aliada (`org_id` de `Corredores de Seguros SA` y `Protecxa Seguros`).
+  - Creación de llave foránea e índice `client_profiles.client_id -> clients.id`.
+  - Incorporación de columna `org_id` y políticas de RLS colaborativo para equipos en `analysis_history`.
+  - Instalación de triggers `trg_assign_clients_org` y `trg_assign_analysis_history_org` para asignación automática de `org_id` en futuras inserciones.
+
 ---
 
 ## 3. Pendientes Residuales Menores (Backlog Técnico P3)

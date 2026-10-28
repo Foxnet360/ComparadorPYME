@@ -124,10 +124,9 @@ export const AuditSection: React.FC<AuditSectionProps> = ({ quotes, viewMode }) 
   const clausesAvailable = hasClauses || (quotes && quotes.some((q) => q.isRagAvailable));
   const hasAttemptedEnrichRef = useRef(false);
 
-  // Auto-enrich on mount when clauses are available (at most once)
+  // Auto-enrich on mount when quotes are available (at most once)
   useEffect(() => {
     if (
-      clausesAvailable &&
       !isEnriched &&
       !isLoading &&
       !error &&
@@ -138,7 +137,7 @@ export const AuditSection: React.FC<AuditSectionProps> = ({ quotes, viewMode }) 
       console.log('🔄 [AuditSection] Auto-enriching with clauses...');
       enrich(quotes);
     }
-  }, [clausesAvailable, isEnriched, isLoading, error, quotes, enrich]);
+  }, [isEnriched, isLoading, error, quotes, enrich]);
 
   // Defensive check for undefined quotes
   if (!quotes || !Array.isArray(quotes)) {
@@ -265,7 +264,7 @@ export const AuditSection: React.FC<AuditSectionProps> = ({ quotes, viewMode }) 
       )}
 
       {/* No clauses info message */}
-      {!clausesAvailable && (
+      {!isLoading && !clausesAvailable && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <Info size={20} className="text-amber-600 mt-0.5" />

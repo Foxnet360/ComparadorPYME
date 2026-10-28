@@ -28,6 +28,7 @@ import { semanticMatcher } from '../services/semanticMatcher';
 
 import { saveAnalysisHistory, getAnalysisHistoryByUser } from '../repositories/analysisRepository';
 import { getPolicyById } from '../repositories/policyRepository';
+import { supabase } from '../config/database';
 import { ensureClausePersistedInLibrary } from '../services/documentIndexingService';
 import { formatCOP } from '../utils/formatCurrency';
 import { parseColombianCurrency } from '../utils/currencyParser';
@@ -252,6 +253,22 @@ export const analysisController = {
         }
       }
 
+      // Parse clauseIds selected from persistent library
+      let selectedClauseIds: string[] = [];
+      if (req.body?.clauseIds) {
+        try {
+          selectedClauseIds =
+            typeof req.body.clauseIds === 'string'
+              ? JSON.parse(req.body.clauseIds)
+              : req.body.clauseIds;
+          if (!Array.isArray(selectedClauseIds)) {
+            selectedClauseIds = [];
+          }
+        } catch (e) {
+          logger.warn({ err: e }, 'Failed to parse clauseIds from req.body');
+        }
+      }
+
       const rawAnalysisType = req.body?.analysisType ?? req.body?.analysis_type;
       const analysisType: AnalysisType | undefined =
         rawAnalysisType === 'renewal' ? 'renewal' : undefined;
@@ -335,6 +352,38 @@ export const analysisController = {
       }
       if (renewalId) {
         comparisonResult.renewalId = renewalId;
+      }
+
+      // Propagate clause availability when clauseIds are selected from library
+      if (selectedClauseIds.length > 0) {
+        try {
+          const { data: clauseDocs } = await supabase
+            .from('document_insurer_view')
+            .select('insurer_name, id')
+            .in('id', selectedClauseIds);
+          const activeInsurers = new Set(
+            (clauseDocs || [])
+              .map((d: any) => (d.insurer_name || '').toUpperCase().trim())
+              .filter(Boolean)
+          );
+          comparisonResult.quotes?.forEach((q: ComparisonResultQuote) => {
+            const insNorm = (q.insurerName || '').toUpperCase().trim();
+            if (
+              activeInsurers.size === 0 ||
+              activeInsurers.has(insNorm) ||
+              Array.from(activeInsurers).some(
+                (ai: string) => insNorm.includes(ai) || ai.includes(insNorm)
+              )
+            ) {
+              q.isRagAvailable = true;
+            }
+          });
+        } catch (e) {
+          logger.warn({ err: e }, 'Failed to map selected clauseIds to insurers');
+          comparisonResult.quotes?.forEach((q: ComparisonResultQuote) => {
+            q.isRagAvailable = true;
+          });
+        }
       }
 
       // Debug: Log result structure

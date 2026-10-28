@@ -106,10 +106,16 @@ export const generatePDF = (
     options?.commercialPolicies || options?.brokerInfo?.commercialPolicies
   );
 
+  const TABLE_MARGINS = { top: 38, bottom: 22, left: 14, right: 14 };
+  const pagesWithHeader = new Set<number>();
+
   // Helper to add Title Header on new pages
-  const addHeader = (title: string) => {
+  const addHeader = (title: string): number => {
+    const pageNum = doc.getCurrentPageInfo().pageNumber;
+    pagesWithHeader.add(pageNum);
+
     doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-    doc.rect(0, 0, 210, 32, 'F');
+    doc.rect(0, 0, 210, 34, 'F');
 
     // Logo Logic (Broker logoUrl or default logoBase64)
     const logoToUse = options?.brokerInfo?.logoUrl || options?.logoBase64;
@@ -117,66 +123,73 @@ export const generatePDF = (
       try {
         const format =
           logoToUse.includes('image/jpeg') || logoToUse.includes('image/jpg') ? 'JPEG' : 'PNG';
-        doc.addImage(logoToUse, format, 160, 4, 36, 24, undefined, 'FAST');
+        // White rounded background container for ally logo
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(156, 4, 40, 26, 2, 2, 'F');
+        doc.addImage(logoToUse, format, 158, 6, 36, 22, undefined, 'FAST');
       } catch (e) {
         console.warn('Failed to add logo', e);
       }
     } else {
       // Stylized Ally Corporate Emblem Badge
       doc.setFillColor(255, 255, 255);
-      doc.roundedRect(158, 4, 38, 24, 2, 2, 'F');
+      doc.roundedRect(156, 4, 40, 26, 2, 2, 'F');
 
       const emblemName = (options?.brokerInfo?.intermediaryName || 'CORREDURÍA').slice(0, 14);
       doc.setFillColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-      doc.circle(167, 16, 5, 'F');
+      doc.circle(166, 17, 5, 'F');
       doc.setFontSize(6.5);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(255, 255, 255);
-      doc.text(emblemName.slice(0, 3).toUpperCase(), 167, 18, { align: 'center' });
+      doc.text(emblemName.slice(0, 3).toUpperCase(), 166, 19, { align: 'center' });
 
       doc.setFontSize(7.5);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-      doc.text(emblemName, 175, 13);
+      doc.text(emblemName, 174, 14);
 
-      doc.setFontSize(6);
+      doc.setFontSize(5.5);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(100, 116, 139);
-      doc.text('ALIADO DE SEGUROS', 175, 17.5);
-      doc.text('VIGILADO SFC', 175, 21.5);
+      doc.text('ALIADO DE SEGUROS', 174, 18.5);
+      doc.text('VIGILADO SFC', 174, 22.5);
     }
 
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(14);
+    doc.setFontSize(13);
     doc.setFont('helvetica', 'bold');
-    const displayTitle = options?.customTitle || title || `Reporte Ejecutivo de Seguros · ${regProfile.displayName}`;
-    doc.text(displayTitle.substring(0, 52), 14, 13);
+    const displayTitle = options?.customTitle || title || `Reporte Ejecutivo · ${regProfile.displayName}`;
+    doc.text(displayTitle.substring(0, 48), 14, 11);
 
-    doc.setFontSize(7.5);
+    // CSA Platform Credits
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(224, 231, 255);
+    doc.text('Plataforma CSA · Corredores de Seguros Asociados S.A.', 14, 16.5);
+
+    doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Ramo: ${regProfile.displayName}  |  Expedición: ${today}`, 14, 18.5);
-
+    doc.setTextColor(255, 255, 255);
     const brokerTitle =
       options?.brokerInfo?.intermediaryName || options?.brokerInfo?.name || 'Correduría Aliada';
+    doc.text(`Ramo: ${regProfile.displayName}  |  Expedición: ${today}  |  Aliado: ${brokerTitle.substring(0, 32)}`, 14, 22);
+
     const brokerAdvisor = options?.brokerInfo?.name ? `Asesor: ${options.brokerInfo.name}` : '';
     const brokerReg = options?.brokerInfo?.registrationNumber
-      ? `Matrícula SFC: ${options.brokerInfo.registrationNumber}`
+      ? `Matrícula: ${options.brokerInfo.registrationNumber}`
       : '';
-    const headerLine2 = [brokerTitle, brokerAdvisor, brokerReg].filter(Boolean).join('  |  ');
-    doc.text(headerLine2.substring(0, 85), 14, 24);
-
     const brokerPhone = options?.brokerInfo?.phone ? `Tel: ${options.brokerInfo.phone}` : '';
     const brokerEmail = options?.brokerInfo?.email ? `Email: ${options.brokerInfo.email}` : '';
-    const brokerCity = options?.brokerInfo?.city ? `Ciudad: ${options.brokerInfo.city}` : '';
-    const headerLine3 = [brokerPhone, brokerEmail, brokerCity].filter(Boolean).join('  |  ');
-    if (headerLine3) {
-      doc.setFontSize(6.8);
-      doc.text(headerLine3.substring(0, 85), 14, 28.5);
+    const headerContact = [brokerAdvisor, brokerReg, brokerPhone, brokerEmail].filter(Boolean).join('  |  ');
+    if (headerContact) {
+      doc.setFontSize(6.5);
+      doc.setTextColor(224, 231, 255);
+      doc.text(headerContact.substring(0, 78), 14, 27.5);
     }
 
     // Reset text color for body
     doc.setTextColor(30, 41, 59);
-    return 38; // New Y position
+    return 40; // New Y position
   };
 
   const quotes = report.quotes || [];
@@ -400,14 +413,146 @@ export const generatePDF = (
     currentY += techText.length * 4 + 8;
   });
 
-  // --- PAGE 2: MATRIZ COMPARATIVA DE COBERTURAS DINÁMICA POR RAMO ---
+  // --- PAGE 2: CUADRO RESUMEN COMPARATIVO (CUADRO CHICO EJECUTIVO) ---
   doc.addPage();
-  currentY = addHeader(`Matriz Comparativa de Coberturas (${regProfile.displayName})`);
+  currentY = addHeader('Cuadro Resumen Comparativo (Cuadro Chico)');
 
   const insurers = quotes.map((q) => {
     const prof = findColombianInsurerProfile(q.insurerName);
     return prof?.monogram ? `[${prof.monogram}]\n${q.insurerName}` : q.insurerName;
   });
+
+  const getCuadroChicoValue = (q: (typeof quotes)[0], keywords: string[]): string => {
+    const coverages = q.coverages || [];
+    const found = coverages.find((c) => {
+      const name = `${c.name || ''} ${c.canonicalName || ''}`.toLowerCase();
+      return keywords.some((kw) => name.includes(kw));
+    });
+    if (!found) return 'No cotizado';
+    if (found.isPositive === false || ['excluido', 'no incluida', 'no cotizado'].includes(String(found.value).toLowerCase())) {
+      return 'Excluido';
+    }
+    return formatCoverageValuePDF(found.value);
+  };
+
+  doc.setFontSize(9.5);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(30, 41, 59);
+  doc.text('Resumen Ejecutivo de Parámetros Principales y Coberturas Clave', 14, currentY + 2);
+
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(71, 85, 105);
+  const chicoIntro =
+    'Síntesis ejecutiva de condiciones económicas, límites asegurados y deducibles para decisión rápida. ' +
+    'En las páginas siguientes se detalla el alcance normativo y el desglose pormenorizado de cada amparo.';
+  const splitChicoIntro = doc.splitTextToSize(chicoIntro, 182);
+  doc.text(splitChicoIntro, 14, currentY + 7);
+
+  currentY += 8 + splitChicoIntro.length * 3.5;
+
+  const condensedHead = [['Concepto / Parámetro Clave', ...insurers]];
+  const condensedRows: string[][] = [
+    [
+      'Prima Neta Anual',
+      ...quotes.map((q) => (q.priceAnnual ? formatCOP(Math.round(q.priceAnnual / 1.19)) : 'No informada')),
+    ],
+    [
+      'I.V.A. (19%)',
+      ...quotes.map((q) =>
+        q.priceAnnual ? formatCOP(Math.round(q.priceAnnual - q.priceAnnual / 1.19)) : 'N/A'
+      ),
+    ],
+    [
+      'Prima Total Anual',
+      ...quotes.map((q) => (q.priceAnnual ? formatCOP(q.priceAnnual) : 'No informada')),
+    ],
+    [
+      'Forma de Pago / Plazo',
+      ...quotes.map((q) => q.paymentTerms || (q.priceMonthly ? 'Financiado / Mensual' : 'Anual Contado')),
+    ],
+    [
+      'Daño Material / Todo Riesgo',
+      ...quotes.map((q) =>
+        getCuadroChicoValue(q, ['daño material', 'todo riesgo', 'edificio', 'contenido', 'bienes'])
+      ),
+    ],
+    [
+      'Responsabilidad Civil (RCE)',
+      ...quotes.map((q) =>
+        getCuadroChicoValue(q, ['responsabilidad civil', 'rce', 'rc extracontractual', 'predios'])
+      ),
+    ],
+    [
+      'Terremoto / Temblor',
+      ...quotes.map((q) => getCuadroChicoValue(q, ['terremoto', 'temblor', 'erupcion'])),
+    ],
+    [
+      'Hurto / Sustracción',
+      ...quotes.map((q) => getCuadroChicoValue(q, ['hurto', 'sustraccion', 'robo'])),
+    ],
+    [
+      'Rotura de Maquinaria / Eq. Elec.',
+      ...quotes.map((q) =>
+        getCuadroChicoValue(q, ['maquinaria', 'equipo electronico', 'electrico', 'rotura'])
+      ),
+    ],
+    [
+      'Deducible Predominante',
+      ...quotes.map((q) =>
+        q.deductibles
+          ? q.deductibles.substring(0, 38) + (q.deductibles.length > 38 ? '...' : '')
+          : 'Ver tabla detallada'
+      ),
+    ],
+    [
+      'Score Técnico CSA',
+      ...quotes.map((q) => `${q.score || 0} / 100`),
+    ],
+  ];
+
+  autoTable(doc, {
+    startY: currentY,
+    head: condensedHead,
+    body: condensedRows,
+    theme: 'grid',
+    headStyles: { fillColor: PRIMARY_COLOR, fontSize: 8, halign: 'center' },
+    bodyStyles: { fontSize: 7.5, cellPadding: 2.2, valign: 'middle' },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 54, fillColor: [248, 250, 252] } },
+    alternateRowStyles: { fillColor: LIGHT_GRAY },
+    margin: TABLE_MARGINS,
+    didDrawPage: () => {
+      const pageNum = doc.getCurrentPageInfo().pageNumber;
+      if (!pagesWithHeader.has(pageNum)) {
+        addHeader('Cuadro Resumen Comparativo (Cont.)');
+      }
+    },
+    didParseCell: (data) => {
+      if (data.section === 'head' && data.column.index > 0 && data.column.index <= quotes.length) {
+        const q = quotes[data.column.index - 1];
+        if (q) {
+          const prof = findColombianInsurerProfile(q.insurerName);
+          if (prof?.primaryColor) {
+            data.cell.styles.fillColor = hexToRgb(prof.primaryColor);
+            data.cell.styles.textColor = [255, 255, 255];
+            data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.halign = 'center';
+          }
+        }
+      }
+      if (data.section === 'body' && data.row.index === 2) {
+        data.cell.styles.fontStyle = 'bold';
+        if (data.column.index > 0) {
+          data.cell.styles.textColor = PRIMARY_COLOR;
+        }
+      }
+    },
+  });
+
+  // --- PAGE 3: MATRIZ COMPARATIVA DE COBERTURAS DINÁMICA POR RAMO ---
+  doc.addPage();
+  currentY = addHeader(`Matriz Comparativa de Coberturas (${regProfile.displayName})`);
+
   const tableHead = [['Amparo / Cobertura y Alcance Legal', ...insurers]];
   const tableBody: string[][] = [];
 
@@ -490,6 +635,13 @@ export const generatePDF = (
     bodyStyles: { fontSize: 7.5, cellPadding: 2.5, valign: 'middle' },
     columnStyles: { 0: { fontStyle: 'bold', cellWidth: 62 } },
     alternateRowStyles: { fillColor: LIGHT_GRAY },
+    margin: TABLE_MARGINS,
+    didDrawPage: () => {
+      const pageNum = doc.getCurrentPageInfo().pageNumber;
+      if (!pagesWithHeader.has(pageNum)) {
+        addHeader(`Matriz Comparativa de Coberturas (${regProfile.displayName}) (Cont.)`);
+      }
+    },
     didParseCell: (data) => {
       if (data.section === 'head' && data.column.index > 0 && data.column.index <= quotes.length) {
         const q = quotes[data.column.index - 1];
@@ -557,6 +709,13 @@ export const generatePDF = (
       bodyStyles: { fontSize: 7.5, cellPadding: 2.5 },
       columnStyles: { 0: { fontStyle: 'bold', cellWidth: 45 } },
       alternateRowStyles: { fillColor: LIGHT_GRAY },
+      margin: TABLE_MARGINS,
+      didDrawPage: () => {
+        const pageNum = doc.getCurrentPageInfo().pageNumber;
+        if (!pagesWithHeader.has(pageNum)) {
+          addHeader('Estructura de Deducibles (Cont.)');
+        }
+      },
       didParseCell: (data) => {
         if (data.section === 'head' && data.column.index > 0 && data.column.index <= quotes.length) {
           const q = quotes[data.column.index - 1];
@@ -714,6 +873,13 @@ export const generatePDF = (
     bodyStyles: { fontSize: 8, fontStyle: 'bold', cellPadding: 3 },
     columnStyles: { 0: { cellWidth: 60 } },
     alternateRowStyles: { fillColor: LIGHT_GRAY },
+    margin: TABLE_MARGINS,
+    didDrawPage: () => {
+      const pageNum = doc.getCurrentPageInfo().pageNumber;
+      if (!pagesWithHeader.has(pageNum)) {
+        addHeader('Resumen Económico (Cont.)');
+      }
+    },
   });
 
   currentY = getLastAutoTableFinalY(doc, currentY) + 12;
@@ -819,7 +985,13 @@ export const generatePDF = (
           }
         }
       },
-      margin: { left: 14, right: 14 },
+      margin: TABLE_MARGINS,
+      didDrawPage: () => {
+        const pageNum = doc.getCurrentPageInfo().pageNumber;
+        if (!pagesWithHeader.has(pageNum)) {
+          addHeader('Auditoría de Conformidad Regulatoria (Cont.)');
+        }
+      },
     });
 
     currentY = getLastAutoTableFinalY(doc, currentY) + 8;
@@ -873,7 +1045,13 @@ export const generatePDF = (
       0: { cellWidth: 50, fontStyle: 'bold', fillColor: [248, 250, 252] },
       1: { cellWidth: 132 },
     },
-    margin: { left: 14, right: 14 },
+    margin: TABLE_MARGINS,
+    didDrawPage: () => {
+      const pageNum = doc.getCurrentPageInfo().pageNumber;
+      if (!pagesWithHeader.has(pageNum)) {
+        addHeader('Políticas Comerciales (Cont.)');
+      }
+    },
   });
 
   let afterPolicyY = getLastAutoTableFinalY(doc, policyY) + 8;
@@ -926,20 +1104,26 @@ export const generatePDF = (
     // Subtle top border for footer
     doc.setDrawColor(226, 232, 240);
     doc.setLineWidth(0.4);
-    doc.line(14, 284, 196, 284);
+    doc.line(14, 282, 196, 282);
 
     // Left: Ally branding & contact
     doc.setFontSize(7);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(51, 65, 85);
     const leftText = `${brokerDisplayName}${brokerFooterContact ? ` · ${brokerFooterContact}` : ''}`;
-    doc.text(leftText.substring(0, 95), 14, 288.5);
+    doc.text(leftText.substring(0, 95), 14, 286);
+
+    // Explicit credit for Corredores de Seguros Asociados S.A.
+    doc.setFontSize(6.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 116, 139);
+    doc.text('En alianza con Corredores de Seguros Asociados S.A. · Vigilado Superintendencia Financiera de Colombia', 14, 290);
 
     // Right: Page number and system mark
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(148, 163, 184);
-    doc.text(`Página ${i} de ${pageCount}  |  Comparador CSA`, 196, 288.5, { align: 'right' });
+    doc.text(`Página ${i} de ${pageCount}  |  CSA`, 196, 288.5, { align: 'right' });
   }
 
   const safeDomain = (domain || 'Seguros').replace(/[^a-zA-Z0-9_-]/g, '_');
