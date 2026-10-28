@@ -1,4 +1,5 @@
 import * as ExcelJS from 'exceljs';
+import sharp from 'sharp';
 import { QuoteAnalysis, MatrixRow, MatrixCell, ScoringBreakdown } from '../types';
 import { InsuranceDomain } from '../types/domain';
 import {
@@ -17,12 +18,25 @@ import {
   getDomainRegulatoryProfile,
   findPedagogicalExplanation,
 } from '../shared/domainRegulatoryKnowledge';
-import { findColombianInsurerProfile } from '../shared/colombianInsurersCatalog';
+import {
+  findColombianInsurerProfile,
+  buildInsurerSvgDataUri,
+} from '../shared/colombianInsurersCatalog';
 import {
   CommercialPolicies,
   getEffectiveCommercialPolicies,
   getStructuredCommercialPolicyEntries,
 } from '../shared/commercialPolicies';
+
+async function getInsurerLogoPngBuffer(insurerName: string): Promise<Buffer | null> {
+  try {
+    const uri = buildInsurerSvgDataUri(insurerName);
+    const svgStr = decodeURIComponent(uri.replace('data:image/svg+xml;utf8,', ''));
+    return await sharp(Buffer.from(svgStr)).resize(64, 64).png().toBuffer();
+  } catch {
+    return null;
+  }
+}
 
 function isDeductibleMatrixRow(row: MatrixRow): boolean {
   if (row.sectionId === DEDUCTIBLE_SECTION_ID) return true;
@@ -144,6 +158,14 @@ export async function generateExcelBuffer(
   const hasNotes = cellNotes && Object.keys(cellNotes).length > 0;
   const FONT_NAME = 'Segoe UI';
   const regulatoryProfile = getDomainRegulatoryProfile(domain);
+
+  // Pre-generate offline brand logo buffers for each insurer
+  const insurerLogoBuffers = await Promise.all(
+    quotes.map((q) => getInsurerLogoPngBuffer(q.insurerName))
+  );
+  const insurerImageIds: (number | null)[] = insurerLogoBuffers.map((buf) =>
+    buf ? workbook.addImage({ buffer: buf as unknown as ExcelJS.Buffer, extension: 'png' }) : null
+  );
 
   // Obtain ground-truth matrix rows from reportData or build using matrixTransformer
   const matrix: MatrixRow[] =
@@ -333,11 +355,12 @@ export async function generateExcelBuffer(
     color: { argb: 'FF1E3A8A' },
   };
 
-  portada.getRow(24).height = 26;
+  portada.getRow(24).height = 42;
   const colAHeader = portada.getCell('B24');
   colAHeader.value = 'DIMENSIÓN DE EVALUACIÓN';
   colAHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
   colAHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+  colAHeader.alignment = { vertical: 'middle', horizontal: 'left' };
 
   quotes.forEach((q, idx) => {
     const colLetter = String.fromCharCode(68 + idx);
@@ -347,9 +370,22 @@ export async function generateExcelBuffer(
       ? 'FF' + profile.primaryColor.replace('#', '')
       : 'FF1E3A8A';
     hCell.value = `${profile?.monogram ? `[${profile.monogram}] ` : ''}${q.insurerName.toUpperCase()}`;
-    hCell.font = { name: FONT_NAME, size: 9.5, bold: true, color: { argb: 'FFFFFFFF' } };
-    hCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: argbColor } };
-    hCell.alignment = { horizontal: 'center' };
+    hCell.font = { name: FONT_NAME, size: 9.5, bold: true, color: { argb: 'FF0F172A' } };
+    hCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+    hCell.border = {
+      top: { style: 'medium', color: { argb: argbColor } },
+      bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+      left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+      right: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+    };
+    hCell.alignment = { horizontal: 'center', vertical: 'bottom', wrapText: true };
+
+    if (insurerImageIds[idx] !== null) {
+      portada.addImage(insurerImageIds[idx]!, {
+        tl: { col: 3 + idx + 0.38, row: 23.08 },
+        ext: { width: 22, height: 22 },
+      });
+    }
   });
 
   const dimensions = [
@@ -497,7 +533,7 @@ export async function generateExcelBuffer(
   sumSubtitle.font = { name: FONT_NAME, size: 9.5, italic: true, color: { argb: 'FF64748B' } };
   sumSubtitle.alignment = { vertical: 'middle', horizontal: 'left' };
 
-  summarySheet.getRow(5).height = 38;
+  summarySheet.getRow(5).height = 54;
   const sumHeaderLabel = summarySheet.getCell(5, 1);
   sumHeaderLabel.value = 'VARIABLE O CONCEPTO CLAVE';
   sumHeaderLabel.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -511,12 +547,25 @@ export async function generateExcelBuffer(
     const argbColor = profile?.primaryColor
       ? 'FF' + profile.primaryColor.replace('#', '')
       : 'FF1E3A8A';
-    headerCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-    headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: argbColor } };
-    headerCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    headerCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF0F172A' } };
+    headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+    headerCell.border = {
+      top: { style: 'medium', color: { argb: argbColor } },
+      bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+      left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+      right: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+    };
+    headerCell.alignment = { horizontal: 'center', vertical: 'bottom', wrapText: true };
+
+    if (insurerImageIds[i] !== null) {
+      summarySheet.addImage(insurerImageIds[i]!, {
+        tl: { col: i + 1 + 0.38, row: 4.1 },
+        ext: { width: 28, height: 28 },
+      });
+    }
   });
 
-  const getCoverageSummary = (q: QuoteAnalysis, keywords: string[]): string => {
+  const getCoverageSummary = (q: QuoteAnalysis, keywords: string[], quoteIdx?: number): string => {
     for (const c of q.coverages || []) {
       const nameNorm = (c.name || c.canonicalName || '').toLowerCase();
       if (keywords.some((kw) => nameNorm.includes(kw))) {
@@ -526,18 +575,58 @@ export async function generateExcelBuffer(
         }
       }
     }
+
+    if (typeof quoteIdx === 'number' && matrix && matrix.length > 0) {
+      const row = matrix.find((r) => {
+        if (r.type !== 'data' || !r.cells || !r.cells[quoteIdx]) return false;
+        if (r.sectionId === FINANCIAL_SECTION_ID) return false;
+        const labelNorm = (r.label || '').toLowerCase();
+        return keywords.some((kw) => labelNorm.includes(kw));
+      });
+      if (row && row.cells[quoteIdx]?.value) {
+        const val = row.cells[quoteIdx]!.value;
+        if (val && val !== 'No informado' && val !== 'No cotizado' && !isExcludedValue(val)) {
+          const num = parseNumericValue(val);
+          return num > 0 ? '$ ' + num.toLocaleString('es-CO') : formatMatrixValue(val);
+        }
+      }
+    }
+
     return 'No cotizado';
   };
 
-  const getDeductibleSummary = (q: QuoteAnalysis, keywords: string[]): string => {
+  const getDeductibleSummary = (q: QuoteAnalysis, keywords: string[], quoteIdx?: number): string => {
     for (const c of q.coverages || []) {
       const nameNorm = (c.name || c.canonicalName || '').toLowerCase();
       if (keywords.some((kw) => nameNorm.includes(kw))) {
-        if (c.deductible && c.deductible.trim() !== '' && c.deductible.toLowerCase() !== 'no aplica') {
+        if (
+          c.deductible &&
+          c.deductible.trim() !== '' &&
+          c.deductible.toLowerCase() !== 'no aplica' &&
+          c.deductible.toLowerCase() !== 'no especificado'
+        ) {
           return c.deductible;
         }
       }
     }
+
+    if (typeof quoteIdx === 'number' && matrix && matrix.length > 0) {
+      const dedRow = matrix.find((r) => {
+        if (r.type !== 'data' || !r.cells || !r.cells[quoteIdx]) return false;
+        if (r.sectionId !== DEDUCTIBLE_SECTION_ID && !r.label.toLowerCase().includes('deducible')) {
+          return false;
+        }
+        const labelNorm = (r.label || '').toLowerCase();
+        return keywords.some((kw) => labelNorm.includes(kw));
+      });
+      if (dedRow && dedRow.cells[quoteIdx]?.value) {
+        const val = dedRow.cells[quoteIdx]!.value;
+        if (val && val !== 'No informado' && val !== 'No cotizado') {
+          return val;
+        }
+      }
+    }
+
     return 'Según condiciones generales';
   };
 
@@ -545,7 +634,7 @@ export async function generateExcelBuffer(
     type: 'header' | 'data';
     label: string;
     isCurrency?: boolean;
-    getValue?: (q: QuoteAnalysis) => string | number;
+    getValue?: (q: QuoteAnalysis, idx?: number) => string | number;
   }
 
   const domainRules = regulatoryProfile?.mandatoryVerificationRules || [];
@@ -590,13 +679,13 @@ export async function generateExcelBuffer(
       ? domainRules.map((rule) => ({
           type: 'data' as const,
           label: rule.title,
-          getValue: (q: QuoteAnalysis) => getCoverageSummary(q, rule.keywords),
+          getValue: (q: QuoteAnalysis, idx?: number) => getCoverageSummary(q, rule.keywords, idx),
         }))
       : [
           {
             type: 'data' as const,
             label: 'Amparo Principal / Cobertura Básica',
-            getValue: (q: QuoteAnalysis) =>
+            getValue: (q: QuoteAnalysis, idx?: number) =>
               (q.coverages && q.coverages[0]?.value) || 'Ver condicionado',
           },
         ]),
@@ -605,7 +694,7 @@ export async function generateExcelBuffer(
       ? domainRules.map((rule) => ({
           type: 'data' as const,
           label: `Deducible: ${rule.title}`,
-          getValue: (q: QuoteAnalysis) => getDeductibleSummary(q, rule.keywords),
+          getValue: (q: QuoteAnalysis, idx?: number) => getDeductibleSummary(q, rule.keywords, idx),
         }))
       : [
           {
@@ -651,7 +740,7 @@ export async function generateExcelBuffer(
 
       quotes.forEach((q, idx) => {
         const cCell = summarySheet.getCell(currentSumRow, idx + 2);
-        const val = cr.getValue ? cr.getValue(q) : '';
+        const val = cr.getValue ? cr.getValue(q, idx) : '';
         if (cr.isCurrency && typeof val === 'number') {
           cCell.value = val > 0 ? val : 'No informado';
           if (val > 0) {
@@ -690,11 +779,12 @@ export async function generateExcelBuffer(
   covTitle.font = { name: FONT_NAME, size: 14, bold: true, color: { argb: 'FF1E3A8A' } };
   covTitle.alignment = { vertical: 'middle', horizontal: 'left' };
 
-  coveragesSheet.getRow(4).height = 38;
+  coveragesSheet.getRow(4).height = 54;
   const mainLabelHeader = coveragesSheet.getCell(4, 1);
   mainLabelHeader.value = 'COBERTURA / CONCEPTO CANÓNICO';
   mainLabelHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
   mainLabelHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+  mainLabelHeader.alignment = { vertical: 'middle', horizontal: 'left' };
 
   quotes.forEach((q, i) => {
     const insHeader = coveragesSheet.getCell(4, i + 2);
@@ -703,9 +793,22 @@ export async function generateExcelBuffer(
     const argbColor = profile?.primaryColor
       ? 'FF' + profile.primaryColor.replace('#', '')
       : 'FF1E3A8A';
-    insHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-    insHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: argbColor } };
-    insHeader.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    insHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF0F172A' } };
+    insHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+    insHeader.border = {
+      top: { style: 'medium', color: { argb: argbColor } },
+      bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+      left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+      right: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+    };
+    insHeader.alignment = { horizontal: 'center', vertical: 'bottom', wrapText: true };
+
+    if (insurerImageIds[i] !== null) {
+      coveragesSheet.addImage(insurerImageIds[i]!, {
+        tl: { col: i + 1 + 0.38, row: 3.1 },
+        ext: { width: 28, height: 28 },
+      });
+    }
   });
 
   if (hasNotes) {
@@ -902,11 +1005,12 @@ export async function generateExcelBuffer(
   dedTitle.value = 'MATRIZ CONSOLIDADA DE DEDUCIBLES Y RETENCIÓN DE RIESGO';
   dedTitle.font = { name: FONT_NAME, size: 14, bold: true, color: { argb: 'FF1E3A8A' } };
 
-  deductiblesSheet.getRow(4).height = 38;
+  deductiblesSheet.getRow(4).height = 54;
   const dedLabelHeader = deductiblesSheet.getCell(4, 1);
   dedLabelHeader.value = 'AMPARO / COBERTURA';
   dedLabelHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
   dedLabelHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+  dedLabelHeader.alignment = { vertical: 'middle', horizontal: 'left' };
 
   quotes.forEach((q, i) => {
     const insHeader = deductiblesSheet.getCell(4, i + 2);
@@ -915,9 +1019,22 @@ export async function generateExcelBuffer(
     const argbColor = profile?.primaryColor
       ? 'FF' + profile.primaryColor.replace('#', '')
       : 'FF1E3A8A';
-    insHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-    insHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: argbColor } };
-    insHeader.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    insHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF0F172A' } };
+    insHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+    insHeader.border = {
+      top: { style: 'medium', color: { argb: argbColor } },
+      bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+      left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+      right: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+    };
+    insHeader.alignment = { horizontal: 'center', vertical: 'bottom', wrapText: true };
+
+    if (insurerImageIds[i] !== null) {
+      deductiblesSheet.addImage(insurerImageIds[i]!, {
+        tl: { col: i + 1 + 0.38, row: 3.1 },
+        ext: { width: 28, height: 28 },
+      });
+    }
   });
 
   if (mode === 'client') {
@@ -1079,11 +1196,12 @@ export async function generateExcelBuffer(
   finTitle.value = 'EVALUACIÓN FINANCIERA DE PRIMAS Y COSTOS COMPARATIVOS';
   finTitle.font = { name: FONT_NAME, size: 14, bold: true, color: { argb: 'FF1E3A8A' } };
 
-  financialsSheet.getRow(4).height = 38;
+  financialsSheet.getRow(4).height = 54;
   const finLabelHeader = financialsSheet.getCell(4, 1);
   finLabelHeader.value = 'CONCEPTO FINANCIERO';
   finLabelHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
   finLabelHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+  finLabelHeader.alignment = { vertical: 'middle', horizontal: 'left' };
 
   quotes.forEach((q, i) => {
     const insHeader = financialsSheet.getCell(4, i + 2);
@@ -1092,9 +1210,22 @@ export async function generateExcelBuffer(
     const argbColor = profile?.primaryColor
       ? 'FF' + profile.primaryColor.replace('#', '')
       : 'FF1E3A8A';
-    insHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-    insHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: argbColor } };
-    insHeader.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    insHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FF0F172A' } };
+    insHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+    insHeader.border = {
+      top: { style: 'medium', color: { argb: argbColor } },
+      bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+      left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+      right: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+    };
+    insHeader.alignment = { horizontal: 'center', vertical: 'bottom', wrapText: true };
+
+    if (insurerImageIds[i] !== null) {
+      financialsSheet.addImage(insurerImageIds[i]!, {
+        tl: { col: i + 1 + 0.38, row: 3.1 },
+        ext: { width: 28, height: 28 },
+      });
+    }
   });
 
   const financialMatrixRows = matrix.filter(

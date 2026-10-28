@@ -1270,12 +1270,14 @@ async function buildV2Cell(
     const parsed = parseDeductible(rawValue);
     deductible = parsed.deductible;
 
-    if (deductible.type === 'see_conditions') {
-      value = 'Ver condiciones';
-      notFound = false;
-    } else if (deductible.type === 'not_applicable') {
-      value = 'No aplica';
-      notFound = false;
+    if (typeof deductible === 'object' && deductible !== null) {
+      if (deductible.type === 'see_conditions') {
+        value = 'Ver condiciones';
+        notFound = false;
+      } else if (deductible.type === 'not_applicable') {
+        value = 'No aplica';
+        notFound = false;
+      }
     }
 
     isAmbiguous = isAmbiguous || parsed.isAmbiguous;
@@ -1283,7 +1285,10 @@ async function buildV2Cell(
     if (graphEnabled && graphService && rawValue) {
       const links = await graphService.queryDeductible(rawValue, { insurer });
       if (links.length > 0) {
-        deductible = { ...deductible, appliesTo: [links[0]!.appliesTo] };
+        deductible =
+          typeof deductible === 'object' && deductible !== null
+            ? { ...deductible, appliesTo: [links[0]!.appliesTo] }
+            : { appliesTo: [links[0]!.appliesTo], description: String(deductible) };
       }
     }
   }

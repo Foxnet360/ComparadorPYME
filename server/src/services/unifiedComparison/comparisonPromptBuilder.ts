@@ -483,7 +483,11 @@ ${context.hasClauses ? 'También se proporcionan clausulados para validación; �
    - Daños por Agua / Anegación: extrae % de la pérdida y mínimo en SMMLV.
    - RCE y D&O: extrae % de la pérdida y mínimo en SMMLV, o "Sin deducible" si no aplica copago.
    - Si una cobertura no tiene deducible a cargo de la copropiedad, usa textualmente "Sin deducible".
-4. FINANCIAL: Extrae Prima Neta, Gastos de Expedición, IVA (19%) y Total a Pagar / Prima Total Anual. NUNCA confundas la suma asegurada de los edificios con la prima a pagar de la póliza. Si una cotización indica 'Prima Mínima Anual' o valor en SMMLV (ej. '1 SMMLV Sin I.V.A. $1.750.905'), extrae obligatoriamente el monto numérico en pesos en 'Total a Pagar' o 'Prima Neta'. NUNCA dejes la prima vacía ni en 0 si figura una prima mínima o valor a pagar.`;
+4. FINANCIAL: Extrae Prima Neta, Gastos de Expedición, IVA (19%) y Total a Pagar / Prima Total Anual. NUNCA confundas la suma asegurada de los edificios con la prima a pagar de la póliza. Si una cotización indica 'Prima Mínima Anual' o valor en SMMLV (ej. '1 SMMLV Sin I.V.A. $1.750.905'), extrae obligatoriamente el monto numérico en pesos en 'Total a Pagar' o 'Prima Neta'. NUNCA dejes la prima vacía ni en 0 si figura una prima mínima o valor a pagar.
+5. ESPECIFICIDAD PARA ASEGURADORAS DE COPROPIEDADES (AXA COLPATRIA, SBS, SEGUROS DEL ESTADO):
+   - AXA Colpatria: Ubica la sección de liquidación de la póliza y extrae obligatoriamente Prima Neta, Gastos de Expedición, IVA y Total a Pagar. En deducibles, extrae la fórmula completa de Terremoto (% edificación o pérdida y mín SMMLV), Rotura de Maquinaria y RCE.
+   - SBS Seguros: Extrae la liquidación económica del cuadro de primas ('Total Liquidación' o 'Prima Total a Pagar') y todos los deducibles especificados para zonas comunes.
+   - Seguros del Estado: Localiza el cuadro 'Liquidación' ('Prima Neta Total', 'Gastos de Expedición', 'IVA' y 'Total Póliza / Total a Pagar') y los deducibles de cada amparo.`;
     } else if (isAutos) {
       sectionsToUse = AUTOS_GRANULAR_SECTIONS;
       roleDescription =
@@ -569,6 +573,8 @@ Reglas Generales:
   * Usa "Sin deducible" en la sección de deducibles cuando el amparo no tenga copago a cargo del asegurado.
   * Usa "No Aplica (Edificio no cotizado)" o "No Aplica (Contenidos no cotizados)" en deducibles cuando el bien base no forma parte del seguro.
 - REGLA CRÍTICA DE COMPLETITUD: DEBES EXTRAER EL 100% DE LAS COBERTURAS, BIENES, DEDUCIBLES Y CONDICIONES PRESENTES EN LAS COTIZACIONES. NO OMITAS NINGUNA FILA POR RESUMEN O LÍMITE DE ESPACIO. SI EXISTEN 30 O 40 AMPAROS, GENERA LAS 30 O 40 FILAS EN EL JSON.
+- REGLA OBLIGATORIA DE DEDUCIBLES: En cada celda del array "cells" de coberturas, incluye en el campo "deductible" el texto textual del deducible correspondiente a ese amparo (ej. "10% de la pérdida mín. 5 SMMLV", "Sin deducible", o "No aplica"). Además, incluye obligatoriamente la sección completa "DEDUCIBLES" con filas dedicadas para cada deducible de la cotización.
+- REGLA OBLIGATORIA DE LIQUIDACIÓN Y PRIMAS: En la sección "FINANCIAL", extrae sin excepción: 'Prima Neta Anual', 'Gastos de Expedición', 'IVA (19%)' y 'Total a Pagar / Prima Total Anual'. Si una cotización indica 'Prima Mínima' o monto de liquidación final, extráelo obligatoriamente en número en pesos en 'Total a Pagar'. NUNCA dejes la prima vacía ni en 0.
 - REGLA DE INTEGRIDAD NUMÉRICA: Conserva intactos los montos, monedas (COP/USD), símbolos y separadores de miles/decimales. Si una cifra dice "$ 15.000.000,00" o "$ 15,000,000.00", déjala tal cual sin alterar ni mover los puntos o comas.${percentageRule}
 - CITA DE PÁGINA: Extrae obligatoriamente en pageNumber el número de página exacto (1-indexado) donde figura la información dentro de la cotización.
 - Copia los valores textualmente como aparecen en cada cotización.
@@ -599,7 +605,7 @@ Reglas Generales:
       "label": "Edificio / Estructura",
       "section": "BIENES ASEGURADOS",
       "cells": [
-        {"insurer": "Aseguradora A", "value": "...", "rawText": "...", "pageNumber": 1},
+        {"insurer": "Aseguradora A", "value": "...", "deductible": "...", "rawText": "...", "pageNumber": 1},
         ...
       ]
     },

@@ -3,6 +3,7 @@ import { quoteScorer } from '../quoteScorer';
 import { checkClauseDocumentExists } from '../clauseCoverageValidator';
 import {
   FINANCIAL_SECTION_ID,
+  DEDUCTIBLE_SECTION_ID,
   isFinancialRowLabel,
   alignMatrixRowsToQuotes,
   extractMatrixInsurers,
@@ -202,10 +203,20 @@ export async function matrixRowsToComparisonReport(
             return;
           }
 
+          // If the row belongs to DEDUCIBLES section, cell.value is the deductible text itself
+          const isDeductibleRow =
+            row.sectionId === DEDUCTIBLE_SECTION_ID ||
+            (currentSection && currentSection.toUpperCase().includes('DEDUCIBLE')) ||
+            (row.label && row.label.toUpperCase().includes('DEDUCIBLE'));
+
+          const deductibleVal = isDeductibleRow
+            ? (cell.notes || (cell.value && cell.value !== 'No informado' ? cell.value : undefined)) || 'No especificado'
+            : cell.notes || 'No especificado';
+
           rowsToProcess.push({
             label: row.label || 'Cobertura',
             value: value === 'No informado' || value === 'N.C.' ? 'No incluido' : value,
-            deductible: cell.notes || 'No especificado',
+            deductible: deductibleVal,
             isExcluded: cell.isExcluded,
             confidence: cell.confidence,
             section: currentSection,
@@ -373,6 +384,37 @@ export async function matrixRowsToComparisonReport(
         }
       });
 
+      // Cross-populate deductibles from deductible rows if coverage deductible is not specified
+      coverages.forEach((cov) => {
+        if (!cov.deductible || cov.deductible === 'No especificado') {
+          const normCovName = (cov.canonicalName || cov.name || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+
+          // Find a deductible row matching coverage concepts
+          const matchingDedRow = matrixRows.find((mr) => {
+            if (mr.type !== 'data' || !mr.cells || cellIdx < 0 || !mr.cells[cellIdx]) return false;
+            if (mr.sectionId !== DEDUCTIBLE_SECTION_ID && !mr.label.toLowerCase().includes('deducible')) {
+              return false;
+            }
+            const normDedLabel = mr.label
+              .toLowerCase()
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '');
+            const keyTokens = normCovName.split(/\s+/).filter((t) => t.length > 3);
+            return keyTokens.some((tok) => normDedLabel.includes(tok));
+          });
+
+          if (matchingDedRow && matchingDedRow.cells[cellIdx]?.value) {
+            const val = matchingDedRow.cells[cellIdx]!.value;
+            if (val && val !== 'No informado' && val !== 'No especificado') {
+              cov.deductible = val;
+            }
+          }
+        }
+      });
+
       const defaultPolicyName =
         domain === 'pyme'
           ? 'Cotización PYME'
@@ -423,20 +465,15 @@ export async function matrixRowsToComparisonReport(
       .replace(/[\u0300-\u036f]/g, '');
 
     if (
-      norm.includes('asegurad') ||
-      norm.includes('asegurable') ||
       norm.includes('suma asegurada') ||
       norm.includes('valor asegurable') ||
       norm.includes('limite') ||
-      norm.includes('edificio') ||
-      norm.includes('contenido') ||
-      norm.includes('bienes') ||
-      norm.includes('mercancia')
+      norm.includes('deducible')
     ) {
       return false;
     }
 
-    return [
+    const highPriorityKeywords = [
       'total a pagar',
       'valor a pagar',
       'total liquidacion',
@@ -446,6 +483,7 @@ export async function matrixRowsToComparisonReport(
       'prima con iva',
       'total prima',
       'prima total',
+      'prima total anual',
       'prima minima',
       'prima mínima',
       'prima minima anual',
@@ -455,7 +493,24 @@ export async function matrixRowsToComparisonReport(
       'total anual',
       'total propuesta',
       'valor de la poliza',
-    ].some((kw) => norm.includes(kw));
+    ];
+
+    const hasHighPriority = highPriorityKeywords.some((kw) => norm.includes(kw));
+    if (hasHighPriority) return true;
+
+    // Disqualify non-financial coverage rows that mention physical assets without an explicit total
+    if (
+      norm.includes('asegurad') ||
+      norm.includes('asegurable') ||
+      norm.includes('edificio') ||
+      norm.includes('contenido') ||
+      norm.includes('bienes') ||
+      norm.includes('mercancia')
+    ) {
+      return false;
+    }
+
+    return false;
   };
 
   const isFallbackPremiumLabel = (label: string): boolean => {
@@ -468,11 +523,27 @@ export async function matrixRowsToComparisonReport(
       norm.includes('gasto') ||
       norm.includes('expedicion') ||
       norm.includes('forma de pago') ||
-      norm.includes('asegurad') ||
-      norm.includes('asegurable') ||
       norm.includes('suma asegurada') ||
       norm.includes('valor asegurable') ||
       norm.includes('limite') ||
+      norm.includes('deducible')
+    ) {
+      return false;
+    }
+
+    // Explicit net premium keywords (including Copropiedades e.g. "Prima Neta Bienes Comunes")
+    if (
+      norm.includes('prima neta') ||
+      norm.includes('prima basica') ||
+      norm.includes('prima básica') ||
+      norm.includes('prima anual')
+    ) {
+      return true;
+    }
+
+    if (
+      norm.includes('asegurad') ||
+      norm.includes('asegurable') ||
       norm.includes('edificio') ||
       norm.includes('contenido') ||
       norm.includes('bienes')
@@ -527,6 +598,26 @@ export async function matrixRowsToComparisonReport(
         intermediateQuotes[i]!.parsedQuote.priceAnnual = numericValue;
         intermediateQuotes[i]!.priceMonthly = Math.round(numericValue / 12);
         hasDefinitivePremium[i] = true;
+      }
+    }
+  }
+
+  // 3rd pass: if an insurer still has no premium, inspect any financial row
+  for (let i = 0; i < insurerNames.length; i++) {
+    if (hasDefinitivePremium[i]) continue;
+    for (const row of matrixRows) {
+      if (row.type !== 'data' || row.sectionId !== FINANCIAL_SECTION_ID) continue;
+      const cellIdx = indexMap[i] ?? -1;
+      const cell = row.cells[cellIdx];
+      if (!cell || !cell.value) continue;
+      const numericValue = parseColombianCurrency(cell.value);
+      if (numericValue !== null && numericValue > 0) {
+        if (domain === 'hogar' && numericValue > 100_000_000) continue;
+        intermediateQuotes[i]!.priceAnnual = numericValue;
+        intermediateQuotes[i]!.parsedQuote.priceAnnual = numericValue;
+        intermediateQuotes[i]!.priceMonthly = Math.round(numericValue / 12);
+        hasDefinitivePremium[i] = true;
+        break;
       }
     }
   }

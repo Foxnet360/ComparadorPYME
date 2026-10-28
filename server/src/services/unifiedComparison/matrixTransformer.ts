@@ -29,22 +29,45 @@ export const ADDITIONAL_SECTION_ID = 101;
 
 export const FINANCIAL_SECTION_LABEL = 'PRIMAS Y COSTOS';
 
-export function getSectionId(sectionName: string): number {
+export function isFinancialSection(sectionName?: string): boolean {
+  if (!sectionName) return false;
   const norm = sectionName
     .toUpperCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
-  if (norm.includes('PRIMA') || norm.includes('COSTO') || norm === FINANCIAL_SECTION_LABEL) {
+  return (
+    norm.includes('PRIMA') ||
+    norm.includes('COSTO') ||
+    norm.includes('FINANC') ||
+    norm.includes('LIQUIDAC') ||
+    norm.includes('PAGO') ||
+    norm.includes('TARIFA') ||
+    norm === FINANCIAL_SECTION_LABEL ||
+    norm === 'FINANCIAL'
+  );
+}
+
+export function getSectionId(sectionName: string): number {
+  if (isFinancialSection(sectionName)) {
     return FINANCIAL_SECTION_ID;
   }
-  if (norm.includes('DEDUCIBLE')) {
+  const norm = sectionName
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  if (
+    norm.includes('DEDUCIBLE') ||
+    norm.includes('COPAGO') ||
+    norm.includes('FRANQUICIA')
+  ) {
     return DEDUCTIBLE_SECTION_ID;
   }
   if (
     norm.includes('CONDICION') ||
     norm.includes('OBSERVACION') ||
     norm.includes('ALERTA') ||
-    norm.includes('ADICIONAL')
+    norm.includes('ADICIONAL') ||
+    norm.includes('EXCLUSION')
   ) {
     return ADDITIONAL_SECTION_ID;
   }
@@ -129,6 +152,39 @@ export function isFinancialRowLabel(label: string): boolean {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
 
+  // Explicit premium and financial billing indicators
+  const explicitFinancialKeywords = [
+    'prima',
+    'total a pagar',
+    'total prima',
+    'valor a pagar',
+    'total liquidacion',
+    'total liquidación',
+    'total poliza',
+    'total póliza',
+    'forma de pago',
+    'gastos de expedicion',
+    'gastos de expedición',
+    'iva',
+  ];
+  const hasExplicitFinancial = explicitFinancialKeywords.some((kw) => normalized.includes(kw));
+
+  // If label explicitly indicates a premium/billing row, terms like 'edificio', 'bienes'
+  // or 'maquinaria' (e.g. "Prima Neta Bienes Comunes") do not disqualify it, unless it's a sum/limit.
+  const sumOrLimitTerms = [
+    'suma asegurada',
+    'valor asegurable',
+    'limite asegurado',
+    'deducible',
+  ];
+  if (sumOrLimitTerms.some((term) => normalized.includes(term))) {
+    return false;
+  }
+
+  if (hasExplicitFinancial) {
+    return true;
+  }
+
   // Common coverage and asset terms that happen to contain financial substrings
   // (e.g. "Pérdida Total" contains "total", "Valor Total Asegurado" contains "total")
   // must not be misclassified as financial rows.
@@ -155,8 +211,6 @@ export function isFinancialRowLabel(label: string): boolean {
     'hurto de partes',
     'asegurad',
     'asegurable',
-    'suma asegurada',
-    'valor asegurable',
     'edificio',
     'contenido',
     'bienes',
@@ -172,20 +226,9 @@ export function isFinancialRowLabel(label: string): boolean {
   }
 
   return [
-    'prima',
-    'prima con iva',
-    'prima neta',
-    'total a pagar',
-    'total prima',
-    'valor a pagar',
-    'total liquidacion',
-    'total poliza',
     'pago',
-    'forma de pago',
     'gastos',
-    'gastos de expedicion',
     'subtotal',
-    'iva',
     'costo',
     'neto',
     'sobre valor asegurado',
@@ -470,7 +513,7 @@ export function flatResultToMatrixRowsV2(
 
   for (const row of sortByCanonicalId(result.rows, domain)) {
     const section =
-      isFinancialRowLabel(row.label) || row.section === 'FINANCIAL'
+      isFinancialRowLabel(row.label) || isFinancialSection(row.section)
         ? FINANCIAL_SECTION_LABEL
         : row.section || 'OTROS';
     if (!sectionGroups.has(section)) {
@@ -501,7 +544,7 @@ export function flatResultToMatrixRowsV2(
 
   for (const row of sortByCanonicalId(result.extraRows, domain)) {
     const section =
-      isFinancialRowLabel(row.label) || row.section === 'FINANCIAL'
+      isFinancialRowLabel(row.label) || isFinancialSection(row.section)
         ? FINANCIAL_SECTION_LABEL
         : row.section || 'OTROS';
     if (!sectionGroups.has(section)) {

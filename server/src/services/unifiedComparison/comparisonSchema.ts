@@ -38,22 +38,30 @@ export const FlatComparisonCellSchemaV1 = z.object({
   notFound: z.boolean().optional(),
 });
 
-export const StructuredDeductibleSchema = z.object({
-  percentage: z.number().optional(),
-  minimum: z.number().optional(),
-  currency: z.string().optional(),
-  type: z
-    .enum([
-      'percentage',
-      'minimum',
-      'percentage_with_minimum',
-      'fixed',
-      'not_applicable',
-      'see_conditions',
-    ])
-    .optional(),
-  appliesTo: z.array(z.string()).optional(),
-});
+export const StructuredDeductibleSchema = z.union([
+  z.string(),
+  z
+    .object({
+      percentage: z.number().optional(),
+      minimum: z.number().optional(),
+      currency: z.string().optional(),
+      type: z
+        .enum([
+          'percentage',
+          'minimum',
+          'percentage_with_minimum',
+          'fixed',
+          'not_applicable',
+          'see_conditions',
+        ])
+        .optional(),
+      appliesTo: z.array(z.string()).optional(),
+      description: z.string().optional(),
+      rawText: z.string().optional(),
+      text: z.string().optional(),
+    })
+    .passthrough(),
+]);
 
 export const FlatComparisonCellSchemaV2 = z.object({
   insurer: z.string().min(1),

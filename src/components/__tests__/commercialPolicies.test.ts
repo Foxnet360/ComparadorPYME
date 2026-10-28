@@ -165,12 +165,13 @@ describe('Commercial Policies Module', () => {
       // Verify embedded logo image in workbook
       expect(wb.model.media.length).toBeGreaterThanOrEqual(1);
 
-      // Verify Insurer corporate brand color fill on coverages sheet
+      // Verify Insurer corporate brand color top border & high contrast fill on coverages sheet
       const covSheet = wb.getWorksheet('Matriz Coberturas');
       expect(covSheet).toBeDefined();
       const insCell = covSheet?.getCell(4, 2);
       expect(insCell?.value).toBe('SEGUROS BOLÍVAR');
-      expect((insCell?.fill as any)?.fgColor?.argb).toBe('FF00843D'); // Bolívar official green brand color
+      expect((insCell?.border?.top as any)?.color?.argb).toBe('FF00843D'); // Bolívar official green brand accent border
+      expect((insCell?.fill as any)?.fgColor?.argb).toBe('FFF1F5F9'); // High-contrast neutral fill
 
       // Verify Políticas Comerciales sheet and commercial card
       const polSheet = wb.getWorksheet('Políticas Comerciales');

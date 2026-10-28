@@ -12,6 +12,10 @@ import {
   alignInsurerIndices,
   parseNumericValue,
   FINANCIAL_SECTION_ID,
+  DEDUCTIBLE_SECTION_ID,
+  isFinancialSection,
+  getSectionId,
+  isFinancialRowLabel,
 } from '../matrixTransformer';
 import { FlatComparisonResult, FlatComparisonResultV2, SchemaSection } from '../comparisonSchema';
 import { ParsedQuote } from '../../quoteParser';
@@ -580,5 +584,35 @@ describe('alignInsurerIndices & parseNumericValue', () => {
     expect(parseNumericValue('$ 15.000.000,00')).toBe(15_000_000);
     expect(parseNumericValue('$ 3.962.567,50')).toBe(3_962_568);
     expect(parseNumericValue('$ 119.600.000')).toBe(119_600_000);
+  });
+});
+
+describe('Section and financial label classification for Copropiedades and multi-domain', () => {
+  it('correctly identifies FINANCIAL sections and sectionIds', () => {
+    expect(isFinancialSection('FINANCIAL')).toBe(true);
+    expect(isFinancialSection('financial')).toBe(true);
+    expect(isFinancialSection('Primas y Costos')).toBe(true);
+    expect(isFinancialSection('Liquidación')).toBe(true);
+    expect(isFinancialSection('RESUMEN DE PRIMAS')).toBe(true);
+    expect(getSectionId('FINANCIAL')).toBe(FINANCIAL_SECTION_ID);
+    expect(getSectionId('Primas y Costos')).toBe(FINANCIAL_SECTION_ID);
+    expect(getSectionId('Liquidación de la Póliza')).toBe(FINANCIAL_SECTION_ID);
+    expect(getSectionId('DEDUCIBLES')).toBe(DEDUCTIBLE_SECTION_ID);
+  });
+
+  it('correctly classifies Copropiedades premium labels as financial rows', () => {
+    expect(isFinancialRowLabel('Prima Bienes Comunes')).toBe(true);
+    expect(isFinancialRowLabel('Prima Neta Edificio y Áreas Comunes')).toBe(true);
+    expect(isFinancialRowLabel('Total a Pagar / Prima Total Anual')).toBe(true);
+    expect(isFinancialRowLabel('Total Póliza Bienes Comunes')).toBe(true);
+    expect(isFinancialRowLabel('Valor a Pagar')).toBe(true);
+    expect(isFinancialRowLabel('Gastos de Expedición')).toBe(true);
+    expect(isFinancialRowLabel('IVA (19%)')).toBe(true);
+
+    // Non-financial coverage/asset rows should remain non-financial
+    expect(isFinancialRowLabel('Edificio y Áreas Comunes')).toBe(false);
+    expect(isFinancialRowLabel('Maquinaria y Equipos Comunitarios')).toBe(false);
+    expect(isFinancialRowLabel('Suma Asegurada Edificio')).toBe(false);
+    expect(isFinancialRowLabel('Terremoto, Temblor y Sismo')).toBe(false);
   });
 });
