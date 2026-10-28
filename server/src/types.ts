@@ -120,6 +120,16 @@ export interface QuoteAudit {
   }>;
 }
 
+export interface FinancialBreakdown {
+  netPremium: number;
+  expenses: number;
+  subtotal: number;
+  iva: number;
+  totalPayable: number;
+  periodicity?: string;
+  currency: string;
+}
+
 export interface QuoteAnalysis {
   insurerName: string;
   policyName: string;
@@ -136,6 +146,7 @@ export interface QuoteAnalysis {
   quoteAudit?: QuoteAudit;
   expenses?: number;
   fees?: number;
+  financialBreakdown?: FinancialBreakdown;
   metadata?: QuoteMetadata;
 }
 

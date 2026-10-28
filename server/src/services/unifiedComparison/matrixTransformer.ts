@@ -716,15 +716,75 @@ export function quotesToMatrixRows(
     cells: emptyCells(numInsurers),
   });
 
+  const isVida = domain === 'vida_grupo';
+
+  // Row: Prima Neta
+  matrix.push({
+    type: 'data',
+    id: 'premium_net',
+    label: 'Prima Neta',
+    sectionId: FINANCIAL_SECTION_ID,
+    cells: quotes.map((q) => {
+      const net =
+        (q as any).financialBreakdown?.netPremium ??
+        (isVida ? q.priceAnnual : Math.round((q.priceAnnual || 0) / 1.19));
+      return {
+        value: net > 0 ? formatCOP(net) : 'No informado',
+        isExcluded: net <= 0,
+        isWinner: false,
+      };
+    }),
+  });
+
+  // Row: Gastos de Expedición
+  matrix.push({
+    type: 'data',
+    id: 'premium_expenses',
+    label: 'Gastos de Expedición',
+    sectionId: FINANCIAL_SECTION_ID,
+    cells: quotes.map((q) => {
+      const exp = (q as any).financialBreakdown?.expenses ?? (q as any).expenses ?? (q as any).fees ?? 0;
+      return {
+        value: exp > 0 ? formatCOP(exp) : '$ 0',
+        isExcluded: false,
+        isWinner: false,
+      };
+    }),
+  });
+
+  // Row: IVA
+  matrix.push({
+    type: 'data',
+    id: 'premium_iva',
+    label: isVida ? 'IVA (0% Exento Art. 427 E.T.)' : 'IVA (19%)',
+    sectionId: FINANCIAL_SECTION_ID,
+    cells: quotes.map((q) => {
+      if (isVida) return { value: '$ 0', isExcluded: false, isWinner: false };
+      const iva =
+        (q as any).financialBreakdown?.iva ??
+        Math.max(0, (q.priceAnnual || 0) - Math.round((q.priceAnnual || 0) / 1.19));
+      return {
+        value: iva > 0 ? formatCOP(iva) : '$ 0',
+        isExcluded: false,
+        isWinner: false,
+      };
+    }),
+  });
+
+  // Row: TOTAL A PAGAR
+  const totals = quotes.map((q) => (q as any).financialBreakdown?.totalPayable ?? q.priceAnnual);
+  const positiveTotals = totals.filter((t) => t > 0);
+  const minTotal = positiveTotals.length > 0 ? Math.min(...positiveTotals) : 0;
+
   matrix.push({
     type: 'data',
     id: 'premium_total',
     label: 'TOTAL A PAGAR',
     sectionId: FINANCIAL_SECTION_ID,
-    cells: quotes.map((q) => ({
-      value: q.priceAnnual > 0 ? formatCOP(q.priceAnnual) : 'No informado',
-      isExcluded: q.priceAnnual <= 0,
-      isWinner: false,
+    cells: quotes.map((q, idx) => ({
+      value: totals[idx]! > 0 ? formatCOP(totals[idx]!) : 'No informado',
+      isExcluded: totals[idx]! <= 0,
+      isWinner: totals[idx]! > 0 && totals[idx]! === minTotal,
     })),
   });
 
@@ -1307,18 +1367,34 @@ export function transformQuotesToMatrix(
     cells: quotes.map(() => ({ value: '', isExcluded: false, isWinner: false })),
   });
 
-  const netPremiums = quotes.map((q) => q.priceAnnual || 0);
+  const netPremiums = quotes.map((q) => {
+    if (q.financialBreakdown?.netPremium !== undefined) return q.financialBreakdown.netPremium;
+    const tot = q.priceAnnual || 0;
+    return tot > 0 ? Math.round(tot / 1.19) : 0;
+  });
+
   const expenses = quotes.map((q) => {
-    if (q.priceAnnual === 0) return 0;
-    if ((q as any).expenses !== undefined) return (q as any).expenses;
-    if ((q as any).fees !== undefined) return (q as any).fees;
-    if (q.insurerName.toLowerCase().includes('mapfre')) return 10000;
-    if (q.insurerName.toLowerCase().includes('chubb')) return 12000;
+    if (q.financialBreakdown?.expenses !== undefined) return q.financialBreakdown.expenses;
+    if (q.expenses !== undefined) return q.expenses;
+    if (q.fees !== undefined) return q.fees;
     return 0;
   });
-  const subtotals = netPremiums.map((net, idx) => net + expenses[idx]!);
-  const ivas = subtotals.map((sub) => Math.round(sub * 0.19));
-  const totals = subtotals.map((sub, idx) => sub + ivas[idx]!);
+
+  const subtotals = quotes.map((q, idx) => {
+    if (q.financialBreakdown?.subtotal !== undefined) return q.financialBreakdown.subtotal;
+    return netPremiums[idx]! + expenses[idx]!;
+  });
+
+  const ivas = quotes.map((q, idx) => {
+    if (q.financialBreakdown?.iva !== undefined) return q.financialBreakdown.iva;
+    const tot = q.priceAnnual || 0;
+    return tot > 0 ? Math.max(0, tot - subtotals[idx]!) : 0;
+  });
+
+  const totals = quotes.map((q, idx) => {
+    if (q.financialBreakdown?.totalPayable !== undefined) return q.financialBreakdown.totalPayable;
+    return q.priceAnnual || subtotals[idx]! + ivas[idx]!;
+  });
 
   // Determine Cheaper Total Price Winner
   const positiveTotals = totals.filter((t) => t > 0);

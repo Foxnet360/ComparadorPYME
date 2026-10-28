@@ -18,7 +18,7 @@ import { formatCOP } from '../../utils/formatCurrency';
 import { parseColombianCurrency } from '../../utils/currencyParser';
 import quoteBasedAuditor from '../quoteBasedAuditor';
 
-import { MatrixRow, QuoteAnalysis, QuoteMetadata } from '../../types';
+import { FinancialBreakdown, MatrixRow, QuoteAnalysis, QuoteMetadata } from '../../types';
 import { InsuranceDomain } from '../../types/domain';
 import { buildRegulatoryBackingPayload } from '../regulatoryAuditService';
 import type { RegulatoryCheckResult } from '../../types';
@@ -31,6 +31,9 @@ export interface UnifiedQuote {
   priceAnnual: number;
   currency: string;
   deductibles: string;
+  expenses?: number;
+  fees?: number;
+  financialBreakdown?: FinancialBreakdown;
   coverages: Array<{
     name: string;
     value: string;
@@ -553,73 +556,158 @@ export async function matrixRowsToComparisonReport(
     return norm.includes('prima') || norm === 'total' || norm === 'total anual';
   };
 
-  const hasDefinitivePremium = new Array(insurerNames.length).fill(false);
+  // Extract Financial Breakdown for each insurer
+  const isVida = domain === 'vida_grupo';
 
-  for (const row of matrixRows) {
-    if (row.type !== 'data') continue;
-    if (row.sectionId !== FINANCIAL_SECTION_ID && !isFinancialRowLabel(row.label)) continue;
-    if (!isHighPriorityPremiumLabel(row.label)) continue;
+  const normalizeFinLabel = (lbl: string) =>
+    lbl
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
 
-    for (let i = 0; i < insurerNames.length; i++) {
-      const cellIdx = indexMap[i] ?? -1;
-      const cell = row.cells[cellIdx];
-      if (!cell) continue;
-
-      const numericValue = parseColombianCurrency(cell.value);
-      if (numericValue !== null && numericValue > 0) {
-        if (domain === 'hogar' && numericValue > 100_000_000) {
-          continue;
-        }
-        intermediateQuotes[i]!.priceAnnual = numericValue;
-        intermediateQuotes[i]!.parsedQuote.priceAnnual = numericValue;
-        intermediateQuotes[i]!.priceMonthly = Math.round(numericValue / 12);
-        hasDefinitivePremium[i] = true;
-      }
+  const isNetRowLabel = (norm: string): boolean => {
+    if (norm.includes('con iva') || norm.includes('iva incluido') || norm.includes('inc iva')) {
+      return false;
     }
-  }
+    return (
+      norm.includes('prima neta') ||
+      norm.includes('prima comercial') ||
+      norm.includes('prima antes de iva') ||
+      norm.includes('prima sin iva') ||
+      norm.includes('prima basica') ||
+      norm.includes('prima básica') ||
+      norm === 'neto'
+    );
+  };
 
-  for (const row of matrixRows) {
-    if (row.type !== 'data') continue;
-    if (row.sectionId !== FINANCIAL_SECTION_ID && !isFinancialRowLabel(row.label)) continue;
-    if (!isFallbackPremiumLabel(row.label)) continue;
+  const isExpRowLabel = (norm: string): boolean =>
+    norm.includes('gasto') || norm.includes('expedici');
 
-    for (let i = 0; i < insurerNames.length; i++) {
-      if (hasDefinitivePremium[i]) continue;
-      const cellIdx = indexMap[i] ?? -1;
-      const cell = row.cells[cellIdx];
-      if (!cell) continue;
+  const isIvaRowLabel = (norm: string): boolean =>
+    norm.includes('iva') &&
+    !norm.includes('con iva') &&
+    !norm.includes('iva incluido') &&
+    !norm.includes('inc. iva') &&
+    !norm.includes('inc iva') &&
+    !norm.includes('sin iva') &&
+    !norm.includes('antes de iva');
 
-      const numericValue = parseColombianCurrency(cell.value);
-      if (numericValue !== null && numericValue > 0) {
-        if (domain === 'hogar' && numericValue > 100_000_000) {
-          continue;
-        }
-        intermediateQuotes[i]!.priceAnnual = numericValue;
-        intermediateQuotes[i]!.parsedQuote.priceAnnual = numericValue;
-        intermediateQuotes[i]!.priceMonthly = Math.round(numericValue / 12);
-        hasDefinitivePremium[i] = true;
-      }
-    }
-  }
+  const financialRows = matrixRows.filter(
+    (r) => r.type === 'data' && (r.sectionId === FINANCIAL_SECTION_ID || isFinancialRowLabel(r.label))
+  );
 
-  // 3rd pass: if an insurer still has no premium, inspect any financial row
   for (let i = 0; i < insurerNames.length; i++) {
-    if (hasDefinitivePremium[i]) continue;
-    for (const row of matrixRows) {
-      if (row.type !== 'data' || row.sectionId !== FINANCIAL_SECTION_ID) continue;
-      const cellIdx = indexMap[i] ?? -1;
+    const cellIdx = indexMap[i] ?? -1;
+    if (cellIdx < 0) continue;
+
+    let rawNet = 0;
+    let rawExp = 0;
+    let rawIva = 0;
+    let rawTotal = 0;
+    let fallbackPremium = 0;
+
+    for (const row of financialRows) {
       const cell = row.cells[cellIdx];
       if (!cell || !cell.value) continue;
-      const numericValue = parseColombianCurrency(cell.value);
-      if (numericValue !== null && numericValue > 0) {
-        if (domain === 'hogar' && numericValue > 100_000_000) continue;
-        intermediateQuotes[i]!.priceAnnual = numericValue;
-        intermediateQuotes[i]!.parsedQuote.priceAnnual = numericValue;
-        intermediateQuotes[i]!.priceMonthly = Math.round(numericValue / 12);
-        hasDefinitivePremium[i] = true;
-        break;
+      const num = parseColombianCurrency(cell.value);
+      if (num === null || num <= 0) continue;
+      if (domain === 'hogar' && num > 100_000_000) continue;
+
+      const norm = normalizeFinLabel(row.label);
+      if (isNetRowLabel(norm)) {
+        rawNet = num;
+      } else if (isExpRowLabel(norm)) {
+        rawExp = num;
+      } else if (isIvaRowLabel(norm)) {
+        rawIva = num;
+      } else if (isHighPriorityPremiumLabel(row.label)) {
+        rawTotal = num;
+      } else if (fallbackPremium === 0 && isFallbackPremiumLabel(row.label)) {
+        fallbackPremium = num;
       }
     }
+
+    if (rawTotal === 0 && fallbackPremium > 0) {
+      rawTotal = fallbackPremium;
+    }
+
+    // Reconciliación canónica
+    let net = rawNet;
+    let exp = rawExp;
+    let iva = rawIva;
+    let total = rawTotal;
+
+    if (total > 0 && net === 0) {
+      if (isVida) {
+        iva = 0;
+        exp = 0;
+        net = total;
+      } else {
+        if (iva > 0 && iva < total) {
+          const subtotal = total - iva;
+          exp = Math.min(exp, subtotal);
+          net = Math.max(0, subtotal - exp);
+        } else {
+          const subtotal = Math.round(total / 1.19);
+          iva = total - subtotal;
+          exp = Math.min(exp, subtotal);
+          net = Math.max(0, subtotal - exp);
+        }
+      }
+    } else if (net > 0 && total === 0) {
+      const subtotal = net + exp;
+      iva = isVida ? 0 : iva > 0 ? iva : Math.round(subtotal * 0.19);
+      total = subtotal + iva;
+    } else if (net > 0 && total > 0) {
+      if (total > net) {
+        const subtotal = net + exp;
+        iva = isVida ? 0 : iva > 0 ? iva : Math.max(0, total - subtotal);
+        if (!isVida && Math.abs(net + exp + iva - total) > 2) {
+          iva = Math.max(0, total - (net + exp));
+        }
+      } else {
+        const subtotal = net + exp;
+        iva = isVida ? 0 : Math.round(subtotal * 0.19);
+        total = subtotal + iva;
+      }
+    } else if (fallbackPremium > 0) {
+      if (isVida) {
+        net = fallbackPremium;
+        exp = 0;
+        iva = 0;
+        total = fallbackPremium;
+      } else {
+        const subtotal = Math.round(fallbackPremium / 1.19);
+        iva = fallbackPremium - subtotal;
+        net = subtotal;
+        exp = 0;
+        total = fallbackPremium;
+      }
+    }
+
+    const subtotal = net + exp;
+    const breakdown: FinancialBreakdown = {
+      netPremium: net,
+      expenses: exp,
+      subtotal,
+      iva,
+      totalPayable: total,
+      periodicity: 'ANUAL',
+      currency: 'COP',
+    };
+
+    intermediateQuotes[i]!.priceAnnual = total;
+    intermediateQuotes[i]!.priceMonthly = Math.round(total / 12);
+    (intermediateQuotes[i] as any).expenses = exp;
+    (intermediateQuotes[i] as any).fees = exp;
+    (intermediateQuotes[i] as any).financialBreakdown = breakdown;
+
+    intermediateQuotes[i]!.parsedQuote.priceAnnual = total;
+    (intermediateQuotes[i]!.parsedQuote as any).priceMonthly = Math.round(total / 12);
+    (intermediateQuotes[i]!.parsedQuote as any).expenses = exp;
+    (intermediateQuotes[i]!.parsedQuote as any).fees = exp;
+    (intermediateQuotes[i]!.parsedQuote as any).financialBreakdown = breakdown;
   }
 
   const quotes: UnifiedQuote[] = await Promise.all(
@@ -677,6 +765,9 @@ export async function matrixRowsToComparisonReport(
         priceAnnual: iq.priceAnnual,
         currency: iq.currency,
         deductibles: iq.deductibles,
+        expenses: (iq as any).expenses,
+        fees: (iq as any).fees,
+        financialBreakdown: (iq as any).financialBreakdown,
         coverages: iq.coverages,
         alerts: combinedAlerts,
         scoringBreakdown: scoringResult.breakdown as unknown as Record<string, number>,

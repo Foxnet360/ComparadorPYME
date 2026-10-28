@@ -458,21 +458,36 @@ export const generatePDF = (
   const condensedRows: string[][] = [
     [
       'Prima Neta Anual',
-      ...quotes.map((q) => (q.priceAnnual ? formatCOP(Math.round(q.priceAnnual / 1.19)) : 'No informada')),
+      ...quotes.map((q) => {
+        if (q.financialBreakdown?.netPremium) return formatCOP(q.financialBreakdown.netPremium);
+        return q.priceAnnual
+          ? formatCOP(isVida ? q.priceAnnual : Math.round(q.priceAnnual / 1.19))
+          : 'No informada';
+      }),
+    ],
+    [
+      'Gastos de Expedición',
+      ...quotes.map((q) => {
+        const exp = q.financialBreakdown?.expenses ?? q.expenses ?? q.fees ?? 0;
+        return exp > 0 ? formatCOP(exp) : '$ 0 (Incluidos)';
+      }),
     ],
     [
       isVida ? 'I.V.A. (0% Exento Art. 427 E.T.)' : 'I.V.A. (19%)',
-      ...quotes.map((q) =>
-        isVida
-          ? '$ 0'
-          : q.priceAnnual
-            ? formatCOP(Math.round(q.priceAnnual - q.priceAnnual / 1.19))
-            : 'N/A'
-      ),
+      ...quotes.map((q) => {
+        if (isVida) return '$ 0';
+        if (q.financialBreakdown?.iva !== undefined) return formatCOP(q.financialBreakdown.iva);
+        return q.priceAnnual
+          ? formatCOP(Math.max(0, q.priceAnnual - Math.round(q.priceAnnual / 1.19)))
+          : 'N/A';
+      }),
     ],
     [
-      'Prima Total Anual',
-      ...quotes.map((q) => (q.priceAnnual ? formatCOP(q.priceAnnual) : 'No informada')),
+      'Total a Pagar (Anual)',
+      ...quotes.map((q) => {
+        const total = q.financialBreakdown?.totalPayable ?? q.priceAnnual;
+        return total ? formatCOP(total) : 'No informada';
+      }),
     ],
     [
       'Forma de Pago / Plazo',

@@ -287,39 +287,39 @@ describe('matrixTransformer', () => {
       expect(incendioValue?.cells[0].value).toBe('$119.600.000');
     });
 
-    it('should inject correct financial computations in Primas y Costos section', () => {
+    it('should inject correct financial computations in Primas y Costos section without double-charging IVA or hardcoding fees', () => {
       const matrix = transformQuotesToMatrix(mockQuotes);
 
       // Financial header should exist
       const finHeader = matrix.find((row) => row.id === 'section_financial_header');
       expect(finHeader).toBeDefined();
 
-      // Check net premium values
+      // Check net premium values (derived from Total so we never double-charge IVA)
       const netRow = matrix.find((row) => row.id === 'financial_net_premium');
       expect(netRow).toBeDefined();
-      expect(netRow?.cells[0].value).toContain('677.801');
-      expect(netRow?.cells[1].value).toContain('1.320.000');
+      expect(netRow?.cells[0].value).toContain('569.581');
+      expect(netRow?.cells[1].value).toContain('1.109.244');
 
-      // Expenses mapping
+      // Expenses mapping (no hardcoded $10k/$12k defaults; returns 'No informado' when not reported)
       const expRow = matrix.find((row) => row.id === 'financial_expenses');
       expect(expRow).toBeDefined();
-      expect(expRow?.cells[0].value).toContain('10.000'); // MAPFRE default expense
-      expect(expRow?.cells[1].value).toContain('12.000'); // CHUBB default expense
+      expect(expRow?.cells[0].value).toBe('No informado');
+      expect(expRow?.cells[1].value).toBe('No informado');
 
       // Subtotal
       const subRow = matrix.find((row) => row.id === 'financial_subtotal');
-      expect(subRow?.cells[0].value).toContain('687.801');
-      expect(subRow?.cells[1].value).toContain('1.332.000');
+      expect(subRow?.cells[0].value).toContain('569.581');
+      expect(subRow?.cells[1].value).toContain('1.109.244');
 
       // VAT 19%
       const ivaRow = matrix.find((row) => row.id === 'financial_iva');
-      expect(ivaRow?.cells[0].value).toContain('130.682');
-      expect(ivaRow?.cells[1].value).toContain('253.080');
+      expect(ivaRow?.cells[0].value).toContain('108.220');
+      expect(ivaRow?.cells[1].value).toContain('210.756');
 
-      // Total to pay
+      // Total to pay (matches priceAnnual exactly without inflation)
       const totalRow = matrix.find((row) => row.id === 'financial_total');
-      expect(totalRow?.cells[0].value).toContain('818.483');
-      expect(totalRow?.cells[1].value).toContain('1.585.080');
+      expect(totalRow?.cells[0].value).toContain('677.801');
+      expect(totalRow?.cells[1].value).toContain('1.320.000');
 
       // MAPFRE is cheaper, so it should be winner
       expect(totalRow?.cells[0].isWinner).toBe(true);
@@ -328,8 +328,37 @@ describe('matrixTransformer', () => {
       // Check ratio
       const ratioRow = matrix.find((row) => row.id === 'financial_ratio');
       expect(ratioRow).toBeDefined();
-      // MAPFRE total: 818483 / 119600000 = 0.684% -> formatted
-      expect(ratioRow?.cells[0].value).toBe('0,68%');
+      // MAPFRE total: 677801 / 119600000 = 0.567% -> formatted
+      expect(ratioRow?.cells[0].value).toBe('0,57%');
+    });
+
+    it('should respect explicit financialBreakdown when available on quotes', () => {
+      const quotesWithBreakdown: QuoteAnalysis[] = [
+        {
+          ...mockQuotes[0]!,
+          financialBreakdown: {
+            netPremium: 500000,
+            expenses: 25000,
+            subtotal: 525000,
+            iva: 99750,
+            totalPayable: 624750,
+            currency: 'COP',
+          },
+        },
+      ];
+
+      const matrix = transformQuotesToMatrix(quotesWithBreakdown);
+      const netRow = matrix.find((row) => row.id === 'financial_net_premium');
+      const expRow = matrix.find((row) => row.id === 'financial_expenses');
+      const subRow = matrix.find((row) => row.id === 'financial_subtotal');
+      const ivaRow = matrix.find((row) => row.id === 'financial_iva');
+      const totalRow = matrix.find((row) => row.id === 'financial_total');
+
+      expect(netRow?.cells[0].value).toBe('$500.000');
+      expect(expRow?.cells[0].value).toBe('$25.000');
+      expect(subRow?.cells[0].value).toBe('$525.000');
+      expect(ivaRow?.cells[0].value).toBe('$99.750');
+      expect(totalRow?.cells[0].value).toBe('$624.750');
     });
   });
 });

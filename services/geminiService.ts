@@ -50,12 +50,14 @@ export const analyzeQuotesWithGemini = async (
 
   quoteFiles.forEach((file) => formData.append('quotes', file));
 
-  // NEW: Use clauseIds from library if provided, otherwise use uploaded files
+  // Support both library clauses and supplemental uploaded clauses simultaneously
   if (clauseIds && clauseIds.length > 0) {
     formData.append('clauseIds', JSON.stringify(clauseIds));
     if (onStatusUpdate) onStatusUpdate('Usando clausulados de biblioteca (optimizado)...');
-  } else {
+  }
+  if (clauseFiles && clauseFiles.length > 0) {
     clauseFiles.forEach((file) => formData.append('clauses', file));
+    if (onStatusUpdate) onStatusUpdate('Adjuntando clausulados adicionales subidos...');
   }
 
   if (onStatusUpdate) onStatusUpdate('Subiendo archivos al servidor seguro (Cloud Run)...');

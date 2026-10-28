@@ -536,7 +536,7 @@ export class UnifiedComparisonEngine {
           thinkingLevel: ThinkingLevel[this.config.thinkingLevel],
         },
         responseMimeType: this.config.responseMimeType,
-        maxOutputTokens: 16384,
+        maxOutputTokens: 65536,
       };
 
       if (Object.keys(this.config.responseSchema).length > 0) {

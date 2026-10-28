@@ -75,7 +75,13 @@ const GRANULAR_SECTIONS = [
   },
   {
     section: 'FINANCIAL',
-    rows: ['Prima con IVA incluido', 'Gastos de expedición', 'IVA', 'Total prima', 'Forma de pago'],
+    rows: [
+      'Prima Neta Anual',
+      'Gastos de Expedición',
+      'IVA (19%)',
+      'Total a Pagar / Prima Total Anual',
+      'Forma de Pago',
+    ],
   },
 ] as const;
 
@@ -543,7 +549,7 @@ ${context.hasClauses ? 'También se proporcionan clausulados para validación; �
 2. COBERTURAS: Extrae límites, amparos y condiciones de cobertura para Amparo básico todo riesgo, Terremoto, Responsabilidad Civil Extracontractual (RCE), Lucro Cesante, Rotura de Maquinaria, Equipos eléctricos y electrónicos, Gastos médicos, Asistencia, Vidrios, Manejo global / Infidelidad, Transporte de mercancías, Daños por agua / Anegación, HMACC-AMIT, y RC en proceso civil.
 3. DEDUCIBLES: Extrae los deducibles específicos para Todo Riesgo Incendio, Anegación / Cobertura Extendida, Terremoto, HMACC-AMIT, RCE, Lucro Cesante, Rotura de Maquinaria, Equipos eléctricos y electrónicos, Vidrios, Manejo global / Infidelidad, Transporte de mercancías, Daños por agua / Anegación, y Sustracción con Violencia. Debes incluir una fila por cada deducible que aparezca textualmente en las cotizaciones; no omitas deducibles. Si un amparo no tiene deducible, usa "Sin deducible".
 4. SUSTRACCIÓN: Extrae límites y condiciones para Sustracción con Violencia.
-5. FINANCIAL: Extrae Prima con IVA incluido, Gastos de expedición, IVA, Total prima, y Forma de pago. NUNCA coloques sumas aseguradas ni valores de bienes en esta sección; solo costos o primas de la póliza. Si una cotización indica 'Prima Mínima Anual' (como BBVA con '1 SMMLV Sin I.V.A. $1.750.905'), extrae obligatoriamente el monto numérico en pesos en 'Total prima' o 'Prima Neta' (ej. $1.750.905). NUNCA dejes la prima vacía ni en 0 si figura una prima mínima o valor a pagar.`;
+5. FINANCIAL: Extrae Prima Neta Anual, Gastos de Expedición, IVA (19%), Total a Pagar / Prima Total Anual, y Forma de Pago. NUNCA coloques sumas aseguradas ni valores de bienes en esta sección; solo costos o primas de la póliza. Si una cotización indica Gastos de Expedición (ej. $15.000 a $80.000 COP), repórtalos en 'Gastos de Expedición'; si no figuran o dice 'incluidos', reporta 0. Si una cotización indica 'Prima Mínima Anual' (como BBVA con '1 SMMLV Sin I.V.A. $1.750.905'), extrae obligatoriamente el monto numérico en pesos en 'Total a Pagar / Prima Total Anual' o 'Prima Neta Anual' (ej. $1.750.905). NUNCA dejes la prima vacía ni en 0 si figura una prima mínima o valor a pagar.`;
     }
 
     const sectionList = sectionsToUse
@@ -580,7 +586,8 @@ Reglas Generales:
 - Copia los valores textualmente como aparecen en cada cotización.
 - No agrupes, no normalices a coberturas canónicas y no inventes datos.
 - Si una fila no aparece en una cotización, usa "No informado".
-- Para rawText (evidencia), incluye un snippet breve (50-300 caracteres) SOLO cuando exista información o cobertura. No incluyas textos extensos en celdas sin amparo.
+- Para rawText (evidencia), incluye un snippet breve (máximo 100 caracteres) SOLO cuando exista información o cobertura relevante. En celdas con 'No incluido', 'No informado' o 'No cotizado', omite el rawText o déjalo vacío para economizar tokens y garantizar la integridad de la respuesta.
+- IMPORTANTE: Cierra siempre correctamente toda la estructura JSON generada hasta el último carácter ('}').
 - Además, para cada cotización, extrae los siguientes metadatos de cabecera: Cliente, Tipo de Seguro, Ubicación del Riesgo, Año Construcción, Pisos, Aliado, Actividad/Ocupación, Documento, Vigencia.
 - Responde únicamente con JSON válido que cumpla este schema:
 {

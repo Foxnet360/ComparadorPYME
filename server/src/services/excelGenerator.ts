@@ -646,7 +646,15 @@ export async function generateExcelBuffer(
       type: 'data',
       label: 'Prima Neta Anual',
       isCurrency: true,
-      getValue: (q) => q.priceAnnual || (q.priceMonthly ? q.priceMonthly * 12 : 0),
+      getValue: (q) =>
+        q.financialBreakdown?.netPremium ??
+        (isVida ? q.priceAnnual || 0 : Math.round((q.priceAnnual || 0) / 1.19)),
+    },
+    {
+      type: 'data',
+      label: 'Gastos de Expedición',
+      isCurrency: true,
+      getValue: (q) => q.financialBreakdown?.expenses ?? q.expenses ?? q.fees ?? 0,
     },
     {
       type: 'data',
@@ -655,16 +663,16 @@ export async function generateExcelBuffer(
       getValue: (q) =>
         isVida
           ? 0
-          : Math.round((q.priceAnnual || (q.priceMonthly ? q.priceMonthly * 12 : 0)) * 0.19),
+          : q.financialBreakdown?.iva ??
+            Math.max(0, (q.priceAnnual || 0) - Math.round((q.priceAnnual || 0) / 1.19)),
     },
     {
       type: 'data',
       label: 'Total a Pagar',
       isCurrency: true,
-      getValue: (q) => {
-        const net = q.priceAnnual || (q.priceMonthly ? q.priceMonthly * 12 : 0);
-        return isVida ? net : net > 0 ? Math.round(net * 1.19) : 0;
-      },
+      getValue: (q) =>
+        q.financialBreakdown?.totalPayable ??
+        (q.priceAnnual || (q.priceMonthly ? q.priceMonthly * 12 : 0)),
     },
     {
       type: 'data',
@@ -1288,6 +1296,15 @@ export async function generateExcelBuffer(
   const totals: number[] = [];
 
   quotes.forEach((q, idx) => {
+    if (q.financialBreakdown) {
+      netPremiums.push(q.financialBreakdown.netPremium);
+      expenses.push(q.financialBreakdown.expenses);
+      subtotals.push(q.financialBreakdown.subtotal);
+      ivas.push(q.financialBreakdown.iva);
+      totals.push(q.financialBreakdown.totalPayable);
+      return;
+    }
+
     const rawNet = netRow ? parseNumericValue(netRow.cells[idx]?.value) : 0;
     const rawExp = expRow
       ? parseNumericValue(expRow.cells[idx]?.value)

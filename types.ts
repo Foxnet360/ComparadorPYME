@@ -158,6 +158,15 @@ export interface QuoteAnalysis {
   missingCoverages?: Array<string | { name?: string; categoryName?: string }>;
   expenses?: number;
   fees?: number;
+  financialBreakdown?: {
+    netPremium: number;
+    expenses: number;
+    subtotal: number;
+    iva: number;
+    totalPayable: number;
+    periodicity?: string;
+    currency: string;
+  };
   metadata?: QuoteMetadata;
 }
 

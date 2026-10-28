@@ -386,6 +386,19 @@ export const analysisController = {
         }
       }
 
+      // Also propagate clause availability for supplemental uploaded clauses
+      if (clauseFiles.length > 0) {
+        clauseFiles.forEach((cf) => {
+          const fname = (cf.originalname || '').toUpperCase();
+          comparisonResult.quotes?.forEach((q: ComparisonResultQuote) => {
+            const insNorm = (q.insurerName || '').toUpperCase().trim();
+            if (insNorm && (fname.includes(insNorm) || insNorm.includes(fname))) {
+              q.isRagAvailable = true;
+            }
+          });
+        });
+      }
+
       // Debug: Log result structure
       logger.info(`📊 [Adapter Debug] Quotes generated: ${comparisonResult.quotes?.length || 0}`);
       comparisonResult.quotes?.forEach((q: ComparisonResultQuote, i: number) => {

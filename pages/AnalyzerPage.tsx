@@ -121,7 +121,31 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
                   }
                 />
 
-                {/* Show file uploader only in upload mode */}
+                {/* Supplemental uploader: Available in both library and upload mode */}
+                {clauseMode === 'library' && (
+                  <div className="mt-4 pt-3 border-t border-slate-200/60">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] font-semibold text-slate-700">
+                        ¿Falta alguna aseguradora en la biblioteca?
+                      </span>
+                      <span className="text-[10px] text-slate-500">
+                        Carga el PDF complementario
+                      </span>
+                    </div>
+                    <FileUploader
+                      title=""
+                      description="Arrastra aquí el clausulado PDF faltante"
+                      files={clauseFiles}
+                      onFilesSelected={addClauseFiles}
+                      onRemoveFile={removeClauseFile}
+                      variant="secondary"
+                      icon={<BookOpen className="w-5 h-5 text-indigo-600" />}
+                      disabled={false}
+                    />
+                  </div>
+                )}
+
+                {/* Show file uploader in upload mode */}
                 {clauseMode === 'upload' && (
                   <div className="mt-4">
                     <FileUploader
@@ -158,11 +182,13 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                 <Sparkles size={20} className="relative z-10" />
                 <span className="relative z-10">
-                  {clauseMode === 'library' && selectedClauseIds.length > 0
-                    ? `Comparar (${selectedClauseIds.length} clausulados biblioteca)`
-                    : clauseFiles.length > 0
-                      ? `Comparar con ${clauseFiles.length} referencias`
-                      : 'Comparar Cotizaciones'}
+                  {selectedClauseIds.length > 0 && clauseFiles.length > 0
+                    ? `Comparar (${selectedClauseIds.length} biblioteca + ${clauseFiles.length} subido${clauseFiles.length > 1 ? 's' : ''})`
+                    : selectedClauseIds.length > 0
+                      ? `Comparar (${selectedClauseIds.length} clausulados biblioteca)`
+                      : clauseFiles.length > 0
+                        ? `Comparar con ${clauseFiles.length} referencias`
+                        : 'Comparar Cotizaciones'}
                 </span>
               </button>
             </div>
