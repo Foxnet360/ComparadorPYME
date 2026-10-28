@@ -13,11 +13,7 @@ import {
   CheckCircle2,
   XCircle,
   X,
-  SlidersHorizontal,
   ChevronLeft,
-  Mail,
-  Phone,
-  Layers,
 } from 'lucide-react';
 import { insurerService, type InsurerEntity } from '../services/insurerService';
 import { InsurerLogo } from './common/InsurerLogo';
@@ -132,8 +128,9 @@ export const InsurerManager: React.FC<InsurerManagerProps> = ({ onBack }) => {
       setSyncing(true);
       const updated = await insurerService.seedInsurers();
       setInsurers(updated);
-    } catch (err: any) {
-      alert(`Error al sincronizar catálogo: ${err?.message || 'Error desconocido'}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error desconocido';
+      alert(`Error al sincronizar catálogo: ${message}`);
     } finally {
       setSyncing(false);
     }
@@ -161,8 +158,8 @@ export const InsurerManager: React.FC<InsurerManagerProps> = ({ onBack }) => {
 
       await loadInsurers();
       setIsModalOpen(false);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Error al guardar la aseguradora');
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'Error al guardar la aseguradora');
     } finally {
       setSaving(false);
     }
@@ -173,8 +170,8 @@ export const InsurerManager: React.FC<InsurerManagerProps> = ({ onBack }) => {
     try {
       await insurerService.deleteInsurer(id);
       await loadInsurers();
-    } catch (err: any) {
-      alert(`Error: ${err.message}`);
+    } catch (err: unknown) {
+      alert(`Error: ${err instanceof Error ? err.message : 'Error al eliminar'}`);
     }
   };
 

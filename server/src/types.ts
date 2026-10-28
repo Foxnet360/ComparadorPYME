@@ -134,6 +134,9 @@ export interface QuoteAnalysis {
   technicalAnalysis: string;
   score: number;
   quoteAudit?: QuoteAudit;
+  expenses?: number;
+  fees?: number;
+  metadata?: QuoteMetadata;
 }
 
 export interface QuoteMetadata {
@@ -147,6 +150,7 @@ export interface QuoteMetadata {
   actividadOcupacion?: string | null;
   documento?: string | null;
   vigencia?: string | null;
+  filename?: string | null;
 }
 
 export interface RegulatoryCheckResult {

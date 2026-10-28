@@ -11,20 +11,31 @@ import { errorHandler } from '../middleware/errorHandler';
 import { AuthenticatedRequest } from '../middleware/auth';
 
 // Mock external dependencies that require environment variables
-vi.mock('../config/database', () => ({
-  supabase: {
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          order: vi.fn(() => Promise.resolve({ data: [], error: null })),
-        })),
-      })),
+vi.mock('../config/database', () => {
+  const makeChain = (val: any) => {
+    const chain: any = {
+      select: vi.fn(() => chain),
       insert: vi.fn(() => Promise.resolve({ data: { id: 'test-id' }, error: null })),
       upsert: vi.fn(() => Promise.resolve({ data: null, error: null })),
+      update: vi.fn(() => chain),
+      delete: vi.fn(() => chain),
+      eq: vi.fn(() => chain),
+      neq: vi.fn(() => chain),
+      or: vi.fn(() => chain),
+      order: vi.fn(() => Promise.resolve({ data: val, error: null })),
+      single: vi.fn(() => Promise.resolve({ data: val, error: null })),
+      then: vi.fn((resolve) => resolve({ data: Array.isArray(val) ? val : [val], error: null })),
+    };
+    return chain;
+  };
+
+  return {
+    supabase: {
+      from: vi.fn(() => makeChain([])),
       rpc: vi.fn(() => Promise.resolve({ data: [], error: null })),
-    })),
-  },
-}));
+    },
+  };
+});
 
 // Create test app
 const app = express();

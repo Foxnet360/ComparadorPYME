@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Users,
-  Building2,
   Building,
   Search,
   Plus,
@@ -9,14 +8,8 @@ import {
   Trash2,
   FileText,
   MapPin,
-  Compass,
   ArrowRight,
-  ShieldCheck,
-  Calendar,
-  DollarSign,
   X,
-  CheckCircle,
-  AlertTriangle,
 } from 'lucide-react';
 import { Client, HistoryEntry, ComparisonReport } from '../types';
 import { storageService } from '../services/storageService';
@@ -267,7 +260,12 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
           </div>
 
           <div className="flex-1 overflow-y-auto divide-y divide-slate-100 scrollbar-thin">
-            {filteredClients.map((client) => {
+            {loading ? (
+              <div className="p-8 text-center text-xs text-slate-400">Cargando clientes...</div>
+            ) : filteredClients.length === 0 ? (
+              <div className="p-8 text-center text-xs text-slate-400">No se encontraron clientes</div>
+            ) : (
+              filteredClients.map((client) => {
               const isSelected = selectedClient?.id === client.id;
               return (
                 <div
@@ -313,13 +311,7 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
                   )}
                 </div>
               );
-            })}
-
-            {filteredClients.length === 0 && (
-              <div className="p-8 text-center text-slate-400 text-sm">
-                No se encontraron clientes que coincidan con la búsqueda.
-              </div>
-            )}
+            }))}
           </div>
         </div>
 
@@ -642,7 +634,7 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white font-semibold"
                       value={clientForm.seismicZone}
                       onChange={(e) =>
-                        setClientForm({ ...clientForm, seismicZone: e.target.value as any })
+                        setClientForm({ ...clientForm, seismicZone: e.target.value as SeismicZone })
                       }
                     >
                       <option value="Alta">Alta</option>

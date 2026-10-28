@@ -147,7 +147,7 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-bold text-cyan-300">
-                  {(bestQuote.quoteAudit?.missingCoverages?.length ?? (bestQuote as any).missingCoverages?.length ?? 0) === 0 ? '100%' : 'Líder'}
+                  {(bestQuote.quoteAudit?.missingCoverages?.length ?? bestQuote.missingCoverages?.length ?? 0) === 0 ? '100%' : 'Líder'}
                 </span>
                 <span className="text-indigo-200">amparo</span>
               </div>
@@ -261,11 +261,15 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
                 </p>
                 <div className="space-y-2">
                   {competitors.map((comp, idx) => {
-                    const missingList = (
-                      comp.quoteAudit?.missingCoverages ||
-                      (comp as any).missingCoverages ||
-                      []
-                    ).map((m: any) => (typeof m === 'string' ? m : m.categoryName || m.name));
+                    const rawMissing = comp.quoteAudit?.missingCoverages || comp.missingCoverages || [];
+                    const missingList = rawMissing
+                      .map((m) => {
+                        if (typeof m === 'string') return m;
+                        if ('categoryName' in m && m.categoryName) return m.categoryName;
+                        if ('name' in m && m.name) return m.name;
+                        return '';
+                      })
+                      .filter(Boolean);
                     const missing = missingList.slice(0, 3).join(', ');
                     const critCount = (comp.alerts || []).filter((a) => a.level === 'CRITICAL').length;
                     return (

@@ -17,7 +17,7 @@ import { formatCOP } from '../../utils/formatCurrency';
 import { parseColombianCurrency } from '../../utils/currencyParser';
 import quoteBasedAuditor from '../quoteBasedAuditor';
 
-import { MatrixRow, QuoteAnalysis } from '../../types';
+import { MatrixRow, QuoteAnalysis, QuoteMetadata } from '../../types';
 import { InsuranceDomain } from '../../types/domain';
 import { buildRegulatoryBackingPayload } from '../regulatoryAuditService';
 import type { RegulatoryCheckResult } from '../../types';
@@ -68,7 +68,7 @@ export interface UnifiedComparisonReport {
   analysisVersion: string;
   id?: string;
   matrix?: MatrixRow[];
-  quoteMetadata?: any[];
+  quoteMetadata?: QuoteMetadata[];
   schemaVersion?: 1 | 2 | 3;
   analysisType?: AnalysisType;
   policyId?: string;
@@ -635,7 +635,7 @@ export async function matrixRowsToComparisonReport(
   const bestQuote = quotes[0];
 
   const alignedMatrixRows = alignMatrixRowsToQuotes(matrixRows, quotes, domain);
-  const regulatoryBacking = buildRegulatoryBackingPayload(quotes as any, domain);
+  const regulatoryBacking = buildRegulatoryBackingPayload(quotes, domain);
 
   return {
     quotes,

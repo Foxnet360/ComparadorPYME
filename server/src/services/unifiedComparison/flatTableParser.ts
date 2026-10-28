@@ -645,10 +645,16 @@ function parseDeductibleNumber(value: string): number {
   return parseFloat(clean);
 }
 
-export function parseDeductible(text: string | null | undefined): {
+export interface ParseDeductibleResult {
   deductible: StructuredDeductible;
   isAmbiguous: boolean;
-} {
+  percentage?: number;
+  minimum?: number;
+  copay?: number;
+  currency?: string;
+}
+
+export function parseDeductible(text: string | null | undefined): ParseDeductibleResult {
   const raw = text ?? '';
   if (raw.trim() === '') {
     return { deductible: { type: 'see_conditions' }, isAmbiguous: true };
@@ -656,8 +662,27 @@ export function parseDeductible(text: string | null | undefined): {
 
   const normalized = normalizeDeductibleText(raw);
 
+  if (
+    /\bsin deducible\b/.test(normalized) ||
+    /\b0%\b/.test(normalized) ||
+    /\bcero deducible\b/.test(normalized)
+  ) {
+    return {
+      deductible: { type: 'not_applicable' },
+      isAmbiguous: false,
+      percentage: 0,
+      copay: 0,
+      minimum: 0,
+    };
+  }
+
   if (/\bno aplica\b/.test(normalized) || /\bn\/a\b/.test(normalized)) {
-    return { deductible: { type: 'not_applicable' }, isAmbiguous: false };
+    return {
+      deductible: { type: 'not_applicable' },
+      isAmbiguous: false,
+      percentage: 0,
+      copay: 0,
+    };
   }
 
   if (
@@ -709,7 +734,12 @@ export function parseDeductible(text: string | null | undefined): {
     if (fixedMoneyMatch) {
       minimum = parseDeductibleNumber(fixedMoneyMatch[1]!);
       currency = (fixedMoneyMatch[2]! || 'COP').toUpperCase();
-      return { deductible: { minimum, currency, type: 'fixed' }, isAmbiguous: false };
+      return {
+        deductible: { minimum, currency, type: 'fixed' },
+        isAmbiguous: false,
+        minimum,
+        currency,
+      };
     }
   }
 
@@ -717,13 +747,25 @@ export function parseDeductible(text: string | null | undefined): {
     return {
       deductible: { percentage, minimum, currency, type: 'percentage_with_minimum' },
       isAmbiguous: false,
+      percentage,
+      minimum,
+      currency,
     };
   }
   if (percentage !== undefined) {
-    return { deductible: { percentage, type: 'percentage' }, isAmbiguous: false };
+    return {
+      deductible: { percentage, type: 'percentage' },
+      isAmbiguous: false,
+      percentage,
+    };
   }
   if (minimum !== undefined) {
-    return { deductible: { minimum, currency, type: 'minimum' }, isAmbiguous: false };
+    return {
+      deductible: { minimum, currency, type: 'minimum' },
+      isAmbiguous: false,
+      minimum,
+      currency,
+    };
   }
 
   return { deductible: { type: 'see_conditions' }, isAmbiguous: true };

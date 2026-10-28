@@ -16,7 +16,6 @@ import {
   COLOMBIA_DEPARTMENTS,
   getMunicipalitiesByDepartment,
   findGeoByCity,
-  SeismicZone,
 } from '../../src/data/colombiaGeo';
 
 export interface NewClientModalProps {

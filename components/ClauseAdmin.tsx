@@ -8,20 +8,11 @@ import {
   Eye,
   Trash2,
   ShieldCheck,
-  FileText,
   Sparkles,
   BookOpen,
-  Layers,
   X,
   Filter,
   Upload,
-  CheckCircle2,
-  Building2,
-  Car,
-  Home,
-  HeartPulse,
-  Briefcase,
-  Users,
 } from 'lucide-react';
 
 interface ClauseAdminProps {

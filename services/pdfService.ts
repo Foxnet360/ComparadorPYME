@@ -23,6 +23,14 @@ function hexToRgb(hex?: string): [number, number, number] {
   return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
 }
 
+interface DocWithAutoTable {
+  lastAutoTable?: { finalY: number };
+}
+
+function getLastAutoTableFinalY(doc: jsPDF, fallback: number = 0): number {
+  return (doc as unknown as DocWithAutoTable).lastAutoTable?.finalY ?? fallback;
+}
+
 // Helper for robust string matching (ignores accents, case, whitespace)
 
 // Format coverage value for PDF (similar to UI formatting)
@@ -83,7 +91,7 @@ interface PDFOptions {
 export const generatePDF = (
   report: ComparisonReport,
   options?: PDFOptions,
-  cellNotes?: Record<string, string>
+  _cellNotes?: Record<string, string>
 ) => {
   const doc = new jsPDF();
   const today = new Date().toLocaleDateString('es-ES');
@@ -141,7 +149,7 @@ export const generatePDF = (
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    const displayTitle = options?.customTitle || `Reporte Ejecutivo de Seguros · ${regProfile.displayName}`;
+    const displayTitle = options?.customTitle || title || `Reporte Ejecutivo de Seguros · ${regProfile.displayName}`;
     doc.text(displayTitle.substring(0, 52), 14, 13);
 
     doc.setFontSize(7.5);
@@ -178,7 +186,7 @@ export const generatePDF = (
   const clientName =
     report.clientInfo?.name ||
     firstMeta?.cliente ||
-    (quotes.find((q) => (q as any).clientName) as any)?.clientName ||
+    quotes.find((q) => q.clientName)?.clientName ||
     'Cliente / Tomador';
   const riskAddress =
     report.clientInfo?.address ||
@@ -244,7 +252,9 @@ export const generatePDF = (
       const format =
         logoToUse.includes('image/jpeg') || logoToUse.includes('image/jpg') ? 'JPEG' : 'PNG';
       doc.addImage(logoToUse, format, 156, currentY + 3, 36, 20, undefined, 'FAST');
-    } catch (_e) {}
+    } catch (_e) {
+      // Ignore image embedding failure if logo format or base64 is unsupported
+    }
   }
 
   currentY += 31;
@@ -562,7 +572,7 @@ export const generatePDF = (
         }
       },
     });
-    currentY = (doc as any).lastAutoTable.finalY + 10;
+    currentY = getLastAutoTableFinalY(doc, currentY) + 10;
   }
 
   // Cuadro Pedagógico para el Cliente sobre Deducibles en Colombia
@@ -706,7 +716,7 @@ export const generatePDF = (
     alternateRowStyles: { fillColor: LIGHT_GRAY },
   });
 
-  currentY = (doc as any).lastAutoTable.finalY + 12;
+  currentY = getLastAutoTableFinalY(doc, currentY) + 12;
 
   // Respaldo Normativo y Leyes Aplicables
   doc.setFontSize(11);
@@ -812,7 +822,7 @@ export const generatePDF = (
       margin: { left: 14, right: 14 },
     });
 
-    currentY = (doc as any).lastAutoTable.finalY + 8;
+    currentY = getLastAutoTableFinalY(doc, currentY) + 8;
   }
 
   // --- Dedicated Page: Políticas Comerciales y Condiciones de la Oferta ---
@@ -866,7 +876,7 @@ export const generatePDF = (
     margin: { left: 14, right: 14 },
   });
 
-  let afterPolicyY = (doc as any).lastAutoTable.finalY + 8;
+  let afterPolicyY = getLastAutoTableFinalY(doc, policyY) + 8;
   if (afterPolicyY > 235) {
     doc.addPage();
     afterPolicyY = addHeader('Políticas Comerciales · Respaldo y Contacto');

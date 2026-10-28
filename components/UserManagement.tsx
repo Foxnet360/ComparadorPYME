@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UserRole, Ally } from '../types';
-import { DEMO_ALLIES, DEMO_ANALYSTS } from '../services/analyticsService';
+import { DEMO_ALLIES } from '../services/analyticsService';
 import { organizationService } from '../services/organizationService';
 import { CommercialPolicies } from '../src/data/commercialPolicies';
 import { UserInviteModal } from './users/UserInviteModal';
@@ -10,7 +10,6 @@ import {
   Users,
   Building2,
   UserPlus,
-  ShieldCheck,
   Edit2,
   Trash2,
   CheckCircle,
@@ -18,7 +17,6 @@ import {
   X,
   Search,
   Building,
-  FileText,
 } from 'lucide-react';
 
 interface ManagedUser {
@@ -182,10 +180,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({
           type: 'success',
           message: `Usuario ${userData.name} vinculado a la correduría ${selectedAlly.name}.`,
         });
-      } catch (fallbackErr: any) {
+      } catch (fallbackErr: unknown) {
         setFeedback({
           type: 'error',
-          message: fallbackErr?.message || 'Error registrando usuario en la plataforma',
+          message: fallbackErr instanceof Error ? fallbackErr.message : 'Error registrando usuario en la plataforma',
         });
         throw fallbackErr;
       }
@@ -211,11 +209,11 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         type: 'success',
         message: `Correduría aliada "${allyData.name}" registrada exitosamente.`,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.warn('Could not persist organization to backend, updating local state', err);
       setFeedback({
         type: 'error',
-        message: err.message || 'Error al persistir correduría aliada',
+        message: err instanceof Error ? err.message : 'Error al persistir correduría aliada',
       });
     }
 
@@ -285,10 +283,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       });
       setShowEditAllyModal(false);
       setEditingAlly(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setFeedback({
         type: 'error',
-        message: err.message || 'Error al actualizar información de la correduría',
+        message: err instanceof Error ? err.message : 'Error al actualizar información de la correduría',
       });
       throw err;
     }
@@ -307,10 +305,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         type: 'success',
         message: `Correduría "${allyName}" eliminada correctamente del sistema.`,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       setFeedback({
         type: 'error',
-        message: err.message || 'Error eliminando correduría',
+        message: err instanceof Error ? err.message : 'Error eliminando correduría',
       });
     } finally {
       setIsSubmitting(false);
@@ -609,8 +607,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                           <span>Editar</span>
                         </button>
                         <button
+                          disabled={isSubmitting}
                           onClick={() => handleDeleteAlly(ally.id, ally.name)}
-                          className="px-2.5 py-1 text-xs font-bold text-rose-600 hover:text-rose-900 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center space-x-1"
+                          className="px-2.5 py-1 text-xs font-bold text-rose-600 hover:text-rose-900 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center space-x-1 disabled:opacity-50"
                         >
                           <Trash2 size={13} />
                           <span>Eliminar</span>

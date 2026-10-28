@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   formatMatrixValue,
   buildExportNotes,
-  CATEGORY_CONFIGS,
   isSublimitRow,
 } from '../../../components/UnifiedCoverageMatrix';
 

@@ -67,6 +67,7 @@ export interface ScoringBreakdown {
 
 export interface QuoteAnalysis {
   id?: string;
+  clientName?: string;
   insurerName: string;
   policyName: string;
   priceMonthly: number;
@@ -153,6 +154,10 @@ export interface QuoteAnalysis {
     overallRiskScore: number;
     summary: string;
   };
+  missingCoverages?: Array<string | { name?: string; categoryName?: string }>;
+  expenses?: number;
+  fees?: number;
+  metadata?: QuoteMetadata;
 }
 
 // --- ADVANCED ANALYSIS TYPES (INTEGRACIÓN CLAUSULADOS) ---
@@ -250,6 +255,7 @@ export interface QuoteMetadata {
   actividadOcupacion?: string | null;
   documento?: string | null;
   vigencia?: string | null;
+  filename?: string | null;
 }
 
 export interface ClientInfoSummary {

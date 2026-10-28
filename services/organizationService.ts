@@ -31,6 +31,25 @@ export interface DirectoryUser {
   createdAt: string;
 }
 
+interface OrganizationDbRow {
+  id: string;
+  name: string;
+  nit?: string | null;
+  created_at?: string | null;
+}
+
+interface DirectoryUserRpcRow {
+  id?: string;
+  user_id?: string;
+  name?: string | null;
+  email?: string | null;
+  role?: string;
+  org_id: string;
+  org_name?: string | null;
+  status?: string | null;
+  created_at?: string | null;
+}
+
 export interface CurrentOrgResponse {
   organization: Ally | null;
   role: UserRole;
@@ -69,7 +88,7 @@ export const organizationService = {
         .select('*')
         .order('name');
       if (!error && Array.isArray(data) && data.length > 0) {
-        return data.map((org: any) => ({
+        return (data as unknown as OrganizationDbRow[]).map((org) => ({
           id: org.id,
           name: org.name,
           nit: org.nit || undefined,
@@ -84,11 +103,11 @@ export const organizationService = {
       // 2. Fallback to Express API
       const res = await apiClient.fetch('/api/organizations');
       if (res.ok) {
-        const data = await res.json();
-        return data.map((org: any) => ({
+        const data = (await res.json()) as OrganizationDbRow[];
+        return data.map((org) => ({
           id: org.id,
           name: org.name,
-          nit: org.nit,
+          nit: org.nit || undefined,
           createdAt: org.created_at ? org.created_at.split('T')[0] : undefined,
         }));
       }
@@ -108,15 +127,16 @@ export const organizationService = {
       // 1. Direct Supabase RPC
       const { data, error } = await supabase.rpc('get_organization_directory');
       if (!error && Array.isArray(data) && data.length > 0) {
-        return data.map((item: any) => ({
-          id: item.id || item.user_id,
+        return (data as unknown as DirectoryUserRpcRow[]).map((item) => ({
+          id: item.id || item.user_id || '',
           name: item.name || item.email?.split('@')[0] || 'Usuario',
           email: item.email || '',
-          role: item.role as UserRole,
+          role: (item.role as UserRole) || 'ally_technical',
           allyId: item.org_id,
           allyName: item.org_name || 'Correduría Aliada',
           status: (item.status as 'ACTIVE' | 'INACTIVE') || 'ACTIVE',
-          createdAt: item.created_at ? item.created_at.split('T')[0] : '2026-01-01',
+          createdAt:
+            (item.created_at ? item.created_at.split('T')[0] : undefined) || '2026-01-01',
         }));
       }
     } catch (err) {
@@ -127,17 +147,18 @@ export const organizationService = {
       // 2. Fallback to Express API
       const res = await apiClient.fetch('/api/organizations/directory');
       if (res.ok) {
-        const data = await res.json();
+        const data = (await res.json()) as DirectoryUserRpcRow[];
         if (Array.isArray(data) && data.length > 0) {
-          return data.map((item: any) => ({
-            id: item.id || item.user_id,
+          return data.map((item) => ({
+            id: item.id || item.user_id || '',
             name: item.name || item.email?.split('@')[0] || 'Usuario',
             email: item.email || '',
-            role: item.role as UserRole,
+            role: (item.role as UserRole) || 'ally_technical',
             allyId: item.org_id,
             allyName: item.org_name || 'Correduría Aliada',
             status: (item.status as 'ACTIVE' | 'INACTIVE') || 'ACTIVE',
-            createdAt: item.created_at ? item.created_at.split('T')[0] : '2026-01-01',
+            createdAt:
+            (item.created_at ? item.created_at.split('T')[0] : undefined) || '2026-01-01',
           }));
         }
       }
@@ -285,7 +306,10 @@ export const organizationService = {
     role: UserRole;
     orgId: string;
     password?: string;
-  }): Promise<{ user: any; member: any }> => {
+  }): Promise<{
+    user: { id?: string; email?: string; [key: string]: unknown };
+    member: Record<string, unknown>;
+  }> => {
     const res = await apiClient.fetch('/api/organizations/users/invite', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

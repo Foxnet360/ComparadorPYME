@@ -45,13 +45,13 @@ const quotes = [{ insurerName: 'MAPFRE' }, { insurerName: 'CHUBB' }];
 
 describe('VirtualizedCoverageMatrix', () => {
   it('renders section header spanning all columns', () => {
-    render(<VirtualizedCoverageMatrix rows={rows} quotes={quotes as any} />);
+    render(<VirtualizedCoverageMatrix rows={rows} quotes={quotes} />);
 
     expect(screen.getByText('INFORMACIÓN GENERAL')).toBeTruthy();
   });
 
   it('renders data row labels and insurer cell values', () => {
-    render(<VirtualizedCoverageMatrix rows={rows} quotes={quotes as any} />);
+    render(<VirtualizedCoverageMatrix rows={rows} quotes={quotes} />);
 
     expect(screen.getByText('Prima con IVA')).toBeTruthy();
     expect(screen.getByText('$ 5.000.000')).toBeTruthy();

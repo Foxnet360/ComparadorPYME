@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, lazy, Suspense, memo, useMemo, useCallback } from 'react';
-import { QuoteAnalysis, MatrixRow, MatrixCell, CoverageItem, QuoteMetadata } from '../types';
+import { QuoteAnalysis, MatrixRow, MatrixCell, QuoteMetadata } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
 import {
   Info,
@@ -304,7 +304,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
   metadata,
   viewMode = 'technical',
   analysisId,
-  schemaVersion,
+  schemaVersion: _schemaVersion,
   domain,
 }) => {
   const [activeTab, setActiveTab] = useState<'coverages' | 'financials' | 'additional'>(
@@ -449,7 +449,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
             const fName = f.name.toLowerCase();
             return (
               fName.includes(normQuoteInsurer) ||
-              ((quote as any).metadata?.filename && f.name === (quote as any).metadata.filename)
+              (quote.metadata?.filename && f.name === quote.metadata.filename)
             );
           }) ||
           analysisState.quoteFiles[quotes.findIndex((q) => q.insurerName === quote.insurerName)] ||

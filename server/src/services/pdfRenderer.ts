@@ -57,7 +57,13 @@ export const pdfRenderer = {
       }
 
       // Obtener número de páginas
-      const pageCount = await pdfRenderer.getPageCount(pdfPath);
+      let pageCount = 0;
+      try {
+        pageCount = await pdfRenderer.getPageCount(pdfPath);
+      } catch (countError) {
+        console.warn(`⚠️ [PDF Renderer] Could not determine page count for ${pdfPath}:`, countError);
+        return [];
+      }
       console.log(`📄 [PDF Renderer] Rendering ${pageCount} pages for document ${documentId}`);
 
       // Renderizar cada página

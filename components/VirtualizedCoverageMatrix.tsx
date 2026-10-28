@@ -5,7 +5,7 @@ import { DeductibleBadge } from './DeductibleBadge';
 
 interface VirtualizedMatrixProps {
   rows: MatrixRow[];
-  quotes: QuoteAnalysis[];
+  quotes: Array<QuoteAnalysis | { insurerName: string }>;
   onCellClick?: (rowId: string, colIdx: number) => void;
   onCellDoubleClick?: (rowId: string, colIdx: number) => void;
 }

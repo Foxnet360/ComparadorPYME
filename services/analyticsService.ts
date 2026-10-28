@@ -8,11 +8,11 @@ export const DEMO_ALLIES: Ally[] = [
   { id: 'ally-300', name: 'Seguros Estratégicos del Caribe', nit: '901.888.777-5' },
 ];
 
-export const DEMO_ANALYSTS: Array<{ id: string; name: string; allyId: string }> = [
-  { id: 'user-tech-1', name: 'Carlos Mendoza (Técnico Senior)', allyId: 'ally-100' },
-  { id: 'user-tech-2', name: 'Ana María Gómez (Analista PYME)', allyId: 'ally-100' },
-  { id: 'user-tech-3', name: 'Jorge Rojas (Especialista Daños)', allyId: 'ally-200' },
-  { id: 'user-tech-4', name: 'Laura Betancur (Analista RC)', allyId: 'ally-300' },
+export const DEMO_ANALYSTS: Array<{ id: string; name: string; allyId: string; email?: string }> = [
+  { id: 'user-tech-1', name: 'Carlos Mendoza (Técnico Senior)', allyId: 'ally-100', email: 'carlos@andina.com' },
+  { id: 'user-tech-2', name: 'Ana María Gómez (Analista PYME)', allyId: 'ally-100', email: 'ana@andina.com' },
+  { id: 'user-tech-3', name: 'Jorge Rojas (Especialista Daños)', allyId: 'ally-200', email: 'jorge@alianzapyme.com' },
+  { id: 'user-tech-4', name: 'Laura Betancur (Analista RC)', allyId: 'ally-300', email: 'laura@caribeseguros.com' },
 ];
 
 let cachedAllies: Ally[] = DEMO_ALLIES;
@@ -50,7 +50,7 @@ export const analyticsService = {
     role: UserRole = 'ally_technical',
     userId: string = 'user-tech-1',
     allyId: string = 'ally-100',
-    simulateDemo: boolean = false
+    _simulateDemo: boolean = false
   ): Promise<ExecutiveAnalyticsData> => {
     let history: HistoryEntry[] = [];
     try {
@@ -140,7 +140,7 @@ export const analyticsService = {
 
         analystPerformance = team.map((member) => {
           const memberHistory = filteredHistory.filter(
-            (h) => h.userId === member.id || h.userId === (member as any).email
+            (h) => h.userId === member.id || (Boolean(member.email) && h.userId === member.email)
           );
           const memCount = memberHistory.length;
           const memSold = memberHistory.filter((h) => h.status === 'SOLD').length;

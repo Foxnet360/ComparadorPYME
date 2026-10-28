@@ -833,6 +833,15 @@ export const coverageOntology = {
         );
       }
 
+      // Guard: Ensure embedding matches pgvector expected dimension (3072)
+      const validEmbedding =
+        Array.isArray(embedding) && embedding.length === 3072 ? embedding : null;
+      if (Array.isArray(embedding) && embedding.length !== 3072) {
+        console.warn(
+          `⚠️ [Ontology DB] Embedding dimension mismatch: expected 3072, got ${embedding.length}. Skipping embedding column.`
+        );
+      }
+
       // Intento 1: Guardar con las nuevas columnas de alta certeza
       const { error } = await supabase.from('coverage_mappings').upsert(
         {
@@ -844,7 +853,7 @@ export const coverageOntology = {
           is_composite: mapping.isComposite,
           components: mapping.components || null,
           domain: d,
-          embedding: embedding || null,
+          embedding: validEmbedding,
           raw_text_snippet: mapping.rawTextSnippet || null,
           ai_justification: mapping.justification || null,
           page_number: mapping.pageNumber || null,
@@ -874,7 +883,7 @@ export const coverageOntology = {
             is_composite: mapping.isComposite,
             components: mapping.components || null,
             domain: d,
-            embedding: embedding || null,
+            embedding: validEmbedding,
             last_used_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           } as unknown as never,

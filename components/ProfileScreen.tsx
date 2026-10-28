@@ -97,7 +97,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handlePolicyChange = (field: keyof CommercialPolicies, value: any) => {
+  const handlePolicyChange = (
+    field: keyof CommercialPolicies,
+    value: string | number
+  ) => {
     setPolicies((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -250,16 +253,16 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
                           Rol de Sistema Asignado
                         </div>
                         <div className="text-sm font-extrabold text-indigo-700">
-                          {(currentUser as any).role === 'super_admin'
+                          {currentUser?.role === 'super_admin'
                             ? 'SUPER ADMINISTRADOR PLATAFORMA'
-                            : (currentUser as any).role === 'ally_admin'
+                            : currentUser?.role === 'ally_admin'
                               ? 'ADMINISTRADOR DE ALIADO (DIRECTOR TÉCNICO)'
                               : 'TÉCNICO ANALISTA DE SEGURIDAD'}
                         </div>
                       </div>
                     </div>
                     <span className="px-3 py-1 bg-indigo-600 text-white rounded-full text-xs font-bold uppercase tracking-wider">
-                      {(currentUser as any).allyName || formData.intermediaryName || 'Aliado CSA'}
+                      {currentUser?.allyName || formData.intermediaryName || 'Aliado CSA'}
                     </span>
                   </div>
 

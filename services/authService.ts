@@ -1,7 +1,7 @@
 import { createClient, User } from '@supabase/supabase-js';
 import { UserProfile } from '../types';
 import { organizationService } from './organizationService';
-import { getEffectiveCommercialPolicies } from '../src/data/commercialPolicies';
+import { getEffectiveCommercialPolicies, type CommercialPolicies } from '../src/data/commercialPolicies';
 
 // Supabase anon credentials are public by design (RLS enforces authorization,
 // never the key). They come from the build/dev environment, not from this
@@ -69,7 +69,8 @@ function profileFromUser(user: User): UserProfile {
     commercialPolicies:
       metadata.commercial_policies || metadata.commercialPolicies
         ? getEffectiveCommercialPolicies(
-            (metadata.commercial_policies || metadata.commercialPolicies) as any
+            (metadata.commercial_policies ||
+              metadata.commercialPolicies) as Partial<CommercialPolicies>
           )
         : undefined,
     agentDetails: {

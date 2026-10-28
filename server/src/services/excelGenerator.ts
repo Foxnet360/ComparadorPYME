@@ -1,5 +1,6 @@
 import * as ExcelJS from 'exceljs';
-import { QuoteAnalysis, MatrixRow, MatrixCell } from '../types';
+import { QuoteAnalysis, MatrixRow, MatrixCell, ScoringBreakdown } from '../types';
+import { InsuranceDomain } from '../types/domain';
 import {
   transformQuotesToMatrix,
   parseNumericValue,
@@ -88,10 +89,16 @@ function calculateDynamicRowHeight(texts: string[], minHeight: number = 24): num
   return Math.max(minHeight, Math.min(96, maxLines * 16 + 8));
 }
 
-interface ClientInfo {
+export interface ClientInfo {
   name?: string;
   activity?: string;
   location?: string;
+  nit?: string;
+}
+
+export interface ExcelReportData {
+  matrix?: MatrixRow[];
+  [key: string]: unknown;
 }
 
 export interface BrokerInfo {
@@ -125,7 +132,7 @@ export async function generateExcelBuffer(
   cellNotes?: Record<string, string>,
   brokerInfo?: BrokerInfo,
   domain: string = 'pyme',
-  reportData?: any,
+  reportData?: ExcelReportData,
   mode: 'technical' | 'client' = 'technical'
 ): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
@@ -141,7 +148,7 @@ export async function generateExcelBuffer(
   // Obtain ground-truth matrix rows from reportData or build using matrixTransformer
   const matrix: MatrixRow[] =
     reportData?.matrix && Array.isArray(reportData.matrix) && reportData.matrix.length > 0
-      ? alignMatrixRowsToQuotes(reportData.matrix, quotes, domain as any)
+      ? alignMatrixRowsToQuotes(reportData.matrix, quotes, domain as InsuranceDomain)
       : transformQuotesToMatrix(quotes, domain);
 
   // Client Info
@@ -299,7 +306,7 @@ export async function generateExcelBuffer(
     color: { argb: 'FF1E3A8A' },
   };
   addInfoRow('Asegurado (Razón Social):', clientName, 11);
-  addInfoRow('NIT / Identificación:', (clientInfo as any)?.nit || 'No especificado', 12);
+  addInfoRow('NIT / Identificación:', clientInfo?.nit || 'No especificado', 12);
   addInfoRow('Actividad / Ocupación:', clientActivity, 13);
   addInfoRow('Ubicación del Riesgo:', clientLocation, 14);
   addInfoRow('Valor Total Bienes:', totalAssetValueStr, 15);
@@ -377,7 +384,8 @@ export async function generateExcelBuffer(
       if (isTotal) {
         scoreVal = q.score || 50;
       } else if (q.scoringBreakdown) {
-        scoreVal = Math.round(((q.scoringBreakdown as any)[dim.key] || 5) * 10);
+        const breakdownVal = q.scoringBreakdown[dim.key as keyof ScoringBreakdown];
+        scoreVal = Math.round((breakdownVal || 5) * 10);
       }
 
       cellVal.value = scoreVal;
@@ -952,7 +960,7 @@ export async function generateExcelBuffer(
       ? parseNumericValue(expRow.cells[idx]?.value)
       : q.priceAnnual === 0
         ? 0
-        : (q as any).expenses || (q as any).fees || 0;
+        : q.expenses || q.fees || 0;
     const rawIva = ivaRow ? parseNumericValue(ivaRow.cells[idx]?.value) : 0;
     const rawTotal = totalRow ? parseNumericValue(totalRow.cells[idx]?.value) : 0;
     const quotePrice = q.priceAnnual || 0;

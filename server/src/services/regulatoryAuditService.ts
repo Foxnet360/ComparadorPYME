@@ -5,7 +5,17 @@
  */
 
 import { getDomainRegulatoryProfile } from '../shared/domainRegulatoryKnowledge';
-import type { QuoteAnalysis, RegulatoryCheckResult } from '../types';
+import type { RegulatoryCheckResult } from '../types';
+
+export interface RegulatoryAuditableQuote {
+  insurerName: string;
+  coverages?: Array<{
+    name: string;
+    canonicalName?: string;
+    value?: string;
+    isPositive?: boolean;
+  }>;
+}
 
 function normalizeText(value: string): string {
   return (value || '')
@@ -19,7 +29,7 @@ function normalizeText(value: string): string {
  * Audit a single quote against the domain's mandatory verification rules.
  */
 export function auditQuoteCompliance(
-  quote: QuoteAnalysis,
+  quote: RegulatoryAuditableQuote,
   domain: string = 'pyme'
 ): RegulatoryCheckResult[] {
   const profile = getDomainRegulatoryProfile(domain);
@@ -62,7 +72,7 @@ export function auditQuoteCompliance(
  * Audit all quotes in a report and return perQuoteCompliance map keyed by insurerName.
  */
 export function auditReportCompliance(
-  quotes: QuoteAnalysis[],
+  quotes: RegulatoryAuditableQuote[],
   domain: string = 'pyme'
 ): Record<string, RegulatoryCheckResult[]> {
   const result: Record<string, RegulatoryCheckResult[]> = {};
@@ -78,7 +88,7 @@ export function auditReportCompliance(
  * Build complete regulatory backing object for report payload.
  */
 export function buildRegulatoryBackingPayload(
-  quotes: QuoteAnalysis[],
+  quotes: RegulatoryAuditableQuote[],
   domain: string = 'pyme'
 ) {
   const profile = getDomainRegulatoryProfile(domain);

@@ -9,7 +9,6 @@ import {
   BookOpen,
   Search,
   ShieldCheck,
-  FileText,
   Filter,
 } from 'lucide-react';
 import { clauseService } from '../services/clauseService';
