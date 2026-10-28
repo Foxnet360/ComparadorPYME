@@ -548,6 +548,9 @@ export async function generateExcelBuffer(
     getValue?: (q: QuoteAnalysis) => string | number;
   }
 
+  const domainRules = regulatoryProfile?.mandatoryVerificationRules || [];
+  const isVida = domain === 'vida_grupo';
+
   const condensedRows: CondensedRow[] = [
     { type: 'header', label: '1. CONDICIONES ECONÓMICAS Y FORMA DE PAGO' },
     {
@@ -558,94 +561,59 @@ export async function generateExcelBuffer(
     },
     {
       type: 'data',
-      label: 'IVA (19%)',
+      label: isVida ? 'IVA (0% Exento Art. 427 E.T.)' : 'IVA (19%)',
       isCurrency: true,
-      getValue: (q) => Math.round((q.priceAnnual || (q.priceMonthly ? q.priceMonthly * 12 : 0)) * 0.19),
+      getValue: (q) =>
+        isVida
+          ? 0
+          : Math.round((q.priceAnnual || (q.priceMonthly ? q.priceMonthly * 12 : 0)) * 0.19),
     },
     {
       type: 'data',
-      label: 'Total a Pagar (Con IVA)',
+      label: 'Total a Pagar',
       isCurrency: true,
       getValue: (q) => {
         const net = q.priceAnnual || (q.priceMonthly ? q.priceMonthly * 12 : 0);
-        return net > 0 ? Math.round(net * 1.19) : 0;
+        return isVida ? net : net > 0 ? Math.round(net * 1.19) : 0;
       },
     },
     {
       type: 'data',
       label: 'Forma y Opciones de Pago',
-      getValue: () => 'Anual / Pago a 60 días o Financiado',
+      getValue: (q) => (q as any).paymentTerms || (q.priceMonthly ? 'Financiado / Mensual' : 'Anual Contado'),
     },
-    { type: 'header', label: '2. VALORES ASEGURADOS PRINCIPALES (LÍMITES)' },
     {
-      type: 'data',
-      label: 'Todo Riesgo Daños Materiales (Edificio / Contenidos)',
-      getValue: (q) =>
-        getCoverageSummary(q, [
-          'incendio',
-          'edificio',
-          'daño material',
-          'amparo basico',
-          'amparo básico',
-          'todo riesgo',
+      type: 'header',
+      label: `2. VALORES ASEGURADOS PRINCIPALES (${(regulatoryProfile?.displayName || 'COBERTURAS').toUpperCase()})`,
+    },
+    ...(domainRules.length > 0
+      ? domainRules.map((rule) => ({
+          type: 'data' as const,
+          label: rule.title,
+          getValue: (q: QuoteAnalysis) => getCoverageSummary(q, rule.keywords),
+        }))
+      : [
+          {
+            type: 'data' as const,
+            label: 'Amparo Principal / Cobertura Básica',
+            getValue: (q: QuoteAnalysis) =>
+              (q.coverages && q.coverages[0]?.value) || 'Ver condicionado',
+          },
         ]),
-    },
-    {
-      type: 'data',
-      label: 'Responsabilidad Civil Extracontractual (RCE / PLO)',
-      getValue: (q) => getCoverageSummary(q, ['responsabilidad civil', 'rce', 'plo']),
-    },
-    {
-      type: 'data',
-      label: 'Terremoto, Temblor y Eventos de la Naturaleza',
-      getValue: (q) => getCoverageSummary(q, ['terremoto', 'ttev', 'temblor']),
-    },
-    {
-      type: 'data',
-      label: 'Sustracción con Violencia (Hurto Calificado)',
-      getValue: (q) => getCoverageSummary(q, ['sustracción', 'sustraccion', 'hurto']),
-    },
-    {
-      type: 'data',
-      label: 'Rotura de Maquinaria / Equipo Eléctrico y Electrónico',
-      getValue: (q) =>
-        getCoverageSummary(q, [
-          'rotura',
-          'maquinaria',
-          'eléctrico',
-          'electrónico',
-          'electronico',
-        ]),
-    },
     { type: 'header', label: '3. ESTRUCTURA DE DEDUCIBLES' },
-    {
-      type: 'data',
-      label: 'Deducible Todo Riesgo Daño Material',
-      getValue: (q) =>
-        getDeductibleSummary(q, [
-          'incendio',
-          'edificio',
-          'daño material',
-          'amparo basico',
-          'amparo básico',
-          'todo riesgo',
+    ...(domainRules.length > 0
+      ? domainRules.map((rule) => ({
+          type: 'data' as const,
+          label: `Deducible: ${rule.title}`,
+          getValue: (q: QuoteAnalysis) => getDeductibleSummary(q, rule.keywords),
+        }))
+      : [
+          {
+            type: 'data' as const,
+            label: 'Deducibles Generales',
+            getValue: (q: QuoteAnalysis) => q.deductibles || 'Ver condicionado particular',
+          },
         ]),
-    },
-    {
-      type: 'data',
-      label: 'Deducible Terremoto',
-      getValue: (q) => getDeductibleSummary(q, ['terremoto', 'ttev', 'temblor']),
-    },
-    {
-      type: 'data',
-      label: 'Deducible Sustracción',
-      getValue: (q) => getDeductibleSummary(q, ['sustracción', 'sustraccion', 'hurto']),
-    },
-    {
-      type: 'data',
-      label: 'Deducible Responsabilidad Civil',
-      getValue: (q) => getDeductibleSummary(q, ['responsabilidad civil', 'rce', 'plo']),
-    },
     { type: 'header', label: '4. EVALUACIÓN Y DICTAMEN DE ASESORÍA' },
     {
       type: 'data',

@@ -469,7 +469,8 @@ ${context.hasClauses ? 'También se proporcionan clausulados para validación; �
    - REGLA CRÍTICA DE SEPARACIÓN PATRIMONIAL VS PRIMA: NUNCA confundas el "Valor Asegurado", "Suma Asegurada" o "Valor Total Asegurado" (que son sumas del inmueble/bienes del orden de cientos o miles de millones de COP) con la Prima o Valor a pagar de la póliza (que para Hogar suele ser de unos pocos millones de COP, ej. $1.000.000 a $15.000.000 COP).
    - La sección FINANCIAL DEBE contener ÚNICA Y EXCLUSIVAMENTE los costos o primas comerciales a pagar por el cliente. Jamás traslades valores de bienes o sumas aseguradas a esta sección ni a la fila "Total a pagar" o "Total prima".
    - Para Allianz: ubica la prima comercial del plan cotizado (ej. "Hogar Esencial", "Hogar Plus") o el "Valor a pagar" / "Total liquidación", extrayendo dicho monto exacto (ej. $3.962.567) en la fila "Total a pagar" o "Total prima".
-   - Para Mapfre: ubica la "Prima Total" o "Total a pagar" con IVA incluido (ej. $4.333.254) y repórtala en "Total a pagar" o "Total prima".`;
+   - Para Mapfre: ubica la "Prima Total" o "Total a pagar" con IVA incluido (ej. $4.333.254) y repórtala en "Total a pagar" o "Total prima".
+   - Si la cotización indica 'Prima Mínima Anual' o valor en SMMLV (ej. '1 SMMLV Sin I.V.A. $1.750.905'), extrae obligatoriamente el monto numérico en pesos en 'Total a pagar' o 'Total prima'. NUNCA dejes la prima vacía ni en 0.`;
     } else if (isCopropiedades) {
       sectionsToUse = COPROPIEDADES_GRANULAR_SECTIONS;
       roleDescription =
@@ -482,7 +483,7 @@ ${context.hasClauses ? 'También se proporcionan clausulados para validación; �
    - Daños por Agua / Anegación: extrae % de la pérdida y mínimo en SMMLV.
    - RCE y D&O: extrae % de la pérdida y mínimo en SMMLV, o "Sin deducible" si no aplica copago.
    - Si una cobertura no tiene deducible a cargo de la copropiedad, usa textualmente "Sin deducible".
-4. FINANCIAL: Extrae Prima Neta, Gastos de Expedición, IVA (19%) y Total a Pagar / Prima Total Anual. NUNCA confundas la suma asegurada de los edificios con la prima a pagar de la póliza.`;
+4. FINANCIAL: Extrae Prima Neta, Gastos de Expedición, IVA (19%) y Total a Pagar / Prima Total Anual. NUNCA confundas la suma asegurada de los edificios con la prima a pagar de la póliza. Si una cotización indica 'Prima Mínima Anual' o valor en SMMLV (ej. '1 SMMLV Sin I.V.A. $1.750.905'), extrae obligatoriamente el monto numérico en pesos en 'Total a Pagar' o 'Prima Neta'. NUNCA dejes la prima vacía ni en 0 si figura una prima mínima o valor a pagar.`;
     } else if (isAutos) {
       sectionsToUse = AUTOS_GRANULAR_SECTIONS;
       roleDescription =
@@ -492,7 +493,7 @@ ${context.hasClauses ? 'También se proporcionan clausulados para validación; �
 2. RESPONSABILIDAD CIVIL Y AMPAROS BÁSICOS: Extrae límites de RCE Daños a Terceros, RCE Lesiones o Muerte 1 Persona, RCE Lesiones o Muerte 2+ Personas, o Límite Único Combinado (LUC). Extrae condiciones de Pérdida Total Daños (PTD) y Pérdida Total Hurto (PTH) indicando el umbral de pérdida (75% u 80% FASECOLDA), y amparos de Pérdida Parcial Daños (PPD) y Pérdida Parcial Hurto (PPH).
 3. ASISTENCIAS Y BENEFICIOS: Extrae coberturas de Grúa y Asistencia en Viaje 24/7, días de Carro Taller / Vehículo de Reemplazo (ej. 10, 15, 30 días), Conductor Elegido y Accidentes al Conductor/Ocupantes.
 4. DEDUCIBLES: Extrae con exactitud cada deducible en su unidad original: porcentaje con mínimo en SMMLV (ej. 10% mín. 1 SMMLV para PPD/PPH), o "Sin deducible" si la póliza cubre al 100% sin franquicia (especialmente en Pérdida Total o RCE).
-5. FINANCIAL: Extrae Prima Neta, Gastos de Expedición, IVA (19%) y Total a Pagar. Nunca confundas el valor comercial del carro con la prima a pagar.`;
+5. FINANCIAL: Extrae Prima Neta, Gastos de Expedición, IVA (19%) y Total a Pagar. Nunca confundas el valor comercial del carro con la prima a pagar. Si la cotización indica 'Prima Mínima Anual' o valor en SMMLV, extrae obligatoriamente el monto numérico en pesos en 'Total a Pagar'. NUNCA dejes la prima vacía ni en 0.`;
     } else if (isSalud) {
       sectionsToUse = SALUD_GRANULAR_SECTIONS;
       roleDescription =
@@ -502,7 +503,7 @@ ${context.hasClauses ? 'También se proporcionan clausulados para validación; �
 2. COBERTURAS HOSPITALARIAS Y QUIRÚRGICAS: Extrae hospitalización en habitación individual sin límite de días, cobertura UCI/UCE, honorarios quirúrgicos y atención domiciliaria (Home Care).
 3. COBERTURAS AMBULATORIAS: Extrae acceso directo a médicos especialistas sin remisión, exámenes diagnósticos de alta complejidad, terapias, tratamientos oncológicos (quimio/radioterapia) y urgencias médicas internacionales (en USD o EUR).
 4. DEDUCIBLES, COPAGOS Y CARENCIAS: Extrae con precisión el valor exacto de copagos por consulta médica especializada en COP (ej. $35.000 COP), copagos por urgencias, períodos de carencia para maternidad o cirugías, y condiciones de preexistencias.
-5. FINANCIAL: Extrae cuota mensual o tarifa anual por persona o colectivo, impuestos y valor total a pagar.`;
+5. FINANCIAL: Extrae cuota mensual o tarifa anual por persona o colectivo, impuestos y valor total a pagar. Si la cotización indica tarifa mínima o valor anual base, extrae obligatoriamente el monto numérico en pesos. NUNCA dejes la prima vacía ni en 0.`;
     } else if (isCumplimiento) {
       sectionsToUse = CUMPLIMIENTO_GRANULAR_SECTIONS;
       roleDescription =
@@ -511,7 +512,7 @@ ${context.hasClauses ? 'También se proporcionan clausulados para validación; �
 1. DATOS DEL CONTRATO GARANTIZADO: Extrae Tomador/Contratista, Entidad Beneficiaria (estatal o privada), Número y Objeto del Contrato, y Valor Total del Contrato en COP.
 2. GARANTÍAS CONTRACTUALES: Extrae porcentajes y sumas aseguradas para Seriedad de la Oferta (mín. 10%), Buen Manejo del Anticipo (100%), Cumplimiento del Contrato (10% a 20%), y Pago de Salarios y Prestaciones Sociales (5% a 15%).
 3. GARANTÍAS POSTCONTRACTUALES: Extrae Estabilidad y Calidad de la Obra (término en años y %), Calidad de Bienes/Servicios, y Mantenimiento.
-4. FINANCIAL: Extrae Prima Neta, Gastos de Expedición, IVA (19%) y Total a Pagar. Registra la tasa aplicada por amparo si está disponible.`;
+4. FINANCIAL: Extrae Prima Neta, Gastos de Expedición, IVA (19%) y Total a Pagar. Registra la tasa aplicada por amparo si está disponible. Si la cotización indica 'Prima Mínima' o valor mínimo en SMMLV (muy común en pólizas de cumplimiento), extrae obligatoriamente el monto numérico en pesos en 'Total a Pagar'. NUNCA dejes la prima vacía ni en 0.`;
     } else if (isTransporte) {
       sectionsToUse = TRANSPORTE_GRANULAR_SECTIONS;
       roleDescription =
@@ -520,7 +521,7 @@ ${context.hasClauses ? 'También se proporcionan clausulados para validación; �
 1. TRAYECTO Y MERCANCÍAS: Extrae modo de transporte (Terrestre, Marítimo, Aéreo, Multimodal), ruta origen-destino, tipo de mercancía y términos Incoterm (con sobre-valor ej. 110%).
 2. COBERTURAS DE TRÁNSITO: Extrae amparos para Todo Riesgo Daño Material, Pérdida Total del vehículo, Hurto Calificado/Simple, Saqueo y Falta de Entrega por bulto entero, Avería Gruesa (General Average), y Cláusulas ICC del Instituto de Londres (A, B o C).
 3. DEDUCIBLES Y SEGURIDAD: Extrae deducibles por amparo (% de la pérdida con mínimo en SMMLV) y requisitos obligatorios de seguridad (monitoreo GPS, escolta armada, horarios de movilización).
-4. FINANCIAL: Extrae Prima Neta o Depósito, Gastos de Expedición, IVA (19%), Total a Pagar y Tasa por Mil aplicada.`;
+4. FINANCIAL: Extrae Prima Neta o Depósito, Gastos de Expedición, IVA (19%), Total a Pagar y Tasa por Mil aplicada. Si la cotización indica 'Prima Mínima de Depósito' o valor mínimo en SMMLV, extrae obligatoriamente el monto numérico en pesos en 'Total a Pagar'. NUNCA dejes la prima vacía ni en 0.`;
     } else if (isVidaGrupo) {
       sectionsToUse = VIDA_GRUPO_GRANULAR_SECTIONS;
       roleDescription =
@@ -529,7 +530,7 @@ ${context.hasClauses ? 'También se proporcionan clausulados para validación; �
 1. DATOS DEL GRUPO Y ASEGURABILIDAD: Extrae Empresa/Tomador, número de asegurados, edades límites (edad máxima de ingreso ej. 65 años, permanencia ej. 75 años) y límites sin examen médico.
 2. AMPAROS PRINCIPALES: Extrae sumas aseguradas de Amparo Básico Muerte Cualquier Causa, Incapacidad Total y Permanente (ITP ≥ 50%), Muerte Accidental (MAyD), Enfermedades Graves y Auxilio Funerario.
 3. BENEFICIOS COMPLEMENTARIOS: Extrae Renta Hospitalaria, Auxilio Educativo, Canasta Familiar, Doble Indemnización en accidente de tránsito, y condiciones del amparo de Suicidio (cobertura desde día 1 vs carencia 1 año según Art. 1158 Co.Co.).
-4. FINANCIAL: Extrae Prima Neta por persona o colectivo, IVA (0% exento en vida bajo Art. 427 Estatuto Tributario) y Total a Pagar.`;
+4. FINANCIAL: Extrae Prima Neta por persona o colectivo, IVA (0% exento en vida bajo Art. 427 Estatuto Tributario) y Total a Pagar. Si la cotización indica prima mínima anual o mensual, extrae obligatoriamente el monto numérico en pesos. NUNCA dejes la prima vacía ni en 0.`;
     } else {
       sectionsToUse = GRANULAR_SECTIONS;
       roleDescription = 'Eres un analista de seguros PYME y Daños Materiales en Colombia.';

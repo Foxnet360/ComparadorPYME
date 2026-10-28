@@ -451,6 +451,9 @@ export const generatePDF = (
 
   currentY += 8 + splitChicoIntro.length * 3.5;
 
+  const domainRules = regProfile.mandatoryVerificationRules || [];
+  const isVida = domain === 'vida_grupo';
+
   const condensedHead = [['Concepto / Parámetro Clave', ...insurers]];
   const condensedRows: string[][] = [
     [
@@ -458,9 +461,13 @@ export const generatePDF = (
       ...quotes.map((q) => (q.priceAnnual ? formatCOP(Math.round(q.priceAnnual / 1.19)) : 'No informada')),
     ],
     [
-      'I.V.A. (19%)',
+      isVida ? 'I.V.A. (0% Exento Art. 427 E.T.)' : 'I.V.A. (19%)',
       ...quotes.map((q) =>
-        q.priceAnnual ? formatCOP(Math.round(q.priceAnnual - q.priceAnnual / 1.19)) : 'N/A'
+        isVida
+          ? '$ 0'
+          : q.priceAnnual
+            ? formatCOP(Math.round(q.priceAnnual - q.priceAnnual / 1.19))
+            : 'N/A'
       ),
     ],
     [
@@ -469,34 +476,19 @@ export const generatePDF = (
     ],
     [
       'Forma de Pago / Plazo',
-      ...quotes.map((q) => q.paymentTerms || (q.priceMonthly ? 'Financiado / Mensual' : 'Anual Contado')),
+      ...quotes.map((q) => (q as any).paymentTerms || (q.priceMonthly ? 'Financiado / Mensual' : 'Anual Contado')),
     ],
-    [
-      'Daño Material / Todo Riesgo',
-      ...quotes.map((q) =>
-        getCuadroChicoValue(q, ['daño material', 'todo riesgo', 'edificio', 'contenido', 'bienes'])
-      ),
-    ],
-    [
-      'Responsabilidad Civil (RCE)',
-      ...quotes.map((q) =>
-        getCuadroChicoValue(q, ['responsabilidad civil', 'rce', 'rc extracontractual', 'predios'])
-      ),
-    ],
-    [
-      'Terremoto / Temblor',
-      ...quotes.map((q) => getCuadroChicoValue(q, ['terremoto', 'temblor', 'erupcion'])),
-    ],
-    [
-      'Hurto / Sustracción',
-      ...quotes.map((q) => getCuadroChicoValue(q, ['hurto', 'sustraccion', 'robo'])),
-    ],
-    [
-      'Rotura de Maquinaria / Eq. Elec.',
-      ...quotes.map((q) =>
-        getCuadroChicoValue(q, ['maquinaria', 'equipo electronico', 'electrico', 'rotura'])
-      ),
-    ],
+    ...(domainRules.length > 0
+      ? domainRules.map((rule) => [
+          rule.title,
+          ...quotes.map((q) => getCuadroChicoValue(q, rule.keywords)),
+        ])
+      : [
+          [
+            'Amparo Principal / Cobertura Básica',
+            ...quotes.map((q) => (q.coverages && q.coverages[0]?.value) || 'Ver detalle'),
+          ],
+        ]),
     [
       'Deducible Predominante',
       ...quotes.map((q) =>

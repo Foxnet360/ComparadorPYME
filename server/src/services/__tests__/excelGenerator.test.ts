@@ -145,6 +145,65 @@ describe('excelGenerator', () => {
       ]);
     });
 
+    it('should dynamically adapt Cuadro Comparativo Resumido to non-PYME domains like autos and vida_grupo', async () => {
+      const autosQuotes: QuoteAnalysis[] = [
+        {
+          ...mockQuotes[0]!,
+          coverages: [
+            { name: 'Responsabilidad Civil Extracontractual', value: '$ 1.000.000.000' },
+            { name: 'Pérdida Total Daños', value: '100% Comercial Fasecolda' },
+            { name: 'Pérdida Total Hurto', value: '100% Comercial Fasecolda' },
+            { name: 'Asistencia en Viaje y Grúa', value: 'Amparado 24/7' },
+          ],
+        },
+      ];
+
+      const autosBuffer = await generateExcelBuffer(autosQuotes, undefined, undefined, undefined, 'autos');
+      const autosWorkbook = new ExcelJS.Workbook();
+      await autosWorkbook.xlsx.load(autosBuffer);
+      const autosSummary = autosWorkbook.getWorksheet('Cuadro Comparativo Resumido');
+      expect(autosSummary).toBeDefined();
+
+      const autosLabels: string[] = [];
+      autosSummary!.eachRow((row) => {
+        autosLabels.push(String(row.getCell(1).value || ''));
+      });
+
+      // Should contain Autos-specific mandatory verification headers
+      expect(
+        autosLabels.some(
+          (l) => l.includes('Responsabilidad Civil') || l.includes('Pérdida') || l.includes('AUTOMOTORES')
+        )
+      ).toBe(true);
+
+      // And test vida_grupo exento IVA
+      const vidaQuotes: QuoteAnalysis[] = [
+        {
+          ...mockQuotes[0]!,
+          priceAnnual: 5000000,
+          coverages: [
+            { name: 'Amparo Básico Vida', value: '$ 50.000.000' },
+            { name: 'Incapacidad Total y Permanente', value: '$ 50.000.000' },
+          ],
+        },
+      ];
+
+      const vidaBuffer = await generateExcelBuffer(vidaQuotes, undefined, undefined, undefined, 'vida_grupo');
+      const vidaWorkbook = new ExcelJS.Workbook();
+      await vidaWorkbook.xlsx.load(vidaBuffer);
+      const vidaSummary = vidaWorkbook.getWorksheet('Cuadro Comparativo Resumido');
+      expect(vidaSummary).toBeDefined();
+
+      let ivaLabel = '';
+      vidaSummary!.eachRow((row) => {
+        const val = String(row.getCell(1).value || '');
+        if (val.includes('IVA')) {
+          ivaLabel = val;
+        }
+      });
+      expect(ivaLabel).toContain('0% Exento');
+    });
+
     it('should format ratio cells as percentages in Primas y Costos sheet', async () => {
       const buffer = await generateExcelBuffer(mockQuotes);
       const workbook = new ExcelJS.Workbook();
