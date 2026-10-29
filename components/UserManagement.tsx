@@ -4,6 +4,7 @@ import { DEMO_ALLIES } from '../services/analyticsService';
 import { organizationService } from '../services/organizationService';
 import { CommercialPolicies } from '../src/data/commercialPolicies';
 import { UserInviteModal } from './users/UserInviteModal';
+import { UserEditModal } from './users/UserEditModal';
 import { AllyCreateModal } from './users/AllyCreateModal';
 import { AllyEditModal } from './users/AllyEditModal';
 import {
@@ -49,6 +50,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 
   // Modal State
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditUserModal, setShowEditUserModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<ManagedUser | null>(null);
   const [showAllyModal, setShowAllyModal] = useState(false);
   const [showEditAllyModal, setShowEditAllyModal] = useState(false);
   const [editingAlly, setEditingAlly] = useState<Ally | null>(null);
@@ -70,6 +73,14 @@ export const UserManagement: React.FC<UserManagementProps> = ({
           setAlliesList(orgs);
           if (!defaultAllyId || defaultAllyId === 'ally-100' || defaultAllyId === 'csa-global') {
             setDefaultAllyId(orgs[0]?.id || '');
+          }
+        }
+
+        // If ally_admin and currentAllyId is legacy or missing, resolve from backend
+        if (currentUserRole === 'ally_admin' && (!currentAllyId || currentAllyId === 'ally-100' || currentAllyId.length !== 36)) {
+          const currentOrgRes = await organizationService.getCurrentOrganization();
+          if (isMounted && currentOrgRes.orgId) {
+            setDefaultAllyId(currentOrgRes.orgId);
           }
         }
 
@@ -108,10 +119,11 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   }, [currentUserRole, currentAllyId]);
 
   // Filter users based on RBAC level
+  const effectiveAllyId = defaultAllyId && defaultAllyId.length === 36 ? defaultAllyId : currentAllyId;
   const visibleUsers = usersList
     .filter((u) => {
       if (currentUserRole === 'ally_admin') {
-        return u.allyId === currentAllyId;
+        return u.allyId === effectiveAllyId || u.allyId === currentAllyId;
       }
       return true; // Super Admin sees all users
     })
@@ -159,34 +171,101 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         message: `Usuario ${userData.name} autorizado y registrado exitosamente con rol ${userData.role}.`,
       });
     } catch (err: unknown) {
-      console.warn('Could not invite user via API, attempting member binding fallback', err);
-      try {
-        await organizationService.addMember(selectedAlly.id, {
-          user_id: userData.email.trim(),
-          role: userData.role,
-        });
-        const newUser: ManagedUser = {
-          id: `user-${Date.now()}`,
-          name: userData.name,
-          email: userData.email,
-          role: userData.role,
-          allyId: selectedAlly.id,
-          allyName: selectedAlly.name,
-          status: 'ACTIVE',
-          createdAt: new Date().toISOString().split('T')[0]!,
-        };
-        setUsersList([newUser, ...usersList]);
-        setFeedback({
-          type: 'success',
-          message: `Usuario ${userData.name} vinculado a la correduría ${selectedAlly.name}.`,
-        });
-      } catch (fallbackErr: unknown) {
-        setFeedback({
-          type: 'error',
-          message: fallbackErr instanceof Error ? fallbackErr.message : 'Error registrando usuario en la plataforma',
-        });
-        throw fallbackErr;
-      }
+      setFeedback({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Error al registrar usuario',
+      });
+      throw err;
+    }
+  };
+
+  const handleOpenEditUser = (user: ManagedUser) => {
+    setEditingUser(user);
+    setShowEditUserModal(true);
+  };
+
+  const handleUpdateUser = async (
+    userId: string,
+    updates: {
+      name?: string;
+      role?: UserRole;
+      orgId?: string;
+      status?: 'ACTIVE' | 'INACTIVE';
+      password?: string;
+      phone?: string;
+    }
+  ) => {
+    setFeedback(null);
+    try {
+      await organizationService.updateUser(userId, updates);
+      const selectedOrg = alliesList.find((a) => a.id === updates.orgId);
+      setUsersList((prev) =>
+        prev.map((u) => {
+          if (u.id !== userId) return u;
+          return {
+            ...u,
+            name: updates.name || u.name,
+            role: updates.role || u.role,
+            allyId: updates.orgId || u.allyId,
+            allyName: selectedOrg ? selectedOrg.name : u.allyName,
+            status: updates.status || u.status,
+          };
+        })
+      );
+      setFeedback({
+        type: 'success',
+        message: `Usuario "${updates.name || 'actualizado'}" guardado exitosamente.`,
+      });
+      setShowEditUserModal(false);
+      setEditingUser(null);
+    } catch (err: unknown) {
+      setFeedback({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Error al actualizar usuario',
+      });
+      throw err;
+    }
+  };
+
+  const handleToggleUserStatus = async (user: ManagedUser) => {
+    const nextStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    setFeedback(null);
+    try {
+      await organizationService.updateUserStatus(user.id, nextStatus);
+      setUsersList((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, status: nextStatus } : u))
+      );
+      setFeedback({
+        type: 'success',
+        message: `Estado de ${user.name} actualizado a ${nextStatus === 'ACTIVE' ? 'Activo' : 'Inactivo'}.`,
+      });
+    } catch (err: unknown) {
+      setFeedback({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Error al cambiar estado del usuario',
+      });
+    }
+  };
+
+  const handleDeleteUser = async (user: ManagedUser) => {
+    const actionLabel = currentUserRole === 'super_admin' ? 'eliminar del sistema' : 'desvincular de su equipo';
+    if (!window.confirm(`¿Está seguro de ${actionLabel} al usuario "${user.name}" (${user.email})?`)) {
+      return;
+    }
+
+    setFeedback(null);
+    try {
+      await organizationService.deleteUser(user.id);
+      setUsersList((prev) => prev.filter((u) => u.id !== user.id));
+      setFeedback({
+        type: 'success',
+        message: `Usuario "${user.name}" eliminado correctamente.`,
+      });
+    } catch (err: unknown) {
+      setFeedback({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Error al eliminar usuario',
+      });
     }
   };
 
@@ -514,12 +593,35 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => toggleUserStatus(user.id)}
-                          className="text-xs font-semibold text-indigo-600 hover:text-indigo-900 underline"
-                        >
-                          {user.status === 'ACTIVE' ? 'Desactivar' : 'Activar'}
-                        </button>
+                        <div className="flex items-center justify-end space-x-2">
+                          <button
+                            onClick={() => handleOpenEditUser(user)}
+                            className="p-1.5 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-lg transition-colors"
+                            title="Editar usuario"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+
+                          <button
+                            onClick={() => handleToggleUserStatus(user)}
+                            className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors ${
+                              user.status === 'ACTIVE'
+                                ? 'text-amber-700 bg-amber-50 hover:bg-amber-100'
+                                : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+                            }`}
+                            title={user.status === 'ACTIVE' ? 'Desactivar usuario' : 'Activar usuario'}
+                          >
+                            {user.status === 'ACTIVE' ? 'Desactivar' : 'Activar'}
+                          </button>
+
+                          <button
+                            onClick={() => handleDeleteUser(user)}
+                            className="p-1.5 text-rose-600 hover:text-rose-900 hover:bg-rose-50 rounded-lg transition-colors"
+                            title="Eliminar usuario"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -650,6 +752,19 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         }}
         ally={editingAlly}
         onUpdate={handleUpdateAlly}
+      />
+
+      {/* Modal: Editar Usuario */}
+      <UserEditModal
+        isOpen={showEditUserModal}
+        onClose={() => {
+          setShowEditUserModal(false);
+          setEditingUser(null);
+        }}
+        currentUserRole={currentUserRole}
+        alliesList={alliesList}
+        user={editingUser}
+        onUpdate={handleUpdateUser}
       />
     </div>
   );

@@ -93,6 +93,7 @@ class FakeQueryBuilder implements PromiseLike<FakeResult> {
   private payload: FakeRow | FakeRow[] | null = null;
   private orderCol: string | null = null;
   private orderAsc = true;
+  private limitCount: number | null = null;
 
   constructor(
     private readonly db: FakeSupabase,
@@ -150,8 +151,20 @@ class FakeQueryBuilder implements PromiseLike<FakeResult> {
     return this;
   }
 
+  limit(count: number): this {
+    this.limitCount = count;
+    return this;
+  }
+
   single(): Promise<FakeResult> {
     return Promise.resolve(this.executeSingle());
+  }
+
+  maybeSingle(): Promise<FakeResult> {
+    const result = this.execute();
+    if (result.error) return Promise.resolve(result);
+    const rows = result.data as FakeRow[];
+    return Promise.resolve({ data: rows[0] || null, error: null });
   }
 
   then<TResult1 = FakeResult, TResult2 = never>(
@@ -208,6 +221,9 @@ class FakeQueryBuilder implements PromiseLike<FakeResult> {
             return av < bv ? -dir : dir;
           });
         }
+        if (this.limitCount !== null) {
+          out = out.slice(0, this.limitCount);
+        }
         return { data: out, error: null };
       }
       case 'update': {
@@ -235,6 +251,37 @@ export class FakeSupabase {
   private readonly uniqueConstraints: FakeUniqueConstraint[] = [];
   readonly client = {
     from: (table: string) => new FakeQueryBuilder(this, table),
+    auth: {
+      admin: {
+        getUserById: vi.fn(async (userId: string) => ({
+          data: {
+            user: {
+              id: userId,
+              email: `${userId}@test.com`,
+              user_metadata: {},
+              app_metadata: {},
+            },
+          },
+          error: null,
+        })),
+        updateUserById: vi.fn(async (userId: string, payload: any) => ({
+          data: { user: { id: userId, ...payload } },
+          error: null,
+        })),
+        deleteUser: vi.fn(async (_userId: string) => ({
+          data: null,
+          error: null,
+        })),
+        listUsers: vi.fn(async () => ({
+          data: { users: [] },
+          error: null,
+        })),
+        createUser: vi.fn(async (payload: any) => ({
+          data: { user: { id: 'created-user-id', ...payload } },
+          error: null,
+        })),
+      },
+    },
   };
 
   rows(table: string): FakeRow[] {

@@ -22,6 +22,7 @@ export interface OrganizationMemberRecord {
   org_id: string;
   user_id: string;
   role: 'super_admin' | 'ally_admin' | 'ally_technical';
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
   created_at: string;
   updated_at: string;
 }
@@ -199,17 +200,18 @@ export async function removeOrganizationMember(
 export async function getUserOrganization(
   userId: string
 ): Promise<{ organization: OrganizationRecord; role: string } | null> {
-  const { data: member, error: memberError } = await supabase
+  const { data: members, error: memberError } = await supabase
     .from('organization_members' as never)
     .select('*')
     .eq('user_id', userId)
-    .single();
+    .order('created_at', { ascending: false })
+    .limit(1);
 
-  if (memberError || !member) {
+  if (memberError || !members || members.length === 0) {
     return null;
   }
 
-  const typedMember = member as unknown as OrganizationMemberRecord;
+  const typedMember = members[0] as unknown as OrganizationMemberRecord;
   const org = await getOrganizationById(typedMember.org_id);
   if (!org) {
     return null;
@@ -219,6 +221,138 @@ export async function getUserOrganization(
     organization: org,
     role: typedMember.role,
   };
+}
+
+export async function getOrganizationMember(
+  userId: string,
+  orgId?: string
+): Promise<OrganizationMemberRecord | null> {
+  let query = supabase
+    .from('organization_members' as never)
+    .select(MEMBER_COLUMNS)
+    .eq('user_id', userId);
+
+  if (orgId) {
+    query = query.eq('org_id', orgId);
+  }
+
+  const { data, error } = await query
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (error || !data || data.length === 0) {
+    return null;
+  }
+
+  return data[0] as unknown as OrganizationMemberRecord;
+}
+
+export async function updateOrganizationMember(
+  userId: string,
+  updates: {
+    role?: 'super_admin' | 'ally_admin' | 'ally_technical';
+    status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+    org_id?: string;
+  },
+  currentOrgId?: string
+): Promise<OrganizationMemberRecord | null> {
+  let query = supabase
+    .from('organization_members' as never)
+    .update({
+      ...updates,
+      updated_at: new Date().toISOString(),
+    } as never)
+    .eq('user_id', userId);
+
+  if (currentOrgId) {
+    query = query.eq('org_id', currentOrgId);
+  }
+
+  const { data, error } = await query.select(MEMBER_COLUMNS).limit(1);
+
+  if (error) {
+    handleDbError(error, 'Failed to update organization member');
+  }
+
+  return data && data.length > 0 ? (data[0] as unknown as OrganizationMemberRecord) : null;
+}
+
+export async function updateAuthUser(
+  userId: string,
+  updates: {
+    name?: string;
+    email?: string;
+    password?: string;
+    role?: string;
+    org_id?: string;
+    org_name?: string;
+    phone?: string;
+    status?: string;
+  }
+): Promise<void> {
+  // Fetch existing user to preserve other metadata
+  const { data: userData, error: getUserError } = await supabase.auth.admin.getUserById(userId);
+  if (getUserError || !userData?.user) {
+    throw new Error(getUserError?.message || 'User not found in auth');
+  }
+
+  const existing = userData.user;
+  const newMetadata: Record<string, unknown> = {
+    ...existing.user_metadata,
+  };
+  const newAppMetadata: Record<string, unknown> = {
+    ...existing.app_metadata,
+  };
+
+  if (updates.name !== undefined) newMetadata.name = updates.name;
+  if (updates.role !== undefined) {
+    newMetadata.role = updates.role;
+    newAppMetadata.role = updates.role;
+  }
+  if (updates.org_id !== undefined) {
+    newMetadata.org_id = updates.org_id;
+    newMetadata.ally_id = updates.org_id;
+    newAppMetadata.org_id = updates.org_id;
+  }
+  if (updates.org_name !== undefined) {
+    newMetadata.org_name = updates.org_name;
+    newMetadata.intermediary_name = updates.org_name;
+  }
+  if (updates.phone !== undefined) {
+    newMetadata.phone = updates.phone;
+  }
+  if (updates.status !== undefined) {
+    newMetadata.status = updates.status;
+    newAppMetadata.status = updates.status;
+  }
+
+  const authUpdatePayload: Parameters<typeof supabase.auth.admin.updateUserById>[1] = {
+    user_metadata: newMetadata,
+    app_metadata: newAppMetadata,
+  };
+
+  if (updates.email !== undefined && updates.email !== existing.email) {
+    authUpdatePayload.email = updates.email;
+  }
+  if (updates.password !== undefined && updates.password.trim().length > 0) {
+    authUpdatePayload.password = updates.password.trim();
+  }
+  if (updates.phone !== undefined) {
+    authUpdatePayload.phone = updates.phone;
+  }
+
+  const { error: updateError } = await supabase.auth.admin.updateUserById(userId, authUpdatePayload);
+  if (updateError) {
+    throw new Error(`Failed to update auth user: ${updateError.message}`);
+  }
+}
+
+export async function deleteUserFromAuth(userId: string): Promise<boolean> {
+  const { error } = await supabase.auth.admin.deleteUser(userId);
+  if (error) {
+    throw new Error(`Failed to delete user from auth: ${error.message}`);
+  }
+  return true;
 }
 
 export interface DirectoryMemberRecord {

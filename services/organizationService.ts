@@ -370,4 +370,72 @@ export const organizationService = {
 
     return res.ok;
   },
+
+  /**
+   * Update user details (name, role, orgId, status, password, phone).
+   */
+  updateUser: async (
+    userId: string,
+    updates: {
+      name?: string;
+      role?: UserRole;
+      orgId?: string;
+      status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+      password?: string;
+      phone?: string;
+    }
+  ): Promise<{
+    user: { id?: string; name?: string; role?: UserRole; orgId?: string; orgName?: string; status?: string };
+    member: Record<string, unknown>;
+  }> => {
+    const res = await apiClient.fetch(`/api/organizations/users/${userId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Error al actualizar usuario');
+    }
+
+    return await res.json();
+  },
+
+  /**
+   * Update user active/inactive status.
+   */
+  updateUserStatus: async (
+    userId: string,
+    status: 'ACTIVE' | 'INACTIVE'
+  ): Promise<{ success: boolean; userId: string; status: string }> => {
+    const res = await apiClient.fetch(`/api/organizations/users/${userId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Error al cambiar estado del usuario');
+    }
+
+    return await res.json();
+  },
+
+  /**
+   * Delete or unbind user.
+   */
+  deleteUser: async (userId: string): Promise<boolean> => {
+    const res = await apiClient.fetch(`/api/organizations/users/${userId}`, {
+      method: 'DELETE',
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Error al eliminar usuario');
+    }
+
+    return true;
+  },
 };

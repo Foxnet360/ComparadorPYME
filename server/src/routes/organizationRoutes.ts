@@ -24,6 +24,10 @@ import {
   removeOrganizationMember,
   getUserOrganization,
   getOrganizationDirectory,
+  getOrganizationMember,
+  updateOrganizationMember,
+  updateAuthUser,
+  deleteUserFromAuth,
 } from '../repositories/organizationRepository';
 
 const router = Router();
@@ -282,13 +286,20 @@ router.post(
     }
 
     // Role-based boundary enforcement
+    let effectiveCallerOrgId = req.user?.orgId;
     if (callerRole === 'ally_admin') {
       if (role !== 'ally_technical') {
         throw new ForbiddenError(
           'Los Administradores Aliados únicamente pueden autorizar o invitar Técnicos Analistas'
         );
       }
-      if (callerOrgId && callerOrgId !== orgId) {
+      if (!effectiveCallerOrgId || effectiveCallerOrgId === 'ally-100' || effectiveCallerOrgId.length !== 36) {
+        const callerMembership = await getUserOrganization(callerId);
+        if (callerMembership) {
+          effectiveCallerOrgId = callerMembership.organization.id;
+        }
+      }
+      if (effectiveCallerOrgId && effectiveCallerOrgId !== orgId) {
         throw new ForbiddenError(
           'No está autorizado para agregar usuarios a una correduría distinta a la suya'
         );
@@ -366,6 +377,214 @@ router.post(
       },
       member,
     });
+  })
+);
+
+/**
+ * PUT /api/organizations/users/:userId
+ * Update an existing user's information, role, assigned organization, status or password.
+ */
+router.put(
+  '/users/:userId',
+  requireRole('super_admin', 'ally_admin'),
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const callerId = requireUser(req);
+    const callerRole = req.user?.role || 'ally_admin';
+    const targetUserId = String(req.params.userId);
+    const { name, role, orgId, status, password, phone } = req.body;
+
+    // Resolve caller's effective organization if ally_admin
+    let effectiveCallerOrgId = req.user?.orgId;
+    if (callerRole === 'ally_admin') {
+      if (!effectiveCallerOrgId || effectiveCallerOrgId === 'ally-100' || effectiveCallerOrgId.length !== 36) {
+        const callerMembership = await getUserOrganization(callerId);
+        if (callerMembership) {
+          effectiveCallerOrgId = callerMembership.organization.id;
+        }
+      }
+    }
+
+    // Fetch target user's current membership
+    const targetMembership = await getOrganizationMember(targetUserId);
+    if (!targetMembership) {
+      throw new NotFoundError('Usuario no encontrado en ninguna organización');
+    }
+
+    // Role-based boundary enforcement
+    if (callerRole === 'ally_admin') {
+      // Ally admin can only modify users within their own organization
+      if (targetMembership.org_id !== effectiveCallerOrgId) {
+        throw new ForbiddenError('No está autorizado para modificar usuarios de otra correduría');
+      }
+      // Ally admin cannot modify super_admin or other ally_admin
+      if (targetMembership.role !== 'ally_technical' && targetUserId !== callerId) {
+        throw new ForbiddenError('Solo puede gestionar analistas técnicos de su equipo');
+      }
+      // Ally admin cannot escalate role or change organization
+      if (role && role !== 'ally_technical') {
+        throw new ForbiddenError('Los administradores aliados solo pueden asignar el rol de Técnico Analista');
+      }
+      if (orgId && orgId !== effectiveCallerOrgId) {
+        throw new ForbiddenError('No puede trasladar usuarios a otra organización');
+      }
+    }
+
+    // Determine target organization
+    const finalOrgId = (callerRole === 'super_admin' && orgId) ? orgId : targetMembership.org_id;
+    const finalRole = role || targetMembership.role;
+    const finalStatus = status || targetMembership.status || 'ACTIVE';
+
+    const targetOrg = await getOrganizationById(finalOrgId);
+    if (!targetOrg) {
+      throw new NotFoundError('Organización no encontrada');
+    }
+
+    // 1. Update organization_members row
+    const updatedMember = await updateOrganizationMember(
+      targetUserId,
+      {
+        role: finalRole,
+        status: finalStatus,
+        org_id: finalOrgId,
+      },
+      targetMembership.org_id
+    );
+
+    // 2. Update auth.users metadata and password
+    await updateAuthUser(targetUserId, {
+      name: name?.trim(),
+      role: finalRole,
+      org_id: finalOrgId,
+      org_name: targetOrg.name,
+      phone,
+      status: finalStatus,
+      password: password && password.trim().length >= 6 ? password.trim() : undefined,
+    });
+
+    res.json({
+      success: true,
+      user: {
+        id: targetUserId,
+        name: name?.trim() || undefined,
+        role: finalRole,
+        orgId: finalOrgId,
+        orgName: targetOrg.name,
+        status: finalStatus,
+      },
+      member: updatedMember,
+    });
+  })
+);
+
+/**
+ * PATCH /api/organizations/users/:userId/status
+ * Toggle active / inactive status for a user.
+ */
+router.patch(
+  '/users/:userId/status',
+  requireRole('super_admin', 'ally_admin'),
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const callerId = requireUser(req);
+    const callerRole = req.user?.role || 'ally_admin';
+    const targetUserId = String(req.params.userId);
+    const { status } = req.body;
+
+    if (!status || !['ACTIVE', 'INACTIVE', 'SUSPENDED'].includes(status)) {
+      res.status(400).json({ error: 'Bad Request', message: 'Valid status is required (ACTIVE, INACTIVE, SUSPENDED)' });
+      return;
+    }
+
+    // Fetch target user's current membership
+    const targetMembership = await getOrganizationMember(targetUserId);
+    if (!targetMembership) {
+      throw new NotFoundError('Usuario no encontrado en la organización');
+    }
+
+    if (callerRole === 'ally_admin') {
+      let effectiveCallerOrgId = req.user?.orgId;
+      if (!effectiveCallerOrgId || effectiveCallerOrgId === 'ally-100' || effectiveCallerOrgId.length !== 36) {
+        const callerMembership = await getUserOrganization(callerId);
+        if (callerMembership) {
+          effectiveCallerOrgId = callerMembership.organization.id;
+        }
+      }
+      if (targetMembership.org_id !== effectiveCallerOrgId) {
+        throw new ForbiddenError('No puede modificar usuarios de otra correduría');
+      }
+      if (targetMembership.role !== 'ally_technical') {
+        throw new ForbiddenError('Solo puede modificar el estado de analistas técnicos');
+      }
+    }
+
+    const updatedMember = await updateOrganizationMember(
+      targetUserId,
+      { status },
+      targetMembership.org_id
+    );
+
+    await updateAuthUser(targetUserId, { status });
+
+    res.json({
+      success: true,
+      userId: targetUserId,
+      status,
+      member: updatedMember,
+    });
+  })
+);
+
+/**
+ * DELETE /api/organizations/users/:userId
+ * Delete or unbind a user.
+ * Super Admin deletes user completely (auth.users + organization_members).
+ * Ally Admin removes the technical user from their organization.
+ */
+router.delete(
+  '/users/:userId',
+  requireRole('super_admin', 'ally_admin'),
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const callerId = requireUser(req);
+    const callerRole = req.user?.role || 'ally_admin';
+    const targetUserId = String(req.params.userId);
+
+    if (targetUserId === callerId) {
+      throw new ForbiddenError('No puede eliminar su propia cuenta de usuario');
+    }
+
+    const targetMembership = await getOrganizationMember(targetUserId);
+    if (!targetMembership) {
+      throw new NotFoundError('Usuario no encontrado en la organización');
+    }
+
+    if (callerRole === 'ally_admin') {
+      let effectiveCallerOrgId = req.user?.orgId;
+      if (!effectiveCallerOrgId || effectiveCallerOrgId === 'ally-100' || effectiveCallerOrgId.length !== 36) {
+        const callerMembership = await getUserOrganization(callerId);
+        if (callerMembership) {
+          effectiveCallerOrgId = callerMembership.organization.id;
+        }
+      }
+      if (targetMembership.org_id !== effectiveCallerOrgId) {
+        throw new ForbiddenError('No puede eliminar usuarios de otra correduría');
+      }
+      if (targetMembership.role !== 'ally_technical') {
+        throw new ForbiddenError('Solo puede eliminar analistas técnicos de su correduría');
+      }
+
+      await removeOrganizationMember(targetMembership.org_id, targetUserId);
+      res.status(204).end();
+      return;
+    }
+
+    // Super Admin: Full removal
+    await removeOrganizationMember(targetMembership.org_id, targetUserId);
+    try {
+      await deleteUserFromAuth(targetUserId);
+    } catch (authErr) {
+      console.warn(`Could not delete user ${targetUserId} from auth:`, authErr);
+    }
+
+    res.status(204).end();
   })
 );
 

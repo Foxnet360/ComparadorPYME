@@ -156,7 +156,7 @@ const AppShell: React.FC = () => {
           <Suspense fallback={<ViewLoadingFallback />}>
             <UsersPage
               currentUserRole={extendedUser?.role || 'super_admin'}
-              currentAllyId={extendedUser?.allyId || 'ally-100'}
+              currentAllyId={extendedUser?.allyId || ''}
               onClose={() => setCurrentView('DASHBOARD')}
             />
           </Suspense>
