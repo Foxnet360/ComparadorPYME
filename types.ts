@@ -601,6 +601,27 @@ export interface ExecutiveAnalyticsData {
       estimatedCostUSD: number;
     }>;
   };
+  daasMetrics?: {
+    totalSnapshots: number;
+    activeDomains: number;
+    activeInsurers: number;
+    monthlyIngestionRate: number;
+    avgMarketScore: number;
+  };
+  marketBenchmark?: {
+    domain: string;
+    sampleSize: number;
+    avgPremiumAnnual: number;
+    medianPremiumAnnual: number;
+    percentile25: number;
+    percentile75: number;
+    topInsurers: Array<{
+      insurerName: string;
+      quoteCount: number;
+      avgPrice: number;
+    }>;
+    calculatedAt?: string;
+  };
   isSimulated?: boolean;
 }
 

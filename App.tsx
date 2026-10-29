@@ -149,7 +149,10 @@ const AppShell: React.FC = () => {
         )}
         {currentView === 'ANALYTICS' && (
           <Suspense fallback={<ViewLoadingFallback />}>
-            <AnalyticsPage onBackToDashboard={() => setCurrentView('DASHBOARD')} />
+            <AnalyticsPage
+              onBackToDashboard={() => setCurrentView('DASHBOARD')}
+              currentUserRole={extendedUser?.role || 'ally_technical'}
+            />
           </Suspense>
         )}
         {currentView === 'USERS' && (

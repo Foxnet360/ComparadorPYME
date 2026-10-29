@@ -1,0 +1,152 @@
+openapi: 3.0.3
+info:
+  title: Comparador CSA - DaaS (Data as a Service) API
+  version: 1.0.0
+  description: >
+    API B2B para la consulta y benchmarking de inteligencia de mercado del sector asegurador colombiano.
+    Proporciona datos agregados y anonimizados de tarifas, dispersión de deducibles y apetito de riesgo
+    por compañía aseguradora y ramo (PYME, Autos, Hogar, Copropiedades, etc.), en estricto cumplimiento
+    con la Ley 1581 de 2012 (Habeas Data).
+servers:
+  - url: https://api.comparadorcsa.com/api/v1/daas
+    description: Servidor de Producción DaaS
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /benchmarks/pricing:
+    get:
+      summary: Consultar índice de precios y tarifas de mercado
+      description: Retorna estadísticas agregadas de primas anuales (media, mediana, P25, P75) por ramo y período.
+      operationId: getPricingBenchmark
+      parameters:
+        - name: domain
+          in: query
+          required: true
+          description: Ramo asegurador (pyme, autos, hogar, copropiedades, etc.)
+          schema:
+            type: string
+            enum: [pyme, autos, hogar, copropiedades, salud, vida_grupo, transporte, cumplimiento, danos_materiales, responsabilidad_civil]
+        - name: periodMonths
+          in: query
+          required: false
+          description: Ventana temporal en meses hacia atrás (por defecto 6)
+          schema:
+            type: integer
+            default: 6
+            minimum: 1
+            maximum: 24
+      responses:
+        '200':
+          description: Benchmark calculado satisfactoriamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricingBenchmarkResponse'
+        '401':
+          $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Cuota o límite de consultas excedido
+
+  /benchmarks/market-share:
+    get:
+      summary: Participación de aseguradoras por ramo
+      description: Retorna la distribución porcentual y volumen de cotizaciones procesadas por compañía en el ramo solicitado.
+      operationId: getMarketShareBenchmark
+      parameters:
+        - name: domain
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Estadísticas de participación obtenidas exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketShareResponse'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    PricingBenchmarkResponse:
+      type: object
+      properties:
+        domain:
+          type: string
+          example: pyme
+        sampleSize:
+          type: integer
+          example: 142
+        avgPremiumAnnual:
+          type: number
+          format: float
+          example: 4850000.00
+        medianPremiumAnnual:
+          type: number
+          format: float
+          example: 4500000.00
+        percentile25:
+          type: number
+          format: float
+          example: 3800000.00
+        percentile75:
+          type: number
+          format: float
+          example: 5600000.00
+        currency:
+          type: string
+          example: COP
+        topInsurers:
+          type: array
+          items:
+            type: object
+            properties:
+              insurerName:
+                type: string
+                example: SURA
+              quoteCount:
+                type: integer
+                example: 45
+              avgPrice:
+                type: number
+                example: 4720000.00
+        calculatedAt:
+          type: string
+          format: date-time
+
+    MarketShareResponse:
+      type: object
+      properties:
+        totalAnalyzedQuotes:
+          type: integer
+          example: 520
+        insurers:
+          type: array
+          items:
+            type: object
+            properties:
+              insurerName:
+                type: string
+                example: AXA Colpatria
+              quoteCount:
+                type: integer
+                example: 120
+              sharePercentage:
+                type: number
+                example: 23.08
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string

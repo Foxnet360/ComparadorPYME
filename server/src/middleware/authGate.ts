@@ -28,7 +28,7 @@ import { AuthenticatedRequest, authMiddleware, optionalAuthMiddleware } from './
  */
 const PUBLIC_EXACT_PATHS: ReadonlySet<string> = new Set(['/analyze', '/history', '/audit/enrich']);
 
-const PUBLIC_PREFIXES: readonly string[] = ['/comparison'];
+const PUBLIC_PREFIXES: readonly string[] = ['/comparison', '/v1/daas'];
 
 const PUBLIC_METHOD_PREFIXES: ReadonlyArray<{
   prefix: string;

@@ -66,6 +66,8 @@ import renewalRoutes from './routes/renewalRoutes';
 import campaignRoutes from './routes/campaignRoutes';
 import insurerRoutes from './routes/insurers';
 import organizationRoutes from './routes/organizationRoutes';
+import analyticsRoutes from './routes/analyticsRoutes';
+import daasRoutes from './routes/daasRoutes';
 
 // Graph seeding lifecycle
 import { buildGraphEdgesFromDomain, seedCoverageGraph } from './services/graphSeeder';
@@ -227,6 +229,8 @@ export const apiRouterMounts = [
   { prefix: '/api/campaigns', router: campaignRoutes },
   { prefix: '/api/insurers', router: insurerRoutes },
   { prefix: '/api/organizations', router: organizationRoutes },
+  { prefix: '/api/analytics', router: analyticsRoutes },
+  { prefix: '/api/v1/daas', router: daasRoutes },
 ] as const;
 
 for (const mount of apiRouterMounts) {

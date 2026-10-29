@@ -71,7 +71,8 @@ class UniqueViolationError extends Error {
 type Filter =
   | { op: 'eq' | 'neq'; column: string; value: unknown }
   | { op: 'in'; column: string; values: unknown[] }
-  | { op: 'not-is'; column: string; value: unknown };
+  | { op: 'not-is'; column: string; value: unknown }
+  | { op: 'gte' | 'lte'; column: string; value: unknown };
 
 function applyFilter(row: FakeRow, filter: Filter): boolean {
   switch (filter.op) {
@@ -84,6 +85,10 @@ function applyFilter(row: FakeRow, filter: Filter): boolean {
     case 'not-is':
       // .not(col, 'is', null) → row[col] IS NOT NULL
       return row[filter.column] !== null && row[filter.column] !== undefined;
+    case 'gte':
+      return (row[filter.column] as any) >= (filter.value as any);
+    case 'lte':
+      return (row[filter.column] as any) <= (filter.value as any);
   }
 }
 
@@ -142,6 +147,16 @@ class FakeQueryBuilder implements PromiseLike<FakeResult> {
       throw new Error(`fakeSupabase: unsupported .not operator "${operator}"`);
     }
     this.filters.push({ op: 'not-is', column, value });
+    return this;
+  }
+
+  gte(column: string, value: unknown): this {
+    this.filters.push({ op: 'gte', column, value });
+    return this;
+  }
+
+  lte(column: string, value: unknown): this {
+    this.filters.push({ op: 'lte', column, value });
     return this;
   }
 
@@ -251,6 +266,10 @@ export class FakeSupabase {
   private readonly uniqueConstraints: FakeUniqueConstraint[] = [];
   readonly client = {
     from: (table: string) => new FakeQueryBuilder(this, table),
+    rpc: vi.fn(async (_fn: string, _args: any) => ({
+      data: null,
+      error: { code: 'PGRST202', message: 'Function not mocked in fake' },
+    })),
     auth: {
       admin: {
         getUserById: vi.fn(async (userId: string) => ({

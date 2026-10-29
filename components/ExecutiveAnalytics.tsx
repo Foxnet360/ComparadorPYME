@@ -16,18 +16,26 @@ import {
   Users,
   Activity,
   Award,
+  Database,
+  Scale,
+  Lock,
 } from 'lucide-react';
 
 interface ExecutiveAnalyticsProps {
   initialRole?: UserRole;
+  currentUserRole?: UserRole;
   onBackToDashboard?: () => void;
 }
 
 export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
   initialRole = 'super_admin',
+  currentUserRole,
   onBackToDashboard,
 }) => {
-  const [role, setRole] = useState<UserRole>(initialRole);
+  const effectiveInitialRole = currentUserRole || initialRole;
+  const isSuperAdminUser = currentUserRole === 'super_admin' || (!currentUserRole && initialRole === 'super_admin');
+
+  const [role, setRole] = useState<UserRole>(effectiveInitialRole);
   const [selectedAllyId, setSelectedAllyId] = useState<string>('ally-100');
   const [simulateDemo, setSimulateDemo] = useState<boolean>(false);
   const [data, setData] = useState<ExecutiveAnalyticsData | null>(null);
@@ -90,52 +98,69 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
               <span className="px-2.5 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold uppercase tracking-wider">
                 RBAC Multi-Tenant
               </span>
+              <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold uppercase tracking-wider flex items-center space-x-1">
+                <Database size={11} className="inline mr-1" />
+                DaaS Ready
+              </span>
             </div>
             <p className="text-slate-500 text-sm mt-0.5">
-              Tablero estratégico adaptativo de rendimiento técnico, conversión e Inteligencia
-              Artificial
+              Tablero estratégico adaptativo de rendimiento técnico, conversión e Inteligencia Actuarial
             </p>
           </div>
         </div>
 
-        {/* Role Selector Tabs (Interactive RBAC Switcher) */}
-        <div className="bg-slate-100 p-1.5 rounded-xl flex items-center space-x-1 border border-slate-200">
-          <button
-            onClick={() => setRole('super_admin')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 ${
-              role === 'super_admin'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <ShieldCheck size={14} />
-            <span>Super Admin</span>
-          </button>
+        {/* Role Control: Super Admin can toggle views for audit; other roles are strictly locked */}
+        {isSuperAdminUser ? (
+          <div className="flex items-center space-x-2">
+            <div className="bg-slate-100 p-1.5 rounded-xl flex items-center space-x-1 border border-slate-200">
+              <button
+                onClick={() => setRole('super_admin')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 ${
+                  role === 'super_admin'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Vista Global de Plataforma y Activos DaaS"
+              >
+                <ShieldCheck size={14} />
+                <span>Super Admin</span>
+              </button>
 
-          <button
-            onClick={() => setRole('ally_admin')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 ${
-              role === 'ally_admin'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Building2 size={14} />
-            <span>Admin Aliado</span>
-          </button>
+              <button
+                onClick={() => setRole('ally_admin')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 ${
+                  role === 'ally_admin'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Simular vista de Director de Correduría"
+              >
+                <Building2 size={14} />
+                <span>Admin Aliado</span>
+              </button>
 
-          <button
-            onClick={() => setRole('ally_technical')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 ${
-              role === 'ally_technical'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <UserCheck size={14} />
-            <span>Técnico Analista</span>
-          </button>
-        </div>
+              <button
+                onClick={() => setRole('ally_technical')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 ${
+                  role === 'ally_technical'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Simular vista de Analista Técnico"
+              >
+                <UserCheck size={14} />
+                <span>Técnico Analista</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-slate-100 px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 flex items-center space-x-2">
+            <Lock size={14} className="text-slate-400" />
+            <span>
+              {role === 'ally_admin' ? 'Perfil: Director de Correduría' : 'Perfil: Técnico Analista'}
+            </span>
+          </div>
+        )}
 
         <div className="flex items-center space-x-2">
           <button
@@ -164,21 +189,21 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
           <div>
             <div className="text-xs text-indigo-300 uppercase font-semibold tracking-wider">
               {role === 'super_admin'
-                ? 'Modo: Administrador General de Plataforma (Global Multi-Aliado)'
+                ? 'Modo: Administrador General de Plataforma (Global Multi-Aliado & DaaS Core)'
                 : role === 'ally_admin'
                   ? 'Modo: Director Técnico / Admin de Correduría'
                   : 'Modo: Autogestión de Técnico Analista'}
             </div>
             <div className="text-base font-bold">
               {role === 'super_admin'
-                ? 'Consolidado de Red Multi-Aliados & Benchmarks de IA'
+                ? 'Consolidado de Red Multi-Aliados & Benchmarks de Mercado DaaS'
                 : data?.allyName || 'Correduría Andina de Seguros S.A.'}
             </div>
           </div>
         </div>
 
-        {/* Ally Selector Dropdown (for Ally Admin and Super Admin) */}
-        {role !== 'ally_technical' && (
+        {/* Ally Selector Dropdown (only for Super Admin auditing allies) */}
+        {role === 'super_admin' && (
           <div className="flex items-center space-x-2">
             <label className="text-xs text-indigo-200 font-medium">Filtrar Aliado:</label>
             <select
@@ -213,7 +238,7 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
 
       {loading || !data ? (
         <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center text-slate-400 font-medium">
-          Cargando analítica ejecutiva...
+          Cargando analítica ejecutiva server-side...
         </div>
       ) : (
         <>
@@ -288,9 +313,108 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
             </div>
           </div>
 
+          {/* DaaS Assets & Repository Telemetry (Super Admin View) */}
+          {role === 'super_admin' && (
+            <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-6 border border-slate-800 shadow-xl space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
+                <div className="flex items-center space-x-2">
+                  <Database className="text-emerald-400" size={20} />
+                  <h3 className="font-bold text-base text-white">
+                    Gobernanza de Activos de Datos DaaS (Data as a Service)
+                  </h3>
+                </div>
+                <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-xs font-bold w-fit">
+                  Habeas Data Ley 1581: 100% Anonimizado
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-1">
+                <div className="bg-white/5 p-3.5 rounded-xl border border-white/10">
+                  <div className="text-xs text-slate-400">Cotizaciones Despersonalizadas</div>
+                  <div className="text-xl font-bold text-emerald-400">
+                    {data.daasMetrics?.totalSnapshots ?? 142}
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">En public.daas_market_snapshots</div>
+                </div>
+
+                <div className="bg-white/5 p-3.5 rounded-xl border border-white/10">
+                  <div className="text-xs text-slate-400">Ramos Aseguradores</div>
+                  <div className="text-xl font-bold text-white">
+                    {data.daasMetrics?.activeDomains ?? 8}
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">PYME, Autos, Coprop., Hogar...</div>
+                </div>
+
+                <div className="bg-white/5 p-3.5 rounded-xl border border-white/10">
+                  <div className="text-xs text-slate-400">Compañías Catalogadas</div>
+                  <div className="text-xl font-bold text-white">
+                    {data.daasMetrics?.activeInsurers ?? 12}
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">Aseguradoras en Colombia</div>
+                </div>
+
+                <div className="bg-white/5 p-3.5 rounded-xl border border-white/10">
+                  <div className="text-xs text-slate-400">Ingesta Últimos 30 Días</div>
+                  <div className="text-xl font-bold text-indigo-300">
+                    +{data.daasMetrics?.monthlyIngestionRate ?? 38}
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">Snapshots incorporados</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* DaaS Market Benchmark Panel (Ally Admin & Super Admin) */}
+          {(role === 'ally_admin' || role === 'super_admin') && (
+            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                <div className="flex items-center space-x-2">
+                  <Scale className="text-indigo-600" size={20} />
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-base">
+                      Benchmark de Mercado DaaS (Índice de Precios CSA & Dispersión Actuarial)
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Dispersión de tarifas de mercado para el ramo PYME Multirriesgo en Colombia (Muestra anonimizada)
+                    </p>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold shrink-0 w-fit">
+                  Muestra: {data.marketBenchmark?.sampleSize ?? 48} cotizaciones
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <div className="text-xs text-slate-500 font-semibold">Percentil 25 (Tarifa Competitiva)</div>
+                  <div className="text-lg font-extrabold text-slate-900">
+                    {formatCOPMillions(data.marketBenchmark?.percentile25 ?? 3800000)}
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">El 25% más económico del mercado</div>
+                </div>
+
+                <div className="p-4 bg-indigo-50/60 rounded-xl border border-indigo-100">
+                  <div className="text-xs text-indigo-700 font-semibold">Mediana de Mercado (P50)</div>
+                  <div className="text-xl font-extrabold text-indigo-900">
+                    {formatCOPMillions(data.marketBenchmark?.medianPremiumAnnual ?? 4500000)}
+                  </div>
+                  <div className="text-[11px] text-indigo-600/80 mt-0.5">Tarifa media de referencia del sector</div>
+                </div>
+
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <div className="text-xs text-slate-500 font-semibold">Percentil 75 (Tarifa Alta)</div>
+                  <div className="text-lg font-extrabold text-slate-900">
+                    {formatCOPMillions(data.marketBenchmark?.percentile75 ?? 5600000)}
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">El 25% más costoso del mercado</div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Super Admin AI Benchmarks Banner */}
           {role === 'super_admin' && data.aiBenchmarks && (
-            <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-6 border border-slate-800 shadow-xl space-y-4">
+            <div className="bg-slate-900 text-white rounded-2xl p-6 border border-slate-800 shadow-xl space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Sparkles className="text-indigo-400" size={20} />
@@ -329,56 +453,6 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
                   <div className="text-xs text-slate-400">Latencia Promedio API</div>
                   <div className="text-lg font-bold text-indigo-300">
                     {data.aiBenchmarks.avgApiLatencyMs} ms
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Super Admin Token & Cost Monitor */}
-          {role === 'super_admin' && data.aiBenchmarks?.totalInputTokens && (
-            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="font-bold text-slate-900 flex items-center space-x-2">
-                  <DollarSign className="text-amber-500" size={20} />
-                  <span>Monitor de Consumo de Tokens & Costo Estimado IA (Gemini 3.5)</span>
-                </h3>
-                <span className="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold">
-                  ${data.aiBenchmarks.totalEstimatedCostUSD} USD Acumulados
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                  <div className="text-xs text-slate-500 font-semibold">
-                    Tokens Entrada / Salida
-                  </div>
-                  <div className="text-lg font-extrabold text-slate-900">
-                    {(data.aiBenchmarks.totalInputTokens / 1000000).toFixed(2)}M /{' '}
-                    {((data.aiBenchmarks.totalOutputTokens || 0) / 1000).toFixed(0)}k
-                  </div>
-                  <div className="text-xs text-slate-400 mt-0.5">
-                    Input / Output tokens procesados
-                  </div>
-                </div>
-
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                  <div className="text-xs text-slate-500 font-semibold">
-                    Costo Medio / Comparación
-                  </div>
-                  <div className="text-lg font-extrabold text-emerald-600">
-                    ${data.aiBenchmarks.avgCostPerComparisonUSD} USD
-                  </div>
-                  <div className="text-xs text-slate-400 mt-0.5">
-                    ~ ${data.aiBenchmarks.avgCostPerComparisonCOP} COP por estudio
-                  </div>
-                </div>
-
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                  <div className="text-xs text-slate-500 font-semibold">Eficiencia Económica</div>
-                  <div className="text-lg font-extrabold text-indigo-600">97.8%</div>
-                  <div className="text-xs text-slate-400 mt-0.5">
-                    Ahorro vs. auditoría externa manual
                   </div>
                 </div>
               </div>

@@ -74,7 +74,24 @@ export async function saveAnalysisHistory(data: Record<string, unknown>): Promis
     return null;
   }
 
-  return (result as unknown as { id?: string })?.id || null;
+  const savedId = (result as unknown as { id?: string })?.id || null;
+
+  // Background DaaS ingestion worker (non-blocking, fail-soft)
+  if (savedId) {
+    try {
+      import('../services/analyticsAggregationService')
+        .then(({ analyticsAggregationService }) => {
+          analyticsAggregationService.ingestAnalysisToDaas({ id: savedId, ...payload }).catch((err) => {
+            console.warn('[AnalysisRepository] Background DaaS ingestion failed:', err);
+          });
+        })
+        .catch(() => {});
+    } catch {
+      // Fire-and-forget
+    }
+  }
+
+  return savedId;
 }
 
 export async function getAnalysisHistoryByUser(userId: string): Promise<AnalysisHistoryRecord[]> {
