@@ -1,10 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import { Response } from 'express';
 import {
   assertProductionJwtSecret,
   requireUser,
   getTenantScope,
   requireRole,
+  authMiddleware,
+  optionalAuthMiddleware,
+  verifyToken,
   AuthenticatedRequest,
 } from '../auth';
 import { AuthenticationError } from '../../errors';
@@ -119,5 +124,128 @@ describe('requireRole middleware', () => {
     });
 
     expect(nextCalled).toBe(true);
+  });
+});
+
+describe('authMiddleware and verifyToken', () => {
+  const originalEnv = { ...process.env };
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    process.env = { ...originalEnv };
+  });
+
+  it('rejects request with missing Authorization header', async () => {
+    const req = { headers: {} } as AuthenticatedRequest;
+    const res = {} as Response;
+    let err: unknown;
+
+    await authMiddleware(req, res, (e) => {
+      err = e;
+    });
+
+    expect(err).toBeInstanceOf(AuthenticationError);
+  });
+
+  it('verifies valid HS256 JWT when SUPABASE_JWT_SECRET is configured', async () => {
+    const secret = 'test-secret-12345';
+    process.env.SUPABASE_JWT_SECRET = secret;
+
+    const token = jwt.sign(
+      { sub: 'user-hs256', email: 'test@csa.com', role: 'super_admin' },
+      secret,
+      { algorithm: 'HS256' }
+    );
+
+    const req = {
+      headers: { authorization: `Bearer ${token}` },
+    } as AuthenticatedRequest;
+    const res = {} as Response;
+    let err: unknown;
+
+    await authMiddleware(req, res, (e) => {
+      err = e;
+    });
+
+    expect(err).toBeUndefined();
+    expect(req.user?.id).toBe('user-hs256');
+    expect(req.user?.email).toBe('test@csa.com');
+    expect(req.user?.role).toBe('super_admin');
+  });
+
+  it('verifies valid ES256 JWT with mocked JWKS public key', async () => {
+    // Generate EC keypair for ES256
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('ec', {
+      namedCurve: 'prime256v1',
+    });
+    const jwk = publicKey.export({ format: 'jwk' });
+    const kid = 'test-ec-kid-123';
+
+    // Mock fetch for JWKS endpoint
+    process.env.SUPABASE_URL = 'https://mock.supabase.co';
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        keys: [{ ...jwk, kid, kty: 'EC', alg: 'ES256' }],
+      }),
+    } as unknown as globalThis.Response);
+
+    const token = jwt.sign(
+      { sub: 'user-es256', email: 'claudia@csa.com', role: 'super_admin' },
+      privateKey,
+      { algorithm: 'ES256', keyid: kid }
+    );
+
+    const req = {
+      headers: { authorization: `Bearer ${token}` },
+    } as AuthenticatedRequest;
+    const res = {} as Response;
+    let err: unknown;
+
+    await authMiddleware(req, res, (e) => {
+      err = e;
+    });
+
+    expect(err).toBeUndefined();
+    expect(req.user?.id).toBe('user-es256');
+    expect(req.user?.email).toBe('claudia@csa.com');
+    expect(req.user?.role).toBe('super_admin');
+  });
+
+  it('optionalAuthMiddleware attaches user when valid token provided', async () => {
+    const secret = 'test-secret-12345';
+    process.env.SUPABASE_JWT_SECRET = secret;
+
+    const token = jwt.sign(
+      { sub: 'optional-user', email: 'opt@csa.com', role: 'ally_admin' },
+      secret,
+      { algorithm: 'HS256' }
+    );
+
+    const req = {
+      headers: { authorization: `Bearer ${token}` },
+    } as AuthenticatedRequest;
+    const res = {} as Response;
+
+    await optionalAuthMiddleware(req, res, () => {});
+
+    expect(req.user?.id).toBe('optional-user');
+    expect(req.user?.role).toBe('ally_admin');
+  });
+
+  it('optionalAuthMiddleware continues anonymously without error when token missing', async () => {
+    const req = { headers: {} } as AuthenticatedRequest;
+    const res = {} as Response;
+    let nextCalled = false;
+
+    await optionalAuthMiddleware(req, res, () => {
+      nextCalled = true;
+    });
+
+    expect(nextCalled).toBe(true);
+    expect(req.user).toBeUndefined();
   });
 });

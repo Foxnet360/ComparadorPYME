@@ -69,8 +69,8 @@ export const isPublicPath = (path: string, method?: string): boolean => {
 
 export const authGate = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
   if (isPublicPath(req.path, req.method)) {
-    optionalAuthMiddleware(req, res, next);
+    optionalAuthMiddleware(req, res, next).catch(next);
     return;
   }
-  authMiddleware(req, res, next);
+  authMiddleware(req, res, next).catch(next);
 };
