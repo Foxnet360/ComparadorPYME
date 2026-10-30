@@ -5,16 +5,12 @@ import {
   FileText,
   Lock,
   Scale,
-  ExternalLink,
   CheckCircle2,
   Calendar,
 } from 'lucide-react';
 import {
   ALL_LEGAL_DOCUMENTS,
   TERMS_OF_SERVICE,
-  PRIVACY_POLICY,
-  SECURITY_POLICY,
-  REGULATORY_DISCLAIMER,
   LegalDocument,
 } from '../../src/data/legalContent';
 

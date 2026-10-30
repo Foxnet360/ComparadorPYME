@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { HelpCircle, Check, ShieldQuestion, Sparkles, CheckCircle2, ChevronRight } from 'lucide-react';
-import type { QuoteAnalysis, CoverageItem } from '../../types';
+import { HelpCircle, Check, CheckCircle2 } from 'lucide-react';
+import type { QuoteAnalysis } from '../../types';
 
 interface DisambiguationCandidate {
   rawName: string;

@@ -394,14 +394,6 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     }
   };
 
-  const toggleUserStatus = (userId: string) => {
-    setUsersList(
-      usersList.map((u) =>
-        u.id === userId ? { ...u, status: u.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' } : u
-      )
-    );
-  };
-
   return (
     <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto pb-12">
       {/* Header & Controls */}

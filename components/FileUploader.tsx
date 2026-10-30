@@ -109,7 +109,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   domain: propDomain,
   onDomainChange,
   showDomainSelector,
-  onFocusClientSelection,
+  onFocusClientSelection: _onFocusClientSelection,
 }) => {
   const [domain, setDomain] = useState<InsuranceDomain>(propDomain || 'pyme');
   const [suggestion, setSuggestion] = useState<DomainSuggestion | null>(null);

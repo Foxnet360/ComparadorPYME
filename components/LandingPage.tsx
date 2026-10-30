@@ -45,6 +45,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
   const [showLegalModal, setShowLegalModal] = useState(false);
   const [legalTab, setLegalTab] = useState<'terms' | 'privacy' | 'security' | 'disclaimer'>('terms');
 
+  const handleOpenLegal = (tab: 'terms' | 'privacy' | 'security' | 'disclaimer') => {
+    if (onOpenLegal) {
+      onOpenLegal(tab);
+    } else {
+      setLegalTab(tab);
+      setShowLegalModal(true);
+    }
+  };
+
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
@@ -1057,10 +1066,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
                 <li>
                   <button
                     type="button"
-                    onClick={() => {
-                      setLegalTab('terms');
-                      setShowLegalModal(true);
-                    }}
+                    onClick={() => handleOpenLegal('terms')}
                     className="text-slate-400 hover:text-white transition-colors cursor-pointer text-left"
                   >
                     Términos y Condiciones
@@ -1069,10 +1075,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
                 <li>
                   <button
                     type="button"
-                    onClick={() => {
-                      setLegalTab('privacy');
-                      setShowLegalModal(true);
-                    }}
+                    onClick={() => handleOpenLegal('privacy')}
                     className="text-slate-400 hover:text-white transition-colors cursor-pointer text-left"
                   >
                     Privacidad (Ley 1581)
@@ -1081,10 +1084,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
                 <li>
                   <button
                     type="button"
-                    onClick={() => {
-                      setLegalTab('security');
-                      setShowLegalModal(true);
-                    }}
+                    onClick={() => handleOpenLegal('security')}
                     className="text-slate-400 hover:text-white transition-colors cursor-pointer text-left"
                   >
                     Seguridad de Información
@@ -1093,10 +1093,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
                 <li>
                   <button
                     type="button"
-                    onClick={() => {
-                      setLegalTab('disclaimer');
-                      setShowLegalModal(true);
-                    }}
+                    onClick={() => handleOpenLegal('disclaimer')}
                     className="text-slate-400 hover:text-white transition-colors cursor-pointer text-left"
                   >
                     Aviso Legal SFC

@@ -16,6 +16,8 @@
  * real: a repository that forgot `.eq('user_id', ...)` would leak rows here.
  */
 
+import { vi } from 'vitest';
+
 export type FakeRow = Record<string, unknown>;
 
 export interface FakeDbError {

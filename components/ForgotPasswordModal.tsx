@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, KeyRound, ArrowLeft, Loader2, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { Mail, KeyRound, Loader2, CheckCircle2, AlertCircle, X } from 'lucide-react';
 import { authService } from '../services/authService';
 
 interface ForgotPasswordModalProps {

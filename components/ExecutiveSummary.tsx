@@ -9,7 +9,6 @@ import {
   ShieldAlert,
   ShieldCheck,
   Briefcase,
-  CheckCircle2,
 } from 'lucide-react';
 import { QuoteAnalysis } from '../types';
 import { formatCOP } from '../utils/formatCurrency';
