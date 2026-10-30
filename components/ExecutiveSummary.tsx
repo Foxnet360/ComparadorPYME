@@ -20,6 +20,7 @@ export interface ExecutiveSummaryProps {
   onNavigate: (tab: 'resumen' | 'coberturas' | 'deducibles' | 'auditoria') => void;
   viewMode?: 'technical' | 'client';
   domain?: string;
+  onPromoteBestQuote?: () => void;
 }
 
 export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
@@ -28,6 +29,7 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
   onNavigate,
   viewMode = 'technical',
   domain = 'pyme',
+  onPromoteBestQuote,
 }) => {
   if (!quotes || quotes.length === 0) return null;
 
@@ -126,6 +128,16 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
                 ? 'Mayor solidez técnica y coberturas integrales'
                 : 'Score más alto en el análisis integral'}
             </p>
+            {onPromoteBestQuote && (
+              <button
+                type="button"
+                onClick={onPromoteBestQuote}
+                className="mt-3 w-full py-1.5 px-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-lg transition-colors shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <ShieldCheck size={14} />
+                <span>Emitir Póliza Ganadora</span>
+              </button>
+            )}
           </div>
 
           {/* Second Card: Protection Index in Client view, or Highest Risk in Technical view */}

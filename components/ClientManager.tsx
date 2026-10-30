@@ -10,6 +10,8 @@ import {
   MapPin,
   ArrowRight,
   X,
+  Link2,
+  CheckCircle2,
 } from 'lucide-react';
 import { Client, HistoryEntry, ComparisonReport } from '../types';
 import { storageService } from '../services/storageService';
@@ -60,6 +62,47 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
     hasElevators: true,
     hasPowerPlant: false,
   });
+
+  // Retroactive link audit state
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [availableAuditsToLink, setAvailableAuditsToLink] = useState<HistoryEntry[]>([]);
+  const [selectedAuditIdToLink, setSelectedAuditIdToLink] = useState<string>('');
+  const [linkingAudit, setLinkingAudit] = useState(false);
+
+  const handleOpenLinkModal = async () => {
+    if (!selectedClient) return;
+    const allHistory = await storageService.getHistory();
+    const unlinked = allHistory.filter(
+      (h) =>
+        h.clientId !== selectedClient.id &&
+        (!h.clientName || h.clientName.toLowerCase() !== selectedClient.name.toLowerCase())
+    );
+    setAvailableAuditsToLink(unlinked);
+    if (unlinked.length > 0) {
+      setSelectedAuditIdToLink(unlinked[0]!.id);
+    }
+    setIsLinkModalOpen(true);
+  };
+
+  const handleLinkAudit = async () => {
+    if (!selectedClient || !selectedAuditIdToLink) return;
+    setLinkingAudit(true);
+    try {
+      await storageService.assignClientToAnalysis(
+        selectedAuditIdToLink,
+        selectedClient.id,
+        selectedClient.name
+      );
+      const audits = await storageService.getHistoryByClient(
+        selectedClient.id,
+        selectedClient.name
+      );
+      setClientAudits(audits);
+      setIsLinkModalOpen(false);
+    } finally {
+      setLinkingAudit(false);
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -416,14 +459,25 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
                     <FileText className="text-indigo-600" size={20} />
                     Auditorías y Comparaciones de Cotizaciones ({clientAudits.length})
                   </h4>
-                  {onSelectClientForAudit && (
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => onSelectClientForAudit(selectedClient)}
-                      className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center"
+                      type="button"
+                      onClick={handleOpenLinkModal}
+                      className="text-xs text-slate-600 hover:text-indigo-700 bg-slate-100 hover:bg-indigo-50 px-2.5 py-1.5 rounded-lg font-semibold flex items-center transition-colors cursor-pointer"
+                      title="Vincular auditorías huérfanas o prospectos generales a este cliente"
                     >
-                      <Plus size={14} className="mr-1" /> Iniciar nueva auditoría
+                      <Link2 size={13} className="mr-1" /> Vincular existente
                     </button>
-                  )}
+                    {onSelectClientForAudit && (
+                      <button
+                        type="button"
+                        onClick={() => onSelectClientForAudit(selectedClient)}
+                        className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center cursor-pointer"
+                      >
+                        <Plus size={14} className="mr-1" /> Iniciar nueva auditoría
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {clientAudits.length > 0 ? (
@@ -706,6 +760,80 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Retroactive Link Modal */}
+      {isLinkModalOpen && selectedClient && (
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                  <Link2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 text-sm">Vincular Auditoría a {selectedClient.name}</h3>
+                  <p className="text-xs text-slate-500">Asocia una comparativa huérfana o prospecto general</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsLinkModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {availableAuditsToLink.length === 0 ? (
+                <div className="text-center py-6 text-slate-500 text-xs">
+                  No hay auditorías no vinculadas disponibles en el historial local.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <label className="text-xs font-semibold text-slate-700 block">
+                    Seleccioná la auditoría a transferir:
+                  </label>
+                  <select
+                    value={selectedAuditIdToLink}
+                    onChange={(e) => setSelectedAuditIdToLink(e.target.value)}
+                    className="w-full text-xs px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  >
+                    {availableAuditsToLink.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.date} — {a.clientName || 'Prospecto'} ({a.insurers.join(', ')})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="pt-4 border-t border-slate-100 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsLinkModalOpen(false)}
+                  className="px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl text-xs font-semibold"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={availableAuditsToLink.length === 0 || linkingAudit}
+                  onClick={handleLinkAudit}
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{linkingAudit ? 'Vinculando...' : 'Confirmar Vinculación'}</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

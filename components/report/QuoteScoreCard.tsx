@@ -16,6 +16,7 @@ interface QuoteScoreCardProps {
   isBest: boolean;
   viewMode: 'technical' | 'client';
   onCorrection: (quote: QuoteAnalysis, correction: QuoteCorrection) => void;
+  onPromote?: (quote: QuoteAnalysis) => void;
 }
 
 /**
@@ -27,6 +28,7 @@ export const QuoteScoreCard: React.FC<QuoteScoreCardProps> = ({
   isBest,
   viewMode,
   onCorrection,
+  onPromote,
 }) => {
   return (
     <div
@@ -173,6 +175,24 @@ export const QuoteScoreCard: React.FC<QuoteScoreCardProps> = ({
             onCorrection(q, correction);
           }}
         />
+      )}
+
+      {/* Promotion Action */}
+      {onPromote && (
+        <div className="mt-4 pt-3 border-t border-slate-100">
+          <button
+            type="button"
+            onClick={() => onPromote(q)}
+            className={`w-full py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              isBest
+                ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs'
+                : 'bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600'
+            }`}
+            title="Promocionar cotización a póliza activa en cartera"
+          >
+            <span>Promocionar a Póliza</span>
+          </button>
+        </div>
       )}
     </div>
   );

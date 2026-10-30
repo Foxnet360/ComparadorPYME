@@ -281,6 +281,26 @@ export const storageService = {
     // This would need to be implemented in the backend if we want persistence
   },
 
+  assignClientToAnalysis: async (
+    analysisId: string,
+    clientId: string,
+    clientName: string
+  ): Promise<void> => {
+    // 1. Update IndexedDB local history entry
+    const entry = await dbService.get('history', analysisId);
+    if (entry) {
+      const updated = {
+        ...entry,
+        clientId,
+        clientName,
+        fullReport: entry.fullReport
+          ? { ...entry.fullReport, clientName, clientId }
+          : undefined,
+      };
+      await dbService.put('history', updated);
+    }
+  },
+
   getStats: async (): Promise<DashboardStats> => {
     const history = await storageService.getHistory();
     const now = new Date();

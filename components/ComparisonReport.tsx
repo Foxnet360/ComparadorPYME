@@ -14,7 +14,8 @@ import { usePdfExport } from '../hooks/usePdfExport';
 import { isAdvancedAnalysisEnabled } from '../config/features';
 import { useCellNotes } from '../contexts/AnalysisContext';
 import { ClaimSimulatorPanel } from './report/ClaimSimulatorPanel';
-import type { ComparisonReport as ReportType } from '../types';
+import { PromoteQuoteModal } from './report/PromoteQuoteModal';
+import type { ComparisonReport as ReportType, QuoteAnalysis } from '../types';
 
 // Renewal-mode (schemaVersion 3) extras: lazy-loaded so the NEW-mode bundle
 // stays lean; only mounted for v3 reports, keeping v1/v2 output identical (XC-3).
@@ -23,17 +24,23 @@ const RenewalAnalysisSection = React.lazy(() => import('./report/RenewalAnalysis
 interface ComparisonReportProps {
   report: ReportType;
   onUpdateReport?: (updatedReport: ReportType) => void;
+  onOpenPortfolio?: () => void;
 }
 
 const ComparisonReport: React.FC<ComparisonReportProps> = ({
   report: initialReport,
   onUpdateReport,
+  onOpenPortfolio,
 }) => {
   const { report, handleApplyCorrection } = useReportCorrections(initialReport, onUpdateReport);
 
   const [activeTab, setActiveTab] = useState<
     'resumen' | 'coberturas' | 'deducibles' | 'auditoria' | 'analisis-avanzado'
   >('resumen');
+
+  // Promotion modal state
+  const [promoteQuote, setPromoteQuote] = useState<QuoteAnalysis | null>(null);
+  const [promoteQuoteIndex, setPromoteQuoteIndex] = useState<number>(0);
 
   // Get cell notes from context
   const { cellNotes } = useCellNotes();
@@ -150,6 +157,11 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
           perQuoteCompliance={report.regulatoryBacking?.perQuoteCompliance}
           onCorrection={(q, correction) => handleApplyCorrection(q.id || q.insurerName, correction)}
           onNavigate={setActiveTab}
+          onPromoteQuote={(q) => {
+            const idx = report.quotes.findIndex((quote) => quote.insurerName === q.insurerName);
+            setPromoteQuote(q);
+            setPromoteQuoteIndex(idx >= 0 ? idx : 0);
+          }}
         />
       )}
 
@@ -189,6 +201,20 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
       {/* --- TAB CONTENT: ANÁLISIS AVANZADO --- */}
       {activeTab === 'analisis-avanzado' && hasAdvancedAnalysis && (
         <AdvancedAnalysisTab quotes={report.quotes} />
+      )}
+
+      {/* Modal de Promoción de Póliza a Portafolio */}
+      {promoteQuote && (
+        <PromoteQuoteModal
+          isOpen={true}
+          onClose={() => setPromoteQuote(null)}
+          analysisId={report.id}
+          quoteIndex={promoteQuoteIndex}
+          quote={promoteQuote}
+          domain={report.domain}
+          initialClientName={report.clientInfo?.name}
+          onOpenPortfolio={onOpenPortfolio}
+        />
       )}
 
       {/* Footer */}

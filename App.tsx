@@ -173,7 +173,11 @@ const AppShell: React.FC = () => {
           <AnalyzerPage onAnalysisComplete={() => setCurrentView('REPORT')} />
         )}
         {currentView === 'REPORT' && report && (
-          <ReportPage onBackToDashboard={() => setCurrentView('DASHBOARD')} onNewAudit={() => setCurrentView('ANALYZER')} />
+          <ReportPage
+            onBackToDashboard={() => setCurrentView('DASHBOARD')}
+            onNewAudit={() => setCurrentView('ANALYZER')}
+            onOpenPortfolio={() => setCurrentView('PORTFOLIO')}
+          />
         )}
       </main>
 

@@ -18,6 +18,16 @@ import type {
   RenewalTransitionInput,
 } from '../types';
 
+export type {
+  CampaignConfig,
+  PortfolioClient,
+  PortfolioPolicy,
+  PortfolioRenewal,
+  RenewalEvent,
+  RenewalState,
+  RenewalTransitionInput,
+};
+
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
 async function parseJson<T>(response: Response): Promise<T> {
@@ -104,6 +114,35 @@ export async function updatePolicy(
 
 export async function deletePolicy(id: string): Promise<void> {
   await apiClient.fetch(`/policies/${id}`, { method: 'DELETE' });
+}
+
+export interface PromoteConfirmations {
+  client_id: string;
+  policy_number: string;
+  start_date: string;
+  end_date: string;
+  insured: Record<string, unknown>;
+}
+
+export interface PromotePolicyPayload {
+  analysis_id: string;
+  quote_index: number;
+  confirmations: PromoteConfirmations;
+}
+
+/**
+ * Task 1.9 / R1.3: Promotes a winning quote from an analysis into a full policy in portfolio.
+ */
+export async function promoteQuoteToPolicy(
+  payload: PromotePolicyPayload
+): Promise<PortfolioPolicy> {
+  return parseJson(
+    await apiClient.fetch('/policies/promote', {
+      method: 'POST',
+      headers: JSON_HEADERS,
+      body: JSON.stringify(payload),
+    })
+  );
 }
 
 // --- Renewals (R3.1/R3.2) ---

@@ -8,9 +8,14 @@ const ComparisonReport = lazy(() => import('../components/ComparisonReport'));
 interface ReportPageProps {
   onBackToDashboard: () => void;
   onNewAudit: () => void;
+  onOpenPortfolio?: () => void;
 }
 
-const ReportPage: React.FC<ReportPageProps> = ({ onBackToDashboard, onNewAudit }) => {
+const ReportPage: React.FC<ReportPageProps> = ({
+  onBackToDashboard,
+  onNewAudit,
+  onOpenPortfolio,
+}) => {
   const { state, dispatch, resetFlow } = useAnalysisFlow();
   const report = state.report;
 
@@ -42,6 +47,7 @@ const ReportPage: React.FC<ReportPageProps> = ({ onBackToDashboard, onNewAudit }
           onUpdateReport={(updatedReport) =>
             dispatch({ type: 'SET_REPORT', payload: updatedReport })
           }
+          onOpenPortfolio={onOpenPortfolio}
         />
       </Suspense>
     </div>

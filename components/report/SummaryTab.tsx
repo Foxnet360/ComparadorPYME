@@ -16,6 +16,7 @@ interface SummaryTabProps {
   perQuoteCompliance?: Record<string, RegulatoryCheckResult[]>;
   onCorrection: (quote: QuoteAnalysis, correction: QuoteCorrection) => void;
   onNavigate: (tab: 'resumen' | 'coberturas' | 'deducibles' | 'auditoria') => void;
+  onPromoteQuote?: (quote: QuoteAnalysis) => void;
 }
 
 /**
@@ -32,6 +33,7 @@ export const SummaryTab: React.FC<SummaryTabProps> = ({
   perQuoteCompliance,
   onCorrection,
   onNavigate,
+  onPromoteQuote,
 }) => {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -42,6 +44,7 @@ export const SummaryTab: React.FC<SummaryTabProps> = ({
         onNavigate={onNavigate}
         viewMode={viewMode}
         domain={domain}
+        onPromoteBestQuote={onPromoteQuote ? () => onPromoteQuote(bestQuote) : undefined}
       />
 
       {/* Scoring Cards - Dynamic Responsive Grid */}
@@ -65,6 +68,7 @@ export const SummaryTab: React.FC<SummaryTabProps> = ({
               isBest={isBest}
               viewMode={viewMode}
               onCorrection={onCorrection}
+              onPromote={onPromoteQuote}
             />
           );
         })}
