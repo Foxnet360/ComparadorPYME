@@ -408,7 +408,7 @@ export class DocumentIndexingService {
         percent: 90,
       });
 
-      const { data: documentId, error: rpcError } = await supabase.rpc(
+      const { data: rawDocId, error: rpcError } = await supabase.rpc(
         'index_document_transaction',
         {
           p_insurer_id: insurerId,
@@ -423,6 +423,8 @@ export class DocumentIndexingService {
           p_product_name: metadata.productName || metadata.documentName,
         } as unknown as never
       );
+
+      const documentId = rawDocId ? String(rawDocId) : undefined;
 
       if (rpcError) {
         throw new Error(`Transacción atómica fallida: ${rpcError.message}`);

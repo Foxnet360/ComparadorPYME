@@ -364,7 +364,7 @@ class MonitoringService {
         .lte('created_at', endDate)
         .not('engine_type', 'is', null);
 
-      const records = (data || []) as EngineComparisonRow[];
+      const records = (data || []) as unknown as EngineComparisonRow[];
 
       const unifiedRecords = records.filter((r) => r.engine_type === 'unified');
       const legacyRecords = records.filter((r) => r.engine_type === 'legacy');

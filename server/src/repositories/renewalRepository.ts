@@ -11,6 +11,7 @@
  */
 
 import { supabase, handleDbError } from './baseRepository';
+import type { TablesInsert, TablesUpdate, Json } from '../types/database';
 import type { RenewalOutcome, RenewalState, TransitionPlan } from '../services/renewalStateMachine';
 
 export interface RenewalRecord {
@@ -51,7 +52,7 @@ export async function listRenewals(
   state?: RenewalState,
   orgId?: string | null
 ): Promise<RenewalRecord[]> {
-  let query = supabase.from('renewals' as never).select(COLUMNS);
+  let query = supabase.from('renewals').select(COLUMNS);
 
   if (orgId) {
     query = query.or(`org_id.eq.${orgId},user_id.eq.${userId}`);
@@ -79,7 +80,7 @@ export async function getRenewalById(
   id: string,
   orgId?: string | null
 ): Promise<RenewalRecord | null> {
-  let query = supabase.from('renewals' as never).select(COLUMNS).eq('id', id);
+  let query = supabase.from('renewals').select(COLUMNS).eq('id', id);
 
   if (orgId) {
     query = query.or(`org_id.eq.${orgId},user_id.eq.${userId}`);
@@ -108,7 +109,7 @@ export async function createRenewal(
   input: { policy_id: string; cycle_start: string },
   orgId?: string | null
 ): Promise<CreateRenewalResult> {
-  const payload: Record<string, unknown> = {
+  const payload: TablesInsert<'renewals'> = {
     user_id: userId,
     policy_id: input.policy_id,
     cycle_start: input.cycle_start,
@@ -117,8 +118,8 @@ export async function createRenewal(
   if (orgId) payload.org_id = orgId;
 
   const { data, error } = await supabase
-    .from('renewals' as never)
-    .insert(payload as never)
+    .from('renewals')
+    .insert(payload)
     .select(COLUMNS)
     .single();
 
@@ -142,7 +143,7 @@ export async function applyTransition(
   plan: TransitionPlan,
   actorId: string
 ): Promise<RenewalRecord | null> {
-  const patch: Record<string, unknown> = {
+  const patch: TablesUpdate<'renewals'> = {
     state: plan.patch.state,
     updated_at: new Date().toISOString(),
   };
@@ -151,8 +152,8 @@ export async function applyTransition(
   if (plan.patch.loss_reason !== undefined) patch.loss_reason = plan.patch.loss_reason;
 
   const { data, error } = await supabase
-    .from('renewals' as never)
-    .update(patch as never)
+    .from('renewals')
+    .update(patch)
     .eq('id', renewalId)
     .eq('user_id', userId)
     .select(COLUMNS)
@@ -170,13 +171,13 @@ export async function applyTransition(
   if (plan.patch.final_premium !== undefined) eventPayload.final_premium = plan.patch.final_premium;
   if (plan.patch.loss_reason !== undefined) eventPayload.loss_reason = plan.patch.loss_reason;
 
-  const { error: eventError } = await supabase.from('renewal_events' as never).insert({
+  const { error: eventError } = await supabase.from('renewal_events').insert({
     renewal_id: renewalId,
     from_state: plan.from,
     to_state: plan.to,
     actor_id: actorId,
-    payload: eventPayload,
-  } as never);
+    payload: eventPayload as unknown as Json,
+  });
 
   if (eventError) {
     handleDbError(eventError, 'Failed to record renewal event');
@@ -187,7 +188,7 @@ export async function applyTransition(
 
 export async function listRenewalEvents(renewalId: string): Promise<RenewalEventRecord[]> {
   const { data, error } = await supabase
-    .from('renewal_events' as never)
+    .from('renewal_events')
     .select(COLUMNS)
     .eq('renewal_id', renewalId)
     .order('created_at', { ascending: true });
@@ -208,7 +209,7 @@ export async function listPoliciesWithEndDate(): Promise<
   Array<{ id: string; user_id: string; end_date: string | null }>
 > {
   const { data, error } = await supabase
-    .from('policies' as never)
+    .from('policies')
     .select('id, user_id, end_date')
     .not('end_date', 'is', null);
 
@@ -225,7 +226,7 @@ export async function listOpenRenewalsForPolicies(
     return [];
   }
   const { data, error } = await supabase
-    .from('renewals' as never)
+    .from('renewals')
     .select('policy_id, cycle_start')
     .in('policy_id', policyIds)
     .neq('state', 'closed');
@@ -242,7 +243,7 @@ export async function listOpenRenewalsForPolicies(
  */
 export async function listOpenRenewals(userId: string): Promise<RenewalRecord[]> {
   const { data, error } = await supabase
-    .from('renewals' as never)
+    .from('renewals')
     .select(COLUMNS)
     .eq('user_id', userId)
     .neq('state', 'closed')

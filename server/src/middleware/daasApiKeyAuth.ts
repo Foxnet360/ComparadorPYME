@@ -59,32 +59,34 @@ export const daasApiKeyAuth = async (
     let subscriber: DaasSubscriber | null = null;
 
     try {
-      const { data, error } = await (supabase.rpc as any)('verify_daas_api_key', {
+      const { data, error } = await supabase.rpc('verify_daas_api_key', {
         p_key_hash: keyHash,
       });
 
-      if (!error && Array.isArray(data) && data.length > 0 && data[0].is_valid) {
+      if (!error && Array.isArray(data) && data.length > 0 && data[0]?.is_valid) {
         const row = data[0];
-        subscriber = {
-          id: row.subscriber_id,
-          name: row.name,
-          tier: row.tier,
-          monthlyQuota: row.monthly_quota,
-          currentMonthUsage: row.current_month_usage,
-          rateLimitPerMinute: row.rate_limit_per_minute,
-          allowedDomains: row.allowed_domains || ['all'],
-        };
+        if (row) {
+          subscriber = {
+            id: row.subscriber_id,
+            name: row.name,
+            tier: row.tier as 'TIER_1' | 'TIER_2' | 'ENTERPRISE',
+            monthlyQuota: row.monthly_quota,
+            currentMonthUsage: row.current_month_usage,
+            rateLimitPerMinute: row.rate_limit_per_minute,
+            allowedDomains: row.allowed_domains || ['all'],
+          };
+        }
       }
     } catch {
       // Direct table query fallback below
     }
 
     if (!subscriber) {
-      const { data: rows } = await (supabase
-        .from('daas_subscribers' as any)
+      const { data: rows } = await supabase
+        .from('daas_subscribers')
         .select('*')
         .eq('api_key_hash', keyHash)
-        .eq('status', 'ACTIVE') as any);
+        .eq('status', 'ACTIVE');
 
       const row = rows && rows[0];
       if (row) {

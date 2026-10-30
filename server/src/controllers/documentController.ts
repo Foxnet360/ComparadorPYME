@@ -349,15 +349,15 @@ export const documentController = {
       }
 
       if (insurerId) {
-        query = query.eq('insurer_id', insurerId);
+        query = query.eq('insurer_id', String(insurerId));
       }
 
       if (documentType) {
-        query = query.eq('document_type', documentType);
+        query = query.eq('document_type', documentType as "CLAUSULADO_GENERAL" | "CLAUSULADO_PARTICULAR" | "COTIZACION");
       }
 
       if (domain) {
-        query = query.eq('domain', domain);
+        query = query.eq('domain', String(domain));
       }
 
       const { data, error, count } = (await query) as unknown as {
@@ -654,7 +654,7 @@ export const documentController = {
         );
 
       if (sectionType) {
-        query = query.eq('section_type', sectionType);
+        query = query.eq('section_type', sectionType as "COBERTURA" | "EXCLUSION" | "DEDUCIBLE" | "CONDICION" | "GENERAL");
       }
 
       if (coverageTag) {

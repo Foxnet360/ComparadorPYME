@@ -8,6 +8,7 @@
  */
 
 import { supabase, handleDbError } from './baseRepository';
+import type { TablesInsert, TablesUpdate, Json } from '../types/database';
 
 export interface ClientContact {
   email?: string;
@@ -46,14 +47,14 @@ export async function createClient(
   input: CreateClientInput,
   orgId?: string | null
 ): Promise<ClientRecord | null> {
-  const payload: Record<string, unknown> = { user_id: userId, name: input.name };
+  const payload: TablesInsert<'clients'> = { user_id: userId, name: input.name };
   if (orgId) payload.org_id = orgId;
   if (input.tax_id !== undefined) payload.tax_id = input.tax_id;
-  if (input.contact !== undefined) payload.contact = input.contact;
+  if (input.contact !== undefined) payload.contact = input.contact as unknown as Json;
 
   const { data, error } = await supabase
-    .from('clients' as never)
-    .insert(payload as never)
+    .from('clients')
+    .insert(payload)
     .select(CLIENT_COLUMNS)
     .single();
 
@@ -65,7 +66,7 @@ export async function createClient(
 }
 
 export async function listClients(userId: string, orgId?: string | null): Promise<ClientRecord[]> {
-  let query = supabase.from('clients' as never).select(CLIENT_COLUMNS);
+  let query = supabase.from('clients').select(CLIENT_COLUMNS);
 
   if (orgId) {
     query = query.or(`org_id.eq.${orgId},user_id.eq.${userId}`);
@@ -87,7 +88,7 @@ export async function getClientById(
   id: string,
   orgId?: string | null
 ): Promise<ClientRecord | null> {
-  let query = supabase.from('clients' as never).select(CLIENT_COLUMNS).eq('id', id);
+  let query = supabase.from('clients').select(CLIENT_COLUMNS).eq('id', id);
 
   if (orgId) {
     query = query.or(`org_id.eq.${orgId},user_id.eq.${userId}`);
@@ -113,12 +114,12 @@ export async function updateClient(
   input: UpdateClientInput,
   orgId?: string | null
 ): Promise<ClientRecord | null> {
-  const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  const payload: TablesUpdate<'clients'> = { updated_at: new Date().toISOString() };
   if (input.name !== undefined) payload.name = input.name;
   if (input.tax_id !== undefined) payload.tax_id = input.tax_id;
-  if (input.contact !== undefined) payload.contact = input.contact;
+  if (input.contact !== undefined) payload.contact = input.contact as unknown as Json;
 
-  let query = supabase.from('clients' as never).update(payload as never).eq('id', id);
+  let query = supabase.from('clients').update(payload).eq('id', id);
 
   if (orgId) {
     query = query.or(`org_id.eq.${orgId},user_id.eq.${userId}`);
@@ -143,7 +144,7 @@ export async function deleteClient(
   id: string,
   orgId?: string | null
 ): Promise<boolean> {
-  let query = supabase.from('clients' as never).delete().eq('id', id);
+  let query = supabase.from('clients').delete().eq('id', id);
 
   if (orgId) {
     query = query.or(`org_id.eq.${orgId},user_id.eq.${userId}`);

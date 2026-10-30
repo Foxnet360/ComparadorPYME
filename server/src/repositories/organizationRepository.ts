@@ -4,6 +4,7 @@
  */
 
 import { supabase, handleDbError } from './baseRepository';
+import type { TablesInsert, TablesUpdate, Json } from '../types/database';
 
 export interface OrganizationRecord {
   id: string;
@@ -47,18 +48,18 @@ const MEMBER_COLUMNS = '*';
 export async function createOrganization(
   input: CreateOrganizationInput
 ): Promise<OrganizationRecord | null> {
-  const payload: Record<string, unknown> = {
+  const payload: TablesInsert<'organizations'> = {
     name: input.name,
     status: 'ACTIVE',
-    settings: input.settings || {},
+    settings: (input.settings || {}) as unknown as Json,
   };
   if (input.nit !== undefined) payload.nit = input.nit;
   if (input.contact_email !== undefined) payload.contact_email = input.contact_email;
   if (input.phone !== undefined) payload.phone = input.phone;
 
   const { data, error } = await supabase
-    .from('organizations' as never)
-    .insert(payload as never)
+    .from('organizations')
+    .insert(payload)
     .select(ORG_COLUMNS)
     .single();
 
@@ -71,7 +72,7 @@ export async function createOrganization(
 
 export async function getOrganizationById(id: string): Promise<OrganizationRecord | null> {
   const { data, error } = await supabase
-    .from('organizations' as never)
+    .from('organizations')
     .select(ORG_COLUMNS)
     .eq('id', id)
     .single();
@@ -88,7 +89,7 @@ export async function getOrganizationById(id: string): Promise<OrganizationRecor
 
 export async function listOrganizations(): Promise<OrganizationRecord[]> {
   const { data, error } = await supabase
-    .from('organizations' as never)
+    .from('organizations')
     .select(ORG_COLUMNS)
     .order('created_at', { ascending: false });
 
@@ -103,7 +104,7 @@ export async function updateOrganization(
   id: string,
   input: Partial<CreateOrganizationInput> & { status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' }
 ): Promise<OrganizationRecord | null> {
-  const payload: Record<string, unknown> = {
+  const payload: TablesUpdate<'organizations'> = {
     updated_at: new Date().toISOString(),
   };
   if (input.name !== undefined) payload.name = input.name;
@@ -111,11 +112,11 @@ export async function updateOrganization(
   if (input.contact_email !== undefined) payload.contact_email = input.contact_email;
   if (input.phone !== undefined) payload.phone = input.phone;
   if (input.status !== undefined) payload.status = input.status;
-  if (input.settings !== undefined) payload.settings = input.settings;
+  if (input.settings !== undefined) payload.settings = input.settings as unknown as Json;
 
   const { data, error } = await supabase
-    .from('organizations' as never)
-    .update(payload as never)
+    .from('organizations')
+    .update(payload)
     .eq('id', id)
     .select(ORG_COLUMNS)
     .single();
@@ -129,7 +130,7 @@ export async function updateOrganization(
 
 export async function deleteOrganization(id: string): Promise<boolean> {
   const { error } = await supabase
-    .from('organizations' as never)
+    .from('organizations')
     .delete()
     .eq('id', id);
 
@@ -143,15 +144,17 @@ export async function deleteOrganization(id: string): Promise<boolean> {
 export async function addOrganizationMember(
   input: AddMemberInput
 ): Promise<OrganizationMemberRecord | null> {
+  const payload: TablesInsert<'organization_members'> = {
+    org_id: input.org_id,
+    user_id: input.user_id,
+    role: input.role,
+    updated_at: new Date().toISOString(),
+  };
+
   const { data, error } = await supabase
-    .from('organization_members' as never)
+    .from('organization_members')
     .upsert(
-      {
-        org_id: input.org_id,
-        user_id: input.user_id,
-        role: input.role,
-        updated_at: new Date().toISOString(),
-      } as never,
+      payload,
       { onConflict: 'org_id,user_id' }
     )
     .select(MEMBER_COLUMNS)
@@ -168,7 +171,7 @@ export async function listOrganizationMembers(
   orgId: string
 ): Promise<OrganizationMemberRecord[]> {
   const { data, error } = await supabase
-    .from('organization_members' as never)
+    .from('organization_members')
     .select(MEMBER_COLUMNS)
     .eq('org_id', orgId)
     .order('created_at', { ascending: false });
@@ -185,7 +188,7 @@ export async function removeOrganizationMember(
   userId: string
 ): Promise<boolean> {
   const { error } = await supabase
-    .from('organization_members' as never)
+    .from('organization_members')
     .delete()
     .eq('org_id', orgId)
     .eq('user_id', userId);
@@ -201,7 +204,7 @@ export async function getUserOrganization(
   userId: string
 ): Promise<{ organization: OrganizationRecord; role: string } | null> {
   const { data: members, error: memberError } = await supabase
-    .from('organization_members' as never)
+    .from('organization_members')
     .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
@@ -228,7 +231,7 @@ export async function getOrganizationMember(
   orgId?: string
 ): Promise<OrganizationMemberRecord | null> {
   let query = supabase
-    .from('organization_members' as never)
+    .from('organization_members')
     .select(MEMBER_COLUMNS)
     .eq('user_id', userId);
 
@@ -257,11 +260,11 @@ export async function updateOrganizationMember(
   currentOrgId?: string
 ): Promise<OrganizationMemberRecord | null> {
   let query = supabase
-    .from('organization_members' as never)
+    .from('organization_members')
     .update({
       ...updates,
       updated_at: new Date().toISOString(),
-    } as never)
+    })
     .eq('user_id', userId);
 
   if (currentOrgId) {

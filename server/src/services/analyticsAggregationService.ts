@@ -5,6 +5,7 @@
  */
 
 import { supabase } from '../config/database';
+import type { Json } from '../types/database';
 import { AuthenticatedUser } from '../middleware/auth';
 
 export interface ExecutiveAnalyticsResponse {
@@ -112,15 +113,15 @@ export const analyticsAggregationService = {
       sinceDate.setMonth(sinceDate.getMonth() - periodMonths);
       const periodStr = sinceDate.toISOString().substring(0, 7);
 
-      const { data: rows } = await (supabase
-        .from('daas_market_snapshots' as any)
+      const { data: rows } = await supabase
+        .from('daas_market_snapshots')
         .select('*')
         .eq('domain', domain)
-        .gte('period_month', periodStr) as any);
+        .gte('period_month', periodStr);
 
       if (rows && rows.length > 0) {
         const prices = rows
-          .map((r: any) => Number(r.price_annual))
+          .map((r) => Number(r.price_annual))
           .filter((p: number) => !isNaN(p) && p > 0)
           .sort((a: number, b: number) => a - b);
 
@@ -152,9 +153,9 @@ export const analyticsAggregationService = {
           domain,
           sampleSize,
           avgPremiumAnnual: Math.round(avg),
-          medianPremiumAnnual: median,
-          percentile25: p25,
-          percentile75: p75,
+          medianPremiumAnnual: median ?? 0,
+          percentile25: p25 ?? 0,
+          percentile75: p75 ?? 0,
           topInsurers,
           calculatedAt: new Date().toISOString(),
         };
@@ -209,8 +210,8 @@ export const analyticsAggregationService = {
       }));
 
       try {
-        await (supabase.from('daas_market_snapshots' as any).insert({
-          source_analysis_id: analysis.id || null,
+        await supabase.from('daas_market_snapshots').insert({
+          source_analysis_id: (analysis.id as string) || null,
           quote_index: i,
           domain,
           insurer_name: q.insurerName || q.insurer || 'Aseguradora Desconocida',
@@ -219,12 +220,12 @@ export const analyticsAggregationService = {
           price_monthly: rawMonthly ? parseFloat(rawMonthly) : null,
           currency: q.currency || 'COP',
           deductibles_raw: q.deductibles ? String(q.deductibles) : null,
-          coverages_summary: cleanCoverages,
+          coverages_summary: cleanCoverages as unknown as Json,
           score: typeof q.score === 'number' ? q.score : null,
           period_month: period,
           region_macro: 'NACIONAL',
           anonymized_at: new Date().toISOString(),
-        } as any) as any);
+        });
 
         insertedCount++;
       } catch (err) {
@@ -246,13 +247,13 @@ export const analyticsAggregationService = {
     statusCode: number = 200
   ): Promise<void> => {
     try {
-      await (supabase.from('daas_api_usage' as any).insert({
+      await supabase.from('daas_api_usage').insert({
         subscriber_id: subscriberId,
         endpoint,
-        query_params: queryParams,
+        query_params: queryParams as unknown as Json,
         response_time_ms: responseTimeMs,
         status_code: statusCode,
-      } as any) as any);
+      });
     } catch (err) {
       console.warn(`[analyticsAggregationService] Could not log DaaS usage:`, err);
     }
@@ -310,9 +311,9 @@ async function fallbackAggregation(
   // Insurer distribution from DaaS snapshots
   let insurerDistribution: Array<{ insurerName: string; count: number; percentage: number }> = [];
   try {
-    const { data: snaps } = await (supabase
-      .from('daas_market_snapshots' as any)
-      .select('insurer_name') as any);
+    const { data: snaps } = await supabase
+      .from('daas_market_snapshots')
+      .select('insurer_name');
     if (snaps && snaps.length > 0) {
       const counts: Record<string, number> = {};
       for (const s of snaps) {

@@ -65,14 +65,14 @@ router.get(
     const domain = req.query.domain as string | undefined;
 
     let query = supabase
-      .from('daas_market_snapshots' as any)
+      .from('daas_market_snapshots')
       .select('insurer_name');
 
     if (domain) {
       query = query.eq('domain', domain);
     }
 
-    const { data: rows } = await (query as any);
+    const { data: rows } = await query;
     const snapshots = rows || [];
     const total = snapshots.length;
 

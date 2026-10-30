@@ -8,7 +8,7 @@ import { QuoteAnalysis } from '../types';
 
 export interface AnalysisHistoryRecord {
   id?: string;
-  user_id?: string;
+  user_id?: string | null;
   quotes_count?: number;
   total_coverages?: number;
   average_confidence?: number;
@@ -107,7 +107,7 @@ export async function getAnalysisHistoryByUser(userId: string): Promise<Analysis
     handleDbError(error, 'Failed to fetch analysis history');
   }
 
-  return data || [];
+  return (data || []) as unknown as AnalysisHistoryRecord[];
 }
 
 export async function getAnalysisById(id: string): Promise<AnalysisHistoryRecord | null> {
@@ -120,7 +120,7 @@ export async function getAnalysisById(id: string): Promise<AnalysisHistoryRecord
     handleDbError(error, 'Failed to fetch analysis by id');
   }
 
-  return data as AnalysisHistoryRecord | null;
+  return (data as unknown as AnalysisHistoryRecord) || null;
 }
 
 interface EngineMetricsRecord {

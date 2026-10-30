@@ -10,6 +10,7 @@
  */
 
 import { supabase, handleDbError } from './baseRepository';
+import type { TablesInsert, TablesUpdate, Json } from '../types/database';
 
 /** The 10 ramos supported transversally from day one. */
 export const POLICY_RAMOS = [
@@ -90,7 +91,7 @@ export async function createPolicy(
   input: CreatePolicyInput,
   orgId?: string | null
 ): Promise<PolicyRecord | null> {
-  const payload: Record<string, unknown> = {
+  const payload: TablesInsert<'policies'> = {
     user_id: userId,
     client_id: input.client_id,
     ramo: input.ramo,
@@ -102,14 +103,14 @@ export async function createPolicy(
   if (input.premium !== undefined) payload.premium = input.premium;
   if (input.start_date !== undefined) payload.start_date = input.start_date;
   if (input.end_date !== undefined) payload.end_date = input.end_date;
-  if (input.coverages !== undefined) payload.coverages = input.coverages;
-  if (input.deductibles !== undefined) payload.deductibles = input.deductibles;
+  if (input.coverages !== undefined) payload.coverages = input.coverages as unknown as Json;
+  if (input.deductibles !== undefined) payload.deductibles = input.deductibles as unknown as Json;
   if (input.source_analysis_id !== undefined) payload.source_analysis_id = input.source_analysis_id;
-  if (input.ramo_details !== undefined) payload.ramo_details = input.ramo_details;
+  if (input.ramo_details !== undefined) payload.ramo_details = input.ramo_details as unknown as Json;
 
   const { data, error } = await supabase
-    .from('policies' as never)
-    .insert(payload as never)
+    .from('policies')
+    .insert(payload)
     .select(POLICY_COLUMNS)
     .single();
 
@@ -121,7 +122,7 @@ export async function createPolicy(
 }
 
 export async function listPolicies(userId: string, orgId?: string | null): Promise<PolicyRecord[]> {
-  let query = supabase.from('policies' as never).select(POLICY_COLUMNS);
+  let query = supabase.from('policies').select(POLICY_COLUMNS);
 
   if (orgId) {
     query = query.or(`org_id.eq.${orgId},user_id.eq.${userId}`);
@@ -143,7 +144,7 @@ export async function getPolicyById(
   id: string,
   orgId?: string | null
 ): Promise<PolicyRecord | null> {
-  let query = supabase.from('policies' as never).select(POLICY_COLUMNS).eq('id', id);
+  let query = supabase.from('policies').select(POLICY_COLUMNS).eq('id', id);
 
   if (orgId) {
     query = query.or(`org_id.eq.${orgId},user_id.eq.${userId}`);
@@ -169,20 +170,20 @@ export async function updatePolicy(
   input: UpdatePolicyInput,
   orgId?: string | null
 ): Promise<PolicyRecord | null> {
-  const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  const payload: TablesUpdate<'policies'> = { updated_at: new Date().toISOString() };
   if (input.ramo !== undefined) payload.ramo = input.ramo;
   if (input.insurer !== undefined) payload.insurer = input.insurer;
   if (input.policy_number !== undefined) payload.policy_number = input.policy_number;
   if (input.premium !== undefined) payload.premium = input.premium;
   if (input.start_date !== undefined) payload.start_date = input.start_date;
   if (input.end_date !== undefined) payload.end_date = input.end_date;
-  if (input.coverages !== undefined) payload.coverages = input.coverages;
-  if (input.deductibles !== undefined) payload.deductibles = input.deductibles;
+  if (input.coverages !== undefined) payload.coverages = input.coverages as unknown as Json;
+  if (input.deductibles !== undefined) payload.deductibles = input.deductibles as unknown as Json;
   if (input.provenance !== undefined) payload.provenance = input.provenance;
   if (input.source_analysis_id !== undefined) payload.source_analysis_id = input.source_analysis_id;
-  if (input.ramo_details !== undefined) payload.ramo_details = input.ramo_details;
+  if (input.ramo_details !== undefined) payload.ramo_details = input.ramo_details as unknown as Json;
 
-  let query = supabase.from('policies' as never).update(payload as never).eq('id', id);
+  let query = supabase.from('policies').update(payload).eq('id', id);
 
   if (orgId) {
     query = query.or(`org_id.eq.${orgId},user_id.eq.${userId}`);
@@ -207,7 +208,7 @@ export async function deletePolicy(
   id: string,
   orgId?: string | null
 ): Promise<boolean> {
-  let query = supabase.from('policies' as never).delete().eq('id', id);
+  let query = supabase.from('policies').delete().eq('id', id);
 
   if (orgId) {
     query = query.or(`org_id.eq.${orgId},user_id.eq.${userId}`);
@@ -234,7 +235,7 @@ export async function listPoliciesByIds(ids: string[]): Promise<PolicyRecord[]> 
     return [];
   }
   const { data, error } = await supabase
-    .from('policies' as never)
+    .from('policies')
     .select(POLICY_COLUMNS)
     .in('id', ids);
 
