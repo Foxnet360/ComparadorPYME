@@ -19,6 +19,7 @@ import {
   Database,
   Scale,
   Lock,
+  Info,
 } from 'lucide-react';
 
 interface ExecutiveAnalyticsProps {
@@ -385,28 +386,52 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                  <div className="text-xs text-slate-500 font-semibold">Percentil 25 (Tarifa Competitiva)</div>
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 relative group">
+                  <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-1">
+                    <span>Percentil 25 (Tarifa Competitiva)</span>
+                    <span
+                      className="cursor-help text-slate-400 hover:text-indigo-600 transition-colors"
+                      title="Primer cuartil actuarial (Q1): El 25% de las cotizaciones del mercado están por debajo de esta prima. Define el umbral de precios agresivos de entrada."
+                    >
+                      <Info size={14} />
+                    </span>
+                  </div>
                   <div className="text-lg font-extrabold text-slate-900">
                     {formatCOPMillions(data.marketBenchmark?.percentile25 ?? 3800000)}
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">El 25% más económico del mercado</div>
+                  <div className="text-[11px] text-slate-400 mt-1">El 25% más económico del mercado</div>
                 </div>
 
-                <div className="p-4 bg-indigo-50/60 rounded-xl border border-indigo-100">
-                  <div className="text-xs text-indigo-700 font-semibold">Mediana de Mercado (P50)</div>
+                <div className="p-4 bg-indigo-50/60 rounded-xl border border-indigo-100 relative group">
+                  <div className="flex items-center justify-between text-xs text-indigo-700 font-semibold mb-1">
+                    <span>Mediana de Mercado (P50)</span>
+                    <span
+                      className="cursor-help text-indigo-400 hover:text-indigo-700 transition-colors"
+                      title="Mediana actuarial (Q2): Valor central donde el 50% de pólizas es más económico y el 50% más costoso. Es la métrica líder por inmunidad a valores atípicos."
+                    >
+                      <Info size={14} />
+                    </span>
+                  </div>
                   <div className="text-xl font-extrabold text-indigo-900">
                     {formatCOPMillions(data.marketBenchmark?.medianPremiumAnnual ?? 4500000)}
                   </div>
-                  <div className="text-[11px] text-indigo-600/80 mt-0.5">Tarifa media de referencia del sector</div>
+                  <div className="text-[11px] text-indigo-600/80 mt-1">Tarifa media de referencia del sector</div>
                 </div>
 
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                  <div className="text-xs text-slate-500 font-semibold">Percentil 75 (Tarifa Alta)</div>
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 relative group">
+                  <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-1">
+                    <span>Percentil 75 (Tarifa Alta)</span>
+                    <span
+                      className="cursor-help text-slate-400 hover:text-indigo-600 transition-colors"
+                      title="Tercer cuartil actuarial (Q3): El 75% del mercado cotiza por debajo de este monto. Refleja ofertas premium con mayor cobertura o menor deducible."
+                    >
+                      <Info size={14} />
+                    </span>
+                  </div>
                   <div className="text-lg font-extrabold text-slate-900">
                     {formatCOPMillions(data.marketBenchmark?.percentile75 ?? 5600000)}
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">El 25% más costoso del mercado</div>
+                  <div className="text-[11px] text-slate-400 mt-1">El 25% más costoso del mercado</div>
                 </div>
               </div>
             </div>

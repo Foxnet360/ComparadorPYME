@@ -873,13 +873,13 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto relative">
+          <div className="overflow-x-auto overflow-y-auto max-h-[75vh] relative scroll-smooth">
             <table className="w-full text-sm border-collapse text-left">
-              <thead className="bg-[#E6F0FA] text-[#0066CC] font-bold text-xs uppercase border-b border-blue-200 sticky top-0 z-20">
+              <thead className="bg-[#E6F0FA] text-[#0066CC] font-bold text-xs uppercase border-b border-blue-200 sticky top-0 z-30 shadow-xs">
                 <tr role="row">
                   <th
                     role="columnheader"
-                    className="px-6 py-4 sticky left-0 bg-[#E6F0FA] border-r border-blue-100 min-w-[220px] md:min-w-[280px] shadow-[4px_0_10px_-5px_rgba(0,0,0,0.08)] z-30"
+                    className="px-6 py-4 sticky left-0 top-0 bg-[#E6F0FA] border-r border-blue-100 min-w-[220px] md:min-w-[280px] shadow-[4px_0_10px_-5px_rgba(0,0,0,0.08)] z-40"
                   >
                     Concepto / Variable
                   </th>
@@ -892,8 +892,8 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                       <th
                         key={i}
                         role="columnheader"
-                        className={`px-6 py-4 min-w-[200px] md:min-w-[240px] whitespace-nowrap text-center text-[#0066CC] border-b border-blue-100 relative group/th ${
-                          isPinned ? 'bg-indigo-100/70 border-x border-indigo-200 shadow-sm' : ''
+                        className={`px-6 py-4 min-w-[200px] md:min-w-[240px] whitespace-nowrap text-center text-[#0066CC] bg-[#E6F0FA] border-b border-blue-100 relative group/th ${
+                          isPinned ? '!bg-indigo-100/90 border-x border-indigo-200 shadow-sm' : ''
                         }`}
                       >
                         <div className="flex items-center justify-center gap-2">
@@ -954,13 +954,16 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                     const displayLabel =
                       viewMode === 'client' ? simplifyHeaderLabel(row.label) : row.label;
                     return (
-                      <tr key={row.id} className="bg-[#E6F0FA]/40 font-bold" role="row">
+                      <tr key={row.id} className="bg-[#E6F0FA]/60 font-bold" role="row">
                         <td
                           role="gridcell"
                           colSpan={effectiveColumnCount}
-                          className="px-6 py-3 text-xs md:text-sm text-blue-800 uppercase tracking-wide border-y border-blue-50/50"
+                          className="px-6 py-3 text-xs md:text-sm text-blue-900 uppercase tracking-wide border-y border-blue-200/50 bg-[#E6F0FA]/95 sticky left-0 z-20 backdrop-blur-xs"
                         >
-                          {displayLabel}
+                          <div className="sticky left-6 inline-flex items-center gap-2 font-bold">
+                            <span className="w-1.5 h-3.5 bg-blue-600 rounded-full inline-block"></span>
+                            {displayLabel}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -997,8 +1000,8 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                       {/* Concept Label (Column A) */}
                       <td
                         role="gridcell"
-                        className={`px-6 py-3.5 text-xs md:text-sm font-semibold text-slate-700 bg-[#F8FAFC] sticky left-0 border-r border-slate-100 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.05)] z-10 group-hover:bg-[#F1F5F9]/80 ${
-                          isSublimit ? 'pl-10 text-slate-600 font-normal bg-slate-50/50' : ''
+                        className={`px-6 py-3.5 text-xs md:text-sm font-semibold text-slate-700 bg-[#F8FAFC] sticky left-0 border-r border-slate-200 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.06)] z-20 group-hover:bg-[#F1F5F9] ${
+                          isSublimit ? 'pl-10 text-slate-600 font-normal !bg-slate-50' : ''
                         }`}
                       >
                         <div className="flex items-center gap-2">
