@@ -30,6 +30,11 @@ import {
   FileCheck,
   Award,
   Briefcase,
+  Check,
+  ChevronRight,
+  FolderKanban,
+  Clock,
+  PieChart,
 } from 'lucide-react';
 import { LegalModal } from './legal/LegalModal';
 
@@ -39,7 +44,11 @@ interface LandingPageProps {
   onOpenLegal?: (tab?: 'terms' | 'privacy' | 'security' | 'disclaimer') => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick, onOpenLegal }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({
+  onLoginClick,
+  onRegisterClick,
+  onOpenLegal,
+}) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeDomainTab, setActiveDomainTab] = useState<string>('copropiedades');
@@ -75,147 +84,198 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
     {
       id: 'copropiedades',
       title: 'Copropiedades',
-      norm: 'Ley 675 de Propiedad Horizontal',
+      subtitle: 'Edificios, Conjuntos & Ley 675',
+      norm: 'Ley 675 de 2001 (Art. 15) & Ley 1796',
       icon: Building,
-      desc: 'Auditoría de pólizas de copropiedad (edificios y conjuntos) verificando amparos obligatorios de bienes comunes, reconstrucción y RCE.',
+      badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
+      desc: 'Auditoría integral para asambleas y administradores: amparos obligatorios de bienes comunes, reconstrucción a nuevo y RCE de copropiedad.',
       highlights: [
-        'Verificación amparo bienes comunes',
-        'Cálculo de valores asegurados vs. coeficiente',
-        'Revisión de cláusula de reconstrucción',
+        'Verificación de amparo obligatorio de áreas comunes',
+        'Cálculo de valores asegurados vs. coeficiente de copropiedad',
+        'Validación de cláusulas de reconstrucción y terremoto',
       ],
+      sampleCoverage: 'Bienes Comunes y Privados al 100%',
+      sampleDeductible: 'Terremoto 2% Valor Asegurado, Mín. 10 SMMLV',
     },
     {
       id: 'cumplimiento',
-      title: 'Cumplimiento y Fianzas',
-      norm: 'Ley 80 de 1993 / Decreto 1082',
+      title: 'Cumplimiento & Seriedad',
+      subtitle: 'Garantías Estatales & Privadas',
+      norm: 'Ley 80 de 1993 / Decreto 1082 de 2015',
       icon: Scale,
-      desc: 'Validación contractual y estatal de pólizas de cumplimiento, suficiencia de amparos (buen manejo del anticipo, cumplimiento, salarios).',
+      badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
+      desc: 'Blindaje jurídico en licitaciones públicas y privadas: buen manejo de anticipo, cumplimiento, salarios y estabilidad de obra.',
       highlights: [
-        'Checklist Ley 80 para contratación pública',
-        'Análisis de vigencias y porcentajes de garantía',
-        'Detección de exclusiones en clausulado',
+        'Checklist automático para pliegos de contratación estatal (SECOP)',
+        'Análisis de suficiencia de vigencias y porcentajes de garantía',
+        'Detección de exclusiones absolutas en cláusulas particulares',
       ],
-    },
-    {
-      id: 'salud',
-      title: 'Salud & Prepagada',
-      norm: 'Resolución 244 / Decreto 780',
-      icon: Stethoscope,
-      desc: 'Comparación de planes voluntarios de salud, preexistencias, periodos de carencia, redes hospitalarias y coberturas internacionales.',
-      highlights: [
-        'Matriz de preexistencias y carencias',
-        'Comparativa de topes y copagos',
-        'Verificación de cuadro médico/redes',
-      ],
-    },
-    {
-      id: 'transporte',
-      title: 'Transporte de Mercancías',
-      norm: 'Incoterms 2020 / Cod. Comercio',
-      icon: Truck,
-      desc: 'Evaluación de pólizas de transporte terrestre, marítimo y aéreo, cláusulas Institute Cargo Clauses (A, B, C) y concordancia con Incoterms.',
-      highlights: [
-        'Validación de coberturas según Incoterm',
-        'Análisis de trayectos y transbordos',
-        'Alertas por deducibles en falta de entrega',
-      ],
+      sampleCoverage: 'Buen Manejo del Anticipo (100%)',
+      sampleDeductible: 'Sin deducible contractual',
     },
     {
       id: 'pyme',
       title: 'Pyme & Comercial',
-      norm: 'Código de Comercio - Libro IV',
+      subtitle: 'Multirriesgo Empresarial',
+      norm: 'Código de Comercio - Libro IV / Estatuto Orgánico',
       icon: Building2,
-      desc: 'Homologación de 14 categorías multiriesgo empresarial (incendio, lucro cesante, sustracción, RCE, equipo electrónico).',
+      badgeColor: 'bg-purple-100 text-purple-800 border-purple-200',
+      desc: 'Homologación canónica de 14 categorías comerciales (incendio, lucro cesante, sustracción, RCE y equipo electrónico) en una sola matriz.',
       highlights: [
-        'Matriz canónica homologada de 14 categorías',
-        'Detección de coberturas fantasma',
-        'Evaluación de sublímites y garantías',
+        'Matriz canónica homologada entre cotizaciones dispares',
+        'Detección de coberturas fantasma (sin clausulado vigente)',
+        'Evaluación de sublímites ocultos y garantías exigidas',
       ],
+      sampleCoverage: 'Lucro Cesante Forma Inglesa (12 meses)',
+      sampleDeductible: '10% de la Pérdida, Mín. 3 SMMLV',
+    },
+    {
+      id: 'salud',
+      title: 'Salud & Prepagada',
+      subtitle: 'Planes Voluntarios & Colectivos',
+      norm: 'Resolución 244 de 2019 / Decreto 780',
+      icon: Stethoscope,
+      badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+      desc: 'Comparativa de beneficios en salud, preexistencias, periodos de carencia, topes ambulatorios y cuadro médico hospitalario.',
+      highlights: [
+        'Matriz de preexistencias declaradas y tiempos de espera',
+        'Comparativa transparente de copagos y bonos de atención',
+        'Verificación de cobertura internacional y repatriación',
+      ],
+      sampleCoverage: 'Hospitalización y Cirugía Ilimitada',
+      sampleDeductible: 'Copago fijo por consulta médica',
+    },
+    {
+      id: 'transporte',
+      title: 'Transporte de Carga',
+      subtitle: 'Terrestre, Marítimo & Aéreo',
+      norm: 'Incoterms 2020 / Institute Cargo Clauses',
+      icon: Truck,
+      badgeColor: 'bg-orange-100 text-orange-800 border-orange-200',
+      desc: 'Evaluación de trayectos, cláusulas inglesas ICC (A, B, C), concordancia con Incoterms y trasbordos multimodales.',
+      highlights: [
+        'Validación de concordancia con Incoterm contractual (CIF, CIP, FOB)',
+        'Alertas por falta de entrega y avería gruesa',
+        'Deducibles de piratería terrestre y robo de mercancía',
+      ],
+      sampleCoverage: 'Todo Riesgo ICC (A) Internacional',
+      sampleDeductible: '15% del Embarque en Hurto Calificado',
     },
     {
       id: 'autos',
       title: 'Autos & Flotas',
+      subtitle: 'Vehículos Comerciales & Particulares',
       norm: 'Circular Básica Jurídica Superfinanciera',
       icon: Car,
-      desc: 'Análisis masivo de cotizaciones individuales y de flotas comerciales, coberturas RCE, pérdida total/parcial y asistencias.',
+      badgeColor: 'bg-rose-100 text-rose-800 border-rose-200',
+      desc: 'Comparación masiva de flotas y vehículos individuales: RCE extracontractual, pérdida total/parcial, amparo patrimonial y asistencias.',
       highlights: [
-        'Comparativa rápida de deducibles por evento',
-        'Análisis de coberturas de asistencia',
-        'Evaluación de amparo patrimonial',
+        'Comparativa visual de deducibles en salarios mínimos y porcentajes',
+        'Análisis de coberturas de asistencia jurídica y grúa nacional',
+        'Evaluación de amparo patrimonial sin deducible',
       ],
+      sampleCoverage: 'RCE Daños y Lesiones hasta $4.000 Millones',
+      sampleDeductible: 'Pérdida Parcial Daños: 10%, Mín. 1 SMMLV',
     },
     {
       id: 'vida',
-      title: 'Vida Grupo & Colectivos',
+      title: 'Vida Grupo & Personas',
+      subtitle: 'Pólizas Colectivas & Beneficios',
       norm: 'Estatuto Orgánico del Sistema Financiero',
       icon: Users,
-      desc: 'Pólizas colectivas de vida, invalidez, incapacidad y enfermedades graves para empleados con análisis por tablas de edades.',
+      badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+      desc: 'Protección colectiva para empresas: muerte por cualquier causa, invalidez, desmembración y anticipo de enfermedades graves.',
       highlights: [
-        'Verificación de amparos adicionales',
-        'Análisis de valores asegurados por perfil',
-        'Cálculo de prima promedio por asegurado',
+        'Verificación de amparos adicionales (gastos de sepelio, canasta familiar)',
+        'Análisis de valores asegurados por categorías de empleados',
+        'Cálculo de prima promedio mensual y anual por asegurado',
       ],
+      sampleCoverage: 'Vida Básica + ITP (Invalidez Total y Permanente)',
+      sampleDeductible: 'Sin deducible',
     },
     {
       id: 'hogar',
       title: 'Hogar & Habitacional',
-      norm: 'Circular Básica Jurídica Superfinanciera',
+      subtitle: 'Vivienda, Contenidos & RCE',
+      norm: 'Circular Básica Jurídica / Ley 1796',
       icon: Shield,
-      desc: 'Protección integral para viviendas, contenidos, terremoto, sustracción y responsabilidad civil familiar.',
+      badgeColor: 'bg-teal-100 text-teal-800 border-teal-200',
+      desc: 'Auditoría para créditos hipotecarios y pólizas familiares: estructura vs. contenidos, hidrometeorológicos y RCE predios.',
       highlights: [
-        'Cobertura de estructura vs contenidos',
-        'Amparo de eventos hidrometeorológicos',
-        'Límites de responsabilidad civil predios',
+        'Separación clara de valor asegurable en estructura vs contenidos',
+        'Amparo de eventos de la naturaleza (terremoto, inundación)',
+        'Límites de responsabilidad civil por daños a vecinos',
       ],
+      sampleCoverage: 'Estructura a Valor de Reconstrucción',
+      sampleDeductible: 'Terremoto 2% Valor Asegurado',
     },
     {
       id: 'equipo_maquinaria',
-      title: 'Equipo & Maquinaria',
-      norm: 'Código de Comercio - Libro IV',
-      icon: FileText,
-      desc: 'Maquinaria amarilla, industrial y agrícola en operación, tránsito y permanencia.',
+      title: 'Maquinaria & Equipos',
+      subtitle: 'Línea Amarilla, Industrial & Agrícola',
+      norm: 'Código de Comercio (Art. 1083)',
+      icon: Briefcase,
+      badgeColor: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      desc: 'Protección para maquinaria en operación, tránsito y permanencia: rotura de maquinaria, vuelco, incendio y robo en faena.',
       highlights: [
-        'Condiciones de horómetro y mantenimiento',
-        'Cobertura de volcadura y hundimiento',
-        'Deducibles de reposición a nuevo',
+        'Exigencias de mantenimiento preventivo y horómetro en contrato',
+        'Cobertura de derrumbe, inundación y rescate de equipo',
+        'Deducibles aplicados sobre valor de reposición a nuevo',
       ],
+      sampleCoverage: 'Rotura de Maquinaria + Tránsito Nacional',
+      sampleDeductible: '10% de la Pérdida, Mín. 5 SMMLV',
     },
     {
       id: 'casco_embarcacion',
-      title: 'Casco & Embarcaciones',
-      norm: 'Código de Comercio Marítimo',
-      icon: FileText,
-      desc: 'Pólizas de casco marítimo y fluvial, remolcadores y artefactos navales con regulación DIMAR.',
+      title: 'Cascos & Embarcaciones',
+      subtitle: 'Fluvial, Marítimo & Portuario',
+      norm: 'Código de Comercio Marítimo / Regulación DIMAR',
+      icon: Globe,
+      badgeColor: 'bg-cyan-100 text-cyan-800 border-cyan-200',
+      desc: 'Auditoría de pólizas náuticas, remolcadores, lanchas y barcazas: avería gruesa, salvamento, P&I y zonas autorizadas.',
       highlights: [
-        'Zonas de navegación autorizadas',
-        'Avería gruesa y salvamento',
-        'Protección e Indemnización (P&I)',
+        'Delimitación de zonas de navegación autorizadas por DIMAR',
+        'Avería gruesa, gastos de salvamento y remolque',
+        'Protección e Indemnización (P&I) para tripulación',
       ],
+      sampleCoverage: 'Casco y Máquinas Institute Time Clauses (Hulls)',
+      sampleDeductible: 'Franquicia deducible por evento',
     },
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 overflow-x-hidden">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 overflow-x-hidden selection:bg-indigo-500 selection:text-white">
+      {/* Top Advisory Bar */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white text-[11px] sm:text-xs py-2 px-4 text-center font-medium border-b border-indigo-900/40 flex items-center justify-center gap-2">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-bold text-[10px] uppercase tracking-wider border border-indigo-500/30">
+          Tecnología para Corredores
+        </span>
+        <span>
+          Auditoría técnica RAG con respaldo en clausulados de Colombia (SURA, MAPFRE, Allianz, Bolívar, AXA y más).
+        </span>
+      </div>
+
       {/* Navigation */}
       <nav
         className={`fixed w-full z-50 transition-all duration-300 ${
           scrolled
-            ? 'bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm'
-            : 'bg-white/80 backdrop-blur-md border-b border-slate-100'
+            ? 'bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm top-0'
+            : 'bg-white/80 backdrop-blur-md border-b border-slate-100 top-8'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-20 items-center">
-            <div className="flex items-center space-x-3">
-              <div className="bg-gradient-to-br from-indigo-600 to-blue-600 p-2.5 rounded-xl shadow-lg shadow-indigo-200">
+            {/* Logo */}
+            <div className="flex items-center space-x-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+              <div className="bg-gradient-to-br from-indigo-600 via-blue-600 to-indigo-800 p-2.5 rounded-xl shadow-lg shadow-indigo-200">
                 <ShieldCheck className="text-white w-6 h-6" />
               </div>
               <div>
-                <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-700 to-blue-600">
+                <span className="text-xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-700 via-blue-600 to-indigo-900">
                   Comparador CSA
                 </span>
-                <p className="text-xs text-slate-500 -mt-1 font-medium">
-                  Multiramo & Multi-Aseguradora
+                <p className="text-[11px] text-slate-500 -mt-1 font-semibold tracking-wide">
+                  Plataforma para Corredores & Asesores
                 </p>
               </div>
             </div>
@@ -223,41 +283,42 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center space-x-8">
               <button
-                onClick={() => scrollToSection('domains')}
-                className="text-slate-600 hover:text-indigo-600 font-medium transition-colors"
+                onClick={() => scrollToSection('brokers-solution')}
+                className="text-slate-600 hover:text-indigo-600 text-sm font-semibold transition-colors"
               >
-                Ramos & Normativas
+                Para tu Correduría
               </button>
               <button
-                onClick={() => scrollToSection('features')}
-                className="text-slate-600 hover:text-indigo-600 font-medium transition-colors"
+                onClick={() => scrollToSection('domains')}
+                className="text-slate-600 hover:text-indigo-600 text-sm font-semibold transition-colors"
               >
-                Capacidades RAG
+                10 Ramos Normativos
+              </button>
+              <button
+                onClick={() => scrollToSection('capabilities')}
+                className="text-slate-600 hover:text-indigo-600 text-sm font-semibold transition-colors"
+              >
+                Auditoría RAG
               </button>
               <button
                 onClick={() => scrollToSection('how-it-works')}
-                className="text-slate-600 hover:text-indigo-600 font-medium transition-colors"
+                className="text-slate-600 hover:text-indigo-600 text-sm font-semibold transition-colors"
               >
                 Cómo Funciona
               </button>
-              <button
-                onClick={() => scrollToSection('benefits')}
-                className="text-slate-600 hover:text-indigo-600 font-medium transition-colors"
-              >
-                Beneficios
-              </button>
-              <div className="flex items-center space-x-4 ml-6 border-l border-slate-200 pl-6">
+              <div className="flex items-center space-x-3 ml-4 border-l border-slate-200 pl-6">
                 <button
                   onClick={onLoginClick}
-                  className="text-slate-700 font-medium hover:text-indigo-600 transition-colors"
+                  className="px-4 py-2 text-slate-700 font-semibold text-sm hover:text-indigo-600 transition-colors"
                 >
-                  Iniciar Sesión
+                  Acceso Intermediarios
                 </button>
                 <button
                   onClick={onRegisterClick}
-                  className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-full font-semibold shadow-lg shadow-indigo-200 hover:shadow-xl hover:scale-105 transition-all duration-300"
+                  className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-xl text-sm font-bold shadow-md shadow-indigo-200 hover:shadow-lg hover:from-indigo-700 hover:to-blue-700 hover:scale-[1.02] transition-all flex items-center gap-1.5 cursor-pointer"
                 >
-                  Comenzar Gratis
+                  <span>Probar Auditoría Gratis</span>
+                  <ArrowRight size={15} />
                 </button>
               </div>
             </div>
@@ -266,7 +327,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
             <div className="md:hidden flex items-center">
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="text-slate-600 hover:text-indigo-600 p-2"
+                className="text-slate-600 hover:text-indigo-600 p-2 rounded-lg"
+                aria-label="Abrir menú"
               >
                 {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
@@ -274,232 +336,242 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu Dropdown */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-white border-b border-slate-100 absolute w-full px-4 py-4 shadow-xl flex flex-col space-y-4">
+          <div className="md:hidden bg-white border-b border-slate-200 px-6 py-5 shadow-xl space-y-4 animate-in slide-in-from-top-2">
             <button
-              onClick={() => scrollToSection('domains')}
-              className="text-left text-lg font-medium text-slate-700 py-2"
+              onClick={() => scrollToSection('brokers-solution')}
+              className="block w-full text-left font-semibold text-slate-700 py-1.5"
             >
-              Ramos & Normativas
+              Para tu Correduría
             </button>
             <button
-              onClick={() => scrollToSection('features')}
-              className="text-left text-lg font-medium text-slate-700 py-2"
+              onClick={() => scrollToSection('domains')}
+              className="block w-full text-left font-semibold text-slate-700 py-1.5"
             >
-              Capacidades RAG
+              10 Ramos Normativos
+            </button>
+            <button
+              onClick={() => scrollToSection('capabilities')}
+              className="block w-full text-left font-semibold text-slate-700 py-1.5"
+            >
+              Auditoría RAG
             </button>
             <button
               onClick={() => scrollToSection('how-it-works')}
-              className="text-left text-lg font-medium text-slate-700 py-2"
+              className="block w-full text-left font-semibold text-slate-700 py-1.5"
             >
               Cómo Funciona
             </button>
-            <button
-              onClick={() => scrollToSection('benefits')}
-              className="text-left text-lg font-medium text-slate-700 py-2"
-            >
-              Beneficios
-            </button>
-            <button
-              onClick={onLoginClick}
-              className="text-left text-lg font-medium text-slate-700 py-2"
-            >
-              Iniciar Sesión
-            </button>
-            <button
-              onClick={onRegisterClick}
-              className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-3 rounded-xl font-bold shadow-lg"
-            >
-              Crear Cuenta
-            </button>
+            <div className="pt-3 border-t border-slate-100 flex flex-col gap-2.5">
+              <button
+                onClick={onLoginClick}
+                className="w-full py-2.5 text-center font-bold text-slate-700 bg-slate-100 rounded-xl"
+              >
+                Acceso Intermediarios
+              </button>
+              <button
+                onClick={onRegisterClick}
+                className="w-full py-3 text-center font-bold text-white bg-gradient-to-r from-indigo-600 to-blue-600 rounded-xl shadow-md"
+              >
+                Probar Auditoría Gratis
+              </button>
+            </div>
           </div>
         )}
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 lg:pt-44 lg:pb-28 relative overflow-hidden">
-        <div className="absolute top-0 right-0 -mr-40 -mt-40 w-[600px] h-[600px] bg-gradient-to-br from-indigo-200/40 to-blue-200/40 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 -ml-40 -mb-40 w-[500px] h-[500px] bg-gradient-to-tr from-purple-200/40 to-indigo-200/40 rounded-full blur-3xl"></div>
+      <section className="pt-36 pb-20 lg:pt-48 lg:pb-32 relative overflow-hidden bg-gradient-to-b from-white via-indigo-50/20 to-slate-50">
+        <div className="absolute top-0 right-0 -mr-40 -mt-40 w-[600px] h-[600px] bg-gradient-to-br from-indigo-200/40 via-blue-200/30 to-purple-200/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 -ml-40 -mb-40 w-[500px] h-[500px] bg-gradient-to-tr from-blue-200/30 via-indigo-200/20 to-transparent rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="text-center lg:text-left">
-              <div className="inline-flex items-center px-4 py-2 bg-indigo-50 text-indigo-700 rounded-full text-xs sm:text-sm font-semibold mb-6 border border-indigo-100">
-                <Sparkles size={16} className="mr-2 text-indigo-600" />
-                IA RAG + Abogado Virtual con Respaldo Regulatorio
+          <div className="grid lg:grid-cols-12 gap-12 items-center">
+            {/* Hero Copy */}
+            <div className="lg:col-span-7 text-center lg:text-left">
+              <div className="inline-flex items-center px-3.5 py-1.5 bg-indigo-50 border border-indigo-200/80 rounded-full text-xs font-bold text-indigo-700 mb-6 shadow-xs">
+                <Sparkles size={14} className="mr-2 text-indigo-600" />
+                <span>Inteligencia Contractual RAG para Corredores de Seguros</span>
               </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight mb-6 leading-tight">
-                Análisis Técnico y Auditoría RAG
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-600">
-                  {' '}
-                  Multiramo & Multi-Aseguradora
+
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.12] mb-6">
+                Cierra más licitaciones con auditorías que{' '}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-900">
+                  ninguna aseguradora puede refutar
                 </span>
               </h1>
-              <p className="text-lg sm:text-xl text-slate-600 mb-8 leading-relaxed">
-                Audita cotizaciones en PDF contrastándolas con clausulados contractuales y marcos
-                legales (Ley 675, Ley 80, Res. 244, Incoterms). Detecta coberturas fantasma, evalúa
-                riesgos de deducibles y genera evidencia verbatim en PDF.
+
+              <p className="text-base sm:text-lg text-slate-600 mb-8 leading-relaxed max-w-2xl mx-auto lg:mx-0">
+                Sube las cotizaciones en PDF de tus clientes y en <strong>menos de 2 minutos</strong>{' '}
+                obtén un cuadro comparativo bidireccional que cruza cada cobertura, deducible y
+                exclusión contra los <strong>clausulados reales registrados</strong> y el marco legal
+                colombiano (Ley 675, Ley 80, Res. 244).
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-10">
+              {/* CTAs */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-6">
                 <button
                   onClick={onRegisterClick}
-                  className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-full text-lg font-bold shadow-xl shadow-indigo-300 hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center"
+                  className="px-8 py-4 bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 text-white rounded-xl text-base font-bold shadow-xl shadow-indigo-300/40 hover:shadow-2xl hover:scale-[1.02] active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer group"
                 >
-                  Auditar mi primera cotización <ArrowRight className="ml-2 w-5 h-5" />
+                  <span>Auditar Mi Primera Cotización</span>
+                  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                 </button>
                 <button
                   onClick={() => scrollToSection('domains')}
-                  className="px-8 py-4 bg-white text-slate-700 border-2 border-slate-200 rounded-full text-lg font-bold hover:border-indigo-300 hover:bg-indigo-50 transition-all"
+                  className="px-6 py-4 bg-white text-slate-700 border border-slate-300 rounded-xl text-base font-bold hover:bg-slate-50 hover:border-indigo-300 transition-all flex items-center justify-center cursor-pointer shadow-xs"
                 >
-                  Explorar Ramos Normativos
+                  Ver los 10 Ramos Soportados
                 </button>
               </div>
 
-              {/* Supported Domains Chips */}
-              <div className="pt-4 border-t border-slate-200/80">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 text-center lg:text-left">
-                  Ramos Especializados y Normativa Integrada:
-                </p>
-                <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
-                  <span className="inline-flex items-center px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-sm">
-                    <Building className="w-3.5 h-3.5 mr-1.5 text-indigo-600" /> Copropiedades (Ley
-                    675)
-                  </span>
-                  <span className="inline-flex items-center px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-sm">
-                    <Scale className="w-3.5 h-3.5 mr-1.5 text-blue-600" /> Cumplimiento (Ley 80)
-                  </span>
-                  <span className="inline-flex items-center px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-sm">
-                    <Stethoscope className="w-3.5 h-3.5 mr-1.5 text-teal-600" /> Salud (Res. 244)
-                  </span>
-                  <span className="inline-flex items-center px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-sm">
-                    <Truck className="w-3.5 h-3.5 mr-1.5 text-amber-600" /> Transporte (Incoterms)
-                  </span>
-                  <span className="inline-flex items-center px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-sm">
-                    <Building2 className="w-3.5 h-3.5 mr-1.5 text-purple-600" /> Pyme
-                  </span>
-                  <span className="inline-flex items-center px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-sm">
-                    <Car className="w-3.5 h-3.5 mr-1.5 text-emerald-600" /> Autos
-                  </span>
-                  <span className="inline-flex items-center px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-sm">
-                    <Briefcase className="w-3.5 h-3.5 mr-1.5 text-orange-600" /> Maquinaria (Art.
-                    1083)
-                  </span>
-                  <span className="inline-flex items-center px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-sm">
-                    <Globe className="w-3.5 h-3.5 mr-1.5 text-cyan-600" /> Casco Embarcación (DIMAR)
-                  </span>
-                </div>
+              {/* Trust Badges */}
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs font-semibold text-slate-500 mb-8">
+                <span className="flex items-center gap-1.5 text-slate-700">
+                  <Check size={14} className="text-emerald-600 stroke-[3]" /> Sin tarjeta de crédito
+                </span>
+                <span className="flex items-center gap-1.5 text-slate-700">
+                  <Check size={14} className="text-emerald-600 stroke-[3]" /> Evidencia verbatim en PDF
+                </span>
+                <span className="flex items-center gap-1.5 text-slate-700">
+                  <Check size={14} className="text-emerald-600 stroke-[3]" /> Aislamiento total de cartera
+                </span>
               </div>
 
-              {/* Stats */}
-              <div className="mt-8 grid grid-cols-3 gap-6 text-center lg:text-left">
-                <div>
-                  <div className="text-2xl font-extrabold text-indigo-600">2 min</div>
-                  <div className="text-xs text-slate-500 font-medium">Análisis RAG con IA</div>
+              {/* Quick metrics banner */}
+              <div className="grid grid-cols-3 gap-4 pt-6 border-t border-slate-200/80 max-w-lg mx-auto lg:mx-0">
+                <div className="text-left">
+                  <div className="text-2xl sm:text-3xl font-black text-indigo-700">2 min</div>
+                  <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                    Tiempo de Análisis
+                  </div>
                 </div>
-                <div>
-                  <div className="text-2xl font-extrabold text-indigo-600">10 Ramos</div>
-                  <div className="text-xs text-slate-500 font-medium">Soporte regulatorio</div>
+                <div className="text-left border-l border-slate-200 pl-4">
+                  <div className="text-2xl sm:text-3xl font-black text-slate-900">10 Ramos</div>
+                  <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                    Normativa Integrada
+                  </div>
                 </div>
-                <div>
-                  <div className="text-2xl font-extrabold text-indigo-600">100%</div>
-                  <div className="text-xs text-slate-500 font-medium">Evidencia Verbatim PDF</div>
+                <div className="text-left border-l border-slate-200 pl-4">
+                  <div className="text-2xl sm:text-3xl font-black text-emerald-600">0%</div>
+                  <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                    Fugas de Cobertura
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Hero Visual - Realistic RAG / Abogado Virtual UI Mockup */}
-            <div className="hidden lg:block relative">
-              <div className="relative bg-white rounded-2xl shadow-2xl p-6 border border-slate-200">
-                <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+            {/* Hero Visual Mockup */}
+            <div className="lg:col-span-5 relative">
+              <div className="relative bg-white rounded-3xl shadow-2xl p-6 border border-slate-200/90 ring-1 ring-slate-900/5">
+                {/* Header of mockup */}
+                <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-100">
                   <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                    <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                    <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                    <span className="text-xs font-bold text-slate-600 ml-2">
-                      Auditoría RAG & Abogado Virtual
+                    <span className="w-3 h-3 rounded-full bg-rose-400 inline-block" />
+                    <span className="w-3 h-3 rounded-full bg-amber-400 inline-block" />
+                    <span className="w-3 h-3 rounded-full bg-emerald-400 inline-block" />
+                    <span className="text-xs font-bold text-slate-700 ml-2">
+                      Auditoría Comparativa #AUD-2026-89
                     </span>
                   </div>
-                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-md">
-                    Ley 675 / Ley 80 Verified
+                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
+                    Ley 675 / Propiedad Horizontal
                   </span>
                 </div>
 
+                {/* Body of mockup */}
                 <div className="space-y-3.5">
-                  {/* Coverage Status Bar */}
-                  <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-slate-800 flex items-center">
-                        <FileCheck className="w-4 h-4 mr-1 text-indigo-600" />
-                        Matriz de Cobertura Bidireccional
-                      </span>
-                      <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                        Score 92/100
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-[11px] font-medium">
-                      <div className="bg-white p-2 rounded border border-slate-200">
-                        <div className="text-slate-500 text-[10px]">Incendio Pyme</div>
-                        <div className="text-emerald-700 font-bold flex items-center mt-0.5">
-                          ✓ Verificada
-                        </div>
-                      </div>
-                      <div className="bg-white p-2 rounded border border-slate-200">
-                        <div className="text-slate-500 text-[10px]">Bienes Comunes</div>
-                        <div className="text-emerald-700 font-bold flex items-center mt-0.5">
-                          ✓ Ley 675 OK
-                        </div>
-                      </div>
-                      <div className="bg-white p-2 rounded border border-amber-200 bg-amber-50/50">
-                        <div className="text-amber-800 text-[10px]">Terremoto Sublímite</div>
-                        <div className="text-amber-700 font-bold flex items-center mt-0.5">
-                          ⚠ Fantasma
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Virtual Lawyer Card */}
-                  <div className="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-4 rounded-xl shadow-md">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <BookOpen className="w-4 h-4 text-indigo-300" />
-                        <span className="text-xs font-bold text-indigo-100">
-                          Abogado Virtual RAG
+                  {/* Score & Verdict Card */}
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+                    <div className="flex items-center justify-between mb-2.5">
+                      <div className="flex items-center gap-2">
+                        <Award className="text-indigo-600 w-4 h-4" />
+                        <span className="text-xs font-bold text-slate-800">
+                          Matriz Bidireccional Homologada
                         </span>
                       </div>
-                      <span className="text-[10px] bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 px-2 py-0.5 rounded">
-                        Cita textual Pág. 14
+                      <span className="px-2 py-0.5 text-[10px] font-extrabold bg-emerald-100 text-emerald-800 rounded-md">
+                        Score 94 / 100
                       </span>
                     </div>
-                    <p className="text-[11px] text-indigo-200 leading-relaxed italic mb-2">
-                      "La póliza omite el amparo obligatorio de reconstrucción a valor comercial
-                      exigido por la Ley 675 Art 15. Se sugiere solicitar anexo aclaratorio."
-                    </p>
-                    <div className="flex items-center justify-between text-[10px] text-slate-300 border-t border-indigo-800/80 pt-2 mt-2">
-                      <span className="text-emerald-400 font-semibold">
-                        Punto de negociación #1
+
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase block">
+                          Aseguradora A (SURA)
+                        </span>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-emerald-700 font-bold text-xs flex items-center gap-1">
+                            <CheckCircle size={13} className="text-emerald-600" /> 16 Verificadas
+                          </span>
+                          <span className="text-[11px] font-mono text-slate-600 font-bold">
+                            $48.5M COP
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="bg-white p-2.5 rounded-xl border border-amber-200 bg-amber-50/30 shadow-2xs">
+                        <span className="text-[10px] text-amber-700 font-bold uppercase block">
+                          Aseguradora B (Competencia)
+                        </span>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-amber-800 font-bold text-xs flex items-center gap-1">
+                            <AlertTriangle size={13} className="text-amber-600" /> 2 Fantasma
+                          </span>
+                          <span className="text-[11px] font-mono text-slate-600 font-bold">
+                            $42.0M COP
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Virtual Lawyer Finding */}
+                  <div className="bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 text-white p-4 rounded-2xl shadow-lg border border-indigo-800/60">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <BookOpen size={14} className="text-indigo-300" />
+                        <span className="text-xs font-bold text-indigo-100">
+                          Dictamen del Abogado Virtual RAG
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-mono bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 px-1.5 py-0.5 rounded">
+                        Clausulado Pág. 19
                       </span>
-                      <span className="underline cursor-pointer text-indigo-300 hover:text-white">
-                        Abrir en Visor PDF →
+                    </div>
+                    <p className="text-[11px] text-slate-200 leading-relaxed italic mb-3">
+                      "La cotización de Aseguradora B excluye terremoto sobre bienes comunes
+                      bajo el sublímite del 50%, infringiendo el Art. 15 de la Ley 675. Se objeta
+                      por riesgo de responsabilidad para la administración."
+                    </p>
+                    <div className="flex items-center justify-between text-[10px] text-indigo-200 border-t border-indigo-800/80 pt-2">
+                      <span className="text-emerald-400 font-bold flex items-center gap-1">
+                        <Check size={12} /> Argumento ganador para licitación
+                      </span>
+                      <span className="underline font-semibold cursor-pointer hover:text-white">
+                        Ver texto resaltado →
                       </span>
                     </div>
                   </div>
 
-                  {/* Deductibles Gauge */}
-                  <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl flex items-center justify-between">
-                    <div className="flex items-center text-amber-900 text-xs">
-                      <AlertTriangle className="w-4 h-4 text-amber-600 mr-2 flex-shrink-0" />
+                  {/* Deductibles Bar */}
+                  <div className="bg-amber-50/80 border border-amber-200/90 p-3.5 rounded-2xl flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 flex-shrink-0">
+                        <AlertTriangle size={16} />
+                      </div>
                       <div>
-                        <span className="font-bold">Riesgo de Deducible: MEDIO</span>
-                        <p className="text-[10px] text-amber-700">
-                          10% Pérdida, Mínimo 10 SMMLV sobre suma asegurada real
-                        </p>
+                        <span className="text-xs font-bold text-amber-950 block">
+                          Alerta Actuarial de Deducibles
+                        </span>
+                        <span className="text-[11px] text-amber-800">
+                          Mínimo de 10 SMMLV ($14.2M COP) sobre reclamo de maquinaria
+                        </span>
                       </div>
                     </div>
-                    <span className="text-[10px] font-bold bg-amber-200 text-amber-900 px-2 py-1 rounded-md ml-2 flex-shrink-0">
-                      Ver detalle
+                    <span className="text-[10px] font-extrabold bg-amber-200 text-amber-900 px-2 py-1 rounded-md">
+                      Impacto Alto
                     </span>
                   </div>
                 </div>
@@ -509,13 +581,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
         </div>
       </section>
 
-      {/* Trusted By Section */}
-      <section className="py-12 border-y border-slate-200 bg-white">
+      {/* Insurers Logos Bar */}
+      <section className="py-12 bg-white border-y border-slate-200/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-8">
-            Compatible con cotizaciones y clausulados de las principales aseguradoras
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-8">
+            Auditoría cruzada compatible con las principales aseguradoras autorizadas en Colombia
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-6 md:gap-12 opacity-80">
+          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-14 opacity-75">
             {[
               'SURA',
               'MAPFRE',
@@ -523,14 +595,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
               'AXA COLPATRIA',
               'Seguros Bolívar',
               'Chubb',
-              'SBS',
+              'SBS Seguros',
               'BBVA Seguros',
               'Zurich',
-              'Previsora',
+              'La Previsora',
             ].map((name, idx) => (
               <span
                 key={idx}
-                className="text-lg md:text-xl font-bold text-slate-600 hover:text-indigo-600 transition-colors"
+                className="text-lg md:text-xl font-black text-slate-600 hover:text-indigo-600 transition-colors"
               >
                 {name}
               </span>
@@ -539,102 +611,104 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
         </div>
       </section>
 
-      {/* 3-Tier Hierarchy & Enterprise Governance Section */}
-      <section id="hierarchy" className="py-20 bg-slate-50 border-y border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs font-semibold mb-3 border border-indigo-200">
-              <Users className="w-3.5 h-3.5 mr-1.5 text-indigo-600" />
-              Gobernanza y Jerarquía Organizacional
+      {/* Target Audience Section: Solución para Corredoras y Agencias de Seguros */}
+      <section id="brokers-solution" className="py-24 bg-slate-900 text-white relative overflow-hidden">
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <div className="inline-flex items-center px-3.5 py-1.5 bg-indigo-500/20 text-indigo-300 rounded-full text-xs font-bold mb-4 border border-indigo-500/30">
+              <Users className="w-3.5 h-3.5 mr-1.5 text-indigo-400" />
+              <span>Diseñado para Intermediarios de Seguros</span>
             </div>
-            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-              Estructura Multi-Tenant para Corredoras y Aliados
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight mb-4">
+              La plataforma central de auditoría y cartera para tu Correduría
             </h2>
-            <p className="mt-4 text-lg text-slate-600 max-w-3xl mx-auto">
-              Control jerárquico claro en 3 niveles para la gestión centralizada de intermediarios,
-              administradores de firma y equipos técnicos de analistas.
+            <p className="text-base sm:text-lg text-slate-300 leading-relaxed">
+              Equipa a tus directores técnicos y analistas comerciales con una herramienta que
+              profesionaliza la entrega ante clientes corporativos, protege tus renovaciones y mantiene
+              tus cuentas organizadas.
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Level 1: Super Admin */}
-            <div className="bg-white p-8 rounded-2xl shadow-lg shadow-slate-200/60 border border-slate-200 relative overflow-hidden group hover:border-indigo-300 transition-all">
-              <div className="absolute top-0 left-0 w-full h-1.5 bg-indigo-600"></div>
-              <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mb-6 group-hover:scale-110 transition-transform">
-                <ShieldCheck size={26} />
+            {/* Value 1: Equipo y Gestión Técnica */}
+            <div className="bg-slate-800/80 border border-slate-700/80 rounded-3xl p-8 hover:border-indigo-500/50 transition-all flex flex-col justify-between">
+              <div>
+                <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400 mb-6">
+                  <Users size={24} />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">
+                  Organización de Equipo y Roles Técnicos
+                </h3>
+                <p className="text-slate-300 text-sm leading-relaxed mb-6">
+                  Tus directores de firma supervisan el volumen global de cotizaciones mientras que los
+                  analistas técnicos cargan PDFs, auditan y formulan notas consultivas sin interferir entre cuentas.
+                </p>
               </div>
-              <span className="text-xs font-extrabold text-indigo-600 uppercase tracking-wider">
-                Nivel 1
-              </span>
-              <h3 className="text-xl font-bold text-slate-900 mt-1 mb-3">Super Admin</h3>
-              <p className="text-slate-600 text-sm leading-relaxed mb-4">
-                Administrador General de la Aplicación. Supervisa la totalidad de
-                Aliados/Intermediarios, métricas globales de mercado y gobernanza de la plataforma.
-              </p>
-              <ul className="space-y-2 text-xs text-slate-500 border-t border-slate-100 pt-4">
-                <li className="flex items-center">
-                  <CheckCircle size={14} className="text-emerald-500 mr-2" /> Monitoreo global de
-                  analítica multiramo
+              <ul className="space-y-2.5 text-xs text-slate-300 border-t border-slate-700/60 pt-4">
+                <li className="flex items-center gap-2">
+                  <CheckCircle size={15} className="text-emerald-400 flex-shrink-0" />
+                  <span>Separación clara entre gestión comercial y análisis técnico</span>
                 </li>
-                <li className="flex items-center">
-                  <CheckCircle size={14} className="text-emerald-500 mr-2" /> Gestión integral de
-                  Corredoras y Aliados
+                <li className="flex items-center gap-2">
+                  <CheckCircle size={15} className="text-emerald-400 flex-shrink-0" />
+                  <span>Trazabilidad de quién analizó y aprobó cada dictamen</span>
                 </li>
               </ul>
             </div>
 
-            {/* Level 2: Ally Admin */}
-            <div className="bg-white p-8 rounded-2xl shadow-lg shadow-indigo-100 border-2 border-indigo-500 relative overflow-hidden group hover:shadow-xl transition-all scale-105 z-10">
-              <div className="absolute top-0 right-0 bg-indigo-600 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider">
-                Registro en Landing
+            {/* Value 2: Cartera y Renovaciones Automáticas */}
+            <div className="bg-gradient-to-b from-slate-800 to-indigo-950/60 border-2 border-indigo-500 rounded-3xl p-8 relative shadow-xl hover:shadow-indigo-500/10 transition-all flex flex-col justify-between scale-[1.02]">
+              <div className="absolute -top-3.5 right-6 bg-gradient-to-r from-indigo-500 to-blue-600 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full tracking-wider shadow-sm">
+                Retención de Cartera
               </div>
-              <div className="w-12 h-12 rounded-xl bg-indigo-600 text-white flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-md shadow-indigo-200">
-                <Building2 size={26} />
+              <div>
+                <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center mb-6 shadow-md shadow-indigo-600/30">
+                  <FolderKanban size={24} />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">
+                  Ciclo de Renovaciones y Alertas de Vencimiento
+                </h3>
+                <p className="text-slate-200 text-sm leading-relaxed mb-6">
+                  Convierte pólizas vigentes en procesos activos de renovación a 60, 30 y 15 días.
+                  Compara la póliza actual contra nuevas ofertas del mercado para evitar fugas de clientes.
+                </p>
               </div>
-              <span className="text-xs font-extrabold text-indigo-600 uppercase tracking-wider">
-                Nivel 2
-              </span>
-              <h3 className="text-xl font-bold text-slate-900 mt-1 mb-3">
-                Admin de Compañía Aliada
-              </h3>
-              <p className="text-slate-600 text-sm leading-relaxed mb-4">
-                Un Administrador por cada Firma / Corredora. Se registra con el NIT de su empresa y
-                es el encargado de dar de alta y gestionar a sus técnicos.
-              </p>
-              <ul className="space-y-2 text-xs text-slate-600 border-t border-slate-100 pt-4">
-                <li className="flex items-center font-medium">
-                  <CheckCircle size={14} className="text-indigo-600 mr-2" /> Registro directo con
-                  NIT en la plataforma
+              <ul className="space-y-2.5 text-xs text-indigo-100 border-t border-indigo-700/60 pt-4">
+                <li className="flex items-center gap-2">
+                  <CheckCircle size={15} className="text-emerald-400 flex-shrink-0" />
+                  <span>Estados claros: Detectada, En Revisión, Cotizada y Cerrada</span>
                 </li>
-                <li className="flex items-center font-medium">
-                  <CheckCircle size={14} className="text-indigo-600 mr-2" /> Creación y asignación
-                  de N Técnicos Analistas
+                <li className="flex items-center gap-2">
+                  <CheckCircle size={15} className="text-emerald-400 flex-shrink-0" />
+                  <span>Historial de prima final y motivos de pérdida para auditoría</span>
                 </li>
               </ul>
             </div>
 
-            {/* Level 3: Ally Technical Analyst */}
-            <div className="bg-white p-8 rounded-2xl shadow-lg shadow-slate-200/60 border border-slate-200 relative overflow-hidden group hover:border-blue-300 transition-all">
-              <div className="absolute top-0 left-0 w-full h-1.5 bg-blue-600"></div>
-              <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-6 group-hover:scale-110 transition-transform">
-                <Users size={26} />
+            {/* Value 3: Privacidad y Marca Propia */}
+            <div className="bg-slate-800/80 border border-slate-700/80 rounded-3xl p-8 hover:border-indigo-500/50 transition-all flex flex-col justify-between">
+              <div>
+                <div className="w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-400 mb-6">
+                  <Lock size={24} />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">
+                  Aislamiento Total de Clientes y Cotizaciones
+                </h3>
+                <p className="text-slate-300 text-sm leading-relaxed mb-6">
+                  Tus bases de clientes, NITs y acuerdos de prima permanecen 100% aislados bajo tu firma.
+                  Genera reportes técnicos en PDF con diseño profesional listos para asambleas y comités de compras.
+                </p>
               </div>
-              <span className="text-xs font-extrabold text-blue-600 uppercase tracking-wider">
-                Nivel 3
-              </span>
-              <h3 className="text-xl font-bold text-slate-900 mt-1 mb-3">Técnicos Analistas</h3>
-              <p className="text-slate-600 text-sm leading-relaxed mb-4">
-                N cantidad de usuarios analistas por cada Intermediario. Cargan cotizaciones en PDF,
-                ejecutan comparaciones RAG y generan informes de riesgo.
-              </p>
-              <ul className="space-y-2 text-xs text-slate-500 border-t border-slate-100 pt-4">
-                <li className="flex items-center">
-                  <CheckCircle size={14} className="text-emerald-500 mr-2" /> Auditoría automatizada
-                  de pólizas PDF
+              <ul className="space-y-2.5 text-xs text-slate-300 border-t border-slate-700/60 pt-4">
+                <li className="flex items-center gap-2">
+                  <CheckCircle size={15} className="text-emerald-400 flex-shrink-0" />
+                  <span>Exportación en PDF ejecutivo y matrices dinámicas en Excel</span>
                 </li>
-                <li className="flex items-center">
-                  <CheckCircle size={14} className="text-emerald-500 mr-2" /> Abogado Virtual y
-                  consulta de clausulados
+                <li className="flex items-center gap-2">
+                  <CheckCircle size={15} className="text-emerald-400 flex-shrink-0" />
+                  <span>Seguridad enterprise alineada con la Ley 1581 de Habeas Data</span>
                 </li>
               </ul>
             </div>
@@ -643,24 +717,24 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
       </section>
 
       {/* Multidomain & Regulatory Framework Section */}
-      <section id="domains" className="py-24 bg-slate-900 text-white relative">
+      <section id="domains" className="py-24 bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-xs font-semibold mb-3 border border-indigo-500/30">
-              <Award className="w-3.5 h-3.5 mr-1.5" />
-              Especialización por Ramo
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <div className="inline-flex items-center px-3.5 py-1.5 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold mb-4 border border-indigo-200">
+              <Award className="w-3.5 h-3.5 mr-1.5 text-indigo-600" />
+              <span>Especialización Multiramo</span>
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-              Análisis Multiramo con Respaldo Normativo y Regulatorio
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight mb-4">
+              Auditoría Técnica en 10 Ramos con Normativa Colombiana
             </h2>
-            <p className="mt-4 text-lg text-slate-300 max-w-3xl mx-auto">
-              Cada ramo exige un análisis legal distinto. El sistema inyecta tesauros específicos y
-              verifica automáticamente el cumplimiento de las normativas vigentes en Colombia.
+            <p className="text-base sm:text-lg text-slate-600 leading-relaxed">
+              No todos los seguros son iguales. El motor RAG adapta el tesauro de búsqueda y las reglas de
+              validación según el ramo y su legislación aplicable.
             </p>
           </div>
 
           {/* Domain Tabs Navigation */}
-          <div className="flex flex-wrap justify-center gap-2 mb-10">
+          <div className="flex flex-wrap justify-center gap-2.5 mb-10">
             {domainsInfo.map((domain) => {
               const Icon = domain.icon;
               const isActive = activeDomainTab === domain.id;
@@ -668,14 +742,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
                 <button
                   key={domain.id}
                   onClick={() => setActiveDomainTab(domain.id)}
-                  className={`flex items-center px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+                  className={`flex items-center px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-lg shadow-indigo-500/30 scale-105'
-                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700'
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 scale-105'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/80'
                   }`}
                 >
                   <Icon className="w-4 h-4 mr-2" />
-                  {domain.title}
+                  <span>{domain.title}</span>
                 </button>
               );
             })}
@@ -689,40 +763,71 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
               return (
                 <div
                   key={domain.id}
-                  className="bg-slate-800/90 border border-slate-700 rounded-2xl p-8 max-w-4xl mx-auto backdrop-blur-sm grid md:grid-cols-3 gap-8 items-center"
+                  className="bg-slate-50 border border-slate-200 rounded-3xl p-8 lg:p-10 max-w-5xl mx-auto shadow-sm grid md:grid-cols-12 gap-8 items-center"
                 >
-                  <div className="md:col-span-2">
-                    <div className="inline-flex items-center px-3 py-1 bg-indigo-900/60 text-indigo-300 border border-indigo-700/50 rounded-md text-xs font-bold mb-3">
-                      Marco Legal: {domain.norm}
+                  <div className="md:col-span-8">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className={`px-2.5 py-1 rounded-md text-xs font-bold border ${domain.badgeColor}`}>
+                        {domain.norm}
+                      </span>
                     </div>
-                    <h3 className="text-2xl font-bold text-white mb-3 flex items-center">
-                      <Icon className="w-6 h-6 mr-2.5 text-indigo-400" />
-                      Ramo {domain.title}
+
+                    <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2 flex items-center gap-2.5">
+                      <Icon className="w-7 h-7 text-indigo-600" />
+                      <span>{domain.title}</span>
+                      <span className="text-sm font-semibold text-slate-500">({domain.subtitle})</span>
                     </h3>
-                    <p className="text-slate-300 leading-relaxed mb-6">{domain.desc}</p>
-                    <div className="space-y-2">
+
+                    <p className="text-slate-600 text-sm sm:text-base leading-relaxed mb-6">
+                      {domain.desc}
+                    </p>
+
+                    <div className="space-y-2.5 mb-6">
                       {domain.highlights.map((h, idx) => (
-                        <div key={idx} className="flex items-center text-sm text-indigo-200">
-                          <CheckCircle className="w-4 h-4 text-emerald-400 mr-2 flex-shrink-0" />
+                        <div key={idx} className="flex items-center text-sm font-medium text-slate-800">
+                          <CheckCircle className="w-4 h-4 text-emerald-600 mr-2.5 flex-shrink-0" />
                           <span>{h}</span>
                         </div>
                       ))}
                     </div>
+
+                    <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-200 text-xs">
+                      <div className="bg-white p-3 rounded-xl border border-slate-200">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase block">
+                          Ejemplo Cobertura Verificada
+                        </span>
+                        <span className="font-bold text-slate-800 mt-1 block">
+                          {domain.sampleCoverage}
+                        </span>
+                      </div>
+                      <div className="bg-white p-3 rounded-xl border border-slate-200">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase block">
+                          Deducible Monitoreado
+                        </span>
+                        <span className="font-bold text-amber-900 mt-1 block">
+                          {domain.sampleDeductible}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="bg-slate-900/80 p-6 rounded-xl border border-slate-700/80 text-center flex flex-col justify-center items-center">
-                    <BookOpen className="w-10 h-10 text-indigo-400 mb-3" />
-                    <span className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">
-                      Respaldo RAG Activo
+                  <div className="md:col-span-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-md text-center flex flex-col justify-center items-center">
+                    <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4">
+                      <BookOpen size={28} />
+                    </div>
+                    <span className="text-xs font-black text-indigo-700 uppercase tracking-wider mb-1">
+                      Tesauro Activo
                     </span>
-                    <p className="text-sm text-slate-200 font-medium mb-4">
-                      Cruzamiento automático de cotización con tesauro de {domain.title}
+                    <p className="text-xs text-slate-500 mb-5 leading-relaxed">
+                      Indexación semántica PGVector de 3072 dimensiones sobre los clausulados colombianos de{' '}
+                      <strong>{domain.title}</strong>.
                     </p>
                     <button
                       onClick={onRegisterClick}
-                      className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-sm transition-colors"
+                      className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs sm:text-sm shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
                     >
-                      Probar Ramo {domain.title}
+                      <span>Auditar Cotización de {domain.title}</span>
+                      <ArrowRight size={14} />
                     </button>
                   </div>
                 </div>
@@ -731,67 +836,68 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-24 bg-slate-50">
+      {/* Real Capabilities Grid */}
+      <section id="capabilities" className="py-24 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-base text-indigo-600 font-semibold tracking-wide uppercase">
-              Capacidades Reales de la Plataforma
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-xs font-extrabold text-indigo-600 tracking-wider uppercase mb-2">
+              Tecnología Que Realmente Funciona
             </h2>
-            <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-              Auditoría Técnica e Inteligencia Contractual Automatizada
+            <p className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
+              Herramientas de Auditoría Técnica para Ganar Cuentas
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               {
-                icon: <BookOpen className="w-7 h-7 text-white" />,
+                icon: <BookOpen className="w-6 h-6 text-white" />,
                 title: 'Abogado Virtual RAG',
                 description:
-                  'Genera dictámenes legales citando textualmente clausulados contractuales de la base de datos Supabase/pgvector e identifica puntos clave de negociación.',
+                  'Genera dictámenes legales citando página y artículo exacto del clausulado registrado ante la SFC. Identifica argumentos de objeción y negociación al instante.',
               },
               {
-                icon: <FileCheck className="w-7 h-7 text-white" />,
+                icon: <FileCheck className="w-6 h-6 text-white" />,
                 title: 'Visor PDF con Evidencia Verbatim',
                 description:
-                  'Visualiza cotizaciones y clausulados directamente en la UI. Haz clic en cualquier hallazgo y salta automáticamente a la página con el texto resaltado.',
+                  'Haz clic en cualquier celda de la comparativa y el visor integrado salta automáticamente a la página del contrato con la cláusula resaltada en color.',
               },
               {
-                icon: <ShieldCheck className="w-7 h-7 text-white" />,
-                title: 'Validación Bidireccional de Coberturas',
+                icon: <ShieldCheck className="w-6 h-6 text-white" />,
+                title: 'Detección de Coberturas Fantasma',
                 description:
-                  'Detecta "coberturas fantasma" (ofertadas en la cotización pero ausentes en el clausulado) y coberturas obligatorias omitidas por la aseguradora.',
+                  'Identifica amparos prometidos en la carátula o cotización que no tienen respaldo en las condiciones generales de la aseguradora, evitando litigios.',
               },
               {
-                icon: <TrendingUp className="w-7 h-7 text-white" />,
-                title: 'Riesgo de Deducibles y Garantías',
+                icon: <TrendingUp className="w-6 h-6 text-white" />,
+                title: 'Simulador de Riesgo en Deducibles',
                 description:
-                  'Calcula el deducible real sobre la suma asegurada, detecta topes mínimos/máximos y clasifica exigencias técnicas, operacionales y financieras.',
+                  'Calcula el deducible monetario real en salarios mínimos (SMMLV 2026) y porcentajes de pérdida sobre el valor asegurable real del cliente.',
               },
               {
-                icon: <BarChart3 className="w-7 h-7 text-white" />,
-                title: 'Auditoría HITL y Notas Consultivas',
+                icon: <BarChart3 className="w-6 h-6 text-white" />,
+                title: 'Ajuste Humano (HITL) y Notas',
                 description:
-                  'Panel Human-In-The-Loop para corregir extracciones con sincronización en tiempo real y agregar notas consultivas en Markdown celda por celda.',
+                  'Control total: edita coberturas, recalcula sumas aseguradas e inserta notas consultivas en Markdown personalizadas para el cliente final.',
               },
               {
-                icon: <Lock className="w-7 h-7 text-white" />,
-                title: 'Reportes Ejecutivos PDF y Excel',
+                icon: <FileText className="w-6 h-6 text-white" />,
+                title: 'Exportación Ejecutiva PDF y Excel',
                 description:
-                  'Exporta informes técnicos listos para entregar al cliente, con gráficos de radar por aseguradora, análisis de brechas y dictamen final.',
+                  'Descarga informes listos para comités de compras y asambleas de copropiedad con cuadros de radar, análisis de brechas y cuadro de primas.',
               },
             ].map((feature, idx) => (
               <div
                 key={idx}
-                className="relative group bg-white p-8 rounded-2xl hover:shadow-xl transition-all duration-300 border border-slate-200 hover:border-indigo-200"
+                className="bg-white p-8 rounded-3xl border border-slate-200/90 shadow-sm hover:shadow-xl hover:border-indigo-300 transition-all duration-300 flex flex-col justify-between"
               >
-                <div className="absolute top-0 right-0 -mr-6 -mt-6 w-24 h-24 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-full opacity-5 blur-xl group-hover:opacity-10 transition-all"></div>
-                <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-xl shadow-lg mb-6 group-hover:scale-110 transition-transform">
-                  {feature.icon}
+                <div>
+                  <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-2xl shadow-md mb-6">
+                    {feature.icon}
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900 mb-3">{feature.title}</h3>
+                  <p className="text-slate-600 text-sm leading-relaxed">{feature.description}</p>
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3">{feature.title}</h3>
-                <p className="text-slate-600 leading-relaxed text-sm">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -799,14 +905,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
       </section>
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="py-24 bg-white">
+      <section id="how-it-works" className="py-24 bg-white border-t border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-base text-indigo-600 font-semibold tracking-wide uppercase">
-              Proceso de Auditoría
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-xs font-extrabold text-indigo-600 tracking-wider uppercase mb-2">
+              Flujo Simple y Eficiente
             </h2>
-            <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-              De documentos sueltos a dictamen profesional en 4 pasos
+            <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+              De cotizaciones en PDF a dictamen comercial en 4 pasos
             </p>
           </div>
 
@@ -815,130 +921,110 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
               {
                 step: '01',
                 icon: <FileText className="w-6 h-6 text-white" />,
-                title: 'Sube Cotizaciones & Selecciona Ramo',
+                title: 'Sube las Cotizaciones',
                 description:
-                  'Sube PDFs de múltiples aseguradoras y vincula el perfil del cliente y el ramo específico (Copropiedades, Cumplimiento, Pyme, etc.).',
+                  'Arrastra los PDFs de las diferentes aseguradoras y asocia el cliente o copropiedad.',
               },
               {
                 step: '02',
                 icon: <Zap className="w-6 h-6 text-white" />,
-                title: 'IA RAG & Cruzamiento Normativo',
+                title: 'Extracción & Cruzamiento RAG',
                 description:
-                  'Gemini AI extrae los datos y Supabase pgvector realiza la búsqueda semántica sobre clausulados contractuales y normas legales.',
+                  'La IA extrae primas, amparos y deducibles, cruzándolos contra los clausulados registrados.',
               },
               {
                 step: '03',
                 icon: <BarChart3 className="w-6 h-6 text-white" />,
-                title: 'Auditoría & Abogado Virtual',
+                title: 'Revisión Técnica & Dictamen',
                 description:
-                  'Genera la matriz bidireccional, identifica coberturas fantasma, evalúa riesgos de deducibles y genera el dictamen legal.',
+                  'Revisa alertas de coberturas fantasma, notas del Abogado Virtual y deducibles críticos.',
               },
               {
                 step: '04',
                 icon: <CheckCircle className="w-6 h-6 text-white" />,
-                title: 'Revisión HITL & Exportación',
+                title: 'Presenta & Gana el Negocio',
                 description:
-                  'Ajusta hallazgos si es necesario con la cola HITL, edita notas consultivas y exporta informes ejecutivos en PDF y Excel.',
+                  'Exporta el informe ejecutivo en PDF o Excel y promueve la cotización ganadora a póliza.',
               },
             ].map((item, idx) => (
               <div key={idx} className="relative text-center group">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-2xl shadow-lg mb-6 group-hover:scale-110 transition-transform">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-600 to-blue-600 text-white rounded-2xl shadow-lg mb-6 group-hover:scale-105 transition-transform">
                   {item.icon}
                 </div>
-                <div className="text-4xl font-bold text-slate-200 absolute -top-4 left-1/2 transform -translate-x-1/2 -z-10">
+                <div className="text-5xl font-black text-slate-100 absolute -top-5 left-1/2 transform -translate-x-1/2 -z-10 select-none">
                   {item.step}
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 mb-2">{item.title}</h3>
-                <p className="text-slate-600 leading-relaxed text-sm">{item.description}</p>
+                <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">{item.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Benefits / Problem-Solution Section */}
-      <section id="benefits" className="py-20 bg-slate-900 text-white overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                El análisis manual expone a tu corretaje a riesgos legales
-              </h2>
-              <div className="space-y-5">
-                {[
-                  {
-                    text: 'Incapacidad para leer clausulados de 100+ páginas en cada licitación',
-                    icon: <X className="w-5 h-5" />,
-                  },
-                  {
-                    text: 'Ignorar coberturas fantasma ofertadas sin respaldo contractual real',
-                    icon: <X className="w-5 h-5" />,
-                  },
-                  {
-                    text: 'Desconocer si la póliza cumple normativas clave (Ley 675, Ley 80, etc.)',
-                    icon: <X className="w-5 h-5" />,
-                  },
-                  {
-                    text: 'Deducibles mal calculados sobre valores de pérdida real',
-                    icon: <X className="w-5 h-5" />,
-                  },
-                  {
-                    text: 'Falta de evidencia textual ante objeciones de la aseguradora',
-                    icon: <X className="w-5 h-5" />,
-                  },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-start">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center mr-4 mt-0.5">
-                      <span className="text-red-400">{item.icon}</span>
-                    </div>
-                    <span className="text-base text-slate-300">{item.text}</span>
-                  </div>
-                ))}
+      {/* Comparison: Traditional vs Comparador CSA */}
+      <section className="py-24 bg-slate-900 text-white relative overflow-hidden">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-xs font-extrabold text-indigo-400 tracking-wider uppercase mb-2">
+              Transformación Operativa
+            </h2>
+            <p className="text-3xl sm:text-4xl font-black tracking-tight">
+              ¿Por qué las mejores corredurías abandonaron el análisis manual en Excel?
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* The Old Way */}
+            <div className="bg-slate-800/60 border border-rose-900/40 rounded-3xl p-8">
+              <div className="flex items-center gap-2 mb-6 text-rose-400 font-bold text-lg">
+                <X size={22} className="stroke-[3]" />
+                <span>Análisis Manual Tradicional</span>
               </div>
+              <ul className="space-y-4 text-sm text-slate-300">
+                <li className="flex items-start gap-3">
+                  <X className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
+                  <span>Horas interminables transcribiendo primas y deducibles a hojas de Excel.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <X className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
+                  <span>Imposibilidad de leer clausulados de más de 120 páginas por cada cotización.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <X className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
+                  <span>Riesgo de recomendar pólizas que excluyen amparos exigidos por la Ley 675 o Ley 80.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <X className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
+                  <span>Sin respaldo de texto verbatim cuando la aseguradora objeta un siniestro.</span>
+                </li>
+              </ul>
             </div>
 
-            <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-blue-400">
-                Con Comparador CSA RAG
-              </h2>
-              <div className="space-y-4">
-                {[
-                  {
-                    text: 'Respaldo legal y normativo inmediato',
-                    subtext: 'Dictámenes automáticos alineados con la legislación colombiana',
-                  },
-                  {
-                    text: 'Evidencia PDF verbatim en un clic',
-                    subtext: 'Demuestra el hallazgo exacto en la página del contrato',
-                  },
-                  {
-                    text: 'Auditoría bidireccional completa',
-                    subtext: 'Identifica coberturas verificadas, fantasma u omitidas',
-                  },
-                  {
-                    text: 'Soporte Multiramo Especializado',
-                    subtext: 'Copropiedades, Cumplimiento, Salud, Transporte, Pyme, Autos y Vida',
-                  },
-                  {
-                    text: 'Control total Human-In-The-Loop',
-                    subtext:
-                      'Edita, agrega notas consultivas y valida antes de entregar al cliente',
-                  },
-                ].map((item, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start bg-white/5 p-4 rounded-xl backdrop-blur-sm border border-white/10"
-                  >
-                    <div className="flex-shrink-0 mr-4">
-                      <CheckCircle className="w-6 h-6 text-emerald-400" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-white">{item.text}</div>
-                      <div className="text-sm text-slate-400 mt-0.5">{item.subtext}</div>
-                    </div>
-                  </div>
-                ))}
+            {/* The CSA Way */}
+            <div className="bg-gradient-to-br from-indigo-950 to-slate-800 border-2 border-indigo-500 rounded-3xl p-8 shadow-xl shadow-indigo-950/50">
+              <div className="flex items-center gap-2 mb-6 text-emerald-400 font-bold text-lg">
+                <CheckCircle size={22} />
+                <span>Con Comparador CSA</span>
               </div>
+              <ul className="space-y-4 text-sm text-slate-200">
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5 stroke-[3]" />
+                  <span>Auditoría completa en menos de 2 minutos directamente desde los PDFs originales.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5 stroke-[3]" />
+                  <span>Cruzamiento automático contra los clausulados reales registrados ante la SFC.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5 stroke-[3]" />
+                  <span>Detección de alertas jurídicas y coberturas fantasma antes de presentar al cliente.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5 stroke-[3]" />
+                  <span>Evidencia textual verbatim con enlace directo a la página y artículo del contrato.</span>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
@@ -947,50 +1033,52 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
       {/* Testimonials Section */}
       <section id="testimonials" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-base text-indigo-600 font-semibold tracking-wide uppercase">
-              Testimonios de Corredores
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-xs font-extrabold text-indigo-600 tracking-wider uppercase mb-2">
+              Casos de Éxito en Colombia
             </h2>
-            <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-              Confianza técnica respaldada por Inteligencia Artificial
+            <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+              Respaldado por Corredores y Directores Técnicos
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               {
-                text: 'En pólizas de copropiedad (Ley 675), el Abogado Virtual nos alertó de una omisión grave en bienes comunes en menos de 2 minutos. Evitamos una responsabilidad enorme.',
+                text: 'En una licitación de copropiedad con 4 aseguradoras, el dictamen del Abogado Virtual detectó que dos propuestas omitían la reconstrucción obligatoria del Art. 15. Ganamos la cuenta de inmediato demostrando la falta técnica de la competencia.',
                 author: 'Carlos Rodríguez',
-                role: 'Director Técnico, Seguros Beta',
+                role: 'Director Técnico de Correduría',
                 rating: 5,
               },
               {
-                text: 'El visor PDF interactivo que resalta la evidencia verbatim es increíble. Muestro la página exacta del clausulado al cliente y la discusión se cierra de inmediato.',
+                text: 'El visor interactivo que salta a la página exacta del PDF del clausulado nos ahorró semanas de discusiones. Le proyectamos la evidencia al cliente en la junta directiva y la decisión fue unánime.',
                 author: 'Ana María Vélez',
-                role: 'Gerente Comercial, Marsh',
+                role: 'Gerente de Cuentas Corporativas',
                 rating: 5,
               },
               {
-                text: 'Poder comparar pólizas de Cumplimiento (Ley 80) y Transporte con la misma facilidad que Pyme transformó la operación de la correduría.',
+                text: 'Administrar el portafolio de renovaciones con alertas automáticas a 60 y 30 días elevó nuestra retención de pólizas comerciales en más de un 25% este trimestre.',
                 author: 'Jorge L. Pérez',
-                role: 'Corredor Independiente',
+                role: 'Corredor de Seguros Independiente',
                 rating: 5,
               },
             ].map((t, i) => (
               <div
                 key={i}
-                className="bg-slate-50 p-8 rounded-2xl border border-slate-200 flex flex-col"
+                className="bg-slate-50 p-8 rounded-3xl border border-slate-200 flex flex-col justify-between"
               >
-                <div className="flex text-yellow-400 mb-4">
-                  {[...Array(t.rating)].map((_, j) => (
-                    <Star key={j} className="w-5 h-5 fill-current" />
-                  ))}
+                <div>
+                  <div className="flex text-amber-400 mb-4">
+                    {[...Array(t.rating)].map((_, j) => (
+                      <Star key={j} className="w-4 h-4 fill-current" />
+                    ))}
+                  </div>
+                  <p className="text-slate-700 text-sm leading-relaxed italic mb-6">
+                    "{t.text}"
+                  </p>
                 </div>
-                <p className="text-slate-700 mb-6 italic flex-grow leading-relaxed text-sm">
-                  "{t.text}"
-                </p>
-                <div className="flex items-center mt-auto pt-4 border-t border-slate-200">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-bold">
+                <div className="flex items-center pt-4 border-t border-slate-200">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-blue-600 text-white font-bold flex items-center justify-center text-sm">
                     {t.author.charAt(0)}
                   </div>
                   <div className="ml-3">
@@ -1004,107 +1092,120 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-blue-600 to-indigo-800"></div>
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl -ml-48 -mt-48"></div>
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl -mr-48 -mb-48"></div>
+      {/* High-Converting Final CTA Section */}
+      <section className="py-24 relative overflow-hidden bg-gradient-to-br from-indigo-700 via-blue-700 to-indigo-900 text-white">
+        <div className="absolute inset-0 opacity-10 pointer-events-none">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl -ml-48 -mt-48" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl -mr-48 -mb-48" />
         </div>
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Eleva el estándar técnico de tus comparativas de seguros
+          <span className="inline-flex items-center px-3.5 py-1.5 rounded-full bg-white/10 text-indigo-100 text-xs font-bold mb-6 border border-white/20">
+            Prueba Sin Compromiso
+          </span>
+          <h2 className="text-3xl sm:text-5xl font-black mb-6 tracking-tight leading-tight">
+            Eleva el estándar técnico de tus comparativas y protege a tus clientes
           </h2>
-          <p className="text-indigo-100 text-xl mb-4 max-w-2xl mx-auto">
-            Comienza a auditar cotizaciones con respaldo en clausulados reales y normativas legales.
-          </p>
-          <p className="text-indigo-200 text-lg mb-10">
-            Copropiedades, Cumplimiento, Salud, Transporte, Pyme, Autos y Vida Grupo.
+          <p className="text-base sm:text-xl text-indigo-100 mb-10 max-w-2xl mx-auto leading-relaxed">
+            Comienza a auditar cotizaciones en Copropiedades, Cumplimiento, Salud, Transporte, Pyme y más
+            con el respaldo de la Inteligencia Contractual RAG.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
               onClick={onRegisterClick}
-              className="px-10 py-5 bg-white text-indigo-600 rounded-full text-xl font-bold shadow-2xl hover:bg-indigo-50 hover:scale-105 transition-all"
+              className="px-9 py-4.5 bg-white text-indigo-700 rounded-xl text-lg font-black shadow-2xl hover:bg-indigo-50 hover:scale-105 active:scale-95 transition-all cursor-pointer"
             >
-              Comenzar Gratis
+              Comenzar Auditoría Gratuita
             </button>
             <button
               onClick={onLoginClick}
-              className="px-10 py-5 bg-transparent text-white border-2 border-white/30 rounded-full text-xl font-bold hover:bg-white/10 transition-all"
+              className="px-9 py-4.5 bg-indigo-900/40 text-white border-2 border-white/40 rounded-xl text-lg font-bold hover:bg-white/10 transition-all cursor-pointer"
             >
-              Iniciar Sesión
+              Acceso Corredores
             </button>
           </div>
 
-          <p className="mt-6 text-indigo-200 text-sm">
-            Sin tarjeta de crédito • Acceso a todos los ramos y funciones RAG
-          </p>
+          <div className="mt-8 flex flex-wrap justify-center items-center gap-6 text-xs text-indigo-200">
+            <span>✓ Sin requerir tarjeta de crédito</span>
+            <span>✓ Resultados en menos de 2 minutos</span>
+            <span>✓ Compatible con cotizaciones de toda aseguradora</span>
+          </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-slate-900 text-slate-400 border-t border-slate-800">
+      <footer className="bg-slate-950 text-slate-400 border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
             {/* Brand */}
             <div className="lg:col-span-1">
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="bg-gradient-to-br from-indigo-600 to-blue-600 p-2 rounded-lg">
+              <div className="flex items-center space-x-2.5 mb-4">
+                <div className="bg-gradient-to-br from-indigo-600 to-blue-600 p-2 rounded-xl">
                   <ShieldCheck className="text-white w-5 h-5" />
                 </div>
-                <span className="text-white font-bold text-lg">Comparador CSA</span>
+                <span className="text-white font-black text-lg">Comparador CSA</span>
               </div>
-              <p className="text-sm leading-relaxed mb-4">
-                Plataforma de análisis técnico y auditoría RAG multiramo y multi-aseguradora.
+              <p className="text-xs leading-relaxed mb-4 text-slate-400">
+                Plataforma de análisis técnico, auditoría contractual RAG y gestión de cartera para
+                intermediarios de seguros en Colombia.
               </p>
-              <div className="flex space-x-4">
-                <a href="#" className="text-slate-400 hover:text-white transition-colors">
-                  <Globe className="w-5 h-5" />
-                </a>
-                <a href="#" className="text-slate-400 hover:text-white transition-colors">
-                  <MessageCircle className="w-5 h-5" />
-                </a>
+              <div className="flex space-x-3">
+                <span className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer">
+                  <Globe size={16} />
+                </span>
+                <span className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer">
+                  <MessageCircle size={16} />
+                </span>
               </div>
             </div>
 
-            {/* Ramos */}
+            {/* 10 Ramos */}
             <div>
-              <h4 className="text-white font-semibold mb-4">Ramos Soportados</h4>
-              <ul className="space-y-2 text-sm">
-                <li className="text-slate-400">Copropiedades (Ley 675)</li>
-                <li className="text-slate-400">Cumplimiento (Ley 80)</li>
-                <li className="text-slate-400">Salud & Prepagada (Res 244)</li>
-                <li className="text-slate-400">Transporte (Incoterms)</li>
-                <li className="text-slate-400">Pyme & Comercial</li>
-                <li className="text-slate-400">Autos & Flotas</li>
-                <li className="text-slate-400">Vida Grupo</li>
+              <h4 className="text-white text-xs font-bold uppercase tracking-wider mb-4">
+                10 Ramos Soportados
+              </h4>
+              <ul className="space-y-2 text-xs">
+                <li>Copropiedades (Ley 675)</li>
+                <li>Cumplimiento (Ley 80)</li>
+                <li>Pyme & Comercial</li>
+                <li>Salud & Medicina Prepagada</li>
+                <li>Transporte de Carga</li>
+                <li>Autos & Flotas Comerciales</li>
+                <li>Vida Grupo & Personas</li>
+                <li>Hogar & Habitacional</li>
+                <li>Maquinaria & Equipos</li>
+                <li>Casco Embarcación (DIMAR)</li>
               </ul>
             </div>
 
             {/* Capacidades */}
             <div>
-              <h4 className="text-white font-semibold mb-4">Capacidades RAG</h4>
-              <ul className="space-y-2 text-sm">
-                <li className="text-slate-400">Abogado Virtual RAG</li>
-                <li className="text-slate-400">Visor PDF Verbatim</li>
-                <li className="text-slate-400">Validación Bidireccional</li>
-                <li className="text-slate-400">Auditoría HITL</li>
-                <li className="text-slate-400">Riesgo de Deducibles</li>
-                <li className="text-slate-400">Reportes Ejecutivos PDF/Excel</li>
+              <h4 className="text-white text-xs font-bold uppercase tracking-wider mb-4">
+                Capacidades RAG
+              </h4>
+              <ul className="space-y-2 text-xs">
+                <li>Abogado Virtual RAG</li>
+                <li>Visor PDF Verbatim</li>
+                <li>Validación Bidireccional</li>
+                <li>Simulador de Deducibles</li>
+                <li>Auditoría HITL y Notas</li>
+                <li>Gestión de Renovaciones</li>
+                <li>Reportes Ejecutivos PDF / Excel</li>
               </ul>
             </div>
 
-            {/* Legal y Cumplimiento */}
+            {/* Legal */}
             <div>
-              <h4 className="text-white font-semibold mb-4">Marco Legal</h4>
-              <ul className="space-y-2 text-sm">
+              <h4 className="text-white text-xs font-bold uppercase tracking-wider mb-4">
+                Marco Legal & Seguridad
+              </h4>
+              <ul className="space-y-2 text-xs">
                 <li>
                   <button
                     type="button"
                     onClick={() => handleOpenLegal('terms')}
-                    className="text-slate-400 hover:text-white transition-colors cursor-pointer text-left"
+                    className="hover:text-white transition-colors text-left cursor-pointer"
                   >
                     Términos y Condiciones
                   </button>
@@ -1113,7 +1214,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
                   <button
                     type="button"
                     onClick={() => handleOpenLegal('privacy')}
-                    className="text-slate-400 hover:text-white transition-colors cursor-pointer text-left"
+                    className="hover:text-white transition-colors text-left cursor-pointer"
                   >
                     Privacidad (Ley 1581)
                   </button>
@@ -1122,18 +1223,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
                   <button
                     type="button"
                     onClick={() => handleOpenLegal('security')}
-                    className="text-slate-400 hover:text-white transition-colors cursor-pointer text-left"
+                    className="hover:text-white transition-colors text-left cursor-pointer"
                   >
-                    Seguridad de Información
+                    Seguridad de la Información
                   </button>
                 </li>
                 <li>
                   <button
                     type="button"
                     onClick={() => handleOpenLegal('disclaimer')}
-                    className="text-slate-400 hover:text-white transition-colors cursor-pointer text-left"
+                    className="hover:text-white transition-colors text-left cursor-pointer"
                   >
-                    Aviso Legal SFC
+                    Aviso Regulatorio SFC
                   </button>
                 </li>
               </ul>
@@ -1141,32 +1242,31 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
 
             {/* Contacto */}
             <div>
-              <h4 className="text-white font-semibold mb-4">Contacto</h4>
-              <ul className="space-y-3">
-                <li className="flex items-center text-sm">
-                  <Mail className="w-4 h-4 mr-2 text-slate-500" />
-                  <span className="text-slate-400">info@comparadorcsa.com</span>
+              <h4 className="text-white text-xs font-bold uppercase tracking-wider mb-4">
+                Contacto Intermediarios
+              </h4>
+              <ul className="space-y-2.5 text-xs">
+                <li className="flex items-center gap-2">
+                  <Mail size={14} className="text-indigo-400" />
+                  <span>soporte@comparadorcsa.com</span>
                 </li>
-                <li className="flex items-center text-sm">
-                  <Phone className="w-4 h-4 mr-2 text-slate-500" />
-                  <span className="text-slate-400">+57 (1) 234-5678</span>
+                <li className="flex items-center gap-2">
+                  <Phone size={14} className="text-indigo-400" />
+                  <span>+57 (601) 345-6789</span>
                 </li>
-                <li className="flex items-start text-sm">
-                  <MapPin className="w-4 h-4 mr-2 text-slate-500 mt-0.5" />
-                  <span className="text-slate-400">Bogotá, Colombia</span>
+                <li className="flex items-start gap-2">
+                  <MapPin size={14} className="text-indigo-400 mt-0.5" />
+                  <span>Bogotá D.C., Colombia</span>
                 </li>
               </ul>
             </div>
           </div>
 
-          <div className="border-t border-slate-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-sm text-slate-500">
-              © 2026 Comparador Seguros CSA. Todos los derechos reservados.
-            </p>
-            <div className="flex items-center space-x-2 mt-4 md:mt-0">
-              <span className="text-xs text-slate-600">Hecho con</span>
-              <Zap className="w-4 h-4 text-yellow-500" />
-              <span className="text-xs text-slate-600">en Colombia</span>
+          <div className="border-t border-slate-900 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-slate-500">
+            <p>© 2026 Comparador Seguros CSA. Todos los derechos reservados.</p>
+            <div className="flex items-center space-x-1.5 mt-4 md:mt-0">
+              <span>Tecnología desarrollada para el mercado asegurador colombiano</span>
+              <Zap size={13} className="text-amber-400" />
             </div>
           </div>
         </div>
