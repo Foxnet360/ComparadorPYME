@@ -26,26 +26,26 @@ import { AuthenticatedRequest, authMiddleware, optionalAuthMiddleware } from './
  * DELETE /api/chat/threads/:id) stay protected — POST /documents also
  * enforces upload ownership via requireUser().
  */
-const PUBLIC_EXACT_PATHS: ReadonlySet<string> = new Set(['/analyze', '/history', '/audit/enrich']);
+// Production: Core application routes require a valid session (XC-1 / SEC-AUDIT).
+// Only public routes:
+// - /v1/daas/* (authenticated independently via daasApiKeyAuth middleware using B2B API Keys)
+// - GET /insurers (public read-only insurance catalog for branding)
+// - GET /documents and GET /documents/:id (public clause library read-only reference data)
+const PUBLIC_EXACT_PATHS: ReadonlySet<string> = new Set([]);
 
-const PUBLIC_PREFIXES: readonly string[] = ['/comparison', '/v1/daas'];
+const PUBLIC_PREFIXES: readonly string[] = ['/v1/daas'];
 
 const PUBLIC_METHOD_PREFIXES: ReadonlyArray<{
   prefix: string;
   methods: readonly string[];
 }> = [
-  // Chat works anonymously by design (threads bucket as 'anonymous'); only
-  // destructive thread operations require a session.
-  { prefix: '/chat', methods: ['GET', 'POST'] },
-  // Read-only knowledge base: document metadata/content have no ownership
-  // checks in the controllers; mutations stay behind the full middleware.
+  // Read-only knowledge base: document metadata/content
   { prefix: '/documents', methods: ['GET'] },
-  // Read-only insurer catalog: brand logos/profiles are public reference data;
-  // mutations (POST/PUT/DELETE) stay behind the full auth middleware.
+  // Read-only insurer catalog: brand logos/profiles are reference data
   { prefix: '/insurers', methods: ['GET'] },
 ];
 
-const PUBLIC_PATTERNS: readonly RegExp[] = [/^\/analysis\/[^/]+\/export$/];
+const PUBLIC_PATTERNS: readonly RegExp[] = [];
 
 export const isPublicPath = (path: string, method?: string): boolean => {
   if (PUBLIC_EXACT_PATHS.has(path)) {

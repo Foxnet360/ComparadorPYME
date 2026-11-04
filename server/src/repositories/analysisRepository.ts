@@ -37,7 +37,17 @@ export interface AnalysisHistoryRecord {
 }
 
 export async function saveAnalysisHistory(data: Record<string, unknown>): Promise<string | null> {
-  const payload = { ...data };
+  // Strip non-existent/phantom columns to prevent PostgREST PGRST204 errors
+  const {
+    quotes_count: _qc,
+    total_coverages: _tc,
+    average_confidence: _ac,
+    best_insurer: _bi,
+    best_score: _bs,
+    price_range_min: _pmin,
+    price_range_max: _pmax,
+    ...payload
+  } = data;
 
   let { data: result, error } = await supabase
     .from('analysis_history')
@@ -47,21 +57,32 @@ export async function saveAnalysisHistory(data: Record<string, unknown>): Promis
 
   if (error) {
     console.warn(
-      `⚠️ [AnalysisRepository] Insert failed (${error.code || 'schema_error'}: ${error.message}). Retrying with minimal schema...`
+      `⚠️ [AnalysisRepository] Insert failed (${error.code || 'schema_error'}: ${error.message}). Retrying with resilient schema...`
     );
 
-    const minimalPayload = {
+    const resilientPayload = {
       user_id: payload.user_id || 'anonymous',
+      org_id: payload.org_id || null,
       client_name: payload.client_name || 'Cliente Desconocido',
+      domain: payload.domain || 'pyme',
+      metadata: payload.metadata || {},
       analysis_result: payload.analysis_result || payload.unified_result || {},
       recommendation: payload.recommendation || null,
       total_score: payload.total_score || null,
       correlation_id: payload.correlation_id || null,
+      engine_type: payload.engine_type || null,
+      processing_time_ms: payload.processing_time_ms || null,
+      confidence_score: payload.confidence_score || null,
+      unified_result: payload.unified_result || null,
+      fallback_reason: payload.fallback_reason || null,
+      policy_id: payload.policy_id || null,
+      renewal_id: payload.renewal_id || null,
+      analysis_type: payload.analysis_type || null,
     };
 
     const retryRes = await supabase
       .from('analysis_history')
-      .insert(minimalPayload as never)
+      .insert(resilientPayload as never)
       .select('id')
       .single();
 
@@ -94,20 +115,49 @@ export async function saveAnalysisHistory(data: Record<string, unknown>): Promis
   return savedId;
 }
 
-export async function getAnalysisHistoryByUser(userId: string): Promise<AnalysisHistoryRecord[]> {
-  let query = supabase.from('analysis_history').select('*');
+export async function getAnalysisHistoryByUser(
+  userId: string,
+  orgId?: string,
+  role?: string,
+  limit?: number,
+  offset?: number
+): Promise<{ data: AnalysisHistoryRecord[]; total: number }> {
+  let countQuery = supabase.from('analysis_history').select('*', { count: 'exact', head: true });
+  let dataQuery = supabase.from('analysis_history').select('*');
 
-  if (userId && userId !== 'all') {
-    query = query.or(`user_id.eq.${userId},user_id.eq.anonymous,user_id.is.null`);
+  // Enforce tenant/user isolation: NEVER leak anonymous/null user analyses across organizations
+  if (role === 'super_admin') {
+    // Super admin sees all platform analyses
+  } else if (role === 'ally_admin' && orgId) {
+    countQuery = countQuery.eq('org_id', orgId);
+    dataQuery = dataQuery.eq('org_id', orgId);
+  } else if (userId && userId !== 'all' && userId !== 'anonymous') {
+    countQuery = countQuery.eq('user_id', userId);
+    dataQuery = dataQuery.eq('user_id', userId);
+  } else {
+    // Unauthenticated/anonymous caller: only see own empty set
+    return { data: [], total: 0 };
   }
 
-  const { data, error } = await query.order('created_at', { ascending: false });
+  const { count } = await countQuery;
+  const total = count || 0;
+
+  dataQuery = dataQuery.order('created_at', { ascending: false });
+
+  if (limit !== undefined && offset !== undefined) {
+    dataQuery = dataQuery.range(offset, offset + limit - 1);
+  }
+
+  const { data, error } = await dataQuery;
 
   if (error) {
     handleDbError(error, 'Failed to fetch analysis history');
   }
 
-  return (data || []) as unknown as AnalysisHistoryRecord[];
+  return {
+    data: (data || []) as unknown as AnalysisHistoryRecord[],
+    total,
+  };
 }
 
 export async function getAnalysisById(id: string): Promise<AnalysisHistoryRecord | null> {

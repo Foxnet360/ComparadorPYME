@@ -106,24 +106,33 @@ router.get(
   })
 );
 
-/** PATCH /api/clients/:id — whitelisted partial update of an own client. */
+/** PATCH & PUT /api/clients/:id — whitelisted partial/full update of an own client. */
+const handleUpdateClient = asyncHandler(async (req: AuthenticatedRequest, res) => {
+  const userId = requireUser(req);
+  const updated = await updateClient(
+    userId,
+    String(req.params.id),
+    req.body as UpdateClientInput,
+    req.user?.orgId
+  );
+  if (!updated) {
+    throw new NotFoundError('Client not found');
+  }
+  res.json(updated);
+});
+
 router.patch(
   '/:id',
   rejectSpoofedUserId,
   validateBody(updateClientSchema),
-  asyncHandler(async (req: AuthenticatedRequest, res) => {
-    const userId = requireUser(req);
-    const updated = await updateClient(
-      userId,
-      String(req.params.id),
-      req.body as UpdateClientInput,
-      req.user?.orgId
-    );
-    if (!updated) {
-      throw new NotFoundError('Client not found');
-    }
-    res.json(updated);
-  })
+  handleUpdateClient
+);
+
+router.put(
+  '/:id',
+  rejectSpoofedUserId,
+  validateBody(updateClientSchema),
+  handleUpdateClient
 );
 
 /** DELETE /api/clients/:id — removes an own client; 404 otherwise. */

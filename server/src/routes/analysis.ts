@@ -6,7 +6,7 @@
 
 import { Router } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
-import { optionalAuthMiddleware } from '../middleware/auth';
+import { optionalAuthMiddleware, authMiddleware, requireRole } from '../middleware/auth';
 import {
   validateCoverages,
   analyzeDeductibleRisk,
@@ -43,9 +43,9 @@ router.post('/correction', asyncHandler(saveCorrection));
 router.post('/disambiguate-coverage', asyncHandler(disambiguateCoverage));
 router.get('/learning-metrics', asyncHandler(getLearningMetrics));
 router.get('/monthly-report', asyncHandler(getMonthlyReport));
-router.post('/batch-retrain', asyncHandler(batchRetrain));
+router.post('/batch-retrain', requireRole('super_admin'), asyncHandler(batchRetrain));
 router.get('/review-queue/coverages', asyncHandler(getReviewQueueCoverages));
-router.get('/:id/export', optionalAuthMiddleware, asyncHandler(exportAnalysisExcel));
-router.post('/:id/export', optionalAuthMiddleware, asyncHandler(exportAnalysisExcel));
+router.get('/:id/export', authMiddleware, asyncHandler(exportAnalysisExcel));
+router.post('/:id/export', authMiddleware, asyncHandler(exportAnalysisExcel));
 
 export default router;

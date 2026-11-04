@@ -49,38 +49,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
     try {
       const user = await authService.signIn(credentials.email, credentials.password);
       onLoginSuccess(user);
-    } catch {
-      // Fallback session if network is restricted or offline
-      const fallbacks: Record<string, UserProfile> = {
-        super_admin: {
-          id: 'user-super-1',
-          name: 'Super Administrador Global',
-          email: 'superadmin@prueba.com',
-          intermediaryName: 'Plataforma Global CSA',
-          role: 'super_admin',
-          allyId: 'csa-global',
-          allyName: 'Plataforma Global CSA',
-        } as unknown as UserProfile,
-        ally_admin: {
-          id: 'user-admin-1',
-          name: 'Director Correduría Demo',
-          email: 'director@prueba.com',
-          intermediaryName: 'Correduría Andina de Seguros S.A.',
-          role: 'ally_admin',
-          allyId: 'ally-100',
-          allyName: 'Correduría Andina de Seguros S.A.',
-        } as unknown as UserProfile,
-        ally_technical: {
-          id: 'user-tech-1',
-          name: 'Analista Técnico Demo',
-          email: 'tecnico@prueba.com',
-          intermediaryName: 'Correduría Andina de Seguros S.A.',
-          role: 'ally_technical',
-          allyId: 'ally-100',
-          allyName: 'Correduría Andina de Seguros S.A.',
-        } as unknown as UserProfile,
-      };
-      onLoginSuccess(fallbacks[role]!);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error al iniciar sesión de demostración');
     } finally {
       setIsLoading(false);
     }
@@ -207,57 +177,60 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
             </div>
 
             {/* Quick Demo Access Bar for Role Testing */}
-            <div className="mt-6 pt-6 border-t border-slate-200 space-y-2.5">
-              <div className="text-xs font-bold text-slate-500 uppercase tracking-wider text-center">
-                ⚡ Acceso Rápido de Prueba por Rol (1-Clic)
-              </div>
-              <div className="grid grid-cols-1 gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemoLogin('super_admin')}
-                  className="w-full py-2.5 px-3 bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 rounded-xl text-xs font-bold transition-all flex items-center justify-between shadow-xs"
-                >
-                  <div className="text-left">
-                    <div>👑 Super Administrador Global</div>
-                    <div className="text-[10px] font-normal text-purple-600 font-mono">superadmin@prueba.com</div>
-                  </div>
-                  <span className="text-[10px] bg-purple-200 text-purple-800 px-2 py-0.5 rounded-md font-extrabold">
-                    1-Clic
-                  </span>
-                </button>
+            {/* Demo quick access: visible only in development mode */}
+            {import.meta.env.DEV && (
+              <div className="mt-6 pt-6 border-t border-slate-200 space-y-2.5">
+                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider text-center">
+                  ⚡ Acceso Rápido de Prueba por Rol (Solo Dev)
+                </div>
+                <div className="grid grid-cols-1 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleQuickDemoLogin('super_admin')}
+                    className="w-full py-2.5 px-3 bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 rounded-xl text-xs font-bold transition-all flex items-center justify-between shadow-xs"
+                  >
+                    <div className="text-left">
+                      <div>👑 Super Administrador Global</div>
+                      <div className="text-[10px] font-normal text-purple-600 font-mono">superadmin@prueba.com</div>
+                    </div>
+                    <span className="text-[10px] bg-purple-200 text-purple-800 px-2 py-0.5 rounded-md font-extrabold">
+                      Dev
+                    </span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemoLogin('ally_admin')}
-                  className="w-full py-2.5 px-3 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-xl text-xs font-bold transition-all flex items-center justify-between shadow-xs"
-                >
-                  <div className="text-left">
-                    <div>👔 Admin de Aliado (Director Correduría)</div>
-                    <div className="text-[10px] font-normal text-blue-600 font-mono">director@prueba.com</div>
-                  </div>
-                  <span className="text-[10px] bg-blue-200 text-blue-800 px-2 py-0.5 rounded-md font-extrabold">
-                    1-Clic
-                  </span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickDemoLogin('ally_admin')}
+                    className="w-full py-2.5 px-3 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-xl text-xs font-bold transition-all flex items-center justify-between shadow-xs"
+                  >
+                    <div className="text-left">
+                      <div>👔 Admin de Aliado (Director Correduría)</div>
+                      <div className="text-[10px] font-normal text-blue-600 font-mono">director@prueba.com</div>
+                    </div>
+                    <span className="text-[10px] bg-blue-200 text-blue-800 px-2 py-0.5 rounded-md font-extrabold">
+                      Dev
+                    </span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemoLogin('ally_technical')}
-                  className="w-full py-2.5 px-3 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-xl text-xs font-bold transition-all flex items-center justify-between shadow-xs"
-                >
-                  <div className="text-left">
-                    <div>👷 Analista Técnico de Seguros</div>
-                    <div className="text-[10px] font-normal text-emerald-600 font-mono">tecnico@prueba.com</div>
-                  </div>
-                  <span className="text-[10px] bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-md font-extrabold">
-                    1-Clic
-                  </span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickDemoLogin('ally_technical')}
+                    className="w-full py-2.5 px-3 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-xl text-xs font-bold transition-all flex items-center justify-between shadow-xs"
+                  >
+                    <div className="text-left">
+                      <div>👷 Analista Técnico de Seguros</div>
+                      <div className="text-[10px] font-normal text-emerald-600 font-mono">tecnico@prueba.com</div>
+                    </div>
+                    <span className="text-[10px] bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-md font-extrabold">
+                      Dev
+                    </span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-center text-slate-500 pt-1">
+                  Contraseña demo: <span className="font-mono font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">csa12345</span>
+                </p>
               </div>
-              <p className="text-[11px] text-center text-slate-500 pt-1">
-                Contraseña demo para todas las cuentas: <span className="font-mono font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">csa12345</span>
-              </p>
-            </div>
+            )}
 
             {/* Legal Links Footer */}
             <div className="mt-6 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-slate-400">

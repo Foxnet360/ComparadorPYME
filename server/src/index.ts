@@ -5,6 +5,7 @@ import path from 'path';
 import fs from 'fs';
 import multer from 'multer';
 import { asyncHandler } from './utils/asyncHandler';
+import { requireRole } from './middleware/auth';
 
 const rootEnvPath = path.resolve(__dirname, '../../.env');
 const serverEnvPath = path.resolve(__dirname, '../.env');
@@ -30,15 +31,11 @@ if (!process.env.GEMINI_API_KEY && process.env.VITE_GEMINI_API_KEY) {
   process.env.GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY;
 }
 
-// Diagnostic logging for API key source (safe prefix only)
+// Diagnostic logging for API key status
 const activeKey = process.env.GEMINI_API_KEY || '';
 const viteKey = process.env.VITE_GEMINI_API_KEY || '';
-console.log(
-  `🔑 [Env Diagnostic] GEMINI_API_KEY present: ${activeKey ? 'yes' : 'no'}, prefix: ${activeKey.slice(0, 8)}..., length: ${activeKey.length}`
-);
-console.log(
-  `🔑 [Env Diagnostic] VITE_GEMINI_API_KEY present: ${viteKey ? 'yes' : 'no'}, prefix: ${viteKey.slice(0, 8)}..., length: ${viteKey.length}`
-);
+console.log(`🔑 [Env Diagnostic] GEMINI_API_KEY present: ${activeKey ? 'yes' : 'no'}`);
+console.log(`🔑 [Env Diagnostic] VITE_GEMINI_API_KEY present: ${viteKey ? 'yes' : 'no'}`);
 if (activeKey && viteKey && activeKey !== viteKey) {
   console.warn(
     '⚠️ [Env Diagnostic] GEMINI_API_KEY and VITE_GEMINI_API_KEY differ; GEMINI_API_KEY will be used'
@@ -81,6 +78,16 @@ const port = parseInt(process.env.PORT || '8080', 10);
 // express-rate-limit emits ERR_ERL_UNEXPECTED_X_FORWARDED_FOR and keys every
 // client as the proxy IP. Exactly one proxy hop sits in front of this app.
 app.set('trust proxy', 1);
+app.disable('x-powered-by');
+
+// Security headers middleware
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  next();
+});
 
 // Request ID middleware
 import { v4 as uuidv4 } from 'uuid';
@@ -98,8 +105,8 @@ console.log('🌐 [CORS] Allowed origins:', corsOrigins);
 app.use(
   cors({
     origin: createCorsOrigin(corsOrigins),
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-API-Key'],
   })
 );
 app.use(express.json({ limit: '10mb' }));
@@ -199,12 +206,12 @@ app.get('/api/history', optionalAuthMiddleware, asyncHandler(analysisController.
 import { documentController } from './controllers/documentController';
 import { searchController } from './controllers/searchController';
 
-// Document management
-app.post('/api/documents', documentController.uploadMiddleware, documentController.createDocument);
+// Document management (mutations require super_admin or ally_admin)
+app.post('/api/documents', requireRole('super_admin', 'ally_admin'), documentController.uploadMiddleware, documentController.createDocument);
 app.get('/api/documents', documentController.listDocuments);
 app.get('/api/documents/check-existing', documentController.checkExistingClause);
 app.get('/api/documents/:id', documentController.getDocument);
-app.delete('/api/documents/:id', documentController.deleteDocument);
+app.delete('/api/documents/:id', requireRole('super_admin', 'ally_admin'), documentController.deleteDocument);
 app.get('/api/documents/:id/chunks', documentController.getDocumentChunks);
 
 // Search routes

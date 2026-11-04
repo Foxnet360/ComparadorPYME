@@ -16,7 +16,7 @@ import { coverageGraphService } from '../services/coverageGraphService';
 import { seedGraphFromThesaurus } from '../services/thesaurusMapper';
 import { supabase } from '../config/database';
 
-const ADMIN_ROLES = new Set(['admin', 'operator', 'ops']);
+const ADMIN_ROLES = new Set(['super_admin', 'ally_admin', 'admin', 'operator', 'ops']);
 
 function requireAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
   const role = req.user?.role;

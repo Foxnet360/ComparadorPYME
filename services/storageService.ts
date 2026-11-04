@@ -66,11 +66,21 @@ export const storageService = {
       try {
         const response = await apiClient.fetch('/clients');
         const rawData = await response.json();
-        const cloudClients: Client[] = Array.isArray(rawData)
+        const rawList = Array.isArray(rawData)
           ? rawData
           : Array.isArray(rawData?.data)
             ? rawData.data
             : [];
+
+        const cloudClients: Client[] = rawList.map((item: any) => {
+          const contact = (item.contact && typeof item.contact === 'object') ? item.contact : {};
+          return {
+            id: item.id,
+            name: item.name,
+            nit: item.tax_id || contact.nit || '',
+            ...contact,
+          };
+        });
 
         // Sync and cache cloud clients to local IndexedDB
         for (const client of cloudClients) {

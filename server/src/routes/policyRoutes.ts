@@ -117,7 +117,11 @@ router.post(
     };
 
     const analysis = await getAnalysisById(analysis_id);
-    if (!analysis || analysis.user_id !== userId) {
+    const isOwner = analysis && analysis.user_id === userId;
+    const isSameOrg = Boolean(req.user?.orgId && analysis && (analysis as any).org_id === req.user.orgId);
+    const isSuper = req.user?.role === 'super_admin';
+
+    if (!analysis || (!isOwner && !isSameOrg && !isSuper)) {
       throw new NotFoundError('Analysis not found');
     }
 

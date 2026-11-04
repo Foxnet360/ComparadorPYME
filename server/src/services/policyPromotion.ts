@@ -41,7 +41,9 @@ export const RAMO_INSURED_REQUIREMENTS: Record<PolicyRamo, readonly string[]> = 
   vida_grupo: ['headcount', 'carencias_date'],
   transporte: ['asset_id'],
   casco: ['asset_id'],
+  casco_embarcacion: ['asset_id'],
   equipo: ['asset_id'],
+  equipo_maquinaria: ['asset_id'],
   cumplimiento: ['contract'],
   hogar: ['address'],
 };

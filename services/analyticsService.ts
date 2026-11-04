@@ -88,20 +88,9 @@ export const analyticsService = {
               isSimulated: false,
             };
 
-            // If super_admin, attach AI benchmarks
-            if (role === 'super_admin') {
-              result.aiBenchmarks = {
-                overallAccuracy: 98.4,
-                thesaurusExactRate: 99.1,
-                fuzzyMatchRate: 96.8,
-                embeddingMatchRate: 99.3,
-                avgApiLatencyMs: 412,
-                totalInputTokens: 2450000,
-                totalOutputTokens: 180000,
-                avgCostPerComparisonUSD: 0.042,
-                avgCostPerComparisonCOP: 175,
-                totalEstimatedCostUSD: 102.9,
-              };
+            // Attach live/server aiBenchmarks if provided by backend, or standard calibrated defaults
+            if (role === 'super_admin' && (apiData as any).aiBenchmarks) {
+              result.aiBenchmarks = (apiData as any).aiBenchmarks;
             }
 
             // Fetch market benchmark for ally_admin and super_admin

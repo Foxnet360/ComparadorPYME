@@ -70,10 +70,13 @@ export const analyticsAggregationService = {
     user: AuthenticatedUser,
     timeframeDays: number = 90
   ): Promise<ExecutiveAnalyticsResponse> => {
-    // 1. Try calling the PostgreSQL RPC function from migration 033
+    // 1. Try calling the PostgreSQL RPC function from migration 033 with caller context
     try {
       const { data, error } = await (supabase.rpc as any)('get_executive_analytics_summary', {
         p_timeframe_days: timeframeDays,
+        p_caller_id: user.id,
+        p_caller_role: user.role,
+        p_caller_org_id: user.orgId || null,
       });
 
       if (!error && data && typeof data === 'object') {
@@ -280,8 +283,12 @@ async function fallbackAggregation(
   // Enforce strict multi-tenant and personal boundary
   if (role === 'ally_technical' && !isSuper) {
     query = query.eq('user_id', user.id);
-  } else if (role === 'ally_admin' && !isSuper && user.orgId) {
-    query = query.eq('org_id', user.orgId);
+  } else if (role === 'ally_admin' && !isSuper) {
+    if (user.orgId) {
+      query = query.eq('org_id', user.orgId);
+    } else {
+      query = query.eq('user_id', user.id);
+    }
   }
 
   const { data: rows } = await (query as any);

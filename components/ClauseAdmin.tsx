@@ -42,6 +42,11 @@ const DOMAIN_OPTIONS = [
   { value: 'autos', label: 'Vehículos y Flotas', color: 'bg-emerald-50 text-emerald-700 ring-emerald-700/10' },
   { value: 'hogar', label: 'Hogar y Habitación', color: 'bg-indigo-50 text-indigo-700 ring-indigo-700/10' },
   { value: 'salud', label: 'Salud y Prepagada', color: 'bg-rose-50 text-rose-700 ring-rose-700/10' },
+  { value: 'vida_grupo', label: 'Vida Grupo y Colectivo', color: 'bg-violet-50 text-violet-700 ring-violet-700/10' },
+  { value: 'cumplimiento', label: 'Cumplimiento y Fianzas', color: 'bg-slate-50 text-slate-700 ring-slate-700/10' },
+  { value: 'transporte', label: 'Transporte de Mercancías', color: 'bg-orange-50 text-orange-700 ring-orange-700/10' },
+  { value: 'equipo_maquinaria', label: 'Maquinaria y Equipo', color: 'bg-yellow-50 text-yellow-800 ring-yellow-800/10' },
+  { value: 'casco_embarcacion', label: 'Casco Embarcación', color: 'bg-cyan-50 text-cyan-700 ring-cyan-700/10' },
   { value: 'rc_medica', label: 'RC Médica y Hospitalaria', color: 'bg-teal-50 text-teal-700 ring-teal-700/10' },
   { value: 'd_and_o', label: 'Directores y Administradores (D&O)', color: 'bg-purple-50 text-purple-700 ring-purple-700/10' },
 ];

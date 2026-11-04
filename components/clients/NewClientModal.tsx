@@ -51,7 +51,21 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
     constructionYear: 2020,
     hasElevators: true,
     hasPowerPlant: false,
+    domainDetails: {},
   });
+
+  const updateDomainDetail = <K extends keyof NonNullable<Client['domainDetails']>>(
+    key: K,
+    value: NonNullable<Client['domainDetails']>[K]
+  ) => {
+    setNewClient((prev) => ({
+      ...prev,
+      domainDetails: {
+        ...prev.domainDetails,
+        [key]: value,
+      },
+    }));
+  };
 
   if (!isOpen) return null;
 
@@ -115,6 +129,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
       constructionYear: Number(newClient.constructionYear) || 2020,
       hasElevators: Boolean(newClient.hasElevators),
       hasPowerPlant: Boolean(newClient.hasPowerPlant),
+      domainDetails: newClient.domainDetails,
     };
 
     storageService.addClient(client).then((_updatedList) => {
@@ -501,7 +516,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
           </div>
 
           {/* Formulario Condicional por Ramo Activo */}
-          {activeDomain === 'maquinaria' && (
+          {(activeDomain === 'equipo_maquinaria' || activeDomain === 'maquinaria') && (
             <div className="pt-2 border-t border-slate-100">
               <h4 className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-3 flex items-center">
                 <FileText size={15} className="mr-1.5 text-amber-600" />
@@ -512,7 +527,12 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                   <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
                     Tipo de Maquinaria
                   </label>
-                  <select className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs bg-white">
+                  <select
+                    value={newClient.domainDetails?.constructionType || ''}
+                    onChange={(e) => updateDomainDetail('constructionType', e.target.value)}
+                    className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs bg-white"
+                  >
+                    <option value="">Seleccionar tipo...</option>
                     <option value="amarilla">Línea Amarilla (Excavadora/Retro)</option>
                     <option value="industrial">Industrial Fija (Generador/Torno)</option>
                     <option value="agricola">Agrícola (Tractor/Cosechadora)</option>
@@ -526,55 +546,28 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                   <input
                     type="text"
                     placeholder="Ej. Caterpillar 320D"
+                    value={newClient.domainDetails?.activitySector || ''}
+                    onChange={(e) => updateDomainDetail('activitySector', e.target.value)}
                     className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
                   />
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                    Número de Serie / Chasis
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ej. CAT0320DABC12345"
-                    className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                    Horómetro Actual
+                    Valor de Reposición a Nuevo (COP)
                   </label>
                   <input
                     type="number"
-                    placeholder="Ej. 4.500 hrs"
+                    placeholder="Ej. 450000000"
+                    value={newClient.domainDetails?.machineryReplacementValue || ''}
+                    onChange={(e) => updateDomainDetail('machineryReplacementValue', Number(e.target.value))}
                     className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
                   />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                    Valor de Reposición a Nuevo
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ej. $450.000.000 COP"
-                    className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                    Zona de Operación
-                  </label>
-                  <select className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs bg-white">
-                    <option value="urbana">Urbana Pavimentada</option>
-                    <option value="rural">Rural / Obra Civil</option>
-                    <option value="minera">Minera / Socavón</option>
-                    <option value="fluvial">Fluvial / Costera</option>
-                  </select>
                 </div>
               </div>
             </div>
           )}
 
-          {activeDomain === 'embarcaciones' && (
+          {(activeDomain === 'casco_embarcacion' || activeDomain === 'embarcaciones') && (
             <div className="pt-2 border-t border-slate-100">
               <h4 className="text-xs font-bold text-cyan-700 uppercase tracking-wider mb-3 flex items-center">
                 <FileText size={15} className="mr-1.5 text-cyan-600" />
@@ -583,68 +576,27 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                    Nombre de la Embarcación
+                    Tipo de Embarcación / Navegación
                   </label>
                   <input
                     type="text"
-                    placeholder="Ej. Nao Victoria"
+                    placeholder="Ej. Fluvial / Costera / Remolcador"
+                    value={newClient.domainDetails?.transitCargoType || ''}
+                    onChange={(e) => updateDomainDetail('transitCargoType', e.target.value)}
                     className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
                   />
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                    Matrícula DIMAR
+                    Rutas / Zonas Frecuentes
                   </label>
                   <input
                     type="text"
-                    placeholder="Ej. CP-05-1234-A"
+                    placeholder="Ej. Río Magdalena / Bahía Cartagena"
+                    value={newClient.domainDetails?.frequentRoutes || ''}
+                    onChange={(e) => updateDomainDetail('frequentRoutes', e.target.value)}
                     className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
                   />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                    Tipo de Embarcación
-                  </label>
-                  <select className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs bg-white">
-                    <option value="lancha">Lancha Rápida / Bote Motor</option>
-                    <option value="velero">Velero de Recreo</option>
-                    <option value="yate">Yate de Placer</option>
-                    <option value="remolcador">Remolcador de Puerto</option>
-                    <option value="barcaza">Barcaza Fluvial</option>
-                    <option value="pesquero">Barco Pesquero</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                    Zona de Navegación
-                  </label>
-                  <select className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs bg-white">
-                    <option value="aguas_interiores">Aguas Interiores / Represas</option>
-                    <option value="costanera">Navegación Costanera (hasta 12 NM)</option>
-                    <option value="mar_abierto">Mar Abierto / Alta Mar</option>
-                    <option value="fluvial">Ríos Navegables (Magdalena/Cauca)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                    Tonelaje Bruto (TRB)
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="Ej. 180 TRB"
-                    className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                    Material del Casco
-                  </label>
-                  <select className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs bg-white">
-                    <option value="acero">Acero Naval</option>
-                    <option value="fibra">Fibra de Vidrio</option>
-                    <option value="aluminio">Aluminio</option>
-                    <option value="madera">Madera / Compuesto</option>
-                  </select>
                 </div>
               </div>
             </div>

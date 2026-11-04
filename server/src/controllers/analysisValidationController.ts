@@ -401,9 +401,23 @@ export const exportAnalysisExcel = async (
   try {
     const analysis = await getAnalysisById(id);
 
-    // Ownership check: when a userId is present and the analysis has an owner, enforce it.
-    if (userId && analysis && analysis.user_id && analysis.user_id !== userId) {
-      res.status(403).json({ error: 'Forbidden: analysis does not belong to current user' });
+    const user = req.user;
+    if (!user) {
+      res.status(401).json({ error: 'Authentication required to export analysis' });
+      return;
+    }
+
+    if (!analysis) {
+      res.status(404).json({ error: `Analysis with id ${id} not found` });
+      return;
+    }
+
+    const isSuper = user.role === 'super_admin';
+    const isOwner = analysis && analysis.user_id === user.id;
+    const isSameOrg = Boolean(user.orgId && analysis && (analysis as any).org_id === user.orgId);
+
+    if (!isSuper && !isOwner && !isSameOrg) {
+      res.status(403).json({ error: 'Forbidden: analysis does not belong to your organization or user' });
       return;
     }
 

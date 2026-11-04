@@ -492,6 +492,7 @@ export const analysisController = {
 
         const insertData = {
           user_id: userId,
+          org_id: req.user?.orgId || null,
           client_name: clientName,
           domain: domain,
           analysis_result: comparisonResult,
@@ -563,6 +564,8 @@ export const analysisController = {
       }
 
       const userId = req.user?.id ?? 'anonymous';
+      const orgId = req.user?.orgId;
+      const role = req.user?.role;
 
       const rawLimit = req.query.limit;
       const rawOffset = req.query.offset;
@@ -574,11 +577,11 @@ export const analysisController = {
         return;
       }
 
-      const history = await getAnalysisHistoryByUser(userId);
+      const { data, total } = await getAnalysisHistoryByUser(userId, orgId, role, limit, offset);
       res.json({
         success: true,
-        data: history.slice(offset, offset + limit),
-        pagination: { limit, offset, total: history.length },
+        data,
+        pagination: { limit, offset, total },
       });
     } catch (error) {
       logger.error({ err: error }, 'Error fetching history');

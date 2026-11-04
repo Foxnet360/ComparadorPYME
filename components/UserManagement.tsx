@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { UserRole, Ally } from '../types';
-import { DEMO_ALLIES } from '../services/analyticsService';
 import { organizationService } from '../services/organizationService';
 import { CommercialPolicies } from '../src/data/commercialPolicies';
 import { UserInviteModal } from './users/UserInviteModal';
@@ -38,14 +37,14 @@ interface UserManagementProps {
 }
 
 export const UserManagement: React.FC<UserManagementProps> = ({
-  currentUserRole = 'super_admin',
-  currentAllyId = 'ally-100',
+  currentUserRole = 'ally_technical',
+  currentAllyId = '',
   onClose,
 }) => {
   const [activeTab, setActiveTab] = useState<'USERS' | 'ALLIES'>('USERS');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoadingData, setIsLoadingData] = useState(true);
-  const [alliesList, setAlliesList] = useState<Ally[]>(DEMO_ALLIES);
+  const [alliesList, setAlliesList] = useState<Ally[]>([]);
   const [usersList, setUsersList] = useState<ManagedUser[]>([]);
 
   // Modal State
@@ -122,10 +121,13 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const effectiveAllyId = defaultAllyId && defaultAllyId.length === 36 ? defaultAllyId : currentAllyId;
   const visibleUsers = usersList
     .filter((u) => {
+      if (currentUserRole === 'super_admin') {
+        return true;
+      }
       if (currentUserRole === 'ally_admin') {
         return u.allyId === effectiveAllyId || u.allyId === currentAllyId;
       }
-      return true; // Super Admin sees all users
+      return false; // ally_technical or unprivileged role sees no admin users
     })
     .filter(
       (u) =>

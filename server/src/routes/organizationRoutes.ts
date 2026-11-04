@@ -60,14 +60,25 @@ router.get(
 
 /**
  * GET /api/organizations/directory
- * List users directory across organizations.
+ * List users directory. Super Admin sees all; Ally Admin sees own organization only.
  */
 router.get(
   '/directory',
+  requireRole('super_admin', 'ally_admin'),
   asyncHandler(async (req: AuthenticatedRequest, res) => {
-    requireUser(req);
+    const user = req.user!;
     const directory = await getOrganizationDirectory();
-    res.json(directory);
+
+    if (user.role === 'super_admin') {
+      res.json(directory);
+      return;
+    }
+
+    // Ally admin only sees members of their own organization (and never super_admin)
+    const filtered = directory.filter(
+      (m: any) => m.org_id === user.orgId && m.role !== 'super_admin'
+    );
+    res.json(filtered);
   })
 );
 
@@ -161,6 +172,13 @@ router.get(
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     requireUser(req);
     const orgId = String(req.params.id);
+    const callerRole = req.user?.role;
+    const callerOrgId = req.user?.orgId;
+
+    if (callerRole !== 'super_admin' && callerOrgId !== orgId) {
+      throw new ForbiddenError('No está autorizado para ver las políticas comerciales de otra correduría');
+    }
+
     const org = await getOrganizationById(orgId);
     if (!org) {
       throw new NotFoundError('Organization not found');
@@ -184,7 +202,7 @@ router.put(
     const callerRole = req.user?.role;
     const callerOrgId = req.user?.orgId;
 
-    if (callerRole === 'ally_admin' && callerOrgId && callerOrgId !== orgId) {
+    if (callerRole === 'ally_admin' && (!callerOrgId || callerOrgId !== orgId)) {
       throw new ForbiddenError('Solo puede configurar las políticas comerciales de su propia correduría');
     }
 
@@ -219,7 +237,7 @@ router.put(
     const callerRole = req.user?.role;
     const callerOrgId = req.user?.orgId;
 
-    if (callerRole === 'ally_admin' && callerOrgId && callerOrgId !== orgId) {
+    if (callerRole === 'ally_admin' && (!callerOrgId || callerOrgId !== orgId)) {
       throw new ForbiddenError('No está autorizado para modificar otra correduría aliada');
     }
 
@@ -617,18 +635,29 @@ router.get(
 
 /**
  * POST /api/organizations/:id/members
- * Add a member to the organization. Admin only.
+ * Add a member to the organization. Super Admin or Ally Admin of that org only.
  */
 router.post(
   '/:id/members',
   requireRole('super_admin', 'ally_admin'),
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const orgId = String(req.params.id);
+    const callerRole = req.user?.role;
+    const callerOrgId = req.user?.orgId;
+
+    if (callerRole === 'ally_admin' && (!callerOrgId || callerOrgId !== orgId)) {
+      throw new ForbiddenError('No está autorizado para agregar miembros a otra organización');
+    }
+
     const { user_id, role } = req.body;
 
     if (!user_id || !role) {
       res.status(400).json({ error: 'Bad Request', message: 'user_id and role are required' });
       return;
+    }
+
+    if (callerRole === 'ally_admin' && role === 'super_admin') {
+      throw new ForbiddenError('Un administrador aliado no puede asignar el rol de super_admin');
     }
 
     const member = await addOrganizationMember({
@@ -643,13 +672,20 @@ router.post(
 
 /**
  * DELETE /api/organizations/:id/members/:userId
- * Remove a member from the organization. Admin only.
+ * Remove a member from the organization. Super Admin or Ally Admin of that org only.
  */
 router.delete(
   '/:id/members/:userId',
   requireRole('super_admin', 'ally_admin'),
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const orgId = String(req.params.id);
+    const callerRole = req.user?.role;
+    const callerOrgId = req.user?.orgId;
+
+    if (callerRole === 'ally_admin' && (!callerOrgId || callerOrgId !== orgId)) {
+      throw new ForbiddenError('No está autorizado para eliminar miembros de otra organización');
+    }
+
     const targetUserId = String(req.params.userId);
 
     await removeOrganizationMember(orgId, targetUserId);

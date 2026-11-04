@@ -128,7 +128,7 @@ export const organizationService = {
       const { data, error } = await supabase.rpc('get_organization_directory');
       if (!error && Array.isArray(data) && data.length > 0) {
         return (data as unknown as DirectoryUserRpcRow[]).map((item) => ({
-          id: item.id || item.user_id || '',
+          id: item.user_id || item.id || '',
           name: item.name || item.email?.split('@')[0] || 'Usuario',
           email: item.email || '',
           role: (item.role as UserRole) || 'ally_technical',
@@ -150,7 +150,7 @@ export const organizationService = {
         const data = (await res.json()) as DirectoryUserRpcRow[];
         if (Array.isArray(data) && data.length > 0) {
           return data.map((item) => ({
-            id: item.id || item.user_id || '',
+            id: item.user_id || item.id || '',
             name: item.name || item.email?.split('@')[0] || 'Usuario',
             email: item.email || '',
             role: (item.role as UserRole) || 'ally_technical',

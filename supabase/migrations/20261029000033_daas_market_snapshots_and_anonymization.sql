@@ -70,9 +70,15 @@ CREATE POLICY "Super admin full access on daas api usage" ON public.daas_api_usa
     OR public.is_super_admin()
   );
 
--- 4. PII Cleansing and Automated Anonymization Trigger Function ----------------
-CREATE OR REPLACE FUNCTION public.anonymize_analysis_to_daas()
-RETURNS TRIGGER
+-- 4. PII Cleansing and Automated Anonymization Core & Trigger Functions --------
+CREATE OR REPLACE FUNCTION public.ingest_analysis_row_to_daas(
+  p_analysis_id UUID,
+  p_domain TEXT,
+  p_analysis_result JSONB,
+  p_unified_result JSONB,
+  p_created_at TIMESTAMPTZ
+)
+RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
@@ -87,20 +93,20 @@ DECLARE
   v_period VARCHAR(7);
 BEGIN
   -- Determine domain and period
-  v_domain := COALESCE(NEW.domain, 'pyme');
-  v_period := to_char(COALESCE(NEW.created_at, now()), 'YYYY-MM');
+  v_domain := COALESCE(p_domain, 'pyme');
+  v_period := to_char(COALESCE(p_created_at, now()), 'YYYY-MM');
 
   -- Extract quotes array from analysis_result or unified_result
-  IF NEW.analysis_result IS NOT NULL AND jsonb_typeof(NEW.analysis_result->'quotes') = 'array' THEN
-    v_quotes := NEW.analysis_result->'quotes';
-  ELSIF NEW.unified_result IS NOT NULL AND jsonb_typeof(NEW.unified_result->'quotes') = 'array' THEN
-    v_quotes := NEW.unified_result->'quotes';
+  IF p_analysis_result IS NOT NULL AND jsonb_typeof(p_analysis_result->'quotes') = 'array' THEN
+    v_quotes := p_analysis_result->'quotes';
+  ELSIF p_unified_result IS NOT NULL AND jsonb_typeof(p_unified_result->'quotes') = 'array' THEN
+    v_quotes := p_unified_result->'quotes';
   ELSE
-    RETURN NEW;
+    RETURN;
   END IF;
 
   -- Delete previous snapshots for this analysis to keep idempotency
-  DELETE FROM public.daas_market_snapshots WHERE source_analysis_id = NEW.id;
+  DELETE FROM public.daas_market_snapshots WHERE source_analysis_id = p_analysis_id;
 
   -- Loop through each quote and extract actuarial data stripping PII
   FOR v_quote IN SELECT * FROM jsonb_array_elements(v_quotes)
@@ -134,7 +140,7 @@ BEGIN
       region_macro,
       anonymized_at
     ) VALUES (
-      NEW.id,
+      p_analysis_id,
       v_quote_idx,
       v_domain,
       COALESCE(v_quote->>'insurerName', v_quote->>'insurer', 'Aseguradora Desconocida'),
@@ -152,7 +158,23 @@ BEGIN
 
     v_quote_idx := v_quote_idx + 1;
   END LOOP;
+END;
+$$;
 
+CREATE OR REPLACE FUNCTION public.anonymize_analysis_to_daas()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  PERFORM public.ingest_analysis_row_to_daas(
+    NEW.id,
+    NEW.domain,
+    NEW.analysis_result,
+    NEW.unified_result,
+    NEW.created_at
+  );
   RETURN NEW;
 END;
 $$;
@@ -167,7 +189,10 @@ CREATE TRIGGER trg_anonymize_analysis_to_daas
 -- 5. Server-Side Executive Analytics Aggregation RPC --------------------------
 -- Eliminates client-side memory filtering and strictly isolates metrics by role and tenant.
 CREATE OR REPLACE FUNCTION public.get_executive_analytics_summary(
-  p_timeframe_days INT DEFAULT 90
+  p_timeframe_days INT DEFAULT 90,
+  p_caller_id TEXT DEFAULT NULL,
+  p_caller_role TEXT DEFAULT NULL,
+  p_caller_org_id UUID DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -195,21 +220,35 @@ DECLARE
 BEGIN
   -- Determine caller
   v_caller_id := COALESCE(
+    p_caller_id,
     auth.uid()::text,
     current_setting('app.current_user_id', true)
   );
 
-  v_is_super := (
-    current_user IN ('postgres', 'service_role')
-    OR current_setting('request.jwt.claim.role', true) = 'service_role'
-    OR COALESCE(auth.role(), '') = 'service_role'
-    OR public.is_super_admin()
-  );
+  -- Explicit caller role or database checks
+  IF p_caller_role = 'super_admin' THEN
+    v_is_super := true;
+    v_role := 'super_admin';
+  ELSIF p_caller_role = 'ally_admin' THEN
+    v_is_super := false;
+    v_role := 'ally_admin';
+    v_org_id := p_caller_org_id;
+  ELSIF p_caller_role = 'ally_technical' THEN
+    v_is_super := false;
+    v_role := 'ally_technical';
+    v_org_id := p_caller_org_id;
+  ELSE
+    -- If called directly via PostgREST client without explicit params
+    v_is_super := public.is_super_admin();
+    IF v_is_super THEN
+      v_role := 'super_admin';
+    END IF;
+  END IF;
 
   v_since_date := now() - (p_timeframe_days || ' days')::INTERVAL;
 
-  -- If not super admin, lookup caller's organization and role
-  IF NOT v_is_super THEN
+  -- If not super admin and role was not explicitly supplied, lookup caller's organization and role
+  IF NOT v_is_super AND v_role IS NULL THEN
     SELECT org_id, role INTO v_org_id, v_role
     FROM public.organization_members
     WHERE user_id = v_caller_id
@@ -219,8 +258,8 @@ BEGIN
     IF v_role IS NULL THEN
       v_role := 'ally_technical';
     END IF;
-  ELSE
-    v_role := 'super_admin';
+  ELSIF v_org_id IS NULL AND p_caller_org_id IS NOT NULL THEN
+    v_org_id := p_caller_org_id;
   END IF;
 
   -- --------------------------------------------------------------------------
@@ -452,8 +491,14 @@ BEGIN
     FROM public.analysis_history 
     WHERE analysis_result IS NOT NULL OR unified_result IS NOT NULL
   LOOP
-    -- Execute anonymization on existing records
-    PERFORM public.anonymize_analysis_to_daas() FROM (SELECT r.*) AS sub;
+    -- Execute anonymization on existing records via core ingestion function
+    PERFORM public.ingest_analysis_row_to_daas(
+      r.id,
+      r.domain,
+      r.analysis_result,
+      r.unified_result,
+      r.created_at
+    );
   END LOOP;
 END;
 $$;

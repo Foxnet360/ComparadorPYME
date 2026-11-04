@@ -26,10 +26,19 @@ function createMockRes() {
 }
 
 describe('analysisValidationController - exportAnalysisExcel', () => {
-  it('should allow export when user is not authenticated and analysis has no owner', async () => {
+  it('should return 401 when user is not authenticated', async () => {
+    const req = { params: { id: 'test-id' } } as any;
+    const res = createMockRes();
+
+    await exportAnalysisExcel(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+
+  it('should allow export when user is authenticated and is owner', async () => {
     getAnalysisById.mockResolvedValueOnce({
       id: 'test-id',
-      user_id: null,
+      user_id: 'test-user-123',
       client_name: 'Test Client',
       analysis_result: {
         quotes: [
@@ -45,7 +54,7 @@ describe('analysisValidationController - exportAnalysisExcel', () => {
       },
     } as any);
 
-    const req = { params: { id: 'test-id' } } as any;
+    const req = { params: { id: 'test-id' }, user: { id: 'test-user-123', role: 'ally_technical' } } as any;
     const res = createMockRes();
 
     await exportAnalysisExcel(req, res);

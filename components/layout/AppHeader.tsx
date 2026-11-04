@@ -123,33 +123,37 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             <BarChart3 size={20} />
           </button>
 
-          {/* Gestión de Usuarios & Aliados (RBAC) */}
-          <button
-            onClick={onOpenUsers}
-            className={`p-2 rounded-full transition-colors ${
-              currentView === 'USERS'
-                ? 'bg-indigo-100 text-indigo-700 font-semibold'
-                : 'text-slate-500 hover:bg-indigo-100 hover:text-indigo-600'
-            }`}
-            title="Gestión de Usuarios y Aliados (RBAC)"
-          >
-            <ShieldCheck size={20} />
-          </button>
+          {/* Gestión de Usuarios & Aliados (super_admin & ally_admin only) */}
+          {currentUser && (currentUser.role === 'super_admin' || currentUser.role === 'ally_admin' || currentUser.role === 'ADMIN') && (
+            <button
+              onClick={onOpenUsers}
+              className={`p-2 rounded-full transition-colors ${
+                currentView === 'USERS'
+                  ? 'bg-indigo-100 text-indigo-700 font-semibold'
+                  : 'text-slate-500 hover:bg-indigo-100 hover:text-indigo-600'
+              }`}
+              title="Gestión de Usuarios y Aliados (RBAC)"
+            >
+              <ShieldCheck size={20} />
+            </button>
+          )}
 
-          {/* Gestión de Aseguradoras & RPA */}
-          <button
-            onClick={onOpenInsurers}
-            className={`p-2 rounded-full transition-colors ${
-              currentView === 'INSURERS'
-                ? 'bg-indigo-100 text-indigo-700 font-semibold'
-                : 'text-slate-500 hover:bg-indigo-100 hover:text-indigo-600'
-            }`}
-            title="Gestión de Aseguradoras y Conectores RPA"
-          >
-            <Building2 size={20} />
-          </button>
+          {/* Gestión de Aseguradoras & RPA (super_admin only) */}
+          {currentUser && (currentUser.role === 'super_admin' || currentUser.role === 'ADMIN') && (
+            <button
+              onClick={onOpenInsurers}
+              className={`p-2 rounded-full transition-colors ${
+                currentView === 'INSURERS'
+                  ? 'bg-indigo-100 text-indigo-700 font-semibold'
+                  : 'text-slate-500 hover:bg-indigo-100 hover:text-indigo-600'
+              }`}
+              title="Gestión de Aseguradoras y Conectores RPA"
+            >
+              <Building2 size={20} />
+            </button>
+          )}
 
-          {/* Clause Library Button (Admin) */}
+          {/* Clause Library Button */}
           <button
             onClick={onOpenClauseAdmin}
             className="p-2 text-slate-500 hover:bg-indigo-100 hover:text-indigo-600 rounded-full transition-colors"

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mail, KeyRound, Loader2, CheckCircle2, AlertCircle, X } from 'lucide-react';
 import { authService } from '../services/authService';
 
@@ -17,6 +17,12 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && defaultEmail) {
+      setEmail(defaultEmail);
+    }
+  }, [isOpen, defaultEmail]);
 
   if (!isOpen) return null;
 

@@ -193,6 +193,7 @@ export interface Database {
         Row: {
           id: string;
           user_id: string | null;
+          org_id: string | null;
           client_name: string;
           quote_document_ids: string[] | null;
           clause_document_ids: string[] | null;
@@ -224,6 +225,7 @@ export interface Database {
         Insert: {
           id?: string;
           user_id?: string | null;
+          org_id?: string | null;
           client_name: string;
           quote_document_ids?: string[] | null;
           clause_document_ids?: string[] | null;
@@ -255,6 +257,7 @@ export interface Database {
         Update: {
           id?: string;
           user_id?: string | null;
+          org_id?: string | null;
           client_name?: string;
           quote_document_ids?: string[] | null;
           clause_document_ids?: string[] | null;

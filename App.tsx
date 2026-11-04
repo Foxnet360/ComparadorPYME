@@ -47,6 +47,7 @@ const AppShell: React.FC = () => {
   } = useUI();
 
   const [currentView, setCurrentView] = useState<AppView>('LANDING');
+  const [legalTab, setLegalTab] = useState<'terms' | 'privacy' | 'security' | 'disclaimer'>('terms');
   const [activeRenewalId, setActiveRenewalId] = useState<string | null>(null);
   const { status, report } = state;
 
@@ -67,6 +68,11 @@ const AppShell: React.FC = () => {
     if (currentView === 'REPORT') setCurrentView('ANALYZER');
   };
 
+  const startNewAnalysis = () => {
+    resetFlow();
+    setCurrentView('ANALYZER');
+  };
+
   const handleLogout = () => {
     handleSessionLogout();
     handleReset();
@@ -82,7 +88,10 @@ const AppShell: React.FC = () => {
       <LandingPage
         onLoginClick={() => setCurrentView('LOGIN')}
         onRegisterClick={() => setCurrentView('REGISTER')}
-        onOpenLegal={() => setCurrentView('LEGAL')}
+        onOpenLegal={(tab) => {
+          if (tab) setLegalTab(tab as typeof legalTab);
+          setCurrentView('LEGAL');
+        }}
       />
     );
   }
@@ -96,7 +105,7 @@ const AppShell: React.FC = () => {
     return <ResetPasswordScreen onSuccess={() => setCurrentView('LOGIN')} onBackToLogin={() => setCurrentView('LOGIN')} />;
   }
   if (currentView === 'LEGAL') {
-    return <LegalPage onBack={() => setCurrentView(currentUser ? 'DASHBOARD' : 'LANDING')} />;
+    return <LegalPage defaultTab={legalTab} onBack={() => setCurrentView(currentUser ? 'DASHBOARD' : 'LANDING')} />;
   }
 
   const extendedUser = currentUser as unknown as ExtendedUserProfile | null;
@@ -124,7 +133,7 @@ const AppShell: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {currentView === 'CLIENTS' && (
           <Suspense fallback={<ViewLoadingFallback />}>
-            <ClientsPage onSelectClientForAudit={() => setCurrentView('ANALYZER')} onViewReport={() => setCurrentView('REPORT')} />
+            <ClientsPage onSelectClientForAudit={() => startNewAnalysis()} onViewReport={(rep) => { viewReport(rep); setCurrentView('REPORT'); }} />
           </Suspense>
         )}
         {currentView === 'PORTFOLIO' && (
@@ -142,7 +151,7 @@ const AppShell: React.FC = () => {
         {currentView === 'DASHBOARD' && (
           <Suspense fallback={<ViewLoadingFallback />}>
             <DashboardPage
-              onNewAnalysis={() => setCurrentView('ANALYZER')}
+              onNewAnalysis={() => startNewAnalysis()}
               onViewReport={(rep) => { viewReport(rep); setCurrentView('REPORT'); }}
             />
           </Suspense>
@@ -158,7 +167,7 @@ const AppShell: React.FC = () => {
         {currentView === 'USERS' && (
           <Suspense fallback={<ViewLoadingFallback />}>
             <UsersPage
-              currentUserRole={extendedUser?.role || 'super_admin'}
+              currentUserRole={extendedUser?.role || 'ally_technical'}
               currentAllyId={extendedUser?.allyId || ''}
               onClose={() => setCurrentView('DASHBOARD')}
             />
@@ -166,16 +175,16 @@ const AppShell: React.FC = () => {
         )}
         {currentView === 'INSURERS' && (
           <Suspense fallback={<ViewLoadingFallback />}>
-            <InsurerManager onBack={() => setCurrentView('ANALYZER')} />
+            <InsurerManager onBack={() => setCurrentView('DASHBOARD')} />
           </Suspense>
         )}
-        {currentView === 'ANALYZER' && status !== AppStatus.COMPLETED && (
+        {currentView === 'ANALYZER' && (
           <AnalyzerPage onAnalysisComplete={() => setCurrentView('REPORT')} />
         )}
         {currentView === 'REPORT' && report && (
           <ReportPage
             onBackToDashboard={() => setCurrentView('DASHBOARD')}
-            onNewAudit={() => setCurrentView('ANALYZER')}
+            onNewAudit={() => startNewAnalysis()}
             onOpenPortfolio={() => setCurrentView('PORTFOLIO')}
           />
         )}

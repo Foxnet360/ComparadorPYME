@@ -14,8 +14,13 @@ import { unifiedComparisonFlag } from '../services/unifiedComparison/featureFlag
 import { featureFlags } from '../config/featureFlags';
 import { getUnifiedEngineMetrics } from '../repositories/analysisRepository';
 import { asyncHandler } from '../utils/asyncHandler';
+import { requireRole } from '../middleware/auth';
 
 const router = Router();
+
+// Protect administrative engine switches and global configs strictly to super_admin
+router.use('/unified-engine/admin', requireRole('super_admin'));
+router.use('/alerts/config', requireRole('super_admin'));
 
 /**
  * GET /api/monitoring/accuracy

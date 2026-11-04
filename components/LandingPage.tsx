@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Shield,
   ShieldCheck,
   Zap,
   FileText,
@@ -153,6 +154,42 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
         'Verificación de amparos adicionales',
         'Análisis de valores asegurados por perfil',
         'Cálculo de prima promedio por asegurado',
+      ],
+    },
+    {
+      id: 'hogar',
+      title: 'Hogar & Habitacional',
+      norm: 'Circular Básica Jurídica Superfinanciera',
+      icon: Shield,
+      desc: 'Protección integral para viviendas, contenidos, terremoto, sustracción y responsabilidad civil familiar.',
+      highlights: [
+        'Cobertura de estructura vs contenidos',
+        'Amparo de eventos hidrometeorológicos',
+        'Límites de responsabilidad civil predios',
+      ],
+    },
+    {
+      id: 'equipo_maquinaria',
+      title: 'Equipo & Maquinaria',
+      norm: 'Código de Comercio - Libro IV',
+      icon: FileText,
+      desc: 'Maquinaria amarilla, industrial y agrícola en operación, tránsito y permanencia.',
+      highlights: [
+        'Condiciones de horómetro y mantenimiento',
+        'Cobertura de volcadura y hundimiento',
+        'Deducibles de reposición a nuevo',
+      ],
+    },
+    {
+      id: 'casco_embarcacion',
+      title: 'Casco & Embarcaciones',
+      norm: 'Código de Comercio Marítimo',
+      icon: FileText,
+      desc: 'Pólizas de casco marítimo y fluvial, remolcadores y artefactos navales con regulación DIMAR.',
+      highlights: [
+        'Zonas de navegación autorizadas',
+        'Avería gruesa y salvamento',
+        'Protección e Indemnización (P&I)',
       ],
     },
   ];

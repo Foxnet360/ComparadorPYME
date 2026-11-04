@@ -20,9 +20,14 @@ if (process.env.REDIS_URL) {
 }
 
 const createStore = () => {
-  if (process.env.REDIS_URL && redisClient.isReady) {
+  if (process.env.REDIS_URL) {
     return new RedisStore({
-      sendCommand: (...args: string[]) => redisClient.sendCommand(args),
+      sendCommand: async (...args: string[]) => {
+        if (!redisClient.isOpen) {
+          await redisClient.connect().catch(() => {});
+        }
+        return (redisClient as any).sendCommand(args);
+      },
     });
   }
   return undefined; // Falls back to default memory store
@@ -30,7 +35,7 @@ const createStore = () => {
 
 export const globalRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+  max: process.env.NODE_ENV === 'test' ? 10000 : 100,
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),

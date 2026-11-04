@@ -50,7 +50,7 @@ export interface EnvConfig {
   VITE_GEMINI_API_KEY?: string;
 }
 
-const requiredVars = ['GEMINI_API_KEY', 'SUPABASE_URL', 'SUPABASE_ANON_KEY'];
+const requiredVars = ['GEMINI_API_KEY', 'SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY'];
 
 interface TaxonomyMetadata {
   salaryValue2026?: number;
@@ -150,7 +150,7 @@ function validateEnv(): EnvConfig {
     }
   }
 
-  function sanitizeGeminiModelName(modelName?: string, defaultModel = 'gemini-3.8-flash'): string {
+  function sanitizeGeminiModelName(modelName?: string, defaultModel = 'gemini-2.5-flash'): string {
     if (!modelName) return defaultModel;
     return modelName;
   }
@@ -164,13 +164,13 @@ function validateEnv(): EnvConfig {
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || '',
     SUPABASE_JWT_SECRET: process.env.SUPABASE_JWT_SECRET || '',
     GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
-    GEMINI_MODEL: sanitizeGeminiModelName(process.env.GEMINI_MODEL, 'gemini-3.8-flash'),
+    GEMINI_MODEL: sanitizeGeminiModelName(process.env.GEMINI_MODEL, 'gemini-2.5-flash'),
     GEMINI_THINKING_LEVEL: process.env.GEMINI_THINKING_LEVEL || 'low',
-    GEMINI_CHAT_MODEL: sanitizeGeminiModelName(process.env.GEMINI_CHAT_MODEL, 'gemini-3.8-flash'),
-    GEMINI_FAST_MODEL: sanitizeGeminiModelName(process.env.GEMINI_FAST_MODEL, 'gemini-3.8-flash'),
+    GEMINI_CHAT_MODEL: sanitizeGeminiModelName(process.env.GEMINI_CHAT_MODEL, 'gemini-2.5-flash'),
+    GEMINI_FAST_MODEL: sanitizeGeminiModelName(process.env.GEMINI_FAST_MODEL, 'gemini-2.5-flash'),
     GEMINI_CLAUSE_MODEL: sanitizeGeminiModelName(
       process.env.GEMINI_CLAUSE_MODEL,
-      'gemini-3.8-flash'
+      'gemini-2.5-flash'
     ),
     GEMINI_EMBEDDING_MODEL: process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-2',
 

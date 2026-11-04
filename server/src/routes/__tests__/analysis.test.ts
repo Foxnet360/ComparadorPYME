@@ -5,11 +5,20 @@ import analysisRoutes from '../analysis';
 
 // Mock auth middleware to inject a test user
 vi.mock('../../middleware/auth', () => ({
-  authMiddleware: (req: { user?: { id: string } }, _res: unknown, next: () => void) => {
-    req.user = { id: 'test-user-123' };
+  authMiddleware: (req: { user?: { id: string; role?: string } }, _res: unknown, next: () => void) => {
+    req.user = { id: 'test-user-123', role: 'super_admin' };
     next();
   },
   optionalAuthMiddleware: (_req: unknown, _res: unknown, next: () => void) => {
+    next();
+  },
+  requireRole: (..._roles: string[]) => (_req: unknown, _res: unknown, next: () => void) => {
+    next();
+  },
+  requireSuperAdmin: (_req: unknown, _res: unknown, next: () => void) => {
+    next();
+  },
+  requireAllyAdmin: (_req: unknown, _res: unknown, next: () => void) => {
     next();
   },
   AuthenticatedRequest: {},

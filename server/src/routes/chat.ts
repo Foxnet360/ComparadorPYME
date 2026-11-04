@@ -10,18 +10,18 @@ import {
   getConversationHistory,
 } from '../services/chatService';
 import { chatRepository, ChatMessageDB } from '../repositories/chatRepository';
-import { AuthenticatedRequest } from '../middleware/auth';
+import { AuthenticatedRequest, requireUser } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
 
 const router = Router();
 
 /**
- * AUTH-2: the authenticated session wins over any client-supplied userId;
- * anonymous traffic is bucketed as 'anonymous'. Chat is anonymous-by-design
- * (see authGate allowlist), so a valid token only personalizes threading.
+ * AUTH-2: Derive user from authenticated session strictly.
+ * Client-supplied userId query/body is rejected to prevent IDOR and impersonation.
  */
-const resolveUserId = (req: AuthenticatedRequest, supplied?: unknown): string =>
-  req.user?.id ?? (typeof supplied === 'string' && supplied ? supplied : undefined) ?? 'anonymous';
+const resolveUserId = (req: AuthenticatedRequest): string => {
+  return req.user?.id || 'anonymous';
+};
 
 // Simple rate limiting map (in production, use Redis)
 const rateLimitMap: Map<string, { count: number; resetTime: number }> = new Map();
@@ -78,7 +78,7 @@ router.post(
 
     console.log(`💬 [chatRoute] Message: "${message.substring(0, 50)}..."`);
 
-    const userId = resolveUserId(req as AuthenticatedRequest, req.body.userId);
+    const userId = resolveUserId(req as AuthenticatedRequest);
 
     const result = await processChatMessage(message, reportContext, userId, threadId);
 
@@ -98,7 +98,7 @@ router.get(
   '/threads/report/:reportId',
   asyncHandler(async (req, res) => {
     const reportId = req.params.reportId as string;
-    const userId = resolveUserId(req as AuthenticatedRequest, req.query.userId);
+    const userId = resolveUserId(req as AuthenticatedRequest);
 
     console.log(`🔍 [chatRoute] Getting thread for report: ${reportId}, user: ${userId}`);
 
@@ -137,8 +137,18 @@ router.get(
   '/threads/:id/messages',
   asyncHandler(async (req, res) => {
     const threadId = req.params.id as string;
-    const messages = await getConversationHistory(threadId, 50);
+    const authReq = req as AuthenticatedRequest;
+    const userId = authReq.user?.id;
 
+    if (userId) {
+      const thread = await chatRepository.getThread(threadId);
+      if (thread && thread.user_id && thread.user_id !== userId && authReq.user?.role !== 'super_admin') {
+        res.status(403).json({ error: 'Forbidden: thread does not belong to you' });
+        return;
+      }
+    }
+
+    const messages = await getConversationHistory(threadId, 50);
     res.json({ messages });
   })
 );
@@ -151,6 +161,14 @@ router.delete(
   '/threads/:id',
   asyncHandler(async (req, res) => {
     const threadId = req.params.id as string;
+    const authReq = req as AuthenticatedRequest;
+    const userId = requireUser(authReq);
+
+    const thread = await chatRepository.getThread(threadId);
+    if (thread && thread.user_id && thread.user_id !== userId && authReq.user?.role !== 'super_admin') {
+      res.status(403).json({ error: 'Forbidden: thread does not belong to you' });
+      return;
+    }
 
     await chatRepository.archiveThread(threadId);
 
@@ -180,7 +198,7 @@ router.post(
 router.get(
   '/threads',
   asyncHandler(async (req, res) => {
-    const userId = resolveUserId(req as AuthenticatedRequest, req.query.userId);
+    const userId = resolveUserId(req as AuthenticatedRequest);
 
     const threads = await chatRepository.listUserThreads(userId);
 

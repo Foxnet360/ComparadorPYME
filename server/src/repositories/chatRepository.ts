@@ -129,6 +129,25 @@ export const chatRepository = {
   },
 
   /**
+   * Get thread by ID
+   */
+  async getThread(threadId: string): Promise<ChatThread | null> {
+    const { data, error } = await supabase
+      .from('chat_threads' as never)
+      .select('*')
+      .eq('id', threadId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') return null;
+      console.error('❌ [chatRepository] Error getting thread by id:', error);
+      throw error;
+    }
+
+    return data as ChatThread;
+  },
+
+  /**
    * Get thread by report ID
    */
   async getThreadByReport(userId: string, reportId: string): Promise<ChatThread | null> {

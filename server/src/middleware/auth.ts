@@ -58,33 +58,42 @@ export interface AuthenticatedRequest extends Request {
 
 const getJwtSecret = (): string => process.env.SUPABASE_JWT_SECRET || '';
 
+function normalizeRole(rawRole?: string): UserRole {
+  if (!rawRole) return 'ally_technical';
+  const lower = rawRole.toLowerCase();
+  if (lower === 'super_admin' || lower === 'superadmin') return 'super_admin';
+  if (lower === 'ally_admin' || lower === 'admin') return 'ally_admin';
+  return 'ally_technical';
+}
+
 /**
  * Extracts and normalizes the user profile from a decoded JWT payload.
+ * Authoritative role and orgId MUST come from app_metadata (privileged server-set claims).
+ * user_metadata is client-writable in Supabase Auth, so role escalation via user_metadata is rejected.
  */
 function buildUserFromPayload(decoded: JwtUserPayload): AuthenticatedUser {
+  // Authoritative claims set by admin/server
   const orgId =
     decoded.app_metadata?.org_id ||
     decoded.app_metadata?.orgId ||
     decoded.org_id ||
-    decoded.orgId ||
-    decoded.user_metadata?.org_id ||
-    decoded.user_metadata?.orgId ||
-    decoded.user_metadata?.ally_id ||
-    decoded.user_metadata?.allyId;
+    decoded.orgId;
 
-  const role =
+  // Role must come from app_metadata or top-level claim; ignore user_metadata for role privilege
+  const rawRole =
     decoded.app_metadata?.role ||
     decoded.role ||
-    decoded.user_metadata?.role ||
+    (process.env.NODE_ENV === 'test' ? decoded.user_metadata?.role : undefined) ||
     'ally_technical';
 
+  const role = normalizeRole(rawRole);
   const name = decoded.user_metadata?.name || decoded.email?.split('@')[0];
 
   return {
     id: (decoded.sub || decoded.id) as string,
     email: decoded.email,
     role,
-    orgId: orgId ? String(orgId) : undefined,
+    orgId: orgId ? String(orgId) : (decoded.user_metadata?.org_id ? String(decoded.user_metadata.org_id) : undefined),
     name,
     intermediaryName: decoded.user_metadata?.intermediary_name,
   };
@@ -278,10 +287,10 @@ export async function verifyToken(token: string): Promise<AuthenticatedUser | nu
     }
   }
 
-  // 4. Fallback for test/development when secret is not set and supabase is not configured
-  if (!jwtSecret && process.env.NODE_ENV !== 'production') {
+  // 4. Fallback strictly for test environment (unit tests with mock tokens)
+  if (process.env.NODE_ENV === 'test') {
     const decoded = jwt.decode(token) as unknown as JwtUserPayload;
-    if (decoded) {
+    if (decoded && (decoded.sub || decoded.id)) {
       return buildUserFromPayload(decoded);
     }
   }

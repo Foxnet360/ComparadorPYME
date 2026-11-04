@@ -21,7 +21,9 @@ export const POLICY_RAMOS = [
   'vida_grupo',
   'transporte',
   'casco',
+  'casco_embarcacion',
   'equipo',
+  'equipo_maquinaria',
   'cumplimiento',
   'hogar',
 ] as const;

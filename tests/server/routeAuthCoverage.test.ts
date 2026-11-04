@@ -143,16 +143,11 @@ describe('route auth coverage (AUTH-1)', () => {
     // Classification-only check: the HTTP behavior of allowlisted endpoints
     // is covered by their own route tests. Here we only pin the allowlist.
     const publicPaths: Array<{ method: string; path: string }> = [
-      { method: 'POST', path: '/analyze' },
-      { method: 'GET', path: '/history' },
-      { method: 'GET', path: '/comparison' },
-      // Chat is anonymous-by-design; reads of the clause library too.
-      { method: 'POST', path: '/chat' },
-      { method: 'GET', path: '/chat/threads' },
-      { method: 'POST', path: '/chat/suggestions' },
+      { method: 'GET', path: '/insurers' },
       { method: 'GET', path: '/documents' },
-      { method: 'GET', path: '/documents/x/chunks' },
-      { method: 'GET', path: '/analysis/x/export' },
+      { method: 'GET', path: '/documents/x' },
+      { method: 'GET', path: '/v1/daas/quotes' },
+      { method: 'GET', path: '/v1/daas/market-index' },
     ];
     for (const { method, path } of publicPaths) {
       expect(isPublicPath(path, method), `${method} ${path} must be public`).toBe(true);
