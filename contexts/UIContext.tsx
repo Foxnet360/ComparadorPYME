@@ -17,9 +17,11 @@ interface UIContextType {
 const UIContext = createContext<UIContextType | undefined>(undefined);
 
 export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [chatOpen, setChatOpen] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
-  const [showClauseAdmin, setShowClauseAdmin] = useState(false);
+  const hasParam = (p: string) => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get(p) === '1';
+
+  const [chatOpen, setChatOpen] = useState(hasParam('chat'));
+  const [showProfile, setShowProfile] = useState(hasParam('profile'));
+  const [showClauseAdmin, setShowClauseAdmin] = useState(hasParam('clauseAdmin'));
   const [clientSelectorOpen, setClientSelectorOpen] = useState(false);
   const [toast, setToast] = useState<{
     message: string;

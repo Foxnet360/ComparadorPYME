@@ -2,6 +2,7 @@ import React, { createContext, useContext, useReducer, useCallback } from 'react
 import { ComparisonReport, AppStatus, Client, InsuranceDomain } from '../types';
 import type { AnalysisMode, InsuranceDomainType, RenewalAnalysisContext } from '../types';
 import { CorrectionQueue } from '../services/correctionQueue';
+import { DEMO_REPORT, DEMO_CLIENTS } from '../src/demoData';
 
 // Types for corrections
 export interface Correction {
@@ -207,8 +208,22 @@ interface AnalysisContextType {
 
 const AnalysisContext = createContext<AnalysisContextType | undefined>(undefined);
 
+const getInitialState = (): AnalysisState => {
+  const isDemo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1';
+  const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const isAnalyzing = params?.get('analyzing') === '1';
+  const isReport = params?.get('view') === 'REPORT' || params?.get('report') === '1';
+
+  return {
+    ...initialState,
+    status: isAnalyzing ? AppStatus.ANALYZING : (isReport ? AppStatus.COMPLETED : AppStatus.IDLE),
+    report: (isDemo && isReport) ? DEMO_REPORT : null,
+    selectedClient: isDemo ? DEMO_CLIENTS[0] || null : null,
+  };
+};
+
 export const AnalysisProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, dispatch] = useReducer(analysisReducer, initialState);
+  const [state, dispatch] = useReducer(analysisReducer, undefined, getInitialState);
 
   const addQuoteFiles = useCallback((files: File[]) => {
     dispatch({ type: 'ADD_QUOTE_FILES', payload: files });

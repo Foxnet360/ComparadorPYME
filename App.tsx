@@ -46,16 +46,33 @@ const AppShell: React.FC = () => {
     setShowClauseAdmin,
   } = useUI();
 
-  const [currentView, setCurrentView] = useState<AppView>('LANDING');
+  const initialView = (() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const v = searchParams.get('view') as AppView | null;
+      if (v) return v;
+      if (searchParams.get('demo') === '1') return 'DASHBOARD';
+    }
+    return 'LANDING';
+  })();
+
+  const [currentView, setCurrentView] = useState<AppView>(initialView);
   const [legalTab, setLegalTab] = useState<'terms' | 'privacy' | 'security' | 'disclaimer'>('terms');
   const [activeRenewalId, setActiveRenewalId] = useState<string | null>(null);
   const { status, report } = state;
 
   const handledBoot = useRef(false);
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.hash?.includes('type=recovery')) {
-      setCurrentView('RESET_PASSWORD');
-      return;
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.has('view') || searchParams.get('demo') === '1') {
+        return;
+      }
+
+      if (window.location.hash?.includes('type=recovery')) {
+        setCurrentView('RESET_PASSWORD');
+        return;
+      }
     }
     if (!handledBoot.current && bootstrapped) {
       handledBoot.current = true;

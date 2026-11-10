@@ -12,15 +12,19 @@ interface AuthContextType {
   updateUser: (user: UserProfile) => void;
 }
 
+import { DEMO_USER } from '../src/demoData';
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const isDemo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1';
   // ERR-4: the session is owned by the Supabase client via authService;
   // nothing is read from local storage.
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  const [bootstrapped, setBootstrapped] = useState(false);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(isDemo ? DEMO_USER : null);
+  const [bootstrapped, setBootstrapped] = useState(isDemo);
 
   useEffect(() => {
+    if (isDemo) return;
     let cancelled = false;
     // ERR-4: wipe auth data persisted by legacy versions, then resolve the
     // existing Supabase session.
@@ -33,7 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isDemo]);
 
   const login = useCallback((user: UserProfile) => {
     setCurrentUser(user);

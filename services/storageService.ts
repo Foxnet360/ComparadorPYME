@@ -61,6 +61,11 @@ export const storageService = {
 
   // --- CLIENTS ---
   getClients: async (): Promise<Client[]> => {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1') {
+      const { DEMO_CLIENTS } = await import('../src/demoData');
+      return DEMO_CLIENTS;
+    }
+
     const currentUser = await storageService.getCurrentUser();
     if (currentUser) {
       try {
@@ -167,6 +172,11 @@ export const storageService = {
 
   // --- HISTORY & STATS ---
   getHistory: async (): Promise<HistoryEntry[]> => {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1') {
+      const { DEMO_HISTORY } = await import('../src/demoData');
+      return DEMO_HISTORY;
+    }
+
     let cloudTransformed: HistoryEntry[] = [];
     let backendReachable = false;
     try {

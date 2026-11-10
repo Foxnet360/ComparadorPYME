@@ -81,6 +81,73 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
       if (filterStatus === 'ACTIVE') params.isActive = true;
       if (filterStatus === 'ARCHIVED') params.isActive = false;
 
+      if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1') {
+        const demoDocs: Document[] = [
+          {
+            id: 'doc-sura-01',
+            documentName: 'Clausulado General Empresarial Todo Riesgo PYME',
+            documentType: 'CLAUSULADO_GENERAL',
+            version: '2024.1',
+            productName: 'Multirriesgo PYME',
+            totalPages: 58,
+            isActive: true,
+            createdAt: '2026-01-15T10:00:00Z',
+            domain: 'pyme',
+            insurer: { id: 'ins-sura', name: 'Seguros SURA' },
+          },
+          {
+            id: 'doc-axa-02',
+            documentName: 'Condiciones Generales Seguro de Daño Material e ILA',
+            documentType: 'CLAUSULADO_GENERAL',
+            version: '2023.2',
+            productName: 'Integral Pyme',
+            totalPages: 44,
+            isActive: true,
+            createdAt: '2025-11-20T14:30:00Z',
+            domain: 'pyme',
+            insurer: { id: 'ins-axa', name: 'AXA Colpatria' },
+          },
+          {
+            id: 'doc-bol-03',
+            documentName: 'Clausulado Pyme Plus Multirriesgo y Copropiedades',
+            documentType: 'CLAUSULADO_GENERAL',
+            version: '2024.2',
+            productName: 'Pyme Plus',
+            totalPages: 62,
+            isActive: true,
+            createdAt: '2026-02-10T09:15:00Z',
+            domain: 'pyme',
+            insurer: { id: 'ins-bolivar', name: 'Seguros Bolívar' },
+          },
+          {
+            id: 'doc-chubb-04',
+            documentName: 'Póliza Master Copropiedades Ley 675 y Zonas Comunes',
+            documentType: 'CLAUSULADO_GENERAL',
+            version: '2024.1',
+            productName: 'Master Copropiedades',
+            totalPages: 76,
+            isActive: true,
+            createdAt: '2026-03-01T11:45:00Z',
+            domain: 'copropiedades',
+            insurer: { id: 'ins-chubb', name: 'Chubb Seguros' },
+          },
+          {
+            id: 'doc-sura-arch-05',
+            documentName: 'Clausulado General Pyme Versión Previa (Archivada)',
+            documentType: 'CLAUSULADO_GENERAL',
+            version: '2021.3',
+            productName: 'Multirriesgo PYME',
+            totalPages: 52,
+            isActive: false,
+            createdAt: '2023-04-12T08:00:00Z',
+            domain: 'pyme',
+            insurer: { id: 'ins-sura', name: 'Seguros SURA' },
+          },
+        ];
+        setDocuments(demoDocs);
+        return;
+      }
+
       const docs = await clauseService.getDocuments(params);
       setDocuments(docs);
     } catch (err: unknown) {

@@ -25,18 +25,30 @@ interface ComparisonReportProps {
   report: ReportType;
   onUpdateReport?: (updatedReport: ReportType) => void;
   onOpenPortfolio?: () => void;
+  initialTab?: 'resumen' | 'coberturas' | 'deducibles' | 'auditoria' | 'analisis-avanzado';
 }
 
 const ComparisonReport: React.FC<ComparisonReportProps> = ({
   report: initialReport,
   onUpdateReport,
   onOpenPortfolio,
+  initialTab = 'resumen',
 }) => {
   const { report, handleApplyCorrection } = useReportCorrections(initialReport, onUpdateReport);
 
+  const initialActiveTab = (() => {
+    if (typeof window !== 'undefined') {
+      const tabParam = new URLSearchParams(window.location.search).get('reportTab');
+      if (tabParam && ['resumen', 'coberturas', 'deducibles', 'auditoria', 'analisis-avanzado'].includes(tabParam)) {
+        return tabParam as 'resumen' | 'coberturas' | 'deducibles' | 'auditoria' | 'analisis-avanzado';
+      }
+    }
+    return initialTab;
+  })();
+
   const [activeTab, setActiveTab] = useState<
     'resumen' | 'coberturas' | 'deducibles' | 'auditoria' | 'analisis-avanzado'
-  >('resumen');
+  >(initialActiveTab);
 
   // Promotion modal state
   const [promoteQuote, setPromoteQuote] = useState<QuoteAnalysis | null>(null);

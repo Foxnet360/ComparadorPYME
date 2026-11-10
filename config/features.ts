@@ -75,6 +75,9 @@ export const FEATURES = {
  * Check if any advanced analysis feature is enabled
  */
 export const isAdvancedAnalysisEnabled = (): boolean => {
+  if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1') {
+    return true;
+  }
   return FEATURES.ADVANCED_ANALYSIS;
 };
 
