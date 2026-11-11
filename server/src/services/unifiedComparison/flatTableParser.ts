@@ -347,6 +347,31 @@ const PYME_ALIAS_MAP: AliasEntry[] = [
   },
   { aliases: ['observaciones'], canonical: 'Observaciones', section: SchemaSection.CONDICIONES },
   { aliases: ['exclusiones'], canonical: 'Exclusiones', section: SchemaSection.CONDICIONES },
+  {
+    aliases: ['validez de la oferta', 'validez oferta', 'vigencia de la cotizacion', 'vigencia cotizacion', 'validez propuesta'],
+    canonical: 'Validez de la Oferta',
+    section: SchemaSection.CONDICIONES_COMERCIALES,
+  },
+  {
+    aliases: ['forma de pago y financiacion', 'forma de pago comercial', 'facilidades de pago', 'plazo de pago y cuotas'],
+    canonical: 'Forma de Pago y Financiación',
+    section: SchemaSection.CONDICIONES_COMERCIALES,
+  },
+  {
+    aliases: ['inspeccion previa y garantias', 'inspeccion previa', 'inspeccion de asegurabilidad', 'garantias de asegurabilidad'],
+    canonical: 'Inspección Previa y Garantías',
+    section: SchemaSection.CONDICIONES_COMERCIALES,
+  },
+  {
+    aliases: ['requisitos de emision', 'requisitos emision', 'documentos para expedicion', 'documentacion requerida', 'sarlaft emision'],
+    canonical: 'Requisitos de Emisión',
+    section: SchemaSection.CONDICIONES_COMERCIALES,
+  },
+  {
+    aliases: ['otras condiciones comerciales', 'compromisos comerciales', 'condiciones comerciales especiales', 'politicas de la oferta'],
+    canonical: 'Otras Condiciones Comerciales',
+    section: SchemaSection.CONDICIONES_COMERCIALES,
+  },
 ];
 
 const DOMAIN_ALIAS_CACHE = new Map<InsuranceDomain, AliasEntry[]>();
@@ -361,6 +386,12 @@ function mapTaxonomySectionToSchemaSection(section?: string): SchemaSection {
     normalized.includes('hurto')
   )
     return SchemaSection.SUSTRACCION;
+  if (
+    normalized.includes('condicion comercial') ||
+    normalized.includes('condiciones comerciales') ||
+    normalized.includes('politica comercial')
+  )
+    return SchemaSection.CONDICIONES_COMERCIALES;
   if (
     normalized.includes('condicion') ||
     normalized.includes('observacion') ||
@@ -545,6 +576,16 @@ export function sectionByKeyword(label: string): SchemaSection {
     normalized.includes('financial')
   ) {
     return SchemaSection.FINANCIAL;
+  }
+  if (
+    normalized.includes('condicion comercial') ||
+    normalized.includes('condiciones comerciales') ||
+    normalized.includes('politica comercial') ||
+    normalized.includes('politicas comerciales') ||
+    normalized.includes('validez de la oferta') ||
+    normalized.includes('requisitos de emision')
+  ) {
+    return SchemaSection.CONDICIONES_COMERCIALES;
   }
   if (
     normalized.includes('exclusi') ||

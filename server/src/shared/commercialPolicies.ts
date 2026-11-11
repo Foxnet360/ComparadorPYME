@@ -23,7 +23,7 @@ export interface CommercialPolicies {
 export const DEFAULT_COMMERCIAL_POLICIES: CommercialPolicies = {
   offerValidityDays: 15,
   paymentConditions:
-    'Pago de contado con descuento por pronto pago según aseguradora, o financiación en cuotas mensuales (hasta 10 meses) mediante débito automático o entidad financiera aliada.',
+    'Pago de contado con descuento por pronto pago según aseguradora, o financiación en cuotas mensuales (hasta 10 meses) mediante débito automático o entidad bancaria autorizada.',
   inspectionRequirements:
     'Inspección previa de asegurabilidad obligatoria para bienes con valor asegurable superior a 500 SMMLV o inmuebles con antigüedad superior a 25 años.',
   issuanceRequirements:
@@ -116,4 +116,134 @@ export function getStructuredCommercialPolicyEntries(policies: CommercialPolicie
         ]
       : []),
   ];
+}
+
+export interface InsurerCommercialConditions {
+  validezOferta?: string;
+  formaPago?: string;
+  inspeccionPrevia?: string;
+  requisitosEmision?: string;
+  otrasCondiciones?: string;
+  [key: string]: string | undefined;
+}
+
+export const COMMERCIAL_CONDITION_FIELDS = [
+  { key: 'validezOferta', label: 'Validez de la Oferta', placeholder: 'Ej: 30 días calendario' },
+  { key: 'formaPago', label: 'Forma de Pago y Financiación', placeholder: 'Ej: Hasta 10 cuotas mensuales / Débito' },
+  { key: 'inspeccionPrevia', label: 'Inspección Previa y Garantías', placeholder: 'Ej: Inspección virtual en 15 días' },
+  { key: 'requisitosEmision', label: 'Requisitos de Emisión', placeholder: 'Ej: SARLAFT + RUT + Orden formal' },
+  { key: 'otrasCondiciones', label: 'Otras Condiciones Comerciales', placeholder: 'Ej: Garantía de mantenimiento de tasa' },
+] as const;
+
+/**
+ * Extracts commercial conditions per insurer from a comparison report or matrix.
+ */
+export function extractCommercialConditionsFromReport(report: any): Record<string, InsurerCommercialConditions> {
+  const result: Record<string, InsurerCommercialConditions> = {};
+  const quotes = report?.quotes || [];
+  const insurers: string[] = quotes.map((q: any) => q.insurerName || q.name || 'Aseguradora');
+
+  // Initialize with empty or existing commercialConditions
+  insurers.forEach((ins) => {
+    result[ins] = { ...(report?.commercialConditions?.[ins] || {}) };
+  });
+
+  const matrixRows = report?.matrix || [];
+  if (Array.isArray(matrixRows) && matrixRows.length > 0) {
+    matrixRows.forEach((row: any) => {
+      const label = (row.label || '').toLowerCase();
+      let matchedKey: keyof InsurerCommercialConditions | null = null;
+      if (label.includes('validez')) matchedKey = 'validezOferta';
+      else if (label.includes('pago') || label.includes('financiaci')) matchedKey = 'formaPago';
+      else if (label.includes('inspecci') || label.includes('garantia')) matchedKey = 'inspeccionPrevia';
+      else if (label.includes('emision') || label.includes('requisito')) matchedKey = 'requisitosEmision';
+      else if (label.includes('otra') || label.includes('compromiso') || (row.section && String(row.section).includes('COMERCIAL'))) matchedKey = 'otrasCondiciones';
+
+      if (matchedKey && Array.isArray(row.cells)) {
+        row.cells.forEach((cell: any, idx: number) => {
+          const insurer = insurers[idx];
+          if (insurer && cell && cell.value) {
+            if (!result[insurer]) {
+              result[insurer] = {};
+            }
+            const target = result[insurer]!;
+            if (!target[matchedKey]) {
+              target[matchedKey] = cell.value;
+            }
+          }
+        });
+      }
+    });
+  }
+
+  // Also fallback to quotes paymentTerms if formaPago is still empty
+  quotes.forEach((q: any) => {
+    const ins = q.insurerName || q.name;
+    if (ins && q.paymentTerms) {
+      if (!result[ins]) {
+        result[ins] = {};
+      }
+      const target = result[ins]!;
+      if (!target.formaPago) {
+        target.formaPago = q.paymentTerms;
+      }
+    }
+  });
+
+  return result;
+}
+
+/**
+ * Synchronizes edited commercial conditions back into the report and its matrix rows.
+ */
+export function applyCommercialConditionsToReport<T extends { matrix?: any[]; commercialConditions?: any; quotes?: any[] }>(
+  report: T,
+  conditions: Record<string, InsurerCommercialConditions>
+): T {
+  const quotes = report.quotes || [];
+  const insurers: string[] = quotes.map((q: any) => q.insurerName || q.name || 'Aseguradora');
+  const updatedReport = {
+    ...report,
+    commercialConditions: { ...(report.commercialConditions || {}), ...conditions },
+  };
+
+  const matrix = [...(report.matrix || [])];
+
+  COMMERCIAL_CONDITION_FIELDS.forEach(({ key, label }) => {
+    let rowIndex = matrix.findIndex(
+      (r) =>
+        r.label === label ||
+        (r.section === 'CONDICIONES COMERCIALES' && (r.label || '').toLowerCase().includes(key.toLowerCase().slice(0, 5)))
+    );
+
+    const cells = insurers.map((ins) => ({
+      value: conditions[ins]?.[key] || 'No especificado en cotización',
+      isExcluded: false,
+      isWinner: false,
+    }));
+
+    if (rowIndex >= 0) {
+      matrix[rowIndex] = {
+        ...matrix[rowIndex],
+        label,
+        section: 'CONDICIONES COMERCIALES',
+        cells: cells.map((c, i) => ({
+          ...(matrix[rowIndex].cells?.[i] || {}),
+          value: c.value,
+        })),
+      };
+    } else {
+      matrix.push({
+        type: 'data',
+        id: `comm-${key}`,
+        label,
+        sectionId: 99,
+        section: 'CONDICIONES COMERCIALES',
+        cells,
+      });
+    }
+  });
+
+  updatedReport.matrix = matrix;
+  return updatedReport;
 }

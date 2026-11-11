@@ -5,7 +5,7 @@
 ---
 
 ### Metadata Técnica del Documento
-- **Plataforma:** Agente Comparador CSA (Corredores de Seguros Asociados S.A.S.)
+- **Plataforma:** Agente Comparador CSA (Corredores de Seguros Asociados S.A. · https://correseguros.co/)
 - **Versión del Sistema:** v2.4.0 Enterprise
 - **Ambiente:** Producción / Pre-producción
 - **Fecha de Emisión:** Noviembre 2026
@@ -434,4 +434,4 @@ Para asesorar con rigor técnico al tomador del seguro, consulte esta matriz ant
 ---
 
 *Manual de Usuario y Guía Técnica de Operaciones - Agente Comparador CSA Enterprise*  
-*Propiedad Intelectual de Corredores de Seguros Asociados S.A.S. - Todos los derechos reservados.*
+*Propiedad Intelectual de Corredores de Seguros Asociados S.A. (https://correseguros.co/) - Todos los derechos reservados.*

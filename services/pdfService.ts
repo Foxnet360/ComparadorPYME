@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { ComparisonReport, UserProfile, DashboardStats, HistoryEntry } from '../types';
 import { PLANTILLA_ITEMS } from '../constants';
-import { formatCOPMillions, formatCOP } from '../utils/formatCurrency';
+import { formatCOPMillions, formatCOP, parseColombianCurrency } from '../utils/formatCurrency';
 import { normalizeText } from '../utils/textUtils';
 import { findColombianInsurerProfile } from '@shared/colombianInsurersCatalog';
 import {
@@ -13,6 +13,8 @@ import {
   CommercialPolicies,
   getEffectiveCommercialPolicies,
   getStructuredCommercialPolicyEntries,
+  COMMERCIAL_CONDITION_FIELDS,
+  extractCommercialConditionsFromReport,
 } from '../src/data/commercialPolicies';
 
 function hexToRgb(hex?: string): [number, number, number] {
@@ -33,7 +35,7 @@ function getLastAutoTableFinalY(doc: jsPDF, fallback: number = 0): number {
 
 // Helper for robust string matching (ignores accents, case, whitespace)
 
-// Format coverage value for PDF (similar to UI formatting)
+// Format coverage value for PDF with exact Web/Excel numeric coherence
 const formatCoverageValuePDF = (value: string | undefined | null): string => {
   if (!value || typeof value !== 'string') return 'NO ESPECIFICADO';
 
@@ -41,27 +43,25 @@ const formatCoverageValuePDF = (value: string | undefined | null): string => {
   const upperValue = trimmed.toUpperCase();
 
   // Special text values - return as-is
-  if (['EXCLUIDO', 'NO CUBRE', 'NO APLICA', 'NO ESPECIFICADO', 'INCLUIDO'].includes(upperValue)) {
+  if (
+    [
+      'EXCLUIDO',
+      'NO CUBRE',
+      'NO APLICA',
+      'NO ESPECIFICADO',
+      'INCLUIDO',
+      'NO COTIZADO',
+      'NO INCLUIDA',
+      'NO CONTRATADO',
+    ].includes(upperValue)
+  ) {
     return trimmed;
   }
 
-  // Handle "500M" format (millions)
-  const millionMatch = trimmed.match(/^(\d+(?:[.,]\d+)?)\s*M$/i);
-  if (millionMatch) {
-    const num = parseFloat(millionMatch[1]!.replace(/\./g, '').replace(',', '.'));
-    if (!isNaN(num)) {
-      return formatCOP(num * 1000000);
-    }
-  }
-
-  // Handle values with $ sign or plain numbers
-  const dollarMatch = trimmed.match(/^\$?\s*([\d.,]+)\s*(.*)$/);
-  if (dollarMatch) {
-    const numStr = dollarMatch[1]!.replace(/\./g, '').replace(',', '.');
-    const num = parseFloat(numStr);
-    if (!isNaN(num) && num > 0) {
-      return formatCOP(num);
-    }
+  // Exact parity with Web & Excel via parseColombianCurrency (recognizes millions, M, $, decimals)
+  const parsed = parseColombianCurrency(trimmed);
+  if (parsed !== null && parsed > 0) {
+    return formatCOP(parsed);
   }
 
   // If nothing matched, return original value
@@ -171,8 +171,8 @@ export const generatePDF = (
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(255, 255, 255);
     const brokerTitle =
-      options?.brokerInfo?.intermediaryName || options?.brokerInfo?.name || 'Correduría Aliada';
-    doc.text(`Ramo: ${regProfile.displayName}  |  Expedición: ${today}  |  Aliado: ${brokerTitle.substring(0, 32)}`, 14, 22);
+      options?.brokerInfo?.intermediaryName || options?.brokerInfo?.name || 'Corredores de Seguros Asociados S.A.';
+    doc.text(`Ramo: ${regProfile.displayName}  |  Expedición: ${today}  |  Intermediario: ${brokerTitle.substring(0, 32)}`, 14, 22);
 
     const brokerAdvisor = options?.brokerInfo?.name ? `Asesor: ${options.brokerInfo.name}` : '';
     const brokerReg = options?.brokerInfo?.registrationNumber
@@ -225,7 +225,7 @@ export const generatePDF = (
   doc.setDrawColor(226, 232, 240);
   doc.roundedRect(14, currentY, 182, 26, 2, 2, 'FD');
 
-  const brokerName = broker?.intermediaryName || 'CORREDURÍA DE SEGUROS ALIADA';
+  const brokerName = broker?.intermediaryName || 'Corredores de Seguros Asociados S.A.';
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
@@ -1008,24 +1008,77 @@ export const generatePDF = (
   doc.addPage();
   let policyY = addHeader('Políticas Comerciales y Condiciones de la Oferta');
 
-  const structuredPolicies = getStructuredCommercialPolicyEntries(effectivePolicies);
-
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(30, 41, 59);
-  doc.text('Términos y Condiciones Comerciales de la Propuesta', 14, policyY + 2);
+  doc.text('Condiciones Comerciales de Cotizaciones por Aseguradora', 14, policyY + 2);
 
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(71, 85, 105);
   const commercialIntroText =
-    'El presente documento contiene las condiciones comerciales e instrucciones operativas bajo las cuales se presenta el estudio comparativo. ' +
-    'Estas directrices rigen la validez de las cotizaciones, los requisitos de inspección previa, el recaudo de primas y el marco de intermediación en la República de Colombia.';
+    'El presente cuadro consolida las condiciones comerciales, facilidades de financiación y requisitos de asegurabilidad estipulados en cada una de las propuestas evaluadas.';
   const splitIntro = doc.splitTextToSize(commercialIntroText, 182);
   doc.text(splitIntro, 14, policyY + 7);
 
   policyY += 8 + splitIntro.length * 4;
 
+  // 1. Tabla Comparativa de Condiciones Comerciales Propuestas por Aseguradora
+  const extractedConditions = extractCommercialConditionsFromReport(report);
+
+  const compTableHead = [['Condición Comercial', ...insurers]];
+  const compTableBody = COMMERCIAL_CONDITION_FIELDS.map(({ key, label }) => {
+    const row: string[] = [label];
+    quotes.forEach((q) => {
+      const ins = q.insurerName || 'Aseguradora';
+      const val = extractedConditions[ins]?.[key] || 'No especificado en cotización';
+      row.push(val);
+    });
+    return row;
+  });
+
+  autoTable(doc, {
+    startY: policyY,
+    head: compTableHead,
+    body: compTableBody,
+    theme: 'grid',
+    headStyles: {
+      fillColor: PRIMARY_COLOR,
+      textColor: [255, 255, 255],
+      fontSize: 8,
+      fontStyle: 'bold',
+      halign: 'center',
+    },
+    bodyStyles: {
+      fontSize: 7.5,
+      cellPadding: 2.5,
+      textColor: [30, 41, 59],
+    },
+    columnStyles: {
+      0: { cellWidth: 44, fontStyle: 'bold', fillColor: [248, 250, 252] },
+    },
+    margin: TABLE_MARGINS,
+    didDrawPage: () => {
+      const pageNum = doc.getCurrentPageInfo().pageNumber;
+      if (!pagesWithHeader.has(pageNum)) {
+        addHeader('Condiciones Comerciales de Cotizaciones (Cont.)');
+      }
+    },
+  });
+
+  policyY = getLastAutoTableFinalY(doc, policyY) + 7;
+  if (policyY > 195) {
+    doc.addPage();
+    policyY = addHeader('Políticas Comerciales del Corredor');
+  }
+
+  doc.setFontSize(9.5);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(30, 41, 59);
+  doc.text('Políticas Generales y Procedimientos de Intermediación del Corredor', 14, policyY + 2);
+  policyY += 6;
+
+  const structuredPolicies = getStructuredCommercialPolicyEntries(effectivePolicies);
   const policyTableHead = [['Categoría / Condición', 'Detalle y Alcance Operativo']];
   const policyTableBody = structuredPolicies.map((p) => [
     `${p.title}\n(${p.category})`,
@@ -1097,40 +1150,39 @@ export const generatePDF = (
   const brokerDisplayName =
     options?.brokerInfo?.intermediaryName ||
     options?.brokerInfo?.name ||
-    'Correduría de Seguros Aliada';
-  const brokerFooterContact = [
-    options?.brokerInfo?.phone ? `Tel: ${options.brokerInfo.phone}` : '',
-    options?.brokerInfo?.email || '',
-    options?.brokerInfo?.city || '',
-  ]
-    .filter(Boolean)
-    .join(' · ');
+    'Corredores de Seguros Asociados S.A.';
+  const brokerAdvisorName = options?.brokerInfo?.name || 'Asesor Técnico de Seguros';
+  const brokerPhoneStr = options?.brokerInfo?.phone || '+57 (601) 345-6789';
+  const brokerEmailStr = options?.brokerInfo?.email || 'soporte@comparadorcsa.com';
+  const brokerRegStr = options?.brokerInfo?.registrationNumber || 'Inscripción Vigente SFC';
+  const brokerWebStr = 'https://correseguros.co/';
 
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     // Subtle top border for footer
     doc.setDrawColor(226, 232, 240);
     doc.setLineWidth(0.4);
-    doc.line(14, 282, 196, 282);
+    doc.line(14, 281, 196, 281);
 
-    // Left: Ally branding & contact
-    doc.setFontSize(7);
+    // Row 1 (Bold primary contact line): Company, Advisor, Phone, Email
+    doc.setFontSize(6.8);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(51, 65, 85);
-    const leftText = `${brokerDisplayName}${brokerFooterContact ? ` · ${brokerFooterContact}` : ''}`;
-    doc.text(leftText.substring(0, 95), 14, 286);
+    doc.setTextColor(30, 58, 138);
+    const row1 = `${brokerDisplayName}  |  Asesor: ${brokerAdvisorName}  |  Tel: ${brokerPhoneStr}  |  Email: ${brokerEmailStr}`;
+    doc.text(row1.substring(0, 115), 14, 285);
 
-    // Explicit credit for Corredores de Seguros Asociados S.A.
-    doc.setFontSize(6.5);
+    // Row 2 (Secondary line): Web, SFC registration, Claims & Regulatory Supervision
+    doc.setFontSize(6.2);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100, 116, 139);
-    doc.text('En alianza con Corredores de Seguros Asociados S.A. · Vigilado Superintendencia Financiera de Colombia', 14, 290);
+    const row2 = `Web: ${brokerWebStr}  |  Reg. SFC: ${brokerRegStr}  |  Atención y radicación de siniestros  |  Vigilado Superintendencia Financiera de Colombia`;
+    doc.text(row2.substring(0, 130), 14, 289);
 
     // Right: Page number and system mark
-    doc.setFontSize(7);
+    doc.setFontSize(6.8);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(148, 163, 184);
-    doc.text(`Página ${i} de ${pageCount}  |  CSA`, 196, 288.5, { align: 'right' });
+    doc.text(`Página ${i} de ${pageCount}  |  CSA`, 196, 287, { align: 'right' });
   }
 
   const safeDomain = (domain || 'Seguros').replace(/[^a-zA-Z0-9_-]/g, '_');

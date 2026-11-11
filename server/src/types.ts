@@ -172,6 +172,15 @@ export interface RegulatoryCheckResult {
   details: string;
 }
 
+export interface InsurerCommercialConditions {
+  validezOferta?: string;
+  formaPago?: string;
+  inspeccionPrevia?: string;
+  requisitosEmision?: string;
+  otrasCondiciones?: string;
+  [key: string]: string | undefined;
+}
+
 export interface ComparisonReport {
   quotes: QuoteAnalysis[];
   recommendation: string;
@@ -182,6 +191,7 @@ export interface ComparisonReport {
   }[];
   matrix?: MatrixRow[]; // Synced backend rows
   quoteMetadata?: QuoteMetadata[]; // Extracted risk details
+  commercialConditions?: Record<string, InsurerCommercialConditions>;
   schemaVersion?: 1 | 2 | 3;
   domain?: string;
   regulatoryBacking?: {

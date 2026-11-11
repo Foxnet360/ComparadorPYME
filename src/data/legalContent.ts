@@ -32,7 +32,7 @@ export const TERMS_OF_SERVICE: LegalDocument = {
       id: 'terms-1',
       title: '1. Objeto y Naturaleza del Servicio',
       content: [
-        'Comparador CSA es una plataforma de software como servicio (SaaS) diseñada para brindar asistencia técnica, cotejo analítico, extracción estructurada mediante modelos de lenguaje (LLM) y auditoría documental de pólizas y cotizaciones de seguros multiramo en la República de Colombia.',
+        'Comparador CSA es una solución tecnológica desarrollada y operada por Corredores de Seguros Asociados S.A. (https://correseguros.co/), diseñada para brindar asistencia técnica, cotejo analítico, extracción estructurada mediante modelos de lenguaje (LLM) y auditoría documental de pólizas y cotizaciones de seguros multiramo en la República de Colombia.',
         'La plataforma está dirigida exclusivamente a profesionales del sector asegurador: corredores, agencias colocadoras, agentes independientes y administradores de riesgos debidamente registrados o vinculados a entidades autorizadas.',
       ],
     },
@@ -57,7 +57,7 @@ export const TERMS_OF_SERVICE: LegalDocument = {
       id: 'terms-4',
       title: '4. Propiedad Intelectual y Licencia de Uso',
       content: [
-        'Todos los algoritmos de extracción RAG, tesauros ontológicos normativos, interfaces, diseños y códigos fuente son propiedad exclusiva de Comparador CSA y sus licenciatarios.',
+        'Todos los algoritmos de extracción RAG, tesauros ontológicos normativos, interfaces, diseños y códigos fuente son propiedad exclusiva de Corredores de Seguros Asociados S.A. y sus licenciatarios.',
         'Se otorga al usuario una licencia de uso no exclusiva, intransferible, revocable y limitada al plazo de su suscripción o autorización corporativa.',
         'Los documentos PDF y cotizaciones cargados por los usuarios continúan siendo propiedad de sus respectivos titulares y emisores; la plataforma sólo adquiere los derechos necesarios para su procesamiento y visualización conforme a estos términos.',
       ],
@@ -94,7 +94,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       title: '1. Marco Normativo y Responsable del Tratamiento',
       content: [
         'La presente política da estricto cumplimiento a la Ley Estatutaria 1581 de 2012, el Decreto Reglamentario 1377 de 2013 y las directrices de la Superintendencia de Industria y Comercio (SIC) de Colombia.',
-        'Comparador CSA, en calidad de Responsable y Encargado del Tratamiento, garantiza la confidencialidad, integridad y disponibilidad de la información personal almacenada en sus bases de datos.',
+        'Corredores de Seguros Asociados S.A. (https://correseguros.co/), en calidad de Responsable y Encargado del Tratamiento a través de la plataforma Comparador CSA, garantiza la confidencialidad, integridad y disponibilidad de la información personal almacenada en sus bases de datos.',
       ],
     },
     {
@@ -174,13 +174,14 @@ export const REGULATORY_DISCLAIMER: LegalDocument = {
   lastUpdated: 'Octubre 2026',
   version: '2.0',
   summary:
-    'Aclaración expresa sobre la no intermediación directa, independencia tecnológica y cumplimiento frente al Estatuto Orgánico del Sistema Financiero de Colombia.',
+    'Aclaración expresa sobre la no intermediación directa, independencia tecnológica y cumplimiento frente a directrices de la Superintendencia Financiera de Colombia y el Estatuto Orgánico del Sistema Financiero.',
   sections: [
     {
       id: 'disc-1',
       title: '1. No Intermediación Directa ni Asunción de Riesgo',
       content: [
-        'Comparador CSA es una empresa proveedora de tecnología y herramientas de software. No es una compañía de seguros, reaseguradora, ni entidad financiera sujeta a la vigilancia directa de la Superintendencia Financiera de Colombia en calidad de emisora.',
+        'Comparador CSA es una solución tecnológica desarrollada y operada por Corredores de Seguros Asociados S.A. (https://correseguros.co/). La herramienta proporciona asistencia computacional técnica e independiente para el cotejo de ofertas de seguros.',
+        'La plataforma y su firma titular operan bajo el marco de estricta independencia técnica e imparcialidad legal exigido por las directrices de la Superintendencia Financiera de Colombia, el Estatuto Orgánico del Sistema Financiero y el Código de Comercio de Colombia, manteniendo total autonomía operativa frente a las compañías de seguros y entidades bancarias del mercado.',
         'La plataforma no expide pólizas de seguros, no cobra primas de aseguramiento, no asume riesgos amparados ni sustituye los contratos de seguros definitivos suscritos entre los tomadores y las aseguradoras legalmente establecidas.',
       ],
     },

@@ -1,5 +1,5 @@
-export { InsuranceDomain } from '@shared/insuranceDomain';
-export type { InsuranceDomainType } from '@shared/insuranceDomain';
+import { InsuranceDomain, type InsuranceDomainType } from '@shared/insuranceDomain';
+export { InsuranceDomain, type InsuranceDomainType };
 export type { CommercialPolicies, CommercialPolicyItem } from './src/data/commercialPolicies';
 
 export interface Citation {
@@ -85,6 +85,7 @@ export interface QuoteAnalysis {
   verificationConfidence?: number;
   isRagAvailable?: boolean;
   extractionConfidence?: number;
+  parseConfidence?: number;
   confidenceBreakdown?: {
     coverageCompleteness: number;
     numericParseSuccess: number;
@@ -100,6 +101,7 @@ export interface QuoteAnalysis {
     code: string;
   }>;
   validationSummary?: string;
+  specialConditions?: any[];
   // Advanced analysis fields (optional, backward compatible)
   clauseValidation?: ClauseValidationResult;
   deductibleAnalysis?: DeductibleAnalysis[];
@@ -188,16 +190,21 @@ export interface ClauseValidationResult {
 }
 
 export interface DeductibleAnalysis {
-  coverageName: string;
-  quoteDeductible: string;
-  clauseDeductible: string;
-  insuredAmount: number;
-  deductibleAmount: number;
-  deductibleRatio: number;
-  hasCap: boolean;
+  coverageName?: string;
+  coverage?: string;
+  deductibleText?: string;
+  financialExposureCOP?: number;
+  smmlvEquivalent?: number;
+  marketComparison?: string;
+  quoteDeductible?: string;
+  clauseDeductible?: string;
+  insuredAmount?: number;
+  deductibleAmount?: number;
+  deductibleRatio?: number;
+  hasCap?: boolean;
   capAmount?: number;
   riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
-  score: number;
+  score?: number;
   recommendation?: string;
 }
 
@@ -272,6 +279,7 @@ export interface ClientInfoSummary {
   name?: string;
   nit?: string;
   activity?: string;
+  activitySector?: string;
   location?: string;
   address?: string;
   city?: string;
@@ -295,6 +303,15 @@ export interface RegulatoryCheckResult {
   details: string;
 }
 
+export interface InsurerCommercialConditions {
+  validezOferta?: string;
+  formaPago?: string;
+  inspeccionPrevia?: string;
+  requisitosEmision?: string;
+  otrasCondiciones?: string;
+  [key: string]: string | undefined;
+}
+
 export interface ComparisonReport {
   id?: string;
   quotes: QuoteAnalysis[];
@@ -306,6 +323,7 @@ export interface ComparisonReport {
   }[];
   matrix?: MatrixRow[]; // Synced backend rows
   quoteMetadata?: QuoteMetadata[]; // Extracted risk details
+  commercialConditions?: Record<string, InsurerCommercialConditions>; // Extracted/edited commercial conditions per insurer
   schemaVersion?: 1 | 2 | 3; // 3 = renewal (v2 + baseline + analytics), 2 = V2 granular, 1/missing = legacy V1
   /** Renewal mode only (schemaVersion 3): incumbent baseline + per-candidate analytics. */
   baseline?: RenewalBaseline;
@@ -383,6 +401,9 @@ export interface UserProfile {
   role: 'TECHNICAL' | 'ADMIN' | UserRole;
   allyId?: string;
   allyName?: string;
+  agencyName?: string;
+  defaultDomain?: InsuranceDomain | string;
+  phone?: string;
   avatarUrl?: string;
   intermediaryName?: string;
   registrationNumber?: string;
@@ -552,6 +573,9 @@ export interface ExtendedUserProfile extends Omit<UserProfile, 'role'> {
   role: UserRole;
   allyId?: string;
   allyName?: string;
+  agencyName?: string;
+  defaultDomain?: InsuranceDomain | string;
+  phone?: string;
 }
 
 export interface AnalystPerformance {
@@ -569,6 +593,9 @@ export interface ExecutiveAnalyticsData {
   role: UserRole;
   allyId?: string;
   allyName?: string;
+  agencyName?: string;
+  defaultDomain?: InsuranceDomain | string;
+  phone?: string;
   totalComparisons: number;
   soldCount: number;
   conversionRate: number;

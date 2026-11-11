@@ -5,14 +5,14 @@ import { apiClient } from './apiClient';
 
 export const DEMO_ALLIES: Ally[] = [
   { id: 'ally-100', name: 'Correduría Andina de Seguros S.A.', nit: '900.543.210-1' },
-  { id: 'ally-200', name: 'Alianza Corredores PYME Ltda.', nit: '800.123.456-9' },
+  { id: 'ally-200', name: 'Unión Corredores PYME Ltda.', nit: '800.123.456-9' },
   { id: 'ally-300', name: 'Seguros Estratégicos del Caribe', nit: '901.888.777-5' },
 ];
 
 export const DEMO_ANALYSTS: Array<{ id: string; name: string; allyId: string; email?: string }> = [
   { id: 'user-tech-1', name: 'Carlos Mendoza (Técnico Senior)', allyId: 'ally-100', email: 'carlos@andina.com' },
   { id: 'user-tech-2', name: 'Ana María Gómez (Analista PYME)', allyId: 'ally-100', email: 'ana@andina.com' },
-  { id: 'user-tech-3', name: 'Jorge Rojas (Especialista Daños)', allyId: 'ally-200', email: 'jorge@alianzapyme.com' },
+  { id: 'user-tech-3', name: 'Jorge Rojas (Especialista Daños)', allyId: 'ally-200', email: 'jorge@unioncorredores.com' },
   { id: 'user-tech-4', name: 'Laura Betancur (Analista RC)', allyId: 'ally-300', email: 'laura@caribeseguros.com' },
 ];
 
@@ -333,7 +333,7 @@ export const analyticsService = {
             estimatedCostUSD: 6.8,
           },
           {
-            allyName: 'Alianza Corredores PYME Ltda.',
+            allyName: 'Unión Corredores PYME Ltda.',
             inputTokens: 490000,
             outputTokens: 112000,
             estimatedCostUSD: 4.9,

@@ -2,20 +2,20 @@ import React from 'react';
 import { AlertTriangle, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface DeductibleRiskGaugeProps {
-  deductibleRatio: number; // 0.0 to 1.0
-  deductibleAmount: number;
-  insuredAmount: number;
+  deductibleRatio?: number; // 0.0 to 1.0
+  deductibleAmount?: number;
+  insuredAmount?: number;
   riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
-  hasCap: boolean;
+  hasCap?: boolean;
   capAmount?: number;
 }
 
 export const DeductibleRiskGauge: React.FC<DeductibleRiskGaugeProps> = ({
-  deductibleRatio,
-  deductibleAmount,
-  insuredAmount,
+  deductibleRatio = 0,
+  deductibleAmount = 0,
+  insuredAmount = 0,
   riskLevel,
-  hasCap,
+  hasCap = false,
   capAmount,
 }) => {
   const percentage = deductibleRatio * 100;

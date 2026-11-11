@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Users,
   Building,
@@ -12,6 +12,11 @@ import {
   X,
   Link2,
   CheckCircle2,
+  Navigation,
+  Loader2,
+  ExternalLink,
+  ChevronDown,
+  Sparkles,
 } from 'lucide-react';
 import { Client, HistoryEntry, ComparisonReport } from '../types';
 import { storageService } from '../services/storageService';
@@ -20,8 +25,11 @@ import {
   COLOMBIA_DEPARTMENTS,
   getMunicipalitiesByDepartment,
   findGeoByCity,
+  searchMunicipalities,
+  getAllDepartments,
   SeismicZone,
 } from '../src/data/colombiaGeo';
+import { geocodeClientAddress } from '../src/services/geocodingService';
 
 interface ClientManagerProps {
   onSelectClientForAudit?: (client: Client) => void;
@@ -127,8 +135,100 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
     setClientAudits(audits);
   };
 
+  // City Search & Geocoding States
+  const [citySearchTerm, setCitySearchTerm] = useState('');
+  const [isCityDropdownOpen, setIsCityDropdownOpen] = useState(false);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [geoStatus, setGeoStatus] = useState<{
+    source: 'address_precise' | 'municipality_fallback' | 'manual';
+    message: string;
+  } | null>(null);
+
+  const geocodeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cityDropdownRef = useRef<HTMLDivElement>(null);
+
+  const allDepartments = useMemo(() => getAllDepartments(), []);
+
+  // Filtrado optimizado de municipios con búsqueda predictiva
+  const displayedMunicipalities = useMemo(() => {
+    const currentDept = clientForm.department || 'Bogotá D.C.';
+    if (!citySearchTerm.trim()) {
+      return getMunicipalitiesByDepartment(currentDept).map((m) => ({
+        ...m,
+        department: currentDept,
+      }));
+    }
+
+    // Buscar primero dentro del departamento
+    const inDept = searchMunicipalities(citySearchTerm, currentDept, 25);
+    if (inDept.length > 0) return inDept;
+
+    // Si no hay resultados en el departamento actual, buscar en todo Colombia
+    return searchMunicipalities(citySearchTerm, undefined, 25);
+  }, [clientForm.department, citySearchTerm]);
+
+  // Click outside listener para cerrar dropdown de municipios
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (cityDropdownRef.current && !cityDropdownRef.current.contains(e.target as Node)) {
+        setIsCityDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const runAddressGeocode = async (addressToGeocode: string, city?: string, department?: string) => {
+    if (!addressToGeocode || addressToGeocode.trim().length < 5) return;
+    setIsGeocoding(true);
+    try {
+      const res = await geocodeClientAddress({
+        address: addressToGeocode,
+        city: city || clientForm.city,
+        department: department || clientForm.department,
+      });
+
+      setClientForm((prev) => ({
+        ...prev,
+        latitude: res.latitude,
+        longitude: res.longitude,
+      }));
+
+      setGeoStatus({
+        source: res.source,
+        message:
+          res.message ||
+          (res.source === 'address_precise'
+            ? 'Georreferenciación exacta por dirección'
+            : 'Coordenadas centroide del municipio'),
+      });
+    } catch {
+      // mantener coordenadas actuales
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
+
+  const handleAddressChange = (newAddress: string) => {
+    setClientForm((prev) => ({ ...prev, address: newAddress }));
+
+    if (geocodeDebounceRef.current) {
+      clearTimeout(geocodeDebounceRef.current);
+    }
+
+    if (newAddress.trim().length >= 6) {
+      geocodeDebounceRef.current = setTimeout(() => {
+        runAddressGeocode(newAddress, clientForm.city, clientForm.department);
+      }, 850);
+    }
+  };
+
   const handleOpenCreateModal = () => {
     setEditingClient(null);
+    const initialCity = 'Bogotá D.C.';
+    const initialDept = 'Bogotá D.C.';
+    const initialGeo = findGeoByCity(initialCity, initialDept);
+
     setClientForm({
       name: '',
       nit: '',
@@ -137,11 +237,11 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
       phone: '',
       industry: 'Copropiedad Horizontal',
       address: '',
-      city: 'Bogotá',
-      department: 'Cundinamarca',
-      latitude: 4.6097,
-      longitude: -74.0817,
-      seismicZone: 'Intermedia',
+      city: initialCity,
+      department: initialDept,
+      latitude: initialGeo?.lat || 4.6097,
+      longitude: initialGeo?.lng || -74.0817,
+      seismicZone: initialGeo?.zone || 'Intermedia',
       buildingType: 'Residencial',
       towersCount: 1,
       unitsCount: 20,
@@ -150,12 +250,24 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
       hasElevators: true,
       hasPowerPlant: false,
     });
+    setCitySearchTerm(initialCity);
+    setIsCityDropdownOpen(false);
+    setGeoStatus({
+      source: 'municipality_fallback',
+      message: `Coordenadas oficiales de ${initialCity}`,
+    });
     setIsModalOpen(true);
   };
 
   const handleOpenEditModal = (client: Client) => {
     setEditingClient(client);
     setClientForm({ ...client });
+    setCitySearchTerm(client.city || '');
+    setIsCityDropdownOpen(false);
+    setGeoStatus({
+      source: 'manual',
+      message: client.latitude && client.longitude ? 'Coordenadas del cliente' : 'Sin coordenadas',
+    });
     setIsModalOpen(true);
   };
 
@@ -171,24 +283,43 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
         latitude: firstCity.lat,
         longitude: firstCity.lng,
       }));
+      setCitySearchTerm(firstCity.name);
+      setGeoStatus({
+        source: 'municipality_fallback',
+        message: `Coordenadas base de ${firstCity.name} (${deptName})`,
+      });
+      if (clientForm.address && clientForm.address.trim().length >= 6) {
+        runAddressGeocode(clientForm.address, firstCity.name, deptName);
+      }
     } else {
       setClientForm((prev) => ({ ...prev, department: deptName }));
     }
   };
 
-  const handleCityChange = (cityName: string) => {
-    const geo = findGeoByCity(cityName, clientForm.department);
-    if (geo) {
-      setClientForm((prev) => ({
-        ...prev,
-        city: cityName,
-        department: geo.dept,
-        seismicZone: geo.zone,
-        latitude: geo.lat,
-        longitude: geo.lng,
-      }));
-    } else {
-      setClientForm((prev) => ({ ...prev, city: cityName }));
+  const handleSelectMunicipality = (m: {
+    name: string;
+    department: string;
+    zone: SeismicZone;
+    lat: number;
+    lng: number;
+  }) => {
+    setClientForm((prev) => ({
+      ...prev,
+      city: m.name,
+      department: m.department,
+      seismicZone: m.zone,
+      latitude: m.lat,
+      longitude: m.lng,
+    }));
+    setCitySearchTerm(m.name);
+    setIsCityDropdownOpen(false);
+    setGeoStatus({
+      source: 'municipality_fallback',
+      message: `Coordenadas oficiales de ${m.name} (${m.department})`,
+    });
+
+    if (clientForm.address && clientForm.address.trim().length >= 6) {
+      runAddressGeocode(clientForm.address, m.name, m.department);
     }
   };
 
@@ -642,102 +773,224 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
               </div>
 
               <div className="pt-3 border-t border-slate-100">
-                <h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-3">
-                  Ubicación Georreferenciada
-                </h4>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <MapPin size={14} className="text-indigo-600" />
+                    Ubicación Georreferenciada (DIVIPOLA / NSR-10)
+                  </h4>
+                  {geoStatus && (
+                    <span
+                      className={`text-[11px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                        geoStatus.source === 'address_precise'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : geoStatus.source === 'municipality_fallback'
+                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                          : 'bg-slate-100 text-slate-600 border border-slate-200'
+                      }`}
+                    >
+                      {geoStatus.source === 'address_precise' ? (
+                        <CheckCircle2 size={12} className="text-emerald-600" />
+                      ) : (
+                        <MapPin size={12} className="text-blue-600" />
+                      )}
+                      {geoStatus.message}
+                    </span>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                  {/* Selector de Departamento */}
                   <div>
                     <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
-                      Departamento
+                      Departamento ({allDepartments.length})
                     </label>
                     <select
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       value={clientForm.department || 'Bogotá D.C.'}
                       onChange={(e) => handleDepartmentChange(e.target.value)}
                     >
                       {COLOMBIA_DEPARTMENTS.map((d) => (
                         <option key={d.code} value={d.name}>
-                          {d.name}
+                          {d.name} ({d.municipalities.length})
                         </option>
                       ))}
                     </select>
                   </div>
 
-                  <div>
+                  {/* Selector Inteligente y Searchable de Municipio */}
+                  <div className="relative" ref={cityDropdownRef}>
                     <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
-                      Ciudad / Municipio
+                      Ciudad / Municipio (1.122 en Colombia)
                     </label>
-                    <select
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white"
-                      value={clientForm.city}
-                      onChange={(e) => handleCityChange(e.target.value)}
-                    >
-                      {getMunicipalitiesByDepartment(clientForm.department || 'Bogotá D.C.').map((m) => (
-                        <option key={m.name} value={m.name}>
-                          {m.name}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
+                        <Search size={14} />
+                      </div>
+                      <input
+                        type="text"
+                        className="w-full pl-8 pr-8 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="Buscar municipio..."
+                        value={citySearchTerm}
+                        onFocus={() => setIsCityDropdownOpen(true)}
+                        onChange={(e) => {
+                          setCitySearchTerm(e.target.value);
+                          setIsCityDropdownOpen(true);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setIsCityDropdownOpen(!isCityDropdownOpen)}
+                        className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600"
+                      >
+                        <ChevronDown size={14} />
+                      </button>
+                    </div>
+
+                    {/* Dropdown de opciones filtradas */}
+                    {isCityDropdownOpen && (
+                      <div className="absolute z-40 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-56 overflow-y-auto divide-y divide-slate-100">
+                        {displayedMunicipalities.length > 0 ? (
+                          displayedMunicipalities.map((m, idx) => (
+                            <button
+                              key={`${m.department}-${m.name}-${idx}`}
+                              type="button"
+                              onClick={() => handleSelectMunicipality(m)}
+                              className={`w-full text-left px-3 py-2 text-xs hover:bg-indigo-50/80 transition-colors flex items-center justify-between ${
+                                clientForm.city === m.name ? 'bg-indigo-50 text-indigo-900 font-bold' : 'text-slate-700'
+                              }`}
+                            >
+                              <div className="flex flex-col">
+                                <span className="font-semibold text-slate-900">{m.name}</span>
+                                <span className="text-[10px] text-slate-500">{m.department}</span>
+                              </div>
+                              <span
+                                className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                                  m.zone === 'Alta'
+                                    ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                    : m.zone === 'Intermedia'
+                                    ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                    : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                }`}
+                              >
+                                {m.zone}
+                              </span>
+                            </button>
+                          ))
+                        ) : (
+                          <div className="p-3 text-xs text-slate-400 text-center">
+                            No se encontraron municipios coincidentes.
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
+                  {/* Zona Sísmica NSR-10 */}
                   <div>
                     <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
                       Zona Sísmica (NSR-10)
                     </label>
                     <select
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white font-semibold"
+                      className={`w-full px-3 py-2 border rounded-lg text-sm bg-white font-semibold ${
+                        clientForm.seismicZone === 'Alta'
+                          ? 'border-rose-300 text-rose-700 bg-rose-50/30'
+                          : clientForm.seismicZone === 'Intermedia'
+                          ? 'border-amber-300 text-amber-700 bg-amber-50/30'
+                          : 'border-emerald-300 text-emerald-700 bg-emerald-50/30'
+                      }`}
                       value={clientForm.seismicZone}
                       onChange={(e) =>
                         setClientForm({ ...clientForm, seismicZone: e.target.value as SeismicZone })
                       }
                     >
-                      <option value="Alta">Alta</option>
-                      <option value="Intermedia">Intermedia</option>
-                      <option value="Baja">Baja</option>
+                      <option value="Alta">Zona Alta (Amenaza Sísmica Severa)</option>
+                      <option value="Intermedia">Zona Intermedia (Amenaza Moderada)</option>
+                      <option value="Baja">Zona Baja (Amenaza Reducida)</option>
                     </select>
                   </div>
                 </div>
 
+                {/* Dirección y Coordenadas GPS Automáticas */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
-                      Dirección Completa
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-                      value={clientForm.address}
-                      onChange={(e) => setClientForm({ ...clientForm, address: e.target.value })}
-                    />
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-slate-600 uppercase">
+                        Dirección Completa
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          runAddressGeocode(clientForm.address || '', clientForm.city, clientForm.department)
+                        }
+                        disabled={isGeocoding || !clientForm.address}
+                        className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 disabled:opacity-40 transition-colors"
+                      >
+                        {isGeocoding ? (
+                          <>
+                            <Loader2 size={12} className="animate-spin text-indigo-600" />
+                            <span>Buscando GPS...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Navigation size={12} />
+                            <span>Georreferenciar dirección</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Ej: Calle 72 # 10-07, Edificio Los Rosales"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        value={clientForm.address || ''}
+                        onChange={(e) => handleAddressChange(e.target.value)}
+                      />
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                        Latitud
+                        Latitud GPS
                       </label>
                       <input
                         type="number"
                         step="0.0001"
-                        className="w-full px-2 py-2 border border-slate-300 rounded-lg text-xs font-mono"
-                        value={clientForm.latitude}
-                        onChange={(e) =>
-                          setClientForm({ ...clientForm, latitude: parseFloat(e.target.value) })
-                        }
+                        className="w-full px-2 py-2 border border-slate-300 rounded-lg text-xs font-mono bg-slate-50/70"
+                        value={clientForm.latitude ?? 4.6097}
+                        onChange={(e) => {
+                          setClientForm({ ...clientForm, latitude: parseFloat(e.target.value) });
+                          setGeoStatus({ source: 'manual', message: 'Latitud editada manualmente' });
+                        }}
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                        Longitud
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase">
+                          Longitud GPS
+                        </label>
+                        {clientForm.latitude && clientForm.longitude ? (
+                          <a
+                            href={`https://www.google.com/maps?q=${clientForm.latitude},${clientForm.longitude}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] text-indigo-500 hover:text-indigo-700 flex items-center gap-0.5"
+                            title="Ver en Google Maps"
+                          >
+                            <ExternalLink size={10} />
+                          </a>
+                        ) : null}
+                      </div>
                       <input
                         type="number"
                         step="0.0001"
-                        className="w-full px-2 py-2 border border-slate-300 rounded-lg text-xs font-mono"
-                        value={clientForm.longitude}
-                        onChange={(e) =>
-                          setClientForm({ ...clientForm, longitude: parseFloat(e.target.value) })
-                        }
+                        className="w-full px-2 py-2 border border-slate-300 rounded-lg text-xs font-mono bg-slate-50/70"
+                        value={clientForm.longitude ?? -74.0817}
+                        onChange={(e) => {
+                          setClientForm({ ...clientForm, longitude: parseFloat(e.target.value) });
+                          setGeoStatus({ source: 'manual', message: 'Longitud editada manualmente' });
+                        }}
                       />
                     </div>
                   </div>

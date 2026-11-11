@@ -92,6 +92,12 @@ function mapTaxonomySectionToSchemaSection(section?: string): string {
   )
     return SchemaSection.SUSTRACCION;
   if (
+    normalized.includes('condicion comercial') ||
+    normalized.includes('condiciones comerciales') ||
+    normalized.includes('politica comercial')
+  )
+    return SchemaSection.CONDICIONES_COMERCIALES;
+  if (
     normalized.includes('condicion') ||
     normalized.includes('observacion') ||
     normalized.includes('exclusion')
@@ -128,6 +134,7 @@ function getSectionOrder(domain: InsuranceDomain = 'pyme'): string[] {
       'SUSTRACCIÓN',
       'DEDUCIBLES',
       'CONDICIONES',
+      'CONDICIONES COMERCIALES',
       FINANCIAL_SECTION_LABEL,
     ];
   }

@@ -46,6 +46,16 @@ export const HOGAR_GRANULAR_SECTIONS = [
     ],
   },
   {
+    section: 'CONDICIONES COMERCIALES',
+    rows: [
+      'Validez de la Oferta',
+      'Forma de Pago y Financiación',
+      'Inspección Previa y Garantías',
+      'Requisitos de Emisión',
+      'Otras Condiciones Comerciales',
+    ],
+  },
+  {
     section: 'FINANCIAL',
     rows: ['Prima con IVA incluido', 'Gastos de expedición', 'IVA', 'Total prima', 'Forma de pago'],
   },

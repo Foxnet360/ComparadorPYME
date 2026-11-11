@@ -74,6 +74,26 @@ const GRANULAR_SECTIONS = [
     rows: ['Sustracción con Violencia'],
   },
   {
+    section: 'CONDICIONES COMERCIALES',
+    rows: [
+      'Validez de la Oferta',
+      'Forma de Pago y Financiación',
+      'Inspección Previa y Garantías',
+      'Requisitos de Emisión',
+      'Otras Condiciones Comerciales',
+    ],
+  },
+  {
+    section: 'CONDICIONES COMERCIALES',
+    rows: [
+      'Validez de la Oferta',
+      'Forma de Pago y Financiación',
+      'Inspección Previa y Garantías',
+      'Requisitos de Emisión',
+      'Otras Condiciones Comerciales',
+    ],
+  },
+  {
     section: 'FINANCIAL',
     rows: [
       'Prima Neta Anual',
@@ -137,6 +157,16 @@ export const COPROPIEDADES_GRANULAR_SECTIONS = [
     ],
   },
   {
+    section: 'CONDICIONES COMERCIALES',
+    rows: [
+      'Validez de la Oferta',
+      'Forma de Pago y Financiación',
+      'Inspección Previa y Garantías',
+      'Requisitos de Emisión',
+      'Otras Condiciones Comerciales',
+    ],
+  },
+  {
     section: 'FINANCIAL',
     rows: [
       'Prima Neta Anual',
@@ -195,6 +225,16 @@ export const AUTOS_GRANULAR_SECTIONS = [
     ],
   },
   {
+    section: 'CONDICIONES COMERCIALES',
+    rows: [
+      'Validez de la Oferta',
+      'Forma de Pago y Financiación',
+      'Inspección Previa y Garantías',
+      'Requisitos de Emisión',
+      'Otras Condiciones Comerciales',
+    ],
+  },
+  {
     section: 'FINANCIAL',
     rows: [
       'Prima Neta Anual',
@@ -249,6 +289,16 @@ export const SALUD_GRANULAR_SECTIONS = [
     ],
   },
   {
+    section: 'CONDICIONES COMERCIALES',
+    rows: [
+      'Validez de la Oferta',
+      'Forma de Pago y Financiación',
+      'Inspección Previa y Garantías',
+      'Requisitos de Emisión',
+      'Otras Condiciones Comerciales',
+    ],
+  },
+  {
     section: 'FINANCIAL',
     rows: [
       'Cuota Mensual por Persona',
@@ -288,6 +338,16 @@ export const CUMPLIMIENTO_GRANULAR_SECTIONS = [
       'Garantía de Mantenimiento y Correcto Funcionamiento',
       'Responsabilidad Civil Extracontractual Derivada del Contrato',
       'Provisión de Repuestos y Accesorios',
+    ],
+  },
+  {
+    section: 'CONDICIONES COMERCIALES',
+    rows: [
+      'Validez de la Oferta',
+      'Forma de Pago y Financiación',
+      'Inspección Previa y Garantías',
+      'Requisitos de Emisión',
+      'Otras Condiciones Comerciales',
     ],
   },
   {
@@ -337,6 +397,16 @@ export const TRANSPORTE_GRANULAR_SECTIONS = [
     ],
   },
   {
+    section: 'CONDICIONES COMERCIALES',
+    rows: [
+      'Validez de la Oferta',
+      'Forma de Pago y Financiación',
+      'Inspección Previa y Garantías',
+      'Requisitos de Emisión',
+      'Otras Condiciones Comerciales',
+    ],
+  },
+  {
     section: 'FINANCIAL',
     rows: [
       'Prima Neta / Depósito de Transporte',
@@ -378,6 +448,16 @@ export const VIDA_GRUPO_GRANULAR_SECTIONS = [
       'Doble Indemnización por Accidente de Tránsito',
       'Cobertura de Suicidio (Día 1 vs. Carencia de 1 Año)',
       'Exoneración de Pago de Primas por Invalidez',
+    ],
+  },
+  {
+    section: 'CONDICIONES COMERCIALES',
+    rows: [
+      'Validez de la Oferta',
+      'Forma de Pago y Financiación',
+      'Inspección Previa y Garantías',
+      'Requisitos de Emisión',
+      'Otras Condiciones Comerciales',
     ],
   },
   {
@@ -579,6 +659,13 @@ Reglas Generales:
   * Usa "Sin deducible" en la sección de deducibles cuando el amparo no tenga copago a cargo del asegurado.
   * Usa "No Aplica (Edificio no cotizado)" o "No Aplica (Contenidos no cotizados)" en deducibles cuando el bien base no forma parte del seguro.
 - REGLA CRÍTICA DE COMPLETITUD: DEBES EXTRAER EL 100% DE LAS COBERTURAS, BIENES, DEDUCIBLES Y CONDICIONES PRESENTES EN LAS COTIZACIONES. NO OMITAS NINGUNA FILA POR RESUMEN O LÍMITE DE ESPACIO. SI EXISTEN 30 O 40 AMPAROS, GENERA LAS 30 O 40 FILAS EN EL JSON.
+- REGLA CRÍTICA DE CONDICIONES COMERCIALES: Si en las cotizaciones se hace referencia a "Condiciones Comerciales", "Condiciones de la Oferta", "Políticas Comerciales", "Garantías de Suscripción" o términos de pago/emisión:
+  * "Validez de la Oferta": Extrae el plazo de validez o fecha de vencimiento de la cotización (ej. "30 días calendario", "15 días", "Hasta 31/12/2026").
+  * "Forma de Pago y Financiación": Extrae facilidades de pago, número de cuotas, financiación o descuento por pronto pago (ej. "Hasta 10 cuotas mensuales sin interés / Débito automático", "Contado con 5% dto").
+  * "Inspección Previa y Garantías": Extrae si la aseguradora exige inspección previa de asegurabilidad, plazos o exenciones (ej. "Inspección obligatoria en 15 días", "Exenta por continuidad de póliza previa").
+  * "Requisitos de Emisión": Documentos requeridos para emitir (ej. "SARLAFT vigente + RUT + Orden de emisión firmada").
+  * "Otras Condiciones Comerciales": Cláusulas de mantenimiento de tasa, compromisos de siniestralidad, o notas comerciales de la propuesta.
+  * Si la cotización no explicita alguna de estas condiciones, reporta "No especificado en cotización".
 - REGLA OBLIGATORIA DE DEDUCIBLES: En cada celda del array "cells" de coberturas, incluye en el campo "deductible" el texto textual del deducible correspondiente a ese amparo (ej. "10% de la pérdida mín. 5 SMMLV", "Sin deducible", o "No aplica"). Además, incluye obligatoriamente la sección completa "DEDUCIBLES" con filas dedicadas para cada deducible de la cotización.
 - REGLA OBLIGATORIA DE LIQUIDACIÓN Y PRIMAS: En la sección "FINANCIAL", extrae sin excepción: 'Prima Neta Anual', 'Gastos de Expedición', 'IVA (19%)' y 'Total a Pagar / Prima Total Anual'. Si una cotización indica 'Prima Mínima' o monto de liquidación final, extráelo obligatoriamente en número en pesos en 'Total a Pagar'. NUNCA dejes la prima vacía ni en 0.
 - REGLA DE INTEGRIDAD NUMÉRICA: Conserva intactos los montos, monedas (COP/USD), símbolos y separadores de miles/decimales. Si una cifra dice "$ 15.000.000,00" o "$ 15,000,000.00", déjala tal cual sin alterar ni mover los puntos o comas.${percentageRule}

@@ -1,6 +1,6 @@
 # Comparador CSA - Análisis de Cotizaciones de Seguros
 
-Sistema de análisis y comparación de cotizaciones de seguros usando IA (Gemini) y búsqueda semántica con Supabase/pgvector.
+Sistema de análisis y comparación de cotizaciones de seguros usando IA (Gemini) y búsqueda semántica con Supabase/pgvector. Desarrollado y operado para [Corredores de Seguros Asociados S.A.](https://correseguros.co/).
 
 ## Arquitectura
 

@@ -644,6 +644,50 @@ describe('flatTableParser.parseV2', async () => {
     expect(gastosRow!.section).toBe('FINANCIAL');
   });
 
+  it('classifies CONDICIONES COMERCIALES section and commercial condition rows properly', async () => {
+    const input = JSON.stringify({
+      insurers: ['SURA', 'AXA'],
+      rows: [
+        {
+          label: 'Validez de la Oferta',
+          section: 'CONDICIONES COMERCIALES',
+          cells: [
+            { insurer: 'SURA', value: '30 días calendario' },
+            { insurer: 'AXA', value: '15 días' },
+          ],
+        },
+        {
+          label: 'Forma de Pago y Financiación',
+          section: 'CONDICIONES COMERCIALES',
+          cells: [
+            { insurer: 'SURA', value: 'Hasta 10 cuotas mensuales' },
+            { insurer: 'AXA', value: 'Contado con 5% dto o 6 cuotas' },
+          ],
+        },
+        {
+          label: 'Inspección Previa y Garantías',
+          section: 'CONDICIONES COMERCIALES',
+          cells: [
+            { insurer: 'SURA', value: 'Inspección virtual en 15 días' },
+            { insurer: 'AXA', value: 'Exenta con informe previo' },
+          ],
+        },
+      ],
+    });
+
+    const result = await flatTableParser.parseV2(input, baseOptions);
+    expect(FlatComparisonSchemaV2.safeParse(result).success).toBe(true);
+
+    const validezRow = result.rows.find((r) => r.label === 'Validez de la Oferta');
+    expect(validezRow).toBeDefined();
+    expect(validezRow!.section).toBe('CONDICIONES COMERCIALES');
+    expect(validezRow!.cells[0].value).toBe('30 días calendario');
+
+    const pagoRow = result.rows.find((r) => r.label === 'Forma de Pago y Financiación');
+    expect(pagoRow).toBeDefined();
+    expect(pagoRow!.section).toBe('CONDICIONES COMERCIALES');
+  });
+
   it('classifies new standard COBERTURAS section and coverages properly', async () => {
     const input = JSON.stringify({
       insurers: ['MAPFRE'],

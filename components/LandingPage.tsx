@@ -1247,6 +1247,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </h4>
               <ul className="space-y-2.5 text-xs">
                 <li className="flex items-center gap-2">
+                  <Globe size={14} className="text-indigo-400" />
+                  <a
+                    href="https://correseguros.co/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-white transition-colors"
+                  >
+                    correseguros.co
+                  </a>
+                </li>
+                <li className="flex items-center gap-2">
                   <Mail size={14} className="text-indigo-400" />
                   <span>soporte@comparadorcsa.com</span>
                 </li>
@@ -1263,7 +1274,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
 
           <div className="border-t border-slate-900 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-slate-500">
-            <p>© 2026 Comparador Seguros CSA. Todos los derechos reservados.</p>
+            <p>
+              © 2026 Comparador Seguros CSA · Desarrollado por{' '}
+              <a
+                href="https://correseguros.co/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-slate-400 hover:text-slate-300 underline underline-offset-2"
+              >
+                Corredores de Seguros Asociados S.A.
+              </a>{' '}
+              · Todos los derechos reservados.
+            </p>
             <div className="flex items-center space-x-1.5 mt-4 md:mt-0">
               <span>Tecnología desarrollada para el mercado asegurador colombiano</span>
               <Zap size={13} className="text-amber-400" />

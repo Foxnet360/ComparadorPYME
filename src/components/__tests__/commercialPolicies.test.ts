@@ -147,7 +147,7 @@ describe('Commercial Policies Module', () => {
         },
         'pyme',
         undefined,
-        'client'
+        'technical'
       );
 
       expect(buffer).toBeDefined();

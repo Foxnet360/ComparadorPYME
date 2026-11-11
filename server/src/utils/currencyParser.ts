@@ -22,6 +22,47 @@ export function parseColombianCurrency(valueStr: string | null | undefined): num
     return null;
   }
 
+  // 0. Detect magnitude expressions (e.g. "100 millones", "1.5 millones", "$ 100M", "100 MM", "100 mdp")
+  const millionExpr = trimmed.match(
+    /(?:^|\$\s*|\b)(\d+(?:[.,]\d+)?)\s*(?:millones?|mill[oó]n|mill\.|mdp|mm|m(?!\w))/i
+  );
+  if (millionExpr && millionExpr[1]) {
+    const rawVal = millionExpr[1];
+    let baseNum: number;
+    if (rawVal.includes(',')) {
+      baseNum = parseFloat(rawVal.replace(/\./g, '').replace(',', '.'));
+    } else if (rawVal.includes('.')) {
+      const parts = rawVal.split('.');
+      if (parts.length === 2 && parts[1]!.length <= 2) {
+        baseNum = parseFloat(rawVal);
+      } else {
+        baseNum = parseFloat(rawVal.replace(/\./g, ''));
+      }
+    } else {
+      baseNum = parseFloat(rawVal);
+    }
+    if (!isNaN(baseNum) && baseNum > 0) {
+      return Math.round(baseNum * 1000000);
+    }
+  }
+
+  // 0.1 Detect thousands expressions (e.g. "500 mil", "500 miles", "500k")
+  const thousandExpr = trimmed.match(
+    /(?:^|\$\s*|\b)(\d+(?:[.,]\d+)?)\s*(?:miles?|mil|k(?!\w))/i
+  );
+  if (thousandExpr && thousandExpr[1]) {
+    const rawVal = thousandExpr[1];
+    let baseNum: number;
+    if (rawVal.includes(',')) {
+      baseNum = parseFloat(rawVal.replace(/\./g, '').replace(',', '.'));
+    } else {
+      baseNum = parseFloat(rawVal);
+    }
+    if (!isNaN(baseNum) && baseNum > 0) {
+      return Math.round(baseNum * 1000);
+    }
+  }
+
   // Remove currency symbols, COP, USD, %, and whitespace
   let cleanStr = trimmed
     .replace(/^\$+/, '')

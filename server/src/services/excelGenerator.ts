@@ -26,6 +26,8 @@ import {
   CommercialPolicies,
   getEffectiveCommercialPolicies,
   getStructuredCommercialPolicyEntries,
+  COMMERCIAL_CONDITION_FIELDS,
+  extractCommercialConditionsFromReport,
 } from '../shared/commercialPolicies';
 
 async function getInsurerLogoPngBuffer(insurerName: string): Promise<Buffer | null> {
@@ -223,29 +225,32 @@ export async function generateExcelBuffer(
     quotes[0]!
   );
 
-  // Intermediary / Ally Commercial Details
-  const brokerName = brokerInfo?.intermediaryName || brokerInfo?.name || 'Correduría de Seguros Aliada';
+  // Intermediary / Broker Commercial Details
+  const brokerName =
+    brokerInfo?.intermediaryName || brokerInfo?.name || 'Corredores de Seguros Asociados S.A.';
   const brokerAdvisor = brokerInfo?.name || 'Asesor Técnico de Seguros';
-  const brokerPhone = brokerInfo?.phone || 'Línea de Asesoría';
-  const brokerEmail = brokerInfo?.email || 'contacto@corredor.com';
+  const brokerPhone = brokerInfo?.phone || '+57 (601) 345-6789';
+  const brokerEmail = brokerInfo?.email || 'soporte@comparadorcsa.com';
   const brokerReg = brokerInfo?.registrationNumber || 'Inscripción Vigente SFC';
-  const brokerAddress = brokerInfo?.address || '';
+  const brokerAddress = brokerInfo?.address || 'Bogotá D.C., Colombia';
   const brokerCity = brokerInfo?.city || 'Colombia';
+  const brokerWebsite = 'https://correseguros.co/';
   const todayStr = new Date().toLocaleDateString('es-ES');
 
   const applySheetHeaderFooter = (ws: ExcelJS.Worksheet, sheetTitle: string) => {
     ws.headerFooter = {
       oddHeader: `&L&B${brokerName}&C&"Segoe UI,Bold"${sheetTitle.toUpperCase()}&R${todayStr}`,
-      oddFooter: `&L${brokerName} · Tel: ${brokerPhone} · ${brokerEmail}&R&P de &N`,
+      oddFooter: `&L&B${brokerName}&B · Asesor: ${brokerAdvisor} · Tel: ${brokerPhone} · ${brokerEmail} · Web: ${brokerWebsite} · Reg. SFC: ${brokerReg}&R&P de &N`,
     };
   };
 
   // -------------------------------------------------------------
-  // Pestaña 1: Portada y Resumen General (Look & Feel Ejecutivo)
+  // Pestaña 1: Portada y Resumen General (Exclusiva para Modo Técnico)
   // -------------------------------------------------------------
-  const portada = workbook.addWorksheet('Portada y Resumen General');
-  portada.views = [{ showGridLines: false }];
-  applySheetHeaderFooter(portada, 'Portada y Resumen General');
+  if (mode === 'technical') {
+    const portada = workbook.addWorksheet('Portada y Resumen General');
+    portada.views = [{ showGridLines: false }];
+    applySheetHeaderFooter(portada, 'Portada y Resumen General');
 
   // Embed broker logo if provided as base64
   if (brokerInfo?.logoUrl && brokerInfo.logoUrl.includes('base64,')) {
@@ -333,7 +338,7 @@ export async function generateExcelBuffer(
   addInfoRow('Ubicación del Riesgo:', clientLocation, 14);
   addInfoRow('Valor Total Bienes:', totalAssetValueStr, 15);
 
-  portada.getCell('B17').value = 'DATOS DEL INTERMEDIARIO / ALIADO TÉCNICO';
+  portada.getCell('B17').value = 'DATOS DEL INTERMEDIARIO / CORREDOR TÉCNICO';
   portada.getCell('B17').font = {
     name: FONT_NAME,
     size: 11,
@@ -454,7 +459,7 @@ export async function generateExcelBuffer(
   const navRows = [
     {
       name: 'Portada y Resumen General',
-      desc: 'Resumen ejecutivo, ficha del cliente, aliado y scorecard de puntaje 0-100.',
+      desc: 'Resumen ejecutivo, ficha del cliente, corredor y scorecard de puntaje 0-100.',
     },
     {
       name: 'Matriz Coberturas',
@@ -508,6 +513,9 @@ export async function generateExcelBuffer(
   addInfoRow('Forma y Plazo de Pago:', effectivePolicies.paymentConditions, 44);
   addInfoRow('Requisitos de Emisión:', effectivePolicies.issuanceRequirements, 45);
   addInfoRow('Atención de Siniestros:', effectivePolicies.claimsPolicy, 46);
+  }
+
+  const effectivePolicies = getEffectiveCommercialPolicies(brokerInfo?.commercialPolicies);
 
   // -------------------------------------------------------------
   // Pestaña 2: Cuadro Comparativo Resumido ("Cuadro Chico")
@@ -533,15 +541,54 @@ export async function generateExcelBuffer(
   sumSubtitle.font = { name: FONT_NAME, size: 9.5, italic: true, color: { argb: 'FF64748B' } };
   sumSubtitle.alignment = { vertical: 'middle', horizontal: 'left' };
 
-  summarySheet.getRow(5).height = 54;
-  const sumHeaderLabel = summarySheet.getCell(5, 1);
+  // Bloque: INFORMACIÓN DEL TÉCNICO (INTERMEDIARIO)
+  summarySheet.mergeCells(5, 1, 5, quotes.length + 1);
+  const techHeader = summarySheet.getCell(5, 1);
+  techHeader.value = 'INFORMACIÓN DEL TÉCNICO (INTERMEDIARIO)';
+  techHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+  techHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+  techHeader.alignment = { vertical: 'middle', horizontal: 'left' };
+  summarySheet.getRow(5).height = 22;
+
+  summarySheet.mergeCells(6, 1, 6, quotes.length + 1);
+  const techRow1 = summarySheet.getCell(6, 1);
+  techRow1.value = `Técnico / Asesor: ${brokerAdvisor}   |   Compañía Intermediaria: ${brokerName}   |   Registro SFC: ${brokerReg}`;
+  techRow1.font = { name: FONT_NAME, size: 9.5, bold: true, color: { argb: 'FF1E293B' } };
+  techRow1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+  techRow1.alignment = { vertical: 'middle', horizontal: 'left' };
+  techRow1.border = {
+    left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+    right: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+    top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+  };
+  summarySheet.getRow(6).height = 20;
+
+  summarySheet.mergeCells(7, 1, 7, quotes.length + 1);
+  const techRow2 = summarySheet.getCell(7, 1);
+  const locStr = [brokerAddress, brokerCity].filter(Boolean).join(', ') || 'Colombia';
+  techRow2.value = `Teléfono: ${brokerPhone}   |   Email: ${brokerEmail}   |   Ubicación: ${locStr}   |   Web: ${brokerWebsite}`;
+  techRow2.font = { name: FONT_NAME, size: 9, color: { argb: 'FF475569' } };
+  techRow2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+  techRow2.alignment = { vertical: 'middle', horizontal: 'left' };
+  techRow2.border = {
+    left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+    right: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+    bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+  };
+  summarySheet.getRow(7).height = 20;
+
+  summarySheet.getRow(8).height = 10;
+
+  const tableHeaderRow = 9;
+  summarySheet.getRow(tableHeaderRow).height = 54;
+  const sumHeaderLabel = summarySheet.getCell(tableHeaderRow, 1);
   sumHeaderLabel.value = 'VARIABLE O CONCEPTO CLAVE';
   sumHeaderLabel.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
   sumHeaderLabel.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
   sumHeaderLabel.alignment = { vertical: 'middle', horizontal: 'left' };
 
   quotes.forEach((q, i) => {
-    const headerCell = summarySheet.getCell(5, i + 2);
+    const headerCell = summarySheet.getCell(tableHeaderRow, i + 2);
     headerCell.value = q.insurerName.toUpperCase();
     const profile = findColombianInsurerProfile(q.insurerName);
     const argbColor = profile?.primaryColor
@@ -559,7 +606,7 @@ export async function generateExcelBuffer(
 
     if (insurerImageIds[i] !== null) {
       summarySheet.addImage(insurerImageIds[i]!, {
-        tl: { col: i + 1 + 0.38, row: 4.1 },
+        tl: { col: i + 1 + 0.38, row: tableHeaderRow - 0.9 },
         ext: { width: 28, height: 28 },
       });
     }
@@ -727,7 +774,7 @@ export async function generateExcelBuffer(
     },
   ];
 
-  let currentSumRow = 6;
+  let currentSumRow = 10;
   for (const cr of condensedRows) {
     if (cr.type === 'header') {
       summarySheet.mergeCells(currentSumRow, 1, currentSumRow, quotes.length + 1);
@@ -769,12 +816,39 @@ export async function generateExcelBuffer(
     }
   }
 
+  // Bloque Pie de Página: Información de Contacto del Intermediario
+  currentSumRow += 1;
+  summarySheet.getRow(currentSumRow).height = 24;
+  summarySheet.mergeCells(currentSumRow, 1, currentSumRow, quotes.length + 1);
+  const sumFooterCell = summarySheet.getCell(currentSumRow, 1);
+  sumFooterCell.value = `CONTACTO Y ASESORÍA TÉCNICA: ${brokerName}   |   Asesor: ${brokerAdvisor}   |   Tel: ${brokerPhone}   |   Email: ${brokerEmail}   |   Web: ${brokerWebsite}   |   Reg. SFC: ${brokerReg}`;
+  sumFooterCell.font = { name: FONT_NAME, size: 9, bold: true, color: { argb: 'FF1E40AF' } };
+  sumFooterCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+  sumFooterCell.alignment = { vertical: 'middle', horizontal: 'center' };
+  sumFooterCell.border = {
+    top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+    bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+    left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+    right: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+  };
+
+  currentSumRow += 1;
+  summarySheet.getRow(currentSumRow).height = 20;
+  summarySheet.mergeCells(currentSumRow, 1, currentSumRow, quotes.length + 1);
+  const sumLegalCell = summarySheet.getCell(currentSumRow, 1);
+  sumLegalCell.value =
+    'Intermediación de seguros regulada por el Estatuto Orgánico del Sistema Financiero. Vigilado por la Superintendencia Financiera de Colombia. Radicación y acompañamiento en reclamación de siniestros.';
+  sumLegalCell.font = { name: FONT_NAME, size: 8, italic: true, color: { argb: 'FF64748B' } };
+  sumLegalCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
   // -------------------------------------------------------------
-  // Pestaña 3: Matriz Coberturas (Direct Matrix Data Rendering)
+  // Pestañas Técnicas de Auditoría (Exclusivas para Modo Técnico)
   // -------------------------------------------------------------
-  const coveragesSheet = workbook.addWorksheet('Matriz Coberturas');
-  coveragesSheet.views = [{ showGridLines: false }];
-  applySheetHeaderFooter(coveragesSheet, 'Matriz Coberturas');
+  if (mode === 'technical') {
+    // Pestaña 3: Matriz Coberturas (Direct Matrix Data Rendering)
+    const coveragesSheet = workbook.addWorksheet('Matriz Coberturas');
+    coveragesSheet.views = [{ showGridLines: false }];
+    applySheetHeaderFooter(coveragesSheet, 'Matriz Coberturas');
 
   coveragesSheet.getColumn(1).width = 45;
   for (let i = 0; i < quotes.length; i++) {
@@ -827,16 +901,6 @@ export async function generateExcelBuffer(
     notesHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
     notesHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6D28D9' } };
     notesHeader.alignment = { horizontal: 'center' };
-  }
-
-  const guideColIdx = quotes.length + (hasNotes ? 2 : 1) + 1;
-  if (mode === 'client') {
-    coveragesSheet.getColumn(guideColIdx).width = 48;
-    const guideHeader = coveragesSheet.getCell(4, guideColIdx);
-    guideHeader.value = 'GUÍA CONSULTIVA PARA EL ASEGURADO';
-    guideHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-    guideHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D9488' } };
-    guideHeader.alignment = { horizontal: 'center' };
   }
 
   // Filter matrix rows for coverages tab (exclude standalone deductible section rows & financial rows)
@@ -975,18 +1039,6 @@ export async function generateExcelBuffer(
         }
       }
 
-      if (mode === 'client') {
-        const ped = findPedagogicalExplanation(row.label, '', 'coverage');
-        const guideText = `💡 ¿Qué protege? ${ped.whatItCovers}\n⚡ En caso de siniestro: ${ped.claimImpact}\n🔍 Clave al comparar: ${ped.comparisonTip}${ped.legalReference ? `\n⚖️ Respaldo legal: ${ped.legalReference}` : ''}`;
-        const guideCell = coveragesSheet.getCell(currentCovRow, guideColIdx);
-        guideCell.value = guideText;
-        guideCell.font = { name: FONT_NAME, size: 9, color: { argb: 'FF134E4A' } };
-        guideCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0FDFA' } };
-        guideCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
-        guideCell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
-        rowTextsForHeight.push(guideText);
-      }
-
       coveragesSheet.getRow(currentCovRow).height = calculateDynamicRowHeight(rowTextsForHeight, 24);
       currentCovRow++;
     }
@@ -1003,12 +1055,8 @@ export async function generateExcelBuffer(
   for (let i = 0; i < quotes.length; i++) {
     deductiblesSheet.getColumn(i + 2).width = 38;
   }
-  const dedGuideColIdx = quotes.length + 2;
-  if (mode === 'client') {
-    deductiblesSheet.getColumn(dedGuideColIdx).width = 48;
-  }
 
-  deductiblesSheet.mergeCells(1, 1, 2, quotes.length + 1 + (mode === 'client' ? 1 : 0));
+  deductiblesSheet.mergeCells(1, 1, 2, quotes.length + 1);
   const dedTitle = deductiblesSheet.getCell(1, 1);
   dedTitle.value = 'MATRIZ CONSOLIDADA DE DEDUCIBLES Y RETENCIÓN DE RIESGO';
   dedTitle.font = { name: FONT_NAME, size: 14, bold: true, color: { argb: 'FF1E3A8A' } };
@@ -1044,14 +1092,6 @@ export async function generateExcelBuffer(
       });
     }
   });
-
-  if (mode === 'client') {
-    const dedGuideHeader = deductiblesSheet.getCell(4, dedGuideColIdx);
-    dedGuideHeader.value = 'GUÍA PRÁCTICA DEL COPAGO';
-    dedGuideHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-    dedGuideHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D9488' } };
-    dedGuideHeader.alignment = { horizontal: 'center' };
-  }
 
   // Filter matrix for deductible rows, qualifying generic "Deducible" sub-rows with their parent section header
   // and pruning orphaned headers.
@@ -1124,17 +1164,6 @@ export async function generateExcelBuffer(
           xlCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
           xlCell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
         });
-        if (mode === 'client') {
-          const ped = findPedagogicalExplanation(row.label, '', 'deductible');
-          const dedGuideText = `📌 ¿Cómo opera? ${ped.whatItCovers}\n⚠️ En siniestro: ${ped.claimImpact}\n🎯 Ojo al comparar: ${ped.comparisonTip}${ped.legalReference ? `\n⚖️ Base: ${ped.legalReference}` : ''}`;
-          const gCell = deductiblesSheet.getCell(currentDedRow, dedGuideColIdx);
-          gCell.value = dedGuideText;
-          gCell.font = { name: FONT_NAME, size: 9, color: { argb: 'FF134E4A' } };
-          gCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0FDFA' } };
-          gCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
-          gCell.border = { bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } } };
-          dedTextsForHeight.push(dedGuideText);
-        }
 
         deductiblesSheet.getRow(currentDedRow).height = calculateDynamicRowHeight(
           dedTextsForHeight,
@@ -1816,9 +1845,10 @@ export async function generateExcelBuffer(
       lRowIdx++;
     });
   });
+  }
 
   // -------------------------------------------------------------
-  // Pestaña 7: Políticas Comerciales y Términos de la Oferta
+  // Pestaña: Políticas Comerciales y Condiciones de la Oferta
   // -------------------------------------------------------------
   const commercialPoliciesSheet = workbook.addWorksheet('Políticas Comerciales');
   commercialPoliciesSheet.views = [{ showGridLines: false }];
@@ -1839,19 +1869,75 @@ export async function generateExcelBuffer(
     'Condiciones operativas y términos comerciales parametrizados por la correduría de seguros para la presentación de propuestas.';
   policySubtitle.font = { name: FONT_NAME, size: 10, italic: true, color: { argb: 'FF475569' } };
 
+  // 1. Tabla Comparativa de Condiciones Comerciales Propuestas por cada Aseguradora
+  const extractedConditions = extractCommercialConditionsFromReport({
+    quotes,
+    matrix,
+    commercialConditions: (reportData as any)?.commercialConditions,
+  });
+
+  const totalColCount = Math.max(3, quotes.length + 1);
+  commercialPoliciesSheet.mergeCells(5, 1, 5, totalColCount);
+  const compCondHeader = commercialPoliciesSheet.getCell(5, 1);
+  compCondHeader.value = 'CONDICIONES COMERCIALES PROPUESTAS POR CADA ASEGURADORA EN COTIZACIÓN';
+  compCondHeader.font = { name: FONT_NAME, size: 10.5, bold: true, color: { argb: 'FF1E3A8A' } };
+  compCondHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+
+  commercialPoliciesSheet.getRow(6).height = 26;
+  const condHeaderCell = commercialPoliciesSheet.getCell(6, 1);
+  condHeaderCell.value = 'Condición Comercial';
+  condHeaderCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+  condHeaderCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+
+  quotes.forEach((q, idx) => {
+    commercialPoliciesSheet.getColumn(idx + 2).width = 34;
+    const colCell = commercialPoliciesSheet.getCell(6, idx + 2);
+    colCell.value = (q.insurerName || `Aseguradora ${idx + 1}`).toUpperCase();
+    colCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+    colCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+    colCell.alignment = { horizontal: 'center', vertical: 'middle' };
+  });
+
+  let pRowIdx = 7;
+  COMMERCIAL_CONDITION_FIELDS.forEach(({ key, label }) => {
+    commercialPoliciesSheet.getRow(pRowIdx).height = 24;
+    const labelCell = commercialPoliciesSheet.getCell(pRowIdx, 1);
+    labelCell.value = label;
+    labelCell.font = { name: FONT_NAME, size: 9.5, bold: true, color: { argb: 'FF1E40AF' } };
+
+    quotes.forEach((q, idx) => {
+      const insName = q.insurerName || `Aseguradora ${idx + 1}`;
+      const cellVal = extractedConditions[insName]?.[key] || 'No especificado en cotización';
+      const cCell = commercialPoliciesSheet.getCell(pRowIdx, idx + 2);
+      cCell.value = cellVal;
+      cCell.font = { name: FONT_NAME, size: 9.5, color: { argb: 'FF1E293B' } };
+      cCell.alignment = { wrapText: true, vertical: 'middle' };
+    });
+    pRowIdx++;
+  });
+
+  pRowIdx += 1;
+
+  // 2. Políticas Generales del Corredor
+  commercialPoliciesSheet.mergeCells(pRowIdx, 1, pRowIdx, totalColCount);
+  const brokerTitleCell = commercialPoliciesSheet.getCell(pRowIdx, 1);
+  brokerTitleCell.value = 'POLÍTICAS GENERALES DE INTERMEDIACIÓN Y PROCEDIMIENTOS DEL CORREDOR';
+  brokerTitleCell.font = { name: FONT_NAME, size: 10.5, bold: true, color: { argb: 'FF1E3A8A' } };
+  brokerTitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+  pRowIdx++;
+
   const structuredPolicies = getStructuredCommercialPolicyEntries(effectivePolicies);
 
-  commercialPoliciesSheet.getRow(5).height = 26;
+  commercialPoliciesSheet.getRow(pRowIdx).height = 26;
   const pHeaders = ['Categoría', 'Término / Condición', 'Detalle y Alcance Operativo'];
   pHeaders.forEach((h, idx) => {
-    const cell = commercialPoliciesSheet.getCell(5, idx + 1);
+    const cell = commercialPoliciesSheet.getCell(pRowIdx, idx + 1);
     cell.value = h;
     cell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
     cell.alignment = { vertical: 'middle', horizontal: 'left' };
   });
-
-  let pRowIdx = 6;
+  pRowIdx++;
   structuredPolicies.forEach((item) => {
     commercialPoliciesSheet.getRow(pRowIdx).height = 24;
     const catCell = commercialPoliciesSheet.getCell(pRowIdx, 1);
@@ -1873,8 +1959,8 @@ export async function generateExcelBuffer(
   pRowIdx += 1;
   commercialPoliciesSheet.getRow(pRowIdx).height = 24;
   const brokerCardCell = commercialPoliciesSheet.getCell(pRowIdx, 1);
-  commercialPoliciesSheet.mergeCells(pRowIdx, 1, pRowIdx, 3);
-  brokerCardCell.value = `INTERMEDIARIO: ${brokerName} | ASESOR: ${brokerAdvisor} | REG. SFC: ${brokerReg} | TEL: ${brokerPhone} | EMAIL: ${brokerEmail}`;
+  commercialPoliciesSheet.mergeCells(pRowIdx, 1, pRowIdx, totalColCount);
+  brokerCardCell.value = `INTERMEDIARIO: ${brokerName} | ASESOR: ${brokerAdvisor} | REG. SFC: ${brokerReg} | TEL: ${brokerPhone} | EMAIL: ${brokerEmail} | WEB: ${brokerWebsite}`;
   brokerCardCell.font = { name: FONT_NAME, size: 9.5, bold: true, color: { argb: 'FF1E40AF' } };
   brokerCardCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
   brokerCardCell.alignment = { vertical: 'middle', horizontal: 'left' };
@@ -1882,7 +1968,7 @@ export async function generateExcelBuffer(
   pRowIdx += 2;
   commercialPoliciesSheet.getRow(pRowIdx).height = 24;
   const legalNoticeCell = commercialPoliciesSheet.getCell(pRowIdx, 1);
-  commercialPoliciesSheet.mergeCells(pRowIdx, 1, pRowIdx + 2, 3);
+  commercialPoliciesSheet.mergeCells(pRowIdx, 1, pRowIdx + 2, totalColCount);
   legalNoticeCell.value =
     'MARCO LEGAL COLOMBIANO: La intermediación de seguros se ejerce bajo el Estatuto Orgánico del Sistema Financiero (Decreto 663 de 1993) y las instrucciones de la Superintendencia Financiera de Colombia. El contrato de seguro se rige por el Código de Comercio de Colombia (Arts. 1036 y ss). El tomador cuenta con un plazo legal de aviso de siniestro de 3 días hábiles conforme al Art. 1075 C.Co.';
   legalNoticeCell.font = { name: FONT_NAME, size: 8.5, italic: true, color: { argb: 'FF64748B' } };

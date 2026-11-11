@@ -145,6 +145,107 @@ describe('excelGenerator', () => {
       ]);
     });
 
+    it('should render insurer commercial conditions comparison in Políticas Comerciales sheet', async () => {
+      const buffer = await generateExcelBuffer(
+        mockQuotes,
+        undefined,
+        undefined,
+        undefined,
+        'pyme',
+        {
+          commercialConditions: {
+            'MAPFRE': {
+              validezOferta: '30 días calendario',
+              formaPago: 'Hasta 10 cuotas mensuales',
+              inspeccionPrevia: 'Inspección virtual en 15 días',
+            },
+            'CHUBB': {
+              validezOferta: '45 días',
+              formaPago: 'Contado con descuento',
+            },
+          },
+        } as any
+      );
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+
+      const polSheet = workbook.getWorksheet('Políticas Comerciales');
+      expect(polSheet).toBeDefined();
+
+      const textValues: string[] = [];
+      polSheet!.eachRow((row) => {
+        row.eachCell((cell) => {
+          if (cell.value) textValues.push(String(cell.value));
+        });
+      });
+
+      expect(textValues).toContain('CONDICIONES COMERCIALES PROPUESTAS POR CADA ASEGURADORA EN COTIZACIÓN');
+      expect(textValues).toContain('Validez de la Oferta');
+      expect(textValues).toContain('30 días calendario');
+      expect(textValues).toContain('Hasta 10 cuotas mensuales');
+      expect(textValues).toContain('Inspección virtual en 15 días');
+    });
+
+    it('should generate exactly two sheets in client mode with executive summary and technician information', async () => {
+      const buffer = await generateExcelBuffer(
+        mockQuotes,
+        undefined, // clientInfo
+        undefined, // cellNotes
+        {
+          name: 'Carlos Mendoza',
+          intermediaryName: 'Corredores de Seguros Asociados S.A.',
+          registrationNumber: 'SFC-88992',
+          phone: '+57 (601) 345-6789',
+          email: 'cmendoza@correseguros.co',
+          address: 'Calle 72 # 10-07',
+          city: 'Bogotá D.C.',
+        },
+        'pyme',
+        undefined,
+        'client'
+      );
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+
+      // In client mode: strictly Cuadro Comparativo Resumido + Políticas Comerciales
+      expect(workbook.worksheets.length).toBe(2);
+      expect(workbook.worksheets.map((w) => w.name)).toEqual([
+        'Cuadro Comparativo Resumido',
+        'Políticas Comerciales',
+      ]);
+
+      const summarySheet = workbook.getWorksheet('Cuadro Comparativo Resumido')!;
+      expect(summarySheet).toBeDefined();
+
+      const summaryTexts: string[] = [];
+      summarySheet.eachRow((row) => {
+        row.eachCell((cell) => {
+          if (cell.value) summaryTexts.push(String(cell.value));
+        });
+      });
+
+      // Verify exact titles and broker/technician contact card
+      expect(summaryTexts.some((t) => t.includes('CUADRO COMPARATIVO RESUMIDO · VISIÓN EJECUTIVA CONDENSADA'))).toBe(true);
+      expect(summaryTexts.some((t) => t.includes('INFORMACIÓN DEL TÉCNICO (INTERMEDIARIO)'))).toBe(true);
+      expect(summaryTexts.some((t) => t.includes('Carlos Mendoza'))).toBe(true);
+      expect(summaryTexts.some((t) => t.includes('Corredores de Seguros Asociados S.A.'))).toBe(true);
+      expect(summaryTexts.some((t) => t.includes('SFC-88992'))).toBe(true);
+      expect(summaryTexts.some((t) => t.includes('+57 (601) 345-6789'))).toBe(true);
+      expect(summaryTexts.some((t) => t.includes('cmendoza@correseguros.co'))).toBe(true);
+      expect(summaryTexts.some((t) => t.includes('https://correseguros.co/'))).toBe(true);
+
+      const polSheet = workbook.getWorksheet('Políticas Comerciales')!;
+      expect(polSheet).toBeDefined();
+      const polTexts: string[] = [];
+      polSheet.eachRow((row) => {
+        row.eachCell((cell) => {
+          if (cell.value) polTexts.push(String(cell.value));
+        });
+      });
+      expect(polTexts.some((t) => t.includes('POLÍTICAS COMERCIALES Y CONDICIONES DE LA OFERTA'))).toBe(true);
+      expect(polTexts.some((t) => t.includes('Corredores de Seguros Asociados S.A.'))).toBe(true);
+    });
+
     it('should dynamically adapt Cuadro Comparativo Resumido to non-PYME domains like autos and vida_grupo', async () => {
       const autosQuotes: QuoteAnalysis[] = [
         {

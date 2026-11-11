@@ -55,4 +55,17 @@ describe('currencyParser - parseColombianCurrency', () => {
     expect(parseColombianCurrency('$ 15.000.000 (Incluye IVA)')).toBe(15000000.0);
     expect(parseColombianCurrency('Valor COP 100.000.000')).toBe(100000000.0);
   });
+
+  it('should parse magnitude expressions (millones, M, MM, mil) correctly without truncating', () => {
+    expect(parseColombianCurrency('100 millones')).toBe(100000000.0);
+    expect(parseColombianCurrency('100 Millones')).toBe(100000000.0);
+    expect(parseColombianCurrency('$ 100 millones COP')).toBe(100000000.0);
+    expect(parseColombianCurrency('1.5 millones')).toBe(1500000.0);
+    expect(parseColombianCurrency('1,5 millones')).toBe(1500000.0);
+    expect(parseColombianCurrency('$100M')).toBe(100000000.0);
+    expect(parseColombianCurrency('100 M')).toBe(100000000.0);
+    expect(parseColombianCurrency('100 MM')).toBe(100000000.0);
+    expect(parseColombianCurrency('500 mil')).toBe(500000.0);
+    expect(parseColombianCurrency('500k')).toBe(500000.0);
+  });
 });

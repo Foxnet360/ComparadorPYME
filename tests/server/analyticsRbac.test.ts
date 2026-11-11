@@ -69,7 +69,7 @@ describe('Analytics & DaaS RBAC API', () => {
   beforeEach(() => {
     fake.replaceRows('organizations', [
       { id: ORG_1, name: 'Correduría Andina S.A.', status: 'ACTIVE' },
-      { id: ORG_2, name: 'Alianza Corredores Ltda.', status: 'ACTIVE' },
+      { id: ORG_2, name: 'Unión Corredores Ltda.', status: 'ACTIVE' },
     ]);
 
     fake.replaceRows('analysis_history', [
