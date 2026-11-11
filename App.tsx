@@ -9,6 +9,8 @@ import RegisterScreen from './components/RegisterScreen';
 import ResetPasswordScreen from './components/ResetPasswordScreen';
 import LegalPage from './pages/LegalPage';
 import { AppHeader } from './components/layout/AppHeader';
+import { AppFooter, type LegalTabType } from './components/layout/AppFooter';
+import { LegalModal } from './components/legal/LegalModal';
 import { ViewLoadingFallback } from './components/layout/ViewLoadingFallback';
 import { useAnalysisFlow, type AppView } from './hooks/useAnalysisFlow';
 import { useAuthSession } from './hooks/useAuthSession';
@@ -24,27 +26,17 @@ const UsersPage = lazy(() => import('./pages/UsersPage'));
 const ChatBot = lazy(() => import('./components/ChatBot'));
 const ProfileScreen = lazy(() => import('./components/ProfileScreen'));
 const ClauseAdmin = lazy(() => import('./components/ClauseAdmin'));
-const InsurerManager = lazy(() =>
-  import('./components/InsurerManager').then((m) => ({ default: m.InsurerManager }))
-);
+const InsurerManager = lazy(() => import('./components/InsurerManager').then((m) => ({ default: m.InsurerManager })));
 const PortfolioPage = lazy(() => import('./pages/Portfolio'));
 const RenewalDetailPage = lazy(() => import('./pages/RenewalDetail'));
 
 const AppShell: React.FC = () => {
   const { state, resetFlow, viewReport } = useAnalysisFlow();
-  const { currentUser, bootstrapped, updateUser, handleLogin, handleSessionLogout } =
-    useAuthSession({
-      onLogin: () => setCurrentView('DASHBOARD'),
-      onLogout: () => setCurrentView('LANDING'),
-    });
-  const {
-    chatOpen,
-    setChatOpen,
-    showProfile,
-    setShowProfile,
-    showClauseAdmin,
-    setShowClauseAdmin,
-  } = useUI();
+  const { currentUser, bootstrapped, updateUser, handleLogin, handleSessionLogout } = useAuthSession({
+    onLogin: () => setCurrentView('DASHBOARD'),
+    onLogout: () => setCurrentView('LANDING'),
+  });
+  const { chatOpen, setChatOpen, showProfile, setShowProfile, showClauseAdmin, setShowClauseAdmin } = useUI();
 
   const initialView = (() => {
     if (typeof window !== 'undefined') {
@@ -58,6 +50,7 @@ const AppShell: React.FC = () => {
 
   const [currentView, setCurrentView] = useState<AppView>(initialView);
   const [legalTab, setLegalTab] = useState<'terms' | 'privacy' | 'security' | 'disclaimer'>('terms');
+  const [showLegalModal, setShowLegalModal] = useState(false);
   const [activeRenewalId, setActiveRenewalId] = useState<string | null>(null);
   const { status, report } = state;
 
@@ -80,25 +73,10 @@ const AppShell: React.FC = () => {
     }
   }, [bootstrapped, currentUser]);
 
-  const handleReset = () => {
-    resetFlow();
-    if (currentView === 'REPORT') setCurrentView('ANALYZER');
-  };
-
-  const startNewAnalysis = () => {
-    resetFlow();
-    setCurrentView('ANALYZER');
-  };
-
-  const handleLogout = () => {
-    handleSessionLogout();
-    handleReset();
-  };
-
-  const navigateToDashboard = () => {
-    handleReset();
-    setCurrentView('DASHBOARD');
-  };
+  const handleReset = () => { resetFlow(); if (currentView === 'REPORT') setCurrentView('ANALYZER'); };
+  const startNewAnalysis = () => { resetFlow(); setCurrentView('ANALYZER'); };
+  const handleLogout = () => { handleSessionLogout(); handleReset(); };
+  const navigateToDashboard = () => { handleReset(); setCurrentView('DASHBOARD'); };
 
   if (currentView === 'LANDING') {
     return (
@@ -128,7 +106,7 @@ const AppShell: React.FC = () => {
   const extendedUser = currentUser as unknown as ExtendedUserProfile | null;
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans selection:bg-indigo-100 selection:text-indigo-900">
+    <div className="min-h-screen bg-slate-50 font-sans selection:bg-indigo-100 selection:text-indigo-900 flex flex-col justify-between">
       <AppHeader
         currentUser={currentUser}
         currentView={currentView}
@@ -147,7 +125,7 @@ const AppShell: React.FC = () => {
         onLogout={handleLogout}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
         {currentView === 'CLIENTS' && (
           <Suspense fallback={<ViewLoadingFallback />}>
             <ClientsPage onSelectClientForAudit={() => startNewAnalysis()} onViewReport={(rep) => { viewReport(rep); setCurrentView('REPORT'); }} />
@@ -220,6 +198,20 @@ const AppShell: React.FC = () => {
       <Suspense fallback={null}>
         <ChatBot reportContext={report || undefined} isOpen={chatOpen} onClose={() => setChatOpen(false)} />
       </Suspense>
+
+      <AppFooter
+        currentUser={currentUser}
+        onOpenLegalModal={(tab: LegalTabType) => {
+          setLegalTab(tab);
+          setShowLegalModal(true);
+        }}
+      />
+
+      <LegalModal
+        isOpen={showLegalModal}
+        onClose={() => setShowLegalModal(false)}
+        initialTab={legalTab}
+      />
     </div>
   );
 };

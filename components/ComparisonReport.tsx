@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { BarChart3, ShieldAlert, Scale, Layers, BookOpen, Building2, Phone, Mail, Globe, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { BarChart3, ShieldAlert, Scale, Layers, BookOpen } from 'lucide-react';
 import { DISCLAIMER_TEXT } from '../constants';
-import { storageService } from '../services/storageService';
 import { AuditSection } from './AuditSection';
 import { UnifiedCoverageMatrix } from './UnifiedCoverageMatrix';
 import { DeductibleMatrix } from './DeductibleMatrix';
@@ -63,44 +62,6 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
 
   // Dynamic view mode toggle (Auditor Técnico vs Cliente Final)
   const [viewMode, setViewMode] = useState<'technical' | 'client'>('technical');
-
-  // Broker & Intermediary contact details for footer
-  const [brokerDetails, setBrokerDetails] = useState<{
-    name: string;
-    advisor: string;
-    phone: string;
-    email: string;
-    website: string;
-    registration: string;
-  }>({
-    name: 'Corredores de Seguros Asociados S.A.',
-    advisor: 'Asesor Técnico de Seguros',
-    phone: '+57 (601) 345-6789',
-    email: 'soporte@comparadorcsa.com',
-    website: 'https://correseguros.co/',
-    registration: 'Inscripción Vigente SFC',
-  });
-
-  useEffect(() => {
-    storageService
-      .getCurrentUser()
-      .then((user) => {
-        if (user) {
-          setBrokerDetails({
-            name: user.intermediaryName || user.agencyName || 'Corredores de Seguros Asociados S.A.',
-            advisor: user.name || 'Asesor Técnico de Seguros',
-            phone: user.agentDetails?.phone || user.phone || '+57 (601) 345-6789',
-            email: user.email || 'soporte@comparadorcsa.com',
-            website: 'https://correseguros.co/',
-            registration:
-              user.registrationNumber ||
-              user.agentDetails?.registrationNumber ||
-              'Inscripción Vigente SFC',
-          });
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   if (!report.quotes || report.quotes.length === 0) {
     return (
@@ -269,58 +230,12 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
         />
       )}
 
-      {/* Footer */}
-      <footer className="mt-12 pt-8 border-t border-slate-200">
-        <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-6 mb-6 shadow-xs">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/60">
-            <div>
-              <div className="flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-indigo-600" />
-                <h4 className="font-bold text-slate-800 text-sm">{brokerDetails.name}</h4>
-                <span className="text-[11px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-medium border border-indigo-100">
-                  {brokerDetails.registration}
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
-                Asesor Responsable: <strong className="text-slate-700">{brokerDetails.advisor}</strong> · Vigilado por la Superintendencia Financiera de Colombia
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600">
-              <a
-                href={brokerDetails.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 hover:text-indigo-600 font-medium transition-colors"
-              >
-                <Globe className="w-4 h-4 text-slate-400" />
-                <span>correseguros.co</span>
-              </a>
-              <a
-                href={`tel:${brokerDetails.phone.replace(/[^0-9+]/g, '')}`}
-                className="flex items-center gap-1.5 hover:text-indigo-600 font-medium transition-colors"
-              >
-                <Phone className="w-4 h-4 text-slate-400" />
-                <span>{brokerDetails.phone}</span>
-              </a>
-              <a
-                href={`mailto:${brokerDetails.email}`}
-                className="flex items-center gap-1.5 hover:text-indigo-600 font-medium transition-colors"
-              >
-                <Mail className="w-4 h-4 text-slate-400" />
-                <span>{brokerDetails.email}</span>
-              </a>
-            </div>
-          </div>
-          <div className="pt-3 flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-slate-500 gap-2">
-            <span>Acompañamiento técnico permanente y radicación de siniestros.</span>
-            <span className="text-slate-400">Intermediación regulada por el Estatuto Orgánico del Sistema Financiero</span>
-          </div>
-        </div>
-
-        <p className="text-xs text-slate-400 max-w-4xl mx-auto leading-relaxed text-center">
+      {/* Disclaimer */}
+      <div className="text-center py-6 border-t border-slate-200 mt-8">
+        <p className="text-xs text-slate-400 max-w-4xl mx-auto leading-relaxed">
           {DISCLAIMER_TEXT}
         </p>
-      </footer>
+      </div>
     </div>
   );
 };
