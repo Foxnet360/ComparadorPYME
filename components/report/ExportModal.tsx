@@ -3,7 +3,7 @@ import { generatePDF } from '../../services/pdfService';
 import { storageService } from '../../services/storageService';
 import { organizationService } from '../../services/organizationService';
 import { apiClient } from '../../services/apiClient';
-import { FileDown, FileSpreadsheet, Loader2, Briefcase, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react';
+import { FileDown, FileSpreadsheet, Loader2, Briefcase, ChevronDown, ChevronUp } from 'lucide-react';
 import {
   COMMERCIAL_CONDITION_FIELDS,
   extractCommercialConditionsFromReport,
@@ -67,7 +67,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 currentOrg.organization?.logoUrl ||
                 (currentOrg.organization?.settings as any)?.logo_url ||
                 (currentOrg.organization?.settings as any)?.logoUrl;
-            } catch {}
+            } catch (err) {
+              void err;
+            }
           }
           if (logo) {
             onPdfOptionsChange({ ...pdfOptions, logo });
