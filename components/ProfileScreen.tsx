@@ -303,20 +303,34 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
                       <ImageIcon className="w-8 h-8 text-slate-300" />
                     )}
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 space-y-2">
                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                      Logo del Aliado (PDF/Excel)
+                      Logo del Intermediario (PDF y Excel)
                     </label>
-                    <label className="cursor-pointer inline-flex items-center px-3 py-1.5 border border-slate-300 rounded-md text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 transition-colors">
-                      <Upload className="w-3.5 h-3.5 mr-1.5 text-indigo-600" />
-                      Subir Logo
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoUpload}
-                        className="hidden"
-                      />
-                    </label>
+                    <div className="flex items-center gap-2">
+                      <label className="cursor-pointer inline-flex items-center px-3 py-1.5 border border-indigo-300 rounded-md text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors">
+                        <Upload className="w-3.5 h-3.5 mr-1.5 text-indigo-600" />
+                        {formData.logoUrl ? 'Cambiar Logo' : 'Subir Logo'}
+                        <input
+                          type="file"
+                          accept="image/png, image/jpeg, image/jpg"
+                          onChange={handleLogoUpload}
+                          className="hidden"
+                        />
+                      </label>
+                      {formData.logoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setFormData((prev) => ({ ...prev, logoUrl: '' }))}
+                          className="px-2.5 py-1.5 border border-slate-200 rounded-md text-xs font-medium text-slate-600 bg-white hover:bg-slate-100 hover:text-rose-600 transition-colors"
+                        >
+                          Quitar
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[10.5px] text-slate-500 leading-normal">
+                      Formato PNG o JPG (fondo transparente/blanco). Proporción horizontal recomendada ~400×120 px (máx. 2 MB).
+                    </p>
                   </div>
                 </div>
               </div>

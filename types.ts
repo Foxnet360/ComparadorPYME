@@ -561,8 +561,11 @@ export interface Ally {
   contact_email?: string;
   phone?: string;
   status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  logoUrl?: string;
   settings?: {
     commercial_policies?: import('./src/data/commercialPolicies').CommercialPolicies;
+    logo_url?: string;
+    logoUrl?: string;
     [key: string]: unknown;
   };
   commercialPolicies?: import('./src/data/commercialPolicies').CommercialPolicies;

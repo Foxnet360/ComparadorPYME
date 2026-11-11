@@ -535,6 +535,25 @@ export async function generateExcelBuffer(
   sumTitle.font = { name: FONT_NAME, size: 13, bold: true, color: { argb: 'FF1E3A8A' } };
   sumTitle.alignment = { vertical: 'middle', horizontal: 'left' };
 
+  // Embed broker logo on Cuadro Comparativo Resumido if provided
+  if (brokerInfo?.logoUrl && brokerInfo.logoUrl.includes('base64,')) {
+    try {
+      const base64Data = brokerInfo.logoUrl.split('base64,')[1];
+      if (base64Data) {
+        const brokerImageId = workbook.addImage({
+          base64: base64Data,
+          extension: brokerInfo.logoUrl.includes('image/jpeg') ? 'jpeg' : 'png',
+        });
+        summarySheet.addImage(brokerImageId, {
+          tl: { col: Math.max(1, quotes.length), row: 0.2 },
+          ext: { width: 125, height: 38 },
+        });
+      }
+    } catch (e) {
+      console.warn('Failed to add broker logo to summarySheet', e);
+    }
+  }
+
   summarySheet.mergeCells(3, 1, 3, quotes.length + 1);
   const sumSubtitle = summarySheet.getCell(3, 1);
   sumSubtitle.value = `Cliente: ${clientName}  |  Ramo: ${regulatoryProfile.displayName}  |  Fecha: ${todayStr}`;

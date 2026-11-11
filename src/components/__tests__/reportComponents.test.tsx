@@ -107,6 +107,8 @@ describe('report component split (ARCH-1)', () => {
     );
     expect(screen.getByText('Personalizar Reporte')).toBeTruthy();
     expect(screen.getByText('Generar PDF')).toBeTruthy();
+    expect(screen.getByText('Versión Resumida Ejecutiva (Cliente)')).toBeTruthy();
+    expect(screen.getByText('Versión Extendida (Auditoría Técnica)')).toBeTruthy();
   });
 
   it('AdvancedAnalysisTab renders every advanced section in isolation', () => {

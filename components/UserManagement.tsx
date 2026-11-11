@@ -324,23 +324,25 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       contactPhone?: string;
       contactEmail?: string;
       status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+      logoUrl?: string;
     },
     commercialPolicies?: CommercialPolicies
   ) => {
     setFeedback(null);
     try {
+      const mergedSettings = {
+        ...(editingAlly?.settings || {}),
+        ...(updates.logoUrl !== undefined ? { logo_url: updates.logoUrl, logoUrl: updates.logoUrl } : {}),
+        ...(commercialPolicies ? { commercial_policies: commercialPolicies } : {}),
+      };
+
       const updated = await organizationService.updateOrganization(allyId, {
         name: updates.name.trim(),
         nit: updates.nit?.trim() || undefined,
         contact_email: updates.contactEmail?.trim() || undefined,
         phone: updates.contactPhone?.trim() || undefined,
         status: updates.status,
-        settings: commercialPolicies
-          ? {
-              ...(editingAlly?.settings || {}),
-              commercial_policies: commercialPolicies,
-            }
-          : editingAlly?.settings,
+        settings: mergedSettings,
       });
 
       if (commercialPolicies) {
@@ -354,7 +356,13 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       setAlliesList(
         alliesList.map((a) =>
           a.id === allyId
-            ? { ...a, ...updated, ...(commercialPolicies ? { commercialPolicies } : {}) }
+            ? {
+                ...a,
+                ...updated,
+                logoUrl: updates.logoUrl !== undefined ? updates.logoUrl : a.logoUrl,
+                settings: mergedSettings,
+                ...(commercialPolicies ? { commercialPolicies } : {}),
+              }
             : a
         )
       );

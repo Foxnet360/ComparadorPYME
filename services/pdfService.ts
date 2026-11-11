@@ -74,18 +74,21 @@ export interface BrokerInfo {
   registrationNumber?: string;
   phone?: string;
   email?: string;
+  website?: string;
   address?: string;
   city?: string;
   logoUrl?: string;
   commercialPolicies?: CommercialPolicies;
 }
 
-interface PDFOptions {
+export interface PDFOptions {
   logoBase64?: string;
   customTitle?: string;
   primaryColor?: [number, number, number];
   brokerInfo?: BrokerInfo;
   commercialPolicies?: CommercialPolicies;
+  mode?: 'condensed' | 'extended';
+  condensed?: boolean;
 }
 
 export const generatePDF = (
@@ -217,19 +220,23 @@ export const generatePDF = (
     .join('  •  ');
 
   // --- PAGE 1: RESUMEN EJECUTIVO Y PERFIL DEL RIESGO ---
-  let currentY = addHeader('Resumen Ejecutivo y Ficha Técnica');
-
-  // Intermediary / Broker Banner
+  const isCondensed = options?.mode === 'condensed' || options?.condensed === true;
   const broker = options?.brokerInfo;
-  doc.setFillColor(248, 250, 252);
-  doc.setDrawColor(226, 232, 240);
-  doc.roundedRect(14, currentY, 182, 26, 2, 2, 'FD');
+  const brokerName = broker?.intermediaryName || broker?.name || 'Corredores de Seguros Asociados S.A.';
+  let currentY = 0;
 
-  const brokerName = broker?.intermediaryName || 'Corredores de Seguros Asociados S.A.';
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
-  doc.text(brokerName, 18, currentY + 6.5);
+  if (!isCondensed) {
+    currentY = addHeader('Resumen Ejecutivo y Ficha Técnica');
+
+    // Intermediary / Broker Banner
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.roundedRect(14, currentY, 182, 26, 2, 2, 'FD');
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.text(brokerName, 18, currentY + 6.5);
 
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'normal');
@@ -412,10 +419,67 @@ export const generatePDF = (
     doc.text(techText, 16, currentY);
     currentY += techText.length * 4 + 8;
   });
+  }
 
-  // --- PAGE 2: CUADRO RESUMEN COMPARATIVO (CUADRO CHICO EJECUTIVO) ---
-  doc.addPage();
-  currentY = addHeader('Cuadro Resumen Comparativo (Cuadro Chico)');
+  // --- CUADRO RESUMEN COMPARATIVO (CUADRO CHICO EJECUTIVO) ---
+  if (!isCondensed) {
+    doc.addPage();
+  }
+  currentY = addHeader(
+    isCondensed
+      ? 'CUADRO COMPARATIVO RESUMIDO · VISIÓN EJECUTIVA CONDENSADA'
+      : 'Cuadro Resumen Comparativo (Cuadro Chico)'
+  );
+
+  if (isCondensed) {
+    // Intermediary / Broker Banner
+    const broker = options?.brokerInfo;
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.roundedRect(14, currentY, 182, 23, 2, 2, 'FD');
+
+    const brokerName = broker?.intermediaryName || broker?.name || 'Corredores de Seguros Asociados S.A.';
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(PRIMARY_COLOR[0], PRIMARY_COLOR[1], PRIMARY_COLOR[2]);
+    doc.text(`INFORMACIÓN DEL TÉCNICO (INTERMEDIARIO) · ${brokerName}`, 18, currentY + 5.5);
+
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(71, 85, 105);
+
+    const line1 = [
+      broker?.name ? `Asesor: ${broker.name}` : 'Asesor Técnico de Seguros',
+      broker?.registrationNumber ? `Matrícula SFC: ${broker.registrationNumber}` : 'Inscripción Vigente SFC',
+      broker?.phone ? `Tel: ${broker.phone}` : '',
+      broker?.email ? `Email: ${broker.email}` : '',
+    ]
+      .filter(Boolean)
+      .join('   |   ');
+    doc.text(line1, 18, currentY + 11.5);
+
+    const locStr = [broker?.address, broker?.city].filter(Boolean).join(', ') || 'Bogotá D.C., Colombia';
+    const line2 = [
+      broker?.website || 'https://correseguros.co/',
+      locStr,
+      'Acompañamiento técnico permanente y radicación de siniestros (Art. 1075 C.Co.)',
+    ]
+      .filter(Boolean)
+      .join('   |   ');
+    doc.text(line2, 18, currentY + 17.5);
+
+    currentY += 26;
+
+    // Client & Risk Summary Bar
+    doc.setFillColor(241, 245, 249);
+    doc.roundedRect(14, currentY, 182, 9, 1.5, 1.5, 'F');
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 41, 59);
+    doc.text(`Cliente: ${clientName}   |   Ramo: ${regProfile.displayName}   |   Ubicación: ${riskAddress}`, 18, currentY + 6);
+
+    currentY += 12;
+  }
 
   const insurers = quotes.map((q) => {
     const prof = findColombianInsurerProfile(q.insurerName);
@@ -556,6 +620,7 @@ export const generatePDF = (
     },
   });
 
+  if (!isCondensed) {
   // --- PAGE 3: MATRIZ COMPARATIVA DE COBERTURAS DINÁMICA POR RAMO ---
   doc.addPage();
   currentY = addHeader(`Matriz Comparativa de Coberturas (${regProfile.displayName})`);
@@ -1003,10 +1068,15 @@ export const generatePDF = (
 
     currentY = getLastAutoTableFinalY(doc, currentY) + 8;
   }
+  }
 
   // --- Dedicated Page: Políticas Comerciales y Condiciones de la Oferta ---
   doc.addPage();
-  let policyY = addHeader('Políticas Comerciales y Condiciones de la Oferta');
+  let policyY = addHeader(
+    isCondensed
+      ? 'POLÍTICAS COMERCIALES Y CONDICIONES DE LA OFERTA'
+      : 'Políticas Comerciales y Condiciones de la Oferta'
+  );
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
@@ -1187,6 +1257,7 @@ export const generatePDF = (
 
   const safeDomain = (domain || 'Seguros').replace(/[^a-zA-Z0-9_-]/g, '_');
   doc.save(`Reporte_Ejecutivo_${safeDomain.toUpperCase()}.pdf`);
+  return doc;
 };
 
 export const generatePerformanceReport = (

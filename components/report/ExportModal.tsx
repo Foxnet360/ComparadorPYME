@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { generatePDF } from '../../services/pdfService';
 import { storageService } from '../../services/storageService';
+import { organizationService } from '../../services/organizationService';
 import { apiClient } from '../../services/apiClient';
-import { FileDown, FileSpreadsheet, Loader2, Briefcase, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileDown, FileSpreadsheet, Loader2, Briefcase, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react';
 import {
   COMMERCIAL_CONDITION_FIELDS,
   extractCommercialConditionsFromReport,
@@ -44,6 +45,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   onUpdateReport,
 }) => {
   const [exportingExcel, setExportingExcel] = useState<string | null>(null);
+  const [pdfMode, setPdfMode] = useState<'condensed' | 'extended'>('condensed');
   const [commercialConditions, setCommercialConditions] = useState<Record<string, InsurerCommercialConditions>>(() =>
     extractCommercialConditionsFromReport(report)
   );
@@ -51,13 +53,22 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const [selectedInsurer, setSelectedInsurer] = useState<string>(insurers[0] || '');
   const [showCommercialSection, setShowCommercialSection] = useState<boolean>(true);
 
-  // Pre-load ally logo from authenticated user profile if not manually set
+  // Pre-load intermediary logo from authenticated user profile or organization if not manually set
   useEffect(() => {
     if (!pdfOptions.logo) {
       storageService
         .getCurrentUser()
-        .then((user) => {
-          const logo = user?.logoUrl || user?.agentDetails?.logoUrl;
+        .then(async (user) => {
+          let logo = user?.logoUrl || user?.agentDetails?.logoUrl;
+          if (!logo && user?.allyId) {
+            try {
+              const currentOrg = await organizationService.getCurrentOrganization();
+              logo =
+                currentOrg.organization?.logoUrl ||
+                (currentOrg.organization?.settings as any)?.logo_url ||
+                (currentOrg.organization?.settings as any)?.logoUrl;
+            } catch {}
+          }
           if (logo) {
             onPdfOptionsChange({ ...pdfOptions, logo });
           }
@@ -174,15 +185,19 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
         <div>
           <label className="block text-xs font-semibold text-slate-600 mb-1">
-            Logo del Aliado (Opcional)
+            Logo del Intermediario (Opcional)
           </label>
           <input
             type="file"
-            accept="image/*"
+            accept="image/png, image/jpeg, image/jpg"
             className="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) {
+                if (file.size > 2 * 1024 * 1024) {
+                  alert('El logo no debe superar los 2MB');
+                  return;
+                }
                 const reader = new FileReader();
                 reader.onloadend = () => {
                   onPdfOptionsChange({ ...pdfOptions, logo: reader.result as string });
@@ -191,6 +206,72 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               }
             }}
           />
+          <p className="text-[10px] text-slate-400 mt-0.5">
+            PNG o JPG/JPEG (recomendado horizontal ~400×120 px, máx. 2 MB)
+          </p>
+        </div>
+
+        {/* Modalidad de Exportación PDF (Resumida Ejecutiva vs Extendida) */}
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 space-y-2">
+          <label className="block text-xs font-bold text-slate-700">
+            Modalidad del Documento PDF
+          </label>
+          <div className="space-y-1.5">
+            <label
+              className={`flex items-start gap-2.5 p-2 rounded-lg border transition-all cursor-pointer ${
+                pdfMode === 'condensed'
+                  ? 'bg-indigo-50/70 border-indigo-300 ring-1 ring-indigo-200'
+                  : 'bg-white border-slate-200 hover:bg-slate-100/70'
+              }`}
+            >
+              <input
+                type="radio"
+                name="pdfMode"
+                value="condensed"
+                checked={pdfMode === 'condensed'}
+                onChange={() => setPdfMode('condensed')}
+                className="mt-0.5 text-indigo-600 focus:ring-indigo-500"
+              />
+              <div className="flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-slate-800">
+                    Versión Resumida Ejecutiva (Cliente)
+                  </span>
+                  <span className="text-[9.5px] bg-emerald-100 text-emerald-800 font-semibold px-1.5 py-0.2 rounded">
+                    Igual a Excel
+                  </span>
+                </div>
+                <p className="text-[10.5px] text-slate-500 mt-0.5 leading-tight">
+                  Cuadro Comparativo Resumido · Visión Ejecutiva Condensada + Información del Técnico + Políticas Comerciales.
+                </p>
+              </div>
+            </label>
+
+            <label
+              className={`flex items-start gap-2.5 p-2 rounded-lg border transition-all cursor-pointer ${
+                pdfMode === 'extended'
+                  ? 'bg-indigo-50/70 border-indigo-300 ring-1 ring-indigo-200'
+                  : 'bg-white border-slate-200 hover:bg-slate-100/70'
+              }`}
+            >
+              <input
+                type="radio"
+                name="pdfMode"
+                value="extended"
+                checked={pdfMode === 'extended'}
+                onChange={() => setPdfMode('extended')}
+                className="mt-0.5 text-indigo-600 focus:ring-indigo-500"
+              />
+              <div className="flex-1">
+                <span className="text-xs font-bold text-slate-800 block">
+                  Versión Extendida (Auditoría Técnica)
+                </span>
+                <p className="text-[10.5px] text-slate-500 mt-0.5 leading-tight">
+                  Auditoría completa multi-página: matriz de coberturas canónicas, deducibles pedagógicos y análisis de riesgos.
+                </p>
+              </div>
+            </label>
+          </div>
         </div>
 
         {/* Color Picker */}
@@ -296,6 +377,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                     primaryColor: pdfOptions.color,
                     brokerInfo,
                     commercialPolicies: user?.commercialPolicies,
+                    mode: pdfMode,
+                    condensed: pdfMode === 'condensed',
                   },
                   cellNotes as unknown as Record<string, string>
                 );

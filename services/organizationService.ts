@@ -88,10 +88,15 @@ export const organizationService = {
         .select('*')
         .order('name');
       if (!error && Array.isArray(data) && data.length > 0) {
-        return (data as unknown as OrganizationDbRow[]).map((org) => ({
+        return (data as unknown as any[]).map((org) => ({
           id: org.id,
           name: org.name,
           nit: org.nit || undefined,
+          phone: org.phone || undefined,
+          contact_email: org.contact_email || undefined,
+          status: org.status || 'ACTIVE',
+          settings: org.settings,
+          logoUrl: org.settings?.logo_url || org.settings?.logoUrl || org.logo_url || undefined,
           createdAt: org.created_at ? org.created_at.split('T')[0] : undefined,
         }));
       }
@@ -103,11 +108,16 @@ export const organizationService = {
       // 2. Fallback to Express API
       const res = await apiClient.fetch('/api/organizations');
       if (res.ok) {
-        const data = (await res.json()) as OrganizationDbRow[];
+        const data = (await res.json()) as any[];
         return data.map((org) => ({
           id: org.id,
           name: org.name,
           nit: org.nit || undefined,
+          phone: org.phone || undefined,
+          contact_email: org.contact_email || undefined,
+          status: org.status || 'ACTIVE',
+          settings: org.settings,
+          logoUrl: org.settings?.logo_url || org.settings?.logoUrl || org.logo_url || undefined,
           createdAt: org.created_at ? org.created_at.split('T')[0] : undefined,
         }));
       }
@@ -233,6 +243,7 @@ export const organizationService = {
       phone: data.phone,
       status: data.status,
       settings: data.settings,
+      logoUrl: data.settings?.logo_url || data.settings?.logoUrl || data.logo_url || undefined,
       commercialPolicies: data.settings?.commercial_policies
         ? getEffectiveCommercialPolicies(data.settings.commercial_policies)
         : undefined,

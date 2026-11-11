@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, X, FileText, RotateCcw } from 'lucide-react';
+import { Building2, X, FileText, RotateCcw, Image as ImageIcon, Upload } from 'lucide-react';
 import { Ally } from '../../types';
 import { organizationService } from '../../services/organizationService';
 import {
@@ -20,6 +20,7 @@ export interface AllyEditModalProps {
       contactPhone?: string;
       contactEmail?: string;
       status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+      logoUrl?: string;
     },
     commercialPolicies?: CommercialPolicies
   ) => Promise<void>;
@@ -35,6 +36,8 @@ export const AllyEditModal: React.FC<AllyEditModalProps> = ({
   const [nit, setNit] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [logoUrl, setLogoUrl] = useState('');
+  const [logoError, setLogoError] = useState<string | null>(null);
   const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE' | 'SUSPENDED'>('ACTIVE');
   const [showPoliciesSection, setShowPoliciesSection] = useState(false);
   const [commercialPolicies, setCommercialPolicies] = useState<CommercialPolicies>(
@@ -48,6 +51,13 @@ export const AllyEditModal: React.FC<AllyEditModalProps> = ({
       setNit(ally.nit || '');
       setPhone(ally.phone || '');
       setEmail(ally.contact_email || '');
+      setLogoUrl(
+        ally.logoUrl ||
+        (ally.settings as Record<string, any> | undefined)?.logo_url ||
+        (ally.settings as Record<string, any> | undefined)?.logoUrl ||
+        ''
+      );
+      setLogoError(null);
       setStatus(ally.status || 'ACTIVE');
       setCommercialPolicies(
         getEffectiveCommercialPolicies(
@@ -67,6 +77,32 @@ export const AllyEditModal: React.FC<AllyEditModalProps> = ({
 
   if (!isOpen || !ally) return null;
 
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setLogoError(null);
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+    if (!validTypes.includes(file.type)) {
+      setLogoError('Formato inválido. Debe ser una imagen PNG o JPG/JPEG.');
+      return;
+    }
+
+    const maxSize = 2 * 1024 * 1024; // 2MB
+    if (file.size > maxSize) {
+      setLogoError('El archivo supera los 2 MB. Reduzca la resolución o peso de la imagen.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        setLogoUrl(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -79,6 +115,7 @@ export const AllyEditModal: React.FC<AllyEditModalProps> = ({
           contactPhone: phone || undefined,
           contactEmail: email || undefined,
           status,
+          logoUrl: logoUrl || undefined,
         },
         commercialPolicies
       );
@@ -94,7 +131,7 @@ export const AllyEditModal: React.FC<AllyEditModalProps> = ({
         <div className="flex justify-between items-center border-b pb-3">
           <h3 className="font-bold text-slate-900 flex items-center gap-2">
             <Building2 className="text-indigo-600" size={18} />
-            <span>Editar Correduría Aliada</span>
+            <span>Editar Intermediario</span>
           </h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
             <X size={18} />
@@ -104,7 +141,7 @@ export const AllyEditModal: React.FC<AllyEditModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-              Nombre de la Correduría
+              Nombre de la Correduría / Intermediario
             </label>
             <input
               type="text"
@@ -113,6 +150,73 @@ export const AllyEditModal: React.FC<AllyEditModalProps> = ({
               onChange={(e) => setName(e.target.value)}
               className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
             />
+          </div>
+
+          {/* Logo del Intermediario para PDF y Excel */}
+          <div className="border border-slate-200 rounded-xl p-3.5 bg-slate-50/70 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                Logo del Intermediario (PDF y Excel)
+              </label>
+              <span className="text-[11px] font-medium text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md">
+                Membrete Oficial
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="h-20 w-36 bg-white border border-slate-300 rounded-xl flex items-center justify-center overflow-hidden shrink-0 p-1.5 shadow-xs">
+                {logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt="Logo Intermediario"
+                    className="max-h-full max-w-full object-contain"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-slate-400">
+                    <ImageIcon className="w-8 h-8 text-slate-300" />
+                    <span className="text-[10px] mt-1">Sin logo</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 space-y-2 text-left w-full">
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="cursor-pointer inline-flex items-center px-3 py-1.5 border border-indigo-300 rounded-lg text-xs font-bold text-indigo-700 bg-indigo-50/80 hover:bg-indigo-100 transition-colors shadow-xs">
+                    <Upload className="w-3.5 h-3.5 mr-1.5 text-indigo-600" />
+                    <span>{logoUrl ? 'Cambiar Logo' : 'Cargar Logo'}</span>
+                    <input
+                      type="file"
+                      accept="image/png, image/jpeg, image/jpg"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                    />
+                  </label>
+
+                  {logoUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setLogoUrl('')}
+                      className="inline-flex items-center px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 bg-white hover:bg-slate-100 hover:text-rose-600 transition-colors"
+                    >
+                      <span>Quitar</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="text-[11px] text-slate-500 leading-relaxed bg-white border border-slate-200/80 rounded-lg p-2">
+                  <p className="font-semibold text-slate-700 mb-0.5">Especificaciones requeridas para PDF y Excel:</p>
+                  <ul className="list-disc pl-4 space-y-0.5 text-[10.5px]">
+                    <li><strong>Formatos:</strong> PNG o JPG/JPEG (fondo transparente o blanco recomendado).</li>
+                    <li><strong>Proporción sugerida:</strong> Rectangular horizontal 3:1 o 4:1 (aprox. 400 × 120 px) para membrete de encabezado.</li>
+                    <li><strong>Peso máximo:</strong> 2 MB (recomendado &lt; 500 KB para no ralentizar la exportación).</li>
+                  </ul>
+                </div>
+
+                {logoError && (
+                  <p className="text-xs text-rose-600 font-semibold">{logoError}</p>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
