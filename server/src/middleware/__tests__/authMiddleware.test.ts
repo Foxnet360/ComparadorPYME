@@ -125,6 +125,18 @@ describe('requireRole middleware', () => {
 
     expect(nextCalled).toBe(true);
   });
+
+  it('allows ally_technical through when configured', () => {
+    const guard = requireRole('super_admin', 'ally_admin', 'ally_technical');
+    const req = { user: { id: 'u1', role: 'ally_technical' } } as AuthenticatedRequest;
+    const res = {} as Response;
+    let nextCalled = false;
+    guard(req, res, () => {
+      nextCalled = true;
+    });
+
+    expect(nextCalled).toBe(true);
+  });
 });
 
 describe('authMiddleware and verifyToken', () => {

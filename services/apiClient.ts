@@ -173,10 +173,10 @@ export const apiClient = {
       let message = `${response.status} ${response.statusText}`;
       try {
         const data = await response.json();
-        if (data?.error) {
-          message = data.error;
-        } else if (typeof data?.message === 'string') {
+        if (typeof data?.message === 'string' && data.message.trim().length > 0) {
           message = data.message;
+        } else if (typeof data?.error === 'string' && data.error.trim().length > 0) {
+          message = data.error;
         }
       } catch {
         // Ignore parse errors and fall back to status text

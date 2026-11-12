@@ -206,8 +206,8 @@ app.get('/api/history', optionalAuthMiddleware, asyncHandler(analysisController.
 import { documentController } from './controllers/documentController';
 import { searchController } from './controllers/searchController';
 
-// Document management (mutations require super_admin or ally_admin)
-app.post('/api/documents', requireRole('super_admin', 'ally_admin'), documentController.uploadMiddleware, documentController.createDocument);
+// Document management (upload allowed for super_admin, ally_admin, ally_technical; delete restricted to admins)
+app.post('/api/documents', requireRole('super_admin', 'ally_admin', 'ally_technical'), documentController.uploadMiddleware, documentController.createDocument);
 app.get('/api/documents', documentController.listDocuments);
 app.get('/api/documents/check-existing', documentController.checkExistingClause);
 app.get('/api/documents/:id', documentController.getDocument);

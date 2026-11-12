@@ -260,6 +260,26 @@ describe('apiClient', () => {
       await expect(apiClient.fetch('/history')).rejects.toThrow('Bad Request');
     });
 
+    it('prefers data.message over data.error when detailed message is provided', async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: { session: null },
+        error: null,
+      });
+      vi.mocked(globalThis.fetch).mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: 'Forbidden',
+            message: 'Insufficient permissions. Required one of: super_admin, ally_admin, ally_technical',
+          }),
+          { status: 403, statusText: 'Forbidden' }
+        )
+      );
+
+      await expect(apiClient.fetch('/documents')).rejects.toThrow(
+        'Insufficient permissions. Required one of: super_admin, ally_admin, ally_technical'
+      );
+    });
+
     it('throws Error with status text when server message is unavailable', async () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: { session: null },
