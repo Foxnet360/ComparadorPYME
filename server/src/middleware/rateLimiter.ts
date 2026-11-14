@@ -4,9 +4,10 @@ import { RateLimitError } from '../errors';
 import logger from '../config/logger';
 import { redis as redisClient } from '../services/cache/redisCache';
 
-const createStore = () => {
+const createStore = (prefix: string) => {
   if (process.env.REDIS_URL) {
     return new RedisStore({
+      prefix,
       sendCommand: (...args: string[]) => (redisClient as any).call(...args),
     });
   }
@@ -18,7 +19,7 @@ export const globalRateLimiter = rateLimit({
   max: process.env.NODE_ENV === 'test' ? 10000 : 100,
   standardHeaders: true,
   legacyHeaders: false,
-  store: createStore(),
+  store: createStore('rl:global:'),
   handler: (_req, _res, _next, options) => {
     throw new RateLimitError(
       `Rate limit exceeded. Try again in ${Math.ceil(options.windowMs / 60000)} minutes.`,
@@ -32,7 +33,7 @@ export const analyzeRateLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  store: createStore(),
+  store: createStore('rl:analyze:'),
   handler: (_req, _res, _next, options) => {
     throw new RateLimitError(
       `Analysis rate limit exceeded. Try again in ${Math.ceil(options.windowMs / 1000)} seconds.`,
@@ -46,7 +47,7 @@ export const chatRateLimiter = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
-  store: createStore(),
+  store: createStore('rl:chat:'),
   handler: (_req, _res, _next, options) => {
     throw new RateLimitError(
       `Chat rate limit exceeded. Try again in ${Math.ceil(options.windowMs / 1000)} seconds.`,
