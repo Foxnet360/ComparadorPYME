@@ -21,11 +21,20 @@ import type { ComparisonReport as ReportType, QuoteAnalysis } from '../types';
 // stays lean; only mounted for v3 reports, keeping v1/v2 output identical (XC-3).
 const RenewalAnalysisSection = React.lazy(() => import('./report/RenewalAnalysisSection'));
 
+type ReportTab = 'resumen' | 'coberturas' | 'deducibles' | 'auditoria' | 'analisis-avanzado';
+const REPORT_TABS: readonly ReportTab[] = [
+  'resumen',
+  'coberturas',
+  'deducibles',
+  'auditoria',
+  'analisis-avanzado',
+];
+
 interface ComparisonReportProps {
   report: ReportType;
   onUpdateReport?: (updatedReport: ReportType) => void;
   onOpenPortfolio?: () => void;
-  initialTab?: 'resumen' | 'coberturas' | 'deducibles' | 'auditoria' | 'analisis-avanzado';
+  initialTab?: ReportTab;
 }
 
 const ComparisonReport: React.FC<ComparisonReportProps> = ({
@@ -39,16 +48,14 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
   const initialActiveTab = (() => {
     if (typeof window !== 'undefined') {
       const tabParam = new URLSearchParams(window.location.search).get('reportTab');
-      if (tabParam && ['resumen', 'coberturas', 'deducibles', 'auditoria', 'analisis-avanzado'].includes(tabParam)) {
-        return tabParam as 'resumen' | 'coberturas' | 'deducibles' | 'auditoria' | 'analisis-avanzado';
+      if (tabParam && REPORT_TABS.includes(tabParam as ReportTab)) {
+        return tabParam as ReportTab;
       }
     }
     return initialTab;
   })();
 
-  const [activeTab, setActiveTab] = useState<
-    'resumen' | 'coberturas' | 'deducibles' | 'auditoria' | 'analisis-avanzado'
-  >(initialActiveTab);
+  const [activeTab, setActiveTab] = useState<ReportTab>(initialActiveTab);
 
   // Promotion modal state
   const [promoteQuote, setPromoteQuote] = useState<QuoteAnalysis | null>(null);
@@ -159,7 +166,6 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
         )}
       </div>
 
-      {/* --- TAB CONTENT: RESUMEN (DASHBOARD) --- */}
       {activeTab === 'resumen' && (
         <SummaryTab
           quotes={report.quotes}
@@ -178,7 +184,6 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
         />
       )}
 
-      {/* --- TAB CONTENT: COBERTURAS --- */}
       {activeTab === 'coberturas' && (
         <div className="animate-in fade-in duration-300">
           <UnifiedCoverageMatrix
@@ -193,13 +198,9 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
         </div>
       )}
 
-      {/* --- TAB CONTENT: DEDUCIBLES --- */}
       {activeTab === 'deducibles' && (
         <div className="animate-in fade-in duration-300 space-y-6">
-          {/* Claim Simulator Panel - Interactive calculation */}
           <ClaimSimulatorPanel quotes={report.quotes} />
-
-          {/* Deductible Matrix - Structured Comparison */}
           <DeductibleMatrix
             quotes={report.quotes}
             matrix={report.matrix}

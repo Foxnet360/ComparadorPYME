@@ -4,15 +4,10 @@ import { UIProvider, useUI } from './contexts/UIContext';
 import { AnalysisProvider } from './contexts/AnalysisContext';
 import { PortfolioProvider } from './contexts/PortfolioContext';
 import { useAppNavigation } from './hooks/useAppNavigation';
-import LandingPage from './components/LandingPage';
-import LoginScreen from './components/LoginScreen';
-import RegisterScreen from './components/RegisterScreen';
-import ResetPasswordScreen from './components/ResetPasswordScreen';
-import LegalPage from './pages/LegalPage';
 import { AppHeader } from './components/layout/AppHeader';
 import { AppFooter, type LegalTabType } from './components/layout/AppFooter';
-import { LegalModal } from './components/legal/LegalModal';
-import { ToastContainer } from './components/ToastNotification';
+import { AppModals } from './components/layout/AppModals';
+import { renderPublicView } from './components/layout/AppPublicViews';
 import { ViewLoadingFallback } from './components/layout/ViewLoadingFallback';
 import { useAnalysisFlow } from './hooks/useAnalysisFlow';
 import { useAuthSession } from './hooks/useAuthSession';
@@ -25,10 +20,9 @@ const ReportPage = lazy(() => import('./pages/ReportPage'));
 const ClientsPage = lazy(() => import('./pages/ClientsPage'));
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 const UsersPage = lazy(() => import('./pages/UsersPage'));
-const ChatBot = lazy(() => import('./components/ChatBot'));
-const ProfileScreen = lazy(() => import('./components/ProfileScreen'));
-const ClauseAdmin = lazy(() => import('./components/ClauseAdmin'));
-const InsurerManager = lazy(() => import('./components/InsurerManager').then((m) => ({ default: m.InsurerManager })));
+const InsurerManager = lazy(() =>
+  import('./components/InsurerManager').then((m) => ({ default: m.InsurerManager }))
+);
 const PortfolioPage = lazy(() => import('./pages/Portfolio'));
 const RenewalDetailPage = lazy(() => import('./pages/RenewalDetail'));
 
@@ -36,14 +30,26 @@ const AppShell: React.FC = () => {
   const { state, resetFlow, viewReport } = useAnalysisFlow();
   const { status, report } = state;
   const { currentView, activeRenewalId, navigateTo } = useAppNavigation(!!report);
-  const [legalTab, setLegalTab] = useState<'terms' | 'privacy' | 'security' | 'disclaimer'>('terms');
+  const [legalTab, setLegalTab] = useState<'terms' | 'privacy' | 'security' | 'disclaimer'>(
+    'terms'
+  );
   const [showLegalModal, setShowLegalModal] = useState(false);
 
-  const { currentUser, bootstrapped, updateUser, handleLogin, handleSessionLogout } = useAuthSession({
-    onLogin: () => navigateTo('DASHBOARD', { replace: true }),
-    onLogout: () => navigateTo('LANDING', { replace: true }),
-  });
-  const { chatOpen, setChatOpen, showProfile, setShowProfile, showClauseAdmin, setShowClauseAdmin, toast, clearToast } = useUI();
+  const { currentUser, bootstrapped, updateUser, handleLogin, handleSessionLogout } =
+    useAuthSession({
+      onLogin: () => navigateTo('DASHBOARD', { replace: true }),
+      onLogout: () => navigateTo('LANDING', { replace: true }),
+    });
+  const {
+    chatOpen,
+    setChatOpen,
+    showProfile,
+    setShowProfile,
+    showClauseAdmin,
+    setShowClauseAdmin,
+    toast,
+    clearToast,
+  } = useUI();
 
   const handledBoot = useRef(false);
   useEffect(() => {
@@ -66,34 +72,28 @@ const AppShell: React.FC = () => {
     }
   }, [bootstrapped, currentUser, currentView, navigateTo]);
 
-  const startNewAnalysis = () => { resetFlow(); navigateTo('ANALYZER'); };
-  const handleLogout = () => { handleSessionLogout(); resetFlow(); navigateTo('LANDING', { replace: true }); };
-  const navigateToDashboard = () => { navigateTo('DASHBOARD'); };
+  const startNewAnalysis = () => {
+    resetFlow();
+    navigateTo('ANALYZER');
+  };
+  const handleLogout = () => {
+    handleSessionLogout();
+    resetFlow();
+    navigateTo('LANDING', { replace: true });
+  };
+  const navigateToDashboard = () => {
+    navigateTo('DASHBOARD');
+  };
 
-  if (currentView === 'LANDING') {
-    return (
-      <LandingPage
-        onLoginClick={() => navigateTo('LOGIN')}
-        onRegisterClick={() => navigateTo('REGISTER')}
-        onOpenLegal={(tab) => {
-          if (tab) setLegalTab(tab as typeof legalTab);
-          navigateTo('LEGAL');
-        }}
-      />
-    );
-  }
-  if (currentView === 'LOGIN') {
-    return <LoginScreen onLoginSuccess={handleLogin} onRegisterClick={() => navigateTo('REGISTER')} />;
-  }
-  if (currentView === 'REGISTER') {
-    return <RegisterScreen onRegisterSuccess={handleLogin} onBackToLogin={() => navigateTo('LOGIN')} />;
-  }
-  if (currentView === 'RESET_PASSWORD') {
-    return <ResetPasswordScreen onSuccess={() => navigateTo('LOGIN')} onBackToLogin={() => navigateTo('LOGIN')} />;
-  }
-  if (currentView === 'LEGAL') {
-    return <LegalPage defaultTab={legalTab} onBack={() => navigateTo(currentUser ? 'DASHBOARD' : 'LANDING')} />;
-  }
+  const publicView = renderPublicView({
+    currentView,
+    currentUser,
+    legalTab,
+    setLegalTab,
+    navigateTo,
+    handleLogin,
+  });
+  if (publicView) return publicView;
 
   const extendedUser = currentUser as unknown as ExtendedUserProfile | null;
 
@@ -120,17 +120,28 @@ const AppShell: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
         {currentView === 'CLIENTS' && (
           <Suspense fallback={<ViewLoadingFallback />}>
-            <ClientsPage onSelectClientForAudit={() => startNewAnalysis()} onViewReport={(rep) => { viewReport(rep); navigateTo('REPORT'); }} />
+            <ClientsPage
+              onSelectClientForAudit={() => startNewAnalysis()}
+              onViewReport={(rep) => {
+                viewReport(rep);
+                navigateTo('REPORT');
+              }}
+            />
           </Suspense>
         )}
         {(currentView === 'PORTFOLIO' || currentView === 'RENEWAL_DETAIL') && (
           <Suspense fallback={<ViewLoadingFallback />}>
             <PortfolioProvider>
               {currentView === 'PORTFOLIO' && (
-                <PortfolioPage onOpenRenewal={(id) => navigateTo('RENEWAL_DETAIL', { renewalId: id })} />
+                <PortfolioPage
+                  onOpenRenewal={(id) => navigateTo('RENEWAL_DETAIL', { renewalId: id })}
+                />
               )}
               {currentView === 'RENEWAL_DETAIL' && activeRenewalId && (
-                <RenewalDetailPage renewalId={activeRenewalId} onBack={() => navigateTo('PORTFOLIO')} />
+                <RenewalDetailPage
+                  renewalId={activeRenewalId}
+                  onBack={() => navigateTo('PORTFOLIO')}
+                />
               )}
             </PortfolioProvider>
           </Suspense>
@@ -139,7 +150,10 @@ const AppShell: React.FC = () => {
           <Suspense fallback={<ViewLoadingFallback />}>
             <DashboardPage
               onNewAnalysis={() => startNewAnalysis()}
-              onViewReport={(rep) => { viewReport(rep); navigateTo('REPORT'); }}
+              onViewReport={(rep) => {
+                viewReport(rep);
+                navigateTo('REPORT');
+              }}
             />
           </Suspense>
         )}
@@ -177,20 +191,6 @@ const AppShell: React.FC = () => {
         )}
       </main>
 
-      {showProfile && currentUser && (
-        <Suspense fallback={null}>
-          <ProfileScreen currentUser={currentUser} onUpdateProfile={updateUser} onClose={() => setShowProfile(false)} />
-        </Suspense>
-      )}
-      {showClauseAdmin && (
-        <Suspense fallback={null}>
-          <ClauseAdmin currentUser={currentUser} onClose={() => setShowClauseAdmin(false)} />
-        </Suspense>
-      )}
-      <Suspense fallback={null}>
-        <ChatBot reportContext={report || undefined} isOpen={chatOpen} onClose={() => setChatOpen(false)} />
-      </Suspense>
-
       <AppFooter
         currentUser={currentUser}
         onOpenLegalModal={(tab: LegalTabType) => {
@@ -199,15 +199,21 @@ const AppShell: React.FC = () => {
         }}
       />
 
-      <LegalModal
-        isOpen={showLegalModal}
-        onClose={() => setShowLegalModal(false)}
-        initialTab={legalTab}
-      />
-
-      <ToastContainer
-        toasts={toast ? [{ id: 'global-toast', message: toast.message, type: toast.type }] : []}
-        onClose={clearToast}
+      <AppModals
+        currentUser={currentUser}
+        report={report}
+        chatOpen={chatOpen}
+        setChatOpen={setChatOpen}
+        showProfile={showProfile}
+        setShowProfile={setShowProfile}
+        showClauseAdmin={showClauseAdmin}
+        setShowClauseAdmin={setShowClauseAdmin}
+        showLegalModal={showLegalModal}
+        setShowLegalModal={setShowLegalModal}
+        legalTab={legalTab}
+        updateUser={updateUser}
+        toast={toast}
+        clearToast={clearToast}
       />
     </div>
   );
