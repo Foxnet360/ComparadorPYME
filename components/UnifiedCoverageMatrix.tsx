@@ -1,305 +1,39 @@
-import React, { useState, useRef, useEffect, lazy, Suspense, memo, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useEffect, lazy, Suspense, useMemo, useCallback } from 'react';
 import { QuoteAnalysis, MatrixRow, MatrixCell, QuoteMetadata } from '../types';
-import { PLANTILLA_ITEMS } from '../constants';
-import {
-  Info,
-  AlertTriangle,
-  ListChecks,
-  Trophy,
-  DollarSign,
-  Calendar,
-  ShieldCheck,
-  Download,
-  Award,
-  ChevronDown,
-  ChevronRight,
-  Layers,
-  Check,
-  AlertCircle,
-  Eye,
-  Loader2,
-  Pin,
-  Scale,
-} from 'lucide-react';
+import { ChevronDown, ChevronRight, Scale, ListChecks } from 'lucide-react';
 import { getDomainRegulatoryProfile } from '@shared/domainRegulatoryKnowledge';
-import { DeductibleBadge } from './DeductibleBadge';
 import { PedagogicalTooltip } from './common/PedagogicalTooltip';
-import { InsurerLogo } from './common/InsurerLogo';
-import { formatPercentage, parseColombianCurrency } from '../utils/formatCurrency';
 import { useOptimisticCorrection } from '../hooks/useOptimisticCorrection';
 import { usePdfViewer, useCellNotes, useAnalysis } from '../contexts/AnalysisContext';
 import { exportAnalysisToExcel } from '../services/excelExportService';
-import { InlineNoteEditor } from './InlineNoteEditor';
 import { useToasts, ToastContainer } from './ToastNotification';
+import {
+  MatrixToolbar,
+  MatrixMetadataCard,
+  MatrixTableHeader,
+  MatrixDataCell,
+  MatrixMethodologyNote,
+  buildExportNotes,
+  isSublimitRow,
+  simplifyHeaderLabel,
+} from './coverageMatrix';
 
 const PdfViewer = lazy(() => import('./PdfViewer'));
 
-// CoverageCell memoizado para optimizar re-renders
-const CoverageCell = memo(
-  ({
-    cell,
-    rowLabel,
-    isWinner,
-    excluded,
-    lowConfidence,
-    needsReview,
-    isSaving,
-    onOpenPdf: _onOpenPdf,
-    onOpenCorrection: _onOpenCorrection,
-    onDoubleClick,
-    hasNote,
-  }: {
-    cell: MatrixCell;
-    rowLabel: string;
-    isWinner: boolean;
-    excluded: boolean;
-    lowConfidence: boolean;
-    needsReview: boolean;
-    isSaving: boolean;
-    onOpenPdf?: () => void;
-    onOpenCorrection?: () => void;
-    onDoubleClick?: () => void;
-    hasNote?: boolean;
-  }) => {
-    return (
-      <div
-        className={`relative ${
-          isWinner ? 'bg-amber-50/60 font-semibold text-amber-900 border border-amber-200/50' : ''
-        } ${excluded ? 'text-red-500 italic bg-slate-50/20' : 'text-slate-800'} ${
-          lowConfidence ? 'bg-yellow-50/40 border-2 border-yellow-400/60 shadow-sm' : ''
-        } ${needsReview ? 'ring-2 ring-red-300/50 ring-inset' : ''} ${
-          isSaving ? 'opacity-70' : ''
-        }`}
-        onDoubleClick={onDoubleClick}
-      >
-        {/* Note indicator */}
-        {hasNote && (
-          <span className="absolute top-1 right-1 text-blue-500" title="Tiene nota consultiva">
-            <Pin size={12} />
-          </span>
-        )}
+export {
+  CATEGORY_CONFIGS,
+  isExcludedValue,
+  isSublimitRow,
+  parseNumericValue,
+  formatCurrency,
+  buildExportNotes,
+  formatMatrixValue,
+  simplifyHeaderLabel,
+  CoverageCell,
+} from './coverageMatrix';
+export type { CategoryConfig } from './coverageMatrix';
 
-        {/* Winner trophy */}
-        {isWinner && !lowConfidence && (
-          <span className="absolute top-1 left-1 text-amber-500" title="Condición favorable">
-            <Trophy size={12} />
-          </span>
-        )}
-
-        <div className="flex flex-col items-center justify-center gap-1.5">
-          {excluded ? (
-            <span className="text-red-400 font-medium">No incluida</span>
-          ) : (
-            <span
-              className={`${isWinner ? 'text-amber-950 font-bold' : 'text-slate-800 font-medium'}`}
-            >
-              {rowLabel === 'Deducible' && cell.value !== 'No aplica' ? (
-                <DeductibleBadge deductible={cell.value} />
-              ) : (
-                formatMatrixValue(cell.value)
-              )}
-            </span>
-          )}
-        </div>
-      </div>
-    );
-  }
-);
-
-CoverageCell.displayName = 'CoverageCell';
-
-interface CategoryConfig {
-  id: number;
-  canonicalName: string;
-  headerLabel: string;
-  rows: Array<{
-    label: string;
-    field: 'value' | 'deductible' | 'details';
-  }>;
-}
-
-import taxonomyData from '../data/domains/pyme/taxonomy.json';
-
-const HEADER_LABEL_MAPPING: Record<number, string> = {
-  1: 'AMPARO BÁSICO - TODO RIESGO DAÑO MATERIAL',
-  14: 'TERREMOTO / TEMBLOR / ERUPCIÓN VOLCÁNICA',
-  13: 'AMIT / HMACC (HUELGA, MOTÍN, ASONADA, CONMOCIÓN CIVIL)',
-  4: 'DAÑO INTERNO - EQUIPO ELÉCTRICO Y ELECTRÓNICO',
-  3: 'HURTO CALIFICADO / SUSTRACCIÓN CON VIOLENCIA',
-  2: 'LUCRO CESANTE / PÉRDIDAS CONSECUENCIALES',
-  8: 'INFIDELIDAD DE EMPLEADOS',
-  6: 'RESPONSABILIDAD CIVIL EXTRACONTRACTUAL (RCE)',
-  5: 'ROTURA DE MAQUINARIA',
-  7: 'ROTURA ACCIDENTAL DE VIDRIOS',
-  9: 'TRANSPORTE DE MERCANCÍAS',
-  10: 'TRANSPORTE DE VALORES',
-  11: 'ASISTENCIAS',
-  12: 'ASISTENCIA LEGAL',
-};
-
-const ROWS_MAPPING: Record<
-  number,
-  Array<{ label: string; field: 'value' | 'deductible' | 'details' }>
-> = {
-  1: [
-    { label: 'Valor Asegurado', field: 'value' },
-    { label: 'Deducible', field: 'deductible' },
-    { label: 'Incluye', field: 'details' },
-  ],
-  6: [
-    { label: 'Valor Asegurado', field: 'value' },
-    { label: 'Deducible', field: 'deductible' },
-    { label: 'Incluye', field: 'details' },
-  ],
-  5: [
-    { label: 'Cobertura', field: 'value' },
-    { label: 'Deducible', field: 'deductible' },
-  ],
-  7: [
-    { label: 'Sublímite', field: 'value' },
-    { label: 'Deducible', field: 'deductible' },
-  ],
-  11: [{ label: 'Incluida', field: 'details' }],
-  12: [{ label: 'Incluida', field: 'details' }],
-};
-
-export const CATEGORY_CONFIGS: CategoryConfig[] = (taxonomyData.categories || []).map((cat) => {
-  const id = cat.id;
-  const canonicalName = cat.name;
-  const headerLabel = HEADER_LABEL_MAPPING[id] || canonicalName.toUpperCase();
-  const rows = ROWS_MAPPING[id] || [
-    { label: 'Valor Asegurado', field: 'value' },
-    { label: 'Deducible', field: 'deductible' },
-  ];
-  return {
-    id,
-    canonicalName,
-    headerLabel,
-    rows,
-  };
-});
-
-export function isExcludedValue(val: string | undefined | null): boolean {
-  if (!val) return true;
-  const normalized = val.toLowerCase().trim();
-  return (
-    normalized === 'no incluida' ||
-    normalized === 'no incluido' ||
-    normalized === 'n.c.' ||
-    normalized === 'nc' ||
-    normalized === 'no aplica' ||
-    normalized === 'no especificado' ||
-    normalized === 'excluido' ||
-    normalized === 'excluida' ||
-    normalized === 'no contratado' ||
-    normalized === ''
-  );
-}
-
-export function isSublimitRow(row: MatrixRow): boolean {
-  if (row.type !== 'data') return false;
-  const label = (row.label || '').trim();
-  if (
-    label.startsWith('↳') ||
-    label.startsWith('- ') ||
-    label.startsWith('· ') ||
-    label.startsWith('– ')
-  ) {
-    return true;
-  }
-  const lower = label.toLowerCase();
-  return (
-    lower.includes('sublímite') ||
-    lower.includes('sub-límite') ||
-    lower.includes('sublimite') ||
-    lower.includes('rider') ||
-    lower.includes('extensión') ||
-    lower.includes('extension') ||
-    lower.includes('(gastos)') ||
-    lower.startsWith('sublímite:') ||
-    lower.startsWith('sub-límite:') ||
-    lower.startsWith('sublimite:')
-  );
-}
-
-export function parseNumericValue(val: string | undefined | null): number {
-  if (!val || isExcludedValue(val)) return 0;
-  const cleaned = val.replace(/[^0-9]/g, '');
-  if (!cleaned) return 0;
-  return parseInt(cleaned, 10);
-}
-
-export function formatCurrency(num: number): string {
-  if (num === 0) return 'No informado';
-  return '$' + num.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-}
-
-export function buildExportNotes(
-  cellNotes: Record<string, { content?: string }>
-): Record<string, string> {
-  const exportNotes: Record<string, string> = {};
-  Object.entries(cellNotes).forEach(([key, note]) => {
-    if (note.content) {
-      exportNotes[key] = note.content;
-    }
-  });
-  return exportNotes;
-}
-
-export function formatMatrixValue(val: string | undefined | null): string {
-  if (!val) return 'No informado';
-  const trimmed = val.trim();
-  if (
-    trimmed === 'No incluida' ||
-    trimmed === 'NO ESPECIFICADO' ||
-    trimmed === 'No contratado' ||
-    isExcludedValue(trimmed)
-  ) {
-    return trimmed;
-  }
-  if (trimmed === '0') return '0';
-
-  // 1. Check if it's a simple currency / numeric string:
-  // e.g. "$ 100.000.000,00", "$100.000.000", "100.000.000 COP", "COP 100.000.000", "$ 1.750.905", "100000000"
-  if (/^(?:\$\s*)?[\d.,\s]+(?:\s*COP|\s*USD)?$/i.test(trimmed)) {
-    if (/\d/.test(trimmed) && !trimmed.includes('%')) {
-      const parsed = parseColombianCurrency(trimmed);
-      if (parsed !== null && parsed > 0) {
-        const hasFraction = parsed % 1 !== 0;
-        return `$${parsed.toLocaleString('es-CO', {
-          minimumFractionDigits: hasFraction ? 2 : 0,
-          maximumFractionDigits: hasFraction ? 2 : 0,
-        })}`;
-      } else if (parsed === 0) {
-        return '0';
-      }
-    }
-  }
-
-  // 2. Clean compound text: strip trailing redundant zero decimals (,00 or .00) and redundant COP mentions
-  const cleanedText = trimmed
-    .replace(/(\$\s*\d{1,3}(?:\.\d{3})+),00\b/g, '$1')
-    .replace(/(\$\s*\d{1,3}(?:,\d{3})+)\.00\b/g, '$1')
-    .replace(/\b(\d{1,3}(?:\.\d{3})+),00\s*COP\b/gi, '$$$1')
-    .replace(/\b(\d{1,3}(?:\.\d{3})+)\s*COP\b/gi, '$$$1');
-
-  return cleanedText;
-}
-
-export function simplifyHeaderLabel(label: string): string {
-  const upper = label.toUpperCase();
-  if (upper.includes('AMPARO BÁSICO')) return 'Cobertura Todo Riesgo Daño Material';
-  if (upper.includes('AMIT / HMACC')) return 'Cobertura de Terrorismo, Huelga y Motín';
-  if (upper.includes('DAÑO INTERNO')) return 'Equipo Eléctrico y Electrónico';
-  if (upper.includes('HURTO CALIFICADO')) return 'Hurto y Sustracción con Violencia';
-  if (upper.includes('LUCRO CESANTE')) return 'Lucro Cesante / Pérdida de Ingresos';
-  if (upper.includes('RESPONSABILIDAD CIVIL')) return 'Responsabilidad Civil (Daños a Terceros)';
-  if (upper.includes('AMPAROS EXCLUSIVOS')) return 'Beneficios y Ventajas Competitivas';
-  if (upper.includes('COMPARATIVA DE PRIMAS')) return 'Resumen de Primas y Costos';
-  return label;
-}
-
-interface UnifiedCoverageMatrixProps {
+export interface UnifiedCoverageMatrixProps {
   quotes: QuoteAnalysis[];
   rows?: MatrixRow[];
   metadata?: QuoteMetadata[];
@@ -494,13 +228,6 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
     setEditingNote(null);
   };
 
-  const isLowConfidence = (confidence: number | undefined): boolean => {
-    return confidence !== undefined && confidence !== null && confidence <= 0.5;
-  };
-
-  // Use backend rows for V2 granular reports; fallback to V1 client-side reconstruction
-  // for explicit V1 or when rows are missing entirely.
-  // Use backend rows directly; rows are pre-calculated by matrixTransformer
   const fullMatrix = rows ?? [];
 
   // Partition matrix rows according to active tabs
@@ -514,7 +241,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
   const [collapsedParentIds, setCollapsedParentIds] = useState<Set<string>>(new Set());
 
   // Compute parent-sublimit relationships
-  const { parentToSublimits, sublimitToParent, totalSublimits } = React.useMemo(() => {
+  const { parentToSublimits, sublimitToParent, totalSublimits } = useMemo(() => {
     const parentMap = new Map<string, string[]>();
     const childMap = new Map<string, string>();
     let currentParentId: string | null = null;
@@ -565,21 +292,6 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
     }
   };
 
-  const getConfidenceBadgeColor = (confidence: number | undefined) => {
-    if (confidence === undefined || confidence === null)
-      return 'bg-slate-100 text-slate-500 border-slate-200';
-    if (confidence >= 0.8) return 'bg-green-100 text-green-700 border-green-300';
-    if (confidence >= 0.5) return 'bg-yellow-100 text-yellow-700 border-yellow-300';
-    return 'bg-red-100 text-red-700 border-red-300';
-  };
-
-  const getConfidenceText = (confidence: number | undefined) => {
-    if (confidence === undefined || confidence === null) return 'Sin match';
-    if (confidence >= 0.8) return 'Alta';
-    if (confidence >= 0.5) return 'Media';
-    return 'Baja';
-  };
-
   const handleExportExcel = async (exportMode: 'technical' | 'client' = 'technical') => {
     if (!analysisId) {
       addToast('ID de análisis no disponible para exportación.', 'warning');
@@ -587,7 +299,6 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
     }
     setIsExporting(true);
     try {
-      // Create a simplified version of cellNotes for export
       const exportNotes = buildExportNotes(cellNotes);
 
       await exportAnalysisToExcel({
@@ -618,228 +329,21 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header Panel with Premium Title & Export Button */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-950 p-6 rounded-2xl shadow-lg border border-slate-700 text-white">
-        <div>
-          <h2 className="text-xl md:text-2xl font-extrabold tracking-tight flex items-center gap-2">
-            <ListChecks className="text-blue-400" size={24} />
-            Análisis de Cotizaciones Unificado
-          </h2>
-          <p className="text-xs md:text-sm text-slate-300 mt-1">
-            Visualización interactiva con paridad total de filas del reporte técnico en Excel.
-          </p>
-        </div>
-        {analysisId && (
-          <div className="flex items-center gap-3 flex-wrap">
-            <button
-              onClick={() => handleExportExcel('client')}
-              disabled={isExporting}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs md:text-sm transition-all shadow-md active:scale-95 disabled:opacity-50"
-              title="Descarga el Excel consultivo para el cliente final, con explicaciones descriptivas del ramo"
-            >
-              {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-              <span>Excel Cliente (Asesoría)</span>
-            </button>
-            <button
-              onClick={() => handleExportExcel('technical')}
-              disabled={isExporting}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs md:text-sm transition-all shadow-md active:scale-95 disabled:opacity-50"
-              title="Descarga la matriz técnica completa con auditoría de riesgos, deducibles y coberturas"
-            >
-              {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-              <span>Excel Técnico (Auditoría)</span>
-            </button>
-          </div>
-        )}
-      </div>
+      <MatrixToolbar
+        analysisId={analysisId}
+        isExporting={isExporting}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        quotesCount={quotes.length}
+        pinnedCount={pinnedColumns.size}
+        onResetPinned={() => setPinnedColumns(new Set())}
+        totalSublimits={totalSublimits}
+        allSublimitsCollapsed={allSublimitsCollapsed}
+        onToggleAllSublimits={toggleAllSublimits}
+        onExportExcel={handleExportExcel}
+      />
 
-      {/* Segmented Premium Tab Controls & Sublimit Folding Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200 max-w-lg shadow-inner">
-          <button
-            onClick={() => setActiveTab('coverages')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs md:text-sm font-semibold transition-all ${
-              activeTab === 'coverages'
-                ? 'bg-white text-blue-700 shadow-sm border border-slate-200'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            }`}
-          >
-            <ShieldCheck size={16} />
-            Bienes y Coberturas
-          </button>
-          <button
-            onClick={() => setActiveTab('financials')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs md:text-sm font-semibold transition-all ${
-              activeTab === 'financials'
-                ? 'bg-white text-blue-700 shadow-sm border border-slate-200'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            }`}
-          >
-            <DollarSign size={16} />
-            Primas y Costos
-          </button>
-          <button
-            onClick={() => setActiveTab('additional')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs md:text-sm font-semibold transition-all ${
-              activeTab === 'additional'
-                ? 'bg-white text-blue-700 shadow-sm border border-slate-200'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            }`}
-          >
-            <Calendar size={16} />
-            Información Adicional
-          </button>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {quotes.length >= 3 && (
-            <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200 text-xs shadow-sm">
-              <span className="text-slate-500 font-medium px-2 flex items-center gap-1">
-                <Pin size={12} className="text-indigo-600" />
-                Frente a Frente:
-              </span>
-              {pinnedColumns.size > 0 ? (
-                <button
-                  onClick={() => setPinnedColumns(new Set())}
-                  className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 font-semibold hover:bg-indigo-100 transition-colors cursor-pointer"
-                  title="Restablecer vista completa de todas las aseguradoras"
-                >
-                  Ver todas ({quotes.length}) ✕
-                </button>
-              ) : (
-                <span className="text-slate-400 text-[11px] pr-2">
-                  (Haz clic en 📌 de la cabecera para aislar)
-                </span>
-              )}
-            </div>
-          )}
-
-          {totalSublimits > 0 && activeTab === 'coverages' && (
-            <button
-              onClick={toggleAllSublimits}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all shadow-sm active:scale-95 cursor-pointer"
-              title="Plegar o desplegar sublímites agrupados bajo coberturas principales"
-            >
-              <Layers size={15} className="text-blue-600" />
-              <span>
-                {allSublimitsCollapsed
-                  ? `Expandir sublímites (${totalSublimits})`
-                  : `Plegar sublímites (${totalSublimits})`}
-              </span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Header Metadata Card */}
-      {metadata && metadata.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
-            <Calendar className="text-blue-600" size={20} />
-            <h3 className="font-bold text-slate-800 text-lg">Información del Riesgo & Metadatos</h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {metadata.map((meta, idx) => (
-              <div
-                key={idx}
-                className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-2">
-                    <div className="flex items-center gap-2">
-                      <InsurerLogo insurerName={meta.insurer} size="xs" />
-                      <span className="font-extrabold text-blue-800 text-sm">{meta.insurer}</span>
-                    </div>
-                    <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full">
-                      Extracción V2
-                    </span>
-                  </div>
-                  <div className="space-y-2 text-xs text-slate-600">
-                    {meta.cliente && (
-                      <div className="flex justify-between">
-                        <span className="font-medium text-slate-500">Cliente:</span>
-                        <span className="font-semibold text-slate-800 text-right">
-                          {meta.cliente}
-                        </span>
-                      </div>
-                    )}
-                    {meta.tipoSeguro && (
-                      <div className="flex justify-between">
-                        <span className="font-medium text-slate-500">Tipo de Seguro:</span>
-                        <span className="font-semibold text-slate-800 text-right">
-                          {meta.tipoSeguro}
-                        </span>
-                      </div>
-                    )}
-                    {meta.ubicacionRiesgo && (
-                      <div className="flex justify-between">
-                        <span className="font-medium text-slate-500">Ubicación del Riesgo:</span>
-                        <span
-                          className="font-semibold text-slate-800 text-right max-w-[150px] truncate"
-                          title={meta.ubicacionRiesgo}
-                        >
-                          {meta.ubicacionRiesgo}
-                        </span>
-                      </div>
-                    )}
-                    {meta.anoConstruccion && (
-                      <div className="flex justify-between">
-                        <span className="font-medium text-slate-500">Año de Construcción:</span>
-                        <span className="font-semibold text-slate-800 text-right">
-                          {meta.anoConstruccion}
-                        </span>
-                      </div>
-                    )}
-                    {meta.pisos && (
-                      <div className="flex justify-between">
-                        <span className="font-medium text-slate-500">Pisos:</span>
-                        <span className="font-semibold text-slate-800 text-right">
-                          {meta.pisos}
-                        </span>
-                      </div>
-                    )}
-                    {meta.aliado && (
-                      <div className="flex justify-between">
-                        <span className="font-medium text-slate-500">Aliado:</span>
-                        <span className="font-semibold text-slate-800 text-right">
-                          {meta.aliado}
-                        </span>
-                      </div>
-                    )}
-                    {meta.actividadOcupacion && (
-                      <div className="flex justify-between">
-                        <span className="font-medium text-slate-500">Actividad/Ocupación:</span>
-                        <span
-                          className="font-semibold text-slate-800 text-right max-w-[150px] truncate"
-                          title={meta.actividadOcupacion}
-                        >
-                          {meta.actividadOcupacion}
-                        </span>
-                      </div>
-                    )}
-                    {meta.documento && (
-                      <div className="flex justify-between">
-                        <span className="font-medium text-slate-500">Documento:</span>
-                        <span className="font-semibold text-slate-800 text-right">
-                          {meta.documento}
-                        </span>
-                      </div>
-                    )}
-                    {meta.vigencia && (
-                      <div className="flex justify-between">
-                        <span className="font-medium text-slate-500">Vigencia:</span>
-                        <span className="font-semibold text-slate-800 text-right">
-                          {meta.vigencia}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <MatrixMetadataCard metadata={metadata} />
 
       {/* Grid Matrix Container */}
       <div
@@ -859,76 +363,12 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
         ) : (
           <div className="overflow-x-auto overflow-y-auto max-h-[75vh] relative scroll-smooth">
             <table className="w-full text-sm border-collapse text-left">
-              <thead className="bg-[#E6F0FA] text-[#0066CC] font-bold text-xs uppercase border-b border-blue-200 sticky top-0 z-30 shadow-xs">
-                <tr role="row">
-                  <th
-                    role="columnheader"
-                    className="px-6 py-4 sticky left-0 top-0 bg-[#E6F0FA] border-r border-blue-100 min-w-[220px] md:min-w-[280px] shadow-[4px_0_10px_-5px_rgba(0,0,0,0.08)] z-40"
-                  >
-                    Concepto / Variable
-                  </th>
-                  {quotes.map((q, i) => {
-                    const isPinned = pinnedColumns.has(i);
-                    const isHiddenByPinning = pinnedColumns.size > 0 && !isPinned;
-                    if (isHiddenByPinning) return null;
-
-                    return (
-                      <th
-                        key={i}
-                        role="columnheader"
-                        className={`px-6 py-4 min-w-[200px] md:min-w-[240px] whitespace-nowrap text-center text-[#0066CC] bg-[#E6F0FA] border-b border-blue-100 relative group/th ${
-                          isPinned ? '!bg-indigo-100/90 border-x border-indigo-200 shadow-sm' : ''
-                        }`}
-                      >
-                        <div className="flex items-center justify-center gap-2">
-                          <InsurerLogo insurerName={q.insurerName} size="xs" />
-                          <span>{q.insurerName}</span>
-                          {quotes.length >= 3 && (
-                            <button
-                              type="button"
-                              onClick={() => togglePinnedColumn(i)}
-                              className={`p-1 rounded transition-colors cursor-pointer ${
-                                isPinned
-                                  ? 'text-indigo-700 bg-white shadow-xs'
-                                  : 'text-slate-400 hover:text-indigo-600 hover:bg-blue-100/50'
-                              }`}
-                              title={
-                                isPinned
-                                  ? 'Quitar de la comparativa frente a frente'
-                                  : 'Fijar para comparar frente a frente'
-                              }
-                            >
-                              <Pin size={12} className={isPinned ? 'fill-indigo-600' : ''} />
-                            </button>
-                          )}
-                        </div>
-                        {/* Regulatory Compliance Scorecard */}
-                        {(() => {
-                          const comp = complianceByInsurer.get(q.insurerName);
-                          if (!comp || comp.totalCount === 0) return null;
-                          return (
-                            <div className="mt-1.5 flex items-center justify-center">
-                              <span
-                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${
-                                  comp.isFullyCompliant
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300/70'
-                                    : 'bg-amber-50 text-amber-700 border-amber-300/70'
-                                }`}
-                                title={comp.details}
-                              >
-                                <Scale size={11} />
-                                <span>
-                                  {comp.compliantCount}/{comp.totalCount} Reglas Legales
-                                </span>
-                              </span>
-                            </div>
-                          );
-                        })()}
-                      </th>
-                    );
-                  })}
-                </tr>
-              </thead>
+              <MatrixTableHeader
+                quotes={quotes}
+                pinnedColumns={pinnedColumns}
+                complianceByInsurer={complianceByInsurer}
+                onTogglePinnedColumn={togglePinnedColumn}
+              />
               <tbody className="divide-y divide-slate-100">
                 {filteredRows.map((row) => {
                   const effectiveColumnCount =
@@ -1033,344 +473,49 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                       {row.cells.map((cell, colIdx) => {
                         const isPinned = pinnedColumns.has(colIdx);
                         const isHiddenByPinning = pinnedColumns.size > 0 && !isPinned;
-                        if (isHiddenByPinning) return null;
-
-                        const isWinner = cell.isWinner;
-                        const excluded = cell.isExcluded;
-                        const hasDetails =
-                          cell.confidence !== undefined ||
-                          cell.pageNumber !== undefined ||
-                          cell.notes;
-                        const lowConfidence = isLowConfidence(cell.confidence);
-                        const needsReview = cell.needsHumanReview;
-                        const isSaving = savingCorrections.has(`${row.id}-${colIdx}`);
                         const cellId = `${row.id}-${colIdx}`;
                         const cellNote = getCellNote(cellId);
                         const isEditingNote =
                           editingNote?.rowId === row.id && editingNote?.colIdx === colIdx;
-
-                        const cellClass = `px-6 py-3.5 text-sm align-middle text-center relative border-r border-slate-50 transition-all cursor-pointer group/cell ${
-                          isWinner
-                            ? 'bg-amber-50/60 font-semibold text-amber-900 border border-amber-200/50'
-                            : ''
-                        } ${
-                          excluded
-                            ? 'text-slate-400 italic bg-slate-100/60 line-through decoration-slate-400'
-                            : 'text-slate-800'
-                        } ${
-                          lowConfidence
-                            ? 'bg-yellow-50/40 border-2 border-yellow-400/60 shadow-sm'
-                            : ''
-                        } ${needsReview ? 'ring-2 ring-red-300/50 ring-inset' : ''} ${
-                          isSaving ? 'opacity-70' : ''
-                        } hover:ring-1 hover:ring-blue-400 hover:ring-inset`;
-
-                        if (isEditingNote) {
-                          return (
-                            <td
-                              key={colIdx}
-                              role="gridcell"
-                              tabIndex={0}
-                              className="relative p-0"
-                              style={{ height: '150px' }}
-                            >
-                              <InlineNoteEditor
-                                cellId={cellId}
-                                initialContent={cellNote?.content || ''}
-                                onSave={(id, content) => handleSaveNote(row.id, colIdx, content)}
-                                onCancel={handleCancelNote}
-                              />
-                            </td>
-                          );
-                        }
+                        const isHovered =
+                          hoveredCell?.rowId === row.id && hoveredCell?.colIdx === colIdx;
+                        const isDropdownOpen =
+                          openDropdown?.rowId === row.id && openDropdown?.colIdx === colIdx;
+                        const isSaving = savingCorrections.has(cellId);
 
                         return (
-                          <td
+                          <MatrixDataCell
                             key={colIdx}
-                            role="gridcell"
-                            tabIndex={0}
-                            className={cellClass}
+                            cell={cell}
+                            row={row}
+                            colIdx={colIdx}
+                            quote={quotes[colIdx]}
+                            viewMode={viewMode}
+                            isPinned={isPinned}
+                            isHiddenByPinning={isHiddenByPinning}
+                            isSaving={isSaving}
+                            cellNote={cellNote}
+                            isEditingNote={isEditingNote}
+                            isHovered={isHovered}
+                            isDropdownOpen={isDropdownOpen}
+                            dropdownRef={dropdownRef}
                             onMouseEnter={() => setHoveredCell({ rowId: row.id, colIdx })}
                             onMouseLeave={() => setHoveredCell(null)}
                             onDoubleClick={() => handleCellDoubleClick(row.id, colIdx)}
-                          >
-                            {/* Note indicator */}
-                            {cellNote && (
-                              <span
-                                className="absolute top-1 right-2 text-blue-500 hover:scale-110 transition-transform cursor-help"
-                                title={`Nota: ${cellNote.content.substring(0, 50)}...`}
-                              >
-                                <Pin size={12} />
-                              </span>
-                            )}
-
-                            {/* Hover Audit Affordance Hint (Double Click Prompt) */}
-                            {!cellNote && (
-                              <span
-                                className="absolute top-1 right-1.5 text-slate-300 group-hover/cell:text-blue-500 opacity-0 group-hover/cell:opacity-100 transition-all text-[10px] pointer-events-none"
-                                title="Doble clic para ver en PDF o agregar nota"
-                              >
-                                🔍
-                              </span>
-                            )}
-
-                            {/* Confidence indicator */}
-                            {viewMode === 'technical' && cell.confidence !== undefined && (
-                              <span
-                                className={`absolute top-1 left-1 w-2.5 h-2.5 rounded-full border ${getConfidenceBadgeColor(cell.confidence)} cursor-help`}
-                                title={`Confianza: ${formatPercentage(cell.confidence, 0)} (${getConfidenceText(cell.confidence)})`}
-                              />
-                            )}
-
-                            {/* Winner trophy */}
-                            {isWinner && (viewMode === 'technical' ? !lowConfidence : true) && (
-                              <span
-                                className="absolute top-1 right-2 text-amber-500 hover:scale-110 transition-transform cursor-help"
-                                title="Condición / Valor favorable"
-                              >
-                                🏆
-                              </span>
-                            )}
-
-                            {/* Low Confidence / Needs Review Alert */}
-                            {viewMode === 'technical' && (lowConfidence || needsReview) && (
-                              <span
-                                className="absolute top-1 right-2 text-yellow-600 hover:scale-110 transition-transform cursor-help z-10"
-                                title={
-                                  needsReview
-                                    ? 'Requiere validación humana - Doble agente en discrepancia'
-                                    : 'Confianza baja en mapeo ontológico'
-                                }
-                              >
-                                <AlertCircle size={14} />
-                              </span>
-                            )}
-
-                            {/* Cell Value Rendering */}
-                            <div className="flex flex-col items-center justify-center gap-1.5">
-                              {excluded ? (
-                                <span className="text-slate-400 font-medium">No incluida</span>
-                              ) : (
-                                <span
-                                  className={`${isWinner ? 'text-amber-950 font-bold' : 'text-slate-800 font-medium'}`}
-                                >
-                                  {row.label === 'Deducible' && cell.value !== 'No aplica' ? (
-                                    <DeductibleBadge deductible={cell.value} />
-                                  ) : (
-                                    formatMatrixValue(cell.value)
-                                  )}
-                                </span>
-                              )}
-
-                              {/* Technical Details Popover Trigger (Only in Technical ViewMode) */}
-                              {viewMode === 'technical' && hasDetails && (
-                                <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-400">
-                                  {(cell.calculatedPage !== undefined ||
-                                    cell.pageNumber !== undefined) && (
-                                    <button
-                                      onClick={() => handleOpenPdfEvidence(cell, quotes[colIdx]!)}
-                                      className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-1.5 py-0.5 rounded border border-blue-200 flex items-center gap-0.5 transition-colors cursor-pointer"
-                                      title="Ver evidencia en PDF"
-                                    >
-                                      <Eye size={10} />
-                                      Pág. {cell.calculatedPage || cell.pageNumber}
-                                    </button>
-                                  )}
-                                  {cell.confidence !== undefined && (
-                                    <span
-                                      className={`px-1.5 py-0.5 rounded border ${getConfidenceBadgeColor(cell.confidence)}`}
-                                    >
-                                      {getConfidenceText(cell.confidence)}
-                                    </span>
-                                  )}
-                                  {needsReview && (
-                                    <span className="bg-red-50 text-red-600 px-1.5 py-0.5 rounded border border-red-200 flex items-center gap-0.5">
-                                      <AlertTriangle size={10} />
-                                      Revisar
-                                    </span>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Inline Discrepancy Resolution Dropdown */}
-                            {viewMode === 'technical' &&
-                              needsReview &&
-                              openDropdown?.rowId === row.id &&
-                              openDropdown?.colIdx === colIdx && (
-                                <div
-                                  ref={dropdownRef}
-                                  className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-80 bg-white rounded-xl shadow-2xl z-50 border border-slate-200 overflow-hidden"
-                                >
-                                  <div className="bg-amber-50 px-4 py-2.5 border-b border-amber-200 flex items-center gap-2">
-                                    <AlertTriangle size={14} className="text-amber-600" />
-                                    <span className="text-xs font-bold text-amber-800">
-                                      Resolver Discrepancia Ontológica
-                                    </span>
-                                  </div>
-                                  <div className="p-3 max-h-64 overflow-y-auto">
-                                    <p className="text-[11px] text-slate-500 mb-2">
-                                      Seleccione la categoría canónica correcta:
-                                    </p>
-                                    {PLANTILLA_ITEMS.map((item, idx) => (
-                                      <button
-                                        key={idx}
-                                        onClick={() =>
-                                          handleDiscrepancyResolution(row.id, colIdx, item)
-                                        }
-                                        className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 rounded-lg transition-colors flex items-center justify-between group"
-                                      >
-                                        <span>{item}</span>
-                                        <Check
-                                          size={12}
-                                          className="text-green-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        />
-                                      </button>
-                                    ))}
-                                  </div>
-                                  <div className="px-3 py-2 bg-slate-50 border-t border-slate-100">
-                                    <button
-                                      onClick={() => setOpenDropdown(null)}
-                                      className="w-full text-center text-[11px] text-slate-500 hover:text-slate-700 py-1"
-                                    >
-                                      Cancelar
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-
-                            {/* Trigger button for dropdown */}
-                            {viewMode === 'technical' && needsReview && (
-                              <button
-                                onClick={() =>
-                                  setOpenDropdown(
-                                    openDropdown?.rowId === row.id &&
-                                      openDropdown?.colIdx === colIdx
-                                      ? null
-                                      : { rowId: row.id, colIdx }
-                                  )
-                                }
-                                disabled={isSaving}
-                                className="absolute bottom-1 right-1 text-[10px] text-yellow-700 bg-yellow-100 hover:bg-yellow-200 disabled:opacity-50 px-1.5 py-0.5 rounded border border-yellow-300 transition-colors flex items-center gap-0.5 z-10"
-                              >
-                                {isSaving ? (
-                                  <Loader2 size={10} className="animate-spin" />
-                                ) : (
-                                  <ChevronDown size={10} />
-                                )}
-                                {isSaving ? 'Guardando...' : 'Corregir'}
-                              </button>
-                            )}
-
-                            {/* Premium Technical Hover Card Popover */}
-                            {viewMode === 'technical' &&
-                              hoveredCell?.rowId === row.id &&
-                              hoveredCell?.colIdx === colIdx &&
-                              hasDetails && (
-                                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-80 p-4 bg-slate-900 text-slate-100 text-xs rounded-xl shadow-xl z-50 border border-slate-700 pointer-events-none transition-all duration-200">
-                                  <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-slate-800">
-                                    <Award className="text-blue-400" size={14} />
-                                    <span className="font-bold text-white text-[11px] tracking-wide uppercase">
-                                      Auditoría de Extracción
-                                    </span>
-                                  </div>
-
-                                  {/* Confidence Section */}
-                                  {cell.confidence !== undefined && (
-                                    <div className="flex justify-between py-0.5">
-                                      <span className="text-slate-400">Confianza:</span>
-                                      <span
-                                        className={`font-semibold ${lowConfidence ? 'text-yellow-400' : 'text-white'}`}
-                                      >
-                                        {formatPercentage(cell.confidence, 0)} (
-                                        {getConfidenceText(cell.confidence)})
-                                      </span>
-                                    </div>
-                                  )}
-
-                                  {/* Canonical Name & Match Method */}
-                                  {(cell.canonicalName || cell.matchMethod) && (
-                                    <div className="mt-2 pt-2 border-t border-slate-800">
-                                      {cell.canonicalName && (
-                                        <div className="flex justify-between py-0.5">
-                                          <span className="text-slate-400">Nombre canónico:</span>
-                                          <span className="font-semibold text-white text-right max-w-[180px] truncate">
-                                            {cell.canonicalName}
-                                          </span>
-                                        </div>
-                                      )}
-                                      {cell.matchMethod && (
-                                        <div className="flex justify-between py-0.5">
-                                          <span className="text-slate-400">Método:</span>
-                                          <span className="font-semibold text-white capitalize">
-                                            {cell.matchMethod}
-                                          </span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-
-                                  {/* Page Evidence */}
-                                  {(cell.calculatedPage !== undefined ||
-                                    cell.pageNumber !== undefined) && (
-                                    <div className="flex justify-between py-0.5">
-                                      <span className="text-slate-400">Página:</span>
-                                      <span className="font-semibold text-white">
-                                        {cell.calculatedPage !== undefined
-                                          ? `Pág. ${cell.calculatedPage} (calculada)`
-                                          : `Pág. ${cell.pageNumber}`}
-                                      </span>
-                                    </div>
-                                  )}
-
-                                  {/* Notes / Raw Text Snippet */}
-                                  {(cell.notes || cell.rawTextSnippet) && (
-                                    <div className="mt-2 pt-2 border-t border-slate-800">
-                                      <span className="font-semibold text-slate-400 block mb-1">
-                                        {cell.notes ? 'Notas' : 'Evidencia textual (verbatim):'}
-                                      </span>
-                                      <div className="bg-slate-800/50 rounded-lg p-2 text-[11px] text-slate-300 leading-relaxed italic border border-slate-700/50">
-                                        "
-                                        {cell.notes && cell.notes.length > 200
-                                          ? `${cell.notes.slice(0, 200)}...`
-                                          : cell.notes || cell.rawTextSnippet}
-                                        "
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* Justification */}
-                                  {cell.justification && (
-                                    <div className="mt-2 pt-2 border-t border-slate-800">
-                                      <span className="font-semibold text-slate-400 block mb-1">
-                                        Justificación IA:
-                                      </span>
-                                      <div className="text-[11px] text-slate-300 leading-relaxed">
-                                        {cell.justification}
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* Human Review Flag */}
-                                  {needsReview && (
-                                    <div className="mt-2 pt-2 border-t border-slate-800">
-                                      <div className="bg-red-900/30 border border-red-700/50 rounded-lg p-2 flex items-center gap-2">
-                                        <AlertTriangle
-                                          size={12}
-                                          className="text-red-400 flex-shrink-0"
-                                        />
-                                        <span className="text-[11px] text-red-300">
-                                          Doble agente en discrepancia. Se requiere validación
-                                          humana.
-                                        </span>
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-slate-900"></div>
-                                </div>
-                              )}
-                          </td>
+                            onSaveNote={(content) => handleSaveNote(row.id, colIdx, content)}
+                            onCancelNote={handleCancelNote}
+                            onOpenPdfEvidence={handleOpenPdfEvidence}
+                            onToggleDropdown={() =>
+                              setOpenDropdown(
+                                openDropdown?.rowId === row.id && openDropdown?.colIdx === colIdx
+                                  ? null
+                                  : { rowId: row.id, colIdx }
+                              )
+                            }
+                            onResolveDiscrepancy={(selectedCategory) =>
+                              handleDiscrepancyResolution(row.id, colIdx, selectedCategory)
+                            }
+                          />
                         );
                       })}
                     </tr>
@@ -1382,34 +527,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
         )}
       </div>
 
-      {/* Methodology Alert Note & Ergonomic Shortcuts */}
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-inner">
-        <div className="flex items-start gap-3">
-          <Info className="text-blue-600 mt-0.5 flex-shrink-0" size={16} />
-          <div className="text-xs text-slate-600 leading-relaxed">
-            {viewMode === 'client' ? (
-              <>
-                <span className="font-semibold text-slate-800">Nota:</span> La correspondencia en esta
-                matriz horizontal ha sido alineada por nuestro motor de análisis. El contenido
-                coincide de manera exacta con el reporte de cotizaciones.
-              </>
-            ) : (
-              <>
-                <span className="font-semibold text-slate-800">Nota técnica:</span> La correspondencia
-                en esta matriz horizontal ha sido alineada determinísticamente por nuestro
-                transformador. El contenido coincide de manera exacta y paritaria con el reporte Excel
-                monocromático de 3 pestañas.
-              </>
-            )}
-          </div>
-        </div>
-
-        {viewMode === 'technical' && (
-          <div className="flex items-center gap-2 text-[11px] text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-200 whitespace-nowrap self-start md:self-auto">
-            <span>💡 <strong>Tip:</strong> Doble clic en cualquier celda para contrastar con el PDF original o añadir notas</span>
-          </div>
-        )}
-      </div>
+      <MatrixMethodologyNote viewMode={viewMode} />
 
       {/* PdfViewer Lazy Loaded */}
       {pdfViewer?.isOpen && (
