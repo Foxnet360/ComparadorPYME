@@ -27,6 +27,7 @@ interface AlertItem {
   description: string;
   clauseReference?: string;
   sourceDocument?: string;
+  category?: 'coverage_gap' | 'retention_alert' | 'special_condition' | 'risk_exposure';
 }
 
 interface QuoteAnalysis {
@@ -387,21 +388,23 @@ const generateAlerts = (
 ): AlertItem[] => {
   const alerts: AlertItem[] = [];
 
-  // Deductible alerts
+  // Deductible retention alerts (separate from underwriting/exposure risks)
   for (const risk of deductibleRisks) {
     if (risk.riskLevel === 'CRITICAL') {
       alerts.push({
         level: 'CRITICAL',
-        title: `Deducible crítico: ${risk.coverageName}`,
+        title: `Retención crítica (Deducible): ${risk.coverageName}`,
         description: risk.recommendation,
         clauseReference: `Deducible: ${risk.deductible}`,
+        category: 'retention_alert',
       });
     } else if (risk.riskLevel === 'HIGH') {
       alerts.push({
         level: 'WARNING',
-        title: `Deducible elevado: ${risk.coverageName}`,
+        title: `Retención elevada (Deducible): ${risk.coverageName}`,
         description: risk.recommendation,
         clauseReference: `Deducible: ${risk.deductible}`,
+        category: 'retention_alert',
       });
     }
   }
@@ -414,6 +417,7 @@ const generateAlerts = (
       title: `Faltan ${highImpactMissing.length} coberturas críticas`,
       description: `Coberturas faltantes: ${highImpactMissing.map((m: MissingCoverage) => m.categoryName).join(', ')}`,
       clauseReference: 'Plantilla PYME canónica',
+      category: 'coverage_gap',
     });
   }
 
@@ -429,6 +433,7 @@ const generateAlerts = (
         .map((m: MissingCoverage) => m.categoryName)
         .join(', ')}${mediumImpactMissing.length > 3 ? '...' : ''}`,
       clauseReference: 'Plantilla PYME canónica',
+      category: 'coverage_gap',
     });
   }
 

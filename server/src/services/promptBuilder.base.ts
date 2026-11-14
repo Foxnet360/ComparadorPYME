@@ -37,7 +37,8 @@ REGLAS CRÍTICAS:
 6. EXTRAER primas por cobertura si aparecen (algunas cotizaciones las muestran)
 7. La sección "RESPONSABILIDAD CIVIL" tiene sub-límites que van en subLimits
 8. Los valores "INCLUIDO" son coberturas sin suma asegurada numérica
-9. DEDUCIBLES POR SUB-AMPARO: Cada sub-límite extraído en subLimits DEBE capturar su deducible particular si aparece en el PDF. Si no especifica deducible propio, usar "Según amparo principal" o null.`,
+9. DEDUCIBLES POR SUB-AMPARO: Cada sub-límite extraído en subLimits DEBE capturar su deducible particular si aparece en el PDF. Si no especifica deducible propio, usar "Según amparo principal" o null.
+10. TAXONOMÍA TÉCNICA ESTRICTA: Nunca clasifiques Deducibles (retención económica del asegurado) ni Sublímites (topes monetarios internos dentro de un amparo) como "Riesgos Detectados" o alertas de exposición; ubícalos únicamente en deductible/generalDeductibles y subLimits respectivamente.`,
     formatInstructions: `FORMATO DE SALIDA:
 {
   "insurerName": "nombre exacto",
@@ -92,7 +93,8 @@ REGLAS CRÍTICAS:
 5. Deducibles que dicen "5,00 % del Siniestro, Mínimo 1 SMMLV" → dejar texto completo
 6. Coberturas que dicen "Aplica según cobertura afectada" → nota especial
 7. El "Amparo Básico Todo Riesgo" cubre múltiples coberturas
-8. IMPORTANTE: Si no encuentras deducible en ninguna página, usa "No aplica" para servicios (Asistencia PYME, Legal) o busca en cláusulas`,
+8. IMPORTANTE: Si no encuentras deducible en ninguna página, usa "No aplica" para servicios (Asistencia PYME, Legal) o busca en cláusulas
+9. TAXONOMÍA TÉCNICA ESTRICTA: Los Sublímites van exclusivamente en subLimits y los Deducibles en deductible/generalDeductibles; nunca los reportes como "Riesgos Detectados".`,
     formatInstructions: `FORMATO DE SALIDA:
 {
   "insurerName": "NOMBRE ASEGURADORA",

@@ -394,7 +394,7 @@ export const AuditSection: React.FC<AuditSectionProps> = ({ quotes, viewMode }) 
                       <div>
                         <h4 className="flex items-center gap-2 text-red-700 font-bold mb-3 text-sm uppercase tracking-wide">
                           <AlertCircle size={16} />
-                          Riesgos Críticos
+                          Brechas y Riesgos Críticos
                           <span className="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">
                             {criticalAlerts.length}
                           </span>
@@ -497,7 +497,7 @@ export const AuditSection: React.FC<AuditSectionProps> = ({ quotes, viewMode }) 
                         ).length > 0 && (
                           <div className="mb-3">
                             <p className="text-xs font-medium text-slate-600 mb-1">
-                              Riesgos de Deducibles:
+                              Impacto de Retención (Deducibles):
                             </p>
                             <div className="space-y-1">
                               {quote.quoteAudit.deductibleRisks
