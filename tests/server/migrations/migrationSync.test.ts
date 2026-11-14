@@ -49,5 +49,30 @@ describe('PR3 canonical embedding dimension documentation', () => {
     expect(md).toContain('vector(3072)');
     expect(md).toContain('vector(768)');
     expect(md).toContain('2000-dimension limit');
+    expect(md).toContain('halfvec(3072)');
+  });
+});
+
+describe('migration directory parity (026+)', () => {
+  const ROOT_MIGRATIONS_DIR = path.join(__dirname, '../../../supabase/migrations');
+
+  it('keeps server/supabase/migrations (026+) in byte-for-byte parity with supabase/migrations', () => {
+    const canonicalFiles = fs
+      .readdirSync(MIGRATIONS_DIR)
+      .filter((f) => /^\d{3}_.*\.sql$/.test(f))
+      .filter((f) => Number(f.slice(0, 3)) >= 26)
+      .sort();
+
+    const mirrorFiles = fs.readdirSync(ROOT_MIGRATIONS_DIR);
+
+    for (const file of canonicalFiles) {
+      const seq = file.slice(0, 3);
+      const rest = file.slice(3); // includes leading underscore
+      const match = mirrorFiles.find((m) => m.endsWith(`000${seq}${rest}`));
+      expect(match, `Missing supabase/migrations mirror for ${file}`).toBeDefined();
+      const canonicalSql = fs.readFileSync(path.join(MIGRATIONS_DIR, file), 'utf-8');
+      const mirrorSql = fs.readFileSync(path.join(ROOT_MIGRATIONS_DIR, match!), 'utf-8');
+      expect(mirrorSql, `Drift detected between ${file} and ${match}`).toBe(canonicalSql);
+    }
   });
 });
