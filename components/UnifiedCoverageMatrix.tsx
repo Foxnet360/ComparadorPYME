@@ -28,8 +28,8 @@ import { InsurerLogo } from './common/InsurerLogo';
 import { formatPercentage, parseColombianCurrency } from '../utils/formatCurrency';
 import { useOptimisticCorrection } from '../hooks/useOptimisticCorrection';
 import { usePdfViewer, useCellNotes, useAnalysis } from '../contexts/AnalysisContext';
+import { exportAnalysisToExcel } from '../services/excelExportService';
 import { InlineNoteEditor } from './InlineNoteEditor';
-import { apiClient } from '../services/apiClient';
 import { useToasts, ToastContainer } from './ToastNotification';
 
 const PdfViewer = lazy(() => import('./PdfViewer'));
@@ -590,30 +590,14 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
       // Create a simplified version of cellNotes for export
       const exportNotes = buildExportNotes(cellNotes);
 
-      const response = await apiClient.fetch(`/analysis/${analysisId}/export`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cellNotes: exportNotes,
-          domain: domain || 'pyme',
-          quotes,
-          matrix: rows,
-          exportMode,
-        }),
+      await exportAnalysisToExcel({
+        analysisId,
+        domain: domain || 'pyme',
+        quotes,
+        matrix: rows,
+        exportMode,
+        cellNotes: exportNotes,
       });
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download =
-        exportMode === 'client'
-          ? `informe_cliente_${domain || 'seguros'}_${analysisId}.xlsx`
-          : `comparativa_tecnica_${analysisId}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
 
       success(
         exportMode === 'client'
