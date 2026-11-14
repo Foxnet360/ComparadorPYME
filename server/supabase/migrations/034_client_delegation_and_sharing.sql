@@ -62,12 +62,13 @@ RETURNS BOOLEAN
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
+SET search_path = ''
 AS $$
   SELECT EXISTS (
     SELECT 1
     FROM public.organization_members om
     WHERE om.org_id = p_org_id
-      AND om.user_id = auth.uid()
+      AND om.user_id = ((SELECT auth.uid())::text)
       AND om.role IN ('ally_admin', 'super_admin')
       AND om.status = 'active'
   );
@@ -89,6 +90,7 @@ RETURNS TABLE (
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
+SET search_path = ''
 AS $$
   SELECT c.id, c.name, c.tax_id, c.lead_status, c.assigned_to, c.created_at
   FROM public.clients c
