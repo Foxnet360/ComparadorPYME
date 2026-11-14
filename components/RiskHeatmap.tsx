@@ -30,10 +30,10 @@ const getRiskScore = (
     return { score: 'high', reason: 'Cobertura excluida' };
   }
 
-  // Check deductible risk
+  // Check deductible retention impact
   const deductible = coverage.deductible?.toUpperCase().trim() || '';
   if (deductible.includes('NO ESPECIFICADO')) {
-    return { score: 'high', reason: 'Deducible no especificado - riesgo de sorpresas' };
+    return { score: 'high', reason: 'Retención no especificada (deducible por confirmar)' };
   }
 
   // Parse deductible percentage
@@ -41,9 +41,9 @@ const getRiskScore = (
   if (deductibleMatch) {
     const percentage = parseInt(deductibleMatch[1]!);
     if (percentage > 10) {
-      return { score: 'high', reason: `Deducible alto (${percentage}%)` };
+      return { score: 'high', reason: `Retención elevada (deducible ${percentage}%)` };
     } else if (percentage > 0) {
-      return { score: 'medium', reason: `Deducible moderado (${percentage}%)` };
+      return { score: 'medium', reason: `Retención moderada (deducible ${percentage}%)` };
     }
   }
 

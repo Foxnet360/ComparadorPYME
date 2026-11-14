@@ -11,6 +11,7 @@ import {
   Shield,
   ExternalLink,
   AlertCircle,
+  MapPin,
 } from 'lucide-react';
 import type { UserProfile } from '../../types';
 
@@ -26,10 +27,13 @@ export const AppFooter: React.FC<AppFooterProps> = ({ currentUser, onOpenLegalMo
     currentUser?.intermediaryName ||
     currentUser?.agencyName ||
     'Corredores de Seguros Asociados S.A.';
-  const advisorName = currentUser?.name || 'Asesor Técnico de Seguros';
+  const advisorName = currentUser?.name || 'Técnico Analista de Seguros';
   const brokerPhone =
     currentUser?.agentDetails?.phone || currentUser?.phone || '+57 (601) 345-6789';
   const brokerEmail = currentUser?.email || 'soporte@comparadorcsa.com';
+  const brokerAddress = currentUser?.address || currentUser?.agentDetails?.address || '';
+  const brokerCity = currentUser?.city || currentUser?.agentDetails?.city || '';
+  const brokerLocation = [brokerAddress, brokerCity].filter(Boolean).join(', ');
   const brokerRegistration =
     currentUser?.registrationNumber ||
     currentUser?.agentDetails?.registrationNumber ||
@@ -64,8 +68,14 @@ export const AppFooter: React.FC<AppFooterProps> = ({ currentUser, onOpenLegalMo
               </div>
               {currentUser?.name && (
                 <div className="flex items-center gap-2">
-                  <span className="text-slate-400">Asesor:</span>
+                  <span className="text-slate-400">Técnico Analista:</span>
                   <span className="text-white font-medium">{advisorName}</span>
+                </div>
+              )}
+              {brokerLocation && (
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span>{brokerLocation}</span>
                 </div>
               )}
               <div className="flex items-center gap-2">

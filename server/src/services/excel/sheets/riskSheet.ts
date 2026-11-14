@@ -264,7 +264,7 @@ export function buildRiskSheet(ctx: ExcelContext): void {
         qa.deductibleRisks.forEach((dr) => {
           riskSheet.getRow(rRowIdx).height = 22;
           const c1 = riskSheet.getCell(rRowIdx, 1);
-          c1.value = `RIESGO DEDUCIBLE (${dr.riskLevel})`;
+          c1.value = `RETENCIÓN / DEDUCIBLE (${dr.riskLevel})`;
           c1.fill = {
             type: 'pattern',
             pattern: 'solid',

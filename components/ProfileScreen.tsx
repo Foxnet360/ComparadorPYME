@@ -274,7 +274,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
                       />
                       <div className="flex-1 min-w-0">
                         <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                          Asesor Responsable
+                          Técnico Analista Responsable
                         </label>
                         <input
                           name="name"
@@ -575,7 +575,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
 
                     <div>
                       <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                        Alcance del Asesor / Intermediación
+                        Alcance del Técnico Analista / Intermediación
                       </label>
                       <textarea
                         rows={2}

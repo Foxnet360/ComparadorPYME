@@ -150,7 +150,7 @@ export function buildPortadaSheet(ctx: ExcelContext): void {
     color: { argb: EXCEL_COLORS.NAVY_HEADER },
   };
   addInfoRow('Correduría / Agencia:', brokerDetails.name, 18);
-  addInfoRow('Asesor Responsable:', brokerDetails.advisor, 19);
+  addInfoRow('Técnico Analista Responsable:', brokerDetails.advisor, 19);
   addInfoRow('Nº Matrícula / Registro SFC:', brokerDetails.reg, 20);
   addInfoRow('Contacto / Teléfono:', `${brokerDetails.phone} | ${brokerDetails.email}`, 21);
   addInfoRow(

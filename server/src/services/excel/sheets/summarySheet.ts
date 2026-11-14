@@ -97,7 +97,7 @@ export function buildSummarySheet(ctx: ExcelContext): void {
 
   summarySheet.mergeCells(6, 1, 6, quotes.length + 1);
   const techRow1 = summarySheet.getCell(6, 1);
-  techRow1.value = `Técnico / Asesor: ${brokerDetails.advisor}   |   Compañía Intermediaria: ${brokerDetails.name}   |   Registro SFC: ${brokerDetails.reg}`;
+  techRow1.value = `Técnico Analista Responsable: ${brokerDetails.advisor}   |   Compañía Intermediaria: ${brokerDetails.name}   |   Registro SFC: ${brokerDetails.reg}`;
   techRow1.font = {
     name: FONT_NAME,
     size: 9.5,
@@ -423,7 +423,7 @@ export function buildSummarySheet(ctx: ExcelContext): void {
   summarySheet.getRow(currentSumRow).height = 24;
   summarySheet.mergeCells(currentSumRow, 1, currentSumRow, quotes.length + 1);
   const sumFooterCell = summarySheet.getCell(currentSumRow, 1);
-  sumFooterCell.value = `CONTACTO Y ASESORÍA TÉCNICA: ${brokerDetails.name}   |   Asesor: ${brokerDetails.advisor}   |   Tel: ${brokerDetails.phone}   |   Email: ${brokerDetails.email}   |   Web: ${brokerDetails.website}   |   Reg. SFC: ${brokerDetails.reg}`;
+  sumFooterCell.value = `CONTACTO Y ASESORÍA TÉCNICA: ${brokerDetails.name}   |   Técnico Analista: ${brokerDetails.advisor}   |   Tel: ${brokerDetails.phone}   |   Email: ${brokerDetails.email}   |   Web: ${brokerDetails.website}   |   Reg. SFC: ${brokerDetails.reg}`;
   sumFooterCell.font = {
     name: FONT_NAME,
     size: 9,

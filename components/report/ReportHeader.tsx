@@ -1,11 +1,12 @@
 import React from 'react';
-import { ShieldAlert, FileDown, Layers } from 'lucide-react';
+import { ShieldAlert, FileDown, Layers, FilePlus } from 'lucide-react';
 
 interface ReportHeaderProps {
   domain?: string;
   viewMode: 'technical' | 'client';
   onViewModeChange: (mode: 'technical' | 'client') => void;
   onExport: () => void;
+  onAddQuote?: () => void;
   /** Rendered inside the header's relative container (absolute-positioned export popover). */
   exportModal?: React.ReactNode;
 }
@@ -40,6 +41,7 @@ export const ReportHeader: React.FC<ReportHeaderProps> = ({
   viewMode,
   onViewModeChange,
   onExport,
+  onAddQuote,
   exportModal,
 }) => {
   const domainKey = domain || 'pyme';
@@ -93,6 +95,18 @@ export const ReportHeader: React.FC<ReportHeaderProps> = ({
             Cliente Final
           </button>
         </div>
+
+        {onAddQuote && (
+          <button
+            type="button"
+            onClick={onAddQuote}
+            className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-700 transition-all shadow-sm text-sm font-medium"
+            title="Adicionar cotización tardía a esta comparación"
+          >
+            <FilePlus size={18} />
+            <span className="hidden sm:inline">Adicionar cotización</span>
+          </button>
+        )}
 
         <button
           onClick={onExport}

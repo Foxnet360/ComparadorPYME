@@ -34,7 +34,13 @@ import {
 } from '../services/unifiedComparison/matrixTransformer';
 import { extractCanonicalInsurerName } from '../services/unifiedComparison/insurerSanitizer';
 
-import { saveAnalysisHistory, getAnalysisHistoryByUser } from '../repositories/analysisRepository';
+import {
+  saveAnalysisHistory,
+  getAnalysisHistoryByUser,
+  getAnalysisById,
+  updateAnalysisHistory,
+} from '../repositories/analysisRepository';
+import { mergeComparisonResults } from '../services/unifiedComparison/incrementalMerge';
 import { getPolicyById } from '../repositories/policyRepository';
 import { supabase } from '../config/database';
 import { ensureClausePersistedInLibrary } from '../services/documentIndexingService';
@@ -62,7 +68,7 @@ function toHttpError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
 }
 
-interface ComparisonResultQuote {
+export interface ComparisonResultQuote {
   insurerName: string;
   policyName: string;
   priceAnnual: number;
@@ -104,7 +110,7 @@ interface ComparisonResultQuote {
   quoteAudit?: Record<string, unknown>;
 }
 
-interface ComparisonResult {
+export interface ComparisonResult {
   quotes: ComparisonResultQuote[];
   recommendation: string;
   marketAnalysis: string;
@@ -553,6 +559,116 @@ export const analysisController = {
       // ERR-1: forward to the central error handler instead of sending a raw
       // response from the controller — the handler attaches the traceId.
       logger.error({ err: error }, 'Controller Error: uploadAndAnalyze failed');
+      next(toHttpError(error));
+    }
+  },
+
+  /**
+   * POST /api/analysis/:id/quotes
+   * Appends one or more late-arriving quote PDFs to an existing comparison.
+   */
+  appendQuotesToAnalysis: async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+    const quoteFiles = files?.quotes || [];
+    const cleanup = () => {
+      for (const file of quoteFiles) {
+        if (file?.path && fs.existsSync(file.path)) {
+          try {
+            fs.unlinkSync(file.path);
+          } catch {
+            // ignore cleanup errors
+          }
+        }
+      }
+    };
+
+    try {
+      const analysisId = Array.isArray(req.params.id)
+        ? req.params.id[0] || ''
+        : String(req.params.id || '');
+      if (!analysisId) {
+        cleanup();
+        res.status(400).json({ error: 'ID de análisis requerido.' });
+        return;
+      }
+
+      if (quoteFiles.length === 0) {
+        res.status(400).json({ error: 'Debe adjuntar al menos una cotización PDF adicional.' });
+        return;
+      }
+
+      const existingRecord = await getAnalysisById(analysisId);
+      if (!existingRecord) {
+        cleanup();
+        res.status(404).json({ error: 'Comparación no encontrada.' });
+        return;
+      }
+
+      const userId = req.user?.id;
+      const orgId = req.user?.orgId;
+      const role = req.user?.role;
+      const recordOrgId = (existingRecord as { org_id?: string | null }).org_id;
+      const hasAccess =
+        role === 'super_admin' ||
+        (userId && existingRecord.user_id === userId) ||
+        (orgId && recordOrgId === orgId);
+
+      if (!hasAccess) {
+        cleanup();
+        res.status(403).json({ error: 'No tiene permisos para modificar esta comparación.' });
+        return;
+      }
+
+      const existingResult = (existingRecord.analysis_result ||
+        existingRecord.unified_result ||
+        {}) as ComparisonResult & Record<string, unknown>;
+
+      const domain = (req.body?.domain || existingRecord.domain || 'pyme') as any;
+      const quotePaths = quoteFiles.map((f) => f.path);
+
+      const adapterResult = await comparisonEngineAdapter.generateComparison(quotePaths, {
+        domain,
+        userId: userId || existingRecord.user_id || undefined,
+      });
+
+      const incomingResult = (await matrixRowsToComparisonReport(
+        adapterResult.matrix,
+        quoteFiles,
+        {
+          graphEnabled: adapterResult.graphEnabled,
+          templateHintsEnabled: adapterResult.templateHintsEnabled,
+          domain,
+        }
+      )) as unknown as ComparisonResult & Record<string, unknown>;
+      incomingResult.matrix = incomingResult.matrix || (adapterResult.matrix as any);
+
+      const merged = mergeComparisonResults(existingResult, incomingResult);
+      merged.id = analysisId;
+
+      const avgConfidence =
+        merged.quotes.reduce(
+          (sum: number, q: ComparisonResultQuote) => sum + (q.extractionConfidence || 0),
+          0
+        ) / (merged.quotes.length || 1);
+
+      await updateAnalysisHistory(analysisId, {
+        analysis_result: merged,
+        unified_result: merged,
+        recommendation: merged.recommendation || null,
+        total_score: merged.quotes?.[0]?.score || null,
+        confidence_score: Math.round(avgConfidence),
+      });
+
+      cleanup();
+      const auditEnvelope = auditGroundedComparison(merged);
+      res.json(auditEnvelope.result);
+    } catch (error: unknown) {
+      cleanup();
+      logger.error({ err: error }, 'Controller Error: appendQuotesToAnalysis failed');
       next(toHttpError(error));
     }
   },

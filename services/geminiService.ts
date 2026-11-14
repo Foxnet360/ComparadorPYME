@@ -101,5 +101,33 @@ export const analyzeQuotesWithGemini = async (
   }
 };
 
+/**
+ * Appends one or more late-arriving quote PDFs to an existing comparison.
+ */
+export const appendQuotesToComparison = async (
+  analysisId: string,
+  quoteFiles: File[],
+  domain: string = 'pyme'
+): Promise<ComparisonReport> => {
+  const formData = new FormData();
+  formData.append('domain', domain);
+  quoteFiles.forEach((file) => {
+    formData.append('quotes', file);
+  });
+
+  const response = await apiClient.fetch(`/analysis/${analysisId}/quotes`, {
+    method: 'POST',
+    body: formData,
+    timeoutMs: ANALYZE_API_TIMEOUT_MS,
+  });
+
+  if (!response.ok) {
+    const errBody = (await response.json().catch(() => ({}))) as { error?: string };
+    throw new Error(errBody.error || 'No se pudieron adicionar las cotizaciones.');
+  }
+
+  return (await response.json()) as ComparisonReport;
+};
+
 // Chat functionality is now handled by the backend API directly
 // See components/ChatBot.tsx for the frontend implementation

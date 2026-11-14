@@ -35,7 +35,7 @@ export async function exportAnalysisToExcel(params: ExportExcelParams): Promise<
 
   const currentUser = await storageService.getCurrentUser();
   const brokerInfo = {
-    name: currentUser?.name || 'Asesor Técnico de Seguros',
+    name: currentUser?.name || 'Técnico Analista de Seguros',
     intermediaryName:
       currentUser?.intermediaryName ||
       currentUser?.agencyName ||

@@ -178,6 +178,27 @@ export async function getAnalysisById(id: string): Promise<AnalysisHistoryRecord
   return (data as unknown as AnalysisHistoryRecord) || null;
 }
 
+export async function updateAnalysisHistory(
+  id: string,
+  patch: Record<string, unknown>
+): Promise<boolean> {
+  const payload = Object.fromEntries(
+    Object.entries(patch).filter(([key]) => !PHANTOM_HISTORY_COLUMNS.has(key))
+  );
+
+  const { error } = await supabase
+    .from('analysis_history')
+    .update(payload as never)
+    .eq('id', id);
+
+  if (error) {
+    console.error('❌ [AnalysisRepository] Failed to update analysis:', error);
+    return false;
+  }
+
+  return true;
+}
+
 interface EngineMetricsRecord {
   engine_type: string;
   processing_time_ms: number | null;
