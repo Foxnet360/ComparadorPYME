@@ -59,7 +59,10 @@ const renderPage = (onOpenRenewal = vi.fn()) => {
 describe('Portfolio page', () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    vi.stubGlobal('confirm', vi.fn(() => true));
+    vi.stubGlobal(
+      'confirm',
+      vi.fn(() => true)
+    );
     vi.mocked(portfolioService.listClients).mockResolvedValue([client]);
     vi.mocked(portfolioService.listPolicies).mockResolvedValue([policy]);
     vi.mocked(portfolioService.listRenewals).mockResolvedValue([renewal]);

@@ -47,7 +47,8 @@ router.get(
     const benchmark = await analyticsAggregationService.getDaasMarketIndex(domain, periodMonths);
 
     // Track usage telemetry
-    const subscriberId = (req.headers['x-subscriber-id'] as string) || req.user?.id || 'anonymous-subscriber';
+    const subscriberId =
+      (req.headers['x-subscriber-id'] as string) || req.user?.id || 'anonymous-subscriber';
     await analyticsAggregationService.recordDaasApiUsage(
       subscriberId,
       '/api/analytics/daas/market-index',

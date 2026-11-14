@@ -15,14 +15,17 @@ export interface AuditPremiumOptions {
  * Handles rounding variances gracefully with a default tolerance of $1.000 COP.
  */
 export function auditPremiumEquation(
-  premium: {
-    netPremium?: number | null;
-    fees?: number | null;
-    taxes?: number | null;
-    otherCharges?: number | null;
-    totalPayable?: number | null;
-    currency?: string;
-  } | undefined | null,
+  premium:
+    | {
+        netPremium?: number | null;
+        fees?: number | null;
+        taxes?: number | null;
+        otherCharges?: number | null;
+        totalPayable?: number | null;
+        currency?: string;
+      }
+    | undefined
+    | null,
   insurerName: string = 'Aseguradora',
   options: AuditPremiumOptions = {}
 ): PremiumAuditResult {

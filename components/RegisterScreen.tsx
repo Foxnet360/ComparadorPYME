@@ -39,7 +39,9 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedDataPolicy, setAcceptedDataPolicy] = useState(false);
   const [showLegalModal, setShowLegalModal] = useState(false);
-  const [legalModalTab, setLegalModalTab] = useState<'terms' | 'privacy' | 'security' | 'disclaimer'>('terms');
+  const [legalModalTab, setLegalModalTab] = useState<
+    'terms' | 'privacy' | 'security' | 'disclaimer'
+  >('terms');
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -304,7 +306,10 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
                     onChange={(e) => setAcceptedTerms(e.target.checked)}
                     className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 border-slate-300 mt-0.5 cursor-pointer"
                   />
-                  <label htmlFor="accept-terms" className="text-xs text-slate-700 leading-normal select-none">
+                  <label
+                    htmlFor="accept-terms"
+                    className="text-xs text-slate-700 leading-normal select-none"
+                  >
                     He leído y acepto los{' '}
                     <button
                       type="button"
@@ -328,7 +333,10 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
                     onChange={(e) => setAcceptedDataPolicy(e.target.checked)}
                     className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 border-slate-300 mt-0.5 cursor-pointer"
                   />
-                  <label htmlFor="accept-data-policy" className="text-xs text-slate-700 leading-normal select-none">
+                  <label
+                    htmlFor="accept-data-policy"
+                    className="text-xs text-slate-700 leading-normal select-none"
+                  >
                     Autorizo expresamente el tratamiento de mis datos personales conforme a la{' '}
                     <button
                       type="button"

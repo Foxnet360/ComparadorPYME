@@ -274,6 +274,4 @@ describe('Accuracy Tests', () => {
       expect(accuracy).toBeGreaterThanOrEqual(ACCURACY_THRESHOLD);
     });
   });
-
 });
-

@@ -121,7 +121,8 @@ describe('chatService - Triple Source with Missing RAG', () => {
           id: `msg-${idx}`,
           thread_id: 'thread-test',
           role: idx % 2 === 0 ? 'user' : 'model',
-          content: idx === 11 ? `Mensaje largo ${'X'.repeat(2000)}` : `Mensaje histórico ${idx + 1}`,
+          content:
+            idx === 11 ? `Mensaje largo ${'X'.repeat(2000)}` : `Mensaje histórico ${idx + 1}`,
           created_at: new Date().toISOString(),
         })) as any
       );

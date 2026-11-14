@@ -5,10 +5,7 @@
  */
 
 import { getDomainConstants } from '../config/domainConstants';
-import {
-  ClaimSimulationReport,
-  InsurerClaimResult,
-} from '../types/claimSimulation';
+import { ClaimSimulationReport, InsurerClaimResult } from '../types/claimSimulation';
 
 export interface DeductibleSimulationInput {
   insurerName: string;
@@ -45,7 +42,9 @@ export function extractDeductibleComponents(
   input: DeductibleSimulationInput,
   smmlvCOP: number
 ): ParseDeductibleComponentsResult {
-  const raw = (input.deductibleStructure?.rawText || input.deductibleText || '').toLowerCase().trim();
+  const raw = (input.deductibleStructure?.rawText || input.deductibleText || '')
+    .toLowerCase()
+    .trim();
 
   // Check for exemption / no deductible
   if (
@@ -108,7 +107,9 @@ export function extractDeductibleComponents(
   }
 
   // Extract minimum: e.g. "mín. 5 smmlv" or "minimo 5 smmlv" or "mín $2.000.000"
-  const minMatch = raw.match(/(?:m[íi]n(?:imo)?\.?\s*(?:de)?)\s*(\d+(?:[.,]\d+)?)\s*(smmlv|uvt|\$|cop)?/i);
+  const minMatch = raw.match(
+    /(?:m[íi]n(?:imo)?\.?\s*(?:de)?)\s*(\d+(?:[.,]\d+)?)\s*(smmlv|uvt|\$|cop)?/i
+  );
   if (minMatch && minMatch[1]) {
     const val = parseFloat(minMatch[1].replace(/\./g, '').replace(',', '.'));
     const unit = (minMatch[2] || '').toLowerCase();
@@ -120,7 +121,9 @@ export function extractDeductibleComponents(
   }
 
   // Extract maximum: e.g. "máx. 50 smmlv" or "tope 50 smmlv"
-  const maxMatch = raw.match(/(?:m[áa]x(?:imo)?\.?|tope)\s*(?:de)?\s*(\d+(?:[.,]\d+)?)\s*(smmlv|uvt|\$|cop)?/i);
+  const maxMatch = raw.match(
+    /(?:m[áa]x(?:imo)?\.?|tope)\s*(?:de)?\s*(\d+(?:[.,]\d+)?)\s*(smmlv|uvt|\$|cop)?/i
+  );
   if (maxMatch && maxMatch[1]) {
     const val = parseFloat(maxMatch[1].replace(/\./g, '').replace(',', '.'));
     const unit = (maxMatch[2] || '').toLowerCase();
@@ -264,7 +267,10 @@ export function simulateClaimScenario(
       bestOption = {
         insurerName: best.insurerName,
         payableDeductibleCOP: best.payableDeductibleCOP,
-        savingsComparedToWorstCOP: Math.max(0, worst.payableDeductibleCOP - best.payableDeductibleCOP),
+        savingsComparedToWorstCOP: Math.max(
+          0,
+          worst.payableDeductibleCOP - best.payableDeductibleCOP
+        ),
       };
     }
   }

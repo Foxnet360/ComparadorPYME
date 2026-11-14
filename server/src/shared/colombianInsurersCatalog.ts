@@ -587,7 +587,10 @@ export function findColombianInsurerProfile(
   for (const item of customCatalog) {
     for (const alias of item.aliases || []) {
       const normAlias = normalizeSearchKey(alias);
-      if (normAlias && (target === normAlias || target.includes(normAlias) || normAlias.includes(target))) {
+      if (
+        normAlias &&
+        (target === normAlias || target.includes(normAlias) || normAlias.includes(target))
+      ) {
         return item;
       }
     }

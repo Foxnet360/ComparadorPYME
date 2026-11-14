@@ -48,9 +48,7 @@ export const ExtractionAuditPopover: React.FC<ExtractionAuditPopoverProps> = ({
           {cell.matchMethod && (
             <div className="flex justify-between py-0.5">
               <span className="text-slate-400">Método:</span>
-              <span className="font-semibold text-white capitalize">
-                {cell.matchMethod}
-              </span>
+              <span className="font-semibold text-white capitalize">{cell.matchMethod}</span>
             </div>
           )}
         </div>
@@ -87,12 +85,8 @@ export const ExtractionAuditPopover: React.FC<ExtractionAuditPopoverProps> = ({
       {/* Justification */}
       {cell.justification && (
         <div className="mt-2 pt-2 border-t border-slate-800">
-          <span className="font-semibold text-slate-400 block mb-1">
-            Justificación IA:
-          </span>
-          <div className="text-[11px] text-slate-300 leading-relaxed">
-            {cell.justification}
-          </div>
+          <span className="font-semibold text-slate-400 block mb-1">Justificación IA:</span>
+          <div className="text-[11px] text-slate-300 leading-relaxed">{cell.justification}</div>
         </div>
       )}
 
@@ -100,10 +94,7 @@ export const ExtractionAuditPopover: React.FC<ExtractionAuditPopoverProps> = ({
       {needsReview && (
         <div className="mt-2 pt-2 border-t border-slate-800">
           <div className="bg-red-900/30 border border-red-700/50 rounded-lg p-2 flex items-center gap-2">
-            <AlertTriangle
-              size={12}
-              className="text-red-400 flex-shrink-0"
-            />
+            <AlertTriangle size={12} className="text-red-400 flex-shrink-0" />
             <span className="text-[11px] text-red-300">
               Doble agente en discrepancia. Se requiere validación humana.
             </span>

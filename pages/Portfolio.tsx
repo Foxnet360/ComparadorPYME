@@ -39,9 +39,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ onOpenRenewal }) => {
     onConfirm: () => void;
   } | null>(null);
 
-  const renewalByPolicy = new Map<string, PortfolioRenewal>(
-    renewals.map((r) => [r.policy_id, r])
-  );
+  const renewalByPolicy = new Map<string, PortfolioRenewal>(renewals.map((r) => [r.policy_id, r]));
 
   const draftFor = (clientId: string) =>
     policyDrafts[clientId] ?? { insurer: '', ramo: '', premium: '', endDate: '' };

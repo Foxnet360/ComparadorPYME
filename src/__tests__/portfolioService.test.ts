@@ -143,7 +143,11 @@ describe('portfolioService', () => {
     const updated = { id: 'r1', state: 'closed', outcome: 'lost', loss_reason: 'precio' };
     vi.mocked(apiClient.fetch).mockResolvedValue(jsonResponse(updated));
 
-    const result = await transitionRenewal('r1', { to: 'closed', outcome: 'lost', loss_reason: 'precio' });
+    const result = await transitionRenewal('r1', {
+      to: 'closed',
+      outcome: 'lost',
+      loss_reason: 'precio',
+    });
 
     const [url, options] = vi.mocked(apiClient.fetch).mock.calls[0];
     expect(url).toBe('/renewals/r1/transition');
@@ -162,12 +166,17 @@ describe('portfolioService', () => {
 
     const result = await listRenewalEvents('r1');
 
-    expect(apiClient.fetch).toHaveBeenCalledWith('/renewals/r1/events', expect.objectContaining({}));
+    expect(apiClient.fetch).toHaveBeenCalledWith(
+      '/renewals/r1/events',
+      expect.objectContaining({})
+    );
     expect(result).toEqual(events);
   });
 
   it('getCampaignConfig GETs /campaigns/config', async () => {
-    vi.mocked(apiClient.fetch).mockResolvedValue(jsonResponse({ windows: [60, 30, 7], enabled: true }));
+    vi.mocked(apiClient.fetch).mockResolvedValue(
+      jsonResponse({ windows: [60, 30, 7], enabled: true })
+    );
 
     const result = await getCampaignConfig();
 
@@ -176,7 +185,9 @@ describe('portfolioService', () => {
   });
 
   it('saveCampaignConfig PUTs the config payload', async () => {
-    vi.mocked(apiClient.fetch).mockResolvedValue(jsonResponse({ windows: [45, 15], enabled: false }));
+    vi.mocked(apiClient.fetch).mockResolvedValue(
+      jsonResponse({ windows: [45, 15], enabled: false })
+    );
 
     await saveCampaignConfig({ windows: [45, 15], enabled: false });
 

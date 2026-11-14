@@ -154,12 +154,12 @@ describe('excelGenerator', () => {
         'pyme',
         {
           commercialConditions: {
-            'MAPFRE': {
+            MAPFRE: {
               validezOferta: '30 días calendario',
               formaPago: 'Hasta 10 cuotas mensuales',
               inspeccionPrevia: 'Inspección virtual en 15 días',
             },
-            'CHUBB': {
+            CHUBB: {
               validezOferta: '45 días',
               formaPago: 'Contado con descuento',
             },
@@ -179,7 +179,9 @@ describe('excelGenerator', () => {
         });
       });
 
-      expect(textValues).toContain('CONDICIONES COMERCIALES PROPUESTAS POR CADA ASEGURADORA EN COTIZACIÓN');
+      expect(textValues).toContain(
+        'CONDICIONES COMERCIALES PROPUESTAS POR CADA ASEGURADORA EN COTIZACIÓN'
+      );
       expect(textValues).toContain('Validez de la Oferta');
       expect(textValues).toContain('30 días calendario');
       expect(textValues).toContain('Hasta 10 cuotas mensuales');
@@ -225,10 +227,18 @@ describe('excelGenerator', () => {
       });
 
       // Verify exact titles and broker/technician contact card
-      expect(summaryTexts.some((t) => t.includes('CUADRO COMPARATIVO RESUMIDO · VISIÓN EJECUTIVA CONDENSADA'))).toBe(true);
-      expect(summaryTexts.some((t) => t.includes('INFORMACIÓN DEL TÉCNICO (INTERMEDIARIO)'))).toBe(true);
+      expect(
+        summaryTexts.some((t) =>
+          t.includes('CUADRO COMPARATIVO RESUMIDO · VISIÓN EJECUTIVA CONDENSADA')
+        )
+      ).toBe(true);
+      expect(summaryTexts.some((t) => t.includes('INFORMACIÓN DEL TÉCNICO (INTERMEDIARIO)'))).toBe(
+        true
+      );
       expect(summaryTexts.some((t) => t.includes('Carlos Mendoza'))).toBe(true);
-      expect(summaryTexts.some((t) => t.includes('Corredores de Seguros Asociados S.A.'))).toBe(true);
+      expect(summaryTexts.some((t) => t.includes('Corredores de Seguros Asociados S.A.'))).toBe(
+        true
+      );
       expect(summaryTexts.some((t) => t.includes('SFC-88992'))).toBe(true);
       expect(summaryTexts.some((t) => t.includes('+57 (601) 345-6789'))).toBe(true);
       expect(summaryTexts.some((t) => t.includes('cmendoza@correseguros.co'))).toBe(true);
@@ -242,7 +252,9 @@ describe('excelGenerator', () => {
           if (cell.value) polTexts.push(String(cell.value));
         });
       });
-      expect(polTexts.some((t) => t.includes('POLÍTICAS COMERCIALES Y CONDICIONES DE LA OFERTA'))).toBe(true);
+      expect(
+        polTexts.some((t) => t.includes('POLÍTICAS COMERCIALES Y CONDICIONES DE LA OFERTA'))
+      ).toBe(true);
       expect(polTexts.some((t) => t.includes('Corredores de Seguros Asociados S.A.'))).toBe(true);
     });
 
@@ -259,7 +271,13 @@ describe('excelGenerator', () => {
         },
       ];
 
-      const autosBuffer = await generateExcelBuffer(autosQuotes, undefined, undefined, undefined, 'autos');
+      const autosBuffer = await generateExcelBuffer(
+        autosQuotes,
+        undefined,
+        undefined,
+        undefined,
+        'autos'
+      );
       const autosWorkbook = new ExcelJS.Workbook();
       await autosWorkbook.xlsx.load(autosBuffer);
       const autosSummary = autosWorkbook.getWorksheet('Cuadro Comparativo Resumido');
@@ -273,7 +291,10 @@ describe('excelGenerator', () => {
       // Should contain Autos-specific mandatory verification headers
       expect(
         autosLabels.some(
-          (l) => l.includes('Responsabilidad Civil') || l.includes('Pérdida') || l.includes('AUTOMOTORES')
+          (l) =>
+            l.includes('Responsabilidad Civil') ||
+            l.includes('Pérdida') ||
+            l.includes('AUTOMOTORES')
         )
       ).toBe(true);
 
@@ -289,7 +310,13 @@ describe('excelGenerator', () => {
         },
       ];
 
-      const vidaBuffer = await generateExcelBuffer(vidaQuotes, undefined, undefined, undefined, 'vida_grupo');
+      const vidaBuffer = await generateExcelBuffer(
+        vidaQuotes,
+        undefined,
+        undefined,
+        undefined,
+        'vida_grupo'
+      );
       const vidaWorkbook = new ExcelJS.Workbook();
       await vidaWorkbook.xlsx.load(vidaBuffer);
       const vidaSummary = vidaWorkbook.getWorksheet('Cuadro Comparativo Resumido');
@@ -632,9 +659,16 @@ describe('excelGenerator', () => {
         },
       ];
 
-      const buffer = await generateExcelBuffer(mockQuotes, undefined, undefined, undefined, 'pyme', {
-        matrix: customMatrix,
-      });
+      const buffer = await generateExcelBuffer(
+        mockQuotes,
+        undefined,
+        undefined,
+        undefined,
+        'pyme',
+        {
+          matrix: customMatrix,
+        }
+      );
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer);
 
@@ -669,9 +703,16 @@ describe('excelGenerator', () => {
         },
       ];
 
-      const buffer = await generateExcelBuffer(mockQuotes, undefined, undefined, undefined, 'pyme', {
-        matrix: customMatrix,
-      });
+      const buffer = await generateExcelBuffer(
+        mockQuotes,
+        undefined,
+        undefined,
+        undefined,
+        'pyme',
+        {
+          matrix: customMatrix,
+        }
+      );
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer);
 
@@ -711,9 +752,16 @@ describe('excelGenerator', () => {
         },
       ];
 
-      const buffer = await generateExcelBuffer(mockQuotes, undefined, undefined, undefined, 'pyme', {
-        matrix: invertedMatrix,
-      });
+      const buffer = await generateExcelBuffer(
+        mockQuotes,
+        undefined,
+        undefined,
+        undefined,
+        'pyme',
+        {
+          matrix: invertedMatrix,
+        }
+      );
 
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer);
@@ -797,9 +845,16 @@ describe('excelGenerator', () => {
         },
       ];
 
-      const buffer = await generateExcelBuffer(mockQuotes, undefined, undefined, undefined, 'pyme', {
-        matrix: v2Matrix,
-      });
+      const buffer = await generateExcelBuffer(
+        mockQuotes,
+        undefined,
+        undefined,
+        undefined,
+        'pyme',
+        {
+          matrix: v2Matrix,
+        }
+      );
 
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer);

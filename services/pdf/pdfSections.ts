@@ -15,7 +15,18 @@ import {
  * Renders Page 1: Executive Summary, Intermediary Profile, Risk Details, and Insurer Cards.
  */
 export function renderExecutiveSummarySection(ctx: PdfRenderContext): void {
-  const { doc, report, quotes, options, regProfile, effectivePolicies, primaryColor, clientMeta, brokerName, addHeader } = ctx;
+  const {
+    doc,
+    report,
+    quotes,
+    options,
+    regProfile,
+    effectivePolicies,
+    primaryColor,
+    clientMeta,
+    brokerName,
+    addHeader,
+  } = ctx;
   let currentY = addHeader('Resumen Ejecutivo y Ficha Técnica');
 
   // Intermediary / Broker Banner
@@ -83,7 +94,11 @@ export function renderExecutiveSummarySection(ctx: PdfRenderContext): void {
   doc.setFontSize(8.5);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(51, 65, 85);
-  doc.text(`Dirección del Riesgo: ${clientMeta.riskAddress} (${clientMeta.riskCity})  |  Ramo: ${regProfile.displayName}`, 18, currentY + 13);
+  doc.text(
+    `Dirección del Riesgo: ${clientMeta.riskAddress} (${clientMeta.riskCity})  |  Ramo: ${regProfile.displayName}`,
+    18,
+    currentY + 13
+  );
   doc.text(clientMeta.buildingDetails || `Marco Legal: ${regProfile.tagline}`, 18, currentY + 19);
 
   currentY += 30;
@@ -216,7 +231,8 @@ export function renderExecutiveSummarySection(ctx: PdfRenderContext): void {
  * Renders Cuadro Chico (executive comparison summary table and surrounding presentation).
  */
 export function renderCuadroChicoSection(ctx: PdfRenderContext): void {
-  const { doc, options, regProfile, primaryColor, isCondensed, clientMeta, brokerName, addHeader } = ctx;
+  const { doc, options, regProfile, primaryColor, isCondensed, clientMeta, brokerName, addHeader } =
+    ctx;
 
   if (!isCondensed) {
     doc.addPage();
@@ -245,7 +261,9 @@ export function renderCuadroChicoSection(ctx: PdfRenderContext): void {
 
     const line1 = [
       broker?.name ? `Asesor: ${broker.name}` : 'Asesor Técnico de Seguros',
-      broker?.registrationNumber ? `Matrícula SFC: ${broker.registrationNumber}` : 'Inscripción Vigente SFC',
+      broker?.registrationNumber
+        ? `Matrícula SFC: ${broker.registrationNumber}`
+        : 'Inscripción Vigente SFC',
       broker?.phone ? `Tel: ${broker.phone}` : '',
       broker?.email ? `Email: ${broker.email}` : '',
     ]
@@ -253,7 +271,8 @@ export function renderCuadroChicoSection(ctx: PdfRenderContext): void {
       .join('   |   ');
     doc.text(line1, 18, currentY + 11.5);
 
-    const locStr = [broker?.address, broker?.city].filter(Boolean).join(', ') || 'Bogotá D.C., Colombia';
+    const locStr =
+      [broker?.address, broker?.city].filter(Boolean).join(', ') || 'Bogotá D.C., Colombia';
     const line2 = [
       broker?.website || 'https://correseguros.co/',
       locStr,
@@ -271,7 +290,11 @@ export function renderCuadroChicoSection(ctx: PdfRenderContext): void {
     doc.setFontSize(7.5);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(30, 41, 59);
-    doc.text(`Cliente: ${clientMeta.clientName}   |   Ramo: ${regProfile.displayName}   |   Ubicación: ${clientMeta.riskAddress}`, 18, currentY + 6);
+    doc.text(
+      `Cliente: ${clientMeta.clientName}   |   Ramo: ${regProfile.displayName}   |   Ubicación: ${clientMeta.riskAddress}`,
+      18,
+      currentY + 6
+    );
 
     currentY += 12;
   }
@@ -283,7 +306,10 @@ export function renderCuadroChicoSection(ctx: PdfRenderContext): void {
       return keywords.some((kw) => name.includes(kw));
     });
     if (!found) return 'No cotizado';
-    if (found.isPositive === false || ['excluido', 'no incluida', 'no cotizado'].includes(String(found.value).toLowerCase())) {
+    if (
+      found.isPositive === false ||
+      ['excluido', 'no incluida', 'no cotizado'].includes(String(found.value).toLowerCase())
+    ) {
       return 'Excluido';
     }
     return formatCoverageValuePDF(found.value);

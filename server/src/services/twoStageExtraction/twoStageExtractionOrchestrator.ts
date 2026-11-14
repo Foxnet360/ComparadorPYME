@@ -2,7 +2,10 @@ import { featureFlags } from '../../config/featureFlags';
 import { geminiService, UploadedFile } from '../gemini';
 import { QuoteExtractionV2, validateQuoteExtractionV2 } from '../../schemas/extractionSchemas';
 import { globalStructureExtractor, GlobalStructureExtractor } from './globalStructureExtractor';
-import { focalizedCoverageExtractor, FocalizedCoverageExtractor } from './focalizedCoverageExtractor';
+import {
+  focalizedCoverageExtractor,
+  FocalizedCoverageExtractor,
+} from './focalizedCoverageExtractor';
 
 export interface TwoStageOrchestratorOptions {
   skipValidation?: boolean;
@@ -24,7 +27,9 @@ export class TwoStageExtractionOrchestrator {
     options?: TwoStageOrchestratorOptions
   ): Promise<QuoteExtractionV2> {
     if (!featureFlags.isEnabled('enableTwoStageExtraction')) {
-      console.log('ℹ️ [TwoStageOrchestrator] Two-stage extraction disabled by feature flag. Delegating to single-stage V2.');
+      console.log(
+        'ℹ️ [TwoStageOrchestrator] Two-stage extraction disabled by feature flag. Delegating to single-stage V2.'
+      );
       return geminiService.extractFromPdfWithVision(
         pdfPath,
         prompt,
@@ -120,7 +125,9 @@ export class TwoStageExtractionOrchestrator {
       if (!options?.skipValidation) {
         const validation = validateQuoteExtractionV2(merged);
         if (!validation.success) {
-          throw new Error(`Merged two-stage output failed Zod validation: ${validation.error?.message}`);
+          throw new Error(
+            `Merged two-stage output failed Zod validation: ${validation.error?.message}`
+          );
         }
       }
 

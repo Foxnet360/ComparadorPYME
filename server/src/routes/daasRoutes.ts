@@ -64,9 +64,7 @@ router.get(
     const startTime = Date.now();
     const domain = req.query.domain as string | undefined;
 
-    let query = supabase
-      .from('daas_market_snapshots')
-      .select('insurer_name');
+    let query = supabase.from('daas_market_snapshots').select('insurer_name');
 
     if (domain) {
       query = query.eq('domain', domain);
@@ -122,7 +120,10 @@ router.get(
         tier: req.subscriber?.tier,
         monthlyQuota: req.subscriber?.monthlyQuota,
         currentMonthUsage: req.subscriber?.currentMonthUsage,
-        remainingQuota: Math.max(0, (req.subscriber?.monthlyQuota || 0) - (req.subscriber?.currentMonthUsage || 0)),
+        remainingQuota: Math.max(
+          0,
+          (req.subscriber?.monthlyQuota || 0) - (req.subscriber?.currentMonthUsage || 0)
+        ),
         rateLimitPerMinute: req.subscriber?.rateLimitPerMinute,
         allowedDomains: req.subscriber?.allowedDomains,
       },

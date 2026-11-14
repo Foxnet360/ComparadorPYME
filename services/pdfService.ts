@@ -88,7 +88,8 @@ export const generatePDF = (
 
   const isCondensed = options?.mode === 'condensed' || options?.condensed === true;
   const broker = options?.brokerInfo;
-  const brokerName = broker?.intermediaryName || broker?.name || 'Corredores de Seguros Asociados S.A.';
+  const brokerName =
+    broker?.intermediaryName || broker?.name || 'Corredores de Seguros Asociados S.A.';
 
   const insurers = quotes.map((q) => {
     const prof = findColombianInsurerProfile(q.insurerName);

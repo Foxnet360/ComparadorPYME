@@ -114,12 +114,15 @@ describe('UserEditModal component', () => {
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
-      expect(handleUpdate).toHaveBeenCalledWith('user-123', expect.objectContaining({
-        name: 'Juan Perez Actualizado',
-        role: 'ally_technical',
-        orgId: 'org-111',
-        status: 'ACTIVE',
-      }));
+      expect(handleUpdate).toHaveBeenCalledWith(
+        'user-123',
+        expect.objectContaining({
+          name: 'Juan Perez Actualizado',
+          role: 'ally_technical',
+          orgId: 'org-111',
+          status: 'ACTIVE',
+        })
+      );
       expect(handleClose).toHaveBeenCalled();
     });
   });
@@ -139,11 +142,7 @@ describe('UserManagement component', () => {
 
   it('mounts and displays user directory correctly', async () => {
     render(
-      <UserManagement
-        currentUserRole="super_admin"
-        currentAllyId="org-111"
-        onClose={vi.fn()}
-      />
+      <UserManagement currentUserRole="super_admin" currentAllyId="org-111" onClose={vi.fn()} />
     );
 
     await waitFor(() => {
@@ -155,11 +154,7 @@ describe('UserManagement component', () => {
 
   it('opens UserEditModal when clicking edit button', async () => {
     render(
-      <UserManagement
-        currentUserRole="super_admin"
-        currentAllyId="org-111"
-        onClose={vi.fn()}
-      />
+      <UserManagement currentUserRole="super_admin" currentAllyId="org-111" onClose={vi.fn()} />
     );
 
     await waitFor(() => {
@@ -183,11 +178,7 @@ describe('UserManagement component', () => {
     });
 
     render(
-      <UserManagement
-        currentUserRole="super_admin"
-        currentAllyId="org-111"
-        onClose={vi.fn()}
-      />
+      <UserManagement currentUserRole="super_admin" currentAllyId="org-111" onClose={vi.fn()} />
     );
 
     await waitFor(() => {
@@ -206,11 +197,7 @@ describe('UserManagement component', () => {
     (organizationService.deleteUser as any).mockResolvedValue({ success: true });
 
     render(
-      <UserManagement
-        currentUserRole="super_admin"
-        currentAllyId="org-111"
-        onClose={vi.fn()}
-      />
+      <UserManagement currentUserRole="super_admin" currentAllyId="org-111" onClose={vi.fn()} />
     );
 
     await waitFor(() => {

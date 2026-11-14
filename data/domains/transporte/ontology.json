@@ -12,11 +12,7 @@
         "robo-hurto-carga",
         "robo-parcial-pillaje-carga"
       ],
-      "aliases": [
-        "COBERTURAS PRINCIPALES",
-        "Daño Material Mercancía",
-        "Pérdida en Tránsito"
-      ],
+      "aliases": ["COBERTURAS PRINCIPALES", "Daño Material Mercancía", "Pérdida en Tránsito"],
       "riskType": "cargo"
     },
     {
@@ -28,40 +24,23 @@
         "transporte-multimodal",
         "clausula-abandono-maritima"
       ],
-      "aliases": [
-        "COBERTURAS MARÍTIMAS",
-        "MODALIDADES DE TRANSPORTE",
-        "Marítimo y Aéreo"
-      ],
+      "aliases": ["COBERTURAS MARÍTIMAS", "MODALIDADES DE TRANSPORTE", "Marítimo y Aéreo"],
       "riskType": "marine"
     },
     {
       "id": "responsabilidad-transporte",
       "name": "Responsabilidad Civil del Transportador",
       "level": 1,
-      "childrenIds": [
-        "rc-transportador"
-      ],
-      "aliases": [
-        "COBERTURAS DE RESPONSABILIDAD",
-        "RC Transportador",
-        "Daños a Cargas Terceros"
-      ],
+      "childrenIds": ["rc-transportador"],
+      "aliases": ["COBERTURAS DE RESPONSABILIDAD", "RC Transportador", "Daños a Cargas Terceros"],
       "riskType": "liability"
     },
     {
       "id": "cargas-especiales",
       "name": "Cargas Especiales, Perecederas y Peligrosas",
       "level": 1,
-      "childrenIds": [
-        "refrigeracion-cadena-frio",
-        "carga-granel-peligrosa"
-      ],
-      "aliases": [
-        "COBERTURAS ESPECIALES",
-        "Refrigerados",
-        "Graneles y Mercancías Peligrosas"
-      ],
+      "childrenIds": ["refrigeracion-cadena-frio", "carga-granel-peligrosa"],
+      "aliases": ["COBERTURAS ESPECIALES", "Refrigerados", "Graneles y Mercancías Peligrosas"],
       "riskType": "special"
     },
     {
@@ -91,9 +70,7 @@
       "name": "Daño Material a la Carga (Todo Riesgo / Named Perils)",
       "level": 2,
       "parentId": "danos-perdidas-carga",
-      "childrenIds": [
-        "mojadura-humedad-carga"
-      ],
+      "childrenIds": ["mojadura-humedad-carga"],
       "aliases": [
         "Daño Material a la Carga (Todo Riesgo / Named Perils)",
         "daño material",
@@ -202,9 +179,7 @@
       "name": "Robo y Hurto (Con y Sin Violencia)",
       "level": 2,
       "parentId": "danos-perdidas-carga",
-      "childrenIds": [
-        "pirateria-terrestre-asalto"
-      ],
+      "childrenIds": ["pirateria-terrestre-asalto"],
       "aliases": [
         "Robo y Hurto (Con y Sin Violencia)",
         "robo",
@@ -528,11 +503,7 @@
       "level": 3,
       "parentId": "dano-material-carga",
       "childrenIds": [],
-      "aliases": [
-        "Mojadura",
-        "Agua de mar",
-        "Humedad en bodega"
-      ],
+      "aliases": ["Mojadura", "Agua de mar", "Humedad en bodega"],
       "riskType": "cargo",
       "typicalDeductible": "10% del despacho"
     },
@@ -542,11 +513,7 @@
       "level": 3,
       "parentId": "robo-hurto-carga",
       "childrenIds": [],
-      "aliases": [
-        "Piratería terrestre",
-        "Atraco en carretera",
-        "Retén ilegal"
-      ],
+      "aliases": ["Piratería terrestre", "Atraco en carretera", "Retén ilegal"],
       "riskType": "theft",
       "typicalDeductible": "15% min 2 SMMLV"
     }
@@ -564,10 +531,7 @@
     },
     {
       "pattern": "p[eé]rdida\\s+total.*(hurto|extrav[ií]o|carga)",
-      "components": [
-        "perdida-total-carga",
-        "clausula-abandono-maritima"
-      ],
+      "components": ["perdida-total-carga", "clausula-abandono-maritima"],
       "confidence": 0.85
     }
   ]

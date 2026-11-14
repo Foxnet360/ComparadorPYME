@@ -13,14 +13,7 @@ import {
 import { MatrixRow, MatrixCell } from '../../../types';
 
 export function buildDeductiblesSheet(ctx: ExcelContext): void {
-  const {
-    workbook,
-    quotes,
-    matrix,
-    insurerImageIds,
-    brokerDetails,
-    todayStr,
-  } = ctx;
+  const { workbook, quotes, matrix, insurerImageIds, brokerDetails, todayStr } = ctx;
 
   const deductiblesSheet = workbook.addWorksheet('Matriz Deducibles');
   deductiblesSheet.views = [{ showGridLines: false }];
@@ -34,13 +27,27 @@ export function buildDeductiblesSheet(ctx: ExcelContext): void {
   deductiblesSheet.mergeCells(1, 1, 2, quotes.length + 1);
   const dedTitle = deductiblesSheet.getCell(1, 1);
   dedTitle.value = 'MATRIZ CONSOLIDADA DE DEDUCIBLES Y RETENCIÓN DE RIESGO';
-  dedTitle.font = { name: FONT_NAME, size: 14, bold: true, color: { argb: EXCEL_COLORS.NAVY_HEADER } };
+  dedTitle.font = {
+    name: FONT_NAME,
+    size: 14,
+    bold: true,
+    color: { argb: EXCEL_COLORS.NAVY_HEADER },
+  };
 
   deductiblesSheet.getRow(4).height = 54;
   const dedLabelHeader = deductiblesSheet.getCell(4, 1);
   dedLabelHeader.value = 'AMPARO / COBERTURA';
-  dedLabelHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.WHITE } };
-  dedLabelHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.NAVY_HEADER } };
+  dedLabelHeader.font = {
+    name: FONT_NAME,
+    size: 10,
+    bold: true,
+    color: { argb: EXCEL_COLORS.WHITE },
+  };
+  dedLabelHeader.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: EXCEL_COLORS.NAVY_HEADER },
+  };
   dedLabelHeader.alignment = { vertical: 'middle', horizontal: 'left' };
 
   quotes.forEach((q, i) => {
@@ -50,8 +57,17 @@ export function buildDeductiblesSheet(ctx: ExcelContext): void {
     const argbColor = profile?.primaryColor
       ? 'FF' + profile.primaryColor.replace('#', '')
       : EXCEL_COLORS.NAVY_HEADER;
-    insHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.SLATE_DARK } };
-    insHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.BG_SLATE_HEADER } };
+    insHeader.font = {
+      name: FONT_NAME,
+      size: 10,
+      bold: true,
+      color: { argb: EXCEL_COLORS.SLATE_DARK },
+    };
+    insHeader.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: EXCEL_COLORS.BG_SLATE_HEADER },
+    };
     insHeader.border = {
       top: { style: 'medium', color: { argb: argbColor } },
       bottom: { style: 'thin', color: { argb: EXCEL_COLORS.BORDER_MEDIUM } },
@@ -102,8 +118,17 @@ export function buildDeductiblesSheet(ctx: ExcelContext): void {
         deductiblesSheet.mergeCells(currentDedRow, 1, currentDedRow, quotes.length + 1);
         const cell = deductiblesSheet.getCell(currentDedRow, 1);
         cell.value = row.label;
-        cell.font = { name: FONT_NAME, size: 11, bold: true, color: { argb: EXCEL_COLORS.NAVY_HEADER } };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.BG_SECTION_HEADER } };
+        cell.font = {
+          name: FONT_NAME,
+          size: 11,
+          bold: true,
+          color: { argb: EXCEL_COLORS.NAVY_HEADER },
+        };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: EXCEL_COLORS.BG_SECTION_HEADER },
+        };
         cell.alignment = { vertical: 'middle', horizontal: 'left' };
         deductiblesSheet.getRow(currentDedRow).height = 24;
         currentDedRow++;
@@ -113,8 +138,17 @@ export function buildDeductiblesSheet(ctx: ExcelContext): void {
       } else {
         const labelCell = deductiblesSheet.getCell(currentDedRow, 1);
         labelCell.value = row.label;
-        labelCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.SLATE_MUTED } };
-        labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.BG_LIGHT_GRAY } };
+        labelCell.font = {
+          name: FONT_NAME,
+          size: 10,
+          bold: true,
+          color: { argb: EXCEL_COLORS.SLATE_MUTED },
+        };
+        labelCell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: EXCEL_COLORS.BG_LIGHT_GRAY },
+        };
         labelCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
 
         const dedTextsForHeight: string[] = [row.label || ''];
@@ -132,8 +166,17 @@ export function buildDeductiblesSheet(ctx: ExcelContext): void {
           xlCell.font = { name: FONT_NAME, size: 10, color: { argb: EXCEL_COLORS.SLATE_BODY } };
 
           if (isNoAplica) {
-            xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.EMERALD_BG } };
-            xlCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.EMERALD_TEXT } };
+            xlCell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: EXCEL_COLORS.EMERALD_BG },
+            };
+            xlCell.font = {
+              name: FONT_NAME,
+              size: 10,
+              bold: true,
+              color: { argb: EXCEL_COLORS.EMERALD_TEXT },
+            };
           }
 
           xlCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
@@ -156,8 +199,17 @@ export function buildDeductiblesSheet(ctx: ExcelContext): void {
     coverageNames.forEach((covName) => {
       const labelCell = deductiblesSheet.getCell(currentDedRow, 1);
       labelCell.value = covName;
-      labelCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.SLATE_MUTED } };
-      labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.BG_LIGHT_GRAY } };
+      labelCell.font = {
+        name: FONT_NAME,
+        size: 10,
+        bold: true,
+        color: { argb: EXCEL_COLORS.SLATE_MUTED },
+      };
+      labelCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: EXCEL_COLORS.BG_LIGHT_GRAY },
+      };
       labelCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
 
       const dedTextsForHeight: string[] = [covName || ''];
@@ -176,8 +228,17 @@ export function buildDeductiblesSheet(ctx: ExcelContext): void {
         xlCell.font = { name: FONT_NAME, size: 10, color: { argb: EXCEL_COLORS.SLATE_BODY } };
 
         if (isNoAplica) {
-          xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.EMERALD_BG } };
-          xlCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.EMERALD_TEXT } };
+          xlCell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: EXCEL_COLORS.EMERALD_BG },
+          };
+          xlCell.font = {
+            name: FONT_NAME,
+            size: 10,
+            bold: true,
+            color: { argb: EXCEL_COLORS.EMERALD_TEXT },
+          };
         }
 
         xlCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };

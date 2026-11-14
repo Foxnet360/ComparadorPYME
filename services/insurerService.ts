@@ -68,11 +68,14 @@ export const insurerService = {
     const data = await response.json();
     const created: InsurerEntity = {
       ...data.insurer,
-      svgBadgeUri: data.insurer.svgBadgeUri || buildInsurerSvgDataUri(data.insurer.name, data.insurer),
+      svgBadgeUri:
+        data.insurer.svgBadgeUri || buildInsurerSvgDataUri(data.insurer.name, data.insurer),
     };
 
     // Update local cache
-    const existingIdx = insurersCache.findIndex((i) => i.id === created.id || i.name === created.name);
+    const existingIdx = insurersCache.findIndex(
+      (i) => i.id === created.id || i.name === created.name
+    );
     if (existingIdx >= 0) {
       insurersCache[existingIdx] = created;
     } else {
@@ -100,7 +103,8 @@ export const insurerService = {
     const data = await response.json();
     const updated: InsurerEntity = {
       ...data.insurer,
-      svgBadgeUri: data.insurer.svgBadgeUri || buildInsurerSvgDataUri(data.insurer.name, data.insurer),
+      svgBadgeUri:
+        data.insurer.svgBadgeUri || buildInsurerSvgDataUri(data.insurer.name, data.insurer),
     };
 
     const idx = insurersCache.findIndex((i) => i.id === id || i.code === id);
@@ -172,11 +176,12 @@ export const insurerService = {
     }
 
     // Dynamic brand generation for uncataloged custom insurer
-    const monogram = rawName
-      .replace(/\b(seguros|compania|compañía|de|del|la|colombia|s\.a\.|sa|generales)\b/gi, '')
-      .trim()
-      .slice(0, 4)
-      .toUpperCase() || 'SEG';
+    const monogram =
+      rawName
+        .replace(/\b(seguros|compania|compañía|de|del|la|colombia|s\.a\.|sa|generales)\b/gi, '')
+        .trim()
+        .slice(0, 4)
+        .toUpperCase() || 'SEG';
 
     const fallback: InsurerEntity = {
       id: `temp-${rawName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
@@ -198,7 +203,11 @@ export const insurerService = {
       supportedDomains: [] as InsuranceDomainType[],
       aliases: [rawName.toLowerCase()],
       isActive: true,
-      svgBadgeUri: buildInsurerSvgDataUri(rawName, { monogram, primaryColor: '#1E293B', accentColor: '#38BDF8' }),
+      svgBadgeUri: buildInsurerSvgDataUri(rawName, {
+        monogram,
+        primaryColor: '#1E293B',
+        accentColor: '#38BDF8',
+      }),
     };
 
     return fallback;

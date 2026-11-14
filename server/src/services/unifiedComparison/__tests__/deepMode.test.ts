@@ -264,9 +264,9 @@ describe('Deep Mode Validation', () => {
 
   describe('comparisonEngineAdapter.validateWithClauses', () => {
     it('should throw if clause files array is empty', async () => {
-      await expect(
-        comparisonEngineAdapter.validateWithClauses('test-id', [])
-      ).rejects.toThrow('No clause files provided');
+      await expect(comparisonEngineAdapter.validateWithClauses('test-id', [])).rejects.toThrow(
+        'No clause files provided'
+      );
     });
 
     it('should throw descriptive error if comparison is not in cache', async () => {

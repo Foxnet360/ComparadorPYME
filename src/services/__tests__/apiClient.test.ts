@@ -269,7 +269,8 @@ describe('apiClient', () => {
         new Response(
           JSON.stringify({
             error: 'Forbidden',
-            message: 'Insufficient permissions. Required one of: super_admin, ally_admin, ally_technical',
+            message:
+              'Insufficient permissions. Required one of: super_admin, ally_admin, ally_technical',
           }),
           { status: 403, statusText: 'Forbidden' }
         )

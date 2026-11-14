@@ -50,7 +50,12 @@ export interface EnvConfig {
   VITE_GEMINI_API_KEY?: string;
 }
 
-const requiredVars = ['GEMINI_API_KEY', 'SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY'];
+const requiredVars = [
+  'GEMINI_API_KEY',
+  'SUPABASE_URL',
+  'SUPABASE_ANON_KEY',
+  'SUPABASE_SERVICE_ROLE_KEY',
+];
 
 interface TaxonomyMetadata {
   salaryValue2026?: number;

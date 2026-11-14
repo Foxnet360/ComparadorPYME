@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Plus,
-  Search,
-  Building2,
-  MapPin,
-  Building,
-  Compass,
-} from 'lucide-react';
+import { Plus, Search, Building2, MapPin, Building, Compass } from 'lucide-react';
 import { Client } from '../types';
 import { storageService } from '../services/storageService';
 import { NewClientModal } from './clients/NewClientModal';

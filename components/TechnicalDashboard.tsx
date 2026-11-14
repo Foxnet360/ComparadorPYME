@@ -1,7 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { HistoryEntry, QuoteStatus, ComparisonReport } from '../types';
 import { storageService } from '../services/storageService';
-import { Plus, Search, Eye, BarChart3, TrendingUp, DollarSign, FileCheck, Calendar } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  Eye,
+  BarChart3,
+  TrendingUp,
+  DollarSign,
+  FileCheck,
+  Calendar,
+} from 'lucide-react';
 import { formatCOPMillions } from '../utils/formatCurrency';
 
 interface TechnicalDashboardProps {
@@ -188,9 +197,7 @@ const TechnicalDashboard: React.FC<TechnicalDashboardProps> = ({ onNewAnalysis, 
           </div>
         ) : filteredHistory.length === 0 ? (
           <div className="py-12 text-center text-slate-400 px-4">
-            <p className="font-semibold text-slate-700 mb-1">
-              No se encontraron comparaciones
-            </p>
+            <p className="font-semibold text-slate-700 mb-1">No se encontraron comparaciones</p>
             <p className="text-xs text-slate-400 mb-4">
               {filter || statusFilter !== 'ALL'
                 ? 'Probá ajustando los filtros de búsqueda.'
@@ -224,7 +231,10 @@ const TechnicalDashboard: React.FC<TechnicalDashboardProps> = ({ onNewAnalysis, 
                   {filteredHistory.map((item) => (
                     <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
                       <td className="px-4 py-3.5">
-                        <div className="font-semibold text-slate-800 truncate" title={item.clientName}>
+                        <div
+                          className="font-semibold text-slate-800 truncate"
+                          title={item.clientName}
+                        >
                           {item.clientName}
                         </div>
                         <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
@@ -254,7 +264,10 @@ const TechnicalDashboard: React.FC<TechnicalDashboardProps> = ({ onNewAnalysis, 
                         </div>
                       </td>
                       <td className="px-4 py-3.5">
-                        <div className="text-xs font-bold text-indigo-600 truncate" title={item.bestOption || '-'}>
+                        <div
+                          className="text-xs font-bold text-indigo-600 truncate"
+                          title={item.bestOption || '-'}
+                        >
                           {item.bestOption || '-'}
                         </div>
                         <div className="text-xs font-medium text-slate-700 mt-0.5">
@@ -264,7 +277,9 @@ const TechnicalDashboard: React.FC<TechnicalDashboardProps> = ({ onNewAnalysis, 
                       <td className="px-3 py-3.5 text-center">
                         <select
                           value={item.status}
-                          onChange={(e) => handleStatusChange(item.id, e.target.value as QuoteStatus)}
+                          onChange={(e) =>
+                            handleStatusChange(item.id, e.target.value as QuoteStatus)
+                          }
                           className={`w-full max-w-[120px] px-2.5 py-1 rounded-full text-xs font-bold border-none outline-none cursor-pointer transition-colors text-center ${
                             item.status === 'SOLD'
                               ? 'bg-emerald-100 text-emerald-800'
@@ -307,7 +322,10 @@ const TechnicalDashboard: React.FC<TechnicalDashboardProps> = ({ onNewAnalysis, 
                 <div key={item.id} className="p-4 space-y-3 hover:bg-slate-50/50 transition-colors">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <h4 className="font-bold text-slate-900 text-sm truncate" title={item.clientName}>
+                      <h4
+                        className="font-bold text-slate-900 text-sm truncate"
+                        title={item.clientName}
+                      >
                         {item.clientName}
                       </h4>
                       <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">

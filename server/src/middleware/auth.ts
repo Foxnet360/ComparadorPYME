@@ -74,10 +74,7 @@ function normalizeRole(rawRole?: string): UserRole {
 function buildUserFromPayload(decoded: JwtUserPayload): AuthenticatedUser {
   // Authoritative claims set by admin/server
   const orgId =
-    decoded.app_metadata?.org_id ||
-    decoded.app_metadata?.orgId ||
-    decoded.org_id ||
-    decoded.orgId;
+    decoded.app_metadata?.org_id || decoded.app_metadata?.orgId || decoded.org_id || decoded.orgId;
 
   // Role must come from app_metadata or top-level claim; ignore user_metadata for role privilege
   const rawRole =
@@ -93,7 +90,11 @@ function buildUserFromPayload(decoded: JwtUserPayload): AuthenticatedUser {
     id: (decoded.sub || decoded.id) as string,
     email: decoded.email,
     role,
-    orgId: orgId ? String(orgId) : (decoded.user_metadata?.org_id ? String(decoded.user_metadata.org_id) : undefined),
+    orgId: orgId
+      ? String(orgId)
+      : decoded.user_metadata?.org_id
+        ? String(decoded.user_metadata.org_id)
+        : undefined,
     name,
     intermediaryName: decoded.user_metadata?.intermediary_name,
   };
@@ -200,7 +201,10 @@ export async function getPublicKeyForKid(kid: string): Promise<string | null> {
     for (const key of data.keys) {
       if (key.kid && key.kty === 'EC') {
         try {
-          const pubKey = (crypto.createPublicKey as (input: unknown) => crypto.KeyObject)({ key, format: 'jwk' });
+          const pubKey = (crypto.createPublicKey as (input: unknown) => crypto.KeyObject)({
+            key,
+            format: 'jwk',
+          });
           const pem = pubKey.export({ type: 'spki', format: 'pem' }) as string;
           jwksCache.set(key.kid, pem);
         } catch (convErr) {
@@ -238,23 +242,31 @@ export async function verifyToken(token: string): Promise<AuthenticatedUser | nu
     try {
       const pem = await getPublicKeyForKid(kid);
       if (pem) {
-        const decoded = jwt.verify(token, pem, { algorithms: ['ES256'] }) as unknown as JwtUserPayload;
+        const decoded = jwt.verify(token, pem, {
+          algorithms: ['ES256'],
+        }) as unknown as JwtUserPayload;
         return buildUserFromPayload(decoded);
       }
     } catch (esErr: unknown) {
       const msg = esErr instanceof Error ? esErr.message : String(esErr);
-      console.warn(`[auth] Local ES256 verification failed (${msg}), falling back to Supabase auth API`);
+      console.warn(
+        `[auth] Local ES256 verification failed (${msg}), falling back to Supabase auth API`
+      );
     }
   }
 
   // 2. Symmetric HS256 verification via SUPABASE_JWT_SECRET
   if (alg === 'HS256' && jwtSecret) {
     try {
-      const decoded = jwt.verify(token, jwtSecret, { algorithms: ['HS256'] }) as unknown as JwtUserPayload;
+      const decoded = jwt.verify(token, jwtSecret, {
+        algorithms: ['HS256'],
+      }) as unknown as JwtUserPayload;
       return buildUserFromPayload(decoded);
     } catch (hsErr: unknown) {
       const msg = hsErr instanceof Error ? hsErr.message : String(hsErr);
-      console.warn(`[auth] Local HS256 verification failed (${msg}), falling back to Supabase auth API`);
+      console.warn(
+        `[auth] Local HS256 verification failed (${msg}), falling back to Supabase auth API`
+      );
     }
   }
 

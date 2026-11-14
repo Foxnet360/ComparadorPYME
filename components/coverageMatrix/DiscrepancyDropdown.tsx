@@ -20,9 +20,7 @@ export const DiscrepancyDropdown: React.FC<DiscrepancyDropdownProps> = ({
     >
       <div className="bg-amber-50 px-4 py-2.5 border-b border-amber-200 flex items-center gap-2">
         <AlertTriangle size={14} className="text-amber-600" />
-        <span className="text-xs font-bold text-amber-800">
-          Resolver Discrepancia Ontológica
-        </span>
+        <span className="text-xs font-bold text-amber-800">Resolver Discrepancia Ontológica</span>
       </div>
       <div className="p-3 max-h-64 overflow-y-auto">
         <p className="text-[11px] text-slate-500 mb-2">

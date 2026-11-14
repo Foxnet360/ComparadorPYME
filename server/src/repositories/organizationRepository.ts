@@ -129,10 +129,7 @@ export async function updateOrganization(
 }
 
 export async function deleteOrganization(id: string): Promise<boolean> {
-  const { error } = await supabase
-    .from('organizations')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('organizations').delete().eq('id', id);
 
   if (error) {
     handleDbError(error, 'Failed to delete organization');
@@ -153,10 +150,7 @@ export async function addOrganizationMember(
 
   const { data, error } = await supabase
     .from('organization_members')
-    .upsert(
-      payload,
-      { onConflict: 'org_id,user_id' }
-    )
+    .upsert(payload, { onConflict: 'org_id,user_id' })
     .select(MEMBER_COLUMNS)
     .single();
 
@@ -167,9 +161,7 @@ export async function addOrganizationMember(
   return data as unknown as OrganizationMemberRecord | null;
 }
 
-export async function listOrganizationMembers(
-  orgId: string
-): Promise<OrganizationMemberRecord[]> {
+export async function listOrganizationMembers(orgId: string): Promise<OrganizationMemberRecord[]> {
   const { data, error } = await supabase
     .from('organization_members')
     .select(MEMBER_COLUMNS)
@@ -183,10 +175,7 @@ export async function listOrganizationMembers(
   return (data as unknown as OrganizationMemberRecord[]) || [];
 }
 
-export async function removeOrganizationMember(
-  orgId: string,
-  userId: string
-): Promise<boolean> {
+export async function removeOrganizationMember(orgId: string, userId: string): Promise<boolean> {
   const { error } = await supabase
     .from('organization_members')
     .delete()
@@ -230,18 +219,13 @@ export async function getOrganizationMember(
   userId: string,
   orgId?: string
 ): Promise<OrganizationMemberRecord | null> {
-  let query = supabase
-    .from('organization_members')
-    .select(MEMBER_COLUMNS)
-    .eq('user_id', userId);
+  let query = supabase.from('organization_members').select(MEMBER_COLUMNS).eq('user_id', userId);
 
   if (orgId) {
     query = query.eq('org_id', orgId);
   }
 
-  const { data, error } = await query
-    .order('created_at', { ascending: false })
-    .limit(1);
+  const { data, error } = await query.order('created_at', { ascending: false }).limit(1);
 
   if (error || !data || data.length === 0) {
     return null;
@@ -344,7 +328,10 @@ export async function updateAuthUser(
     authUpdatePayload.phone = updates.phone;
   }
 
-  const { error: updateError } = await supabase.auth.admin.updateUserById(userId, authUpdatePayload);
+  const { error: updateError } = await supabase.auth.admin.updateUserById(
+    userId,
+    authUpdatePayload
+  );
   if (updateError) {
     throw new Error(`Failed to update auth user: ${updateError.message}`);
   }

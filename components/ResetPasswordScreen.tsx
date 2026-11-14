@@ -73,7 +73,8 @@ export const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
                 ¡Contraseña Actualizada con Éxito!
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Tu clave de acceso ha sido actualizada. Ya puedes iniciar sesión con tu nueva contraseña.
+                Tu clave de acceso ha sido actualizada. Ya puedes iniciar sesión con tu nueva
+                contraseña.
               </p>
               <button
                 type="button"

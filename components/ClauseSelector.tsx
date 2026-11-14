@@ -252,8 +252,7 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
               <div className="flex items-center gap-1.5 text-slate-600">
                 <Filter size={12} className="text-indigo-600 shrink-0" />
                 <span>
-                  Filtro por Ramo:{' '}
-                  <strong className="uppercase text-slate-800">{domain}</strong>
+                  Filtro por Ramo: <strong className="uppercase text-slate-800">{domain}</strong>
                 </span>
               </div>
               <button
@@ -273,7 +272,9 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
             </div>
           ) : filteredDocuments.length === 0 ? (
             <div className="py-6 text-center text-slate-500 text-xs bg-slate-50/60 rounded-xl border border-dashed border-slate-200">
-              {searchQuery ? 'No se encontraron clausulados para esta búsqueda.' : 'No hay clausulados disponibles en la biblioteca.'}
+              {searchQuery
+                ? 'No se encontraron clausulados para esta búsqueda.'
+                : 'No hay clausulados disponibles en la biblioteca.'}
             </div>
           ) : (
             <div className="max-h-72 overflow-y-auto rounded-xl border border-slate-200/80 divide-y divide-slate-100 bg-white">
@@ -362,8 +363,7 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
                                 <div className="text-[11px] text-slate-500 flex flex-wrap gap-2.5 items-center mt-1">
                                   {doc.version && (
                                     <span className="flex items-center gap-1 font-mono text-[10px]">
-                                      <Tag size={10} />
-                                      v{doc.version}
+                                      <Tag size={10} />v{doc.version}
                                     </span>
                                   )}
                                   {doc.productName && (
@@ -419,8 +419,8 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
           </div>
           <h4 className="text-xs font-bold text-slate-800">Cargar Clausulados Particulares</h4>
           <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-            Usa el área de arrastre inferior para adjuntar pólizas y condiciones particulares. El motor
-            auditará automáticamente los deducibles y exclusiones frente a tus cotizaciones.
+            Usa el área de arrastre inferior para adjuntar pólizas y condiciones particulares. El
+            motor auditará automáticamente los deducibles y exclusiones frente a tus cotizaciones.
           </p>
         </div>
       )}

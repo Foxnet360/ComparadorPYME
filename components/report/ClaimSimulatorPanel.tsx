@@ -59,14 +59,18 @@ export const ClaimSimulatorPanel: React.FC<ClaimSimulatorPanelProps> = ({
           const pctMatch = lower.match(/(\d+(?:[.,]\d+)?)\s*%/);
           if (pctMatch && pctMatch[1]) percentage = parseFloat(pctMatch[1].replace(',', '.'));
 
-          const minMatch = lower.match(/(?:m[íi]n(?:imo)?\.?\s*(?:de)?)\s*(\d+(?:[.,]\d+)?)\s*(smmlv|uvt|\$)?/i);
+          const minMatch = lower.match(
+            /(?:m[íi]n(?:imo)?\.?\s*(?:de)?)\s*(\d+(?:[.,]\d+)?)\s*(smmlv|uvt|\$)?/i
+          );
           if (minMatch && minMatch[1]) {
             const val = parseFloat(minMatch[1].replace(/\./g, '').replace(',', '.'));
             const unit = (minMatch[2] || '').toLowerCase();
             minCOP = unit === 'smmlv' || (!unit && val <= 50) ? val * SMMLV_CURRENT : val;
           }
 
-          const maxMatch = lower.match(/(?:m[áa]x(?:imo)?\.?|tope)\s*(?:de)?\s*(\d+(?:[.,]\d+)?)\s*(smmlv|uvt|\$)?/i);
+          const maxMatch = lower.match(
+            /(?:m[áa]x(?:imo)?\.?|tope)\s*(?:de)?\s*(\d+(?:[.,]\d+)?)\s*(smmlv|uvt|\$)?/i
+          );
           if (maxMatch && maxMatch[1]) {
             const val = parseFloat(maxMatch[1].replace(/\./g, '').replace(',', '.'));
             const unit = (maxMatch[2] || '').toLowerCase();
@@ -99,9 +103,7 @@ export const ClaimSimulatorPanel: React.FC<ClaimSimulatorPanelProps> = ({
   }, [quotes, claimAmount]);
 
   // Find lowest deductible (best option)
-  const sorted = [...simulationResults].sort(
-    (a, b) => a.payableDeductible - b.payableDeductible
-  );
+  const sorted = [...simulationResults].sort((a, b) => a.payableDeductible - b.payableDeductible);
   const bestInsurer = sorted[0]?.insurerName;
   const worstDeductible = sorted[sorted.length - 1]?.payableDeductible || 0;
   const bestDeductible = sorted[0]?.payableDeductible || 0;
@@ -110,15 +112,21 @@ export const ClaimSimulatorPanel: React.FC<ClaimSimulatorPanelProps> = ({
   const formatCOP = (val: number) => `$${Math.round(val).toLocaleString('es-CO')} COP`;
 
   return (
-    <div className={`bg-white rounded-xl border border-slate-200 shadow-sm ${compact ? 'p-5 space-y-4' : 'p-6 space-y-6'}`}>
+    <div
+      className={`bg-white rounded-xl border border-slate-200 shadow-sm ${compact ? 'p-5 space-y-4' : 'p-6 space-y-6'}`}
+    >
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-slate-100 pb-3">
         <div>
           <div className="flex items-center gap-2">
-            <div className={`rounded-lg ${compact ? 'p-1.5 bg-indigo-50 text-indigo-600' : 'p-2 bg-indigo-50 text-indigo-600'}`}>
+            <div
+              className={`rounded-lg ${compact ? 'p-1.5 bg-indigo-50 text-indigo-600' : 'p-2 bg-indigo-50 text-indigo-600'}`}
+            >
               <Calculator size={compact ? 18 : 20} />
             </div>
             <h3 className={`font-bold text-slate-900 ${compact ? 'text-base' : 'text-lg'}`}>
-              {compact ? 'Impacto de Deducibles en Siniestro Real' : 'Simulador Interactivo de Siniestro (Deducibles)'}
+              {compact
+                ? 'Impacto de Deducibles en Siniestro Real'
+                : 'Simulador Interactivo de Siniestro (Deducibles)'}
             </h3>
           </div>
           <p className="text-xs text-slate-500 mt-1">
@@ -132,7 +140,9 @@ export const ClaimSimulatorPanel: React.FC<ClaimSimulatorPanelProps> = ({
           {savings > 0 && (
             <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 text-emerald-800 text-xs font-semibold">
               <TrendingDown size={14} className="text-emerald-600" />
-              <span>Ahorro máx: {formatCOP(savings)} con {bestInsurer}</span>
+              <span>
+                Ahorro máx: {formatCOP(savings)} con {bestInsurer}
+              </span>
             </div>
           )}
 
@@ -150,7 +160,10 @@ export const ClaimSimulatorPanel: React.FC<ClaimSimulatorPanelProps> = ({
       {/* Controls: Presets and Slider */}
       <div className="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-200/80">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-          <label htmlFor="claim-slider" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+          <label
+            htmlFor="claim-slider"
+            className="text-xs font-semibold text-slate-700 uppercase tracking-wider"
+          >
             Monto de Pérdida / Reclamo Simulado:
           </label>
           <div className="text-xl font-black text-indigo-700 font-mono">
@@ -235,7 +248,9 @@ export const ClaimSimulatorPanel: React.FC<ClaimSimulatorPanelProps> = ({
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between items-center py-1 border-b border-slate-100">
                   <span className="text-slate-600">Deducible a pagar:</span>
-                  <span className={`font-bold font-mono ${isWinner ? 'text-emerald-700' : 'text-slate-900'}`}>
+                  <span
+                    className={`font-bold font-mono ${isWinner ? 'text-emerald-700' : 'text-slate-900'}`}
+                  >
                     {formatCOP(res.payableDeductible)}
                   </span>
                 </div>

@@ -78,9 +78,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
   const [newClient, setNewClient] = useState<Partial<Client>>(() =>
     buildInitialClientState(activeDomain, editingClient)
   );
-  const [citySearchTerm, setCitySearchTerm] = useState(
-    editingClient?.city || 'Bogotá D.C.'
-  );
+  const [citySearchTerm, setCitySearchTerm] = useState(editingClient?.city || 'Bogotá D.C.');
   const [isCityDropdownOpen, setIsCityDropdownOpen] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [geoStatus, setGeoStatus] = useState<{
@@ -306,10 +304,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
               Ingresá la información del cliente, geolocalización y datos físicos del inmueble.
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 p-1"
-          >
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1">
             <X size={20} />
           </button>
         </div>
@@ -749,9 +744,7 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                   type="checkbox"
                   id="hasPowerPlant"
                   checked={newClient.hasPowerPlant}
-                  onChange={(e) =>
-                    setNewClient({ ...newClient, hasPowerPlant: e.target.checked })
-                  }
+                  onChange={(e) => setNewClient({ ...newClient, hasPowerPlant: e.target.checked })}
                   className="w-4 h-4 text-indigo-600 rounded-sm"
                 />
                 <label htmlFor="hasPowerPlant" className="text-xs font-semibold text-slate-700">
@@ -805,7 +798,9 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
                     type="number"
                     placeholder="Ej. 450000000"
                     value={newClient.domainDetails?.machineryReplacementValue || ''}
-                    onChange={(e) => updateDomainDetail('machineryReplacementValue', Number(e.target.value))}
+                    onChange={(e) =>
+                      updateDomainDetail('machineryReplacementValue', Number(e.target.value))
+                    }
                     className="w-full px-2.5 py-2 border border-slate-300 rounded-lg text-xs"
                   />
                 </div>

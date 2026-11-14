@@ -348,27 +348,54 @@ const PYME_ALIAS_MAP: AliasEntry[] = [
   { aliases: ['observaciones'], canonical: 'Observaciones', section: SchemaSection.CONDICIONES },
   { aliases: ['exclusiones'], canonical: 'Exclusiones', section: SchemaSection.CONDICIONES },
   {
-    aliases: ['validez de la oferta', 'validez oferta', 'vigencia de la cotizacion', 'vigencia cotizacion', 'validez propuesta'],
+    aliases: [
+      'validez de la oferta',
+      'validez oferta',
+      'vigencia de la cotizacion',
+      'vigencia cotizacion',
+      'validez propuesta',
+    ],
     canonical: 'Validez de la Oferta',
     section: SchemaSection.CONDICIONES_COMERCIALES,
   },
   {
-    aliases: ['forma de pago y financiacion', 'forma de pago comercial', 'facilidades de pago', 'plazo de pago y cuotas'],
+    aliases: [
+      'forma de pago y financiacion',
+      'forma de pago comercial',
+      'facilidades de pago',
+      'plazo de pago y cuotas',
+    ],
     canonical: 'Forma de Pago y Financiación',
     section: SchemaSection.CONDICIONES_COMERCIALES,
   },
   {
-    aliases: ['inspeccion previa y garantias', 'inspeccion previa', 'inspeccion de asegurabilidad', 'garantias de asegurabilidad'],
+    aliases: [
+      'inspeccion previa y garantias',
+      'inspeccion previa',
+      'inspeccion de asegurabilidad',
+      'garantias de asegurabilidad',
+    ],
     canonical: 'Inspección Previa y Garantías',
     section: SchemaSection.CONDICIONES_COMERCIALES,
   },
   {
-    aliases: ['requisitos de emision', 'requisitos emision', 'documentos para expedicion', 'documentacion requerida', 'sarlaft emision'],
+    aliases: [
+      'requisitos de emision',
+      'requisitos emision',
+      'documentos para expedicion',
+      'documentacion requerida',
+      'sarlaft emision',
+    ],
     canonical: 'Requisitos de Emisión',
     section: SchemaSection.CONDICIONES_COMERCIALES,
   },
   {
-    aliases: ['otras condiciones comerciales', 'compromisos comerciales', 'condiciones comerciales especiales', 'politicas de la oferta'],
+    aliases: [
+      'otras condiciones comerciales',
+      'compromisos comerciales',
+      'condiciones comerciales especiales',
+      'politicas de la oferta',
+    ],
     canonical: 'Otras Condiciones Comerciales',
     section: SchemaSection.CONDICIONES_COMERCIALES,
   },
@@ -842,7 +869,6 @@ function detectFormat(raw: string): 'markdown' | 'csv' | 'json' | 'kv' {
     return 'json';
   }
 
-
   const lines = trimmed
     .split('\n')
     .map((line) => line.trim())
@@ -1111,8 +1137,9 @@ function parseJsonWithInsurersArray(data: Record<string, unknown>): RawTable {
             typeof cell === 'object' &&
             cell !== null &&
             (String((cell as { insurer?: unknown }).insurer).trim() === insurer ||
-              extractCanonicalInsurerName(String((cell as { insurer?: unknown }).insurer).trim()) ===
-                insurer)
+              extractCanonicalInsurerName(
+                String((cell as { insurer?: unknown }).insurer).trim()
+              ) === insurer)
         );
         if (matched != null) {
           return extractCellValue(matched);
@@ -1429,8 +1456,9 @@ function parseJsonV2(raw: string): RawTable {
             typeof cell === 'object' &&
             cell !== null &&
             (String((cell as { insurer?: unknown }).insurer).trim() === insurer ||
-              extractCanonicalInsurerName(String((cell as { insurer?: unknown }).insurer).trim()) ===
-                insurer)
+              extractCanonicalInsurerName(
+                String((cell as { insurer?: unknown }).insurer).trim()
+              ) === insurer)
         );
         if (matched != null) {
           return extractCellValueV2(matched);
@@ -1445,8 +1473,9 @@ function parseJsonV2(raw: string): RawTable {
             typeof cell === 'object' &&
             cell !== null &&
             (String((cell as { insurer?: unknown }).insurer).trim() === insurer ||
-              extractCanonicalInsurerName(String((cell as { insurer?: unknown }).insurer).trim()) ===
-                insurer)
+              extractCanonicalInsurerName(
+                String((cell as { insurer?: unknown }).insurer).trim()
+              ) === insurer)
         );
         if (matched != null) {
           return extractCellMetaV2(matched);
@@ -1714,7 +1743,6 @@ export class FlatTableParser {
 
     return await buildV2Result(rawTable, options, warnings);
   }
-
 }
 
 export const flatTableParser = new FlatTableParser();

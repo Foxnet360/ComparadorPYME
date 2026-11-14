@@ -165,7 +165,10 @@ async function syncWithSupabase(): Promise<InsurerRecord[]> {
       }
     }
   } catch (err) {
-    console.warn('⚠️ [insurerController] Could not sync insurers from Supabase, using catalog:', err);
+    console.warn(
+      '⚠️ [insurerController] Could not sync insurers from Supabase, using catalog:',
+      err
+    );
   }
 
   return Array.from(memoryCatalogStore.values())

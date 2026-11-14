@@ -6,15 +6,8 @@
       "id": "coberturas-principales-vida",
       "name": "Coberturas Principales de Vida e Invalidez",
       "level": 1,
-      "childrenIds": [
-        "amparo-basico-muerte",
-        "incapacidad-total-permanente"
-      ],
-      "aliases": [
-        "Coberturas Principales",
-        "Amparo Básico Vida",
-        "Muerte e Incapacidad"
-      ],
+      "childrenIds": ["amparo-basico-muerte", "incapacidad-total-permanente"],
+      "aliases": ["Coberturas Principales", "Amparo Básico Vida", "Muerte e Incapacidad"],
       "riskType": "life"
     },
     {
@@ -27,11 +20,7 @@
         "doble-indemnizacion-transito",
         "incapacidad-parcial-permanente"
       ],
-      "aliases": [
-        "Accidentes e Incapacidad",
-        "COBERTURAS DE INCAPACIDAD",
-        "Muerte Accidental"
-      ],
+      "aliases": ["Accidentes e Incapacidad", "COBERTURAS DE INCAPACIDAD", "Muerte Accidental"],
       "riskType": "accident"
     },
     {
@@ -43,10 +32,7 @@
         "renta-diaria-hospitalizacion",
         "anticipo-enfermedad-terminal"
       ],
-      "aliases": [
-        "Salud y Enfermedades",
-        "Enfermedades de Alto Costo Vida"
-      ],
+      "aliases": ["Salud y Enfermedades", "Enfermedades de Alto Costo Vida"],
       "riskType": "health"
     },
     {
@@ -59,10 +45,7 @@
         "auxilio-canasta-familiar",
         "auxilio-hijos-enfermedades-congenitas"
       ],
-      "aliases": [
-        "Auxilios y Beneficios",
-        "Beneficios al Empleado / Familia"
-      ],
+      "aliases": ["Auxilios y Beneficios", "Beneficios al Empleado / Familia"],
       "riskType": "assistance"
     },
     {
@@ -74,11 +57,7 @@
         "cobertura-suicidio",
         "renta-desempleo-involuntario"
       ],
-      "aliases": [
-        "Condiciones Especiales",
-        "COBERTURAS COMPLEMENTARIAS",
-        "Suicidio y Desempleo"
-      ],
+      "aliases": ["Condiciones Especiales", "COBERTURAS COMPLEMENTARIAS", "Suicidio y Desempleo"],
       "riskType": "condition"
     },
     {
@@ -122,9 +101,7 @@
       "name": "Muerte Accidental y Desmembración (MAyD)",
       "level": 2,
       "parentId": "accidentes-e-incapacidad",
-      "childrenIds": [
-        "desmembracion-accidental"
-      ],
+      "childrenIds": ["desmembracion-accidental"],
       "aliases": [
         "Muerte Accidental y Desmembración (MAyD)",
         "MAyD",
@@ -369,10 +346,7 @@
       "level": 3,
       "parentId": "muerte-accidental-desmembracion",
       "childrenIds": [],
-      "aliases": [
-        "Desmembración",
-        "Pérdida anatómica"
-      ],
+      "aliases": ["Desmembración", "Pérdida anatómica"],
       "riskType": "accident",
       "typicalDeductible": "0%"
     }
@@ -390,10 +364,7 @@
     },
     {
       "pattern": "muerte\\s+accidental.*desmembraci[oó]n|mayd",
-      "components": [
-        "muerte-accidental-desmembracion",
-        "doble-indemnizacion-transito"
-      ],
+      "components": ["muerte-accidental-desmembracion", "doble-indemnizacion-transito"],
       "confidence": 0.85
     }
   ]

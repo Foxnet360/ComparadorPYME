@@ -63,23 +63,27 @@ export const QuoteScoreCard: React.FC<QuoteScoreCardProps> = ({
         </div>
 
         {/* Verification Confidence Badge */}
-        {q.verificationConfidence !== undefined && q.verificationConfidence > 0 && viewMode === 'technical' && (
-          <div className="text-right">
-            <span className="text-[10px] text-slate-400 block font-medium">Verificación Cruzada</span>
-            <span
-              className={`text-xs font-bold px-2.5 py-0.5 rounded-full inline-block border ${
-                q.verificationConfidence >= 80
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                  : q.verificationConfidence >= 50
-                    ? 'bg-amber-50 text-amber-700 border-amber-200'
-                    : 'bg-rose-50 text-rose-700 border-rose-200'
-              }`}
-              title="Porcentaje de consistencia entre extracción multimodal y validación cruzada"
-            >
-              {q.verificationConfidence}% match
-            </span>
-          </div>
-        )}
+        {q.verificationConfidence !== undefined &&
+          q.verificationConfidence > 0 &&
+          viewMode === 'technical' && (
+            <div className="text-right">
+              <span className="text-[10px] text-slate-400 block font-medium">
+                Verificación Cruzada
+              </span>
+              <span
+                className={`text-xs font-bold px-2.5 py-0.5 rounded-full inline-block border ${
+                  q.verificationConfidence >= 80
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : q.verificationConfidence >= 50
+                      ? 'bg-amber-50 text-amber-700 border-amber-200'
+                      : 'bg-rose-50 text-rose-700 border-rose-200'
+                }`}
+                title="Porcentaje de consistencia entre extracción multimodal y validación cruzada"
+              >
+                {q.verificationConfidence}% match
+              </span>
+            </div>
+          )}
       </div>
 
       <div className="space-y-2">

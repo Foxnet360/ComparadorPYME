@@ -7,12 +7,14 @@ import type { ExecutiveAnalyticsData } from '../../../types';
 
 vi.mock('../../../services/analyticsService', () => ({
   analyticsService: {
-    getAvailableAllies: vi.fn().mockReturnValue([
-      { id: 'ally-100', name: 'Correduría Andina S.A.', nit: '900.543.210-1' },
-    ]),
-    fetchAllies: vi.fn().mockResolvedValue([
-      { id: 'ally-100', name: 'Correduría Andina S.A.', nit: '900.543.210-1' },
-    ]),
+    getAvailableAllies: vi
+      .fn()
+      .mockReturnValue([{ id: 'ally-100', name: 'Correduría Andina S.A.', nit: '900.543.210-1' }]),
+    fetchAllies: vi
+      .fn()
+      .mockResolvedValue([
+        { id: 'ally-100', name: 'Correduría Andina S.A.', nit: '900.543.210-1' },
+      ]),
     getExecutiveAnalytics: vi.fn(),
   },
 }));
@@ -61,9 +63,7 @@ const mockSuperAdminData: ExecutiveAnalyticsData = {
     medianPremiumAnnual: 4500000,
     percentile25: 3800000,
     percentile75: 5600000,
-    topInsurers: [
-      { insurerName: 'SURA', quoteCount: 45, avgPrice: 4600000 },
-    ],
+    topInsurers: [{ insurerName: 'SURA', quoteCount: 45, avgPrice: 4600000 }],
   },
   aiBenchmarks: {
     overallAccuracy: 98.4,
@@ -88,9 +88,7 @@ const mockTechnicalData: ExecutiveAnalyticsData = {
   domainDistribution: [
     { domainId: 'pyme', domainName: 'PYME Multirriesgo', count: 12, percentage: 100 },
   ],
-  insurerDistribution: [
-    { insurerName: 'SURA', count: 12, percentage: 100 },
-  ],
+  insurerDistribution: [{ insurerName: 'SURA', count: 12, percentage: 100 }],
   isSimulated: false,
 };
 
@@ -117,7 +115,9 @@ describe('ExecutiveAnalytics Component', () => {
     render(<ExecutiveAnalytics currentUserRole="super_admin" />);
 
     await waitFor(() => {
-      expect(screen.getByText('Gobernanza de Activos de Datos DaaS (Data as a Service)')).toBeTruthy();
+      expect(
+        screen.getByText('Gobernanza de Activos de Datos DaaS (Data as a Service)')
+      ).toBeTruthy();
     });
 
     // Check role switcher buttons exist for audit simulation

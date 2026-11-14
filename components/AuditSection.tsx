@@ -233,7 +233,9 @@ export const AuditSection: React.FC<AuditSectionProps> = ({ quotes, viewMode }) 
             Detección de Letra Chica, Exclusiones Ocultas y Brechas de Cobertura
           </h4>
           <p className="text-xs text-amber-800 leading-relaxed">
-            Identifica trampas contractuales, garantías obligatorias no divulgadas, infraseguro y diferencias críticas de deducibles entre aseguradoras para asesorar con máxima certeza a tu cliente antes de la contratación.
+            Identifica trampas contractuales, garantías obligatorias no divulgadas, infraseguro y
+            diferencias críticas de deducibles entre aseguradoras para asesorar con máxima certeza a
+            tu cliente antes de la contratación.
           </p>
         </div>
       </div>

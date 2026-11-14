@@ -9,7 +9,15 @@ export const DEFAULT_LIGHT_GRAY: [number, number, number] = [241, 245, 249]; // 
 export function hexToRgb(hex?: string): [number, number, number] {
   if (!hex) return [30, 41, 59];
   const clean = hex.replace('#', '');
-  const bigint = parseInt(clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean, 16);
+  const bigint = parseInt(
+    clean.length === 3
+      ? clean
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : clean,
+    16
+  );
   if (isNaN(bigint)) return [30, 41, 59];
   return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
 }

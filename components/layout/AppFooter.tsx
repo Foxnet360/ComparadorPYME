@@ -21,10 +21,7 @@ interface AppFooterProps {
   onOpenLegalModal: (tab: LegalTabType) => void;
 }
 
-export const AppFooter: React.FC<AppFooterProps> = ({
-  currentUser,
-  onOpenLegalModal,
-}) => {
+export const AppFooter: React.FC<AppFooterProps> = ({ currentUser, onOpenLegalModal }) => {
   const brokerName =
     currentUser?.intermediaryName ||
     currentUser?.agencyName ||
@@ -49,9 +46,7 @@ export const AppFooter: React.FC<AppFooterProps> = ({
               <div className="p-1.5 rounded-lg bg-indigo-600 text-white">
                 <Building2 className="w-4 h-4" />
               </div>
-              <span className="font-bold text-white text-sm tracking-tight">
-                {brokerName}
-              </span>
+              <span className="font-bold text-white text-sm tracking-tight">{brokerName}</span>
             </div>
 
             <p className="text-slate-400 text-xs leading-relaxed">
@@ -63,7 +58,8 @@ export const AppFooter: React.FC<AppFooterProps> = ({
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                 <span>
-                  Registro / Licencia: <strong className="text-white font-medium">{brokerRegistration}</strong>
+                  Registro / Licencia:{' '}
+                  <strong className="text-white font-medium">{brokerRegistration}</strong>
                 </span>
               </div>
               {currentUser?.name && (
@@ -186,18 +182,23 @@ export const AppFooter: React.FC<AppFooterProps> = ({
               <div className="flex items-start gap-2">
                 <span className="text-amber-400 font-bold shrink-0">⚖️</span>
                 <p className="text-[11px] leading-relaxed">
-                  <strong className="text-white">Aviso Perentorio de Siniestros:</strong> Conforme al
-                  Artículo 1075 del Código de Comercio, el asegurado o beneficiario debe dar noticia
-                  del siniestro al asegurador dentro de los <strong className="text-amber-300">3 días hábiles</strong> siguientes
-                  a la fecha en que lo haya conocido.
+                  <strong className="text-white">Aviso Perentorio de Siniestros:</strong> Conforme
+                  al Artículo 1075 del Código de Comercio, el asegurado o beneficiario debe dar
+                  noticia del siniestro al asegurador dentro de los{' '}
+                  <strong className="text-amber-300">3 días hábiles</strong> siguientes a la fecha
+                  en que lo haya conocido.
                 </p>
               </div>
               <div className="flex items-start gap-2 pt-1 border-t border-slate-700/40">
                 <span className="text-indigo-400 font-bold shrink-0">🏛️</span>
                 <p className="text-[11px] leading-relaxed">
-                  <strong className="text-white">Vigilancia Estatal:</strong> Actividad de intermediación
-                  sujeta al Estatuto Orgánico del Sistema Financiero (Decreto 663 de 1993) e inspección
-                  de la <strong className="text-slate-100">Superintendencia Financiera de Colombia</strong>.
+                  <strong className="text-white">Vigilancia Estatal:</strong> Actividad de
+                  intermediación sujeta al Estatuto Orgánico del Sistema Financiero (Decreto 663 de
+                  1993) e inspección de la{' '}
+                  <strong className="text-slate-100">
+                    Superintendencia Financiera de Colombia
+                  </strong>
+                  .
                 </p>
               </div>
             </div>
@@ -212,7 +213,9 @@ export const AppFooter: React.FC<AppFooterProps> = ({
         {/* Fila Inferior / Copyright & Créditos */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-400 text-xs">
           <p>
-            © {new Date().getFullYear()} <strong className="text-slate-300">Corredores de Seguros Asociados S.A.</strong> Todos los derechos reservados.
+            © {new Date().getFullYear()}{' '}
+            <strong className="text-slate-300">Corredores de Seguros Asociados S.A.</strong> Todos
+            los derechos reservados.
           </p>
           <div className="flex items-center gap-4 text-[11px]">
             <a

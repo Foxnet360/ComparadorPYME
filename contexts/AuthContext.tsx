@@ -17,7 +17,9 @@ import { DEMO_USER } from '../src/demoData';
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const isDemo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1';
+  const isDemo =
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('demo') === '1';
   // ERR-4: the session is owned by the Supabase client via authService;
   // nothing is read from local storage.
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(isDemo ? DEMO_USER : null);

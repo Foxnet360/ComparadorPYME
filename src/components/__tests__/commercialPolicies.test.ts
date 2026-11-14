@@ -16,8 +16,12 @@ describe('Commercial Policies Module', () => {
       expect(DEFAULT_COMMERCIAL_POLICIES.paymentConditions).toContain('Pago de contado');
       expect(DEFAULT_COMMERCIAL_POLICIES.inspectionRequirements).toContain('500 SMMLV');
       expect(DEFAULT_COMMERCIAL_POLICIES.issuanceRequirements).toContain('SARLAFT');
-      expect(DEFAULT_COMMERCIAL_POLICIES.claimsPolicy).toContain('artículo 1075 del Código de Comercio');
-      expect(DEFAULT_COMMERCIAL_POLICIES.intermediationScope).toContain('Asesoría técnica integral');
+      expect(DEFAULT_COMMERCIAL_POLICIES.claimsPolicy).toContain(
+        'artículo 1075 del Código de Comercio'
+      );
+      expect(DEFAULT_COMMERCIAL_POLICIES.intermediationScope).toContain(
+        'Asesoría técnica integral'
+      );
     });
   });
 
@@ -42,7 +46,9 @@ describe('Commercial Policies Module', () => {
       expect(result.customNotes).toBe('Descuento del 5% adicional por póliza multirriesgo.');
       // Untouched fields must equal defaults
       expect(result.paymentConditions).toBe(DEFAULT_COMMERCIAL_POLICIES.paymentConditions);
-      expect(result.inspectionRequirements).toBe(DEFAULT_COMMERCIAL_POLICIES.inspectionRequirements);
+      expect(result.inspectionRequirements).toBe(
+        DEFAULT_COMMERCIAL_POLICIES.inspectionRequirements
+      );
       expect(result.issuanceRequirements).toBe(DEFAULT_COMMERCIAL_POLICIES.issuanceRequirements);
       expect(result.claimsPolicy).toBe(DEFAULT_COMMERCIAL_POLICIES.claimsPolicy);
     });
@@ -79,7 +85,9 @@ describe('Commercial Policies Module', () => {
       const entries = getStructuredCommercialPolicyEntries(policies);
 
       expect(entries.length).toBeGreaterThanOrEqual(6);
-      expect(entries.some((e) => e.category === 'Vigencia de la Oferta' && e.detail.includes('20 días'))).toBe(true);
+      expect(
+        entries.some((e) => e.category === 'Vigencia de la Oferta' && e.detail.includes('20 días'))
+      ).toBe(true);
       expect(entries.some((e) => e.category === 'Atención de Siniestros')).toBe(true);
       expect(entries.some((e) => e.category === 'Financiación y Pagos')).toBe(true);
     });
@@ -95,7 +103,12 @@ describe('Commercial Policies Module', () => {
         ...DEFAULT_COMMERCIAL_POLICIES,
         customNotes: 'Cláusula de inspección previa en sitio.',
       });
-      expect(withNotes.some((e) => e.category === 'Notas Especiales' && e.detail.includes('inspección previa en sitio'))).toBe(true);
+      expect(
+        withNotes.some(
+          (e) =>
+            e.category === 'Notas Especiales' && e.detail.includes('inspección previa en sitio')
+        )
+      ).toBe(true);
     });
   });
 

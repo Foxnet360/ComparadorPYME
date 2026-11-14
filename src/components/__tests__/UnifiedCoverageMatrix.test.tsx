@@ -435,9 +435,7 @@ describe('UnifiedCoverageMatrix', () => {
       },
     ];
 
-    renderWithProvider(
-      <UnifiedCoverageMatrix quotes={baseQuotes} rows={rowsWithSublimits} />
-    );
+    renderWithProvider(<UnifiedCoverageMatrix quotes={baseQuotes} rows={rowsWithSublimits} />);
 
     // Initial state: parent shows sublimit count badge
     expect(screen.getByText('Incendio y Rayo')).toBeTruthy();

@@ -130,9 +130,7 @@ export function parseColombianCurrency(valueStr: string | null | undefined): num
   }
 
   // 0.1 Detect thousands expressions (e.g. "500 mil", "500 miles", "500k")
-  const thousandExpr = trimmed.match(
-    /(?:^|\$\s*|\b)(\d+(?:[.,]\d+)?)\s*(?:miles?|mil|k(?!\w))/i
-  );
+  const thousandExpr = trimmed.match(/(?:^|\$\s*|\b)(\d+(?:[.,]\d+)?)\s*(?:miles?|mil|k(?!\w))/i);
   if (thousandExpr && thousandExpr[1]) {
     const rawVal = thousandExpr[1];
     let baseNum: number;

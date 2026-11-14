@@ -6,11 +6,7 @@
       "id": "danos-basicos-vivienda",
       "name": "Coberturas Básicas y Estructurales de Vivienda",
       "level": 1,
-      "childrenIds": [
-        "incendio-hogar",
-        "dano-electrico-hogar",
-        "rotura-cristales-hogar"
-      ],
+      "childrenIds": ["incendio-hogar", "dano-electrico-hogar", "rotura-cristales-hogar"],
       "aliases": [
         "COBERTURAS BÁSICAS DE LA VIVIENDA",
         "DAÑOS MATERIALES",
@@ -46,26 +42,15 @@
         "sustraccion-fuera-predio",
         "objetos-valor-joyas-arte"
       ],
-      "aliases": [
-        "HURTO Y SUSTRACCIÓN",
-        "Robo en Vivienda",
-        "Bienes Personales"
-      ],
+      "aliases": ["HURTO Y SUSTRACCIÓN", "Robo en Vivienda", "Bienes Personales"],
       "riskType": "theft"
     },
     {
       "id": "responsabilidad-civil-familiar",
       "name": "Responsabilidad Civil Extracontractual y Familiar",
       "level": 1,
-      "childrenIds": [
-        "rce-hogar-familiar",
-        "rc-patronal-empleados-domesticos"
-      ],
-      "aliases": [
-        "RESPONSABILIDAD CIVIL",
-        "RC Hogar",
-        "RC Familiar y Patronal"
-      ],
+      "childrenIds": ["rce-hogar-familiar", "rc-patronal-empleados-domesticos"],
+      "aliases": ["RESPONSABILIDAD CIVIL", "RC Hogar", "RC Familiar y Patronal"],
       "riskType": "liability"
     },
     {
@@ -422,11 +407,7 @@
       "level": 3,
       "parentId": "asistencia-domiciliaria-247",
       "childrenIds": [],
-      "aliases": [
-        "Plomería urgente",
-        "Fontanería",
-        "Desatasco de tuberías"
-      ],
+      "aliases": ["Plomería urgente", "Fontanería", "Desatasco de tuberías"],
       "riskType": "assistance",
       "typicalDeductible": "0%"
     },
@@ -436,10 +417,7 @@
       "level": 3,
       "parentId": "asistencia-domiciliaria-247",
       "childrenIds": [],
-      "aliases": [
-        "Electricista urgente",
-        "Falla de energía hogar"
-      ],
+      "aliases": ["Electricista urgente", "Falla de energía hogar"],
       "riskType": "assistance",
       "typicalDeductible": "0%"
     },
@@ -449,10 +427,7 @@
       "level": 3,
       "parentId": "asistencia-domiciliaria-247",
       "childrenIds": [],
-      "aliases": [
-        "Cerrajería urgente",
-        "Apertura de cerradura"
-      ],
+      "aliases": ["Cerrajería urgente", "Apertura de cerradura"],
       "riskType": "assistance",
       "typicalDeductible": "0%"
     }
@@ -471,9 +446,7 @@
     },
     {
       "pattern": "terremoto.*temblor|erupci[oó]n.*volc[aá]nica",
-      "components": [
-        "terremoto-hogar"
-      ],
+      "components": ["terremoto-hogar"],
       "confidence": 0.85
     }
   ]

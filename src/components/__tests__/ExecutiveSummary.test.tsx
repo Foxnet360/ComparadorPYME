@@ -15,7 +15,9 @@ const mockQuotes: QuoteAnalysis[] = [
       { name: 'Terremoto', limit: '$1.000.000.000' },
     ],
     missingCoverages: [],
-    alerts: [{ level: 'WARNING', message: 'Revisar cláusula de garantías', description: 'Garantías' }],
+    alerts: [
+      { level: 'WARNING', message: 'Revisar cláusula de garantías', description: 'Garantías' },
+    ],
   },
   {
     insurerName: 'Chubb Seguros',
@@ -83,9 +85,7 @@ describe('ExecutiveSummary', () => {
       expect(screen.getByText('Protección Patrimonial')).toBeDefined();
 
       // Pitch deck block
-      expect(
-        screen.getByText('Propuesta Comercial y Argumentación de Decisión')
-      ).toBeDefined();
+      expect(screen.getByText('Propuesta Comercial y Argumentación de Decisión')).toBeDefined();
       expect(screen.getByText('1. Cobertura Integral')).toBeDefined();
       expect(screen.getByText('2. Deducibles Favorables')).toBeDefined();
       expect(screen.getByText('3. Retorno de Inversión')).toBeDefined();
@@ -94,9 +94,7 @@ describe('ExecutiveSummary', () => {
       expect(
         screen.getByText('Factores Diferenciales frente a Alternativas Competidoras:')
       ).toBeDefined();
-      expect(
-        screen.getByText(/Omite amparos clave \(Terremoto, Lucro Cesante\)/)
-      ).toBeDefined();
+      expect(screen.getByText(/Omite amparos clave \(Terremoto, Lucro Cesante\)/)).toBeDefined();
     });
   });
 });

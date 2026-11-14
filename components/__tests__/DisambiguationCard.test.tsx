@@ -71,10 +71,7 @@ describe('DisambiguationCard Component', () => {
     const handleDisambiguate = vi.fn().mockResolvedValue(undefined);
 
     render(
-      <DisambiguationCard
-        quotes={mockQuotesWithAmbiguity}
-        onDisambiguate={handleDisambiguate}
-      />
+      <DisambiguationCard quotes={mockQuotesWithAmbiguity} onDisambiguate={handleDisambiguate} />
     );
 
     const confirmBtn = screen.getByRole('button', { name: /confirmar/i });
@@ -96,10 +93,7 @@ describe('DisambiguationCard Component', () => {
     const handleDisambiguate = vi.fn().mockResolvedValue(undefined);
 
     render(
-      <DisambiguationCard
-        quotes={mockQuotesWithAmbiguity}
-        onDisambiguate={handleDisambiguate}
-      />
+      <DisambiguationCard quotes={mockQuotesWithAmbiguity} onDisambiguate={handleDisambiguate} />
     );
 
     const independentBtn = screen.getByRole('button', { name: /independiente/i });

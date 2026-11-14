@@ -204,7 +204,8 @@ export const PromoteQuoteModal: React.FC<PromoteQuoteModalProps> = ({
         onSuccess(policy);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error al promocionar la cotización a póliza';
+      const msg =
+        err instanceof Error ? err.message : 'Error al promocionar la cotización a póliza';
       setErrorMessage(msg);
     } finally {
       setSubmitting(false);
@@ -255,7 +256,9 @@ export const PromoteQuoteModal: React.FC<PromoteQuoteModalProps> = ({
                 </span>
                 <span className="text-sm font-bold text-slate-800">{quote.insurerName}</span>
               </div>
-              <p className="text-xs text-slate-500 mt-1">{quote.policyName || 'Póliza Empresarial'}</p>
+              <p className="text-xs text-slate-500 mt-1">
+                {quote.policyName || 'Póliza Empresarial'}
+              </p>
             </div>
             <div className="text-left sm:text-right">
               <span className="text-xs text-slate-400 block font-medium">Prima Anual</span>
@@ -276,7 +279,9 @@ export const PromoteQuoteModal: React.FC<PromoteQuoteModalProps> = ({
                   ¡Póliza Promocionada con Éxito!
                 </h3>
                 <p className="text-sm text-slate-600 mt-1">
-                  La póliza <strong className="text-slate-900">{createdPolicy.policy_number}</strong> ha sido registrada en el sistema de gestión de cartera.
+                  La póliza{' '}
+                  <strong className="text-slate-900">{createdPolicy.policy_number}</strong> ha sido
+                  registrada en el sistema de gestión de cartera.
                 </p>
               </div>
 
@@ -592,9 +597,15 @@ export const PromoteQuoteModal: React.FC<PromoteQuoteModalProps> = ({
                   </div>
                 )}
 
-                {!['autos', 'pyme', 'copropiedades', 'salud', 'vida_grupo', 'hogar', 'cumplimiento'].includes(
-                  domain.toLowerCase()
-                ) && (
+                {![
+                  'autos',
+                  'pyme',
+                  'copropiedades',
+                  'salud',
+                  'vida_grupo',
+                  'hogar',
+                  'cumplimiento',
+                ].includes(domain.toLowerCase()) && (
                   <div>
                     <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                       Identificador de Activo / Embarcación / Maquinaria *

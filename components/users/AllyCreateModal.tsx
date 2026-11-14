@@ -12,11 +12,7 @@ export interface AllyCreateModalProps {
   }) => Promise<void>;
 }
 
-export const AllyCreateModal: React.FC<AllyCreateModalProps> = ({
-  isOpen,
-  onClose,
-  onCreate,
-}) => {
+export const AllyCreateModal: React.FC<AllyCreateModalProps> = ({ isOpen, onClose, onCreate }) => {
   const [name, setName] = useState('');
   const [nit, setNit] = useState('');
   const [contactEmail, setContactEmail] = useState('');

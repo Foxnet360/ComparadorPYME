@@ -58,7 +58,8 @@ describe('TwoStageExtractionOrchestrator', () => {
         section: 'AMPAROS BÁSICOS',
         insuredAmount: 500000000,
         deductible: '10% de la pérdida mínimo 3 SMMLV',
-        rawTextSnippet: 'Incendio y/o Rayo: Límite asegurado $500.000.000 COP con deducible del 10% mínimo 3 SMMLV.',
+        rawTextSnippet:
+          'Incendio y/o Rayo: Límite asegurado $500.000.000 COP con deducible del 10% mínimo 3 SMMLV.',
         pageNumber: 2,
       },
     ],
@@ -98,10 +99,7 @@ describe('TwoStageExtractionOrchestrator', () => {
       extract: vi.fn(),
     } as unknown as FocalizedCoverageExtractor;
 
-    orchestrator = new TwoStageExtractionOrchestrator(
-      mockGlobalExtractor,
-      mockCoverageExtractor
-    );
+    orchestrator = new TwoStageExtractionOrchestrator(mockGlobalExtractor, mockCoverageExtractor);
 
     (geminiService.uploadFile as any).mockResolvedValue(sampleUploadedFile);
     (geminiService.waitForFilesActive as any).mockResolvedValue(undefined);
@@ -136,14 +134,19 @@ describe('TwoStageExtractionOrchestrator', () => {
     (mockGlobalExtractor.extract as any).mockResolvedValue(sampleStage1Output);
     (mockCoverageExtractor.extract as any).mockResolvedValue(sampleStage2Output);
 
-    const result = await orchestrator.extractTwoStage(
+    const result = await orchestrator.extractTwoStage('/tmp/quote.pdf', 'Prompt', 'quote.pdf');
+
+    expect(geminiService.uploadFile).toHaveBeenCalledWith(
       '/tmp/quote.pdf',
-      'Prompt',
+      'application/pdf',
       'quote.pdf'
     );
-
-    expect(geminiService.uploadFile).toHaveBeenCalledWith('/tmp/quote.pdf', 'application/pdf', 'quote.pdf');
-    expect(mockGlobalExtractor.extract).toHaveBeenCalledWith(sampleUploadedFile, 'quote.pdf', undefined, undefined);
+    expect(mockGlobalExtractor.extract).toHaveBeenCalledWith(
+      sampleUploadedFile,
+      'quote.pdf',
+      undefined,
+      undefined
+    );
     expect(mockCoverageExtractor.extract).toHaveBeenCalledWith(
       sampleUploadedFile,
       'quote.pdf',
@@ -216,13 +219,11 @@ describe('TwoStageExtractionOrchestrator', () => {
 
   it('triggers transparent fallback to single-stage when Stage 1 throws an error', async () => {
     (featureFlags.isEnabled as any).mockReturnValue(true);
-    (mockGlobalExtractor.extract as any).mockRejectedValue(new Error('Gemini quota exceeded or schema error'));
-
-    const result = await orchestrator.extractTwoStage(
-      '/tmp/quote.pdf',
-      'Prompt',
-      'quote.pdf'
+    (mockGlobalExtractor.extract as any).mockRejectedValue(
+      new Error('Gemini quota exceeded or schema error')
     );
+
+    const result = await orchestrator.extractTwoStage('/tmp/quote.pdf', 'Prompt', 'quote.pdf');
 
     expect(geminiService.extractFromPdfWithVision).toHaveBeenCalled();
     expect(geminiService.deleteFile).toHaveBeenCalledWith(sampleUploadedFile.name);

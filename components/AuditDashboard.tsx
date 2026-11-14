@@ -260,7 +260,11 @@ export const AuditDashboard: React.FC<AuditDashboardProps> = ({
                     axisLine={false}
                     tickLine={false}
                   />
-                  <YAxis tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis
+                    tick={{ fill: '#64748b', fontSize: 12 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
                   <Tooltip
                     contentStyle={{
                       borderRadius: '8px',
@@ -268,7 +272,12 @@ export const AuditDashboard: React.FC<AuditDashboardProps> = ({
                       boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                     }}
                   />
-                  <Bar dataKey="Críticos" stackId="a" fill={COLORS.critical} radius={[0, 0, 4, 4]} />
+                  <Bar
+                    dataKey="Críticos"
+                    stackId="a"
+                    fill={COLORS.critical}
+                    radius={[0, 0, 4, 4]}
+                  />
                   <Bar dataKey="Advertencias" stackId="a" fill={COLORS.warning} />
                   <Bar dataKey="Destacados" stackId="a" fill={COLORS.good} radius={[4, 4, 0, 0]} />
                 </BarChart>

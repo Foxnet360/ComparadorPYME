@@ -123,7 +123,10 @@ describe('PortfolioContext', () => {
       await api!.addClient({ name: 'Acme SAS', tax_id: '900111' });
     });
 
-    expect(portfolioService.createClient).toHaveBeenCalledWith({ name: 'Acme SAS', tax_id: '900111' });
+    expect(portfolioService.createClient).toHaveBeenCalledWith({
+      name: 'Acme SAS',
+      tax_id: '900111',
+    });
     expect(screen.getByTestId('clients').textContent).toBe('Acme SAS');
   });
 

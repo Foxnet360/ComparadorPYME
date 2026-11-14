@@ -6,39 +6,23 @@
       "id": "danos-casco-maquinaria",
       "name": "Daños Materiales a Casco y Maquinaria",
       "level": 1,
-      "childrenIds": [
-        "perdida-total-parcial-casco"
-      ],
-      "aliases": [
-        "COBERTURAS PRINCIPALES",
-        "Casco y Maquinaria",
-        "Daño Físico Naval"
-      ],
+      "childrenIds": ["perdida-total-parcial-casco"],
+      "aliases": ["COBERTURAS PRINCIPALES", "Casco y Maquinaria", "Daño Físico Naval"],
       "riskType": "marine_hull"
     },
     {
       "id": "salvamento-averia-maritima",
       "name": "Avería Gruesa, Salvamento y Remolque",
       "level": 1,
-      "childrenIds": [
-        "averia-gruesa-salvamento",
-        "remolque-asistencia-nautica"
-      ],
-      "aliases": [
-        "Salvamento Marítimo",
-        "Avería Gruesa",
-        "Asistencia Náutica"
-      ],
+      "childrenIds": ["averia-gruesa-salvamento", "remolque-asistencia-nautica"],
+      "aliases": ["Salvamento Marítimo", "Avería Gruesa", "Asistencia Náutica"],
       "riskType": "marine_salvage"
     },
     {
       "id": "responsabilidad-civil-maritima",
       "name": "Responsabilidad Civil Náutica y P&I",
       "level": 1,
-      "childrenIds": [
-        "rc-por-abordaje-collision",
-        "proteccion-indemnizacion-pi"
-      ],
+      "childrenIds": ["rc-por-abordaje-collision", "proteccion-indemnizacion-pi"],
       "aliases": [
         "COBERTURAS MARÍTIMAS AVANZADAS",
         "Collision Liability",
@@ -50,26 +34,16 @@
       "id": "riesgos-guerra-maritimos",
       "name": "Riesgos de Guerra, Piratería y Huelgas Navales",
       "level": 1,
-      "childrenIds": [
-        "riesgos-guerra-pirateria-maritima"
-      ],
-      "aliases": [
-        "Guerra y Piratería",
-        "War and Strikes Marítimo"
-      ],
+      "childrenIds": ["riesgos-guerra-pirateria-maritima"],
+      "aliases": ["Guerra y Piratería", "War and Strikes Marítimo"],
       "riskType": "war_marine"
     },
     {
       "id": "coberturas-maquinaria-auxiliar",
       "name": "Maquinaria Auxiliar y Asistencias Náuticas",
       "level": 1,
-      "childrenIds": [
-        "cobertura-motores-fuera-borda"
-      ],
-      "aliases": [
-        "COBERTURAS COMPLEMENTARIAS",
-        "Motores y Asistencia"
-      ],
+      "childrenIds": ["cobertura-motores-fuera-borda"],
+      "aliases": ["COBERTURAS COMPLEMENTARIAS", "Motores y Asistencia"],
       "riskType": "equipment"
     },
     {

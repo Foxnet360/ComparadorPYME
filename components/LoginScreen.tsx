@@ -17,7 +17,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
   const [error, setError] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showLegalModal, setShowLegalModal] = useState(false);
-  const [legalTab, setLegalTab] = useState<'terms' | 'privacy' | 'security' | 'disclaimer'>('terms');
+  const [legalTab, setLegalTab] = useState<'terms' | 'privacy' | 'security' | 'disclaimer'>(
+    'terms'
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -191,7 +193,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
                   >
                     <div className="text-left">
                       <div>👑 Super Administrador Global</div>
-                      <div className="text-[10px] font-normal text-purple-600 font-mono">superadmin@prueba.com</div>
+                      <div className="text-[10px] font-normal text-purple-600 font-mono">
+                        superadmin@prueba.com
+                      </div>
                     </div>
                     <span className="text-[10px] bg-purple-200 text-purple-800 px-2 py-0.5 rounded-md font-extrabold">
                       Dev
@@ -205,7 +209,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
                   >
                     <div className="text-left">
                       <div>👔 Admin de Aliado (Director Correduría)</div>
-                      <div className="text-[10px] font-normal text-blue-600 font-mono">director@prueba.com</div>
+                      <div className="text-[10px] font-normal text-blue-600 font-mono">
+                        director@prueba.com
+                      </div>
                     </div>
                     <span className="text-[10px] bg-blue-200 text-blue-800 px-2 py-0.5 rounded-md font-extrabold">
                       Dev
@@ -219,7 +225,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
                   >
                     <div className="text-left">
                       <div>👷 Analista Técnico de Seguros</div>
-                      <div className="text-[10px] font-normal text-emerald-600 font-mono">tecnico@prueba.com</div>
+                      <div className="text-[10px] font-normal text-emerald-600 font-mono">
+                        tecnico@prueba.com
+                      </div>
                     </div>
                     <span className="text-[10px] bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-md font-extrabold">
                       Dev
@@ -227,7 +235,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onRegisterCli
                   </button>
                 </div>
                 <p className="text-[11px] text-center text-slate-500 pt-1">
-                  Contraseña demo: <span className="font-mono font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">csa12345</span>
+                  Contraseña demo:{' '}
+                  <span className="font-mono font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
+                    csa12345
+                  </span>
                 </p>
               </div>
             )}

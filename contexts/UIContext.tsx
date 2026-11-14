@@ -17,7 +17,8 @@ interface UIContextType {
 const UIContext = createContext<UIContextType | undefined>(undefined);
 
 export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const hasParam = (p: string) => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get(p) === '1';
+  const hasParam = (p: string) =>
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get(p) === '1';
 
   const [chatOpen, setChatOpen] = useState(hasParam('chat'));
   const [showProfile, setShowProfile] = useState(hasParam('profile'));

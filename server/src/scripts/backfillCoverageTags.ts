@@ -44,7 +44,8 @@ async function main() {
 
   console.log(`Updated: ${updated}/${chunks.length}`);
   console.log(`Chunks with >=1 tag: ${tagged}`);
-  if (failed.length > 0) console.log(`Failed: ${failed.length} (${failed.slice(0, 5).join(', ')}...)`);
+  if (failed.length > 0)
+    console.log(`Failed: ${failed.length} (${failed.slice(0, 5).join(', ')}...)`);
 }
 
 main().catch((err) => {

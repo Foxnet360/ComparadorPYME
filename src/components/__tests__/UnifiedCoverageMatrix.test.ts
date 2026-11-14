@@ -100,22 +100,84 @@ describe('UnifiedCoverageMatrix - Pure Functions', () => {
 
   describe('isSublimitRow', () => {
     it('should identify sublimit rows with prefix or keywords', () => {
-      expect(isSublimitRow({ type: 'data', id: '1', label: '↳ Gastos de Extinción', sectionId: 1, cells: [] })).toBe(true);
-      expect(isSublimitRow({ type: 'data', id: '2', label: '- Remoción de Escombros', sectionId: 1, cells: [] })).toBe(true);
-      expect(isSublimitRow({ type: 'data', id: '3', label: 'Incendio (Sublímite Contenidos)', sectionId: 1, cells: [] })).toBe(true);
-      expect(isSublimitRow({ type: 'data', id: '4', label: 'Sublímite: Bienes a la Intemperie', sectionId: 1, cells: [] })).toBe(true);
-      expect(isSublimitRow({ type: 'data', id: '5', label: 'RCE (Extensión Vehículos)', sectionId: 1, cells: [] })).toBe(true);
+      expect(
+        isSublimitRow({
+          type: 'data',
+          id: '1',
+          label: '↳ Gastos de Extinción',
+          sectionId: 1,
+          cells: [],
+        })
+      ).toBe(true);
+      expect(
+        isSublimitRow({
+          type: 'data',
+          id: '2',
+          label: '- Remoción de Escombros',
+          sectionId: 1,
+          cells: [],
+        })
+      ).toBe(true);
+      expect(
+        isSublimitRow({
+          type: 'data',
+          id: '3',
+          label: 'Incendio (Sublímite Contenidos)',
+          sectionId: 1,
+          cells: [],
+        })
+      ).toBe(true);
+      expect(
+        isSublimitRow({
+          type: 'data',
+          id: '4',
+          label: 'Sublímite: Bienes a la Intemperie',
+          sectionId: 1,
+          cells: [],
+        })
+      ).toBe(true);
+      expect(
+        isSublimitRow({
+          type: 'data',
+          id: '5',
+          label: 'RCE (Extensión Vehículos)',
+          sectionId: 1,
+          cells: [],
+        })
+      ).toBe(true);
     });
 
     it('should not identify main coverages as sublimits', () => {
-      expect(isSublimitRow({ type: 'data', id: '1', label: 'Incendio (Edificio y Contenidos)', sectionId: 1, cells: [] })).toBe(false);
-      expect(isSublimitRow({ type: 'data', id: '2', label: 'Responsabilidad Civil Extracontractual', sectionId: 1, cells: [] })).toBe(false);
-      expect(isSublimitRow({ type: 'data', id: '3', label: 'Terremoto', sectionId: 1, cells: [] })).toBe(false);
+      expect(
+        isSublimitRow({
+          type: 'data',
+          id: '1',
+          label: 'Incendio (Edificio y Contenidos)',
+          sectionId: 1,
+          cells: [],
+        })
+      ).toBe(false);
+      expect(
+        isSublimitRow({
+          type: 'data',
+          id: '2',
+          label: 'Responsabilidad Civil Extracontractual',
+          sectionId: 1,
+          cells: [],
+        })
+      ).toBe(false);
+      expect(
+        isSublimitRow({ type: 'data', id: '3', label: 'Terremoto', sectionId: 1, cells: [] })
+      ).toBe(false);
     });
 
     it('should return false for header and spacer rows', () => {
-      expect(isSublimitRow({ type: 'header', id: 'h1', label: '↳ Gastos', sectionId: 1, cells: [] })).toBe(false);
-      expect(isSublimitRow({ type: 'spacer', id: 's1', label: '', sectionId: 1, cells: [] })).toBe(false);
+      expect(
+        isSublimitRow({ type: 'header', id: 'h1', label: '↳ Gastos', sectionId: 1, cells: [] })
+      ).toBe(false);
+      expect(isSublimitRow({ type: 'spacer', id: 's1', label: '', sectionId: 1, cells: [] })).toBe(
+        false
+      );
     });
   });
 });

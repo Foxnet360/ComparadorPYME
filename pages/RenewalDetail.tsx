@@ -9,11 +9,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import {
-  listRenewals,
-  listRenewalEvents,
-  transitionRenewal,
-} from '../services/portfolioService';
+import { listRenewals, listRenewalEvents, transitionRenewal } from '../services/portfolioService';
 import { RenewalTimeline } from '../components/RenewalTimeline';
 import type {
   PortfolioRenewal,
@@ -109,8 +105,7 @@ const RenewalDetail: React.FC<RenewalDetailProps> = ({ renewalId, onBack }) => {
   const nextState = renewal.state === 'closed' ? null : NEXT_STATE[renewal.state];
   const trimmedReason = lossReason.trim();
   const trimmedPremium = finalPremium.trim();
-  const closeValid =
-    outcome === 'lost' ? trimmedReason.length > 0 : trimmedPremium.length > 0;
+  const closeValid = outcome === 'lost' ? trimmedReason.length > 0 : trimmedPremium.length > 0;
 
   const handleCloseSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -187,7 +182,10 @@ const RenewalDetail: React.FC<RenewalDetailProps> = ({ renewalId, onBack }) => {
       )}
 
       {closeFormOpen && (
-        <form onSubmit={handleCloseSubmit} className="space-y-3 border border-slate-200 rounded p-4">
+        <form
+          onSubmit={handleCloseSubmit}
+          className="space-y-3 border border-slate-200 rounded p-4"
+        >
           <div>
             <label htmlFor="close-outcome" className="block text-sm font-medium text-slate-700">
               Resultado

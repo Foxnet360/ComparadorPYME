@@ -34,27 +34,32 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
   pyme: {
     domain: 'pyme',
     displayName: 'Multirriesgo PYME / Daños Materiales',
-    tagline: 'Protección integral del patrimonio empresarial, continuidad del negocio (Lucro Cesante) y responsabilidad frente a terceros.',
+    tagline:
+      'Protección integral del patrimonio empresarial, continuidad del negocio (Lucro Cesante) y responsabilidad frente a terceros.',
     primaryLaws: [
       {
         code: 'Art. 1088 Co.Co.',
         title: 'Principio Indemnizatorio y Lucro Cesante',
-        summary: 'El seguro de daños comprende el daño emergente y, solo mediante acuerdo expreso en la póliza, el lucro cesante.',
+        summary:
+          'El seguro de daños comprende el daño emergente y, solo mediante acuerdo expreso en la póliza, el lucro cesante.',
       },
       {
         code: 'Art. 1102 Co.Co.',
         title: 'Regla Proporcional por Infraseguro',
-        summary: 'Si el valor asegurado es inferior al valor real del bien, el asegurador solo indemniza en la proporción existente entre ambos valores.',
+        summary:
+          'Si el valor asegurado es inferior al valor real del bien, el asegurador solo indemniza en la proporción existente entre ambos valores.',
       },
       {
         code: 'Arts. 1127–1133 Co.Co.',
         title: 'Responsabilidad Civil Extracontractual (RCE)',
-        summary: 'Ampara perjuicios patrimoniales, extrapatrimoniales y gastos de defensa judicial (Art. 1128) frente a reclamaciones directas de terceros.',
+        summary:
+          'Ampara perjuicios patrimoniales, extrapatrimoniales y gastos de defensa judicial (Art. 1128) frente a reclamaciones directas de terceros.',
       },
       {
         code: 'Circular 050/2013 SFC',
         title: 'Estándares de Transparencia en Pólizas Comerciales',
-        summary: 'Obligación de informar de manera destacada amparos básicos, sublímites, garantías de seguridad y exclusiones.',
+        summary:
+          'Obligación de informar de manera destacada amparos básicos, sublímites, garantías de seguridad y exclusiones.',
       },
     ],
     mandatoryVerificationRules: [
@@ -62,7 +67,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'pyme_incendio',
         title: 'Amparo Básico de Incendio y Todo Riesgo Daños Materiales',
         legalBasis: 'Arts. 1079 y 1082 Código de Comercio',
-        description: 'Verifica la cobertura estructural de Edificio y Contenidos al 100% del valor asegurable para evitar penalización por infraseguro (Art. 1102 Co.Co.).',
+        description:
+          'Verifica la cobertura estructural de Edificio y Contenidos al 100% del valor asegurable para evitar penalización por infraseguro (Art. 1102 Co.Co.).',
         keywords: ['incendio', 'amparo basico', 'todo riesgo', 'edificio', 'contenidos'],
         severityIfMissing: 'CRITICAL',
       },
@@ -70,7 +76,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'pyme_terremoto',
         title: 'Terremoto, Temblor y Erupción Volcánica',
         legalBasis: 'Reglamentación Técnica de Sismo SFC / NSR-10',
-        description: 'Evalúa que el riesgo catastrófico sísmico esté cubierto al 100% y audita si el deducible aplica sobre el valor de la pérdida o sobre el valor asegurado.',
+        description:
+          'Evalúa que el riesgo catastrófico sísmico esté cubierto al 100% y audita si el deducible aplica sobre el valor de la pérdida o sobre el valor asegurado.',
         keywords: ['terremoto', 'temblor', 'sismo', 'erupcion'],
         severityIfMissing: 'CRITICAL',
       },
@@ -78,7 +85,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'pyme_rce',
         title: 'Responsabilidad Civil Extracontractual (PLO, Patronal y Cruzada)',
         legalBasis: 'Arts. 1127, 1128 y 1133 Código de Comercio',
-        description: 'Audita la cobertura frente a demandas de terceros, incluyendo gastos de defensa y subamparos patronal, parqueaderos y contratistas.',
+        description:
+          'Audita la cobertura frente a demandas de terceros, incluyendo gastos de defensa y subamparos patronal, parqueaderos y contratistas.',
         keywords: ['responsabilidad civil', 'rce', 'predios', 'labores', 'terceros'],
         severityIfMissing: 'CRITICAL',
       },
@@ -86,7 +94,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'pyme_sustraccion',
         title: 'Sustracción con y sin Violencia / Equipo Electrónico',
         legalBasis: 'Art. 1088 Código de Comercio',
-        description: 'Verifica la protección de activos operativos y equipos portátiles/fijos ante hurto calificado y daños internos eléctricos.',
+        description:
+          'Verifica la protección de activos operativos y equipos portátiles/fijos ante hurto calificado y daños internos eléctricos.',
         keywords: ['sustraccion', 'hurto', 'robo', 'equipo electronico'],
         severityIfMissing: 'WARNING',
       },
@@ -106,22 +115,26 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
   hogar: {
     domain: 'hogar',
     displayName: 'Multirriesgo Hogar y Vivienda',
-    tagline: 'Protección patrimonial de la vivienda familiar, sus contenidos y responsabilidad civil familiar conforme al EOSF y NSR-10.',
+    tagline:
+      'Protección patrimonial de la vivienda familiar, sus contenidos y responsabilidad civil familiar conforme al EOSF y NSR-10.',
     primaryLaws: [
       {
         code: 'Art. 101 EOSF',
         title: 'Seguro Obligatorio de Incendio y Terremoto Hipotecario',
-        summary: 'Exige asegurar los inmuebles por el valor comercial de la parte destructible, garantizando libertad de elección de aseguradora sin cobros por endoso.',
+        summary:
+          'Exige asegurar los inmuebles por el valor comercial de la parte destructible, garantizando libertad de elección de aseguradora sin cobros por endoso.',
       },
       {
         code: 'Ley 1796 de 2016',
         title: 'Ley de Vivienda Segura y NSR-10',
-        summary: 'Establece los estándares sismo-resistentes y de protección patrimonial del comprador de vivienda en Colombia.',
+        summary:
+          'Establece los estándares sismo-resistentes y de protección patrimonial del comprador de vivienda en Colombia.',
       },
       {
         code: 'Art. 1102 Co.Co.',
         title: 'Prevención de Infraseguro en Edificio y Contenidos',
-        summary: 'Garantiza que la suma asegurada de reconstrucción y contenidos refleje el valor real para evitar recortes proporcionales en un siniestro.',
+        summary:
+          'Garantiza que la suma asegurada de reconstrucción y contenidos refleje el valor real para evitar recortes proporcionales en un siniestro.',
       },
     ],
     mandatoryVerificationRules: [
@@ -129,7 +142,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'hogar_incendio',
         title: 'Incendio, Rayo y Explosión (Estructura / Contenidos)',
         legalBasis: 'Art. 101 EOSF y Art. 1079 Código de Comercio',
-        description: 'Verifica que el inmueble y/o sus contenidos cuenten con amparo básico integral a valor de reconstrucción o reposición.',
+        description:
+          'Verifica que el inmueble y/o sus contenidos cuenten con amparo básico integral a valor de reconstrucción o reposición.',
         keywords: ['incendio', 'edificio', 'contenidos', 'amparo basico', 'explosion'],
         severityIfMissing: 'CRITICAL',
       },
@@ -137,7 +151,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'hogar_terremoto',
         title: 'Terremoto, Temblor y Erupción Volcánica',
         legalBasis: 'Art. 101 EOSF y Reglamentación Sismo SFC',
-        description: 'Verifica la cobertura sísmica al 100% y compara el deducible porcentual y su mínimo en SMMLV.',
+        description:
+          'Verifica la cobertura sísmica al 100% y compara el deducible porcentual y su mínimo en SMMLV.',
         keywords: ['terremoto', 'temblor', 'sismo'],
         severityIfMissing: 'CRITICAL',
       },
@@ -145,7 +160,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'hogar_agua',
         title: 'Daños por Agua, Anegación y Rotura de Tuberías',
         legalBasis: 'Estándar Técnico Multirriesgo Hogar SFC',
-        description: 'Audita la cobertura ante el siniestro más frecuente en vivienda: daños por agua, filtraciones accidentales y eventos climáticos.',
+        description:
+          'Audita la cobertura ante el siniestro más frecuente en vivienda: daños por agua, filtraciones accidentales y eventos climáticos.',
         keywords: ['agua', 'anegacion', 'inundacion', 'tuberia', 'vientos', 'granizo'],
         severityIfMissing: 'WARNING',
       },
@@ -153,7 +169,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'hogar_hurto',
         title: 'Hurto y Sustracción de Contenidos (Dentro y Fuera del Hogar)',
         legalBasis: 'Código de Comercio Art. 1088',
-        description: 'Verifica la protección de bienes muebles, joyas, bicicletas y computadores portátiles ante hurto calificado y simple.',
+        description:
+          'Verifica la protección de bienes muebles, joyas, bicicletas y computadores portátiles ante hurto calificado y simple.',
         keywords: ['sustraccion', 'hurto', 'robo', 'portatiles', 'bicicletas'],
         severityIfMissing: 'WARNING',
       },
@@ -161,7 +178,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'hogar_rce',
         title: 'Responsabilidad Civil Familiar y Mascotas',
         legalBasis: 'Código de Comercio Arts. 1127 y 1128',
-        description: 'Protege el patrimonio familiar frente a daños a terceros o vecinos causados por personas a cargo, empleados o mascotas.',
+        description:
+          'Protege el patrimonio familiar frente a daños a terceros o vecinos causados por personas a cargo, empleados o mascotas.',
         keywords: ['responsabilidad civil', 'rce', 'familiar', 'mascotas', 'terceros'],
         severityIfMissing: 'WARNING',
       },
@@ -169,8 +187,15 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'hogar_asistencia',
         title: 'Asistencia Domiciliaria de Emergencia 24/7',
         legalBasis: 'Servicio Integral de Asistencia Hogar',
-        description: 'Cobertura de emergencias en plomería, cerrajería, electricidad de urgencia y reemplazo de vidrios rotos.',
-        keywords: ['asistencia', 'plomeria', 'cerrajeria', 'electricista', 'emergencia domiciliaria'],
+        description:
+          'Cobertura de emergencias en plomería, cerrajería, electricidad de urgencia y reemplazo de vidrios rotos.',
+        keywords: [
+          'asistencia',
+          'plomeria',
+          'cerrajeria',
+          'electricista',
+          'emergencia domiciliaria',
+        ],
         severityIfMissing: 'WARNING',
       },
     ],
@@ -188,22 +213,26 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
   autos: {
     domain: 'autos',
     displayName: 'Automóviles y Movilidad',
-    tagline: 'Protección integral del vehículo (Guía Fasecolda), Responsabilidad Civil Extracontractual (Art. 1127 Co.Co.) y asistencia en viaje.',
+    tagline:
+      'Protección integral del vehículo (Guía Fasecolda), Responsabilidad Civil Extracontractual (Art. 1127 Co.Co.) y asistencia en viaje.',
     primaryLaws: [
       {
         code: 'Arts. 1127 y 1133 Co.Co.',
         title: 'Responsabilidad Civil Extracontractual y Acción Directa',
-        summary: 'Cubre daños materiales, lesiones o muerte a terceros (incluyendo perjuicios morales y culpa grave del conductor) y defensa jurídica.',
+        summary:
+          'Cubre daños materiales, lesiones o muerte a terceros (incluyendo perjuicios morales y culpa grave del conductor) y defensa jurídica.',
       },
       {
         code: 'Ley 2251 de 2022',
         title: 'Ley Julián Esteban (Art. 16 — Choques Simples)',
-        summary: 'Permite resolver choques simples de solo latas mediante pruebas fotográficas/video sin esperar croquis de tránsito.',
+        summary:
+          'Permite resolver choques simples de solo latas mediante pruebas fotográficas/video sin esperar croquis de tránsito.',
       },
       {
         code: 'Guía Fasecolda & Art. 1096 Co.Co.',
         title: 'Valoración Comercial Oficial y Subrogación Legal',
-        summary: 'Determina el valor comercial de indemnización en pérdida total según el código Fasecolda del vehículo.',
+        summary:
+          'Determina el valor comercial de indemnización en pérdida total según el código Fasecolda del vehículo.',
       },
     ],
     mandatoryVerificationRules: [
@@ -211,7 +240,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'autos_rce',
         title: 'Responsabilidad Civil Extracontractual (RCE)',
         legalBasis: 'Arts. 1127 y 1128 Código de Comercio',
-        description: 'Verifica el límite en millones o SMMLV para responder ante daños a bienes de terceros, lesiones o muerte y asistencia jurídica penal/civil.',
+        description:
+          'Verifica el límite en millones o SMMLV para responder ante daños a bienes de terceros, lesiones o muerte y asistencia jurídica penal/civil.',
         keywords: ['responsabilidad civil', 'rce', 'terceros', 'danos a bienes'],
         severityIfMissing: 'CRITICAL',
       },
@@ -219,7 +249,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'autos_pt',
         title: 'Pérdida Total por Daños y por Hurto',
         legalBasis: 'Art. 1079 Co.Co. y Guía de Valores Fasecolda',
-        description: 'Audita que el vehículo esté cubierto al 100% del valor Fasecolda idealmente con 0% de deducible en Pérdida Total.',
+        description:
+          'Audita que el vehículo esté cubierto al 100% del valor Fasecolda idealmente con 0% de deducible en Pérdida Total.',
         keywords: ['perdida total', 'hurto total', 'danos mayor cuantia', 'destruccion total'],
         severityIfMissing: 'CRITICAL',
       },
@@ -227,7 +258,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'autos_pp',
         title: 'Pérdida Parcial por Daños y por Hurto + Amparo Patrimonial',
         legalBasis: 'Ley 2251 de 2022 y Condicionados Autos SFC',
-        description: 'Evalúa el deducible de taller en choques parciales y la inclusión del Amparo Patrimonial (cobertura pese a infracción de tránsito).',
+        description:
+          'Evalúa el deducible de taller en choques parciales y la inclusión del Amparo Patrimonial (cobertura pese a infracción de tránsito).',
         keywords: ['perdida parcial', 'menor cuantia', 'patrimonial', 'colision'],
         severityIfMissing: 'WARNING',
       },
@@ -235,7 +267,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'autos_reemplazo',
         title: 'Vehículo de Reemplazo / Carro Taller',
         legalBasis: 'Beneficio Asistencial Automotores',
-        description: 'Verifica el número de días de vehículo sustituto ante pérdida parcial o total para garantizar la movilidad.',
+        description:
+          'Verifica el número de días de vehículo sustituto ante pérdida parcial o total para garantizar la movilidad.',
         keywords: ['vehiculo de reemplazo', 'carro taller', 'sustituto'],
         severityIfMissing: 'WARNING',
       },
@@ -243,7 +276,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'autos_asistencia',
         title: 'Asistencia en Viaje, Grúa 24/7 y Conductor Elegido',
         legalBasis: 'Servicio Integral de Asistencia Vial',
-        description: 'Verifica cobertura de grúa sin límite de kilómetros, asistencia mecánica y servicios de conductor elegido.',
+        description:
+          'Verifica cobertura de grúa sin límite de kilómetros, asistencia mecánica y servicios de conductor elegido.',
         keywords: ['asistencia', 'grua', 'conductor elegido', 'viaje'],
         severityIfMissing: 'WARNING',
       },
@@ -251,7 +285,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'autos_accidentes',
         title: 'Accidentes Personales y Gastos Médicos a Ocupantes',
         legalBasis: 'Código de Comercio Art. 1137',
-        description: 'Cubre muerte accidental, incapacidad y gastos médicos para conductor y ocupantes del vehículo asegurado.',
+        description:
+          'Cubre muerte accidental, incapacidad y gastos médicos para conductor y ocupantes del vehículo asegurado.',
         keywords: ['accidentes personales', 'gastos medicos', 'ocupantes'],
         severityIfMissing: 'WARNING',
       },
@@ -270,22 +305,26 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
   copropiedades: {
     domain: 'copropiedades',
     displayName: 'Copropiedades y Propiedad Horizontal',
-    tagline: 'Cumplimiento estricto del Art. 15 de la Ley 675 de 2001 para zonas comunes, estructura sismo-resistente (NSR-10) y RC del Administrador.',
+    tagline:
+      'Cumplimiento estricto del Art. 15 de la Ley 675 de 2001 para zonas comunes, estructura sismo-resistente (NSR-10) y RC del Administrador.',
     primaryLaws: [
       {
         code: 'Ley 675 de 2001 (Art. 15)',
         title: 'Seguro Obligatorio de Bienes Comunes',
-        summary: 'Obliga a toda copropiedad a constituir póliza contra incendio y terremoto que garantice la reconstrucción total de las áreas comunes.',
+        summary:
+          'Obliga a toda copropiedad a constituir póliza contra incendio y terremoto que garantice la reconstrucción total de las áreas comunes.',
       },
       {
         code: 'Ley 400/1997 y NSR-10',
         title: 'Norma Sismo Resistente Colombiana',
-        summary: 'Rige la evaluación técnica de vulnerabilidad sísmica y reconstrucción estructural del edificio o conjunto.',
+        summary:
+          'Rige la evaluación técnica de vulnerabilidad sísmica y reconstrucción estructural del edificio o conjunto.',
       },
       {
         code: 'Art. 50 Ley 675 / Ley 389 de 1997',
         title: 'Responsabilidad de Administradores y Consejo (D&O)',
-        summary: 'Los administradores responden por los perjuicios que por dolo o culpa leve u omisión ocasionen a la persona jurídica o propietarios.',
+        summary:
+          'Los administradores responden por los perjuicios que por dolo o culpa leve u omisión ocasionen a la persona jurídica o propietarios.',
       },
     ],
     mandatoryVerificationRules: [
@@ -293,7 +332,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'cop_edificio_bienes_comunes',
         title: 'Edificio y Áreas Comunes (Reconstrucción Total Ley 675)',
         legalBasis: 'Art. 15 Ley 675 de 2001',
-        description: 'Verifica la suma asegurada para reconstrucción al 100% de la estructura y áreas comunes del conjunto/edificio.',
+        description:
+          'Verifica la suma asegurada para reconstrucción al 100% de la estructura y áreas comunes del conjunto/edificio.',
         keywords: ['edificio', 'estructura', 'bienes comunes', 'areas comunes', 'cimentacion'],
         severityIfMissing: 'CRITICAL',
       },
@@ -301,7 +341,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'cop_terremoto_sismo',
         title: 'Terremoto, Temblor y Sismo (NSR-10)',
         legalBasis: 'Ley 400/1997 y Art. 15 Ley 675 de 2001',
-        description: 'Verifica el amparo catastrófico obligatorio contra sismo y las condiciones del deducible sísmico.',
+        description:
+          'Verifica el amparo catastrófico obligatorio contra sismo y las condiciones del deducible sísmico.',
         keywords: ['terremoto', 'temblor', 'erupcion', 'sismo', 'ttev'],
         severityIfMissing: 'CRITICAL',
       },
@@ -309,7 +350,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'cop_rce_predios',
         title: 'RCE Áreas Comunes y Parqueaderos (PLO)',
         legalBasis: 'Arts. 1127 y 1128 Código de Comercio',
-        description: 'Verifica la protección patrimonial ante accidentes de copropietarios, visitantes y daños en parqueaderos.',
+        description:
+          'Verifica la protección patrimonial ante accidentes de copropietarios, visitantes y daños en parqueaderos.',
         keywords: ['responsabilidad civil', 'rce', 'plo', 'predios', 'parqueadero'],
         severityIfMissing: 'CRITICAL',
       },
@@ -317,7 +359,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'cop_rce_do',
         title: 'RCE Directores y Administradores (D&O Copropiedades)',
         legalBasis: 'Art. 50 Ley 675 de 2001 y Art. 1127 Co.Co.',
-        description: 'Verifica la protección patrimonial del Administrador y Miembros del Consejo ante decisiones y demandas.',
+        description:
+          'Verifica la protección patrimonial del Administrador y Miembros del Consejo ante decisiones y demandas.',
         keywords: ['directores', 'administradores', 'd&o', 'consejo', 'administrador'],
         severityIfMissing: 'WARNING',
       },
@@ -325,7 +368,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'cop_maquinaria_ascensores',
         title: 'Maquinaria Comunitaria (Ascensores, Bombas y Subestación)',
         legalBasis: 'Decreto 564 de 2006 y Estándares Técnicos',
-        description: 'Ampara averías mecánicas y eléctricas de equipos vitales (ascensores, bombas eyectoras, planta eléctrica).',
+        description:
+          'Ampara averías mecánicas y eléctricas de equipos vitales (ascensores, bombas eyectoras, planta eléctrica).',
         keywords: ['maquinaria', 'ascensor', 'bomba', 'subestacion', 'planta electrica'],
         severityIfMissing: 'CRITICAL',
       },
@@ -333,7 +377,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'cop_agua_anegacion',
         title: 'Daños por Agua, Anegación e Inundación',
         legalBasis: 'Estándar Técnico FASECOLDA',
-        description: 'Ampara rotura accidental de tuberías matrices comunales, filtraciones e inundaciones en zonas comunes.',
+        description:
+          'Ampara rotura accidental de tuberías matrices comunales, filtraciones e inundaciones en zonas comunes.',
         keywords: ['agua', 'anegacion', 'inundacion', 'rotura de tuberias', 'tuberias'],
         severityIfMissing: 'WARNING',
       },
@@ -341,7 +386,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'cop_amit_hmacc',
         title: 'Actos Malintencionados (AMIT) y Terrorismo / HMACC',
         legalBasis: 'Código de Comercio Arts. 1072 y 1088',
-        description: 'Ampara daños materiales ocasionados por vandalismo, huelga, asonada o alteraciones de orden público.',
+        description:
+          'Ampara daños materiales ocasionados por vandalismo, huelga, asonada o alteraciones de orden público.',
         keywords: ['amit', 'terrorismo', 'malintencionado', 'hmacc', 'huelga', 'asonada'],
         severityIfMissing: 'WARNING',
       },
@@ -349,7 +395,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'cop_rotura_vidrios',
         title: 'Rotura de Vidrios y Cristales Comunales',
         legalBasis: 'Estándar Técnico FASECOLDA',
-        description: 'Ampara vidrios, espejos y domos instalados en porterías, fachadas y salones comunales.',
+        description:
+          'Ampara vidrios, espejos y domos instalados en porterías, fachadas y salones comunales.',
         keywords: ['vidrio', 'cristal', 'fachada', 'domo'],
         severityIfMissing: 'WARNING',
       },
@@ -357,7 +404,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'cop_asistencia_comunal',
         title: 'Asistencia Zonas Comunes (Emergencias 24/7)',
         legalBasis: 'Servicio Integral Copropiedades',
-        description: 'Atención de emergencias 24 horas en plomería, cerrajería, vidrios y electricidad en zonas comunes.',
+        description:
+          'Atención de emergencias 24 horas en plomería, cerrajería, vidrios y electricidad en zonas comunes.',
         keywords: ['asistencia', 'plomeria', 'cerrajeria', 'emergencia'],
         severityIfMissing: 'WARNING',
       },
@@ -376,22 +424,26 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
   cumplimiento: {
     domain: 'cumplimiento',
     displayName: 'Cumplimiento, Garantías y Fianzas',
-    tagline: 'Respaldo contractual estatal (Ley 80/1993, Ley 1150/2007 y Decreto 1082/2015) y particular con verificación de suficiencias legales.',
+    tagline:
+      'Respaldo contractual estatal (Ley 80/1993, Ley 1150/2007 y Decreto 1082/2015) y particular con verificación de suficiencias legales.',
     primaryLaws: [
       {
         code: 'Ley 80/1993 y Ley 1150/2007 (Art. 7)',
         title: 'Régimen de Garantías en Contratación Estatal',
-        summary: 'Regula la Garantía Única de Cumplimiento, su irrevocabilidad por falta de pago de prima y la declaratoria de siniestro.',
+        summary:
+          'Regula la Garantía Única de Cumplimiento, su irrevocabilidad por falta de pago de prima y la declaratoria de siniestro.',
       },
       {
         code: 'Decreto 1082 de 2015',
         title: 'Suficiencias Mínimas y Vigencias Reglamentarias (SECOP)',
-        summary: 'Define los porcentajes y vigencias mínimas: Seriedad (10%), Anticipo (100%), Cumplimiento (10%), Salarios (5% + 3 años), Estabilidad (5 años).',
+        summary:
+          'Define los porcentajes y vigencias mínimas: Seriedad (10%), Anticipo (100%), Cumplimiento (10%), Salarios (5% + 3 años), Estabilidad (5 años).',
       },
       {
         code: 'Art. 1099 Co.Co.',
         title: 'Inaplicabilidad de Infraseguro y Derecho de Subrogación',
-        summary: 'En cumplimiento no aplica la regla proporcional del Art. 1102 Co.Co. y la aseguradora se subroga contra el contratista incumplido.',
+        summary:
+          'En cumplimiento no aplica la regla proporcional del Art. 1102 Co.Co. y la aseguradora se subroga contra el contratista incumplido.',
       },
     ],
     mandatoryVerificationRules: [
@@ -399,7 +451,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'cum_seriedad',
         title: 'Seriedad de la Oferta (Mínimo 10%)',
         legalBasis: 'Decreto 1082 de 2015 Art. 2.2.1.2.3.1.9',
-        description: 'Garantiza la formalización del contrato y mantenimiento de la propuesta en procesos licitatorios.',
+        description:
+          'Garantiza la formalización del contrato y mantenimiento de la propuesta en procesos licitatorios.',
         keywords: ['seriedad', 'oferta', 'propuesta'],
         severityIfMissing: 'CRITICAL',
       },
@@ -407,7 +460,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'cum_anticipo',
         title: 'Buen Manejo y Correcta Inversión del Anticipo (100%)',
         legalBasis: 'Decreto 1082 de 2015 Art. 2.2.1.2.3.1.10',
-        description: 'Garantiza la destinación exclusiva y reintegro del anticipo o pago anticipado entregado al contratista.',
+        description:
+          'Garantiza la destinación exclusiva y reintegro del anticipo o pago anticipado entregado al contratista.',
         keywords: ['anticipo', 'buen manejo', 'correcta inversion', 'pago anticipado'],
         severityIfMissing: 'CRITICAL',
       },
@@ -415,7 +469,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'cum_ejecucion',
         title: 'Cumplimiento del Contrato (10% a 20%)',
         legalBasis: 'Decreto 1082 de 2015 Art. 2.2.1.2.3.1.11',
-        description: 'Verifica el amparo de multas, cláusula penal y cumplimiento cabal del objeto contractual hasta liquidación.',
+        description:
+          'Verifica el amparo de multas, cláusula penal y cumplimiento cabal del objeto contractual hasta liquidación.',
         keywords: ['cumplimiento', 'ejecucion', 'contrato'],
         severityIfMissing: 'CRITICAL',
       },
@@ -423,7 +478,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'cum_salarios',
         title: 'Pago de Salarios, Prestaciones Sociales e Indemnizaciones (+3 años)',
         legalBasis: 'Decreto 1082 de 2015 Art. 2.2.1.2.3.1.13 / Art. 488 CST',
-        description: 'Audita que el amparo laboral cubra el plazo del contrato más 3 años de prescripción de derechos laborales.',
+        description:
+          'Audita que el amparo laboral cubra el plazo del contrato más 3 años de prescripción de derechos laborales.',
         keywords: ['salarios', 'prestaciones', 'laboral', 'indemnizaciones laborales'],
         severityIfMissing: 'WARNING',
       },
@@ -431,7 +487,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'cum_estabilidad',
         title: 'Estabilidad y Calidad de la Obra / Calidad del Servicio (+5 años)',
         legalBasis: 'Decreto 1082 de 2015 Art. 2.2.1.2.3.1.14 / Art. 2060 C.C.',
-        description: 'Garantiza la reparación de deterioros o vicios ocultos atribuibles a la calidad de los materiales o construcción.',
+        description:
+          'Garantiza la reparación de deterioros o vicios ocultos atribuibles a la calidad de los materiales o construcción.',
         keywords: ['estabilidad', 'calidad', 'obra', 'vicios ocultos', 'bienes suministrados'],
         severityIfMissing: 'WARNING',
       },
@@ -450,22 +507,26 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
   vida_grupo: {
     domain: 'vida_grupo',
     displayName: 'Vida Grupo, Colectivo y Accidentes Personales',
-    tagline: 'Protección del capital humano y bienestar familiar bajo el régimen de Seguros de Personas (Arts. 1137–1162 Código de Comercio).',
+    tagline:
+      'Protección del capital humano y bienestar familiar bajo el régimen de Seguros de Personas (Arts. 1137–1162 Código de Comercio).',
     primaryLaws: [
       {
         code: 'Arts. 1137 y 1138 Co.Co.',
         title: 'Ausencia de Límite Pecuniario y No Infraseguro',
-        summary: 'En los seguros de personas no existe infraseguro ni coexistencia excluyente: las indemnizaciones son acumulables.',
+        summary:
+          'En los seguros de personas no existe infraseguro ni coexistencia excluyente: las indemnizaciones son acumulables.',
       },
       {
         code: 'Art. 1158 Co.Co.',
         title: 'Cláusula de Incontestabilidad y Edad Asegurable',
-        summary: 'Regula la reducción de sanciones por inexactitud en la declaración de edad y la incontestabilidad tras dos años de vigencia.',
+        summary:
+          'Regula la reducción de sanciones por inexactitud en la declaración de edad y la incontestabilidad tras dos años de vigencia.',
       },
       {
         code: 'Ley 100/1993 y Ley 1562/2012',
         title: 'Calificación de Pérdida de Capacidad Laboral (PCL >= 50%)',
-        summary: 'Marco técnico de referencia en Colombia para la activación del amparo de Incapacidad Total y Permanente (ITP).',
+        summary:
+          'Marco técnico de referencia en Colombia para la activación del amparo de Incapacidad Total y Permanente (ITP).',
       },
     ],
     mandatoryVerificationRules: [
@@ -473,7 +534,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'vg_muerte',
         title: 'Amparo Básico de Vida (Muerte por Cualquier Causa)',
         legalBasis: 'Art. 1137 Código de Comercio',
-        description: 'Verifica el capital básico asegurado o múltiplo salarial ante fallecimiento natural o accidental.',
+        description:
+          'Verifica el capital básico asegurado o múltiplo salarial ante fallecimiento natural o accidental.',
         keywords: ['muerte', 'fallecimiento', 'vida', 'amparo basico'],
         severityIfMissing: 'CRITICAL',
       },
@@ -481,7 +543,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'vg_itp',
         title: 'Incapacidad Total y Permanente (ITP ≥ 50%)',
         legalBasis: 'Arts. 1138 Co.Co. y Estándar PCL Ley 100/1993',
-        description: 'Verifica el anticipo o indemnización adicional del capital asegurado por invalidez calificada.',
+        description:
+          'Verifica el anticipo o indemnización adicional del capital asegurado por invalidez calificada.',
         keywords: ['incapacidad total', 'itp', 'invalidez', 'capacidad laboral'],
         severityIfMissing: 'CRITICAL',
       },
@@ -489,7 +552,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'vg_mayd',
         title: 'Doble Indemnización por Muerte Accidental y Desmembración (MAyD)',
         legalBasis: 'Condicionado General Vida Grupo SFC',
-        description: 'Duplica el valor asegurado ante fallecimiento o pérdidas anatómicas provocadas directamente por accidente.',
+        description:
+          'Duplica el valor asegurado ante fallecimiento o pérdidas anatómicas provocadas directamente por accidente.',
         keywords: ['accidental', 'desmembracion', 'mayd', 'muerte accidental'],
         severityIfMissing: 'WARNING',
       },
@@ -497,7 +561,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'vg_enfermedades_graves',
         title: 'Enfermedades Graves y Cáncer',
         legalBasis: 'Anexo Especial Seguros de Personas',
-        description: 'Otorga un anticipo del 50% o capital adicional ante diagnóstico de cáncer, infarto, ACV o falla renal.',
+        description:
+          'Otorga un anticipo del 50% o capital adicional ante diagnóstico de cáncer, infarto, ACV o falla renal.',
         keywords: ['enfermedades graves', 'cancer', 'infarto', 'acv'],
         severityIfMissing: 'WARNING',
       },
@@ -505,7 +570,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'vg_auxilios',
         title: 'Auxilio Funerario y Canasta Familiar',
         legalBasis: 'Beneficios de Asistencia Familiar',
-        description: 'Subsidio inmediato para gastos exequiales y sostenimiento de la canasta familiar del asegurado.',
+        description:
+          'Subsidio inmediato para gastos exequiales y sostenimiento de la canasta familiar del asegurado.',
         keywords: ['auxilio funerario', 'exequial', 'canasta familiar', 'educativo'],
         severityIfMissing: 'WARNING',
       },
@@ -524,22 +590,26 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
   salud: {
     domain: 'salud',
     displayName: 'Salud, Pólizas Hospitalarias y Medicina Prepagada',
-    tagline: 'Planes Voluntarios de Salud (PVS) regulados por la Ley 1438 de 2011, Resolución 244 de 2019 y la Superintendencia Financiera.',
+    tagline:
+      'Planes Voluntarios de Salud (PVS) regulados por la Ley 1438 de 2011, Resolución 244 de 2019 y la Superintendencia Financiera.',
     primaryLaws: [
       {
         code: 'Ley 1438 de 2011 (Art. 13)',
         title: 'Régimen de Planes Voluntarios de Salud (PVS) y Continuidad',
-        summary: 'Regula la complementariedad con el Plan de Beneficios en Salud (PBS) y el reconocimiento de antigüedad/continuidad sin nuevas preexistencias.',
+        summary:
+          'Regula la complementariedad con el Plan de Beneficios en Salud (PBS) y el reconocimiento de antigüedad/continuidad sin nuevas preexistencias.',
       },
       {
         code: 'Resolución 244 de 2019 MinSalud',
         title: 'Estándares de Cobertura y Red de Prestadores PVS',
-        summary: 'Establece los lineamientos de calidad, red de atención hospitalaria/ambulatoria y transparencia en copagos/vales.',
+        summary:
+          'Establece los lineamientos de calidad, red de atención hospitalaria/ambulatoria y transparencia en copagos/vales.',
       },
       {
         code: 'Circular 049/2013 SFC',
         title: 'Supervisión de Pólizas de Salud',
-        summary: 'Regula las condiciones técnicas, períodos de carencia y reservas de las pólizas colectivas e individuales de salud.',
+        summary:
+          'Regula las condiciones técnicas, períodos de carencia y reservas de las pólizas colectivas e individuales de salud.',
       },
     ],
     mandatoryVerificationRules: [
@@ -547,7 +617,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'salud_hosp',
         title: 'Hospitalización, Cirugía y Habitación Individual',
         legalBasis: 'Ley 1438 de 2011 y Circular 049/2013 SFC',
-        description: 'Verifica la estancia en habitación individual sin límite de días, honorarios médicos y materiales quirúrgicos.',
+        description:
+          'Verifica la estancia en habitación individual sin límite de días, honorarios médicos y materiales quirúrgicos.',
         keywords: ['hospitalizacion', 'cirugia', 'habitacion individual', 'clinica'],
         severityIfMissing: 'CRITICAL',
       },
@@ -555,7 +626,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'salud_uci',
         title: 'Unidad de Cuidados Intensivos (UCI / UCE) Sin Límite',
         legalBasis: 'Resolución 244 de 2019 MinSalud',
-        description: 'Verifica la cobertura al 100% en cuidados intensivos o intermedios en clínicas de alta complejidad.',
+        description:
+          'Verifica la cobertura al 100% en cuidados intensivos o intermedios en clínicas de alta complejidad.',
         keywords: ['uci', 'uce', 'cuidados intensivos', 'cuidados intermedios'],
         severityIfMissing: 'CRITICAL',
       },
@@ -563,7 +635,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'salud_ambulatorio',
         title: 'Consultas Médicas Especializadas sin Remisión',
         legalBasis: 'Planes Voluntarios de Salud MinSalud',
-        description: 'Acceso directo a especialistas médicos de primer nivel sin necesidad de autorización del médico general.',
+        description:
+          'Acceso directo a especialistas médicos de primer nivel sin necesidad de autorización del médico general.',
         keywords: ['consulta externa', 'especialistas', 'consulta especializada', 'acceso directo'],
         severityIfMissing: 'WARNING',
       },
@@ -571,7 +644,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'salud_alto_costo',
         title: 'Oncología, Quimioterapia y Tratamientos de Alto Costo',
         legalBasis: 'Resolución 244 de 2019 MinSalud',
-        description: 'Audita la cobertura de quimioterapia, radioterapia, diálisis, terapias biológicas y trasplantes.',
+        description:
+          'Audita la cobertura de quimioterapia, radioterapia, diálisis, terapias biológicas y trasplantes.',
         keywords: ['cancer', 'oncologia', 'alto costo', 'quimioterapia', 'trasplantes'],
         severityIfMissing: 'CRITICAL',
       },
@@ -579,8 +653,13 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'salud_urgencias_exterior',
         title: 'Urgencias Médicas y Asistencia Internacional',
         legalBasis: 'Asistencia Médica en Viaje',
-        description: 'Cobertura de emergencias por accidente o enfermedad imprevista fuera de Colombia (en USD o EUR).',
-        keywords: ['asistencia en el exterior', 'urgencias internacionales', 'asistencia medica internacional'],
+        description:
+          'Cobertura de emergencias por accidente o enfermedad imprevista fuera de Colombia (en USD o EUR).',
+        keywords: [
+          'asistencia en el exterior',
+          'urgencias internacionales',
+          'asistencia medica internacional',
+        ],
         severityIfMissing: 'WARNING',
       },
     ],
@@ -598,22 +677,26 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
   transporte: {
     domain: 'transporte',
     displayName: 'Transporte de Mercancías y Logística',
-    tagline: 'Protección de carga en tránsito nacional e internacional bajo el Código de Comercio (Arts. 1117–1126), Decreto 1079/2015 e Incoterms 2020.',
+    tagline:
+      'Protección de carga en tránsito nacional e internacional bajo el Código de Comercio (Arts. 1117–1126), Decreto 1079/2015 e Incoterms 2020.',
     primaryLaws: [
       {
         code: 'Arts. 1117–1126 Co.Co.',
         title: 'Contrato de Seguro de Transporte',
-        summary: 'Regula el seguro de mercancías por trayecto o póliza automática, el valor asegurable (costo + flete + lucro esperado) y el certificado de transporte.',
+        summary:
+          'Regula el seguro de mercancías por trayecto o póliza automática, el valor asegurable (costo + flete + lucro esperado) y el certificado de transporte.',
       },
       {
         code: 'Decreto 1079 de 2015',
         title: 'Decreto Único Reglamentario del Sector Transporte',
-        summary: 'Establece las obligaciones de remesa terrestre de carga, manifiesto RNDC y condiciones de seguridad vial y trazabilidad satelital.',
+        summary:
+          'Establece las obligaciones de remesa terrestre de carga, manifiesto RNDC y condiciones de seguridad vial y trazabilidad satelital.',
       },
       {
         code: 'Incoterms 2020 ICC',
         title: 'Términos Internacionales de Comercio (CIF / CIP / FOB)',
-        summary: 'Determina el punto exacto de transferencia del riesgo en importaciones y exportaciones marítimas, aéreas y multimodales.',
+        summary:
+          'Determina el punto exacto de transferencia del riesgo en importaciones y exportaciones marítimas, aéreas y multimodales.',
       },
     ],
     mandatoryVerificationRules: [
@@ -621,7 +704,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'trans_todo_riesgo',
         title: 'Todo Riesgo Daño Material a la Carga en Tránsito',
         legalBasis: 'Arts. 1117 a 1122 Código de Comercio',
-        description: 'Ampara colisión, volcamiento, incendio, explosión y daños por manipulación durante el transporte.',
+        description:
+          'Ampara colisión, volcamiento, incendio, explosión y daños por manipulación durante el transporte.',
         keywords: ['todo riesgo', 'dano material', 'volcamiento', 'colision', 'averias'],
         severityIfMissing: 'CRITICAL',
       },
@@ -629,7 +713,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'trans_hurto_saqueo',
         title: 'Hurto Calificado, Hurto Simple y Saqueo / Pillaje',
         legalBasis: 'Código de Comercio Art. 1088',
-        description: 'Cubre el apoderamiento de la mercancía con violencia o engaño y la sustracción parcial de contenidos.',
+        description:
+          'Cubre el apoderamiento de la mercancía con violencia o engaño y la sustracción parcial de contenidos.',
         keywords: ['hurto', 'robo', 'saqueo', 'pillaje', 'pirateria terrestre'],
         severityIfMissing: 'CRITICAL',
       },
@@ -637,7 +722,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'trans_falta_entrega',
         title: 'Falta de Entrega por Bulto Entero',
         legalBasis: 'Código de Comercio Art. 1124',
-        description: 'Indemniza la desaparición completa de bultos o contenedores despachados bajo remesa o conocimiento de embarque.',
+        description:
+          'Indemniza la desaparición completa de bultos o contenedores despachados bajo remesa o conocimiento de embarque.',
         keywords: ['falta de entrega', 'desaparicion', 'bulto entero', 'no entrega'],
         severityIfMissing: 'WARNING',
       },
@@ -645,7 +731,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'trans_averia_gruesa',
         title: 'Avería Gruesa (General Average) y Salvamento',
         legalBasis: 'Código de Comercio Arts. 1500–1520 y Reglas York-Amberes',
-        description: 'Cubre la contribución obligatoria del dueño de la carga ante sacrificios deliberados para salvar el buque o aeronave.',
+        description:
+          'Cubre la contribución obligatoria del dueño de la carga ante sacrificios deliberados para salvar el buque o aeronave.',
         keywords: ['averia gruesa', 'general average', 'salvamento', 'contribucion'],
         severityIfMissing: 'WARNING',
       },
@@ -653,7 +740,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'trans_garantias',
         title: 'Garantías de Seguridad Vial (GPS, Escolta y Trazabilidad)',
         legalBasis: 'Art. 1061 Co.Co. (Garantías en Pólizas de Transporte)',
-        description: 'Audita las garantías operativas exigidas (monitoreo GPS, precintos satelitales, horarios de tránsito).',
+        description:
+          'Audita las garantías operativas exigidas (monitoreo GPS, precintos satelitales, horarios de tránsito).',
         keywords: ['garantia', 'escolta', 'satelital', 'gps', 'horario', 'cargue', 'descargue'],
         severityIfMissing: 'WARNING',
       },
@@ -672,22 +760,26 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
   equipo_maquinaria: {
     domain: 'equipo_maquinaria',
     displayName: 'Maquinaria y Equipo Contratista (TREC)',
-    tagline: 'Protección técnica de maquinaria amarilla, agrícola e industrial bajo los Arts. 1083–1112 del Código de Comercio y normas de seguridad.',
+    tagline:
+      'Protección técnica de maquinaria amarilla, agrícola e industrial bajo los Arts. 1083–1112 del Código de Comercio y normas de seguridad.',
     primaryLaws: [
       {
         code: 'Arts. 1083–1112 Co.Co.',
         title: 'Seguros de Daños Patrimoniales y Valor de Reposición',
-        summary: 'Regula el aseguramiento a valor de reposición a nuevo (sin descuento por depreciación salvo pacto) y el deber de salvamento.',
+        summary:
+          'Regula el aseguramiento a valor de reposición a nuevo (sin descuento por depreciación salvo pacto) y el deber de salvamento.',
       },
       {
         code: 'Art. 1102 Co.Co.',
         title: 'Regla Proporcional en Maquinaria Amarilla e Industrial',
-        summary: 'Exige asegurar cada máquina por su valor de reposición a nuevo (incluyendo fletes, montaje y aranceles) para evitar infraseguro.',
+        summary:
+          'Exige asegurar cada máquina por su valor de reposición a nuevo (incluyendo fletes, montaje y aranceles) para evitar infraseguro.',
       },
       {
         code: 'Resolución 2400 de 1979',
         title: 'Estatuto de Seguridad Industrial y Operación de Maquinaria',
-        summary: 'Estándares de operación certificada y mantenimiento preventivo exigidos en las garantías de la póliza.',
+        summary:
+          'Estándares de operación certificada y mantenimiento preventivo exigidos en las garantías de la póliza.',
       },
     ],
     mandatoryVerificationRules: [
@@ -695,7 +787,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'eqm_dano_fisico',
         title: 'Todo Riesgo Daño Físico Accidental y Eventos de la Naturaleza',
         legalBasis: 'Arts. 1083 y 1088 Código de Comercio',
-        description: 'Verifica la cobertura de vuelco, colisión, derrumbe, incendio, sismo y hurto tanto en obra como durante movilización en cama baja.',
+        description:
+          'Verifica la cobertura de vuelco, colisión, derrumbe, incendio, sismo y hurto tanto en obra como durante movilización en cama baja.',
         keywords: ['dano fisico', 'maquinaria', 'equipo', 'vuelco', 'hurto', 'transporte'],
         severityIfMissing: 'CRITICAL',
       },
@@ -703,7 +796,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'eqm_rotura_rce',
         title: 'Avería Interna / Rotura Mecánica y RCE de Operación',
         legalBasis: 'Art. 1127 Co.Co.',
-        description: 'Audita si incluye daños internos mecánicos/eléctricos y Responsabilidad Civil Extracontractual por daños causados con la máquina a terceros.',
+        description:
+          'Audita si incluye daños internos mecánicos/eléctricos y Responsabilidad Civil Extracontractual por daños causados con la máquina a terceros.',
         keywords: ['rotura', 'averia', 'electrica', 'mecanica', 'responsabilidad civil', 'rce'],
         severityIfMissing: 'WARNING',
       },
@@ -722,22 +816,26 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
   casco_embarcacion: {
     domain: 'casco_embarcacion',
     displayName: 'Casco Marítimo, Fluvial y Embarcaciones',
-    tagline: 'Aseguramiento naval bajo el Libro V del Código de Comercio (Arts. 1703–1772), reglamentación DIMAR e Institute Time Clauses (ITCH).',
+    tagline:
+      'Aseguramiento naval bajo el Libro V del Código de Comercio (Arts. 1703–1772), reglamentación DIMAR e Institute Time Clauses (ITCH).',
     primaryLaws: [
       {
         code: 'Arts. 1703–1772 Co.Co.',
         title: 'Seguro Marítimo y de Navegación (Libro V)',
-        summary: 'Regula el seguro de casco y maquinaria, el valor convenido, la avería gruesa, los gastos de salvamento y el abandono de la nave.',
+        summary:
+          'Regula el seguro de casco y maquinaria, el valor convenido, la avería gruesa, los gastos de salvamento y el abandono de la nave.',
       },
       {
         code: 'Reglamentación DIMAR',
         title: 'Dirección General Marítima — Matrícula y Navegabilidad',
-        summary: 'Exige certificados vigentes de navegabilidad, dotación y zona de navegación autorizada como garantía esencial de la póliza.',
+        summary:
+          'Exige certificados vigentes de navegabilidad, dotación y zona de navegación autorizada como garantía esencial de la póliza.',
       },
       {
         code: 'Cláusulas ITCH 1.10.83',
         title: 'Institute Time Clauses - Hulls (Estándar Internacional)',
-        summary: 'Marco técnico internacional que define peligros del mar, colisión (3/4 o 4/4 RDC), avería particular y cláusula Inchmaree.',
+        summary:
+          'Marco técnico internacional que define peligros del mar, colisión (3/4 o 4/4 RDC), avería particular y cláusula Inchmaree.',
       },
     ],
     mandatoryVerificationRules: [
@@ -745,7 +843,8 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'cas_casco',
         title: 'Pérdida Total y Parcial de Casco, Maquinaria y Aparejos',
         legalBasis: 'Arts. 1703 y ss. Código de Comercio / ITCH',
-        description: 'Verifica la cobertura del casco, motores y equipos de navegación frente a peligros del mar, incendio, varadura y hundimiento.',
+        description:
+          'Verifica la cobertura del casco, motores y equipos de navegación frente a peligros del mar, incendio, varadura y hundimiento.',
         keywords: ['casco', 'maquinaria', 'perdida total', 'embarcacion', 'motores', 'averias'],
         severityIfMissing: 'CRITICAL',
       },
@@ -753,8 +852,15 @@ export const DOMAIN_REGULATORY_PROFILES: Record<string, DomainRegulatoryProfile>
         id: 'cas_pi_salvamento',
         title: 'Protección e Indemnización (P&I / RCE Marítima) y Avería Gruesa',
         legalBasis: 'Arts. 1517 y 1740 Código de Comercio / DIMAR',
-        description: 'Audita la cobertura de Responsabilidad Civil Marítima (abordaje, daños a muelles, lesiones a pasajeros/tripulación, remoción de restos) y salvamento.',
-        keywords: ['p&i', 'proteccion e indemnizacion', 'responsabilidad civil', 'averia gruesa', 'salvamento'],
+        description:
+          'Audita la cobertura de Responsabilidad Civil Marítima (abordaje, daños a muelles, lesiones a pasajeros/tripulación, remoción de restos) y salvamento.',
+        keywords: [
+          'p&i',
+          'proteccion e indemnizacion',
+          'responsabilidad civil',
+          'averia gruesa',
+          'salvamento',
+        ],
         severityIfMissing: 'WARNING',
       },
     ],
@@ -803,7 +909,13 @@ export const PEDAGOGICAL_TOOLTIPS_CATALOG: PedagogicalExplanation[] = [
     id: 'ded_valor_asegurado_vs_perdida',
     title: 'Deducible: "% del Valor de la Pérdida" vs. "% del Valor Asegurado"',
     category: 'deductible',
-    keywords: ['valor asegurado', 'valor asegurable', 'v.a.', 'suma asegurada', 'valor del articulo'],
+    keywords: [
+      'valor asegurado',
+      'valor asegurable',
+      'v.a.',
+      'suma asegurada',
+      'valor del articulo',
+    ],
     whatItCovers:
       'El "% del valor de la pérdida" calcula tu participación únicamente sobre el monto del daño sufrido, mientras que el "% del valor asegurado" (común en Terremoto) lo calcula sobre el valor total declarado del inmueble o bien.',
     claimImpact:
@@ -843,7 +955,15 @@ export const PEDAGOGICAL_TOOLTIPS_CATALOG: PedagogicalExplanation[] = [
     id: 'cov_incendio_basico',
     title: 'Amparo Básico: Incendio, Rayo, Explosión y Todo Riesgo Daños Materiales',
     category: 'coverage',
-    keywords: ['incendio', 'rayo', 'explosion', 'amparo basico', 'todo riesgo dano', 'edificio', 'contenidos'],
+    keywords: [
+      'incendio',
+      'rayo',
+      'explosion',
+      'amparo basico',
+      'todo riesgo dano',
+      'edificio',
+      'contenidos',
+    ],
     whatItCovers:
       'Protege la estructura física del inmueble (Edificio) y sus bienes internos (Contenidos, maquinaria, mercancías) frente a daños materiales súbitos e imprevistos por fuego, rayo, explosión o causas accidentales no excluidas.',
     claimImpact:
@@ -869,7 +989,19 @@ export const PEDAGOGICAL_TOOLTIPS_CATALOG: PedagogicalExplanation[] = [
     id: 'cov_agua_naturaleza_amit',
     title: 'Daños por Agua, Anegación, Eventos de la Naturaleza (HMACC) y AMIT',
     category: 'coverage',
-    keywords: ['anegacion', 'agua', 'inundacion', 'vientos', 'granizo', 'hmacc', 'amit', 'terrorismo', 'asonada', 'huelga', 'tuberia'],
+    keywords: [
+      'anegacion',
+      'agua',
+      'inundacion',
+      'vientos',
+      'granizo',
+      'hmacc',
+      'amit',
+      'terrorismo',
+      'asonada',
+      'huelga',
+      'tuberia',
+    ],
     whatItCovers:
       'Cubre daños por fenómenos climáticos (inundación, avalancha, vientos fuertes, granizo), rotura accidental de tuberías y Actos Mal Intencionados de Terceros (AMIT, asonada, huelga, vandalismo y terrorismo).',
     claimImpact:
@@ -895,7 +1027,15 @@ export const PEDAGOGICAL_TOOLTIPS_CATALOG: PedagogicalExplanation[] = [
     id: 'cov_equipo_electronico',
     title: 'Equipo Eléctrico, Electrónico y Equipos Móviles / Portátiles',
     category: 'coverage',
-    keywords: ['equipo electronico', 'electronico', 'electrico', 'portatiles', 'moviles', 'computadores', 'eee'],
+    keywords: [
+      'equipo electronico',
+      'electronico',
+      'electrico',
+      'portatiles',
+      'moviles',
+      'computadores',
+      'eee',
+    ],
     whatItCovers:
       'Ampara computadores, servidores, equipos médicos, paneles y dispositivos móviles contra daños internos por cortocircuito, sobretensión eléctrica, caída accidental o hurto.',
     claimImpact:
@@ -908,7 +1048,15 @@ export const PEDAGOGICAL_TOOLTIPS_CATALOG: PedagogicalExplanation[] = [
     id: 'cov_rotura_maquinaria',
     title: 'Rotura de Maquinaria y Avería Mecánica',
     category: 'coverage',
-    keywords: ['rotura de maquinaria', 'maquinaria', 'ascensores', 'planta electrica', 'caldera', 'transformador', 'bienes refrigerados'],
+    keywords: [
+      'rotura de maquinaria',
+      'maquinaria',
+      'ascensores',
+      'planta electrica',
+      'caldera',
+      'transformador',
+      'bienes refrigerados',
+    ],
     whatItCovers:
       'Protege maquinaria industrial, plantas eléctricas, ascensores, bombas y equipos de frío contra averías internas súbitas de origen mecánico o eléctrico e impericia operativa.',
     claimImpact:
@@ -921,7 +1069,14 @@ export const PEDAGOGICAL_TOOLTIPS_CATALOG: PedagogicalExplanation[] = [
     id: 'cov_lucro_cesante',
     title: 'Lucro Cesante / Pérdida de Ingresos o Arrendamientos',
     category: 'coverage',
-    keywords: ['lucro cesante', 'perdida de utilidad', 'gastos adicionales', 'canon', 'arrendamiento', 'interrupcion'],
+    keywords: [
+      'lucro cesante',
+      'perdida de utilidad',
+      'gastos adicionales',
+      'canon',
+      'arrendamiento',
+      'interrupcion',
+    ],
     whatItCovers:
       'Indemniza la utilidad bruta que deja de percibir el negocio y los gastos fijos permanentes (nómina, arriendo, servicios) durante la paralización causada por un daño material amparado.',
     claimImpact:
@@ -934,7 +1089,18 @@ export const PEDAGOGICAL_TOOLTIPS_CATALOG: PedagogicalExplanation[] = [
     id: 'cov_rce',
     title: 'Responsabilidad Civil Extracontractual (RCE - Art. 1127 Co.Co.)',
     category: 'coverage',
-    keywords: ['responsabilidad civil', 'rce', 'rc ', 'terceros', 'patronal', 'parqueaderos', 'cruzada', 'plo', 'directores', 'd&o'],
+    keywords: [
+      'responsabilidad civil',
+      'rce',
+      'rc ',
+      'terceros',
+      'patronal',
+      'parqueaderos',
+      'cruzada',
+      'plo',
+      'directores',
+      'd&o',
+    ],
     whatItCovers:
       'Protege el patrimonio del asegurado frente a las sumas que deba pagar por daños materiales, lesiones o muerte causados a terceros, incluyendo los gastos de defensa judicial.',
     claimImpact:
@@ -947,7 +1113,15 @@ export const PEDAGOGICAL_TOOLTIPS_CATALOG: PedagogicalExplanation[] = [
     id: 'cov_autos_perdida',
     title: 'Pérdida Total y Pérdida Parcial por Daños o Hurto (Vehículos)',
     category: 'coverage',
-    keywords: ['perdida total', 'perdida parcial', 'colision', 'hurto parcial', 'hurto total', 'patrimonial', 'fasecolda'],
+    keywords: [
+      'perdida total',
+      'perdida parcial',
+      'colision',
+      'hurto parcial',
+      'hurto total',
+      'patrimonial',
+      'fasecolda',
+    ],
     whatItCovers:
       'La Pérdida Parcial cubre la reparación en taller cuando el daño es menor al 75% del valor comercial; la Pérdida Total indemniza el valor comercial Fasecolda cuando el daño supera el 75% o el vehículo es hurtado.',
     claimImpact:
@@ -960,7 +1134,15 @@ export const PEDAGOGICAL_TOOLTIPS_CATALOG: PedagogicalExplanation[] = [
     id: 'cov_cumplimiento',
     title: 'Amparos de Cumplimiento, Anticipo, Salarios y Estabilidad de Obra',
     category: 'coverage',
-    keywords: ['seriedad', 'cumplimiento', 'anticipo', 'salarios', 'prestaciones', 'estabilidad', 'calidad'],
+    keywords: [
+      'seriedad',
+      'cumplimiento',
+      'anticipo',
+      'salarios',
+      'prestaciones',
+      'estabilidad',
+      'calidad',
+    ],
     whatItCovers:
       'Garantiza ante la entidad contratante (pública o privada) el cumplimiento de las obligaciones del contrato, el buen manejo del anticipo, el pago de obligaciones laborales y la calidad post-entrega.',
     claimImpact:
@@ -973,7 +1155,16 @@ export const PEDAGOGICAL_TOOLTIPS_CATALOG: PedagogicalExplanation[] = [
     id: 'cov_asistencias',
     title: 'Servicios de Asistencia (Domiciliaria, Empresarial o en Viaje / Grúa)',
     category: 'coverage',
-    keywords: ['asistencia', 'grua', 'conductor elegido', 'reemplazo', 'plomeria', 'cerrajeria', 'vidrios', 'carro taller'],
+    keywords: [
+      'asistencia',
+      'grua',
+      'conductor elegido',
+      'reemplazo',
+      'plomeria',
+      'cerrajeria',
+      'vidrios',
+      'carro taller',
+    ],
     whatItCovers:
       'Provee atención operativa inmediata 24/7 ante emergencias cotidianas (plomería, electricidad, cerrajería, vidrios, vigilancia de emergencia, grúa, carro taller o conductor elegido).',
     claimImpact:
@@ -1041,7 +1232,11 @@ export function findPedagogicalExplanation(
   let bestScore = 0;
 
   for (const entry of PEDAGOGICAL_TOOLTIPS_CATALOG) {
-    if (preferredCategory && entry.category !== preferredCategory && entry.category !== 'coverage') {
+    if (
+      preferredCategory &&
+      entry.category !== preferredCategory &&
+      entry.category !== 'coverage'
+    ) {
       continue;
     }
     let score = 0;

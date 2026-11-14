@@ -207,11 +207,20 @@ import { documentController } from './controllers/documentController';
 import { searchController } from './controllers/searchController';
 
 // Document management (upload allowed for super_admin, ally_admin, ally_technical; delete restricted to admins)
-app.post('/api/documents', requireRole('super_admin', 'ally_admin', 'ally_technical'), documentController.uploadMiddleware, documentController.createDocument);
+app.post(
+  '/api/documents',
+  requireRole('super_admin', 'ally_admin', 'ally_technical'),
+  documentController.uploadMiddleware,
+  documentController.createDocument
+);
 app.get('/api/documents', documentController.listDocuments);
 app.get('/api/documents/check-existing', documentController.checkExistingClause);
 app.get('/api/documents/:id', documentController.getDocument);
-app.delete('/api/documents/:id', requireRole('super_admin', 'ally_admin'), documentController.deleteDocument);
+app.delete(
+  '/api/documents/:id',
+  requireRole('super_admin', 'ally_admin'),
+  documentController.deleteDocument
+);
 app.get('/api/documents/:id/chunks', documentController.getDocumentChunks);
 
 // Search routes

@@ -1,18 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-  X,
-  ShieldCheck,
-  FileText,
-  Lock,
-  Scale,
-  CheckCircle2,
-  Calendar,
-} from 'lucide-react';
-import {
-  ALL_LEGAL_DOCUMENTS,
-  TERMS_OF_SERVICE,
-  LegalDocument,
-} from '../../src/data/legalContent';
+import { X, ShieldCheck, FileText, Lock, Scale, CheckCircle2, Calendar } from 'lucide-react';
+import { ALL_LEGAL_DOCUMENTS, TERMS_OF_SERVICE, LegalDocument } from '../../src/data/legalContent';
 
 interface LegalModalProps {
   isOpen: boolean;

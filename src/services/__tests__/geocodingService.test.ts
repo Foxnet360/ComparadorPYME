@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-  geocodeClientAddress,
-  normalizeColombianAddress,
-} from '../geocodingService';
+import { geocodeClientAddress, normalizeColombianAddress } from '../geocodingService';
 
 describe('geocodingService', () => {
   beforeEach(() => {

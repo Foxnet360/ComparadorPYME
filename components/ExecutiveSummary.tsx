@@ -151,14 +151,16 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
                   <p className="text-xs text-indigo-200 uppercase tracking-wide">
                     Protección Patrimonial
                   </p>
-                  <p className="font-bold text-lg">
-                    {bestQuote.coverages?.length || 0} Coberturas
-                  </p>
+                  <p className="font-bold text-lg">{bestQuote.coverages?.length || 0} Coberturas</p>
                 </div>
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-bold text-cyan-300">
-                  {(bestQuote.quoteAudit?.missingCoverages?.length ?? bestQuote.missingCoverages?.length ?? 0) === 0 ? '100%' : 'Líder'}
+                  {(bestQuote.quoteAudit?.missingCoverages?.length ??
+                    bestQuote.missingCoverages?.length ??
+                    0) === 0
+                    ? '100%'
+                    : 'Líder'}
                 </span>
                 <span className="text-indigo-200">amparo</span>
               </div>
@@ -237,7 +239,8 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
                   <span>1. Cobertura Integral</span>
                 </div>
                 <p className="text-xs text-indigo-200">
-                  {bestQuote.insurerName} lidera con mayor amplitud en coberturas esenciales para la continuidad operativa de la empresa.
+                  {bestQuote.insurerName} lidera con mayor amplitud en coberturas esenciales para la
+                  continuidad operativa de la empresa.
                 </p>
               </div>
 
@@ -247,7 +250,8 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
                   <span>2. Deducibles Favorables</span>
                 </div>
                 <p className="text-xs text-indigo-200">
-                  Estructura de deducibles optimizada que minimiza el desembolso directo de la compañía al momento de un siniestro.
+                  Estructura de deducibles optimizada que minimiza el desembolso directo de la
+                  compañía al momento de un siniestro.
                 </p>
               </div>
 
@@ -272,7 +276,8 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
                 </p>
                 <div className="space-y-2">
                   {competitors.map((comp, idx) => {
-                    const rawMissing = comp.quoteAudit?.missingCoverages || comp.missingCoverages || [];
+                    const rawMissing =
+                      comp.quoteAudit?.missingCoverages || comp.missingCoverages || [];
                     const missingList = rawMissing
                       .map((m) => {
                         if (typeof m === 'string') return m;
@@ -282,15 +287,15 @@ export const ExecutiveSummary: React.FC<ExecutiveSummaryProps> = ({
                       })
                       .filter(Boolean);
                     const missing = missingList.slice(0, 3).join(', ');
-                    const critCount = (comp.alerts || []).filter((a) => a.level === 'CRITICAL').length;
+                    const critCount = (comp.alerts || []).filter(
+                      (a) => a.level === 'CRITICAL'
+                    ).length;
                     return (
                       <div
                         key={idx}
                         className="flex flex-col sm:flex-row sm:items-center justify-between text-xs bg-white/5 rounded px-3 py-2 border border-white/10 gap-1"
                       >
-                        <span className="font-semibold text-white">
-                          {comp.insurerName}:
-                        </span>
+                        <span className="font-semibold text-white">{comp.insurerName}:</span>
                         <span className="text-indigo-200">
                           {missing
                             ? `Omite amparos clave (${missing}) que trasladarían riesgo financiero directo al asegurado.`

@@ -36,9 +36,7 @@ export const MatrixMetadataCard: React.FC<MatrixMetadataCardProps> = ({ metadata
                 {meta.cliente && (
                   <div className="flex justify-between">
                     <span className="font-medium text-slate-500">Cliente:</span>
-                    <span className="font-semibold text-slate-800 text-right">
-                      {meta.cliente}
-                    </span>
+                    <span className="font-semibold text-slate-800 text-right">{meta.cliente}</span>
                   </div>
                 )}
                 {meta.tipoSeguro && (
@@ -71,17 +69,13 @@ export const MatrixMetadataCard: React.FC<MatrixMetadataCardProps> = ({ metadata
                 {meta.pisos && (
                   <div className="flex justify-between">
                     <span className="font-medium text-slate-500">Pisos:</span>
-                    <span className="font-semibold text-slate-800 text-right">
-                      {meta.pisos}
-                    </span>
+                    <span className="font-semibold text-slate-800 text-right">{meta.pisos}</span>
                   </div>
                 )}
                 {meta.aliado && (
                   <div className="flex justify-between">
                     <span className="font-medium text-slate-500">Aliado:</span>
-                    <span className="font-semibold text-slate-800 text-right">
-                      {meta.aliado}
-                    </span>
+                    <span className="font-semibold text-slate-800 text-right">{meta.aliado}</span>
                   </div>
                 )}
                 {meta.actividadOcupacion && (
@@ -106,9 +100,7 @@ export const MatrixMetadataCard: React.FC<MatrixMetadataCardProps> = ({ metadata
                 {meta.vigencia && (
                   <div className="flex justify-between">
                     <span className="font-medium text-slate-500">Vigencia:</span>
-                    <span className="font-semibold text-slate-800 text-right">
-                      {meta.vigencia}
-                    </span>
+                    <span className="font-semibold text-slate-800 text-right">{meta.vigencia}</span>
                   </div>
                 )}
               </div>

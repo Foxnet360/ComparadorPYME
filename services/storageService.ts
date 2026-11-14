@@ -61,7 +61,10 @@ export const storageService = {
 
   // --- CLIENTS ---
   getClients: async (): Promise<Client[]> => {
-    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1') {
+    if (
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).get('demo') === '1'
+    ) {
       const { DEMO_CLIENTS } = await import('../src/demoData');
       return DEMO_CLIENTS;
     }
@@ -78,7 +81,7 @@ export const storageService = {
             : [];
 
         const cloudClients: Client[] = rawList.map((item: any) => {
-          const contact = (item.contact && typeof item.contact === 'object') ? item.contact : {};
+          const contact = item.contact && typeof item.contact === 'object' ? item.contact : {};
           return {
             id: item.id,
             name: item.name,
@@ -172,7 +175,10 @@ export const storageService = {
 
   // --- HISTORY & STATS ---
   getHistory: async (): Promise<HistoryEntry[]> => {
-    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1') {
+    if (
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).get('demo') === '1'
+    ) {
       const { DEMO_HISTORY } = await import('../src/demoData');
       return DEMO_HISTORY;
     }
@@ -313,9 +319,7 @@ export const storageService = {
         ...entry,
         clientId,
         clientName,
-        fullReport: entry.fullReport
-          ? { ...entry.fullReport, clientName, clientId }
-          : undefined,
+        fullReport: entry.fullReport ? { ...entry.fullReport, clientName, clientId } : undefined,
       };
       await dbService.put('history', updated);
     }

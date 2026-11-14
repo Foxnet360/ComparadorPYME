@@ -408,21 +408,18 @@ export class DocumentIndexingService {
         percent: 90,
       });
 
-      const { data: rawDocId, error: rpcError } = await supabase.rpc(
-        'index_document_transaction',
-        {
-          p_insurer_id: insurerId,
-          p_document_name: metadata.documentName,
-          p_document_type: metadata.documentType,
-          p_version: metadata.version || null,
-          p_total_pages: extractionResult.metadata.pageCount,
-          p_storage_path: `${insurerId}`,
-          p_uploaded_by: metadata.uploadedBy || 'anonymous',
-          p_images: imagesPayload,
-          p_chunks: chunksPayload,
-          p_product_name: metadata.productName || metadata.documentName,
-        } as unknown as never
-      );
+      const { data: rawDocId, error: rpcError } = await supabase.rpc('index_document_transaction', {
+        p_insurer_id: insurerId,
+        p_document_name: metadata.documentName,
+        p_document_type: metadata.documentType,
+        p_version: metadata.version || null,
+        p_total_pages: extractionResult.metadata.pageCount,
+        p_storage_path: `${insurerId}`,
+        p_uploaded_by: metadata.uploadedBy || 'anonymous',
+        p_images: imagesPayload,
+        p_chunks: chunksPayload,
+        p_product_name: metadata.productName || metadata.documentName,
+      } as unknown as never);
 
       const documentId = rawDocId ? String(rawDocId) : undefined;
 

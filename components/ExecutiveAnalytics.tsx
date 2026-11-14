@@ -34,7 +34,8 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
   onBackToDashboard,
 }) => {
   const effectiveInitialRole = currentUserRole || initialRole;
-  const isSuperAdminUser = currentUserRole === 'super_admin' || (!currentUserRole && initialRole === 'super_admin');
+  const isSuperAdminUser =
+    currentUserRole === 'super_admin' || (!currentUserRole && initialRole === 'super_admin');
 
   const [role, setRole] = useState<UserRole>(effectiveInitialRole);
   const [selectedAllyId, setSelectedAllyId] = useState<string>('ally-100');
@@ -105,7 +106,8 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
               </span>
             </div>
             <p className="text-slate-500 text-sm mt-0.5">
-              Tablero estratégico adaptativo de rendimiento técnico, conversión e Inteligencia Actuarial
+              Tablero estratégico adaptativo de rendimiento técnico, conversión e Inteligencia
+              Actuarial
             </p>
           </div>
         </div>
@@ -158,7 +160,9 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
           <div className="bg-slate-100 px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 flex items-center space-x-2">
             <Lock size={14} className="text-slate-400" />
             <span>
-              {role === 'ally_admin' ? 'Perfil: Director de Correduría' : 'Perfil: Técnico Analista'}
+              {role === 'ally_admin'
+                ? 'Perfil: Director de Correduría'
+                : 'Perfil: Técnico Analista'}
             </span>
           </div>
         )}
@@ -228,7 +232,9 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
           <div className="flex items-center space-x-2">
             <Activity size={16} className="text-amber-600 shrink-0" />
             <span>
-              <strong>Datos de referencia / simulación:</strong> No se registraron cotizaciones previas en la base de datos para este perfil. Se visualizan indicadores de referencia (benchmarks) del modelo de negocio.
+              <strong>Datos de referencia / simulación:</strong> No se registraron cotizaciones
+              previas en la base de datos para este perfil. Se visualizan indicadores de referencia
+              (benchmarks) del modelo de negocio.
             </span>
           </div>
           <span className="font-semibold px-2 py-0.5 bg-amber-200/60 text-amber-900 rounded-md text-[10px] uppercase tracking-wide shrink-0 ml-2">
@@ -335,7 +341,9 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
                   <div className="text-xl font-bold text-emerald-400">
                     {data.daasMetrics?.totalSnapshots ?? 142}
                   </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">En public.daas_market_snapshots</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">
+                    En public.daas_market_snapshots
+                  </div>
                 </div>
 
                 <div className="bg-white/5 p-3.5 rounded-xl border border-white/10">
@@ -343,7 +351,9 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
                   <div className="text-xl font-bold text-white">
                     {data.daasMetrics?.activeDomains ?? 8}
                   </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">PYME, Autos, Coprop., Hogar...</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">
+                    PYME, Autos, Coprop., Hogar...
+                  </div>
                 </div>
 
                 <div className="bg-white/5 p-3.5 rounded-xl border border-white/10">
@@ -376,7 +386,8 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
                       Benchmark de Mercado DaaS (Índice de Precios CSA & Dispersión Actuarial)
                     </h3>
                     <p className="text-xs text-slate-500">
-                      Dispersión de tarifas de mercado para el ramo PYME Multirriesgo en Colombia (Muestra anonimizada)
+                      Dispersión de tarifas de mercado para el ramo PYME Multirriesgo en Colombia
+                      (Muestra anonimizada)
                     </p>
                   </div>
                 </div>
@@ -399,7 +410,9 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
                   <div className="text-lg font-extrabold text-slate-900">
                     {formatCOPMillions(data.marketBenchmark?.percentile25 ?? 3800000)}
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-1">El 25% más económico del mercado</div>
+                  <div className="text-[11px] text-slate-400 mt-1">
+                    El 25% más económico del mercado
+                  </div>
                 </div>
 
                 <div className="p-4 bg-indigo-50/60 rounded-xl border border-indigo-100 relative group">
@@ -415,7 +428,9 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
                   <div className="text-xl font-extrabold text-indigo-900">
                     {formatCOPMillions(data.marketBenchmark?.medianPremiumAnnual ?? 4500000)}
                   </div>
-                  <div className="text-[11px] text-indigo-600/80 mt-1">Tarifa media de referencia del sector</div>
+                  <div className="text-[11px] text-indigo-600/80 mt-1">
+                    Tarifa media de referencia del sector
+                  </div>
                 </div>
 
                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 relative group">
@@ -431,7 +446,9 @@ export const ExecutiveAnalytics: React.FC<ExecutiveAnalyticsProps> = ({
                   <div className="text-lg font-extrabold text-slate-900">
                     {formatCOPMillions(data.marketBenchmark?.percentile75 ?? 5600000)}
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-1">El 25% más costoso del mercado</div>
+                  <div className="text-[11px] text-slate-400 mt-1">
+                    El 25% más costoso del mercado
+                  </div>
                 </div>
               </div>
             </div>

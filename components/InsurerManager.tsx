@@ -208,7 +208,8 @@ export const InsurerManager: React.FC<InsurerManagerProps> = ({ onBack }) => {
 
     const matchesDomain =
       selectedDomain === 'all' ||
-      (ins.supportedDomains && ins.supportedDomains.includes(selectedDomain as InsuranceDomainType));
+      (ins.supportedDomains &&
+        ins.supportedDomains.includes(selectedDomain as InsuranceDomainType));
 
     const matchesRpa =
       filterRpa === null ||
@@ -241,7 +242,8 @@ export const InsurerManager: React.FC<InsurerManagerProps> = ({ onBack }) => {
                 Gestión de Aseguradoras
               </h1>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Catálogo unificado de aseguradoras en Colombia, identidades de marca, RPA Rocketbot y conectores API
+                Catálogo unificado de aseguradoras en Colombia, identidades de marca, RPA Rocketbot
+                y conectores API
               </p>
             </div>
           </div>
@@ -340,8 +342,12 @@ export const InsurerManager: React.FC<InsurerManagerProps> = ({ onBack }) => {
       ) : filteredInsurers.length === 0 ? (
         <div className="p-12 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
           <Shield className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-600 mb-2" />
-          <p className="font-bold text-slate-700 dark:text-slate-300">No se encontraron aseguradoras</p>
-          <p className="text-xs text-slate-400 mt-1">Intente cambiar los filtros o el término de búsqueda</p>
+          <p className="font-bold text-slate-700 dark:text-slate-300">
+            No se encontraron aseguradoras
+          </p>
+          <p className="text-xs text-slate-400 mt-1">
+            Intente cambiar los filtros o el término de búsqueda
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -434,7 +440,9 @@ export const InsurerManager: React.FC<InsurerManagerProps> = ({ onBack }) => {
 
                 {/* Supported ramos badges */}
                 <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[10px] font-bold text-slate-400 mr-1 uppercase">Ramos:</span>
+                  <span className="text-[10px] font-bold text-slate-400 mr-1 uppercase">
+                    Ramos:
+                  </span>
                   {(ins.supportedDomains || []).slice(0, 4).map((dom) => (
                     <span
                       key={dom}
@@ -570,7 +578,9 @@ export const InsurerManager: React.FC<InsurerManagerProps> = ({ onBack }) => {
                     type="text"
                     maxLength={4}
                     value={formData.monogram || ''}
-                    onChange={(e) => setFormData({ ...formData, monogram: e.target.value.toUpperCase() })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, monogram: e.target.value.toUpperCase() })
+                    }
                     placeholder="Ej. SURA"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 uppercase font-bold"
                   />
@@ -689,7 +699,11 @@ export const InsurerManager: React.FC<InsurerManagerProps> = ({ onBack }) => {
                   disabled={saving}
                   className="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-md hover:shadow-lg disabled:opacity-50"
                 >
-                  {saving ? 'Guardando...' : editingInsurer ? 'Guardar Cambios' : 'Crear Aseguradora'}
+                  {saving
+                    ? 'Guardando...'
+                    : editingInsurer
+                      ? 'Guardar Cambios'
+                      : 'Crear Aseguradora'}
                 </button>
               </div>
             </form>
@@ -701,9 +715,7 @@ export const InsurerManager: React.FC<InsurerManagerProps> = ({ onBack }) => {
         isOpen={pendingDelete !== null}
         title="Eliminar o desactivar aseguradora"
         message={
-          pendingDelete
-            ? `¿Está seguro de eliminar o desactivar a "${pendingDelete.name}"?`
-            : ''
+          pendingDelete ? `¿Está seguro de eliminar o desactivar a "${pendingDelete.name}"?` : ''
         }
         confirmLabel="Eliminar"
         onConfirm={confirmDeleteInsurer}

@@ -7,10 +7,7 @@ import { FormatDetectionResult } from '../formatDetector';
 import { TemplateRegistryEntry } from '../../schemas/templateRegistrySchema';
 import { LayoutParserResult } from '../layoutParser';
 import { buildPromptForFamily, buildTemplatePrompt } from '../promptBuilder';
-import {
-  createStructuredLogger,
-  globalMetrics,
-} from '../../utils/structuredLogger';
+import { createStructuredLogger, globalMetrics } from '../../utils/structuredLogger';
 import { ExtractionPromptContext, ExtractionPromptSelection } from './types';
 
 /**

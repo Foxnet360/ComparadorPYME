@@ -31,7 +31,8 @@ export const MatrixMethodologyNote: React.FC<MatrixMethodologyNoteProps> = ({ vi
       {viewMode === 'technical' && (
         <div className="flex items-center gap-2 text-[11px] text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-200 whitespace-nowrap self-start md:self-auto">
           <span>
-            💡 <strong>Tip:</strong> Doble clic en cualquier celda para contrastar con el PDF original o añadir notas
+            💡 <strong>Tip:</strong> Doble clic en cualquier celda para contrastar con el PDF
+            original o añadir notas
           </span>
         </div>
       )}

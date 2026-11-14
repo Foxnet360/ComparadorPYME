@@ -48,9 +48,15 @@ describe('migration 033: DaaS market snapshots and anonymization pipeline', () =
   });
 
   it('creates performant indexes on domain, insurer_name, and period', () => {
-    expect(sql).toMatch(/CREATE INDEX IF NOT EXISTS idx_daas_snapshots_domain ON public\.daas_market_snapshots\(domain\)/i);
-    expect(sql).toMatch(/CREATE INDEX IF NOT EXISTS idx_daas_snapshots_insurer ON public\.daas_market_snapshots\(insurer_name\)/i);
-    expect(sql).toMatch(/CREATE INDEX IF NOT EXISTS idx_daas_snapshots_period ON public\.daas_market_snapshots\(period_month\)/i);
+    expect(sql).toMatch(
+      /CREATE INDEX IF NOT EXISTS idx_daas_snapshots_domain ON public\.daas_market_snapshots\(domain\)/i
+    );
+    expect(sql).toMatch(
+      /CREATE INDEX IF NOT EXISTS idx_daas_snapshots_insurer ON public\.daas_market_snapshots\(insurer_name\)/i
+    );
+    expect(sql).toMatch(
+      /CREATE INDEX IF NOT EXISTS idx_daas_snapshots_period ON public\.daas_market_snapshots\(period_month\)/i
+    );
   });
 
   it('defines the automated PII cleansing trigger function and attaches it to analysis_history', () => {
@@ -58,7 +64,9 @@ describe('migration 033: DaaS market snapshots and anonymization pipeline', () =
     expect(sql).toMatch(/SECURITY DEFINER/i);
     expect(sql).toMatch(/SET search_path = ''/i);
     expect(sql).toMatch(/TRIGGER trg_anonymize_analysis_to_daas/i);
-    expect(sql).toMatch(/AFTER INSERT OR UPDATE OF analysis_result, unified_result ON public\.analysis_history/i);
+    expect(sql).toMatch(
+      /AFTER INSERT OR UPDATE OF analysis_result, unified_result ON public\.analysis_history/i
+    );
   });
 
   it('implements server-side executive analytics RPC (get_executive_analytics_summary) with role isolation', () => {

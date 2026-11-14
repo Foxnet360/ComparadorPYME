@@ -108,7 +108,8 @@ export async function createPolicy(
   if (input.coverages !== undefined) payload.coverages = input.coverages as unknown as Json;
   if (input.deductibles !== undefined) payload.deductibles = input.deductibles as unknown as Json;
   if (input.source_analysis_id !== undefined) payload.source_analysis_id = input.source_analysis_id;
-  if (input.ramo_details !== undefined) payload.ramo_details = input.ramo_details as unknown as Json;
+  if (input.ramo_details !== undefined)
+    payload.ramo_details = input.ramo_details as unknown as Json;
 
   const { data, error } = await supabase
     .from('policies')
@@ -183,7 +184,8 @@ export async function updatePolicy(
   if (input.deductibles !== undefined) payload.deductibles = input.deductibles as unknown as Json;
   if (input.provenance !== undefined) payload.provenance = input.provenance;
   if (input.source_analysis_id !== undefined) payload.source_analysis_id = input.source_analysis_id;
-  if (input.ramo_details !== undefined) payload.ramo_details = input.ramo_details as unknown as Json;
+  if (input.ramo_details !== undefined)
+    payload.ramo_details = input.ramo_details as unknown as Json;
 
   let query = supabase.from('policies').update(payload).eq('id', id);
 
@@ -236,10 +238,7 @@ export async function listPoliciesByIds(ids: string[]): Promise<PolicyRecord[]> 
   if (ids.length === 0) {
     return [];
   }
-  const { data, error } = await supabase
-    .from('policies')
-    .select(POLICY_COLUMNS)
-    .in('id', ids);
+  const { data, error } = await supabase.from('policies').select(POLICY_COLUMNS).in('id', ids);
 
   if (error) {
     handleDbError(error, 'Failed to list policies by ids');

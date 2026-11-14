@@ -171,7 +171,8 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
                 </div>
               ) : (
                 <div className="text-xs text-slate-500">
-                  Cliente asignado: <span className="font-semibold text-slate-700">{selectedClient.name}</span>
+                  Cliente asignado:{' '}
+                  <span className="font-semibold text-slate-700">{selectedClient.name}</span>
                 </div>
               )}
               <button

@@ -10,7 +10,9 @@ describe('AppFooter component', () => {
     render(<AppFooter onOpenLegalModal={handleOpenLegalModal} />);
 
     // Broker name appears in both column 1 and copyright footer
-    expect(screen.getAllByText('Corredores de Seguros Asociados S.A.').length).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByText('Corredores de Seguros Asociados S.A.').length
+    ).toBeGreaterThanOrEqual(1);
 
     // Website link
     const webLink = screen.getByRole('link', { name: /correseguros\.co/i });
@@ -35,12 +37,7 @@ describe('AppFooter component', () => {
     };
 
     const handleOpenLegalModal = vi.fn();
-    render(
-      <AppFooter
-        currentUser={customUser}
-        onOpenLegalModal={handleOpenLegalModal}
-      />
-    );
+    render(<AppFooter currentUser={customUser} onOpenLegalModal={handleOpenLegalModal} />);
 
     expect(screen.getByText('Mauricio Asesor')).toBeDefined();
     expect(screen.getByText('SFC-MAT-77665')).toBeDefined();

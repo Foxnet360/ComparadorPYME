@@ -1,6 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import { matrixRowsToComparisonReport, resolveAnalysisUserId } from '../analysisController';
-import { FINANCIAL_SECTION_ID, isFinancialRowLabel } from '../../services/unifiedComparison/matrixTransformer';
+import {
+  FINANCIAL_SECTION_ID,
+  isFinancialRowLabel,
+} from '../../services/unifiedComparison/matrixTransformer';
 import { semanticMatcher } from '../../services/semanticMatcher';
 import { MatrixRow } from '../../types';
 import { AuthenticatedRequest } from '../../middleware/auth';
@@ -428,13 +431,19 @@ describe('analysisController - matrixRowsToComparisonReport', () => {
     ];
     const quoteFiles = [{ originalname: 'COTIZACION-MAPFRE.pdf' }] as Express.Multer.File[];
 
-    const reportPyme = await matrixRowsToComparisonReport(matrixRows, quoteFiles, { domain: 'pyme' });
+    const reportPyme = await matrixRowsToComparisonReport(matrixRows, quoteFiles, {
+      domain: 'pyme',
+    });
     expect(reportPyme.quotes[0].policyName).toBe('Cotización PYME');
 
-    const reportAutos = await matrixRowsToComparisonReport(matrixRows, quoteFiles, { domain: 'autos' });
+    const reportAutos = await matrixRowsToComparisonReport(matrixRows, quoteFiles, {
+      domain: 'autos',
+    });
     expect(reportAutos.quotes[0].policyName).toBe('Cotización Autos');
 
-    const reportSalud = await matrixRowsToComparisonReport(matrixRows, quoteFiles, { domain: 'salud' });
+    const reportSalud = await matrixRowsToComparisonReport(matrixRows, quoteFiles, {
+      domain: 'salud',
+    });
     expect(reportSalud.quotes[0].policyName).toBe('Cotización Salud');
   });
 
@@ -445,14 +454,22 @@ describe('analysisController - matrixRowsToComparisonReport', () => {
         id: 'r_high_evidence',
         label: 'Incendio',
         sectionId: 1,
-        cells: [{ value: '$ 500.000.000', notes: '10% min 2 SMMLV', isExcluded: false, isWinner: false, confidence: 0.95 }],
+        cells: [
+          {
+            value: '$ 500.000.000',
+            notes: '10% min 2 SMMLV',
+            isExcluded: false,
+            isWinner: false,
+            confidence: 0.95,
+          },
+        ],
       },
       {
         type: 'data',
         id: 'r_low_evidence',
         label: 'Cobertura Incierta',
         sectionId: 1,
-        cells: [{ value: 'No informado', isExcluded: true, isWinner: false, confidence: 0.40 }],
+        cells: [{ value: 'No informado', isExcluded: true, isWinner: false, confidence: 0.4 }],
       },
     ];
     const quoteFiles = [{ originalname: 'COTIZACION-MAPFRE.pdf' }] as Express.Multer.File[];
@@ -465,7 +482,7 @@ describe('analysisController - matrixRowsToComparisonReport', () => {
     expect(lowCov).toBeDefined();
     // High evidence coverage with valid value and deductible has high confidence
     expect(highCov!.confidence).toBeGreaterThan(lowCov!.confidence);
-    expect(lowCov!.confidence).toBeLessThan(0.70);
+    expect(lowCov!.confidence).toBeLessThan(0.7);
   });
 
   it('deduplicates semanticMatcher.matchCoverage calls across multiple insurers for the same coverage row', async () => {

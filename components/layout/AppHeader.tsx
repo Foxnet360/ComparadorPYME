@@ -124,19 +124,22 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           </button>
 
           {/* Gestión de Usuarios & Aliados (super_admin & ally_admin only) */}
-          {currentUser && (currentUser.role === 'super_admin' || currentUser.role === 'ally_admin' || currentUser.role === 'ADMIN') && (
-            <button
-              onClick={onOpenUsers}
-              className={`p-2 rounded-full transition-colors ${
-                currentView === 'USERS'
-                  ? 'bg-indigo-100 text-indigo-700 font-semibold'
-                  : 'text-slate-500 hover:bg-indigo-100 hover:text-indigo-600'
-              }`}
-              title="Gestión de Usuarios y Aliados (RBAC)"
-            >
-              <ShieldCheck size={20} />
-            </button>
-          )}
+          {currentUser &&
+            (currentUser.role === 'super_admin' ||
+              currentUser.role === 'ally_admin' ||
+              currentUser.role === 'ADMIN') && (
+              <button
+                onClick={onOpenUsers}
+                className={`p-2 rounded-full transition-colors ${
+                  currentView === 'USERS'
+                    ? 'bg-indigo-100 text-indigo-700 font-semibold'
+                    : 'text-slate-500 hover:bg-indigo-100 hover:text-indigo-600'
+                }`}
+                title="Gestión de Usuarios y Aliados (RBAC)"
+              >
+                <ShieldCheck size={20} />
+              </button>
+            )}
 
           {/* Gestión de Aseguradoras & RPA (super_admin only) */}
           {currentUser && (currentUser.role === 'super_admin' || currentUser.role === 'ADMIN') && (

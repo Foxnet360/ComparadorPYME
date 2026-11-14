@@ -54,7 +54,10 @@ describe('analysisValidationController - exportAnalysisExcel', () => {
       },
     } as any);
 
-    const req = { params: { id: 'test-id' }, user: { id: 'test-user-123', role: 'ally_technical' } } as any;
+    const req = {
+      params: { id: 'test-id' },
+      user: { id: 'test-user-123', role: 'ally_technical' },
+    } as any;
     const res = createMockRes();
 
     await exportAnalysisExcel(req, res);
@@ -140,9 +143,7 @@ describe('analysisValidationController - exportAnalysisExcel', () => {
       },
     } as any);
 
-    const updatedQuotes = [
-      { insurerName: 'HDI', priceAnnual: 4200000, coverages: [], alerts: [] },
-    ];
+    const updatedQuotes = [{ insurerName: 'HDI', priceAnnual: 4200000, coverages: [], alerts: [] }];
     const req = {
       params: { id: 'test-id' },
       user: { id: 'test-user-123' },

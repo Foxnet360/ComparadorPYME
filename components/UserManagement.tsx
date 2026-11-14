@@ -59,7 +59,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 
   // Feedback & Action state
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(
+    null
+  );
 
   // Load real organizations and members from Supabase / Backend
   useEffect(() => {
@@ -77,7 +79,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         }
 
         // If ally_admin and currentAllyId is legacy or missing, resolve from backend
-        if (currentUserRole === 'ally_admin' && (!currentAllyId || currentAllyId === 'ally-100' || currentAllyId.length !== 36)) {
+        if (
+          currentUserRole === 'ally_admin' &&
+          (!currentAllyId || currentAllyId === 'ally-100' || currentAllyId.length !== 36)
+        ) {
           const currentOrgRes = await organizationService.getCurrentOrganization();
           if (isMounted && currentOrgRes.orgId) {
             setDefaultAllyId(currentOrgRes.orgId);
@@ -92,7 +97,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({
           // Fallback to org members if directory RPC was not available
           const members = await organizationService.listMembers(currentAllyId);
           if (isMounted && members.length > 0) {
-            const orgMap = new Map((orgs.length > 0 ? orgs : alliesList).map((o) => [o.id, o.name]));
+            const orgMap = new Map(
+              (orgs.length > 0 ? orgs : alliesList).map((o) => [o.id, o.name])
+            );
             const remoteUsers: ManagedUser[] = members.map((m) => ({
               id: m.id,
               name: m.user_id.includes('@') ? m.user_id.split('@')[0]! : m.user_id,
@@ -119,7 +126,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   }, [currentUserRole, currentAllyId]);
 
   // Filter users based on RBAC level
-  const effectiveAllyId = defaultAllyId && defaultAllyId.length === 36 ? defaultAllyId : currentAllyId;
+  const effectiveAllyId =
+    defaultAllyId && defaultAllyId.length === 36 ? defaultAllyId : currentAllyId;
   const visibleUsers = usersList
     .filter((u) => {
       if (currentUserRole === 'super_admin') {
@@ -143,8 +151,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     role: UserRole;
     allyId: string;
   }) => {
-    const selectedAlly =
-      alliesList.find((a) => a.id === userData.allyId) ||
+    const selectedAlly = alliesList.find((a) => a.id === userData.allyId) ||
       alliesList[0] || { id: userData.allyId, name: 'Correduría General' };
 
     setFeedback(null);
@@ -257,7 +264,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   } | null>(null);
 
   const handleDeleteUser = (user: ManagedUser) => {
-    const actionLabel = currentUserRole === 'super_admin' ? 'eliminar del sistema' : 'desvincular de su equipo';
+    const actionLabel =
+      currentUserRole === 'super_admin' ? 'eliminar del sistema' : 'desvincular de su equipo';
     setPendingConfirm({
       title: 'Confirmar eliminación de usuario',
       message: `¿Está seguro de ${actionLabel} al usuario "${user.name}" (${user.email})?`,
@@ -341,7 +349,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     try {
       const mergedSettings = {
         ...(editingAlly?.settings || {}),
-        ...(updates.logoUrl !== undefined ? { logo_url: updates.logoUrl, logoUrl: updates.logoUrl } : {}),
+        ...(updates.logoUrl !== undefined
+          ? { logo_url: updates.logoUrl, logoUrl: updates.logoUrl }
+          : {}),
         ...(commercialPolicies ? { commercial_policies: commercialPolicies } : {}),
       };
 
@@ -384,7 +394,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     } catch (err: unknown) {
       setFeedback({
         type: 'error',
-        message: err instanceof Error ? err.message : 'Error al actualizar información de la correduría',
+        message:
+          err instanceof Error ? err.message : 'Error al actualizar información de la correduría',
       });
       throw err;
     }
@@ -622,7 +633,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                                 ? 'text-amber-700 bg-amber-50 hover:bg-amber-100'
                                 : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
                             }`}
-                            title={user.status === 'ACTIVE' ? 'Desactivar usuario' : 'Activar usuario'}
+                            title={
+                              user.status === 'ACTIVE' ? 'Desactivar usuario' : 'Activar usuario'
+                            }
                           >
                             {user.status === 'ACTIVE' ? 'Desactivar' : 'Activar'}
                           </button>
@@ -682,7 +695,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-xs font-mono text-slate-600">{ally.nit || '—'}</td>
+                      <td className="px-6 py-4 text-xs font-mono text-slate-600">
+                        {ally.nit || '—'}
+                      </td>
                       <td className="px-6 py-4 text-xs text-slate-600">
                         {ally.contact_email || ally.phone ? (
                           <div>

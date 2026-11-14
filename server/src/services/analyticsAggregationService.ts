@@ -129,7 +129,8 @@ export const analyticsAggregationService = {
           .sort((a: number, b: number) => a - b);
 
         const sampleSize = prices.length;
-        const avg = sampleSize > 0 ? prices.reduce((a: number, b: number) => a + b, 0) / sampleSize : 0;
+        const avg =
+          sampleSize > 0 ? prices.reduce((a: number, b: number) => a + b, 0) / sampleSize : 0;
         const median = sampleSize > 0 ? prices[Math.floor(sampleSize / 2)] : 0;
         const p25 = sampleSize > 0 ? prices[Math.floor(sampleSize * 0.25)] : 0;
         const p75 = sampleSize > 0 ? prices[Math.floor(sampleSize * 0.75)] : 0;
@@ -185,8 +186,7 @@ export const analyticsAggregationService = {
    */
   ingestAnalysisToDaas: async (analysis: Record<string, unknown>): Promise<number> => {
     const quotes =
-      (analysis.analysis_result as any)?.quotes ||
-      (analysis.unified_result as any)?.quotes;
+      (analysis.analysis_result as any)?.quotes || (analysis.unified_result as any)?.quotes;
 
     if (!Array.isArray(quotes) || quotes.length === 0) {
       return 0;
@@ -318,9 +318,7 @@ async function fallbackAggregation(
   // Insurer distribution from DaaS snapshots
   let insurerDistribution: Array<{ insurerName: string; count: number; percentage: number }> = [];
   try {
-    const { data: snaps } = await supabase
-      .from('daas_market_snapshots')
-      .select('insurer_name');
+    const { data: snaps } = await supabase.from('daas_market_snapshots').select('insurer_name');
     if (snaps && snaps.length > 0) {
       const counts: Record<string, number> = {};
       for (const s of snaps) {

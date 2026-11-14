@@ -11,24 +11,15 @@
         "rotura-mecanica-implosion",
         "sustraccion-robo-maquinaria"
       ],
-      "aliases": [
-        "COBERTURAS PRINCIPALES",
-        "Daño Físico Maquinaria",
-        "Rotura Mecánica"
-      ],
+      "aliases": ["COBERTURAS PRINCIPALES", "Daño Físico Maquinaria", "Rotura Mecánica"],
       "riskType": "equipment_damage"
     },
     {
       "id": "responsabilidad-operacion-maquinaria",
       "name": "Responsabilidad Civil por Operación de Maquinaria",
       "level": 1,
-      "childrenIds": [
-        "rc-operacion-maquinaria"
-      ],
-      "aliases": [
-        "RC Maquinaria",
-        "RC Extracontractual Operación"
-      ],
+      "childrenIds": ["rc-operacion-maquinaria"],
+      "aliases": ["RC Maquinaria", "RC Extracontractual Operación"],
       "riskType": "liability"
     },
     {
@@ -40,10 +31,7 @@
         "perdida-beneficios-paralizacion",
         "transito-movilizacion-maquinaria"
       ],
-      "aliases": [
-        "COBERTURAS COMPLEMENTARIAS",
-        "Gastos y Tránsito"
-      ],
+      "aliases": ["COBERTURAS COMPLEMENTARIAS", "Gastos y Tránsito"],
       "riskType": "consequential"
     },
     {

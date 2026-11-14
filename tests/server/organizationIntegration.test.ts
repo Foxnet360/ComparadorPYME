@@ -113,8 +113,22 @@ describe('Multi-Tenant Organization API & Team Sharing', () => {
     it('allows ally_admin of organization A to read their team members', async () => {
       mockUser = { id: 'u-admin-a', role: 'ally_admin', orgId: 'org-a' };
       vi.spyOn(orgRepo, 'listOrganizationMembers').mockResolvedValueOnce([
-        { id: 'm1', org_id: 'org-a', user_id: 'u-tech-1', role: 'ally_technical', created_at: '', updated_at: '' },
-        { id: 'm2', org_id: 'org-a', user_id: 'u-admin-a', role: 'ally_admin', created_at: '', updated_at: '' },
+        {
+          id: 'm1',
+          org_id: 'org-a',
+          user_id: 'u-tech-1',
+          role: 'ally_technical',
+          created_at: '',
+          updated_at: '',
+        },
+        {
+          id: 'm2',
+          org_id: 'org-a',
+          user_id: 'u-admin-a',
+          role: 'ally_admin',
+          created_at: '',
+          updated_at: '',
+        },
       ]);
 
       const res = await request(app).get('/api/organizations/org-a/members');

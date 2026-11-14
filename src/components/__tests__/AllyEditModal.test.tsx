@@ -24,31 +24,20 @@ const mockAlly: Ally = {
   phone: '+57 (602) 888-9900',
   contact_email: 'contacto@segurosdelvalle.com',
   status: 'ACTIVE',
-  logoUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+  logoUrl:
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
 };
 
 describe('AllyEditModal — Intermediary logo & format requirements', () => {
   it('does not render when isOpen is false', () => {
     const { container } = render(
-      <AllyEditModal
-        isOpen={false}
-        onClose={vi.fn()}
-        ally={mockAlly}
-        onUpdate={vi.fn()}
-      />
+      <AllyEditModal isOpen={false} onClose={vi.fn()} ally={mockAlly} onUpdate={vi.fn()} />
     );
     expect(container.firstChild).toBeNull();
   });
 
   it('renders modal with "Editar Intermediario" and displays technical specifications for logo', () => {
-    render(
-      <AllyEditModal
-        isOpen={true}
-        onClose={vi.fn()}
-        ally={mockAlly}
-        onUpdate={vi.fn()}
-      />
-    );
+    render(<AllyEditModal isOpen={true} onClose={vi.fn()} ally={mockAlly} onUpdate={vi.fn()} />);
 
     expect(screen.getByText('Editar Intermediario')).toBeTruthy();
     expect(screen.getByText('Logo del Intermediario (PDF y Excel)')).toBeTruthy();
@@ -59,14 +48,7 @@ describe('AllyEditModal — Intermediary logo & format requirements', () => {
   });
 
   it('displays the existing logo image preview when provided in ally', () => {
-    render(
-      <AllyEditModal
-        isOpen={true}
-        onClose={vi.fn()}
-        ally={mockAlly}
-        onUpdate={vi.fn()}
-      />
-    );
+    render(<AllyEditModal isOpen={true} onClose={vi.fn()} ally={mockAlly} onUpdate={vi.fn()} />);
 
     const img = screen.getByAltText('Logo Intermediario') as HTMLImageElement;
     expect(img).toBeTruthy();
@@ -76,12 +58,7 @@ describe('AllyEditModal — Intermediary logo & format requirements', () => {
   it('submits updated logoUrl when saving the intermediary form', async () => {
     const onUpdateMock = vi.fn().mockResolvedValue(undefined);
     render(
-      <AllyEditModal
-        isOpen={true}
-        onClose={vi.fn()}
-        ally={mockAlly}
-        onUpdate={onUpdateMock}
-      />
+      <AllyEditModal isOpen={true} onClose={vi.fn()} ally={mockAlly} onUpdate={onUpdateMock} />
     );
 
     const submitBtn = screen.getByRole('button', { name: /Actualizar Correduría/i });
@@ -103,12 +80,7 @@ describe('AllyEditModal — Intermediary logo & format requirements', () => {
   it('allows removing the logo via the "Quitar" button', async () => {
     const onUpdateMock = vi.fn().mockResolvedValue(undefined);
     render(
-      <AllyEditModal
-        isOpen={true}
-        onClose={vi.fn()}
-        ally={mockAlly}
-        onUpdate={onUpdateMock}
-      />
+      <AllyEditModal isOpen={true} onClose={vi.fn()} ally={mockAlly} onUpdate={onUpdateMock} />
     );
 
     const removeBtn = screen.getByRole('button', { name: /Quitar/i });

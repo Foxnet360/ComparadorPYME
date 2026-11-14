@@ -37,7 +37,9 @@ export async function exportAnalysisToExcel(params: ExportExcelParams): Promise<
   const brokerInfo = {
     name: currentUser?.name || 'Asesor Técnico de Seguros',
     intermediaryName:
-      currentUser?.intermediaryName || currentUser?.agencyName || 'Corredores de Seguros Asociados S.A.',
+      currentUser?.intermediaryName ||
+      currentUser?.agencyName ||
+      'Corredores de Seguros Asociados S.A.',
     registrationNumber:
       currentUser?.registrationNumber ||
       currentUser?.agentDetails?.registrationNumber ||

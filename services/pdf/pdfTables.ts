@@ -20,7 +20,18 @@ export function renderCuadroChicoTable(
   startY: number,
   getCuadroChicoValue: (quote: PdfRenderContext['quotes'][0], keywords: string[]) => string
 ): void {
-  const { doc, quotes, insurers, regProfile, domain, primaryColor, lightGray, tableMargins, pagesWithHeader, addHeader } = ctx;
+  const {
+    doc,
+    quotes,
+    insurers,
+    regProfile,
+    domain,
+    primaryColor,
+    lightGray,
+    tableMargins,
+    pagesWithHeader,
+    addHeader,
+  } = ctx;
   const domainRules = regProfile.mandatoryVerificationRules || [];
   const isVida = domain === 'vida_grupo';
 
@@ -61,7 +72,11 @@ export function renderCuadroChicoTable(
     ],
     [
       'Forma de Pago / Plazo',
-      ...quotes.map((q) => (q as unknown as { paymentTerms?: string }).paymentTerms || (q.priceMonthly ? 'Financiado / Mensual' : 'Anual Contado')),
+      ...quotes.map(
+        (q) =>
+          (q as unknown as { paymentTerms?: string }).paymentTerms ||
+          (q.priceMonthly ? 'Financiado / Mensual' : 'Anual Contado')
+      ),
     ],
     ...(domainRules.length > 0
       ? domainRules.map((rule) => [
@@ -82,10 +97,7 @@ export function renderCuadroChicoTable(
           : 'Ver tabla detallada'
       ),
     ],
-    [
-      'Score Técnico CSA',
-      ...quotes.map((q) => `${q.score || 0} / 100`),
-    ],
+    ['Score Técnico CSA', ...quotes.map((q) => `${q.score || 0} / 100`)],
   ];
 
   autoTable(doc, {
@@ -131,7 +143,18 @@ export function renderCuadroChicoTable(
  * Renders the multi-page dynamic coverage matrix table.
  */
 export function renderCoverageMatrixTable(ctx: PdfRenderContext, startY: number): void {
-  const { doc, report, quotes, insurers, regProfile, primaryColor, lightGray, tableMargins, pagesWithHeader, addHeader } = ctx;
+  const {
+    doc,
+    report,
+    quotes,
+    insurers,
+    regProfile,
+    primaryColor,
+    lightGray,
+    tableMargins,
+    pagesWithHeader,
+    addHeader,
+  } = ctx;
   const tableHead = [['Amparo / Cobertura y Alcance Legal', ...insurers]];
   const tableBody: string[][] = [];
 
@@ -152,11 +175,20 @@ export function renderCoverageMatrixTable(ctx: PdfRenderContext, startY: number)
 
       quotes.forEach((_q, colIdx) => {
         const cell = row.cells[colIdx];
-        if (!cell || cell.isExcluded || cell.value === 'No incluida' || cell.value === 'No Cotizado') {
+        if (
+          !cell ||
+          cell.isExcluded ||
+          cell.value === 'No incluida' ||
+          cell.value === 'No Cotizado'
+        ) {
           rowCells.push('No cotizado');
         } else {
           let cellText = formatCoverageValuePDF(cell.value);
-          if (cell.notes && cell.notes !== cell.value && !['No cotizado', 'No incluida'].includes(cell.notes)) {
+          if (
+            cell.notes &&
+            cell.notes !== cell.value &&
+            !['No cotizado', 'No incluida'].includes(cell.notes)
+          ) {
             cellText += `\n[Nota: ${cell.notes}]`;
           }
           rowCells.push(cellText);
@@ -171,10 +203,7 @@ export function renderCoverageMatrixTable(ctx: PdfRenderContext, startY: number)
       new Set(quotes.flatMap((q) => (q.coverages || []).map((c) => c.name)).filter(Boolean))
     );
 
-    const itemsToProcess =
-      uniqueCoverageNames.length > 0
-        ? uniqueCoverageNames
-        : PLANTILLA_ITEMS;
+    const itemsToProcess = uniqueCoverageNames.length > 0 ? uniqueCoverageNames : PLANTILLA_ITEMS;
 
     itemsToProcess.forEach((itemName) => {
       const explanation = findPedagogicalExplanation(itemName);
@@ -187,7 +216,9 @@ export function renderCoverageMatrixTable(ctx: PdfRenderContext, startY: number)
         const found = coverages.find((c) => {
           if (!c.name) return false;
           const normName = normalizeText(c.name);
-          return normName === normItem || normName.includes(normItem) || normItem.includes(normName);
+          return (
+            normName === normItem || normName.includes(normItem) || normItem.includes(normName)
+          );
         });
 
         if (found) {
@@ -242,7 +273,8 @@ export function renderCoverageMatrixTable(ctx: PdfRenderContext, startY: number)
  * Renders the deductibles comparison table.
  */
 export function renderDeductiblesTable(ctx: PdfRenderContext, startY: number): number {
-  const { doc, report, quotes, insurers, lightGray, tableMargins, pagesWithHeader, addHeader } = ctx;
+  const { doc, report, quotes, insurers, lightGray, tableMargins, pagesWithHeader, addHeader } =
+    ctx;
   const deducHead = [['Concepto / Amparo', ...insurers, 'Criterio Técnico del Deducible']];
   const deducBody: string[][] = [];
 
@@ -267,7 +299,11 @@ export function renderDeductiblesTable(ctx: PdfRenderContext, startY: number): n
     });
   } else {
     quotes.forEach((q) => {
-      const explanation = findPedagogicalExplanation('Deducibles Generales', q.deductibles, 'deductible');
+      const explanation = findPedagogicalExplanation(
+        'Deducibles Generales',
+        q.deductibles,
+        'deductible'
+      );
       deducBody.push([
         `Deducibles ${q.insurerName}`,
         q.deductibles || 'Ver condicionado particular',
@@ -295,7 +331,11 @@ export function renderDeductiblesTable(ctx: PdfRenderContext, startY: number): n
         }
       },
       didParseCell: (data) => {
-        if (data.section === 'head' && data.column.index > 0 && data.column.index <= quotes.length) {
+        if (
+          data.section === 'head' &&
+          data.column.index > 0 &&
+          data.column.index <= quotes.length
+        ) {
           const q = quotes[data.column.index - 1];
           if (q) {
             const prof = findColombianInsurerProfile(q.insurerName);
@@ -319,19 +359,32 @@ export function renderDeductiblesTable(ctx: PdfRenderContext, startY: number): n
  * Renders the financial overview table (annual & monthly amounts).
  */
 export function renderFinancialTable(ctx: PdfRenderContext, startY: number): number {
-  const { doc, quotes, insurers, primaryColor, lightGray, tableMargins, pagesWithHeader, addHeader } = ctx;
+  const {
+    doc,
+    quotes,
+    insurers,
+    primaryColor,
+    lightGray,
+    tableMargins,
+    pagesWithHeader,
+    addHeader,
+  } = ctx;
   const financialHead = [['Concepto Financiero', ...insurers]];
   const financialRows: string[][] = [
     [
       'Prima Anual (Total a Pagar)',
-      ...quotes.map((q) => (q.priceAnnual && q.priceAnnual > 0 ? formatCOP(q.priceAnnual) : 'No informada')),
+      ...quotes.map((q) =>
+        q.priceAnnual && q.priceAnnual > 0 ? formatCOP(q.priceAnnual) : 'No informada'
+      ),
     ],
   ];
 
   if (quotes.some((q) => q.priceMonthly && q.priceMonthly > 0)) {
     financialRows.push([
       'Cuota Mensual Estimada',
-      ...quotes.map((q) => (q.priceMonthly && q.priceMonthly > 0 ? formatCOP(q.priceMonthly) : 'N/A')),
+      ...quotes.map((q) =>
+        q.priceMonthly && q.priceMonthly > 0 ? formatCOP(q.priceMonthly) : 'N/A'
+      ),
     ]);
   }
 
@@ -372,7 +425,9 @@ export function renderRegulatoryAuditTable(ctx: PdfRenderContext, startY: number
         const isIncluded =
           cov.isPositive !== false &&
           val.length > 0 &&
-          !['no incluido', 'no incluida', 'no informado', 'excluido', 'no cubre', 'n.c.'].includes(val);
+          !['no incluido', 'no incluida', 'no informado', 'excluido', 'no cubre', 'n.c.'].includes(
+            val
+          );
         return isIncluded && rule.keywords.some((kw) => label.includes(kw.toLowerCase()));
       });
 
@@ -439,7 +494,8 @@ export function renderRegulatoryAuditTable(ctx: PdfRenderContext, startY: number
  * Renders the insurer proposed commercial conditions comparative table.
  */
 export function renderCommercialConditionsTable(ctx: PdfRenderContext, startY: number): number {
-  const { doc, report, quotes, insurers, primaryColor, tableMargins, pagesWithHeader, addHeader } = ctx;
+  const { doc, report, quotes, insurers, primaryColor, tableMargins, pagesWithHeader, addHeader } =
+    ctx;
   const extractedConditions = extractCommercialConditionsFromReport(report);
 
   const compTableHead = [['Condición Comercial', ...insurers]];
@@ -492,10 +548,7 @@ export function renderBrokerCommercialPoliciesTable(ctx: PdfRenderContext, start
   const { doc, effectivePolicies, primaryColor, tableMargins, pagesWithHeader, addHeader } = ctx;
   const structuredPolicies = getStructuredCommercialPolicyEntries(effectivePolicies);
   const policyTableHead = [['Categoría / Condición', 'Detalle y Alcance Operativo']];
-  const policyTableBody = structuredPolicies.map((p) => [
-    `${p.title}\n(${p.category})`,
-    p.detail,
-  ]);
+  const policyTableBody = structuredPolicies.map((p) => [`${p.title}\n(${p.category})`, p.detail]);
 
   autoTable(doc, {
     startY,

@@ -6,14 +6,8 @@
       "id": "garantias-precontractuales",
       "name": "Garantías Precontractuales",
       "level": 1,
-      "childrenIds": [
-        "seriedad-oferta"
-      ],
-      "aliases": [
-        "GARANTÍAS PRECONTRACTUALES",
-        "Precontractual",
-        "Licitaciones"
-      ],
+      "childrenIds": ["seriedad-oferta"],
+      "aliases": ["GARANTÍAS PRECONTRACTUALES", "Precontractual", "Licitaciones"],
       "riskType": "surety"
     },
     {
@@ -25,11 +19,7 @@
         "correcta-inversion-anticipo",
         "salarios-prestaciones-laborales"
       ],
-      "aliases": [
-        "GARANTÍAS DE EJECUCIÓN",
-        "Ejecución Contractual",
-        "Amparos de Cumplimiento"
-      ],
+      "aliases": ["GARANTÍAS DE EJECUCIÓN", "Ejecución Contractual", "Amparos de Cumplimiento"],
       "riskType": "surety"
     },
     {
@@ -41,26 +31,15 @@
         "calidad-bien-servicio",
         "garantia-mantenimiento"
       ],
-      "aliases": [
-        "GARANTÍAS POST-CONTRACTUALES",
-        "Postcontractual",
-        "Estabilidad y Calidad"
-      ],
+      "aliases": ["GARANTÍAS POST-CONTRACTUALES", "Postcontractual", "Estabilidad y Calidad"],
       "riskType": "surety"
     },
     {
       "id": "responsabilidad-contractual",
       "name": "Garantías de Responsabilidad y Daños a Terceros",
       "level": 1,
-      "childrenIds": [
-        "pago-danos-terceros",
-        "rce-durante-ejecucion"
-      ],
-      "aliases": [
-        "GARANTÍAS DE RESPONSABILIDAD",
-        "RC en Contratos",
-        "Daños en Ejecución"
-      ],
+      "childrenIds": ["pago-danos-terceros", "rce-durante-ejecucion"],
+      "aliases": ["GARANTÍAS DE RESPONSABILIDAD", "RC en Contratos", "Daños en Ejecución"],
       "riskType": "liability"
     },
     {
@@ -116,9 +95,7 @@
       "name": "Cumplimiento de Contrato",
       "level": 2,
       "parentId": "garantias-ejecucion",
-      "childrenIds": [
-        "multas-sanciones-contractuales"
-      ],
+      "childrenIds": ["multas-sanciones-contractuales"],
       "aliases": [
         "Cumplimiento de Contrato",
         "cumplimiento de contrato",
@@ -173,9 +150,7 @@
       "name": "Correcta Inversión del Anticipo",
       "level": 2,
       "parentId": "garantias-ejecucion",
-      "childrenIds": [
-        "anticipo-devolucion-saldos"
-      ],
+      "childrenIds": ["anticipo-devolucion-saldos"],
       "aliases": [
         "Correcta Inversión del Anticipo",
         "anticipo",
@@ -498,11 +473,7 @@
       "level": 3,
       "parentId": "cumplimiento-contrato",
       "childrenIds": [],
-      "aliases": [
-        "Multas",
-        "Cláusula penal pecuniaria",
-        "Sanciones contractuales"
-      ],
+      "aliases": ["Multas", "Cláusula penal pecuniaria", "Sanciones contractuales"],
       "riskType": "surety",
       "typicalDeductible": "0%"
     },
@@ -512,10 +483,7 @@
       "level": 3,
       "parentId": "correcta-inversion-anticipo",
       "childrenIds": [],
-      "aliases": [
-        "Saldos no amortizados",
-        "Reintegro de anticipo"
-      ],
+      "aliases": ["Saldos no amortizados", "Reintegro de anticipo"],
       "riskType": "surety",
       "typicalDeductible": "0%"
     }
@@ -534,10 +502,7 @@
     },
     {
       "pattern": "calidad\\s+y\\s+estabilidad|estabilidad\\s+de\\s+la?\\s*obra",
-      "components": [
-        "estabilidad-calidad-obra",
-        "calidad-bien-servicio"
-      ],
+      "components": ["estabilidad-calidad-obra", "calidad-bien-servicio"],
       "confidence": 0.85
     }
   ]

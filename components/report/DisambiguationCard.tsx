@@ -21,7 +21,10 @@ interface DisambiguationCardProps {
   ) => Promise<void>;
 }
 
-export const DisambiguationCard: React.FC<DisambiguationCardProps> = ({ quotes, onDisambiguate }) => {
+export const DisambiguationCard: React.FC<DisambiguationCardProps> = ({
+  quotes,
+  onDisambiguate,
+}) => {
   // Collect candidate coverages that have ambiguous confidence (50% - 84%) or needsHumanReview
   const candidates: DisambiguationCandidate[] = useMemo(() => {
     const list: DisambiguationCandidate[] = [];
@@ -42,7 +45,9 @@ export const DisambiguationCard: React.FC<DisambiguationCardProps> = ({ quotes, 
               suggestedCanonicalName: cov.canonicalName,
               suggestedGroupId: cov.canonicalName,
               confidence: Math.round(conf * 100),
-              justification: cov.justification || 'Correspondencia semántica tentativa detectada en el documento.',
+              justification:
+                cov.justification ||
+                'Correspondencia semántica tentativa detectada en el documento.',
             });
           }
         }
@@ -53,7 +58,9 @@ export const DisambiguationCard: React.FC<DisambiguationCardProps> = ({ quotes, 
     return list.slice(0, 3);
   }, [quotes]);
 
-  const [resolvedState, setResolvedState] = useState<Record<string, { action: string; label: string }>>({});
+  const [resolvedState, setResolvedState] = useState<
+    Record<string, { action: string; label: string }>
+  >({});
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
 
   if (candidates.length === 0) {
@@ -121,7 +128,8 @@ export const DisambiguationCard: React.FC<DisambiguationCardProps> = ({ quotes, 
               </span>
             </h4>
             <p className="text-xs text-slate-500">
-              Detectamos términos con confianza intermedia. Tu validación entrena al motor para futuras cotizaciones.
+              Detectamos términos con confianza intermedia. Tu validación entrena al motor para
+              futuras cotizaciones.
             </p>
           </div>
         </div>
@@ -142,9 +150,7 @@ export const DisambiguationCard: React.FC<DisambiguationCardProps> = ({ quotes, 
                 <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
                 <div>
                   <span className="font-bold">{cand.insurerName}</span>: {cand.rawName}
-                  <div className="text-[11px] text-emerald-700">
-                    ✅ {resolvedState[key]?.label}
-                  </div>
+                  <div className="text-[11px] text-emerald-700">✅ {resolvedState[key]?.label}</div>
                 </div>
               </div>
             );
@@ -164,9 +170,7 @@ export const DisambiguationCard: React.FC<DisambiguationCardProps> = ({ quotes, 
                     {cand.confidence}% certeza
                   </span>
                 </div>
-                <div className="font-bold text-slate-900 text-xs mb-1">
-                  "{cand.rawName}"
-                </div>
+                <div className="font-bold text-slate-900 text-xs mb-1">"{cand.rawName}"</div>
                 <div className="text-[11px] text-slate-600 flex items-center gap-1">
                   <span className="text-slate-400">¿Asociar a:</span>
                   <span className="font-semibold text-indigo-700 underline decoration-indigo-300">

@@ -10,10 +10,30 @@ export const DEMO_ALLIES: Ally[] = [
 ];
 
 export const DEMO_ANALYSTS: Array<{ id: string; name: string; allyId: string; email?: string }> = [
-  { id: 'user-tech-1', name: 'Carlos Mendoza (Técnico Senior)', allyId: 'ally-100', email: 'carlos@andina.com' },
-  { id: 'user-tech-2', name: 'Ana María Gómez (Analista PYME)', allyId: 'ally-100', email: 'ana@andina.com' },
-  { id: 'user-tech-3', name: 'Jorge Rojas (Especialista Daños)', allyId: 'ally-200', email: 'jorge@unioncorredores.com' },
-  { id: 'user-tech-4', name: 'Laura Betancur (Analista RC)', allyId: 'ally-300', email: 'laura@caribeseguros.com' },
+  {
+    id: 'user-tech-1',
+    name: 'Carlos Mendoza (Técnico Senior)',
+    allyId: 'ally-100',
+    email: 'carlos@andina.com',
+  },
+  {
+    id: 'user-tech-2',
+    name: 'Ana María Gómez (Analista PYME)',
+    allyId: 'ally-100',
+    email: 'ana@andina.com',
+  },
+  {
+    id: 'user-tech-3',
+    name: 'Jorge Rojas (Especialista Daños)',
+    allyId: 'ally-200',
+    email: 'jorge@unioncorredores.com',
+  },
+  {
+    id: 'user-tech-4',
+    name: 'Laura Betancur (Analista RC)',
+    allyId: 'ally-300',
+    email: 'laura@caribeseguros.com',
+  },
 ];
 
 let cachedAllies: Ally[] = DEMO_ALLIES;
@@ -74,7 +94,10 @@ export const analyticsService = {
               soldCount: apiData.soldCount ?? 0,
               conversionRate: apiData.conversionRate ?? 0,
               totalPremium: apiData.totalPremium ?? 0,
-              activeProspects: Math.max(0, (apiData.totalComparisons ?? 0) - (apiData.soldCount ?? 0)),
+              activeProspects: Math.max(
+                0,
+                (apiData.totalComparisons ?? 0) - (apiData.soldCount ?? 0)
+              ),
               avgProcessTimeMinutes: apiData.avgProcessTimeMinutes ?? 12,
               domainDistribution: (apiData.domainDistribution || []).map((d: any) => ({
                 domainId: d.domainId,
@@ -96,7 +119,9 @@ export const analyticsService = {
             // Fetch market benchmark for ally_admin and super_admin
             if (role === 'ally_admin' || role === 'super_admin') {
               try {
-                const bRes = await apiClient.fetch('/api/analytics/daas/market-index?domain=pyme&periodMonths=6');
+                const bRes = await apiClient.fetch(
+                  '/api/analytics/daas/market-index?domain=pyme&periodMonths=6'
+                );
                 if (bRes.ok) {
                   const bJson = await bRes.json();
                   if (bJson?.success && bJson?.data) {
@@ -112,7 +137,10 @@ export const analyticsService = {
           }
         }
       } catch (err) {
-        console.warn('API /api/analytics/executive unavailable, falling back to local calculation:', err);
+        console.warn(
+          'API /api/analytics/executive unavailable, falling back to local calculation:',
+          err
+        );
       }
     }
 
@@ -124,7 +152,13 @@ export const analyticsService = {
       console.warn('Could not fetch real history for analytics, using fallback', err);
     }
 
-    let directoryUsers: Array<{ id: string; name: string; email: string; role: string; allyId: string }> = [];
+    let directoryUsers: Array<{
+      id: string;
+      name: string;
+      email: string;
+      role: string;
+      allyId: string;
+    }> = [];
     try {
       directoryUsers = await organizationService.getDirectory();
     } catch {
@@ -145,9 +179,7 @@ export const analyticsService = {
       const teamUserIds = new Set(
         directoryUsers.filter((u) => u.allyId === allyId).map((u) => u.id)
       );
-      filteredHistory = history.filter(
-        (h) => (h.userId && teamUserIds.has(h.userId)) || !h.userId
-      );
+      filteredHistory = history.filter((h) => (h.userId && teamUserIds.has(h.userId)) || !h.userId);
     }
 
     const hasRealData = filteredHistory.length > 0;
@@ -161,11 +193,9 @@ export const analyticsService = {
       ).length;
       const conversionRate =
         totalComparisons > 0 ? Math.round((soldCount / totalComparisons) * 100) : 0;
-      const totalPremium = filteredHistory.reduce(
-        (sum, item) => sum + (item.premiumValue || 0),
-        0
-      );
-      const avgProcessTimeMinutes = role === 'super_admin' ? 3.9 : role === 'ally_admin' ? 4.2 : 3.4;
+      const totalPremium = filteredHistory.reduce((sum, item) => sum + (item.premiumValue || 0), 0);
+      const avgProcessTimeMinutes =
+        role === 'super_admin' ? 3.9 : role === 'ally_admin' ? 4.2 : 3.4;
 
       // Real Domain Distribution
       const domainCounts: Record<string, number> = {};
@@ -199,9 +229,10 @@ export const analyticsService = {
       // Real Analyst Performance
       let analystPerformance: AnalystPerformance[] | undefined;
       if (role === 'ally_admin' || role === 'super_admin') {
-        const team = directoryUsers.length > 0
-          ? directoryUsers.filter((u) => (role === 'ally_admin' ? u.allyId === allyId : true))
-          : DEMO_ANALYSTS.filter((a) => (role === 'ally_admin' ? a.allyId === allyId : true));
+        const team =
+          directoryUsers.length > 0
+            ? directoryUsers.filter((u) => (role === 'ally_admin' ? u.allyId === allyId : true))
+            : DEMO_ANALYSTS.filter((a) => (role === 'ally_admin' ? a.allyId === allyId : true));
 
         analystPerformance = team.map((member) => {
           const memberHistory = filteredHistory.filter(
@@ -241,7 +272,9 @@ export const analyticsService = {
             allyName: a.name,
             inputTokens: Math.round((totalComparisons * 16500) / (cachedAllies.length || 1)),
             outputTokens: Math.round((totalComparisons * 3800) / (cachedAllies.length || 1)),
-            estimatedCostUSD: Number(((totalComparisons * 0.08) / (cachedAllies.length || 1)).toFixed(2)),
+            estimatedCostUSD: Number(
+              ((totalComparisons * 0.08) / (cachedAllies.length || 1)).toFixed(2)
+            ),
           })),
         };
       }
@@ -270,27 +303,62 @@ export const analyticsService = {
     const activeProspects = Math.round(totalComparisons * 0.35);
     const conversionRate = 42;
     const totalPremium =
-      role === 'super_admin'
-        ? 8450000000
-        : role === 'ally_admin'
-          ? 3200000000
-          : 1250000000;
+      role === 'super_admin' ? 8450000000 : role === 'ally_admin' ? 3200000000 : 1250000000;
     const avgProcessTimeMinutes = role === 'super_admin' ? 4.2 : role === 'ally_admin' ? 4.8 : 3.5;
 
     const domainDistribution = [
-      { domainId: 'pyme', domainName: 'PYME Multirriesgo', count: Math.round(totalComparisons * 0.35), percentage: 35 },
-      { domainId: 'danos_materiales', domainName: 'Todo Riesgo Daños', count: Math.round(totalComparisons * 0.2), percentage: 20 },
-      { domainId: 'responsabilidad_civil', domainName: 'Responsabilidad Civil', count: Math.round(totalComparisons * 0.15), percentage: 15 },
-      { domainId: 'sustraccion', domainName: 'Sustracción y Hurto', count: Math.round(totalComparisons * 0.1), percentage: 10 },
-      { domainId: 'transporte', domainName: 'Transporte de Mercancías', count: Math.round(totalComparisons * 0.08), percentage: 8 },
-      { domainId: 'equipo_electronico', domainName: 'Equipo Electrónico', count: Math.round(totalComparisons * 0.07), percentage: 7 },
-      { domainId: 'manejo', domainName: 'Manejo / Infidelidad', count: Math.round(totalComparisons * 0.05), percentage: 5 },
+      {
+        domainId: 'pyme',
+        domainName: 'PYME Multirriesgo',
+        count: Math.round(totalComparisons * 0.35),
+        percentage: 35,
+      },
+      {
+        domainId: 'danos_materiales',
+        domainName: 'Todo Riesgo Daños',
+        count: Math.round(totalComparisons * 0.2),
+        percentage: 20,
+      },
+      {
+        domainId: 'responsabilidad_civil',
+        domainName: 'Responsabilidad Civil',
+        count: Math.round(totalComparisons * 0.15),
+        percentage: 15,
+      },
+      {
+        domainId: 'sustraccion',
+        domainName: 'Sustracción y Hurto',
+        count: Math.round(totalComparisons * 0.1),
+        percentage: 10,
+      },
+      {
+        domainId: 'transporte',
+        domainName: 'Transporte de Mercancías',
+        count: Math.round(totalComparisons * 0.08),
+        percentage: 8,
+      },
+      {
+        domainId: 'equipo_electronico',
+        domainName: 'Equipo Electrónico',
+        count: Math.round(totalComparisons * 0.07),
+        percentage: 7,
+      },
+      {
+        domainId: 'manejo',
+        domainName: 'Manejo / Infidelidad',
+        count: Math.round(totalComparisons * 0.05),
+        percentage: 5,
+      },
     ];
 
     const insurerDistribution = [
       { insurerName: 'SURA', count: Math.round(totalComparisons * 0.28), percentage: 28 },
       { insurerName: 'AXA COLPATRIA', count: Math.round(totalComparisons * 0.24), percentage: 24 },
-      { insurerName: 'SEGUROS DEL ESTADO', count: Math.round(totalComparisons * 0.18), percentage: 18 },
+      {
+        insurerName: 'SEGUROS DEL ESTADO',
+        count: Math.round(totalComparisons * 0.18),
+        percentage: 18,
+      },
       { insurerName: 'ALLIANZ', count: Math.round(totalComparisons * 0.16), percentage: 16 },
       { insurerName: 'MAPFRE / BBVA', count: Math.round(totalComparisons * 0.14), percentage: 14 },
     ];
@@ -366,10 +434,7 @@ export const analyticsService = {
     };
   },
 
-  getDaasMarketIndex: async (
-    domain: string = 'pyme',
-    periodMonths: number = 6
-  ) => {
+  getDaasMarketIndex: async (domain: string = 'pyme', periodMonths: number = 6) => {
     try {
       const res = await apiClient.fetch(
         `/api/analytics/daas/market-index?domain=${encodeURIComponent(domain)}&periodMonths=${periodMonths}`

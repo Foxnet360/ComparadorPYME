@@ -139,21 +139,13 @@ export const MatrixDataCell: React.FC<MatrixDataCellProps> = ({
   const cellId = `${row.id}-${colIdx}`;
   const isWinner = cell.isWinner;
   const excluded = cell.isExcluded;
-  const hasDetails =
-    cell.confidence !== undefined ||
-    cell.pageNumber !== undefined ||
-    cell.notes;
+  const hasDetails = cell.confidence !== undefined || cell.pageNumber !== undefined || cell.notes;
   const lowConfidence = isLowConfidence(cell.confidence);
   const needsReview = cell.needsHumanReview;
 
   if (isEditingNote) {
     return (
-      <td
-        role="gridcell"
-        tabIndex={0}
-        className="relative p-0"
-        style={{ height: '150px' }}
-      >
+      <td role="gridcell" tabIndex={0} className="relative p-0" style={{ height: '150px' }}>
         <InlineNoteEditor
           cellId={cellId}
           initialContent={cellNote?.content || ''}
@@ -165,17 +157,13 @@ export const MatrixDataCell: React.FC<MatrixDataCellProps> = ({
   }
 
   const cellClass = `px-6 py-3.5 text-sm align-middle text-center relative border-r border-slate-50 transition-all cursor-pointer group/cell ${
-    isWinner
-      ? 'bg-amber-50/60 font-semibold text-amber-900 border border-amber-200/50'
-      : ''
+    isWinner ? 'bg-amber-50/60 font-semibold text-amber-900 border border-amber-200/50' : ''
   } ${
     excluded
       ? 'text-slate-400 italic bg-slate-100/60 line-through decoration-slate-400'
       : 'text-slate-800'
   } ${
-    lowConfidence
-      ? 'bg-yellow-50/40 border-2 border-yellow-400/60 shadow-sm'
-      : ''
+    lowConfidence ? 'bg-yellow-50/40 border-2 border-yellow-400/60 shadow-sm' : ''
   } ${needsReview ? 'ring-2 ring-red-300/50 ring-inset' : ''} ${
     isSaving ? 'opacity-70' : ''
   } hover:ring-1 hover:ring-blue-400 hover:ring-inset`;
@@ -260,8 +248,7 @@ export const MatrixDataCell: React.FC<MatrixDataCellProps> = ({
         {/* Technical Details Popover Trigger (Only in Technical ViewMode) */}
         {viewMode === 'technical' && hasDetails && (
           <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-400">
-            {(cell.calculatedPage !== undefined ||
-              cell.pageNumber !== undefined) && quote && (
+            {(cell.calculatedPage !== undefined || cell.pageNumber !== undefined) && quote && (
               <button
                 type="button"
                 onClick={() => onOpenPdfEvidence?.(cell, quote)}
@@ -290,15 +277,13 @@ export const MatrixDataCell: React.FC<MatrixDataCellProps> = ({
       </div>
 
       {/* Inline Discrepancy Resolution Dropdown */}
-      {viewMode === 'technical' &&
-        needsReview &&
-        isDropdownOpen && (
-          <DiscrepancyDropdown
-            dropdownRef={dropdownRef}
-            onSelect={onResolveDiscrepancy}
-            onClose={onToggleDropdown}
-          />
-        )}
+      {viewMode === 'technical' && needsReview && isDropdownOpen && (
+        <DiscrepancyDropdown
+          dropdownRef={dropdownRef}
+          onSelect={onResolveDiscrepancy}
+          onClose={onToggleDropdown}
+        />
+      )}
 
       {/* Trigger button for dropdown */}
       {viewMode === 'technical' && needsReview && (
@@ -308,11 +293,7 @@ export const MatrixDataCell: React.FC<MatrixDataCellProps> = ({
           disabled={isSaving}
           className="absolute bottom-1 right-1 text-[10px] text-yellow-700 bg-yellow-100 hover:bg-yellow-200 disabled:opacity-50 px-1.5 py-0.5 rounded border border-yellow-300 transition-colors flex items-center gap-0.5 z-10 cursor-pointer"
         >
-          {isSaving ? (
-            <Loader2 size={10} className="animate-spin" />
-          ) : (
-            <ChevronDown size={10} />
-          )}
+          {isSaving ? <Loader2 size={10} className="animate-spin" /> : <ChevronDown size={10} />}
           {isSaving ? 'Guardando...' : 'Corregir'}
         </button>
       )}

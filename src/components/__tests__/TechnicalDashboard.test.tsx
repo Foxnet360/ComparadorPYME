@@ -91,8 +91,6 @@ describe('TechnicalDashboard — Responsive History without horizontal overflow'
     const viewButtons = screen.getAllByRole('button', { name: /Ver Informe/i });
     fireEvent.click(viewButtons[0]);
 
-    expect(onViewReportMock).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'comp-1' })
-    );
+    expect(onViewReportMock).toHaveBeenCalledWith(expect.objectContaining({ id: 'comp-1' }));
   });
 });

@@ -161,7 +161,12 @@ export const embeddingService = {
   generateEmbeddingsBatch: async (texts: string[], retries = 3): Promise<EmbeddingResult[]> => {
     const BATCH_SIZE = 100; // Gemini soporta múltiples contenidos por llamada
     const orderedResults: (EmbeddingResult | undefined)[] = new Array(texts.length);
-    const uncachedItems: Array<{ index: number; text: string; truncatedText: string; cacheKey: string }> = [];
+    const uncachedItems: Array<{
+      index: number;
+      text: string;
+      truncatedText: string;
+      cacheKey: string;
+    }> = [];
 
     for (let i = 0; i < texts.length; i++) {
       const text = texts[i]!;

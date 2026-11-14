@@ -51,9 +51,15 @@ describe('migration 029: organizations and team-level RLS', () => {
 
   it('adds foreign keys and performance indexes on org_id', () => {
     expect(sql).toMatch(/FOREIGN KEY \(org_id\) REFERENCES public\.organizations\(id\)/i);
-    expect(sql).toMatch(/CREATE INDEX IF NOT EXISTS idx_clients_org_id ON public\.clients\(org_id\)/i);
-    expect(sql).toMatch(/CREATE INDEX IF NOT EXISTS idx_policies_org_id ON public\.policies\(org_id\)/i);
-    expect(sql).toMatch(/CREATE INDEX IF NOT EXISTS idx_renewals_org_id ON public\.renewals\(org_id\)/i);
+    expect(sql).toMatch(
+      /CREATE INDEX IF NOT EXISTS idx_clients_org_id ON public\.clients\(org_id\)/i
+    );
+    expect(sql).toMatch(
+      /CREATE INDEX IF NOT EXISTS idx_policies_org_id ON public\.policies\(org_id\)/i
+    );
+    expect(sql).toMatch(
+      /CREATE INDEX IF NOT EXISTS idx_renewals_org_id ON public\.renewals\(org_id\)/i
+    );
   });
 
   it('includes an idempotent backfill block for existing records', () => {

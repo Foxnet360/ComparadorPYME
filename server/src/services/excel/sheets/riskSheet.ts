@@ -2,13 +2,7 @@ import { ExcelContext } from '../types';
 import { FONT_NAME, EXCEL_COLORS, applySheetHeaderFooter } from '../excelStyles';
 
 export function buildRiskSheet(ctx: ExcelContext): void {
-  const {
-    workbook,
-    quotes,
-    regulatoryProfile,
-    brokerDetails,
-    todayStr,
-  } = ctx;
+  const { workbook, quotes, regulatoryProfile, brokerDetails, todayStr } = ctx;
 
   const riskSheet = workbook.addWorksheet('Análisis de Riesgos');
   riskSheet.views = [{ showGridLines: false }];
@@ -23,7 +17,12 @@ export function buildRiskSheet(ctx: ExcelContext): void {
   riskSheet.mergeCells('A1:E2');
   const riskTitle = riskSheet.getCell('A1');
   riskTitle.value = 'AUDITORÍA DE RIESGOS, CALIFICACIÓN TÉCNICA Y CONDICIONADOS';
-  riskTitle.font = { name: FONT_NAME, size: 14, bold: true, color: { argb: EXCEL_COLORS.NAVY_HEADER } };
+  riskTitle.font = {
+    name: FONT_NAME,
+    size: 14,
+    bold: true,
+    color: { argb: EXCEL_COLORS.NAVY_HEADER },
+  };
 
   // Scorecard de Calificación Técnica (1 a 10)
   riskSheet.getRow(4).height = 28;
@@ -62,14 +61,41 @@ export function buildRiskSheet(ctx: ExcelContext): void {
     gradeCell.alignment = { horizontal: 'center' };
 
     if (ratingScore >= 8) {
-      gradeCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.EMERALD_BG } };
-      gradeCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.EMERALD_TEXT } };
+      gradeCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: EXCEL_COLORS.EMERALD_BG },
+      };
+      gradeCell.font = {
+        name: FONT_NAME,
+        size: 10,
+        bold: true,
+        color: { argb: EXCEL_COLORS.EMERALD_TEXT },
+      };
     } else if (ratingScore >= 6) {
-      gradeCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.YELLOW_BG } };
-      gradeCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.YELLOW_TEXT } };
+      gradeCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: EXCEL_COLORS.YELLOW_BG },
+      };
+      gradeCell.font = {
+        name: FONT_NAME,
+        size: 10,
+        bold: true,
+        color: { argb: EXCEL_COLORS.YELLOW_TEXT },
+      };
     } else {
-      gradeCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.RED_BG } };
-      gradeCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.RED_TEXT } };
+      gradeCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: EXCEL_COLORS.RED_BG },
+      };
+      gradeCell.font = {
+        name: FONT_NAME,
+        size: 10,
+        bold: true,
+        color: { argb: EXCEL_COLORS.RED_TEXT },
+      };
     }
 
     riskSheet.getCell(rowNum, 4).value =
@@ -109,14 +135,41 @@ export function buildRiskSheet(ctx: ExcelContext): void {
       levelCell.alignment = { horizontal: 'center' };
 
       if (alert.level === 'CRITICAL') {
-        levelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.RED_BG } };
-        levelCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.RED_TEXT } };
+        levelCell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: EXCEL_COLORS.RED_BG },
+        };
+        levelCell.font = {
+          name: FONT_NAME,
+          size: 10,
+          bold: true,
+          color: { argb: EXCEL_COLORS.RED_TEXT },
+        };
       } else if (alert.level === 'WARNING') {
-        levelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.YELLOW_BG } };
-        levelCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.YELLOW_TEXT } };
+        levelCell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: EXCEL_COLORS.YELLOW_BG },
+        };
+        levelCell.font = {
+          name: FONT_NAME,
+          size: 10,
+          bold: true,
+          color: { argb: EXCEL_COLORS.YELLOW_TEXT },
+        };
       } else {
-        levelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.EMERALD_BG } };
-        levelCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.EMERALD_TEXT } };
+        levelCell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: EXCEL_COLORS.EMERALD_BG },
+        };
+        levelCell.font = {
+          name: FONT_NAME,
+          size: 10,
+          bold: true,
+          color: { argb: EXCEL_COLORS.EMERALD_TEXT },
+        };
       }
 
       riskSheet.getCell(rRowIdx, 2).value = q.insurerName;
@@ -133,7 +186,12 @@ export function buildRiskSheet(ctx: ExcelContext): void {
     riskSheet.mergeCells(`A${rRowIdx}:E${rRowIdx}`);
     const noAlertCell = riskSheet.getCell(`A${rRowIdx}`);
     noAlertCell.value = 'No se detectaron alertas críticas en los documentos analizados.';
-    noAlertCell.font = { name: FONT_NAME, size: 10, italic: true, color: { argb: EXCEL_COLORS.SLATE_LIGHT } };
+    noAlertCell.font = {
+      name: FONT_NAME,
+      size: 10,
+      italic: true,
+      color: { argb: EXCEL_COLORS.SLATE_LIGHT },
+    };
     rRowIdx++;
   }
 
@@ -151,9 +209,19 @@ export function buildRiskSheet(ctx: ExcelContext): void {
     rRowIdx += 2;
     riskSheet.mergeCells(`A${rRowIdx}:E${rRowIdx}`);
     const auditTitleCell = riskSheet.getCell(`A${rRowIdx}`);
-    auditTitleCell.value = 'AUDITORÍA DETALLADA: COBERTURAS FALTANTES, CONDICIONES Y PUNTOS DE NEGOCIACIÓN';
-    auditTitleCell.font = { name: FONT_NAME, size: 12, bold: true, color: { argb: EXCEL_COLORS.NAVY_HEADER } };
-    auditTitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.BG_SECTION_HEADER } };
+    auditTitleCell.value =
+      'AUDITORÍA DETALLADA: COBERTURAS FALTANTES, CONDICIONES Y PUNTOS DE NEGOCIACIÓN';
+    auditTitleCell.font = {
+      name: FONT_NAME,
+      size: 12,
+      bold: true,
+      color: { argb: EXCEL_COLORS.NAVY_HEADER },
+    };
+    auditTitleCell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: EXCEL_COLORS.BG_SECTION_HEADER },
+    };
     riskSheet.getRow(rRowIdx).height = 26;
     rRowIdx++;
 
@@ -167,14 +235,26 @@ export function buildRiskSheet(ctx: ExcelContext): void {
           riskSheet.getRow(rRowIdx).height = 22;
           const c1 = riskSheet.getCell(rRowIdx, 1);
           c1.value = mc.impact === 'HIGH' ? 'FALTANTE CRÍTICO' : 'FALTANTE MEDIO';
-          c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: mc.impact === 'HIGH' ? EXCEL_COLORS.RED_BG : EXCEL_COLORS.YELLOW_BG } };
-          c1.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: mc.impact === 'HIGH' ? EXCEL_COLORS.RED_TEXT : EXCEL_COLORS.YELLOW_TEXT } };
+          c1.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: mc.impact === 'HIGH' ? EXCEL_COLORS.RED_BG : EXCEL_COLORS.YELLOW_BG },
+          };
+          c1.font = {
+            name: FONT_NAME,
+            size: 10,
+            bold: true,
+            color: {
+              argb: mc.impact === 'HIGH' ? EXCEL_COLORS.RED_TEXT : EXCEL_COLORS.YELLOW_TEXT,
+            },
+          };
           c1.alignment = { horizontal: 'center' };
 
           riskSheet.getCell(rRowIdx, 2).value = q.insurerName;
           riskSheet.getCell(rRowIdx, 3).value = mc.categoryName;
           riskSheet.getCell(rRowIdx, 4).value = mc.reason;
-          riskSheet.getCell(rRowIdx, 5).value = `Obligatorio según estándar ${regulatoryProfile.displayName}`;
+          riskSheet.getCell(rRowIdx, 5).value =
+            `Obligatorio según estándar ${regulatoryProfile.displayName}`;
           rRowIdx++;
         });
       }
@@ -185,8 +265,27 @@ export function buildRiskSheet(ctx: ExcelContext): void {
           riskSheet.getRow(rRowIdx).height = 22;
           const c1 = riskSheet.getCell(rRowIdx, 1);
           c1.value = `RIESGO DEDUCIBLE (${dr.riskLevel})`;
-          c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: dr.riskLevel === 'HIGH' || dr.riskLevel === 'CRITICAL' ? EXCEL_COLORS.RED_BG : EXCEL_COLORS.YELLOW_BG } };
-          c1.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: dr.riskLevel === 'HIGH' || dr.riskLevel === 'CRITICAL' ? EXCEL_COLORS.RED_TEXT : EXCEL_COLORS.YELLOW_TEXT } };
+          c1.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: {
+              argb:
+                dr.riskLevel === 'HIGH' || dr.riskLevel === 'CRITICAL'
+                  ? EXCEL_COLORS.RED_BG
+                  : EXCEL_COLORS.YELLOW_BG,
+            },
+          };
+          c1.font = {
+            name: FONT_NAME,
+            size: 10,
+            bold: true,
+            color: {
+              argb:
+                dr.riskLevel === 'HIGH' || dr.riskLevel === 'CRITICAL'
+                  ? EXCEL_COLORS.RED_TEXT
+                  : EXCEL_COLORS.YELLOW_TEXT,
+            },
+          };
           c1.alignment = { horizontal: 'center' };
 
           riskSheet.getCell(rRowIdx, 2).value = q.insurerName;
@@ -203,14 +302,25 @@ export function buildRiskSheet(ctx: ExcelContext): void {
           riskSheet.getRow(rRowIdx).height = 22;
           const c1 = riskSheet.getCell(rRowIdx, 1);
           c1.value = `NEGOCIACIÓN (${np.priority})`;
-          c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.BLUE_LIGHT_BG } };
-          c1.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.NAVY_ACCENT } };
+          c1.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: EXCEL_COLORS.BLUE_LIGHT_BG },
+          };
+          c1.font = {
+            name: FONT_NAME,
+            size: 10,
+            bold: true,
+            color: { argb: EXCEL_COLORS.NAVY_ACCENT },
+          };
           c1.alignment = { horizontal: 'center' };
 
           riskSheet.getCell(rRowIdx, 2).value = q.insurerName;
           riskSheet.getCell(rRowIdx, 3).value = np.title;
           riskSheet.getCell(rRowIdx, 4).value = np.description;
-          riskSheet.getCell(rRowIdx, 5).value = np.potentialSavings ? `Ahorro est.: ${np.potentialSavings}` : 'Mejora en suscripción';
+          riskSheet.getCell(rRowIdx, 5).value = np.potentialSavings
+            ? `Ahorro est.: ${np.potentialSavings}`
+            : 'Mejora en suscripción';
           rRowIdx++;
         });
       }

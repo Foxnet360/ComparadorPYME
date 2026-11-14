@@ -59,7 +59,11 @@ export const MatrixToolbar: React.FC<MatrixToolbarProps> = ({
               className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs md:text-sm transition-all shadow-md active:scale-95 disabled:opacity-50 cursor-pointer"
               title="Descarga el Excel consultivo para el cliente final, con explicaciones descriptivas del ramo"
             >
-              {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+              {isExporting ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Download size={16} />
+              )}
               <span>Excel Cliente (Asesoría)</span>
             </button>
             <button
@@ -69,7 +73,11 @@ export const MatrixToolbar: React.FC<MatrixToolbarProps> = ({
               className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs md:text-sm transition-all shadow-md active:scale-95 disabled:opacity-50 cursor-pointer"
               title="Descarga la matriz técnica completa con auditoría de riesgos, deducibles y coberturas"
             >
-              {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+              {isExporting ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Download size={16} />
+              )}
               <span>Excel Técnico (Auditoría)</span>
             </button>
           </div>

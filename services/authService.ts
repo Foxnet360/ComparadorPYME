@@ -1,7 +1,10 @@
 import { createClient, User } from '@supabase/supabase-js';
 import { UserProfile } from '../types';
 import { organizationService } from './organizationService';
-import { getEffectiveCommercialPolicies, type CommercialPolicies } from '../src/data/commercialPolicies';
+import {
+  getEffectiveCommercialPolicies,
+  type CommercialPolicies,
+} from '../src/data/commercialPolicies';
 
 // Supabase anon credentials are public by design (RLS enforces authorization,
 // never the key). They come from the build/dev environment, not from this

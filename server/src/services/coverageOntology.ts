@@ -26,7 +26,7 @@ export function resolveCertaintyBand(
   confidence: number,
   isExclusive: boolean = false
 ): OntologyCertaintyBand {
-  if (isExclusive || confidence < 0.50) {
+  if (isExclusive || confidence < 0.5) {
     return 'autonomous';
   }
   if (confidence >= 0.85) {

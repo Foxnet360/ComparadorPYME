@@ -176,7 +176,9 @@ describe('comparisonPromptBuilder.buildV2ComparisonPrompt', () => {
         'autos'
       );
 
-      expect(prompt).toContain('Automotores y Vehículos en Colombia bajo regulación de la SFC y FASECOLDA');
+      expect(prompt).toContain(
+        'Automotores y Vehículos en Colombia bajo regulación de la SFC y FASECOLDA'
+      );
       expect(prompt).toContain('DATOS DEL VEHÍCULO Y BIENES');
       expect(prompt).toContain('Vehículo Asegurado (Marca / Modelo / Año / Placa)');
       expect(prompt).toContain('Límite Único Combinado (LUC) RCE');
@@ -192,7 +194,9 @@ describe('comparisonPromptBuilder.buildV2ComparisonPrompt', () => {
         'salud'
       );
 
-      expect(prompt).toContain('Planes Voluntarios de Salud (PVS) y Medicina Prepagada en Colombia');
+      expect(prompt).toContain(
+        'Planes Voluntarios de Salud (PVS) y Medicina Prepagada en Colombia'
+      );
       expect(prompt).toContain('MODALIDAD Y RED DE ATENCIÓN');
       expect(prompt).toContain('Tipo de Plan (Complementario PBS / Sustitutivo)');
       expect(prompt).toContain('Hospitalización en Habitación Individual');
@@ -207,7 +211,9 @@ describe('comparisonPromptBuilder.buildV2ComparisonPrompt', () => {
         'cumplimiento'
       );
 
-      expect(prompt).toContain('Seguros de Cumplimiento, Fianzas y Contratación Estatal en Colombia');
+      expect(prompt).toContain(
+        'Seguros de Cumplimiento, Fianzas y Contratación Estatal en Colombia'
+      );
       expect(prompt).toContain('DATOS DEL CONTRATO GARANTIZADO');
       expect(prompt).toContain('Seriedad de la Oferta (% y Límite)');
       expect(prompt).toContain('Buen Manejo y Correcta Inversión del Anticipo (100%)');
@@ -251,5 +257,3 @@ describe('comparisonPromptBuilder.buildV2ComparisonPrompt', () => {
     });
   });
 });
-
-

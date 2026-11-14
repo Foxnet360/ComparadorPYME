@@ -113,7 +113,6 @@ export function parseJsonWithRepair(
   }
 }
 
-
 /**
  * Repair unterminated strings by adding missing closing quotes
  */
@@ -326,7 +325,6 @@ function extractPartialData(json: string): PartialQuoteData | null {
   while ((match = keyValuePattern.exec(json)) !== null) {
     result[match[1]!] = match[2]!;
   }
-
 
   // Try to extract numeric values
   const numericPattern = /"(priceAnnual)"\s*:\s*(\d+)/g;

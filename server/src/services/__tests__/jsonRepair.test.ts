@@ -48,7 +48,6 @@ describe('jsonRepair', () => {
       expect((result.data as any).priceAnnual).toBe(5000000);
     });
 
-
     it('should handle completely invalid JSON', () => {
       const json = 'not json at all';
       const result = parseJsonWithRepair(json);

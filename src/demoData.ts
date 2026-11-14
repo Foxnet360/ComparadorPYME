@@ -208,7 +208,8 @@ export const DEMO_QUOTES: QuoteAnalysis[] = [
     priceAnnual: 34500000,
     currency: 'COP',
     paymentTerms: '10 cuotas mensuales sin interés',
-    deductibles: 'Terremoto: 2% valor asegurable / Mínimo 5 SMMLV. Rotura Maquinaria: 10% / Mín 3 SMMLV.',
+    deductibles:
+      'Terremoto: 2% valor asegurable / Mínimo 5 SMMLV. Rotura Maquinaria: 10% / Mín 3 SMMLV.',
     score: 88.5,
     parseConfidence: 98,
     dataQualityScore: 96,
@@ -234,33 +235,72 @@ export const DEMO_QUOTES: QuoteAnalysis[] = [
     technicalAnalysis:
       'Clausulado certificado SURA-PYME-2024.1. Incorpora cláusula de 72 horas para eventos hidrometeorológicos y sísmicos, reposición a nuevo para maquinaria de hasta 7 años de antigüedad y cobertura de RCE patronal y cruzada sin necesidad de endoso adicional.',
     coverages: [
-      { name: 'Incendio, Rayo y Explosión', value: '48.500.000.000 COP', deductible: 'Sin deducible' },
-      { name: 'Terremoto, Temblor y Erupción Volcánica', value: '48.500.000.000 COP', deductible: '2% VA / Mín. 5 SMMLV' },
-      { name: 'HMACC y AMIT (Terrorismo)', value: '48.500.000.000 COP', deductible: '10% de la pérdida / Mín. 4 SMMLV' },
-      { name: 'Anegación, Daños por Agua y Granizo', value: '15.000.000.000 COP', deductible: '10% de la pérdida / Mín. 3 SMMLV' },
-      { name: 'Rotura de Maquinaria y Calderas', value: '8.500.000.000 COP', deductible: '10% / Mín. 3 SMMLV' },
-      { name: 'Equipo Eléctrico y Electrónico', value: '3.200.000.000 COP', deductible: '10% / Mín. 2 SMMLV' },
-      { name: 'Responsabilidad Civil Extracontractual (RCE)', value: '5.000.000.000 COP', deductible: '10% / Mín. 2 SMMLV' },
-      { name: 'Remoción de Escombros', value: '100% Límite Básico (Hasta $4.850M)', deductible: 'Sin deducible' },
-      { name: 'Gastos de Extinción y Preservación', value: '1.200.000.000 COP', deductible: 'Sin deducible' },
+      {
+        name: 'Incendio, Rayo y Explosión',
+        value: '48.500.000.000 COP',
+        deductible: 'Sin deducible',
+      },
+      {
+        name: 'Terremoto, Temblor y Erupción Volcánica',
+        value: '48.500.000.000 COP',
+        deductible: '2% VA / Mín. 5 SMMLV',
+      },
+      {
+        name: 'HMACC y AMIT (Terrorismo)',
+        value: '48.500.000.000 COP',
+        deductible: '10% de la pérdida / Mín. 4 SMMLV',
+      },
+      {
+        name: 'Anegación, Daños por Agua y Granizo',
+        value: '15.000.000.000 COP',
+        deductible: '10% de la pérdida / Mín. 3 SMMLV',
+      },
+      {
+        name: 'Rotura de Maquinaria y Calderas',
+        value: '8.500.000.000 COP',
+        deductible: '10% / Mín. 3 SMMLV',
+      },
+      {
+        name: 'Equipo Eléctrico y Electrónico',
+        value: '3.200.000.000 COP',
+        deductible: '10% / Mín. 2 SMMLV',
+      },
+      {
+        name: 'Responsabilidad Civil Extracontractual (RCE)',
+        value: '5.000.000.000 COP',
+        deductible: '10% / Mín. 2 SMMLV',
+      },
+      {
+        name: 'Remoción de Escombros',
+        value: '100% Límite Básico (Hasta $4.850M)',
+        deductible: 'Sin deducible',
+      },
+      {
+        name: 'Gastos de Extinción y Preservación',
+        value: '1.200.000.000 COP',
+        deductible: 'Sin deducible',
+      },
     ],
     alerts: [
       {
         level: 'GOOD',
         title: 'Remoción de Escombros Ampliada al 100%',
-        description: 'No impone el sublímite tradicional del 10% que aplican otras aseguradoras, otorgando máxima protección en siniestro mayor.',
+        description:
+          'No impone el sublímite tradicional del 10% que aplican otras aseguradoras, otorgando máxima protección en siniestro mayor.',
         clauseReference: 'Cláusula Adicional 14 - Remoción de Restos',
         sourceDocument: 'Clausulado General SURA PYME 2024 Pág. 38',
       },
       {
         level: 'GOOD',
         title: 'Amparo Automático de RCE Cruzada y Patronal',
-        description: 'Cubre reclamaciones de contratistas y empleados sin requerir endosos particulares previos.',
+        description:
+          'Cubre reclamaciones de contratistas y empleados sin requerir endosos particulares previos.',
       },
       {
         level: 'INFO',
         title: 'Inspección de Bombas Contra Incendio Requerida',
-        description: 'Exige certificado de prueba hidrostática de la red en los primeros 60 días de vigencia.',
+        description:
+          'Exige certificado de prueba hidrostática de la red en los primeros 60 días de vigencia.',
         clauseReference: 'Garantía 4.2 - Mantenimiento de Equipos de Emergencia',
       },
     ],
@@ -280,7 +320,8 @@ export const DEMO_QUOTES: QuoteAnalysis[] = [
         riskLevel: 'LOW',
         financialExposureCOP: 71166300,
         smmlvEquivalent: 5,
-        marketComparison: 'Alineado con el estándar regulatorio de la Superintendencia Financiera para zona intermedia.',
+        marketComparison:
+          'Alineado con el estándar regulatorio de la Superintendencia Financiera para zona intermedia.',
       },
       {
         coverage: 'Rotura de Maquinaria',
@@ -288,16 +329,19 @@ export const DEMO_QUOTES: QuoteAnalysis[] = [
         riskLevel: 'LOW',
         financialExposureCOP: 4269978,
         smmlvEquivalent: 3,
-        marketComparison: 'Uno de los deducibles más favorables del mercado (AXA y Bolívar exigen 5 SMMLV).',
+        marketComparison:
+          'Uno de los deducibles más favorables del mercado (AXA y Bolívar exigen 5 SMMLV).',
       },
     ],
     legalOpinion: [
       {
         coverageName: 'Terremoto y Cláusula Catastrófica de 72 Horas',
-        riskScenario: 'Enjambre sísmico con réplicas continuas durante 3 días afectando cimientos y mampostería de la copropiedad.',
+        riskScenario:
+          'Enjambre sísmico con réplicas continuas durante 3 días afectando cimientos y mampostería de la copropiedad.',
         clauseInterpretation:
           'La cláusula de 72 horas de SURA agrupa todas las réplicas dentro de un solo evento sin cobrar deducibles adicionales por cada temblor, en estricta conformidad con el Art. 1077 del Código de Comercio.',
-        recommendation: 'Aceptar condición tal como está; es la más garantista del mercado asegurador colombiano.',
+        recommendation:
+          'Aceptar condición tal como está; es la más garantista del mercado asegurador colombiano.',
         confidence: 96,
         negotiationPoints: [
           {
@@ -318,15 +362,18 @@ export const DEMO_QUOTES: QuoteAnalysis[] = [
       },
       {
         coverageName: 'Remoción de Escombros y Demolición',
-        riskScenario: 'Colapso parcial de fachada requiriendo demolición controlada y retiro de 400 toneladas de escombros.',
+        riskScenario:
+          'Colapso parcial de fachada requiriendo demolición controlada y retiro de 400 toneladas de escombros.',
         clauseInterpretation:
           'SURA no subordina este amparo al sublímite del 10% del valor del daño, sino que extiende la cobertura hasta el 100% del valor básico asegurado.',
-        recommendation: 'Utilizar esta ventaja competitiva como argumento decisivo de venta frente a la copropiedad.',
+        recommendation:
+          'Utilizar esta ventaja competitiva como argumento decisivo de venta frente a la copropiedad.',
         confidence: 94,
         negotiationPoints: [
           {
             point: 'Ratificar la ausencia de coaseguro o sublímites en demolición',
-            rationale: 'Los costos de disposición final de escombros en Bogotá han crecido un 45% en 2025',
+            rationale:
+              'Los costos de disposición final de escombros en Bogotá han crecido un 45% en 2025',
             expectedOutcome: 'Protección financiera integral para la junta de copropietarios',
             priority: 'HIGH',
           },
@@ -370,26 +417,64 @@ export const DEMO_QUOTES: QuoteAnalysis[] = [
     technicalAnalysis:
       'Clausulado AXA-P-2023. Incluye amparos estándar. Aplica regla proporcional estricta en caso de infraseguro si la tasación no se certifica con avalúo RICS o Lonja de Propiedad Raíz.',
     coverages: [
-      { name: 'Incendio, Rayo y Explosión', value: '48.500.000.000 COP', deductible: 'Sin deducible' },
-      { name: 'Terremoto, Temblor y Erupción Volcánica', value: '48.500.000.000 COP', deductible: '2.5% VA / Mín. 8 SMMLV' },
-      { name: 'HMACC y AMIT (Terrorismo)', value: '48.500.000.000 COP', deductible: '15% de la pérdida / Mín. 5 SMMLV' },
-      { name: 'Anegación, Daños por Agua y Granizo', value: '10.000.000.000 COP', deductible: '10% de la pérdida / Mín. 4 SMMLV' },
-      { name: 'Rotura de Maquinaria y Calderas', value: '6.000.000.000 COP', deductible: '10% / Mín. 5 SMMLV' },
-      { name: 'Equipo Eléctrico y Electrónico', value: '2.500.000.000 COP', deductible: '10% / Mín. 3 SMMLV' },
-      { name: 'Responsabilidad Civil Extracontractual (RCE)', value: '4.000.000.000 COP', deductible: '10% / Mín. 3 SMMLV' },
-      { name: 'Remoción de Escombros', value: 'Sublímite 10% del Valor del Siniestro (Máx $2.000M)', deductible: 'Sin deducible' },
-      { name: 'Gastos de Extinción y Preservación', value: '800.000.000 COP', deductible: 'Sin deducible' },
+      {
+        name: 'Incendio, Rayo y Explosión',
+        value: '48.500.000.000 COP',
+        deductible: 'Sin deducible',
+      },
+      {
+        name: 'Terremoto, Temblor y Erupción Volcánica',
+        value: '48.500.000.000 COP',
+        deductible: '2.5% VA / Mín. 8 SMMLV',
+      },
+      {
+        name: 'HMACC y AMIT (Terrorismo)',
+        value: '48.500.000.000 COP',
+        deductible: '15% de la pérdida / Mín. 5 SMMLV',
+      },
+      {
+        name: 'Anegación, Daños por Agua y Granizo',
+        value: '10.000.000.000 COP',
+        deductible: '10% de la pérdida / Mín. 4 SMMLV',
+      },
+      {
+        name: 'Rotura de Maquinaria y Calderas',
+        value: '6.000.000.000 COP',
+        deductible: '10% / Mín. 5 SMMLV',
+      },
+      {
+        name: 'Equipo Eléctrico y Electrónico',
+        value: '2.500.000.000 COP',
+        deductible: '10% / Mín. 3 SMMLV',
+      },
+      {
+        name: 'Responsabilidad Civil Extracontractual (RCE)',
+        value: '4.000.000.000 COP',
+        deductible: '10% / Mín. 3 SMMLV',
+      },
+      {
+        name: 'Remoción de Escombros',
+        value: 'Sublímite 10% del Valor del Siniestro (Máx $2.000M)',
+        deductible: 'Sin deducible',
+      },
+      {
+        name: 'Gastos de Extinción y Preservación',
+        value: '800.000.000 COP',
+        deductible: 'Sin deducible',
+      },
     ],
     alerts: [
       {
         level: 'WARNING',
         title: 'Deducible de Terremoto Elevado (8 SMMLV)',
-        description: 'El piso mínimo exige $11.386.608 COP en caso de siniestro leve, incrementando el gasto directo de la copropiedad.',
+        description:
+          'El piso mínimo exige $11.386.608 COP en caso de siniestro leve, incrementando el gasto directo de la copropiedad.',
       },
       {
         level: 'WARNING',
         title: 'Sublímite Restrictivo en Escombros',
-        description: 'En colapso estructural por sismo, el tope de $2.000M COP podría ser insuficiente para demolición y transporte.',
+        description:
+          'En colapso estructural por sismo, el tope de $2.000M COP podría ser insuficiente para demolición y transporte.',
       },
       {
         level: 'GOOD',
@@ -427,26 +512,64 @@ export const DEMO_QUOTES: QuoteAnalysis[] = [
     technicalAnalysis:
       'Clausulado Bolívar Clásico. Contiene cláusula de arbitraje obligatorio en la Cámara de Comercio de Bogotá para siniestros superiores a 500 SMMLV.',
     coverages: [
-      { name: 'Incendio, Rayo y Explosión', value: '48.500.000.000 COP', deductible: 'Sin deducible' },
-      { name: 'Terremoto, Temblor y Erupción Volcánica', value: '48.500.000.000 COP', deductible: '3% VA / Mín. 10 SMMLV' },
-      { name: 'HMACC y AMIT (Terrorismo)', value: '30.000.000.000 COP', deductible: '15% de la pérdida / Mín. 5 SMMLV' },
-      { name: 'Anegación, Daños por Agua y Granizo', value: '8.000.000.000 COP', deductible: '15% de la pérdida / Mín. 5 SMMLV' },
-      { name: 'Rotura de Maquinaria y Calderas', value: '5.000.000.000 COP', deductible: '15% / Mín. 5 SMMLV' },
-      { name: 'Equipo Eléctrico y Electrónico', value: '2.000.000.000 COP', deductible: '10% / Mín. 3 SMMLV' },
-      { name: 'Responsabilidad Civil Extracontractual (RCE)', value: '3.000.000.000 COP', deductible: '10% / Mín. 4 SMMLV' },
-      { name: 'Remoción de Escombros', value: '15% del Valor del Siniestro (Máx $3.000M)', deductible: 'Sin deducible' },
-      { name: 'Gastos de Extinción y Preservación', value: '500.000.000 COP', deductible: 'Sin deducible' },
+      {
+        name: 'Incendio, Rayo y Explosión',
+        value: '48.500.000.000 COP',
+        deductible: 'Sin deducible',
+      },
+      {
+        name: 'Terremoto, Temblor y Erupción Volcánica',
+        value: '48.500.000.000 COP',
+        deductible: '3% VA / Mín. 10 SMMLV',
+      },
+      {
+        name: 'HMACC y AMIT (Terrorismo)',
+        value: '30.000.000.000 COP',
+        deductible: '15% de la pérdida / Mín. 5 SMMLV',
+      },
+      {
+        name: 'Anegación, Daños por Agua y Granizo',
+        value: '8.000.000.000 COP',
+        deductible: '15% de la pérdida / Mín. 5 SMMLV',
+      },
+      {
+        name: 'Rotura de Maquinaria y Calderas',
+        value: '5.000.000.000 COP',
+        deductible: '15% / Mín. 5 SMMLV',
+      },
+      {
+        name: 'Equipo Eléctrico y Electrónico',
+        value: '2.000.000.000 COP',
+        deductible: '10% / Mín. 3 SMMLV',
+      },
+      {
+        name: 'Responsabilidad Civil Extracontractual (RCE)',
+        value: '3.000.000.000 COP',
+        deductible: '10% / Mín. 4 SMMLV',
+      },
+      {
+        name: 'Remoción de Escombros',
+        value: '15% del Valor del Siniestro (Máx $3.000M)',
+        deductible: 'Sin deducible',
+      },
+      {
+        name: 'Gastos de Extinción y Preservación',
+        value: '500.000.000 COP',
+        deductible: 'Sin deducible',
+      },
     ],
     alerts: [
       {
         level: 'CRITICAL',
         title: 'Deducible Mínimo de 10 SMMLV en Terremoto',
-        description: 'Exige un mínimo no indemnizable de $14.233.260 COP, el más alto de las opciones evaluadas.',
+        description:
+          'Exige un mínimo no indemnizable de $14.233.260 COP, el más alto de las opciones evaluadas.',
       },
       {
         level: 'WARNING',
         title: 'Sublímite en Terrorismo (AMIT)',
-        description: 'Limita la cobertura de terrorismo a $30.000M frente a los $48.500M de valor total asegurado.',
+        description:
+          'Limita la cobertura de terrorismo a $30.000M frente a los $48.500M de valor total asegurado.',
       },
     ],
     specialConditions: [],
@@ -708,15 +831,18 @@ export const DEMO_REPORT: ComparisonReport = {
   deductibleComparison: [
     {
       insurer: 'Seguros SURA',
-      deductibleText: 'Terremoto: 2% VA / Mínimo 5 SMMLV ($7.1M). Rotura Maquinaria: 10% / Mínimo 3 SMMLV ($4.3M). RCE: 10% / Mínimo 2 SMMLV ($2.8M).',
+      deductibleText:
+        'Terremoto: 2% VA / Mínimo 5 SMMLV ($7.1M). Rotura Maquinaria: 10% / Mínimo 3 SMMLV ($4.3M). RCE: 10% / Mínimo 2 SMMLV ($2.8M).',
     },
     {
       insurer: 'AXA Colpatria',
-      deductibleText: 'Terremoto: 2.5% VA / Mínimo 8 SMMLV ($11.4M). Rotura Maquinaria: 10% / Mínimo 5 SMMLV ($7.1M). RCE: 10% / Mínimo 3 SMMLV ($4.3M).',
+      deductibleText:
+        'Terremoto: 2.5% VA / Mínimo 8 SMMLV ($11.4M). Rotura Maquinaria: 10% / Mínimo 5 SMMLV ($7.1M). RCE: 10% / Mínimo 3 SMMLV ($4.3M).',
     },
     {
       insurer: 'Seguros Bolívar',
-      deductibleText: 'Terremoto: 3% VA / Mínimo 10 SMMLV ($14.2M). Rotura Maquinaria: 15% / Mínimo 5 SMMLV ($7.1M). RCE: 10% / Mínimo 4 SMMLV ($5.7M).',
+      deductibleText:
+        'Terremoto: 3% VA / Mínimo 10 SMMLV ($14.2M). Rotura Maquinaria: 15% / Mínimo 5 SMMLV ($7.1M). RCE: 10% / Mínimo 4 SMMLV ($5.7M).',
     },
   ],
   matrix: DEMO_MATRIX_ROWS,
@@ -737,17 +863,20 @@ export const DEMO_REPORT: ComparisonReport = {
       {
         code: 'Ley 675 de 2001 (Art. 15)',
         title: 'Régimen de Propiedad Horizontal',
-        summary: 'Obligatoriedad de asegurar contra incendio y terremoto los bienes comunes de la copropiedad.',
+        summary:
+          'Obligatoriedad de asegurar contra incendio y terremoto los bienes comunes de la copropiedad.',
       },
       {
         code: 'Código de Comercio (Art. 1077)',
         title: 'Carga de la Prueba y Ocurrencia del Siniestro',
-        summary: 'Regula la acreditación de la cuantía del daño y validez de las cláusulas de garantía.',
+        summary:
+          'Regula la acreditación de la cuantía del daño y validez de las cláusulas de garantía.',
       },
       {
         code: 'Ley 45 de 1990',
         title: 'Estatuto Orgánico del Sistema Financiero',
-        summary: 'Prohibición de cláusulas lesivas o ambiguas y prevalencia de la oferta comercial vinculante.',
+        summary:
+          'Prohibición de cláusulas lesivas o ambiguas y prevalencia de la oferta comercial vinculante.',
       },
     ],
     thesaurusHighlights: [
@@ -786,14 +915,16 @@ export const DEMO_CHAT_MESSAGES: ChatMessage[] = [
       {
         id: 'cit-1',
         insurerName: 'Seguros SURA',
-        content: 'Cláusula 12: Rotura de maquinaria. Se amparan bombas centrífugas, motores y tableros. Deducible 10% mínimo 3 SMMLV.',
+        content:
+          'Cláusula 12: Rotura de maquinaria. Se amparan bombas centrífugas, motores y tableros. Deducible 10% mínimo 3 SMMLV.',
         pageNumber: 7,
         similarityScore: 0.96,
       },
       {
         id: 'cit-2',
         insurerName: 'AXA Colpatria',
-        content: 'Sección Maquinaria y Calderas: Deducible del 10% con piso fijado en 5 salarios mínimos mensuales legales vigentes.',
+        content:
+          'Sección Maquinaria y Calderas: Deducible del 10% con piso fijado en 5 salarios mínimos mensuales legales vigentes.',
         pageNumber: 6,
         similarityScore: 0.93,
       },

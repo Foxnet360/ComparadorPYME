@@ -7,9 +7,7 @@ describe('quoteBasedAuditor - domain parameterization', () => {
     policyName: 'Póliza PYME',
     priceAnnual: 10000000,
     currency: 'COP',
-    coverages: [
-      { name: 'Incendio y Terremoto', value: '$500M' },
-    ],
+    coverages: [{ name: 'Incendio y Terremoto', value: '$500M' }],
     alerts: [],
   };
 
@@ -18,9 +16,7 @@ describe('quoteBasedAuditor - domain parameterization', () => {
     policyName: 'Póliza Autos',
     priceAnnual: 2500000,
     currency: 'COP',
-    coverages: [
-      { name: 'Responsabilidad Civil Extracontractual Vehicular', value: '$1000M' },
-    ],
+    coverages: [{ name: 'Responsabilidad Civil Extracontractual Vehicular', value: '$1000M' }],
     alerts: [],
   };
 

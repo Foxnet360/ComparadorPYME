@@ -53,15 +53,16 @@ export const AllyEditModal: React.FC<AllyEditModalProps> = ({
       setEmail(ally.contact_email || '');
       setLogoUrl(
         ally.logoUrl ||
-        (ally.settings as Record<string, any> | undefined)?.logo_url ||
-        (ally.settings as Record<string, any> | undefined)?.logoUrl ||
-        ''
+          (ally.settings as Record<string, any> | undefined)?.logo_url ||
+          (ally.settings as Record<string, any> | undefined)?.logoUrl ||
+          ''
       );
       setLogoError(null);
       setStatus(ally.status || 'ACTIVE');
       setCommercialPolicies(
         getEffectiveCommercialPolicies(
-          ally.commercialPolicies || (ally.settings as Record<string, any> | undefined)?.commercial_policies
+          ally.commercialPolicies ||
+            (ally.settings as Record<string, any> | undefined)?.commercial_policies
         )
       );
       setShowPoliciesSection(false);
@@ -204,17 +205,26 @@ export const AllyEditModal: React.FC<AllyEditModalProps> = ({
                 </div>
 
                 <div className="text-[11px] text-slate-500 leading-relaxed bg-white border border-slate-200/80 rounded-lg p-2">
-                  <p className="font-semibold text-slate-700 mb-0.5">Especificaciones requeridas para PDF y Excel:</p>
+                  <p className="font-semibold text-slate-700 mb-0.5">
+                    Especificaciones requeridas para PDF y Excel:
+                  </p>
                   <ul className="list-disc pl-4 space-y-0.5 text-[10.5px]">
-                    <li><strong>Formatos:</strong> PNG o JPG/JPEG (fondo transparente o blanco recomendado).</li>
-                    <li><strong>Proporción sugerida:</strong> Rectangular horizontal 3:1 o 4:1 (aprox. 400 × 120 px) para membrete de encabezado.</li>
-                    <li><strong>Peso máximo:</strong> 2 MB (recomendado &lt; 500 KB para no ralentizar la exportación).</li>
+                    <li>
+                      <strong>Formatos:</strong> PNG o JPG/JPEG (fondo transparente o blanco
+                      recomendado).
+                    </li>
+                    <li>
+                      <strong>Proporción sugerida:</strong> Rectangular horizontal 3:1 o 4:1 (aprox.
+                      400 × 120 px) para membrete de encabezado.
+                    </li>
+                    <li>
+                      <strong>Peso máximo:</strong> 2 MB (recomendado &lt; 500 KB para no ralentizar
+                      la exportación).
+                    </li>
                   </ul>
                 </div>
 
-                {logoError && (
-                  <p className="text-xs text-rose-600 font-semibold">{logoError}</p>
-                )}
+                {logoError && <p className="text-xs text-rose-600 font-semibold">{logoError}</p>}
               </div>
             </div>
           </div>
@@ -260,9 +270,7 @@ export const AllyEditModal: React.FC<AllyEditModalProps> = ({
             </label>
             <select
               value={status}
-              onChange={(e) =>
-                setStatus(e.target.value as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED')
-              }
+              onChange={(e) => setStatus(e.target.value as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED')}
               className="w-full border border-slate-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
             >
               <option value="ACTIVE">Vigente / Activa</option>
@@ -280,7 +288,9 @@ export const AllyEditModal: React.FC<AllyEditModalProps> = ({
             >
               <span className="flex items-center gap-1.5">
                 <FileText size={15} className="text-indigo-600" />
-                <span>Políticas Comerciales de Oferta ({commercialPolicies.offerValidityDays} días)</span>
+                <span>
+                  Políticas Comerciales de Oferta ({commercialPolicies.offerValidityDays} días)
+                </span>
               </span>
               <span className="text-[11px] text-indigo-600 underline">
                 {showPoliciesSection ? 'Ocultar' : 'Configurar'}

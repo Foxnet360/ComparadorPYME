@@ -92,7 +92,8 @@ const brokerInfo = {
   website: 'https://correseguros.co/',
   address: 'Carrera 7 # 71-21 Torre B',
   city: 'Bogotá D.C.',
-  logoUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+  logoUrl:
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
 };
 
 describe('generatePDF — Condensed mode vs Extended mode', () => {

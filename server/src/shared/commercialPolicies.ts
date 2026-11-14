@@ -55,15 +55,14 @@ export function getEffectiveCommercialPolicies(
     paymentConditions:
       configured.paymentConditions?.trim() || DEFAULT_COMMERCIAL_POLICIES.paymentConditions,
     inspectionRequirements:
-      configured.inspectionRequirements?.trim() || DEFAULT_COMMERCIAL_POLICIES.inspectionRequirements,
+      configured.inspectionRequirements?.trim() ||
+      DEFAULT_COMMERCIAL_POLICIES.inspectionRequirements,
     issuanceRequirements:
       configured.issuanceRequirements?.trim() || DEFAULT_COMMERCIAL_POLICIES.issuanceRequirements,
-    claimsPolicy:
-      configured.claimsPolicy?.trim() || DEFAULT_COMMERCIAL_POLICIES.claimsPolicy,
+    claimsPolicy: configured.claimsPolicy?.trim() || DEFAULT_COMMERCIAL_POLICIES.claimsPolicy,
     intermediationScope:
       configured.intermediationScope?.trim() || DEFAULT_COMMERCIAL_POLICIES.intermediationScope,
-    customNotes:
-      configured.customNotes?.trim() || DEFAULT_COMMERCIAL_POLICIES.customNotes,
+    customNotes: configured.customNotes?.trim() || DEFAULT_COMMERCIAL_POLICIES.customNotes,
   };
 }
 
@@ -129,16 +128,34 @@ export interface InsurerCommercialConditions {
 
 export const COMMERCIAL_CONDITION_FIELDS = [
   { key: 'validezOferta', label: 'Validez de la Oferta', placeholder: 'Ej: 30 días calendario' },
-  { key: 'formaPago', label: 'Forma de Pago y Financiación', placeholder: 'Ej: Hasta 10 cuotas mensuales / Débito' },
-  { key: 'inspeccionPrevia', label: 'Inspección Previa y Garantías', placeholder: 'Ej: Inspección virtual en 15 días' },
-  { key: 'requisitosEmision', label: 'Requisitos de Emisión', placeholder: 'Ej: SARLAFT + RUT + Orden formal' },
-  { key: 'otrasCondiciones', label: 'Otras Condiciones Comerciales', placeholder: 'Ej: Garantía de mantenimiento de tasa' },
+  {
+    key: 'formaPago',
+    label: 'Forma de Pago y Financiación',
+    placeholder: 'Ej: Hasta 10 cuotas mensuales / Débito',
+  },
+  {
+    key: 'inspeccionPrevia',
+    label: 'Inspección Previa y Garantías',
+    placeholder: 'Ej: Inspección virtual en 15 días',
+  },
+  {
+    key: 'requisitosEmision',
+    label: 'Requisitos de Emisión',
+    placeholder: 'Ej: SARLAFT + RUT + Orden formal',
+  },
+  {
+    key: 'otrasCondiciones',
+    label: 'Otras Condiciones Comerciales',
+    placeholder: 'Ej: Garantía de mantenimiento de tasa',
+  },
 ] as const;
 
 /**
  * Extracts commercial conditions per insurer from a comparison report or matrix.
  */
-export function extractCommercialConditionsFromReport(report: any): Record<string, InsurerCommercialConditions> {
+export function extractCommercialConditionsFromReport(
+  report: any
+): Record<string, InsurerCommercialConditions> {
   const result: Record<string, InsurerCommercialConditions> = {};
   const quotes = report?.quotes || [];
   const insurers: string[] = quotes.map((q: any) => q.insurerName || q.name || 'Aseguradora');
@@ -155,9 +172,16 @@ export function extractCommercialConditionsFromReport(report: any): Record<strin
       let matchedKey: keyof InsurerCommercialConditions | null = null;
       if (label.includes('validez')) matchedKey = 'validezOferta';
       else if (label.includes('pago') || label.includes('financiaci')) matchedKey = 'formaPago';
-      else if (label.includes('inspecci') || label.includes('garantia')) matchedKey = 'inspeccionPrevia';
-      else if (label.includes('emision') || label.includes('requisito')) matchedKey = 'requisitosEmision';
-      else if (label.includes('otra') || label.includes('compromiso') || (row.section && String(row.section).includes('COMERCIAL'))) matchedKey = 'otrasCondiciones';
+      else if (label.includes('inspecci') || label.includes('garantia'))
+        matchedKey = 'inspeccionPrevia';
+      else if (label.includes('emision') || label.includes('requisito'))
+        matchedKey = 'requisitosEmision';
+      else if (
+        label.includes('otra') ||
+        label.includes('compromiso') ||
+        (row.section && String(row.section).includes('COMERCIAL'))
+      )
+        matchedKey = 'otrasCondiciones';
 
       if (matchedKey && Array.isArray(row.cells)) {
         row.cells.forEach((cell: any, idx: number) => {
@@ -196,10 +220,9 @@ export function extractCommercialConditionsFromReport(report: any): Record<strin
 /**
  * Synchronizes edited commercial conditions back into the report and its matrix rows.
  */
-export function applyCommercialConditionsToReport<T extends { matrix?: any[]; commercialConditions?: any; quotes?: any[] }>(
-  report: T,
-  conditions: Record<string, InsurerCommercialConditions>
-): T {
+export function applyCommercialConditionsToReport<
+  T extends { matrix?: any[]; commercialConditions?: any; quotes?: any[] },
+>(report: T, conditions: Record<string, InsurerCommercialConditions>): T {
   const quotes = report.quotes || [];
   const insurers: string[] = quotes.map((q: any) => q.insurerName || q.name || 'Aseguradora');
   const updatedReport = {
@@ -213,7 +236,8 @@ export function applyCommercialConditionsToReport<T extends { matrix?: any[]; co
     let rowIndex = matrix.findIndex(
       (r) =>
         r.label === label ||
-        (r.section === 'CONDICIONES COMERCIALES' && (r.label || '').toLowerCase().includes(key.toLowerCase().slice(0, 5)))
+        (r.section === 'CONDICIONES COMERCIALES' &&
+          (r.label || '').toLowerCase().includes(key.toLowerCase().slice(0, 5)))
     );
 
     const cells = insurers.map((ins) => ({

@@ -3,7 +3,14 @@ import { generatePDF } from '../../services/pdfService';
 import { storageService } from '../../services/storageService';
 import { organizationService } from '../../services/organizationService';
 import { exportAnalysisToExcel } from '../../services/excelExportService';
-import { FileDown, FileSpreadsheet, Loader2, Briefcase, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  FileDown,
+  FileSpreadsheet,
+  Loader2,
+  Briefcase,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 import {
   COMMERCIAL_CONDITION_FIELDS,
   extractCommercialConditionsFromReport,
@@ -47,9 +54,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const [exportingExcel, setExportingExcel] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [pdfMode, setPdfMode] = useState<'condensed' | 'extended'>('condensed');
-  const [commercialConditions, setCommercialConditions] = useState<Record<string, InsurerCommercialConditions>>(() =>
-    extractCommercialConditionsFromReport(report)
-  );
+  const [commercialConditions, setCommercialConditions] = useState<
+    Record<string, InsurerCommercialConditions>
+  >(() => extractCommercialConditionsFromReport(report));
   const insurers = (report.quotes || []).map((q) => q.insurerName || 'Aseguradora');
   const [selectedInsurer, setSelectedInsurer] = useState<string>(insurers[0] || '');
   const [showCommercialSection, setShowCommercialSection] = useState<boolean>(true);
@@ -230,7 +237,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   </span>
                 </div>
                 <p className="text-[10.5px] text-slate-500 mt-0.5 leading-tight">
-                  Cuadro Comparativo Resumido · Visión Ejecutiva Condensada + Información del Técnico + Políticas Comerciales.
+                  Cuadro Comparativo Resumido · Visión Ejecutiva Condensada + Información del
+                  Técnico + Políticas Comerciales.
                 </p>
               </div>
             </label>
@@ -255,7 +263,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   Versión Extendida (Auditoría Técnica)
                 </span>
                 <p className="text-[10.5px] text-slate-500 mt-0.5 leading-tight">
-                  Auditoría completa multi-página: matriz de coberturas canónicas, deducibles pedagógicos y análisis de riesgos.
+                  Auditoría completa multi-página: matriz de coberturas canónicas, deducibles
+                  pedagógicos y análisis de riesgos.
                 </p>
               </div>
             </label>
@@ -270,7 +279,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               <button
                 key={i}
                 className={`w-5 h-5 rounded-full border-2 transition-transform ${
-                  pdfOptions.color[0] === color.v[0] ? 'scale-110 border-slate-800 ring-1 ring-slate-800' : 'border-transparent'
+                  pdfOptions.color[0] === color.v[0]
+                    ? 'scale-110 border-slate-800 ring-1 ring-slate-800'
+                    : 'border-transparent'
                 }`}
                 style={{ backgroundColor: color.c }}
                 onClick={() => onPdfOptionsChange({ ...pdfOptions, color: color.v })}
@@ -344,7 +355,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 const brokerInfo = {
                   name: user?.name || 'Asesor Técnico de Seguros',
                   intermediaryName:
-                    user?.intermediaryName || user?.agencyName || 'Corredores de Seguros Asociados S.A.',
+                    user?.intermediaryName ||
+                    user?.agencyName ||
+                    'Corredores de Seguros Asociados S.A.',
                   registrationNumber:
                     user?.registrationNumber ||
                     user?.agentDetails?.registrationNumber ||

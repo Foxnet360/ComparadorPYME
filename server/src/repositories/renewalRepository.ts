@@ -117,11 +117,7 @@ export async function createRenewal(
   };
   if (orgId) payload.org_id = orgId;
 
-  const { data, error } = await supabase
-    .from('renewals')
-    .insert(payload)
-    .select(COLUMNS)
-    .single();
+  const { data, error } = await supabase.from('renewals').insert(payload).select(COLUMNS).single();
 
   if (error) {
     if (error.code === UNIQUE_VIOLATION) {
@@ -152,10 +148,7 @@ export async function applyTransition(
   if (plan.patch.final_premium !== undefined) patch.final_premium = plan.patch.final_premium;
   if (plan.patch.loss_reason !== undefined) patch.loss_reason = plan.patch.loss_reason;
 
-  let updateQuery = supabase
-    .from('renewals')
-    .update(patch)
-    .eq('id', renewalId);
+  let updateQuery = supabase.from('renewals').update(patch).eq('id', renewalId);
 
   if (orgId) {
     updateQuery = updateQuery.or(`org_id.eq.${orgId},user_id.eq.${userId}`);
@@ -163,9 +156,7 @@ export async function applyTransition(
     updateQuery = updateQuery.eq('user_id', userId);
   }
 
-  const { data, error } = await updateQuery
-    .select(COLUMNS)
-    .single();
+  const { data, error } = await updateQuery.select(COLUMNS).single();
 
   if (error) {
     if (error.code === 'PGRST116') {

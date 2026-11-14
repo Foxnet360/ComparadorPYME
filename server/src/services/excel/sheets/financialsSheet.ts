@@ -28,13 +28,27 @@ export function buildFinancialsSheet(ctx: ExcelContext): void {
   financialsSheet.mergeCells(1, 1, 2, quotes.length + 1);
   const finTitle = financialsSheet.getCell(1, 1);
   finTitle.value = 'EVALUACIÓN FINANCIERA DE PRIMAS Y COSTOS COMPARATIVOS';
-  finTitle.font = { name: FONT_NAME, size: 14, bold: true, color: { argb: EXCEL_COLORS.NAVY_HEADER } };
+  finTitle.font = {
+    name: FONT_NAME,
+    size: 14,
+    bold: true,
+    color: { argb: EXCEL_COLORS.NAVY_HEADER },
+  };
 
   financialsSheet.getRow(4).height = 54;
   const finLabelHeader = financialsSheet.getCell(4, 1);
   finLabelHeader.value = 'CONCEPTO FINANCIERO';
-  finLabelHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.WHITE } };
-  finLabelHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.NAVY_HEADER } };
+  finLabelHeader.font = {
+    name: FONT_NAME,
+    size: 10,
+    bold: true,
+    color: { argb: EXCEL_COLORS.WHITE },
+  };
+  finLabelHeader.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: EXCEL_COLORS.NAVY_HEADER },
+  };
   finLabelHeader.alignment = { vertical: 'middle', horizontal: 'left' };
 
   quotes.forEach((q, i) => {
@@ -44,8 +58,17 @@ export function buildFinancialsSheet(ctx: ExcelContext): void {
     const argbColor = profile?.primaryColor
       ? 'FF' + profile.primaryColor.replace('#', '')
       : EXCEL_COLORS.NAVY_HEADER;
-    insHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.SLATE_DARK } };
-    insHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.BG_SLATE_HEADER } };
+    insHeader.font = {
+      name: FONT_NAME,
+      size: 10,
+      bold: true,
+      color: { argb: EXCEL_COLORS.SLATE_DARK },
+    };
+    insHeader.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: EXCEL_COLORS.BG_SLATE_HEADER },
+    };
     insHeader.border = {
       top: { style: 'medium', color: { argb: argbColor } },
       bottom: { style: 'thin', color: { argb: EXCEL_COLORS.BORDER_MEDIUM } },
@@ -145,8 +168,7 @@ export function buildFinancialsSheet(ctx: ExcelContext): void {
       // V2 unified matrix where priceAnnual / Total already includes IVA (and no separate Prima Neta row exists):
       // derive Subtotal, IVA, and Prima Neta from Total so we never double-charge 19% IVA over priceAnnual.
       const totVal = rawTotal > 0 ? rawTotal : quotePrice;
-      const ivaVal =
-        rawIva > 0 && rawIva < totVal ? rawIva : totVal - Math.round(totVal / 1.19);
+      const ivaVal = rawIva > 0 && rawIva < totVal ? rawIva : totVal - Math.round(totVal / 1.19);
       const subVal = Math.max(0, totVal - ivaVal);
       const expVal = Math.min(rawExp, subVal);
       const netVal = Math.max(0, subVal - expVal);
@@ -189,13 +211,28 @@ export function buildFinancialsSheet(ctx: ExcelContext): void {
     getValueOrFormula: (
       colLetter: string,
       idx: number
-    ) => { value?: number; formula?: string; result?: number; isTotal?: boolean; isWinner?: boolean }
+    ) => {
+      value?: number;
+      formula?: string;
+      result?: number;
+      isTotal?: boolean;
+      isWinner?: boolean;
+    }
   ) => {
     financialsSheet.getRow(rowNum).height = 22;
     const lCell = financialsSheet.getCell(rowNum, 1);
     lCell.value = label;
-    lCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.SLATE_LABEL } };
-    lCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.BG_SLATE_HEADER } };
+    lCell.font = {
+      name: FONT_NAME,
+      size: 10,
+      bold: true,
+      color: { argb: EXCEL_COLORS.SLATE_LABEL },
+    };
+    lCell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: EXCEL_COLORS.BG_SLATE_HEADER },
+    };
 
     quotes.forEach((q, idx) => {
       const colLetter = String.fromCharCode(66 + idx);
@@ -212,12 +249,26 @@ export function buildFinancialsSheet(ctx: ExcelContext): void {
       }
 
       xlCell.numFmt = '$#,##0';
-      xlCell.font = { name: FONT_NAME, size: 10, bold: !!res.isTotal, color: { argb: EXCEL_COLORS.SLATE_BODY } };
+      xlCell.font = {
+        name: FONT_NAME,
+        size: 10,
+        bold: !!res.isTotal,
+        color: { argb: EXCEL_COLORS.SLATE_BODY },
+      };
       xlCell.alignment = { horizontal: 'center' };
 
       if (res.isWinner) {
-        xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.AMBER_BG } };
-        xlCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.AMBER_TEXT } };
+        xlCell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: EXCEL_COLORS.AMBER_BG },
+        };
+        xlCell.font = {
+          name: FONT_NAME,
+          size: 10,
+          bold: true,
+          color: { argb: EXCEL_COLORS.AMBER_TEXT },
+        };
       }
     });
   };
@@ -269,7 +320,12 @@ export function buildFinancialsSheet(ctx: ExcelContext): void {
   financialsSheet.getRow(11).height = 22;
   const ratioLabel = financialsSheet.getCell(11, 1);
   ratioLabel.value = '% SOBRE VALOR ASEGURADO';
-  ratioLabel.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.NAVY_HEADER } };
+  ratioLabel.font = {
+    name: FONT_NAME,
+    size: 10,
+    bold: true,
+    color: { argb: EXCEL_COLORS.NAVY_HEADER },
+  };
 
   quotes.forEach((q, idx) => {
     const colLetter = String.fromCharCode(66 + idx);
@@ -287,13 +343,27 @@ export function buildFinancialsSheet(ctx: ExcelContext): void {
   financialsSheet.getRow(13).height = 24;
   const chartHeader = financialsSheet.getCell(13, 1);
   chartHeader.value = '📊 COMPARACIÓN GRÁFICA DE COSTO RELATIVO';
-  chartHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.NAVY_HEADER } };
+  chartHeader.font = {
+    name: FONT_NAME,
+    size: 10,
+    bold: true,
+    color: { argb: EXCEL_COLORS.NAVY_HEADER },
+  };
 
   financialsSheet.getRow(14).height = 24;
   const chartLabel = financialsSheet.getCell(14, 1);
   chartLabel.value = 'Indicador Visual (Más Económica vs Más Costosa)';
-  chartLabel.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.SLATE_MUTED } };
-  chartLabel.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.BG_LIGHT_GRAY } };
+  chartLabel.font = {
+    name: FONT_NAME,
+    size: 10,
+    bold: true,
+    color: { argb: EXCEL_COLORS.SLATE_MUTED },
+  };
+  chartLabel.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: EXCEL_COLORS.BG_LIGHT_GRAY },
+  };
 
   quotes.forEach((q, idx) => {
     const colLetter = String.fromCharCode(66 + idx);
@@ -309,14 +379,37 @@ export function buildFinancialsSheet(ctx: ExcelContext): void {
       xlCell.value = `${barChars} (+${diffPct.toFixed(1)}%)`;
 
       if (p === minTotal) {
-        xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.EMERALD_BG } };
-        xlCell.font = { name: FONT_NAME, size: 9, bold: true, color: { argb: EXCEL_COLORS.EMERALD_TEXT } };
+        xlCell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: EXCEL_COLORS.EMERALD_BG },
+        };
+        xlCell.font = {
+          name: FONT_NAME,
+          size: 9,
+          bold: true,
+          color: { argb: EXCEL_COLORS.EMERALD_TEXT },
+        };
       } else if (p === maxTotal) {
         xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.RED_BG } };
-        xlCell.font = { name: FONT_NAME, size: 9, bold: true, color: { argb: EXCEL_COLORS.RED_TEXT } };
+        xlCell.font = {
+          name: FONT_NAME,
+          size: 9,
+          bold: true,
+          color: { argb: EXCEL_COLORS.RED_TEXT },
+        };
       } else {
-        xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.YELLOW_BG } };
-        xlCell.font = { name: FONT_NAME, size: 9, bold: true, color: { argb: EXCEL_COLORS.YELLOW_TEXT } };
+        xlCell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: EXCEL_COLORS.YELLOW_BG },
+        };
+        xlCell.font = {
+          name: FONT_NAME,
+          size: 9,
+          bold: true,
+          color: { argb: EXCEL_COLORS.YELLOW_TEXT },
+        };
       }
     } else {
       xlCell.value = 'N/A';

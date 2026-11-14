@@ -80,7 +80,11 @@ export const SummaryTab: React.FC<SummaryTabProps> = ({
       <ClaimSimulatorPanel quotes={quotes} compact={true} onNavigate={onNavigate} />
 
       {/* Respaldo Normativo y Regulatorio por Ramo con Verificación de Reglas Legales */}
-      <RegulatoryBackingPanel domain={domain} quotes={quotes} perQuoteCompliance={perQuoteCompliance} />
+      <RegulatoryBackingPanel
+        domain={domain}
+        quotes={quotes}
+        perQuoteCompliance={perQuoteCompliance}
+      />
 
       {/* Recommendation Text */}
       <div className="bg-slate-800 text-white p-6 rounded-xl shadow-lg">

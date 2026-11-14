@@ -130,7 +130,10 @@ export const daasApiKeyAuth = async (
     // 5. Expose standard rate limit and quota headers
     res.setHeader('X-RateLimit-Limit', subscriber.rateLimitPerMinute);
     res.setHeader('X-Quota-Monthly', subscriber.monthlyQuota);
-    res.setHeader('X-Quota-Remaining', Math.max(0, subscriber.monthlyQuota - subscriber.currentMonthUsage));
+    res.setHeader(
+      'X-Quota-Remaining',
+      Math.max(0, subscriber.monthlyQuota - subscriber.currentMonthUsage)
+    );
 
     next();
   } catch (error) {

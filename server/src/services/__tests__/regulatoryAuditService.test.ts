@@ -23,7 +23,11 @@ describe('regulatoryAuditService', () => {
     coverages: [
       { name: 'Incendio y Todo Riesgo Daño Material', value: '$1.000.000.000', isPositive: true },
       { name: 'Terremoto y Temblor', value: '$1.000.000.000', isPositive: true },
-      { name: 'Responsabilidad Civil Extracontractual PLO', value: '$500.000.000', isPositive: true },
+      {
+        name: 'Responsabilidad Civil Extracontractual PLO',
+        value: '$500.000.000',
+        isPositive: true,
+      },
       { name: 'Sustracción con Violencia', value: '$100.000.000', isPositive: true },
     ],
   };

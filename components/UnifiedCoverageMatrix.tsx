@@ -100,9 +100,14 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
           const isIncluded =
             cov.isPositive !== false &&
             val.length > 0 &&
-            !['no incluido', 'no incluida', 'no informado', 'excluido', 'no cubre', 'n.c.'].includes(
-              val
-            );
+            ![
+              'no incluido',
+              'no incluida',
+              'no informado',
+              'excluido',
+              'no cubre',
+              'n.c.',
+            ].includes(val);
           return isIncluded && rule.keywords.some((kw) => label.includes(kw.toLowerCase()));
         });
         if (matched) compliant++;

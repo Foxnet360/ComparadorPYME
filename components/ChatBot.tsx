@@ -42,7 +42,11 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
   }, [messages, isOpen]);
 
   useEffect(() => {
-    if (isOpen && typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1') {
+    if (
+      isOpen &&
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).get('demo') === '1'
+    ) {
       import('../src/demoData').then(({ DEMO_CHAT_MESSAGES }) => {
         setMessages([INITIAL_MESSAGE, ...DEMO_CHAT_MESSAGES]);
       });

@@ -191,7 +191,9 @@ export const InsurerRadar: React.FC<InsurerRadarProps> = ({
                     formatter={(value: string) => {
                       // Truncate long insurer names
                       const maxLength = 15;
-                      return value.length > maxLength ? value.substring(0, maxLength) + '...' : value;
+                      return value.length > maxLength
+                        ? value.substring(0, maxLength) + '...'
+                        : value;
                     }}
                   />
                   <Tooltip

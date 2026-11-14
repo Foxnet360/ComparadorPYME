@@ -141,7 +141,8 @@ export const RegulatoryBackingPanel: React.FC<RegulatoryBackingPanelProps> = ({
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-300 mb-2 flex items-center gap-1.5">
               <ShieldCheck size={14} />
-              Tesauro Técnico Específico del Ramo ({profile.thesaurusHighlights.length} ejes canónicos)
+              Tesauro Técnico Específico del Ramo ({profile.thesaurusHighlights.length} ejes
+              canónicos)
             </h4>
             <div className="flex flex-wrap gap-1.5">
               {profile.thesaurusHighlights.map((item, idx) => (

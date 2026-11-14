@@ -1,10 +1,7 @@
 import { Type } from '@google/genai';
 import { getGenAI, UploadedFile, extractHighSignalReferenceText } from '../gemini';
 import { parseJsonWithRepair } from '../jsonRepair';
-import {
-  GlobalStructureExtraction,
-  GlobalStructureSchema,
-} from '../../types/twoStageExtraction';
+import { GlobalStructureExtraction, GlobalStructureSchema } from '../../types/twoStageExtraction';
 
 const SchemaType = Type;
 
@@ -14,12 +11,14 @@ export const GlobalStructureJsonSchema = {
   properties: {
     insurerName: {
       type: SchemaType.STRING,
-      description: 'Name of the insurance company (e.g. SURA, SEGUROS BOLIVAR, CHUBB, ALLIANZ, MAPFRE, AXA COLPATRIA, SBS)',
+      description:
+        'Name of the insurance company (e.g. SURA, SEGUROS BOLIVAR, CHUBB, ALLIANZ, MAPFRE, AXA COLPATRIA, SBS)',
       nullable: false,
     },
     policyName: {
       type: SchemaType.STRING,
-      description: 'Product or policy commercial name (e.g. MULTIRRIESGO PYME, EMPRESARIAL, TODO RIESGO DAÑO MATERIAL)',
+      description:
+        'Product or policy commercial name (e.g. MULTIRRIESGO PYME, EMPRESARIAL, TODO RIESGO DAÑO MATERIAL)',
       nullable: false,
     },
     validityPeriod: {
@@ -29,20 +28,33 @@ export const GlobalStructureJsonSchema = {
     },
     formatFamily: {
       type: SchemaType.STRING,
-      description: 'Detected format layout family (e.g. TABLE-DOUBLE, SECTIONS, BULLET-LIST, HYBRID)',
+      description:
+        'Detected format layout family (e.g. TABLE-DOUBLE, SECTIONS, BULLET-LIST, HYBRID)',
       nullable: false,
     },
     premium: {
       type: SchemaType.OBJECT,
       description: 'Financial premium breakdown',
       properties: {
-        netPremium: { type: SchemaType.NUMBER, description: 'Prima neta antes de gastos e impuestos' },
+        netPremium: {
+          type: SchemaType.NUMBER,
+          description: 'Prima neta antes de gastos e impuestos',
+        },
         fees: { type: SchemaType.NUMBER, description: 'Gastos de expedición' },
         taxes: { type: SchemaType.NUMBER, description: 'Impuestos / IVA (19% en Colombia)' },
-        otherCharges: { type: SchemaType.NUMBER, description: 'Otros cargos o asistencias facturadas en póliza' },
-        totalPayable: { type: SchemaType.NUMBER, description: 'Prima total a pagar con IVA y gastos incluidos' },
+        otherCharges: {
+          type: SchemaType.NUMBER,
+          description: 'Otros cargos o asistencias facturadas en póliza',
+        },
+        totalPayable: {
+          type: SchemaType.NUMBER,
+          description: 'Prima total a pagar con IVA y gastos incluidos',
+        },
         currency: { type: SchemaType.STRING, description: 'Moneda (COP o USD)' },
-        periodicity: { type: SchemaType.STRING, description: 'Periodicidad de pago (Anual, Semestral, Mensual, etc.)' },
+        periodicity: {
+          type: SchemaType.STRING,
+          description: 'Periodicidad de pago (Anual, Semestral, Mensual, etc.)',
+        },
       },
       required: ['totalPayable', 'currency'],
     },
@@ -65,8 +77,14 @@ export const GlobalStructureJsonSchema = {
       items: {
         type: SchemaType.OBJECT,
         properties: {
-          sectionName: { type: SchemaType.STRING, description: 'Nombre de la sección o capítulo (ej: AMPAROS BÁSICOS, TERREMOTO, R.C.)' },
-          pageNumber: { type: SchemaType.NUMBER, description: 'Página donde inicia o se ubica esta sección (1-based)' },
+          sectionName: {
+            type: SchemaType.STRING,
+            description: 'Nombre de la sección o capítulo (ej: AMPAROS BÁSICOS, TERREMOTO, R.C.)',
+          },
+          pageNumber: {
+            type: SchemaType.NUMBER,
+            description: 'Página donde inicia o se ubica esta sección (1-based)',
+          },
           description: { type: SchemaType.STRING, description: 'Breve descripción del contenido' },
         },
         required: ['sectionName'],

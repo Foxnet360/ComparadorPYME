@@ -984,6 +984,4 @@ describe('flatTableParser.parseV2 graph canonicalization', () => {
       expect(result.rows[0].label).toBe('Bienes Asegurados');
     });
   });
-
 });
-

@@ -14,7 +14,11 @@ export interface NavigateOptions {
 export function useAppNavigation(hasReport: boolean) {
   const initialRoute =
     typeof window !== 'undefined'
-      ? resolveRouteFromLocation(window.location.pathname, window.location.search, window.location.hash)
+      ? resolveRouteFromLocation(
+          window.location.pathname,
+          window.location.search,
+          window.location.hash
+        )
       : { view: 'LANDING' as AppView, renewalId: null };
 
   const [currentView, setCurrentView] = useState<AppView>(initialRoute.view);

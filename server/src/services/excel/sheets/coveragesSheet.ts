@@ -40,14 +40,28 @@ export function buildCoveragesSheet(ctx: ExcelContext): void {
   coveragesSheet.mergeCells(1, 1, 2, quotes.length + 1 + (hasNotes ? 1 : 0));
   const covTitle = coveragesSheet.getCell(1, 1);
   covTitle.value = 'MATRIZ COMPARATIVA AMPLIADA DE COBERTURAS Y AMPAROS';
-  covTitle.font = { name: FONT_NAME, size: 14, bold: true, color: { argb: EXCEL_COLORS.NAVY_HEADER } };
+  covTitle.font = {
+    name: FONT_NAME,
+    size: 14,
+    bold: true,
+    color: { argb: EXCEL_COLORS.NAVY_HEADER },
+  };
   covTitle.alignment = { vertical: 'middle', horizontal: 'left' };
 
   coveragesSheet.getRow(4).height = 54;
   const mainLabelHeader = coveragesSheet.getCell(4, 1);
   mainLabelHeader.value = 'COBERTURA / CONCEPTO CANÓNICO';
-  mainLabelHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.WHITE } };
-  mainLabelHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.NAVY_HEADER } };
+  mainLabelHeader.font = {
+    name: FONT_NAME,
+    size: 10,
+    bold: true,
+    color: { argb: EXCEL_COLORS.WHITE },
+  };
+  mainLabelHeader.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: EXCEL_COLORS.NAVY_HEADER },
+  };
   mainLabelHeader.alignment = { vertical: 'middle', horizontal: 'left' };
 
   quotes.forEach((q, i) => {
@@ -57,8 +71,17 @@ export function buildCoveragesSheet(ctx: ExcelContext): void {
     const argbColor = profile?.primaryColor
       ? 'FF' + profile.primaryColor.replace('#', '')
       : EXCEL_COLORS.NAVY_HEADER;
-    insHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.SLATE_DARK } };
-    insHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.BG_SLATE_HEADER } };
+    insHeader.font = {
+      name: FONT_NAME,
+      size: 10,
+      bold: true,
+      color: { argb: EXCEL_COLORS.SLATE_DARK },
+    };
+    insHeader.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: EXCEL_COLORS.BG_SLATE_HEADER },
+    };
     insHeader.border = {
       top: { style: 'medium', color: { argb: argbColor } },
       bottom: { style: 'thin', color: { argb: EXCEL_COLORS.BORDER_MEDIUM } },
@@ -80,8 +103,17 @@ export function buildCoveragesSheet(ctx: ExcelContext): void {
     coveragesSheet.getColumn(notesColIdx).width = 40;
     const notesHeader = coveragesSheet.getCell(4, notesColIdx);
     notesHeader.value = 'INSIGHTS DEL CONSULTOR';
-    notesHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.WHITE } };
-    notesHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.PURPLE_HEADER } };
+    notesHeader.font = {
+      name: FONT_NAME,
+      size: 10,
+      bold: true,
+      color: { argb: EXCEL_COLORS.WHITE },
+    };
+    notesHeader.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: EXCEL_COLORS.PURPLE_HEADER },
+    };
     notesHeader.alignment = { horizontal: 'center' };
   }
 
@@ -107,8 +139,17 @@ export function buildCoveragesSheet(ctx: ExcelContext): void {
       );
       const secCell = coveragesSheet.getCell(currentCovRow, 1);
       secCell.value = row.label;
-      secCell.font = { name: FONT_NAME, size: 11, bold: true, color: { argb: EXCEL_COLORS.NAVY_HEADER } };
-      secCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.BG_SECTION_HEADER } };
+      secCell.font = {
+        name: FONT_NAME,
+        size: 11,
+        bold: true,
+        color: { argb: EXCEL_COLORS.NAVY_HEADER },
+      };
+      secCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: EXCEL_COLORS.BG_SECTION_HEADER },
+      };
       secCell.alignment = { vertical: 'middle', horizontal: 'left' };
       coveragesSheet.getRow(currentCovRow).height = 24;
       currentCovRow++;
@@ -118,8 +159,17 @@ export function buildCoveragesSheet(ctx: ExcelContext): void {
     } else {
       const labelCell = coveragesSheet.getCell(currentCovRow, 1);
       labelCell.value = row.label;
-      labelCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.SLATE_MUTED } };
-      labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.BG_LIGHT_GRAY } };
+      labelCell.font = {
+        name: FONT_NAME,
+        size: 10,
+        bold: true,
+        color: { argb: EXCEL_COLORS.SLATE_MUTED },
+      };
+      labelCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: EXCEL_COLORS.BG_LIGHT_GRAY },
+      };
       labelCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
 
       const rowTextsForHeight: string[] = [row.label || ''];
@@ -162,14 +212,32 @@ export function buildCoveragesSheet(ctx: ExcelContext): void {
         if (excluded) {
           xlCell.value = 'No incluida';
           rowTextsForHeight.push('No incluida');
-          xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.RED_BG } };
-          xlCell.font = { name: FONT_NAME, size: 10, italic: true, color: { argb: EXCEL_COLORS.RED_TEXT } };
+          xlCell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: EXCEL_COLORS.RED_BG },
+          };
+          xlCell.font = {
+            name: FONT_NAME,
+            size: 10,
+            italic: true,
+            color: { argb: EXCEL_COLORS.RED_TEXT },
+          };
         } else if (numericVal > 0 && !hasConditions) {
           xlCell.value = numericVal;
           xlCell.numFmt = '$#,##0';
           rowTextsForHeight.push(valStr);
-          xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.EMERALD_BG } };
-          xlCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.EMERALD_TEXT } };
+          xlCell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: EXCEL_COLORS.EMERALD_BG },
+          };
+          xlCell.font = {
+            name: FONT_NAME,
+            size: 10,
+            bold: true,
+            color: { argb: EXCEL_COLORS.EMERALD_TEXT },
+          };
         } else {
           const baseDisplay =
             numericVal > 0 && !hasConditions
@@ -181,13 +249,26 @@ export function buildCoveragesSheet(ctx: ExcelContext): void {
               : formatMatrixValue(valStr);
           xlCell.value = baseDisplay;
           rowTextsForHeight.push(baseDisplay);
-          xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.EMERALD_BG } };
+          xlCell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: EXCEL_COLORS.EMERALD_BG },
+          };
           xlCell.font = { name: FONT_NAME, size: 10, color: { argb: EXCEL_COLORS.EMERALD_TEXT } };
         }
 
         if (isWinner && !excluded) {
-          xlCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.AMBER_BG } };
-          xlCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.AMBER_TEXT } };
+          xlCell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: EXCEL_COLORS.AMBER_BG },
+          };
+          xlCell.font = {
+            name: FONT_NAME,
+            size: 10,
+            bold: true,
+            color: { argb: EXCEL_COLORS.AMBER_TEXT },
+          };
         }
 
         xlCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
@@ -213,15 +294,27 @@ export function buildCoveragesSheet(ctx: ExcelContext): void {
         const note = cellNotes?.[cellId];
         const notesCell = coveragesSheet.getCell(currentCovRow, quotes.length + 2);
         notesCell.value = note || '';
-        notesCell.font = { name: FONT_NAME, size: 9, color: { argb: EXCEL_COLORS.PURPLE_NOTE }, italic: true };
+        notesCell.font = {
+          name: FONT_NAME,
+          size: 9,
+          color: { argb: EXCEL_COLORS.PURPLE_NOTE },
+          italic: true,
+        };
         notesCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
         if (note) {
-          notesCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.PURPLE_BG } };
+          notesCell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: EXCEL_COLORS.PURPLE_BG },
+          };
           rowTextsForHeight.push(note);
         }
       }
 
-      coveragesSheet.getRow(currentCovRow).height = calculateDynamicRowHeight(rowTextsForHeight, 24);
+      coveragesSheet.getRow(currentCovRow).height = calculateDynamicRowHeight(
+        rowTextsForHeight,
+        24
+      );
       currentCovRow++;
     }
   }

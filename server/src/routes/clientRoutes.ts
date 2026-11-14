@@ -81,11 +81,7 @@ router.post(
   validateBody(createClientSchema),
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const userId = requireUser(req);
-    const created = await createClient(
-      userId,
-      req.body as CreateClientInput,
-      req.user?.orgId
-    );
+    const created = await createClient(userId, req.body as CreateClientInput, req.user?.orgId);
     res.status(201).json(created);
   })
 );
@@ -121,19 +117,9 @@ const handleUpdateClient = asyncHandler(async (req: AuthenticatedRequest, res) =
   res.json(updated);
 });
 
-router.patch(
-  '/:id',
-  rejectSpoofedUserId,
-  validateBody(updateClientSchema),
-  handleUpdateClient
-);
+router.patch('/:id', rejectSpoofedUserId, validateBody(updateClientSchema), handleUpdateClient);
 
-router.put(
-  '/:id',
-  rejectSpoofedUserId,
-  validateBody(updateClientSchema),
-  handleUpdateClient
-);
+router.put('/:id', rejectSpoofedUserId, validateBody(updateClientSchema), handleUpdateClient);
 
 /** DELETE /api/clients/:id — removes an own client; 404 otherwise. */
 router.delete(

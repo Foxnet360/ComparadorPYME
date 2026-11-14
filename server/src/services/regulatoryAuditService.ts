@@ -62,7 +62,8 @@ export function auditQuoteCompliance(
       ruleId: rule.id,
       title: rule.title,
       legalBasis: rule.legalBasis,
-      status: rule.severityIfMissing === 'CRITICAL' ? ('NON_COMPLIANT' as const) : ('WARNING' as const),
+      status:
+        rule.severityIfMissing === 'CRITICAL' ? ('NON_COMPLIANT' as const) : ('WARNING' as const),
       details: `Requiere verificación expresa en condiciones particulares (${rule.legalBasis}).`,
     };
   });

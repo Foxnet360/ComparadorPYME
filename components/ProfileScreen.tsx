@@ -97,10 +97,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handlePolicyChange = (
-    field: keyof CommercialPolicies,
-    value: string | number
-  ) => {
+  const handlePolicyChange = (field: keyof CommercialPolicies, value: string | number) => {
     setPolicies((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -266,216 +263,217 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
                     </span>
                   </div>
 
-              {/* Asesor & Logo Section */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                {/* Asesor Info */}
-                <div className="flex items-center space-x-4">
-                  <img
-                    className="h-16 w-16 rounded-full bg-slate-200 border border-slate-300 flex-shrink-0"
-                    src={formData.avatarUrl || currentUser.avatarUrl}
-                    alt="Avatar"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                      Asesor Responsable
-                    </label>
-                    <input
-                      name="name"
-                      type="text"
-                      value={formData.name}
-                      onChange={handleChange}
-                      placeholder="Nombre del corredor"
-                      className="block w-full border border-slate-300 rounded-md shadow-sm p-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  </div>
-                </div>
-
-                {/* Intermediary Logo Picker */}
-                <div className="flex items-center space-x-4">
-                  <div className="h-16 w-24 bg-white border border-slate-300 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0 p-1">
-                    {formData.logoUrl ? (
+                  {/* Asesor & Logo Section */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    {/* Asesor Info */}
+                    <div className="flex items-center space-x-4">
                       <img
-                        src={formData.logoUrl}
-                        alt="Logo Aliado"
-                        className="max-h-full max-w-full object-contain"
+                        className="h-16 w-16 rounded-full bg-slate-200 border border-slate-300 flex-shrink-0"
+                        src={formData.avatarUrl || currentUser.avatarUrl}
+                        alt="Avatar"
                       />
-                    ) : (
-                      <ImageIcon className="w-8 h-8 text-slate-300" />
-                    )}
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                      Logo del Intermediario (PDF y Excel)
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <label className="cursor-pointer inline-flex items-center px-3 py-1.5 border border-indigo-300 rounded-md text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors">
-                        <Upload className="w-3.5 h-3.5 mr-1.5 text-indigo-600" />
-                        {formData.logoUrl ? 'Cambiar Logo' : 'Subir Logo'}
+                      <div className="flex-1 min-w-0">
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                          Asesor Responsable
+                        </label>
                         <input
-                          type="file"
-                          accept="image/png, image/jpeg, image/jpg"
-                          onChange={handleLogoUpload}
-                          className="hidden"
+                          name="name"
+                          type="text"
+                          value={formData.name}
+                          onChange={handleChange}
+                          placeholder="Nombre del corredor"
+                          className="block w-full border border-slate-300 rounded-md shadow-sm p-2 text-sm focus:ring-indigo-500 focus:border-indigo-500"
                         />
+                      </div>
+                    </div>
+
+                    {/* Intermediary Logo Picker */}
+                    <div className="flex items-center space-x-4">
+                      <div className="h-16 w-24 bg-white border border-slate-300 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0 p-1">
+                        {formData.logoUrl ? (
+                          <img
+                            src={formData.logoUrl}
+                            alt="Logo Aliado"
+                            className="max-h-full max-w-full object-contain"
+                          />
+                        ) : (
+                          <ImageIcon className="w-8 h-8 text-slate-300" />
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                          Logo del Intermediario (PDF y Excel)
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <label className="cursor-pointer inline-flex items-center px-3 py-1.5 border border-indigo-300 rounded-md text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors">
+                            <Upload className="w-3.5 h-3.5 mr-1.5 text-indigo-600" />
+                            {formData.logoUrl ? 'Cambiar Logo' : 'Subir Logo'}
+                            <input
+                              type="file"
+                              accept="image/png, image/jpeg, image/jpg"
+                              onChange={handleLogoUpload}
+                              className="hidden"
+                            />
+                          </label>
+                          {formData.logoUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setFormData((prev) => ({ ...prev, logoUrl: '' }))}
+                              className="px-2.5 py-1.5 border border-slate-200 rounded-md text-xs font-medium text-slate-600 bg-white hover:bg-slate-100 hover:text-rose-600 transition-colors"
+                            >
+                              Quitar
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-[10.5px] text-slate-500 leading-normal">
+                          Formato PNG o JPG (fondo transparente/blanco). Proporción horizontal
+                          recomendada ~400×120 px (máx. 2 MB).
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Form Grid */}
+                  <div className="grid grid-cols-1 gap-y-5 gap-x-4 sm:grid-cols-2">
+                    {/* Intermediary Name */}
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-medium text-slate-700">
+                        Compañía / Agencia de Seguros (Aliado)
                       </label>
-                      {formData.logoUrl && (
-                        <button
-                          type="button"
-                          onClick={() => setFormData((prev) => ({ ...prev, logoUrl: '' }))}
-                          className="px-2.5 py-1.5 border border-slate-200 rounded-md text-xs font-medium text-slate-600 bg-white hover:bg-slate-100 hover:text-rose-600 transition-colors"
-                        >
-                          Quitar
-                        </button>
-                      )}
+                      <div className="mt-1 relative rounded-md shadow-sm">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Building className="h-4 w-4 text-slate-400" />
+                        </div>
+                        <input
+                          name="intermediaryName"
+                          type="text"
+                          value={formData.intermediaryName}
+                          onChange={handleChange}
+                          placeholder="Ej. Correval Seguros Ltda."
+                          className="pl-9 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        />
+                      </div>
                     </div>
-                    <p className="text-[10.5px] text-slate-500 leading-normal">
-                      Formato PNG o JPG (fondo transparente/blanco). Proporción horizontal recomendada ~400×120 px (máx. 2 MB).
-                    </p>
-                  </div>
-                </div>
-              </div>
 
-              {/* Form Grid */}
-              <div className="grid grid-cols-1 gap-y-5 gap-x-4 sm:grid-cols-2">
-                {/* Intermediary Name */}
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-slate-700">
-                    Compañía / Agencia de Seguros (Aliado)
-                  </label>
-                  <div className="mt-1 relative rounded-md shadow-sm">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Building className="h-4 w-4 text-slate-400" />
+                    {/* Registration Number */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">
+                        Nº Matrícula / Registro
+                      </label>
+                      <div className="mt-1 relative rounded-md shadow-sm">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Award className="h-4 w-4 text-slate-400" />
+                        </div>
+                        <input
+                          name="registrationNumber"
+                          type="text"
+                          value={formData.registrationNumber}
+                          onChange={handleChange}
+                          placeholder="Ej. Superfinanciera Reg. 9042"
+                          className="pl-9 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        />
+                      </div>
                     </div>
-                    <input
-                      name="intermediaryName"
-                      type="text"
-                      value={formData.intermediaryName}
-                      onChange={handleChange}
-                      placeholder="Ej. Correval Seguros Ltda."
-                      className="pl-9 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    />
-                  </div>
-                </div>
 
-                {/* Registration Number */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700">
-                    Nº Matrícula / Registro
-                  </label>
-                  <div className="mt-1 relative rounded-md shadow-sm">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Award className="h-4 w-4 text-slate-400" />
+                    {/* Phone */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">
+                        Teléfono de Contacto
+                      </label>
+                      <div className="mt-1 relative rounded-md shadow-sm">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Phone className="h-4 w-4 text-slate-400" />
+                        </div>
+                        <input
+                          name="phone"
+                          type="tel"
+                          value={formData.phone}
+                          onChange={handleChange}
+                          placeholder="+57 (601) 234-5678"
+                          className="pl-9 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        />
+                      </div>
                     </div>
-                    <input
-                      name="registrationNumber"
-                      type="text"
-                      value={formData.registrationNumber}
-                      onChange={handleChange}
-                      placeholder="Ej. Superfinanciera Reg. 9042"
-                      className="pl-9 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    />
-                  </div>
-                </div>
 
-                {/* Phone */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700">
-                    Teléfono de Contacto
-                  </label>
-                  <div className="mt-1 relative rounded-md shadow-sm">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Phone className="h-4 w-4 text-slate-400" />
+                    {/* Address */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">
+                        Dirección Comercial
+                      </label>
+                      <div className="mt-1 relative rounded-md shadow-sm">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <MapPin className="h-4 w-4 text-slate-400" />
+                        </div>
+                        <input
+                          name="address"
+                          type="text"
+                          value={formData.address}
+                          onChange={handleChange}
+                          placeholder="Calle 100 # 19-61 Off 502"
+                          className="pl-9 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        />
+                      </div>
                     </div>
-                    <input
-                      name="phone"
-                      type="tel"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      placeholder="+57 (601) 234-5678"
-                      className="pl-9 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    />
-                  </div>
-                </div>
 
-                {/* Address */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700">
-                    Dirección Comercial
-                  </label>
-                  <div className="mt-1 relative rounded-md shadow-sm">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <MapPin className="h-4 w-4 text-slate-400" />
+                    {/* City */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">
+                        Ciudad / Ubicación
+                      </label>
+                      <div className="mt-1 relative rounded-md shadow-sm">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <MapPin className="h-4 w-4 text-slate-400" />
+                        </div>
+                        <input
+                          name="city"
+                          type="text"
+                          value={formData.city}
+                          onChange={handleChange}
+                          placeholder="Bogotá D.C."
+                          className="pl-9 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        />
+                      </div>
                     </div>
-                    <input
-                      name="address"
-                      type="text"
-                      value={formData.address}
-                      onChange={handleChange}
-                      placeholder="Calle 100 # 19-61 Off 502"
-                      className="pl-9 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    />
-                  </div>
-                </div>
 
-                {/* City */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700">
-                    Ciudad / Ubicación
-                  </label>
-                  <div className="mt-1 relative rounded-md shadow-sm">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <MapPin className="h-4 w-4 text-slate-400" />
+                    {/* Specialty Field */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">
+                        Ramo / Especialidad
+                      </label>
+                      <div className="mt-1 relative rounded-md shadow-sm">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Briefcase className="h-4 w-4 text-slate-400" />
+                        </div>
+                        <input
+                          name="field"
+                          type="text"
+                          value={formData.field}
+                          onChange={handleChange}
+                          placeholder="Ej. Copropiedades, Cumplimiento, Pyme"
+                          className="pl-9 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        />
+                      </div>
                     </div>
-                    <input
-                      name="city"
-                      type="text"
-                      value={formData.city}
-                      onChange={handleChange}
-                      placeholder="Bogotá D.C."
-                      className="pl-9 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    />
-                  </div>
-                </div>
 
-                {/* Specialty Field */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700">
-                    Ramo / Especialidad
-                  </label>
-                  <div className="mt-1 relative rounded-md shadow-sm">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Briefcase className="h-4 w-4 text-slate-400" />
+                    {/* Email (Read Only) */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">
+                        Correo Electrónico (Solo Lectura)
+                      </label>
+                      <div className="mt-1 relative rounded-md shadow-sm">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Mail className="h-4 w-4 text-slate-400" />
+                        </div>
+                        <input
+                          name="email"
+                          type="email"
+                          value={formData.email}
+                          disabled
+                          className="pl-9 block w-full bg-slate-50 border border-slate-300 rounded-md shadow-sm p-2 text-slate-500 sm:text-sm cursor-not-allowed"
+                        />
+                      </div>
                     </div>
-                    <input
-                      name="field"
-                      type="text"
-                      value={formData.field}
-                      onChange={handleChange}
-                      placeholder="Ej. Copropiedades, Cumplimiento, Pyme"
-                      className="pl-9 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    />
                   </div>
-                </div>
-
-                {/* Email (Read Only) */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700">
-                    Correo Electrónico (Solo Lectura)
-                  </label>
-                  <div className="mt-1 relative rounded-md shadow-sm">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Mail className="h-4 w-4 text-slate-400" />
-                    </div>
-                    <input
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      disabled
-                      className="pl-9 block w-full bg-slate-50 border border-slate-300 rounded-md shadow-sm p-2 text-slate-500 sm:text-sm cursor-not-allowed"
-                    />
-                  </div>
-                </div>
-              </div>
                 </>
               ) : (
                 <div className="space-y-5">
@@ -486,7 +484,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
                         Políticas Comerciales de la Correduría
                       </h4>
                       <p className="text-xs text-indigo-700 mt-1 max-w-xl">
-                        Estas condiciones se inyectan automáticamente en la portada y páginas de respaldo de los reportes PDF y libros Excel exportados para sus clientes.
+                        Estas condiciones se inyectan automáticamente en la portada y páginas de
+                        respaldo de los reportes PDF y libros Excel exportados para sus clientes.
                       </p>
                     </div>
                     <button
@@ -540,7 +539,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onUpdateProf
                       <textarea
                         rows={2}
                         value={policies.inspectionRequirements}
-                        onChange={(e) => handlePolicyChange('inspectionRequirements', e.target.value)}
+                        onChange={(e) =>
+                          handlePolicyChange('inspectionRequirements', e.target.value)
+                        }
                         placeholder="Ej. Inspección obligatoria para bienes > 500 SMMLV..."
                         className="w-full block border border-slate-300 rounded-md shadow-xs p-2.5 text-xs text-slate-800 focus:ring-indigo-500 focus:border-indigo-500"
                       />

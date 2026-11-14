@@ -9,11 +9,7 @@ import {
   CheckCircle2,
   Printer,
 } from 'lucide-react';
-import {
-  ALL_LEGAL_DOCUMENTS,
-  TERMS_OF_SERVICE,
-  LegalDocument,
-} from '../src/data/legalContent';
+import { ALL_LEGAL_DOCUMENTS, TERMS_OF_SERVICE, LegalDocument } from '../src/data/legalContent';
 
 interface LegalPageProps {
   onBack: () => void;
@@ -125,7 +121,9 @@ export const LegalPage: React.FC<LegalPageProps> = ({ onBack, defaultTab = 'term
                   </span>
                 </div>
               </div>
-              <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">{currentDoc.summary}</p>
+              <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+                {currentDoc.summary}
+              </p>
             </div>
 
             {/* Sections */}

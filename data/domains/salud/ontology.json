@@ -6,11 +6,7 @@
       "id": "coberturas-hospitalarias-cirugia",
       "name": "Coberturas Hospitalarias y Quirúrgicas",
       "level": 1,
-      "childrenIds": [
-        "hospitalizacion-cirugia",
-        "urgencias-salud",
-        "hospitalizacion-domiciliaria"
-      ],
+      "childrenIds": ["hospitalizacion-cirugia", "urgencias-salud", "hospitalizacion-domiciliaria"],
       "aliases": [
         "COBERTURAS HOSPITALARIAS",
         "COBERTURAS DE URGENCIAS",
@@ -45,11 +41,7 @@
         "maternidad-neonatologia",
         "salud-mental-psiquiatria"
       ],
-      "aliases": [
-        "ENFERMEDADES DE ALTO COSTO",
-        "COBERTURAS ESPECIALES",
-        "Cáncer y Maternidad"
-      ],
+      "aliases": ["ENFERMEDADES DE ALTO COSTO", "COBERTURAS ESPECIALES", "Cáncer y Maternidad"],
       "riskType": "catastrophic_illness"
     },
     {
@@ -61,11 +53,7 @@
         "odontologia-salud",
         "optometria-oftalmologia"
       ],
-      "aliases": [
-        "COBERTURAS COMPLEMENTARIAS",
-        "COBERTURAS DE VIAJE",
-        "Odontología y Óptica"
-      ],
+      "aliases": ["COBERTURAS COMPLEMENTARIAS", "COBERTURAS DE VIAJE", "Odontología y Óptica"],
       "riskType": "supplemental"
     },
     {
@@ -116,10 +104,7 @@
       "name": "Hospitalización y Cirugía",
       "level": 2,
       "parentId": "coberturas-hospitalarias-cirugia",
-      "childrenIds": [
-        "cuidados-intensivos-uci",
-        "honorarios-quirurgicos"
-      ],
+      "childrenIds": ["cuidados-intensivos-uci", "honorarios-quirurgicos"],
       "aliases": [
         "Hospitalización y Cirugía",
         "hospitalización",
@@ -535,11 +520,7 @@
       "level": 3,
       "parentId": "hospitalizacion-cirugia",
       "childrenIds": [],
-      "aliases": [
-        "UCI",
-        "Cuidados intensivos",
-        "UCE"
-      ],
+      "aliases": ["UCI", "Cuidados intensivos", "UCE"],
       "riskType": "hospitalization",
       "typicalDeductible": "0%"
     },
@@ -549,11 +530,7 @@
       "level": 3,
       "parentId": "hospitalizacion-cirugia",
       "childrenIds": [],
-      "aliases": [
-        "Honorarios cirujano",
-        "Cirugía",
-        "Anestesiología"
-      ],
+      "aliases": ["Honorarios cirujano", "Cirugía", "Anestesiología"],
       "riskType": "hospitalization",
       "typicalDeductible": "Copago plan"
     }

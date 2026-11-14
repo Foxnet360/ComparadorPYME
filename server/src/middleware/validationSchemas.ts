@@ -122,46 +122,55 @@ export const auditEnrichSchema = z.object({
 });
 
 // Portfolio schemas (renovacion-polizas PR-2 / CRM full attributes)
-export const createClientSchema = z.preprocess((val: any) => {
-  if (val && typeof val === 'object') {
-    const { name, tax_id, nit, contact, ...rest } = val;
-    const finalTaxId = tax_id || nit || null;
-    const existingContact = (contact && typeof contact === 'object') ? contact : {};
-    return {
-      name,
-      tax_id: finalTaxId,
-      contact: { ...rest, ...existingContact },
-    };
-  }
-  return val;
-}, z.object({
-  name: z.string().min(1).max(300),
-  tax_id: z.string().max(50).nullish(),
-  contact: z.record(z.string(), z.unknown()).optional(),
-}));
-
-export const updateClientSchema = z.preprocess((val: any) => {
-  if (val && typeof val === 'object') {
-    const { name, tax_id, nit, contact, ...rest } = val;
-    const finalTaxId = tax_id !== undefined ? tax_id : (nit !== undefined ? nit : undefined);
-    const existingContact = (contact && typeof contact === 'object') ? contact : {};
-    const mergedContact = Object.keys(rest).length > 0 || contact !== undefined ? { ...rest, ...existingContact } : undefined;
-    return {
-      ...(name !== undefined && { name }),
-      ...(finalTaxId !== undefined && { tax_id: finalTaxId }),
-      ...(mergedContact !== undefined && { contact: mergedContact }),
-    };
-  }
-  return val;
-}, z
-  .object({
-    name: z.string().min(1).max(300).optional(),
+export const createClientSchema = z.preprocess(
+  (val: any) => {
+    if (val && typeof val === 'object') {
+      const { name, tax_id, nit, contact, ...rest } = val;
+      const finalTaxId = tax_id || nit || null;
+      const existingContact = contact && typeof contact === 'object' ? contact : {};
+      return {
+        name,
+        tax_id: finalTaxId,
+        contact: { ...rest, ...existingContact },
+      };
+    }
+    return val;
+  },
+  z.object({
+    name: z.string().min(1).max(300),
     tax_id: z.string().max(50).nullish(),
     contact: z.record(z.string(), z.unknown()).optional(),
   })
-  .refine((val) => Object.values(val).some((v) => v !== undefined), {
-    message: 'At least one field must be provided',
-  }));
+);
+
+export const updateClientSchema = z.preprocess(
+  (val: any) => {
+    if (val && typeof val === 'object') {
+      const { name, tax_id, nit, contact, ...rest } = val;
+      const finalTaxId = tax_id !== undefined ? tax_id : nit !== undefined ? nit : undefined;
+      const existingContact = contact && typeof contact === 'object' ? contact : {};
+      const mergedContact =
+        Object.keys(rest).length > 0 || contact !== undefined
+          ? { ...rest, ...existingContact }
+          : undefined;
+      return {
+        ...(name !== undefined && { name }),
+        ...(finalTaxId !== undefined && { tax_id: finalTaxId }),
+        ...(mergedContact !== undefined && { contact: mergedContact }),
+      };
+    }
+    return val;
+  },
+  z
+    .object({
+      name: z.string().min(1).max(300).optional(),
+      tax_id: z.string().max(50).nullish(),
+      contact: z.record(z.string(), z.unknown()).optional(),
+    })
+    .refine((val) => Object.values(val).some((v) => v !== undefined), {
+      message: 'At least one field must be provided',
+    })
+);
 
 export const createPolicySchema = z.object({
   client_id: z.string().uuid(),

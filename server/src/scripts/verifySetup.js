@@ -9,7 +9,9 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !GEMINI_API_KEY) {
-  console.error('❌ Error: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY y GEMINI_API_KEY son requeridas.');
+  console.error(
+    '❌ Error: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY y GEMINI_API_KEY son requeridas.'
+  );
   console.error('Definilas en .env.local o en el entorno antes de ejecutar este script.');
   process.exit(1);
 }

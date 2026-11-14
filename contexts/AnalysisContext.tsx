@@ -209,15 +209,17 @@ interface AnalysisContextType {
 const AnalysisContext = createContext<AnalysisContextType | undefined>(undefined);
 
 const getInitialState = (): AnalysisState => {
-  const isDemo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1';
+  const isDemo =
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('demo') === '1';
   const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
   const isAnalyzing = params?.get('analyzing') === '1';
   const isReport = params?.get('view') === 'REPORT' || params?.get('report') === '1';
 
   return {
     ...initialState,
-    status: isAnalyzing ? AppStatus.ANALYZING : (isReport ? AppStatus.COMPLETED : AppStatus.IDLE),
-    report: (isDemo && isReport) ? DEMO_REPORT : null,
+    status: isAnalyzing ? AppStatus.ANALYZING : isReport ? AppStatus.COMPLETED : AppStatus.IDLE,
+    report: isDemo && isReport ? DEMO_REPORT : null,
     selectedClient: isDemo ? DEMO_CLIENTS[0] || null : null,
   };
 };

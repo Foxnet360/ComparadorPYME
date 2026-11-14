@@ -60,7 +60,7 @@ describe('embeddingService - LRU Cache & In-Flight Deduplication', () => {
     const p2 = embeddingService.generateEmbedding(' ¿Cuál es el deducible de terremoto? ');
     const p3 = embeddingService.generateEmbedding(' ¿Cuál es el deducible de terremoto? ');
 
-    expect( getEmbeddingCacheStats().inFlight ).toBe(1);
+    expect(getEmbeddingCacheStats().inFlight).toBe(1);
     expect(mockEmbedContent).toHaveBeenCalledTimes(1);
 
     resolveApiCall({

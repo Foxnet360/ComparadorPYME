@@ -303,10 +303,10 @@ export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes, matr
                       typo.typology === 'integral'
                         ? 'bg-indigo-100 text-indigo-800 border border-indigo-200'
                         : typo.typology === 'edificio'
-                        ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                        : typo.typology === 'contenido'
-                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                        : 'bg-slate-200 text-slate-700'
+                          ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                          : typo.typology === 'contenido'
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                            : 'bg-slate-200 text-slate-700'
                     }`}
                   >
                     {typo.label}
@@ -409,10 +409,10 @@ export const DeductibleMatrix: React.FC<DeductibleMatrixProps> = ({ quotes, matr
                             typo.typology === 'integral'
                               ? 'bg-indigo-100 text-indigo-700'
                               : typo.typology === 'edificio'
-                              ? 'bg-amber-100 text-amber-700'
-                              : typo.typology === 'contenido'
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : 'bg-slate-100 text-slate-600'
+                                ? 'bg-amber-100 text-amber-700'
+                                : typo.typology === 'contenido'
+                                  ? 'bg-emerald-100 text-emerald-700'
+                                  : 'bg-slate-100 text-slate-600'
                           }`}
                         >
                           {typo.label}

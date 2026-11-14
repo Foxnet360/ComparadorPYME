@@ -9,10 +9,7 @@ import {
   extractMatrixInsurers,
   alignInsurerIndices,
 } from './matrixTransformer';
-import {
-  extractCanonicalInsurerName,
-  isKnownCanonicalInsurer,
-} from './insurerSanitizer';
+import { extractCanonicalInsurerName, isKnownCanonicalInsurer } from './insurerSanitizer';
 import { semanticMatcher } from '../semanticMatcher';
 import { formatCOP } from '../../utils/formatCurrency';
 import { parseColombianCurrency } from '../../utils/currencyParser';
@@ -118,10 +115,7 @@ export async function matrixRowsToComparisonReport(
     return fileInsurer;
   });
 
-  const matchCoverageCache = new Map<
-    string,
-    ReturnType<typeof semanticMatcher.matchCoverage>
-  >();
+  const matchCoverageCache = new Map<string, ReturnType<typeof semanticMatcher.matchCoverage>>();
 
   if (typeof semanticMatcher.matchCoveragesBatch === 'function') {
     const graphEnabled = options?.graphEnabled ?? false;
@@ -213,7 +207,9 @@ export async function matrixRowsToComparisonReport(
             (row.label && row.label.toUpperCase().includes('DEDUCIBLE'));
 
           const deductibleVal = isDeductibleRow
-            ? (cell.notes || (cell.value && cell.value !== 'No informado' ? cell.value : undefined)) || 'No especificado'
+            ? cell.notes ||
+              (cell.value && cell.value !== 'No informado' ? cell.value : undefined) ||
+              'No especificado'
             : cell.notes || 'No especificado';
 
           rowsToProcess.push({
@@ -342,7 +338,9 @@ export async function matrixRowsToComparisonReport(
           c.value !== undefined &&
           c.value !== null &&
           String(c.value).trim().length > 0 &&
-          !['No informado', 'N.C.', 'NO ESPECIFICADO', 'No incluido'].includes(String(c.value).trim());
+          !['No informado', 'N.C.', 'NO ESPECIFICADO', 'No incluido'].includes(
+            String(c.value).trim()
+          );
         const hasValidDeductible =
           c.deductible &&
           c.deductible.trim().length > 0 &&
@@ -367,7 +365,9 @@ export async function matrixRowsToComparisonReport(
                 validQuotedConfidences.length
             )
           : realConfidences.length > 0
-            ? Math.round(realConfidences.reduce((sum, val) => sum + val, 0) / realConfidences.length)
+            ? Math.round(
+                realConfidences.reduce((sum, val) => sum + val, 0) / realConfidences.length
+              )
             : 88;
 
       coverages.forEach((c, idx) => {
@@ -398,7 +398,10 @@ export async function matrixRowsToComparisonReport(
           // Find a deductible row matching coverage concepts
           const matchingDedRow = matrixRows.find((mr) => {
             if (mr.type !== 'data' || !mr.cells || cellIdx < 0 || !mr.cells[cellIdx]) return false;
-            if (mr.sectionId !== DEDUCTIBLE_SECTION_ID && !mr.label.toLowerCase().includes('deducible')) {
+            if (
+              mr.sectionId !== DEDUCTIBLE_SECTION_ID &&
+              !mr.label.toLowerCase().includes('deducible')
+            ) {
               return false;
             }
             const normDedLabel = mr.label
@@ -594,7 +597,8 @@ export async function matrixRowsToComparisonReport(
     !norm.includes('antes de iva');
 
   const financialRows = matrixRows.filter(
-    (r) => r.type === 'data' && (r.sectionId === FINANCIAL_SECTION_ID || isFinancialRowLabel(r.label))
+    (r) =>
+      r.type === 'data' && (r.sectionId === FINANCIAL_SECTION_ID || isFinancialRowLabel(r.label))
   );
 
   for (let i = 0; i < insurerNames.length; i++) {
@@ -789,9 +793,8 @@ export async function matrixRowsToComparisonReport(
           criticalAlerts: combinedAlerts.filter(
             (a) => a.level === 'CRITICAL' || a.level === 'critical'
           ).length,
-          warnings: combinedAlerts.filter(
-            (a) => a.level === 'WARNING' || a.level === 'warning'
-          ).length,
+          warnings: combinedAlerts.filter((a) => a.level === 'WARNING' || a.level === 'warning')
+            .length,
         },
         clauseValidation: {
           hasClauseDocument,

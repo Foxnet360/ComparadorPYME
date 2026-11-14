@@ -38,31 +38,78 @@ interface Document {
   };
 }
 
-const DOMAIN_OPTIONS: ReadonlyArray<{ value: InsuranceDomainType; label: string; color: string }> = [
-  { value: InsuranceDomain.PYME, label: 'PYME Comercial', color: 'bg-blue-50 text-blue-700 ring-blue-700/10' },
-  { value: InsuranceDomain.COPROPIEDADES, label: 'Copropiedades (Ley 675)', color: 'bg-amber-50 text-amber-700 ring-amber-700/10' },
-  { value: InsuranceDomain.AUTOS, label: 'Vehículos y Flotas', color: 'bg-emerald-50 text-emerald-700 ring-emerald-700/10' },
-  { value: InsuranceDomain.HOGAR, label: 'Hogar y Habitación', color: 'bg-indigo-50 text-indigo-700 ring-indigo-700/10' },
-  { value: InsuranceDomain.SALUD, label: 'Salud y Prepagada', color: 'bg-rose-50 text-rose-700 ring-rose-700/10' },
-  { value: InsuranceDomain.VIDA_GRUPO, label: 'Vida Grupo y Colectivo', color: 'bg-violet-50 text-violet-700 ring-violet-700/10' },
-  { value: InsuranceDomain.CUMPLIMIENTO, label: 'Cumplimiento y Fianzas', color: 'bg-slate-50 text-slate-700 ring-slate-700/10' },
-  { value: InsuranceDomain.TRANSPORTE, label: 'Transporte de Mercancías', color: 'bg-orange-50 text-orange-700 ring-orange-700/10' },
-  { value: InsuranceDomain.EQUIPO_MAQUINARIA, label: 'Maquinaria y Equipo', color: 'bg-yellow-50 text-yellow-800 ring-yellow-800/10' },
-  { value: InsuranceDomain.CASCO_EMBARCACION, label: 'Casco Embarcación', color: 'bg-cyan-50 text-cyan-700 ring-cyan-700/10' },
-];
+const DOMAIN_OPTIONS: ReadonlyArray<{ value: InsuranceDomainType; label: string; color: string }> =
+  [
+    {
+      value: InsuranceDomain.PYME,
+      label: 'PYME Comercial',
+      color: 'bg-blue-50 text-blue-700 ring-blue-700/10',
+    },
+    {
+      value: InsuranceDomain.COPROPIEDADES,
+      label: 'Copropiedades (Ley 675)',
+      color: 'bg-amber-50 text-amber-700 ring-amber-700/10',
+    },
+    {
+      value: InsuranceDomain.AUTOS,
+      label: 'Vehículos y Flotas',
+      color: 'bg-emerald-50 text-emerald-700 ring-emerald-700/10',
+    },
+    {
+      value: InsuranceDomain.HOGAR,
+      label: 'Hogar y Habitación',
+      color: 'bg-indigo-50 text-indigo-700 ring-indigo-700/10',
+    },
+    {
+      value: InsuranceDomain.SALUD,
+      label: 'Salud y Prepagada',
+      color: 'bg-rose-50 text-rose-700 ring-rose-700/10',
+    },
+    {
+      value: InsuranceDomain.VIDA_GRUPO,
+      label: 'Vida Grupo y Colectivo',
+      color: 'bg-violet-50 text-violet-700 ring-violet-700/10',
+    },
+    {
+      value: InsuranceDomain.CUMPLIMIENTO,
+      label: 'Cumplimiento y Fianzas',
+      color: 'bg-slate-50 text-slate-700 ring-slate-700/10',
+    },
+    {
+      value: InsuranceDomain.TRANSPORTE,
+      label: 'Transporte de Mercancías',
+      color: 'bg-orange-50 text-orange-700 ring-orange-700/10',
+    },
+    {
+      value: InsuranceDomain.EQUIPO_MAQUINARIA,
+      label: 'Maquinaria y Equipo',
+      color: 'bg-yellow-50 text-yellow-800 ring-yellow-800/10',
+    },
+    {
+      value: InsuranceDomain.CASCO_EMBARCACION,
+      label: 'Casco Embarcación',
+      color: 'bg-cyan-50 text-cyan-700 ring-cyan-700/10',
+    },
+  ];
 
 export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [uploadFeedback, setUploadFeedback] = useState<{ message: string; deduplicated?: boolean } | null>(null);
+  const [uploadFeedback, setUploadFeedback] = useState<{
+    message: string;
+    deduplicated?: boolean;
+  } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterInsurer, setFilterInsurer] = useState('');
   const [filterDomain, setFilterDomain] = useState('');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'ACTIVE' | 'ARCHIVED'>('ALL');
   const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
-  const [pendingDeleteDoc, setPendingDeleteDoc] = useState<{ id: string; documentName: string } | null>(null);
+  const [pendingDeleteDoc, setPendingDeleteDoc] = useState<{
+    id: string;
+    documentName: string;
+  } | null>(null);
 
   // Form state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -82,7 +129,10 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
       if (filterStatus === 'ACTIVE') params.isActive = true;
       if (filterStatus === 'ARCHIVED') params.isActive = false;
 
-      if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1') {
+      if (
+        typeof window !== 'undefined' &&
+        new URLSearchParams(window.location.search).get('demo') === '1'
+      ) {
         const demoDocs: Document[] = [
           {
             id: 'doc-sura-01',
@@ -306,7 +356,7 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
 
   const getDomainLabel = (dom?: string) => {
     const found = DOMAIN_OPTIONS.find((d) => d.value === dom);
-    return found ? found.label : (dom ? dom.toUpperCase() : 'General');
+    return found ? found.label : dom ? dom.toUpperCase() : 'General';
   };
 
   const getDomainBadgeClass = (dom?: string) => {
@@ -382,7 +432,10 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
             </div>
 
             {currentUser ? (
-              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <form
+                onSubmit={handleSubmit}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+              >
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
                     Aseguradora
@@ -475,7 +528,10 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
                           const file = e.target.files?.[0] || null;
                           setSelectedFile(file);
                           if (file && !formData.documentName) {
-                            setFormData({ ...formData, documentName: file.name.replace(/\.pdf$/i, '') });
+                            setFormData({
+                              ...formData,
+                              documentName: file.name.replace(/\.pdf$/i, ''),
+                            });
                           }
                         }}
                         className="hidden"
@@ -486,10 +542,7 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
                   <button
                     type="submit"
                     disabled={
-                      uploading ||
-                      !formData.insurerName ||
-                      !formData.documentName ||
-                      !selectedFile
+                      uploading || !formData.insurerName || !formData.documentName || !selectedFile
                     }
                     className="bg-indigo-600 text-white font-semibold rounded-xl px-4 py-2 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors h-[38px] text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                   >
@@ -512,7 +565,8 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
                 <ShieldCheck size={16} className="mt-0.5 flex-shrink-0 text-amber-600" />
                 <span>
                   La carga y gestión de clausulados requiere inicio de sesión. Inicia sesión con tu
-                  cuenta para agregar o modificar documentos del repositorio; la consulta es de acceso libre.
+                  cuenta para agregar o modificar documentos del repositorio; la consulta es de
+                  acceso libre.
                 </span>
               </div>
             )}
@@ -688,7 +742,8 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
           <div className="text-xs text-slate-500 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-2">
             <div className="flex items-center gap-4">
               <span>
-                Total Documentos: <strong className="text-slate-800">{filteredDocuments.length}</strong>
+                Total Documentos:{' '}
+                <strong className="text-slate-800">{filteredDocuments.length}</strong>
               </span>
               <span>
                 Activos:{' '}
@@ -718,7 +773,8 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
               <div>
                 <h3 className="font-bold text-slate-900 text-sm">{previewDoc.documentName}</h3>
                 <p className="text-xs text-slate-500">
-                  {previewDoc.insurer?.name} • Versión {previewDoc.version || '2026.1'} • {getDomainLabel(previewDoc.domain)}
+                  {previewDoc.insurer?.name} • Versión {previewDoc.version || '2026.1'} •{' '}
+                  {getDomainLabel(previewDoc.domain)}
                 </p>
               </div>
               <button

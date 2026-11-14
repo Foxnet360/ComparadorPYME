@@ -27,7 +27,19 @@ paths:
           description: Ramo asegurador (pyme, autos, hogar, copropiedades, etc.)
           schema:
             type: string
-            enum: [pyme, autos, hogar, copropiedades, salud, vida_grupo, transporte, cumplimiento, danos_materiales, responsabilidad_civil]
+            enum:
+              [
+                pyme,
+                autos,
+                hogar,
+                copropiedades,
+                salud,
+                vida_grupo,
+                transporte,
+                cumplimiento,
+                danos_materiales,
+                responsabilidad_civil,
+              ]
         - name: periodMonths
           in: query
           required: false

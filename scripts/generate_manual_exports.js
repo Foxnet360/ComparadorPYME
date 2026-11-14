@@ -33,9 +33,18 @@ mdContent = mdContent.replace(/^>\s*\[!WARNING\][ \t]*\n((?:^>.*$\n?)*)/gim, (m,
 });
 
 // Single-line alert fallback
-mdContent = mdContent.replace(/^>\s*\[!NOTE\]\s*(.*)$/gim, '<div class="alert alert-note"><strong>Nota:</strong> $1</div>');
-mdContent = mdContent.replace(/^>\s*\[!TIP\]\s*(.*)$/gim, '<div class="alert alert-tip"><strong>Consejo:</strong> $1</div>');
-mdContent = mdContent.replace(/^>\s*\[!IMPORTANT\]\s*(.*)$/gim, '<div class="alert alert-important"><strong>Importante:</strong> $1</div>');
+mdContent = mdContent.replace(
+  /^>\s*\[!NOTE\]\s*(.*)$/gim,
+  '<div class="alert alert-note"><strong>Nota:</strong> $1</div>'
+);
+mdContent = mdContent.replace(
+  /^>\s*\[!TIP\]\s*(.*)$/gim,
+  '<div class="alert alert-tip"><strong>Consejo:</strong> $1</div>'
+);
+mdContent = mdContent.replace(
+  /^>\s*\[!IMPORTANT\]\s*(.*)$/gim,
+  '<div class="alert alert-important"><strong>Importante:</strong> $1</div>'
+);
 
 // Protect Mermaid diagrams from being mangled by marked.parse
 const mermaidBlocks = [];
@@ -46,16 +55,19 @@ mdContent = mdContent.replace(/```mermaid([\s\S]*?)```/g, (match, code) => {
 });
 
 // Convert images to base64 Data URIs so DOCX and PDF embed them with 100% reliability
-mdContent = mdContent.replace(/!\[(.*?)\]\(\.\/assets\/screenshots\/(.*?)\)/g, (match, alt, filename) => {
-  const imgFilePath = path.join(outDir, 'assets/screenshots', filename);
-  if (fs.existsSync(imgFilePath)) {
-    const ext = path.extname(filename).slice(1) || 'png';
-    const b64 = fs.readFileSync(imgFilePath).toString('base64');
-    const dataUri = `data:image/${ext};base64,${b64}`;
-    return `<figure class="manual-figure"><img src="${dataUri}" alt="${alt}" /><figcaption>${alt}</figcaption></figure>`;
+mdContent = mdContent.replace(
+  /!\[(.*?)\]\(\.\/assets\/screenshots\/(.*?)\)/g,
+  (match, alt, filename) => {
+    const imgFilePath = path.join(outDir, 'assets/screenshots', filename);
+    if (fs.existsSync(imgFilePath)) {
+      const ext = path.extname(filename).slice(1) || 'png';
+      const b64 = fs.readFileSync(imgFilePath).toString('base64');
+      const dataUri = `data:image/${ext};base64,${b64}`;
+      return `<figure class="manual-figure"><img src="${dataUri}" alt="${alt}" /><figcaption>${alt}</figcaption></figure>`;
+    }
+    return match;
   }
-  return match;
-});
+);
 
 console.log('2. Parsing markdown to HTML...');
 let parsedBody = marked.parse(mdContent);

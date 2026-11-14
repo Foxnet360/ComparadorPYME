@@ -28,11 +28,7 @@
         "amit-terrorismo-copropiedades",
         "granizo-vientos-copropiedades"
       ],
-      "aliases": [
-        "FENÓMENOS NATURALES",
-        "Eventos de la Naturaleza",
-        "Catastróficos PH"
-      ],
+      "aliases": ["FENÓMENOS NATURALES", "Eventos de la Naturaleza", "Catastróficos PH"],
       "riskType": "catastrophe"
     },
     {
@@ -45,26 +41,15 @@
         "rc-patronal-copropiedades",
         "manejo-infidelidad-copropiedades"
       ],
-      "aliases": [
-        "RESPONSABILIDAD CIVIL",
-        "RESPONSABILIDAD PROFESIONAL",
-        "RC Zonas Comunes"
-      ],
+      "aliases": ["RESPONSABILIDAD CIVIL", "RESPONSABILIDAD PROFESIONAL", "RC Zonas Comunes"],
       "riskType": "liability"
     },
     {
       "id": "maquinaria-equipos-comunes",
       "name": "Equipos, Maquinaria y Seguridad de Áreas Comunes",
       "level": 1,
-      "childrenIds": [
-        "equipo-maquinaria-comunes",
-        "sustraccion-bienes-comunes"
-      ],
-      "aliases": [
-        "Maquinaria Común",
-        "Equipos Eléctricos Zonas Comunes",
-        "Seguridad PH"
-      ],
+      "childrenIds": ["equipo-maquinaria-comunes", "sustraccion-bienes-comunes"],
+      "aliases": ["Maquinaria Común", "Equipos Eléctricos Zonas Comunes", "Seguridad PH"],
       "riskType": "equipment"
     },
     {
@@ -76,11 +61,7 @@
         "perdida-expensas-administracion",
         "asistencia-areas-comunes"
       ],
-      "aliases": [
-        "GASTOS COMPLEMENTARIOS",
-        "PÉRDIDAS CONSECUENCIALES",
-        "SERVICIOS Y ASISTENCIAS"
-      ],
+      "aliases": ["GASTOS COMPLEMENTARIOS", "PÉRDIDAS CONSECUENCIALES", "SERVICIOS Y ASISTENCIAS"],
       "riskType": "assistance"
     },
     {
@@ -132,10 +113,7 @@
       "name": "Responsabilidad Civil Extracontractual Áreas Comunes",
       "level": 2,
       "parentId": "responsabilidad-civil-ph",
-      "childrenIds": [
-        "rc-parqueaderos-copropiedad",
-        "rc-zonas-humedas-piscinas"
-      ],
+      "childrenIds": ["rc-parqueaderos-copropiedad", "rc-zonas-humedas-piscinas"],
       "aliases": [
         "Responsabilidad Civil Extracontractual Áreas Comunes",
         "Responsabilidad Civil Extracontractual",
@@ -395,9 +373,7 @@
       "name": "Remoción de Escombros y Gastos de Preservación",
       "level": 2,
       "parentId": "gastos-consecuenciales-asistencia",
-      "childrenIds": [
-        "gastos-preservacion-ph"
-      ],
+      "childrenIds": ["gastos-preservacion-ph"],
       "aliases": [
         "Remoción de Escombros y Gastos de Preservación",
         "remoción de escombros",
@@ -463,11 +439,7 @@
       "level": 3,
       "parentId": "rce-areas-comunes",
       "childrenIds": [],
-      "aliases": [
-        "RC parqueaderos",
-        "Vehículos en parqueadero común",
-        "Vigilancia y portería"
-      ],
+      "aliases": ["RC parqueaderos", "Vehículos en parqueadero común", "Vigilancia y portería"],
       "riskType": "liability",
       "typicalDeductible": "10% min 1 SMMLV"
     },
@@ -477,11 +449,7 @@
       "level": 3,
       "parentId": "rce-areas-comunes",
       "childrenIds": [],
-      "aliases": [
-        "RC piscinas",
-        "RC zonas húmedas",
-        "RC ascensores"
-      ],
+      "aliases": ["RC piscinas", "RC zonas húmedas", "RC ascensores"],
       "riskType": "liability",
       "typicalDeductible": "10% min 1 SMMLV"
     },
@@ -491,10 +459,7 @@
       "level": 3,
       "parentId": "remocion-escombros-copropiedades",
       "childrenIds": [],
-      "aliases": [
-        "Preservación de bienes comunes",
-        "Mitigación de daños"
-      ],
+      "aliases": ["Preservación de bienes comunes", "Mitigación de daños"],
       "riskType": "assistance",
       "typicalDeductible": "0%"
     }
@@ -512,9 +477,7 @@
     },
     {
       "pattern": "terremoto.*temblor|erupci[oó]n.*volc[aá]nica",
-      "components": [
-        "terremoto-bienes-comunes"
-      ],
+      "components": ["terremoto-bienes-comunes"],
       "confidence": 0.85
     }
   ]

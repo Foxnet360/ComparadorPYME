@@ -1,9 +1,5 @@
 {
   "version": "1.0.0",
   "domain": "transporte",
-  "files": [
-    "taxonomy.json",
-    "ontology.json",
-    "thesaurus.json"
-  ]
+  "files": ["taxonomy.json", "ontology.json", "thesaurus.json"]
 }

@@ -46,7 +46,8 @@ export const useAnalysisFlow = () => {
     try {
       const clientName = state.selectedClient?.name || 'Prospecto General';
       // Pass clauseIds whenever selected (supports hybrid: library + supplemental uploads)
-      const clauseIdsToUse = state.selectedClauseIds.length > 0 ? state.selectedClauseIds : undefined;
+      const clauseIdsToUse =
+        state.selectedClauseIds.length > 0 ? state.selectedClauseIds : undefined;
       const result = await analyzeQuotesWithGemini(
         state.quoteFiles,
         state.clauseFiles,

@@ -26,7 +26,11 @@ export const FocalizedCoverageJsonSchema = {
             nullable: true,
           },
           rawName: { type: SchemaType.STRING, description: 'Exact coverage name from document' },
-          insuredAmount: { type: SchemaType.NUMBER, description: 'Insured amount / Limite asegurado', nullable: true },
+          insuredAmount: {
+            type: SchemaType.NUMBER,
+            description: 'Insured amount / Limite asegurado',
+            nullable: true,
+          },
           deductible: {
             type: SchemaType.STRING,
             description: 'Deductible text verbatim as it appears in document. If none, null.',
@@ -34,7 +38,8 @@ export const FocalizedCoverageJsonSchema = {
           },
           rawTextSnippet: {
             type: SchemaType.STRING,
-            description: 'Exact contiguous text snippet (50-300 chars) from the document proving this coverage and its parameters.',
+            description:
+              'Exact contiguous text snippet (50-300 chars) from the document proving this coverage and its parameters.',
             nullable: false,
           },
           pageNumber: {

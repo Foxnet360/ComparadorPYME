@@ -8,10 +8,7 @@ import { geminiService } from '../gemini';
 import { quoteParser, ParsedQuote } from '../quoteParser';
 import { normalizeCoverages } from '../thesaurusMapper';
 import { insurerProfileService } from '../insurerProfileService';
-import {
-  validateQuoteExtraction,
-  QuoteExtraction,
-} from '../../schemas/extractionSchemas';
+import { validateQuoteExtraction, QuoteExtraction } from '../../schemas/extractionSchemas';
 import { reconciliationService } from '../reconciliationService';
 import { createExtractionMetricsEmitter } from '../extractionMetrics';
 import { withTimeout, extractWithZodValidation } from './utils';

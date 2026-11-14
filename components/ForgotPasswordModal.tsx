@@ -93,7 +93,8 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
               </p>
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-left text-xs text-amber-800">
                 <span className="font-bold block mb-0.5">ℹ️ Revisa tu bandeja de entrada</span>
-                Haz clic en el enlace que recibas para crear tu nueva contraseña. Si no lo encuentras en unos minutos, revisa tu carpeta de correo no deseado (Spam).
+                Haz clic en el enlace que recibas para crear tu nueva contraseña. Si no lo
+                encuentras en unos minutos, revisa tu carpeta de correo no deseado (Spam).
               </div>
               <button
                 type="button"
@@ -111,7 +112,10 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
               </p>
 
               <div>
-                <label htmlFor="recovery-email" className="block text-xs font-semibold text-slate-700 mb-1">
+                <label
+                  htmlFor="recovery-email"
+                  className="block text-xs font-semibold text-slate-700 mb-1"
+                >
                   Correo Electrónico
                 </label>
                 <div className="relative rounded-xl shadow-xs">

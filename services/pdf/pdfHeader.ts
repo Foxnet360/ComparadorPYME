@@ -71,7 +71,8 @@ export function renderPageHeader({
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
-  const displayTitle = options?.customTitle || title || `Reporte Ejecutivo · ${regProfile.displayName}`;
+  const displayTitle =
+    options?.customTitle || title || `Reporte Ejecutivo · ${regProfile.displayName}`;
   doc.text(displayTitle.substring(0, 48), 14, 11);
 
   // CSA Platform Credits
@@ -84,8 +85,14 @@ export function renderPageHeader({
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(255, 255, 255);
   const brokerTitle =
-    options?.brokerInfo?.intermediaryName || options?.brokerInfo?.name || 'Corredores de Seguros Asociados S.A.';
-  doc.text(`Ramo: ${regProfile.displayName}  |  Expedición: ${today}  |  Intermediario: ${brokerTitle.substring(0, 32)}`, 14, 22);
+    options?.brokerInfo?.intermediaryName ||
+    options?.brokerInfo?.name ||
+    'Corredores de Seguros Asociados S.A.';
+  doc.text(
+    `Ramo: ${regProfile.displayName}  |  Expedición: ${today}  |  Intermediario: ${brokerTitle.substring(0, 32)}`,
+    14,
+    22
+  );
 
   const brokerAdvisor = options?.brokerInfo?.name ? `Asesor: ${options.brokerInfo.name}` : '';
   const brokerReg = options?.brokerInfo?.registrationNumber
@@ -93,7 +100,9 @@ export function renderPageHeader({
     : '';
   const brokerPhone = options?.brokerInfo?.phone ? `Tel: ${options.brokerInfo.phone}` : '';
   const brokerEmail = options?.brokerInfo?.email ? `Email: ${options.brokerInfo.email}` : '';
-  const headerContact = [brokerAdvisor, brokerReg, brokerPhone, brokerEmail].filter(Boolean).join('  |  ');
+  const headerContact = [brokerAdvisor, brokerReg, brokerPhone, brokerEmail]
+    .filter(Boolean)
+    .join('  |  ');
   if (headerContact) {
     doc.setFontSize(6.5);
     doc.setTextColor(224, 231, 255);

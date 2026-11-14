@@ -55,28 +55,51 @@ export function buildPortadaSheet(ctx: ExcelContext): void {
   const titleCell = portada.getCell('B2');
   titleCell.value = 'COMPARATIVA Y AUDITORÍA TÉCNICA DE SEGUROS';
   titleCell.font = { name: FONT_NAME, size: 16, bold: true, color: { argb: EXCEL_COLORS.WHITE } };
-  titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.NAVY_HEADER } };
+  titleCell.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: EXCEL_COLORS.NAVY_HEADER },
+  };
   titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
   portada.getRow(2).height = 38;
 
   portada.mergeCells('B3:F3');
   const subtitleCell = portada.getCell('B3');
   subtitleCell.value = `INFORME EJECUTIVO PARA LA TOMA DE DECISIONES | ${clientName.toUpperCase()} | ${clientLocation}`;
-  subtitleCell.font = { name: FONT_NAME, size: 10, italic: true, color: { argb: EXCEL_COLORS.SLATE_MUTED } };
+  subtitleCell.font = {
+    name: FONT_NAME,
+    size: 10,
+    italic: true,
+    color: { argb: EXCEL_COLORS.SLATE_MUTED },
+  };
   subtitleCell.alignment = { vertical: 'middle', horizontal: 'center' };
 
   // BLOQUE SOMBREADO: RESUMEN EJECUTIVO
   portada.mergeCells('B5:F5');
   const execHeaderCell = portada.getCell('B5');
   execHeaderCell.value = '📌 RESUMEN EJECUTIVO Y DICTAMEN DE RECOMENDACIÓN';
-  execHeaderCell.font = { name: FONT_NAME, size: 11, bold: true, color: { argb: EXCEL_COLORS.NAVY_HEADER } };
+  execHeaderCell.font = {
+    name: FONT_NAME,
+    size: 11,
+    bold: true,
+    color: { argb: EXCEL_COLORS.NAVY_HEADER },
+  };
 
   portada.mergeCells('B6:F8');
   const execBoxCell = portada.getCell('B6');
   const execText = `Tras auditar técnicamente las cotizaciones recibidas, la opción recomendada para ${clientName} es ${bestQuote?.insurerName.toUpperCase()} (Puntaje: ${bestQuote?.score || 'N/A'}/100). Esta propuesta presenta la mejor combinación de amplitud de coberturas canónicas, equilibrio financiero en primas y condiciones de deducibles alineadas al perfil de riesgo.`;
   execBoxCell.value = execText;
-  execBoxCell.font = { name: FONT_NAME, size: 10, italic: true, color: { argb: EXCEL_COLORS.SLATE_BODY } };
-  execBoxCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.BG_LIGHT_GRAY } };
+  execBoxCell.font = {
+    name: FONT_NAME,
+    size: 10,
+    italic: true,
+    color: { argb: EXCEL_COLORS.SLATE_BODY },
+  };
+  execBoxCell.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: EXCEL_COLORS.BG_LIGHT_GRAY },
+  };
   execBoxCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
   execBoxCell.border = {
     left: { style: 'medium', color: { argb: EXCEL_COLORS.NAVY_HEADER } },
@@ -89,8 +112,17 @@ export function buildPortadaSheet(ctx: ExcelContext): void {
   const addInfoRow = (label: string, value: string, rowIdx: number) => {
     const cellA = portada.getCell(`B${rowIdx}`);
     cellA.value = label;
-    cellA.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.SLATE_LABEL } };
-    cellA.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.BG_SLATE_HEADER } };
+    cellA.font = {
+      name: FONT_NAME,
+      size: 10,
+      bold: true,
+      color: { argb: EXCEL_COLORS.SLATE_LABEL },
+    };
+    cellA.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: EXCEL_COLORS.BG_SLATE_HEADER },
+    };
 
     const cellB = portada.getCell(`D${rowIdx}`);
     cellB.value = value;
@@ -121,7 +153,11 @@ export function buildPortadaSheet(ctx: ExcelContext): void {
   addInfoRow('Asesor Responsable:', brokerDetails.advisor, 19);
   addInfoRow('Nº Matrícula / Registro SFC:', brokerDetails.reg, 20);
   addInfoRow('Contacto / Teléfono:', `${brokerDetails.phone} | ${brokerDetails.email}`, 21);
-  addInfoRow('Ubicación y Sede:', `${brokerDetails.address ? brokerDetails.address + ' · ' : ''}${brokerDetails.city}`, 22);
+  addInfoRow(
+    'Ubicación y Sede:',
+    `${brokerDetails.address ? brokerDetails.address + ' · ' : ''}${brokerDetails.city}`,
+    22
+  );
 
   // Scorecard Multidimensional (0 - 100)
   portada.getCell('B23').value = 'SCORECARD COMPARATIVO DE AUDITORÍA (0 - 100)';
@@ -136,7 +172,11 @@ export function buildPortadaSheet(ctx: ExcelContext): void {
   const colAHeader = portada.getCell('B24');
   colAHeader.value = 'DIMENSIÓN DE EVALUACIÓN';
   colAHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.WHITE } };
-  colAHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.NAVY_HEADER } };
+  colAHeader.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: EXCEL_COLORS.NAVY_HEADER },
+  };
   colAHeader.alignment = { vertical: 'middle', horizontal: 'left' };
 
   quotes.forEach((q, idx) => {
@@ -147,8 +187,17 @@ export function buildPortadaSheet(ctx: ExcelContext): void {
       ? 'FF' + profile.primaryColor.replace('#', '')
       : EXCEL_COLORS.NAVY_HEADER;
     hCell.value = `${profile?.monogram ? `[${profile.monogram}] ` : ''}${q.insurerName.toUpperCase()}`;
-    hCell.font = { name: FONT_NAME, size: 9.5, bold: true, color: { argb: EXCEL_COLORS.SLATE_DARK } };
-    hCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.BG_SLATE_HEADER } };
+    hCell.font = {
+      name: FONT_NAME,
+      size: 9.5,
+      bold: true,
+      color: { argb: EXCEL_COLORS.SLATE_DARK },
+    };
+    hCell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: EXCEL_COLORS.BG_SLATE_HEADER },
+    };
     hCell.border = {
       top: { style: 'medium', color: { argb: argbColor } },
       bottom: { style: 'thin', color: { argb: EXCEL_COLORS.BORDER_MEDIUM } },
@@ -202,19 +251,51 @@ export function buildPortadaSheet(ctx: ExcelContext): void {
       }
 
       cellVal.value = scoreVal;
-      cellVal.font = { name: FONT_NAME, size: 10, bold: isTotal, color: { argb: EXCEL_COLORS.SLATE_BODY } };
+      cellVal.font = {
+        name: FONT_NAME,
+        size: 10,
+        bold: isTotal,
+        color: { argb: EXCEL_COLORS.SLATE_BODY },
+      };
       cellVal.alignment = { horizontal: 'center' };
 
       // Pastel RAG Status Highlight
       if (scoreVal >= 80) {
-        cellVal.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.EMERALD_BG } };
-        cellVal.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.EMERALD_TEXT } };
+        cellVal.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: EXCEL_COLORS.EMERALD_BG },
+        };
+        cellVal.font = {
+          name: FONT_NAME,
+          size: 10,
+          bold: true,
+          color: { argb: EXCEL_COLORS.EMERALD_TEXT },
+        };
       } else if (scoreVal >= 60) {
-        cellVal.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.YELLOW_BG } };
-        cellVal.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.YELLOW_TEXT } };
+        cellVal.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: EXCEL_COLORS.YELLOW_BG },
+        };
+        cellVal.font = {
+          name: FONT_NAME,
+          size: 10,
+          bold: true,
+          color: { argb: EXCEL_COLORS.YELLOW_TEXT },
+        };
       } else {
-        cellVal.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.RED_BG } };
-        cellVal.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.RED_TEXT } };
+        cellVal.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: EXCEL_COLORS.RED_BG },
+        };
+        cellVal.font = {
+          name: FONT_NAME,
+          size: 10,
+          bold: true,
+          color: { argb: EXCEL_COLORS.RED_TEXT },
+        };
       }
     });
   });
@@ -263,7 +344,12 @@ export function buildPortadaSheet(ctx: ExcelContext): void {
     const rIdx = 34 + idx;
     const cellA = portada.getCell(`B${rIdx}`);
     cellA.value = item.name;
-    cellA.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.NAVY_HEADER } };
+    cellA.font = {
+      name: FONT_NAME,
+      size: 10,
+      bold: true,
+      color: { argb: EXCEL_COLORS.NAVY_HEADER },
+    };
 
     const cellB = portada.getCell(`D${rIdx}`);
     cellB.value = item.desc;
@@ -281,7 +367,11 @@ export function buildPortadaSheet(ctx: ExcelContext): void {
     color: { argb: EXCEL_COLORS.NAVY_HEADER },
   };
 
-  addInfoRow('Vigencia de la Oferta:', `${effectivePolicies.offerValidityDays} días calendario desde la expedición`, 43);
+  addInfoRow(
+    'Vigencia de la Oferta:',
+    `${effectivePolicies.offerValidityDays} días calendario desde la expedición`,
+    43
+  );
   addInfoRow('Forma y Plazo de Pago:', effectivePolicies.paymentConditions, 44);
   addInfoRow('Requisitos de Emisión:', effectivePolicies.issuanceRequirements, 45);
   addInfoRow('Atención de Siniestros:', effectivePolicies.claimsPolicy, 46);

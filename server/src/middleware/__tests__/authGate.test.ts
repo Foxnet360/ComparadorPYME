@@ -7,9 +7,12 @@ import { isPublicPath } from '../authGate';
  * /health is not under /api, so it never reaches the gate.
  */
 describe('isPublicPath (AUTH-1 allowlist semantics - Production Hardened)', () => {
-  it.each(['/v1/daas', '/v1/daas/quotes', '/v1/daas/market-index'])('allows DaaS prefix %s', (path) => {
-    expect(isPublicPath(path)).toBe(true);
-  });
+  it.each(['/v1/daas', '/v1/daas/quotes', '/v1/daas/market-index'])(
+    'allows DaaS prefix %s',
+    (path) => {
+      expect(isPublicPath(path)).toBe(true);
+    }
+  );
 
   it('allows public GET routes for insurers and documents', () => {
     expect(isPublicPath('/insurers', 'GET')).toBe(true);

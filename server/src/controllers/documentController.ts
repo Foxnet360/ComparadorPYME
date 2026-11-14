@@ -184,7 +184,10 @@ export const documentController = {
       const insurerId = await documentIndexingService.getOrCreateInsurer(insurerName.trim());
 
       // Verificar deduplicación estricta por SHA-256 file_hash
-      if (fileHash && typeof documentIndexingService.findExistingDeduplicatedDocument === 'function') {
+      if (
+        fileHash &&
+        typeof documentIndexingService.findExistingDeduplicatedDocument === 'function'
+      ) {
         const existingMatch = await documentIndexingService.findExistingDeduplicatedDocument(
           insurerId,
           documentName.trim(),
@@ -315,7 +318,15 @@ export const documentController = {
     console.log('📋 [documentController.listDocuments] Request received');
 
     try {
-      const { insurerId, documentType, domain, isActive, latest, limit = '100', offset = '0' } = req.query;
+      const {
+        insurerId,
+        documentType,
+        domain,
+        isActive,
+        latest,
+        limit = '100',
+        offset = '0',
+      } = req.query;
 
       let query = supabase
         .from('documents')
@@ -353,7 +364,10 @@ export const documentController = {
       }
 
       if (documentType) {
-        query = query.eq('document_type', documentType as "CLAUSULADO_GENERAL" | "CLAUSULADO_PARTICULAR" | "COTIZACION");
+        query = query.eq(
+          'document_type',
+          documentType as 'CLAUSULADO_GENERAL' | 'CLAUSULADO_PARTICULAR' | 'COTIZACION'
+        );
       }
 
       if (domain) {
@@ -626,7 +640,10 @@ export const documentController = {
         );
 
       if (sectionType) {
-        query = query.eq('section_type', sectionType as "COBERTURA" | "EXCLUSION" | "DEDUCIBLE" | "CONDICION" | "GENERAL");
+        query = query.eq(
+          'section_type',
+          sectionType as 'COBERTURA' | 'EXCLUSION' | 'DEDUCIBLE' | 'CONDICION' | 'GENERAL'
+        );
       }
 
       if (coverageTag) {

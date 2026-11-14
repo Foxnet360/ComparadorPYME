@@ -31,12 +31,30 @@ const DOMAIN_KEYWORD_RULES: Array<{
   {
     domain: 'autos',
     label: 'Seguro de Autos',
-    keywords: ['auto', 'automovil', 'vehicul', 'placa', 'chasis', 'flota', 'fasecolda', 'liviano', 'pesado'],
+    keywords: [
+      'auto',
+      'automovil',
+      'vehicul',
+      'placa',
+      'chasis',
+      'flota',
+      'fasecolda',
+      'liviano',
+      'pesado',
+    ],
   },
   {
     domain: 'copropiedades',
     label: 'Copropiedades',
-    keywords: ['copropiedad', 'ley 675', 'conjunto', 'edificio', 'areas comunes', 'zonas comunes', 'ph '],
+    keywords: [
+      'copropiedad',
+      'ley 675',
+      'conjunto',
+      'edificio',
+      'areas comunes',
+      'zonas comunes',
+      'ph ',
+    ],
   },
   {
     domain: 'salud',
@@ -51,7 +69,15 @@ const DOMAIN_KEYWORD_RULES: Array<{
   {
     domain: 'cumplimiento',
     label: 'Cumplimiento y Fianzas',
-    keywords: ['cumplimiento', 'seriedad', 'anticipo', 'estatal', 'ley 80', 'fianza', 'garantia unica'],
+    keywords: [
+      'cumplimiento',
+      'seriedad',
+      'anticipo',
+      'estatal',
+      'ley 80',
+      'fianza',
+      'garantia unica',
+    ],
   },
   {
     domain: 'transporte',
@@ -187,7 +213,8 @@ const FileUploader: React.FC<FileUploaderProps> = ({
                 ¿Estas cotizaciones corresponden al ramo "{suggestion.label}"?
               </span>
               <span className="text-amber-800">
-                Detectamos el patrón <em>"{suggestion.matchedKeyword}"</em> en los archivos. Podés cambiar el ramo ahora para aplicar la taxonomía especializada.
+                Detectamos el patrón <em>"{suggestion.matchedKeyword}"</em> en los archivos. Podés
+                cambiar el ramo ahora para aplicar la taxonomía especializada.
               </span>
             </div>
           </div>
