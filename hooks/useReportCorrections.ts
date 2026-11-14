@@ -52,5 +52,10 @@ export const useReportCorrections = (
     });
   };
 
-  return { report, handleApplyCorrection };
+  const replaceReport = (nextReport: ReportType) => {
+    setReport(nextReport);
+    if (onUpdateReport) onUpdateReport(nextReport);
+  };
+
+  return { report, handleApplyCorrection, replaceReport };
 };

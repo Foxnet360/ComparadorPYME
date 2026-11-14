@@ -15,6 +15,8 @@ import { isAdvancedAnalysisEnabled } from '../config/features';
 import { useCellNotes } from '../contexts/AnalysisContext';
 import { ClaimSimulatorPanel } from './report/ClaimSimulatorPanel';
 import { PromoteQuoteModal } from './report/PromoteQuoteModal';
+import { AddLateQuoteModal } from './report/AddLateQuoteModal';
+import { storageService } from '../services/storageService';
 import type { ComparisonReport as ReportType, QuoteAnalysis } from '../types';
 
 // Renewal-mode (schemaVersion 3) extras: lazy-loaded so the NEW-mode bundle
@@ -43,7 +45,11 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
   onOpenPortfolio,
   initialTab = 'resumen',
 }) => {
-  const { report, handleApplyCorrection } = useReportCorrections(initialReport, onUpdateReport);
+  const { report, handleApplyCorrection, replaceReport } = useReportCorrections(
+    initialReport,
+    onUpdateReport
+  );
+  const [showAddQuoteModal, setShowAddQuoteModal] = useState(false);
 
   const initialActiveTab = (() => {
     if (typeof window !== 'undefined') {
@@ -104,6 +110,7 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         onExport={openExportModal}
+        onAddQuote={report.id ? () => setShowAddQuoteModal(true) : undefined}
         exportModal={
           showExportModal && (
             <ExportModal
@@ -228,6 +235,21 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
           domain={report.domain}
           initialClientName={report.clientInfo?.name}
           onOpenPortfolio={onOpenPortfolio}
+        />
+      )}
+
+      {/* Modal para adicionar cotizaciones tardías */}
+      {showAddQuoteModal && report.id && (
+        <AddLateQuoteModal
+          analysisId={report.id}
+          domain={report.domain}
+          existingInsurers={report.quotes.map((q) => q.insurerName)}
+          onClose={() => setShowAddQuoteModal(false)}
+          onQuotesAppended={(updatedReport) => {
+            replaceReport(updatedReport);
+            const clientLabel = updatedReport.clientInfo?.name || 'Cliente';
+            void storageService.saveAnalysis(clientLabel, updatedReport);
+          }}
         />
       )}
 

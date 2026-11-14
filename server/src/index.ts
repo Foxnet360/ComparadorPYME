@@ -200,6 +200,14 @@ app.post(
   asyncHandler(analysisController.uploadAndAnalyze)
 );
 
+app.post(
+  '/api/analysis/:id/quotes',
+  analyzeRateLimiter,
+  optionalAuthMiddleware,
+  upload.fields([{ name: 'quotes', maxCount: 10 }]),
+  asyncHandler(analysisController.appendQuotesToAnalysis)
+);
+
 app.get('/api/history', optionalAuthMiddleware, asyncHandler(analysisController.getHistory));
 
 // Document Indexing routes
