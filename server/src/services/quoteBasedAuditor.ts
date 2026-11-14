@@ -7,7 +7,7 @@
 import { ScoringBreakdown } from '../types';
 import { featureFlags } from '../config/featureFlags';
 import { auditPremiumEquation } from './financialAudit/premiumAuditor';
-import { InsuranceDomain, isInsuranceDomain } from '../types/domain';
+import { isInsuranceDomain } from '../types/domain';
 import { domainTaxonomyRegistry } from './domainTaxonomyRegistry';
 
 // Local type definitions to avoid importing from outside rootDir
@@ -238,7 +238,7 @@ export const detectMissingCoverages = (
       const taxonomy = domainTaxonomyRegistry.getTaxonomy(domain);
       if (taxonomy && Array.isArray(taxonomy.categories) && taxonomy.categories.length > 0) {
         categoriesToUse = taxonomy.categories.map((c, idx) => ({
-          id: typeof c.id === 'number' ? c.id : (parseInt(String(c.id), 10) || idx + 1),
+          id: typeof c.id === 'number' ? c.id : parseInt(String(c.id), 10) || idx + 1,
           name: c.name,
           isRequired: c.isRequired,
           synonyms: c.synonyms,
@@ -260,10 +260,7 @@ export const detectMissingCoverages = (
       if (name.includes(categoryNameLower)) return true;
 
       // Common abbreviations / synonyms
-      const extraKeywords = [
-        ...(category.synonyms || []),
-        ...(category.aliases || []),
-      ];
+      const extraKeywords = [...(category.synonyms || []), ...(category.aliases || [])];
       if (extraKeywords.length > 0) {
         if (extraKeywords.some((kw) => name.includes(kw.toLowerCase()))) {
           return true;
@@ -299,8 +296,12 @@ export const detectMissingCoverages = (
       ];
 
       const impact: 'HIGH' | 'MEDIUM' = isDynamicTaxonomy
-        ? (category.isRequired ? 'HIGH' : 'MEDIUM')
-        : (highImpactCategories.includes(category.name) ? 'HIGH' : 'MEDIUM');
+        ? category.isRequired
+          ? 'HIGH'
+          : 'MEDIUM'
+        : highImpactCategories.includes(category.name)
+          ? 'HIGH'
+          : 'MEDIUM';
 
       missing.push({
         categoryName: category.name,

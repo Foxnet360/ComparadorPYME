@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   COMMERCIAL_CONDITION_FIELDS,
   extractCommercialConditionsFromReport,
@@ -45,8 +45,14 @@ describe('Commercial Conditions in Quotes', () => {
 
     const mockReport: Partial<ComparisonReport> = {
       quotes: [
-        { insurerName: 'Seguros SURA', paymentTerms: '10 cuotas mensuales sin interés' } as unknown as QuoteAnalysis,
-        { insurerName: 'AXA Colpatria', paymentTerms: 'Contado 5% descuento' } as unknown as QuoteAnalysis,
+        {
+          insurerName: 'Seguros SURA',
+          paymentTerms: '10 cuotas mensuales sin interés',
+        } as unknown as QuoteAnalysis,
+        {
+          insurerName: 'AXA Colpatria',
+          paymentTerms: 'Contado 5% descuento',
+        } as unknown as QuoteAnalysis,
       ],
       matrix: mockMatrix,
     };
@@ -66,9 +72,7 @@ describe('Commercial Conditions in Quotes', () => {
 
   it('applies edited commercial conditions to the report matrix and updates commercialConditions object', () => {
     const mockReport: Partial<ComparisonReport> = {
-      quotes: [
-        { insurerName: 'Seguros Bolívar' } as unknown as QuoteAnalysis,
-      ],
+      quotes: [{ insurerName: 'Seguros Bolívar' } as unknown as QuoteAnalysis],
       matrix: [],
     };
 
@@ -82,7 +86,9 @@ describe('Commercial Conditions in Quotes', () => {
       },
     });
 
-    expect(updated.commercialConditions?.['Seguros Bolívar'].validezOferta).toBe('45 días calendario');
+    expect(updated.commercialConditions?.['Seguros Bolívar'].validezOferta).toBe(
+      '45 días calendario'
+    );
     expect(updated.matrix).toHaveLength(5);
 
     const validezRow = updated.matrix!.find((r) => r.label === 'Validez de la Oferta');

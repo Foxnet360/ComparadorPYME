@@ -31,13 +31,6 @@ export interface DirectoryUser {
   createdAt: string;
 }
 
-interface OrganizationDbRow {
-  id: string;
-  name: string;
-  nit?: string | null;
-  created_at?: string | null;
-}
-
 interface DirectoryUserRpcRow {
   id?: string;
   user_id?: string;
@@ -83,10 +76,7 @@ export const organizationService = {
   listOrganizations: async (): Promise<Ally[]> => {
     try {
       // 1. Direct Supabase query with active user session
-      const { data, error } = await supabase
-        .from('organizations')
-        .select('*')
-        .order('name');
+      const { data, error } = await supabase.from('organizations').select('*').order('name');
       if (!error && Array.isArray(data) && data.length > 0) {
         return (data as unknown as any[]).map((org) => ({
           id: org.id,
@@ -145,8 +135,7 @@ export const organizationService = {
           allyId: item.org_id,
           allyName: item.org_name || 'Correduría Aliada',
           status: (item.status as 'ACTIVE' | 'INACTIVE') || 'ACTIVE',
-          createdAt:
-            (item.created_at ? item.created_at.split('T')[0] : undefined) || '2026-01-01',
+          createdAt: (item.created_at ? item.created_at.split('T')[0] : undefined) || '2026-01-01',
         }));
       }
     } catch (err) {
@@ -168,7 +157,7 @@ export const organizationService = {
             allyName: item.org_name || 'Correduría Aliada',
             status: (item.status as 'ACTIVE' | 'INACTIVE') || 'ACTIVE',
             createdAt:
-            (item.created_at ? item.created_at.split('T')[0] : undefined) || '2026-01-01',
+              (item.created_at ? item.created_at.split('T')[0] : undefined) || '2026-01-01',
           }));
         }
       }
@@ -396,7 +385,14 @@ export const organizationService = {
       phone?: string;
     }
   ): Promise<{
-    user: { id?: string; name?: string; role?: UserRole; orgId?: string; orgName?: string; status?: string };
+    user: {
+      id?: string;
+      name?: string;
+      role?: UserRole;
+      orgId?: string;
+      orgName?: string;
+      status?: string;
+    };
     member: Record<string, unknown>;
   }> => {
     const res = await apiClient.fetch(`/api/organizations/users/${userId}`, {

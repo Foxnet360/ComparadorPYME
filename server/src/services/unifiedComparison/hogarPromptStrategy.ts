@@ -62,14 +62,14 @@ export const HOGAR_GRANULAR_SECTIONS = [
 ] as const;
 
 export class HogarPromptStrategy implements PromptStrategy {
-  buildPromptForFamily(family: FormatFamily, context?: PromptContext): string {
+  buildPromptForFamily(_family: FormatFamily, _context?: PromptContext): string {
     return `Eres un analista de seguros de Hogar y Vivienda en Colombia. Extrae con precisión los amparos de la cotización residencial, distinguiendo si cubre Edificio, Contenido o ambos.`;
   }
 
   buildTemplatePrompt(
     templateId: string,
-    template: TemplateRegistryEntry,
-    tables: LayoutTable[]
+    _template: TemplateRegistryEntry,
+    _tables: LayoutTable[]
   ): string {
     return `Extrae las coberturas y deducibles de la cotización de Hogar según la plantilla ${templateId}.`;
   }

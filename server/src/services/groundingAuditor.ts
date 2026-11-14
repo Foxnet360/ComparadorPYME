@@ -4,7 +4,7 @@
  * to eliminate hallucinations, cross-page mismatches, and truncated numbers.
  */
 
-import { sanitizeText, sanitizeDeep } from '../utils/textSanitizer';
+import { sanitizeDeep } from '../utils/textSanitizer';
 
 export interface AuditResultEnvelope<T> {
   result: T;
@@ -28,7 +28,7 @@ export function auditGroundedComparison<T extends Record<string, any>>(
   const sanitizedReport = sanitizeDeep(report);
 
   if (Array.isArray(sanitizedReport.quotes)) {
-    sanitizedReport.quotes.forEach((quote: any, i: number) => {
+    sanitizedReport.quotes.forEach((quote: any) => {
       if (Array.isArray(quote.coverages)) {
         quote.coverages.forEach((cov: any) => {
           if (cov.sourceSnippet || cov.pageNumber) {

@@ -36,18 +36,21 @@ export interface AnalysisHistoryRecord {
   fallback_reason?: string;
 }
 
+const PHANTOM_HISTORY_COLUMNS = new Set([
+  'quotes_count',
+  'total_coverages',
+  'average_confidence',
+  'best_insurer',
+  'best_score',
+  'price_range_min',
+  'price_range_max',
+]);
+
 export async function saveAnalysisHistory(data: Record<string, unknown>): Promise<string | null> {
   // Strip non-existent/phantom columns to prevent PostgREST PGRST204 errors
-  const {
-    quotes_count: _qc,
-    total_coverages: _tc,
-    average_confidence: _ac,
-    best_insurer: _bi,
-    best_score: _bs,
-    price_range_min: _pmin,
-    price_range_max: _pmax,
-    ...payload
-  } = data;
+  const payload = Object.fromEntries(
+    Object.entries(data).filter(([key]) => !PHANTOM_HISTORY_COLUMNS.has(key))
+  );
 
   let { data: result, error } = await supabase
     .from('analysis_history')
@@ -102,9 +105,11 @@ export async function saveAnalysisHistory(data: Record<string, unknown>): Promis
     try {
       import('../services/analyticsAggregationService')
         .then(({ analyticsAggregationService }) => {
-          analyticsAggregationService.ingestAnalysisToDaas({ id: savedId, ...payload }).catch((err) => {
-            console.warn('[AnalysisRepository] Background DaaS ingestion failed:', err);
-          });
+          analyticsAggregationService
+            .ingestAnalysisToDaas({ id: savedId, ...payload })
+            .catch((err) => {
+              console.warn('[AnalysisRepository] Background DaaS ingestion failed:', err);
+            });
         })
         .catch(() => {});
     } catch {

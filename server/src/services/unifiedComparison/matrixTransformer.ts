@@ -55,11 +55,7 @@ export function getSectionId(sectionName: string): number {
     .toUpperCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
-  if (
-    norm.includes('DEDUCIBLE') ||
-    norm.includes('COPAGO') ||
-    norm.includes('FRANQUICIA')
-  ) {
+  if (norm.includes('DEDUCIBLE') || norm.includes('COPAGO') || norm.includes('FRANQUICIA')) {
     return DEDUCTIBLE_SECTION_ID;
   }
   if (
@@ -178,12 +174,7 @@ export function isFinancialRowLabel(label: string): boolean {
 
   // If label explicitly indicates a premium/billing row, terms like 'edificio', 'bienes'
   // or 'maquinaria' (e.g. "Prima Neta Bienes Comunes") do not disqualify it, unless it's a sum/limit.
-  const sumOrLimitTerms = [
-    'suma asegurada',
-    'valor asegurable',
-    'limite asegurado',
-    'deducible',
-  ];
+  const sumOrLimitTerms = ['suma asegurada', 'valor asegurable', 'limite asegurado', 'deducible'];
   if (sumOrLimitTerms.some((term) => normalized.includes(term))) {
     return false;
   }
@@ -438,9 +429,15 @@ export function formatCoverageValueColombian(value: string | number | null | und
   const str = String(value).trim();
   if (
     str === '' ||
-    ['No informado', 'N.C.', 'NO ESPECIFICADO', 'No incluido', 'No aplica', 'APLICA', 'INCLUIDO'].includes(
-      str
-    )
+    [
+      'No informado',
+      'N.C.',
+      'NO ESPECIFICADO',
+      'No incluido',
+      'No aplica',
+      'APLICA',
+      'INCLUIDO',
+    ].includes(str)
   ) {
     return str === '' ? 'No informado' : str;
   }
@@ -535,7 +532,9 @@ export function flatResultToMatrixRowsV2(
       cells: row.cells.map((cell) => {
         const formattedDed = formatDeductible(cell.deductible);
         const cellNotes = formattedDed
-          ? (cell.rawText && !cell.rawText.includes(formattedDed) ? `${formattedDed} • ${cell.rawText}` : formattedDed)
+          ? cell.rawText && !cell.rawText.includes(formattedDed)
+            ? `${formattedDed} • ${cell.rawText}`
+            : formattedDed
           : cell.rawText;
         return {
           value: cell.value,
@@ -566,7 +565,9 @@ export function flatResultToMatrixRowsV2(
       cells: row.cells.map((cell) => {
         const formattedDed = formatDeductible(cell.deductible);
         const cellNotes = formattedDed
-          ? (cell.rawText && !cell.rawText.includes(formattedDed) ? `${formattedDed} • ${cell.rawText}` : formattedDed)
+          ? cell.rawText && !cell.rawText.includes(formattedDed)
+            ? `${formattedDed} • ${cell.rawText}`
+            : formattedDed
           : cell.rawText;
         return {
           value: cell.value,
@@ -663,7 +664,9 @@ function cellFromQuoteCoverage(coverage: ParsedQuote['coverages'][number] | unde
   }
   const formattedValue = formatCoverageValueColombian(coverage.value);
   const isExcluded =
-    formattedValue === 'No informado' || formattedValue === 'NO ESPECIFICADO' || formattedValue === '';
+    formattedValue === 'No informado' ||
+    formattedValue === 'NO ESPECIFICADO' ||
+    formattedValue === '';
   return {
     value: formattedValue,
     isExcluded,
@@ -750,7 +753,8 @@ export function quotesToMatrixRows(
     label: 'Gastos de Expedición',
     sectionId: FINANCIAL_SECTION_ID,
     cells: quotes.map((q) => {
-      const exp = (q as any).financialBreakdown?.expenses ?? (q as any).expenses ?? (q as any).fees ?? 0;
+      const exp =
+        (q as any).financialBreakdown?.expenses ?? (q as any).expenses ?? (q as any).fees ?? 0;
       return {
         value: exp > 0 ? formatCOP(exp) : '$ 0',
         isExcluded: false,
@@ -1145,7 +1149,7 @@ export function getCategoryConfigsForDomain(domain: string = 'pyme'): CategoryCo
       const taxonomy: any = loadDomainJson(d, 'taxonomy.json');
 
       if (taxonomy && Array.isArray(taxonomy.categories) && taxonomy.categories.length > 0) {
-        return taxonomy.categories.map((cat: any, idx: number) => ({
+        return taxonomy.categories.map((cat: any) => ({
           id: cat.id,
           canonicalName: cat.name,
           headerLabel: String(cat.section || cat.name).toUpperCase(),
@@ -1626,10 +1630,7 @@ export function transformQuotesToMatrix(
     sectionId: 101,
     cells: quotes.map((q) => {
       const dateStr =
-        (q as any).quoteDate ||
-        (q as any).metadata?.quoteDate ||
-        (q as any).date ||
-        'No informada';
+        (q as any).quoteDate || (q as any).metadata?.quoteDate || (q as any).date || 'No informada';
       return { value: dateStr, isExcluded: dateStr === 'No informada', isWinner: false };
     }),
   });
@@ -1675,7 +1676,8 @@ export function unifiedResultToMatrixRows(
         sectionId: row.type === 'deductible' ? DEDUCTIBLE_SECTION_ID : COVERAGE_SECTION_ID,
         cells: row.cells.map((cell) => {
           const val = cell.value;
-          const isMissing = !val || val === 'No incluido' || val === 'N/A' || val === 'No informado';
+          const isMissing =
+            !val || val === 'No incluido' || val === 'N/A' || val === 'No informado';
           return {
             value: isMissing ? 'No informado' : val,
             rawText: cell.rawText,
@@ -1700,7 +1702,9 @@ export function unifiedResultToMatrixRows(
     });
 
     const netPremiums = result.financials.premiums.map((p) =>
-      p.netPremium !== null && p.netPremium !== undefined ? formatCurrency(p.netPremium) : 'No disponible'
+      p.netPremium !== null && p.netPremium !== undefined
+        ? formatCurrency(p.netPremium)
+        : 'No disponible'
     );
     matrix.push({
       type: 'data',
@@ -1917,4 +1921,3 @@ export function alignMatrixRowsToQuotes(
     };
   });
 }
-

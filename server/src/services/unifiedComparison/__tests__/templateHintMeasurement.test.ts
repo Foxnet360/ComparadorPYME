@@ -253,7 +253,6 @@ describe('RedisTemplateHintMeasurementHarness', () => {
   });
 
   it('only considers observations inside the configured time window', async () => {
-    const now = Date.now();
     await harness.setBaseline('BBVA', { tokens: 1000, latencyMs: 8000 });
 
     for (let i = 0; i < 20; i++) {

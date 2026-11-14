@@ -25,17 +25,14 @@ import {
   normalizeCurrency,
 } from '../premiumExtractor';
 import { getDeductibleFallback } from '../deductibleResolver';
-import {
-  validateQuoteExtractionV2,
-  QuoteExtractionV2,
-} from '../../schemas/extractionSchemas';
+import { validateQuoteExtractionV2, QuoteExtractionV2 } from '../../schemas/extractionSchemas';
 import { reconciliationService } from '../reconciliationService';
 import { featureFlags } from '../../config/featureFlags';
 import { templateRegistryService } from '../templateRegistryService';
 import { TemplateRegistryEntry } from '../../schemas/templateRegistrySchema';
 import { extractTables, LayoutParserResult } from '../layoutParser';
 import { createExtractionMetricsEmitter } from '../extractionMetrics';
-import { NativeTextResult, ProcessQuoteOptions } from './types';
+import { ProcessQuoteOptions } from './types';
 import { withTimeout, extractWithZodValidation, createFailedPlaceholder } from './utils';
 import { selectExtractionPrompt } from './promptSelection';
 import { enrichRawCoveragesWithGraph } from './graphEnrichment';
@@ -438,7 +435,8 @@ export async function processQuoteMultimodalInternal(
 
     // Phase 6: Reconcile quote against clause data
     console.log(`   🔍 Phase 6: Reconciling quote against clause data...`);
-    let reconciliationResults: import('../../schemas/extractionSchemas').ReconciliationResult[] = [];
+    let reconciliationResults: import('../../schemas/extractionSchemas').ReconciliationResult[] =
+      [];
     try {
       const preParsed: ParsedQuote = {
         insurerName: extracted.insurerName || 'NO ESPECIFICADO',

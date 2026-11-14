@@ -6,7 +6,7 @@
 
 import { Router } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
-import { optionalAuthMiddleware, authMiddleware, requireRole } from '../middleware/auth';
+import { authMiddleware, requireRole } from '../middleware/auth';
 import {
   validateCoverages,
   analyzeDeductibleRisk,

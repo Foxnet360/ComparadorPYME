@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { GlobalStructureSchema, FocalizedCoverageSchema } from '../../../types/twoStageExtraction';
 import { getDomainDescription } from '../globalStructureExtractor';
 
@@ -18,9 +18,7 @@ describe('TwoStageExtraction Schemas and Validators', () => {
         currency: 'COP',
         periodicity: 'Anual',
       },
-      insuredAssets: [
-        { assetType: 'CONTENIDOS', value: 200000000, notes: 'Mercancías en bodega' },
-      ],
+      insuredAssets: [{ assetType: 'CONTENIDOS', value: 200000000, notes: 'Mercancías en bodega' }],
       coverageSections: [
         { sectionName: 'AMPAROS BÁSICOS', pageNumber: 1, description: 'Incendio y terremoto' },
         { sectionName: 'RESPONSABILIDAD CIVIL', pageNumber: 3 },
@@ -56,7 +54,8 @@ describe('TwoStageExtraction Schemas and Validators', () => {
           section: 'AMPAROS BÁSICOS',
           insuredAmount: 1000000000,
           deductible: '2% del valor asegurable mínimo 5 SMMLV',
-          rawTextSnippet: 'Amparo de Terremoto, Temblor o Erupción Volcánica hasta por $1.000.000.000 COP con deducible del 2% del valor asegurable.',
+          rawTextSnippet:
+            'Amparo de Terremoto, Temblor o Erupción Volcánica hasta por $1.000.000.000 COP con deducible del 2% del valor asegurable.',
           pageNumber: 2,
           notes: 'Deducible especial para zona de alto riesgo',
         },
@@ -109,14 +108,26 @@ describe('TwoStageExtraction Schemas and Validators', () => {
 describe('Domain description mapping for two-stage extractors', () => {
   it('maps known domains to Colombian insurance descriptions and falls back to PYME/general', () => {
     expect(getDomainDescription('autos')).toBe('seguros de automóviles y vehículos en Colombia');
-    expect(getDomainDescription('copropiedades')).toBe('seguros de copropiedades y zonas comunes (Ley 675) en Colombia');
-    expect(getDomainDescription('salud')).toBe('seguros de salud y planes de medicina prepagada en Colombia');
-    expect(getDomainDescription('vida_grupo')).toBe('seguros de vida grupo y vida colectivo en Colombia');
-    expect(getDomainDescription('cumplimiento')).toBe('seguros de cumplimiento y fianzas en Colombia');
-    expect(getDomainDescription('transporte')).toBe('seguros de transporte de mercancías y carga en Colombia');
+    expect(getDomainDescription('copropiedades')).toBe(
+      'seguros de copropiedades y zonas comunes (Ley 675) en Colombia'
+    );
+    expect(getDomainDescription('salud')).toBe(
+      'seguros de salud y planes de medicina prepagada en Colombia'
+    );
+    expect(getDomainDescription('vida_grupo')).toBe(
+      'seguros de vida grupo y vida colectivo en Colombia'
+    );
+    expect(getDomainDescription('cumplimiento')).toBe(
+      'seguros de cumplimiento y fianzas en Colombia'
+    );
+    expect(getDomainDescription('transporte')).toBe(
+      'seguros de transporte de mercancías y carga en Colombia'
+    );
     expect(getDomainDescription('hogar')).toBe('seguros de hogar y vivienda en Colombia');
     expect(getDomainDescription('pyme')).toBe('seguros comerciales y empresariales en Colombia');
     expect(getDomainDescription(undefined)).toBe('seguros comerciales y empresariales en Colombia');
-    expect(getDomainDescription('unknown_domain')).toBe('seguros comerciales y empresariales en Colombia');
+    expect(getDomainDescription('unknown_domain')).toBe(
+      'seguros comerciales y empresariales en Colombia'
+    );
   });
 });

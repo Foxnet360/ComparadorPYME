@@ -3,11 +3,11 @@ import fs from 'fs';
 
 import { ParsedQuote } from '../services/quoteParser';
 import { type CrossReferenceResult } from '../services/crossReferenceEngine';
-import { quoteScorer, type ScoringResult, type ScoreBreakdown } from '../services/quoteScorer';
+import { type ScoringResult, type ScoreBreakdown } from '../services/quoteScorer';
 import { type NarrativeResult } from '../services/narrativeService';
 import { type ValidationResult } from '../services/quoteValidator';
 import { type ConfidenceResult, type ConfidenceBreakdown } from '../services/confidenceScorer';
-import { type ClauseValidationSummary, checkClauseDocumentExists } from '../services/clauseCoverageValidator';
+import { type ClauseValidationSummary } from '../services/clauseCoverageValidator';
 export interface DualExtractionResult {
   coverageName: string;
   firstExtraction: {
@@ -28,26 +28,17 @@ import { isMultimodalEnabled } from '../services/quoteProcessingService';
 import { comparisonEngineAdapter } from '../services/unifiedComparison/comparisonEngineAdapter';
 import { AnalysisType } from '../services/unifiedComparison/comparisonSchema';
 import {
-  FINANCIAL_SECTION_ID,
-  isFinancialRowLabel,
-  alignMatrixRowsToQuotes,
   extractMatrixInsurers,
   alignInsurerIndices,
   normalizeInsurerName,
 } from '../services/unifiedComparison/matrixTransformer';
-import {
-  extractCanonicalInsurerName,
-  isKnownCanonicalInsurer,
-} from '../services/unifiedComparison/insurerSanitizer';
-import { semanticMatcher } from '../services/semanticMatcher';
+import { extractCanonicalInsurerName } from '../services/unifiedComparison/insurerSanitizer';
 
 import { saveAnalysisHistory, getAnalysisHistoryByUser } from '../repositories/analysisRepository';
 import { getPolicyById } from '../repositories/policyRepository';
 import { supabase } from '../config/database';
 import { ensureClausePersistedInLibrary } from '../services/documentIndexingService';
 import { formatCOP } from '../utils/formatCurrency';
-import { parseColombianCurrency } from '../utils/currencyParser';
-import { sanitizeDeep } from '../utils/textSanitizer';
 import { auditGroundedComparison } from '../services/groundingAuditor';
 import quoteBasedAuditor from '../services/quoteBasedAuditor';
 
@@ -263,7 +254,10 @@ export const analysisController = {
               );
             }
           } catch (clauseErr) {
-            logger.warn({ err: clauseErr, file: cf.originalname }, 'Failed to auto-persist clause in permanent library');
+            logger.warn(
+              { err: clauseErr, file: cf.originalname },
+              'Failed to auto-persist clause in permanent library'
+            );
           }
         }
       }
@@ -435,13 +429,13 @@ export const analysisController = {
         }
       }
 
-      const extractedMetaClient = adapterResult.quoteMetadata?.find(
-        (m: any) => m?.cliente
-      );
+      const extractedMetaClient = adapterResult.quoteMetadata?.find((m: any) => m?.cliente);
       const extractedClientName = extractedMetaClient?.cliente;
       const clientName =
         parsedClientProfile?.name ||
-        (req.body.clientName && req.body.clientName !== 'Cliente' && req.body.clientName !== 'Prospecto General'
+        (req.body.clientName &&
+        req.body.clientName !== 'Cliente' &&
+        req.body.clientName !== 'Prospecto General'
           ? req.body.clientName
           : extractedClientName || req.body.clientName || 'Cliente');
 
@@ -483,7 +477,8 @@ export const analysisController = {
         email: parsedClientProfile?.email || undefined,
         phone: parsedClientProfile?.phone || undefined,
         vigencia: adapterResult.quoteMetadata?.find((m: any) => m?.vigencia)?.vigencia || undefined,
-        tipoSeguro: adapterResult.quoteMetadata?.find((m: any) => m?.tipoSeguro)?.tipoSeguro || undefined,
+        tipoSeguro:
+          adapterResult.quoteMetadata?.find((m: any) => m?.tipoSeguro)?.tipoSeguro || undefined,
         anoConstruccion:
           parsedClientProfile?.constructionYear ||
           adapterResult.quoteMetadata?.find((m: any) => m?.anoConstruccion)?.anoConstruccion ||

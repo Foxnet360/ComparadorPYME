@@ -75,8 +75,8 @@ export const FEATURES = {
  * Check if any advanced analysis feature is enabled
  */
 export const isAdvancedAnalysisEnabled = (): boolean => {
-  // eslint-disable-next-line no-undef
-  if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1') {
+  const search = (globalThis as { location?: { search?: string } }).location?.search;
+  if (search && new URLSearchParams(search).get('demo') === '1') {
     return true;
   }
   return FEATURES.ADVANCED_ANALYSIS;

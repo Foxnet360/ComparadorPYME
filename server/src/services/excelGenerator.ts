@@ -14,10 +14,7 @@ import {
   BrokerDetails,
   ExcelContext,
 } from './excel/types';
-import {
-  getInsurerLogoPngBuffer,
-  formatRatioCell,
-} from './excel/excelHelpers';
+import { getInsurerLogoPngBuffer } from './excel/excelHelpers';
 import {
   buildPortadaSheet,
   buildSummarySheet,
@@ -121,7 +118,8 @@ export async function generateExcelBuffer(
 
   // Intermediary / Broker Commercial Details
   const brokerDetails: BrokerDetails = {
-    name: brokerInfo?.intermediaryName || brokerInfo?.name || 'Corredores de Seguros Asociados S.A.',
+    name:
+      brokerInfo?.intermediaryName || brokerInfo?.name || 'Corredores de Seguros Asociados S.A.',
     advisor: brokerInfo?.name || 'Asesor Técnico de Seguros',
     phone: brokerInfo?.phone || '+57 (601) 345-6789',
     email: brokerInfo?.email || 'soporte@comparadorcsa.com',

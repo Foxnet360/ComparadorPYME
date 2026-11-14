@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from '@google/genai';
+import { Type } from '@google/genai';
 import { z } from 'zod';
 const SchemaType = Type;
 
@@ -748,7 +748,8 @@ Instrucciones para el análisis:
 
       const parseResult = parseJsonWithRepair(responseText);
       if (parseResult.success) {
-        const parsedData = parseResult.data && typeof parseResult.data === 'object' ? parseResult.data : {};
+        const parsedData =
+          parseResult.data && typeof parseResult.data === 'object' ? parseResult.data : {};
         const dataToValidate = {
           rawText: deductibleText,
           ...parsedData,

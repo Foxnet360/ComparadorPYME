@@ -8,11 +8,7 @@ import { AuthenticatedRequest, requireUser, requireRole } from '../middleware/au
 import { asyncHandler } from '../utils/asyncHandler';
 import { NotFoundError, ForbiddenError, AppError } from '../errors';
 import { supabase } from '../config/database';
-import {
-  DEFAULT_COMMERCIAL_POLICIES,
-  getEffectiveCommercialPolicies,
-  CommercialPolicies,
-} from '../shared/commercialPolicies';
+import { getEffectiveCommercialPolicies, CommercialPolicies } from '../shared/commercialPolicies';
 import {
   createOrganization,
   updateOrganization,
@@ -119,7 +115,9 @@ router.post(
     });
 
     if (!org) {
-      res.status(500).json({ error: 'Internal Server Error', message: 'Failed to create organization' });
+      res
+        .status(500)
+        .json({ error: 'Internal Server Error', message: 'Failed to create organization' });
       return;
     }
 
@@ -176,7 +174,9 @@ router.get(
     const callerOrgId = req.user?.orgId;
 
     if (callerRole !== 'super_admin' && callerOrgId !== orgId) {
-      throw new ForbiddenError('No está autorizado para ver las políticas comerciales de otra correduría');
+      throw new ForbiddenError(
+        'No está autorizado para ver las políticas comerciales de otra correduría'
+      );
     }
 
     const org = await getOrganizationById(orgId);
@@ -203,7 +203,9 @@ router.put(
     const callerOrgId = req.user?.orgId;
 
     if (callerRole === 'ally_admin' && (!callerOrgId || callerOrgId !== orgId)) {
-      throw new ForbiddenError('Solo puede configurar las políticas comerciales de su propia correduría');
+      throw new ForbiddenError(
+        'Solo puede configurar las políticas comerciales de su propia correduría'
+      );
     }
 
     const org = await getOrganizationById(orgId);
@@ -292,7 +294,6 @@ router.post(
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const callerId = requireUser(req);
     const callerRole = req.user?.role || 'ally_admin';
-    const callerOrgId = req.user?.orgId;
     const { email, name, role, orgId, password } = req.body;
 
     if (!email || !name || !role || !orgId) {
@@ -311,7 +312,11 @@ router.post(
           'Los Administradores Aliados únicamente pueden autorizar o invitar Técnicos Analistas'
         );
       }
-      if (!effectiveCallerOrgId || effectiveCallerOrgId === 'ally-100' || effectiveCallerOrgId.length !== 36) {
+      if (
+        !effectiveCallerOrgId ||
+        effectiveCallerOrgId === 'ally-100' ||
+        effectiveCallerOrgId.length !== 36
+      ) {
         const callerMembership = await getUserOrganization(callerId);
         if (callerMembership) {
           effectiveCallerOrgId = callerMembership.organization.id;
@@ -414,7 +419,11 @@ router.put(
     // Resolve caller's effective organization if ally_admin
     let effectiveCallerOrgId = req.user?.orgId;
     if (callerRole === 'ally_admin') {
-      if (!effectiveCallerOrgId || effectiveCallerOrgId === 'ally-100' || effectiveCallerOrgId.length !== 36) {
+      if (
+        !effectiveCallerOrgId ||
+        effectiveCallerOrgId === 'ally-100' ||
+        effectiveCallerOrgId.length !== 36
+      ) {
         const callerMembership = await getUserOrganization(callerId);
         if (callerMembership) {
           effectiveCallerOrgId = callerMembership.organization.id;
@@ -440,7 +449,9 @@ router.put(
       }
       // Ally admin cannot escalate role or change organization
       if (role && role !== 'ally_technical') {
-        throw new ForbiddenError('Los administradores aliados solo pueden asignar el rol de Técnico Analista');
+        throw new ForbiddenError(
+          'Los administradores aliados solo pueden asignar el rol de Técnico Analista'
+        );
       }
       if (orgId && orgId !== effectiveCallerOrgId) {
         throw new ForbiddenError('No puede trasladar usuarios a otra organización');
@@ -448,7 +459,7 @@ router.put(
     }
 
     // Determine target organization
-    const finalOrgId = (callerRole === 'super_admin' && orgId) ? orgId : targetMembership.org_id;
+    const finalOrgId = callerRole === 'super_admin' && orgId ? orgId : targetMembership.org_id;
     const finalRole = role || targetMembership.role;
     const finalStatus = status || targetMembership.status || 'ACTIVE';
 
@@ -508,7 +519,10 @@ router.patch(
     const { status } = req.body;
 
     if (!status || !['ACTIVE', 'INACTIVE', 'SUSPENDED'].includes(status)) {
-      res.status(400).json({ error: 'Bad Request', message: 'Valid status is required (ACTIVE, INACTIVE, SUSPENDED)' });
+      res.status(400).json({
+        error: 'Bad Request',
+        message: 'Valid status is required (ACTIVE, INACTIVE, SUSPENDED)',
+      });
       return;
     }
 
@@ -520,7 +534,11 @@ router.patch(
 
     if (callerRole === 'ally_admin') {
       let effectiveCallerOrgId = req.user?.orgId;
-      if (!effectiveCallerOrgId || effectiveCallerOrgId === 'ally-100' || effectiveCallerOrgId.length !== 36) {
+      if (
+        !effectiveCallerOrgId ||
+        effectiveCallerOrgId === 'ally-100' ||
+        effectiveCallerOrgId.length !== 36
+      ) {
         const callerMembership = await getUserOrganization(callerId);
         if (callerMembership) {
           effectiveCallerOrgId = callerMembership.organization.id;
@@ -576,7 +594,11 @@ router.delete(
 
     if (callerRole === 'ally_admin') {
       let effectiveCallerOrgId = req.user?.orgId;
-      if (!effectiveCallerOrgId || effectiveCallerOrgId === 'ally-100' || effectiveCallerOrgId.length !== 36) {
+      if (
+        !effectiveCallerOrgId ||
+        effectiveCallerOrgId === 'ally-100' ||
+        effectiveCallerOrgId.length !== 36
+      ) {
         const callerMembership = await getUserOrganization(callerId);
         if (callerMembership) {
           effectiveCallerOrgId = callerMembership.organization.id;

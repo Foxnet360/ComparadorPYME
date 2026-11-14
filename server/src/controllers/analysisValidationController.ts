@@ -287,7 +287,9 @@ export const disambiguateCoverage = async (req: Request, res: Response): Promise
     if (action === 'confirm' || action === 'reassign') {
       const targetCanonical = canonicalGroupId;
       if (!targetCanonical) {
-        res.status(400).json({ error: 'canonicalGroupId is required when action is confirm or reassign' });
+        res
+          .status(400)
+          .json({ error: 'canonicalGroupId is required when action is confirm or reassign' });
         return;
       }
 
@@ -303,18 +305,17 @@ export const disambiguateCoverage = async (req: Request, res: Response): Promise
 
       // Update coverage_mappings in Supabase to mark human review as satisfied
       try {
-        await (supabase.from('coverage_mappings') as any)
-          .upsert(
-            {
-              raw_name: rawName,
-              insurer_name: insurerName || '',
-              canonical_name: targetCanonical,
-              confidence: 0.98,
-              needs_human_review: false,
-              user_corrected: true,
-            },
-            { onConflict: 'raw_name,insurer_name' }
-          );
+        await (supabase.from('coverage_mappings') as any).upsert(
+          {
+            raw_name: rawName,
+            insurer_name: insurerName || '',
+            canonical_name: targetCanonical,
+            confidence: 0.98,
+            needs_human_review: false,
+            user_corrected: true,
+          },
+          { onConflict: 'raw_name,insurer_name' }
+        );
       } catch (dbErr) {
         console.warn('⚠️ [disambiguateCoverage] DB upsert warning:', dbErr);
       }
@@ -331,18 +332,17 @@ export const disambiguateCoverage = async (req: Request, res: Response): Promise
 
     if (action === 'keep_autonomous') {
       try {
-        await (supabase.from('coverage_mappings') as any)
-          .upsert(
-            {
-              raw_name: rawName,
-              insurer_name: insurerName || '',
-              canonical_name: 'EXCLUSIVE',
-              confidence: 0.2,
-              needs_human_review: false,
-              user_corrected: true,
-            },
-            { onConflict: 'raw_name,insurer_name' }
-          );
+        await (supabase.from('coverage_mappings') as any).upsert(
+          {
+            raw_name: rawName,
+            insurer_name: insurerName || '',
+            canonical_name: 'EXCLUSIVE',
+            confidence: 0.2,
+            needs_human_review: false,
+            user_corrected: true,
+          },
+          { onConflict: 'raw_name,insurer_name' }
+        );
       } catch (dbErr) {
         console.warn('⚠️ [disambiguateCoverage] DB upsert warning:', dbErr);
       }
@@ -389,8 +389,6 @@ export const exportAnalysisExcel = async (
   req: AuthenticatedRequest,
   res: Response
 ): Promise<void> => {
-  const userId = req.user?.id;
-
   const id = req.params.id as string;
 
   if (!id) {
@@ -417,7 +415,9 @@ export const exportAnalysisExcel = async (
     const isSameOrg = Boolean(user.orgId && analysis && (analysis as any).org_id === user.orgId);
 
     if (!isSuper && !isOwner && !isSameOrg) {
-      res.status(403).json({ error: 'Forbidden: analysis does not belong to your organization or user' });
+      res
+        .status(403)
+        .json({ error: 'Forbidden: analysis does not belong to your organization or user' });
       return;
     }
 
@@ -442,9 +442,7 @@ export const exportAnalysisExcel = async (
       .trim();
 
     const rawClientInfo =
-      req.body?.clientInfo ||
-      (analysis as any)?.analysis_result?.clientInfo ||
-      {};
+      req.body?.clientInfo || (analysis as any)?.analysis_result?.clientInfo || {};
 
     const rawClientName =
       (req.query?.clientName as string) ||

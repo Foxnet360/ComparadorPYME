@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   COLOMBIA_DEPARTMENTS,
   getAllDepartments,
-  getMunicipalitiesByDepartment,
   findGeoByCity,
   searchMunicipalities,
 } from '../colombiaGeo';

@@ -31,10 +31,7 @@ import {
   Award,
   Briefcase,
   Check,
-  ChevronRight,
   FolderKanban,
-  Clock,
-  PieChart,
 } from 'lucide-react';
 import { LegalModal } from './legal/LegalModal';
 
@@ -53,7 +50,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const [scrolled, setScrolled] = useState(false);
   const [activeDomainTab, setActiveDomainTab] = useState<string>('copropiedades');
   const [showLegalModal, setShowLegalModal] = useState(false);
-  const [legalTab, setLegalTab] = useState<'terms' | 'privacy' | 'security' | 'disclaimer'>('terms');
+  const [legalTab, setLegalTab] = useState<'terms' | 'privacy' | 'security' | 'disclaimer'>(
+    'terms'
+  );
 
   const handleOpenLegal = (tab: 'terms' | 'privacy' | 'security' | 'disclaimer') => {
     if (onOpenLegal) {
@@ -251,7 +250,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           Tecnología para Corredores
         </span>
         <span>
-          Auditoría técnica RAG con respaldo en clausulados de Colombia (SURA, MAPFRE, Allianz, Bolívar, AXA y más).
+          Auditoría técnica RAG con respaldo en clausulados de Colombia (SURA, MAPFRE, Allianz,
+          Bolívar, AXA y más).
         </span>
       </div>
 
@@ -266,7 +266,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-20 items-center">
             {/* Logo */}
-            <div className="flex items-center space-x-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <div
+              className="flex items-center space-x-3 cursor-pointer"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            >
               <div className="bg-gradient-to-br from-indigo-600 via-blue-600 to-indigo-800 p-2.5 rounded-xl shadow-lg shadow-indigo-200">
                 <ShieldCheck className="text-white w-6 h-6" />
               </div>
@@ -403,10 +406,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </h1>
 
               <p className="text-base sm:text-lg text-slate-600 mb-8 leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                Sube las cotizaciones en PDF de tus clientes y en <strong>menos de 2 minutos</strong>{' '}
-                obtén un cuadro comparativo bidireccional que cruza cada cobertura, deducible y
-                exclusión contra los <strong>clausulados reales registrados</strong> y el marco legal
-                colombiano (Ley 675, Ley 80, Res. 244).
+                Sube las cotizaciones en PDF de tus clientes y en{' '}
+                <strong>menos de 2 minutos</strong> obtén un cuadro comparativo bidireccional que
+                cruza cada cobertura, deducible y exclusión contra los{' '}
+                <strong>clausulados reales registrados</strong> y el marco legal colombiano (Ley
+                675, Ley 80, Res. 244).
               </p>
 
               {/* CTAs */}
@@ -416,7 +420,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   className="px-8 py-4 bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 text-white rounded-xl text-base font-bold shadow-xl shadow-indigo-300/40 hover:shadow-2xl hover:scale-[1.02] active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer group"
                 >
                   <span>Auditar Mi Primera Cotización</span>
-                  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight
+                    size={18}
+                    className="group-hover:translate-x-1 transition-transform"
+                  />
                 </button>
                 <button
                   onClick={() => scrollToSection('domains')}
@@ -432,10 +439,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   <Check size={14} className="text-emerald-600 stroke-[3]" /> Sin tarjeta de crédito
                 </span>
                 <span className="flex items-center gap-1.5 text-slate-700">
-                  <Check size={14} className="text-emerald-600 stroke-[3]" /> Evidencia verbatim en PDF
+                  <Check size={14} className="text-emerald-600 stroke-[3]" /> Evidencia verbatim en
+                  PDF
                 </span>
                 <span className="flex items-center gap-1.5 text-slate-700">
-                  <Check size={14} className="text-emerald-600 stroke-[3]" /> Aislamiento total de cartera
+                  <Check size={14} className="text-emerald-600 stroke-[3]" /> Aislamiento total de
+                  cartera
                 </span>
               </div>
 
@@ -541,9 +550,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-200 leading-relaxed italic mb-3">
-                      "La cotización de Aseguradora B excluye terremoto sobre bienes comunes
-                      bajo el sublímite del 50%, infringiendo el Art. 15 de la Ley 675. Se objeta
-                      por riesgo de responsabilidad para la administración."
+                      "La cotización de Aseguradora B excluye terremoto sobre bienes comunes bajo el
+                      sublímite del 50%, infringiendo el Art. 15 de la Ley 675. Se objeta por riesgo
+                      de responsabilidad para la administración."
                     </p>
                     <div className="flex items-center justify-between text-[10px] text-indigo-200 border-t border-indigo-800/80 pt-2">
                       <span className="text-emerald-400 font-bold flex items-center gap-1">
@@ -612,7 +621,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </section>
 
       {/* Target Audience Section: Solución para Corredoras y Agencias de Seguros */}
-      <section id="brokers-solution" className="py-24 bg-slate-900 text-white relative overflow-hidden">
+      <section
+        id="brokers-solution"
+        className="py-24 bg-slate-900 text-white relative overflow-hidden"
+      >
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -626,8 +638,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </h2>
             <p className="text-base sm:text-lg text-slate-300 leading-relaxed">
               Equipa a tus directores técnicos y analistas comerciales con una herramienta que
-              profesionaliza la entrega ante clientes corporativos, protege tus renovaciones y mantiene
-              tus cuentas organizadas.
+              profesionaliza la entrega ante clientes corporativos, protege tus renovaciones y
+              mantiene tus cuentas organizadas.
             </p>
           </div>
 
@@ -642,8 +654,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   Organización de Equipo y Roles Técnicos
                 </h3>
                 <p className="text-slate-300 text-sm leading-relaxed mb-6">
-                  Tus directores de firma supervisan el volumen global de cotizaciones mientras que los
-                  analistas técnicos cargan PDFs, auditan y formulan notas consultivas sin interferir entre cuentas.
+                  Tus directores de firma supervisan el volumen global de cotizaciones mientras que
+                  los analistas técnicos cargan PDFs, auditan y formulan notas consultivas sin
+                  interferir entre cuentas.
                 </p>
               </div>
               <ul className="space-y-2.5 text-xs text-slate-300 border-t border-slate-700/60 pt-4">
@@ -672,7 +685,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </h3>
                 <p className="text-slate-200 text-sm leading-relaxed mb-6">
                   Convierte pólizas vigentes en procesos activos de renovación a 60, 30 y 15 días.
-                  Compara la póliza actual contra nuevas ofertas del mercado para evitar fugas de clientes.
+                  Compara la póliza actual contra nuevas ofertas del mercado para evitar fugas de
+                  clientes.
                 </p>
               </div>
               <ul className="space-y-2.5 text-xs text-indigo-100 border-t border-indigo-700/60 pt-4">
@@ -697,8 +711,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   Aislamiento Total de Clientes y Cotizaciones
                 </h3>
                 <p className="text-slate-300 text-sm leading-relaxed mb-6">
-                  Tus bases de clientes, NITs y acuerdos de prima permanecen 100% aislados bajo tu firma.
-                  Genera reportes técnicos en PDF con diseño profesional listos para asambleas y comités de compras.
+                  Tus bases de clientes, NITs y acuerdos de prima permanecen 100% aislados bajo tu
+                  firma. Genera reportes técnicos en PDF con diseño profesional listos para
+                  asambleas y comités de compras.
                 </p>
               </div>
               <ul className="space-y-2.5 text-xs text-slate-300 border-t border-slate-700/60 pt-4">
@@ -728,8 +743,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               Auditoría Técnica en 10 Ramos con Normativa Colombiana
             </h2>
             <p className="text-base sm:text-lg text-slate-600 leading-relaxed">
-              No todos los seguros son iguales. El motor RAG adapta el tesauro de búsqueda y las reglas de
-              validación según el ramo y su legislación aplicable.
+              No todos los seguros son iguales. El motor RAG adapta el tesauro de búsqueda y las
+              reglas de validación según el ramo y su legislación aplicable.
             </p>
           </div>
 
@@ -767,7 +782,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 >
                   <div className="md:col-span-8">
                     <div className="flex items-center gap-2 mb-3">
-                      <span className={`px-2.5 py-1 rounded-md text-xs font-bold border ${domain.badgeColor}`}>
+                      <span
+                        className={`px-2.5 py-1 rounded-md text-xs font-bold border ${domain.badgeColor}`}
+                      >
                         {domain.norm}
                       </span>
                     </div>
@@ -775,7 +792,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2 flex items-center gap-2.5">
                       <Icon className="w-7 h-7 text-indigo-600" />
                       <span>{domain.title}</span>
-                      <span className="text-sm font-semibold text-slate-500">({domain.subtitle})</span>
+                      <span className="text-sm font-semibold text-slate-500">
+                        ({domain.subtitle})
+                      </span>
                     </h3>
 
                     <p className="text-slate-600 text-sm sm:text-base leading-relaxed mb-6">
@@ -784,7 +803,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
                     <div className="space-y-2.5 mb-6">
                       {domain.highlights.map((h, idx) => (
-                        <div key={idx} className="flex items-center text-sm font-medium text-slate-800">
+                        <div
+                          key={idx}
+                          className="flex items-center text-sm font-medium text-slate-800"
+                        >
                           <CheckCircle className="w-4 h-4 text-emerald-600 mr-2.5 flex-shrink-0" />
                           <span>{h}</span>
                         </div>
@@ -819,8 +841,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       Tesauro Activo
                     </span>
                     <p className="text-xs text-slate-500 mb-5 leading-relaxed">
-                      Indexación semántica PGVector de 3072 dimensiones sobre los clausulados colombianos de{' '}
-                      <strong>{domain.title}</strong>.
+                      Indexación semántica PGVector de 3072 dimensiones sobre los clausulados
+                      colombianos de <strong>{domain.title}</strong>.
                     </p>
                     <button
                       onClick={onRegisterClick}
@@ -955,7 +977,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   {item.step}
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 mb-2">{item.title}</h3>
-                <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">{item.description}</p>
+                <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
+                  {item.description}
+                </p>
               </div>
             ))}
           </div>
@@ -984,19 +1008,28 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <ul className="space-y-4 text-sm text-slate-300">
                 <li className="flex items-start gap-3">
                   <X className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
-                  <span>Horas interminables transcribiendo primas y deducibles a hojas de Excel.</span>
+                  <span>
+                    Horas interminables transcribiendo primas y deducibles a hojas de Excel.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <X className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
-                  <span>Imposibilidad de leer clausulados de más de 120 páginas por cada cotización.</span>
+                  <span>
+                    Imposibilidad de leer clausulados de más de 120 páginas por cada cotización.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <X className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
-                  <span>Riesgo de recomendar pólizas que excluyen amparos exigidos por la Ley 675 o Ley 80.</span>
+                  <span>
+                    Riesgo de recomendar pólizas que excluyen amparos exigidos por la Ley 675 o Ley
+                    80.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <X className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
-                  <span>Sin respaldo de texto verbatim cuando la aseguradora objeta un siniestro.</span>
+                  <span>
+                    Sin respaldo de texto verbatim cuando la aseguradora objeta un siniestro.
+                  </span>
                 </li>
               </ul>
             </div>
@@ -1010,19 +1043,29 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <ul className="space-y-4 text-sm text-slate-200">
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5 stroke-[3]" />
-                  <span>Auditoría completa en menos de 2 minutos directamente desde los PDFs originales.</span>
+                  <span>
+                    Auditoría completa en menos de 2 minutos directamente desde los PDFs originales.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5 stroke-[3]" />
-                  <span>Cruzamiento automático contra los clausulados reales registrados ante la SFC.</span>
+                  <span>
+                    Cruzamiento automático contra los clausulados reales registrados ante la SFC.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5 stroke-[3]" />
-                  <span>Detección de alertas jurídicas y coberturas fantasma antes de presentar al cliente.</span>
+                  <span>
+                    Detección de alertas jurídicas y coberturas fantasma antes de presentar al
+                    cliente.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5 stroke-[3]" />
-                  <span>Evidencia textual verbatim con enlace directo a la página y artículo del contrato.</span>
+                  <span>
+                    Evidencia textual verbatim con enlace directo a la página y artículo del
+                    contrato.
+                  </span>
                 </li>
               </ul>
             </div>
@@ -1073,9 +1116,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       <Star key={j} className="w-4 h-4 fill-current" />
                     ))}
                   </div>
-                  <p className="text-slate-700 text-sm leading-relaxed italic mb-6">
-                    "{t.text}"
-                  </p>
+                  <p className="text-slate-700 text-sm leading-relaxed italic mb-6">"{t.text}"</p>
                 </div>
                 <div className="flex items-center pt-4 border-t border-slate-200">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-blue-600 text-white font-bold flex items-center justify-center text-sm">
@@ -1107,8 +1148,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             Eleva el estándar técnico de tus comparativas y protege a tus clientes
           </h2>
           <p className="text-base sm:text-xl text-indigo-100 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Comienza a auditar cotizaciones en Copropiedades, Cumplimiento, Salud, Transporte, Pyme y más
-            con el respaldo de la Inteligencia Contractual RAG.
+            Comienza a auditar cotizaciones en Copropiedades, Cumplimiento, Salud, Transporte, Pyme
+            y más con el respaldo de la Inteligencia Contractual RAG.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

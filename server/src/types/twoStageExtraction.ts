@@ -6,11 +6,6 @@ import {
   SubLimitSchema,
   GeneralDeductibleSchema,
   QuoteExtractionV2,
-  RawCoverage,
-  SubLimit,
-  GeneralDeductible,
-  PremiumBreakdown,
-  InsuredAsset,
 } from '../schemas/extractionSchemas';
 
 export const CoverageSectionHintSchema = z.object({

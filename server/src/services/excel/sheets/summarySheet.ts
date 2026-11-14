@@ -1,4 +1,3 @@
-import * as ExcelJS from 'exceljs';
 import { ExcelContext } from '../types';
 import { FONT_NAME, EXCEL_COLORS, applySheetHeaderFooter } from '../excelStyles';
 import { findColombianInsurerProfile } from '../../../shared/colombianInsurersCatalog';
@@ -45,7 +44,12 @@ export function buildSummarySheet(ctx: ExcelContext): void {
   summarySheet.mergeCells(1, 1, 2, quotes.length + 1);
   const sumTitle = summarySheet.getCell(1, 1);
   sumTitle.value = 'CUADRO COMPARATIVO RESUMIDO · VISIÓN EJECUTIVA CONDENSADA';
-  sumTitle.font = { name: FONT_NAME, size: 13, bold: true, color: { argb: EXCEL_COLORS.NAVY_HEADER } };
+  sumTitle.font = {
+    name: FONT_NAME,
+    size: 13,
+    bold: true,
+    color: { argb: EXCEL_COLORS.NAVY_HEADER },
+  };
   sumTitle.alignment = { vertical: 'middle', horizontal: 'left' };
 
   // Embed broker logo on Cuadro Comparativo Resumido if provided
@@ -70,7 +74,12 @@ export function buildSummarySheet(ctx: ExcelContext): void {
   summarySheet.mergeCells(3, 1, 3, quotes.length + 1);
   const sumSubtitle = summarySheet.getCell(3, 1);
   sumSubtitle.value = `Cliente: ${clientName}  |  Ramo: ${regulatoryProfile.displayName}  |  Fecha: ${todayStr}`;
-  sumSubtitle.font = { name: FONT_NAME, size: 9.5, italic: true, color: { argb: EXCEL_COLORS.SLATE_LIGHT } };
+  sumSubtitle.font = {
+    name: FONT_NAME,
+    size: 9.5,
+    italic: true,
+    color: { argb: EXCEL_COLORS.SLATE_LIGHT },
+  };
   sumSubtitle.alignment = { vertical: 'middle', horizontal: 'left' };
 
   // Bloque: INFORMACIÓN DEL TÉCNICO (INTERMEDIARIO)
@@ -78,15 +87,28 @@ export function buildSummarySheet(ctx: ExcelContext): void {
   const techHeader = summarySheet.getCell(5, 1);
   techHeader.value = 'INFORMACIÓN DEL TÉCNICO (INTERMEDIARIO)';
   techHeader.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.WHITE } };
-  techHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.NAVY_HEADER } };
+  techHeader.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: EXCEL_COLORS.NAVY_HEADER },
+  };
   techHeader.alignment = { vertical: 'middle', horizontal: 'left' };
   summarySheet.getRow(5).height = 22;
 
   summarySheet.mergeCells(6, 1, 6, quotes.length + 1);
   const techRow1 = summarySheet.getCell(6, 1);
   techRow1.value = `Técnico / Asesor: ${brokerDetails.advisor}   |   Compañía Intermediaria: ${brokerDetails.name}   |   Registro SFC: ${brokerDetails.reg}`;
-  techRow1.font = { name: FONT_NAME, size: 9.5, bold: true, color: { argb: EXCEL_COLORS.SLATE_BODY } };
-  techRow1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.BG_LIGHT_GRAY } };
+  techRow1.font = {
+    name: FONT_NAME,
+    size: 9.5,
+    bold: true,
+    color: { argb: EXCEL_COLORS.SLATE_BODY },
+  };
+  techRow1.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: EXCEL_COLORS.BG_LIGHT_GRAY },
+  };
   techRow1.alignment = { vertical: 'middle', horizontal: 'left' };
   techRow1.border = {
     left: { style: 'thin', color: { argb: EXCEL_COLORS.BORDER_MEDIUM } },
@@ -97,10 +119,15 @@ export function buildSummarySheet(ctx: ExcelContext): void {
 
   summarySheet.mergeCells(7, 1, 7, quotes.length + 1);
   const techRow2 = summarySheet.getCell(7, 1);
-  const locStr = [brokerDetails.address, brokerDetails.city].filter(Boolean).join(', ') || 'Colombia';
+  const locStr =
+    [brokerDetails.address, brokerDetails.city].filter(Boolean).join(', ') || 'Colombia';
   techRow2.value = `Teléfono: ${brokerDetails.phone}   |   Email: ${brokerDetails.email}   |   Ubicación: ${locStr}   |   Web: ${brokerDetails.website}`;
   techRow2.font = { name: FONT_NAME, size: 9, color: { argb: EXCEL_COLORS.SLATE_MUTED } };
-  techRow2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.BG_LIGHT_GRAY } };
+  techRow2.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: EXCEL_COLORS.BG_LIGHT_GRAY },
+  };
   techRow2.alignment = { vertical: 'middle', horizontal: 'left' };
   techRow2.border = {
     left: { style: 'thin', color: { argb: EXCEL_COLORS.BORDER_MEDIUM } },
@@ -115,8 +142,17 @@ export function buildSummarySheet(ctx: ExcelContext): void {
   summarySheet.getRow(tableHeaderRow).height = 54;
   const sumHeaderLabel = summarySheet.getCell(tableHeaderRow, 1);
   sumHeaderLabel.value = 'VARIABLE O CONCEPTO CLAVE';
-  sumHeaderLabel.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.WHITE } };
-  sumHeaderLabel.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.NAVY_HEADER } };
+  sumHeaderLabel.font = {
+    name: FONT_NAME,
+    size: 10,
+    bold: true,
+    color: { argb: EXCEL_COLORS.WHITE },
+  };
+  sumHeaderLabel.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: EXCEL_COLORS.NAVY_HEADER },
+  };
   sumHeaderLabel.alignment = { vertical: 'middle', horizontal: 'left' };
 
   quotes.forEach((q, i) => {
@@ -126,8 +162,17 @@ export function buildSummarySheet(ctx: ExcelContext): void {
     const argbColor = profile?.primaryColor
       ? 'FF' + profile.primaryColor.replace('#', '')
       : EXCEL_COLORS.NAVY_HEADER;
-    headerCell.font = { name: FONT_NAME, size: 10, bold: true, color: { argb: EXCEL_COLORS.SLATE_DARK } };
-    headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.BG_SLATE_HEADER } };
+    headerCell.font = {
+      name: FONT_NAME,
+      size: 10,
+      bold: true,
+      color: { argb: EXCEL_COLORS.SLATE_DARK },
+    };
+    headerCell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: EXCEL_COLORS.BG_SLATE_HEADER },
+    };
     headerCell.border = {
       top: { style: 'medium', color: { argb: argbColor } },
       bottom: { style: 'thin', color: { argb: EXCEL_COLORS.BORDER_MEDIUM } },
@@ -174,7 +219,11 @@ export function buildSummarySheet(ctx: ExcelContext): void {
     return 'No cotizado';
   };
 
-  const getDeductibleSummary = (q: QuoteAnalysis, keywords: string[], quoteIdx?: number): string => {
+  const getDeductibleSummary = (
+    q: QuoteAnalysis,
+    keywords: string[],
+    quoteIdx?: number
+  ): string => {
     for (const c of q.coverages || []) {
       const nameNorm = (c.name || c.canonicalName || '').toLowerCase();
       if (keywords.some((kw) => nameNorm.includes(kw))) {
@@ -235,8 +284,8 @@ export function buildSummarySheet(ctx: ExcelContext): void {
       getValue: (q) =>
         isVida
           ? 0
-          : q.financialBreakdown?.iva ??
-            Math.max(0, (q.priceAnnual || 0) - Math.round((q.priceAnnual || 0) / 1.19)),
+          : (q.financialBreakdown?.iva ??
+            Math.max(0, (q.priceAnnual || 0) - Math.round((q.priceAnnual || 0) / 1.19))),
     },
     {
       type: 'data',
@@ -249,7 +298,8 @@ export function buildSummarySheet(ctx: ExcelContext): void {
     {
       type: 'data',
       label: 'Forma y Opciones de Pago',
-      getValue: (q) => (q as any).paymentTerms || (q.priceMonthly ? 'Financiado / Mensual' : 'Anual Contado'),
+      getValue: (q) =>
+        (q as any).paymentTerms || (q.priceMonthly ? 'Financiado / Mensual' : 'Anual Contado'),
     },
     {
       type: 'header',
@@ -265,7 +315,7 @@ export function buildSummarySheet(ctx: ExcelContext): void {
           {
             type: 'data' as const,
             label: 'Amparo Principal / Cobertura Básica',
-            getValue: (q: QuoteAnalysis, idx?: number) =>
+            getValue: (q: QuoteAnalysis) =>
               (q.coverages && q.coverages[0]?.value) || 'Ver condicionado',
           },
         ]),
@@ -305,16 +355,34 @@ export function buildSummarySheet(ctx: ExcelContext): void {
       summarySheet.mergeCells(currentSumRow, 1, currentSumRow, quotes.length + 1);
       const hCell = summarySheet.getCell(currentSumRow, 1);
       hCell.value = cr.label;
-      hCell.font = { name: FONT_NAME, size: 10.5, bold: true, color: { argb: EXCEL_COLORS.NAVY_HEADER } };
-      hCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.BG_SECTION_HEADER } };
+      hCell.font = {
+        name: FONT_NAME,
+        size: 10.5,
+        bold: true,
+        color: { argb: EXCEL_COLORS.NAVY_HEADER },
+      };
+      hCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: EXCEL_COLORS.BG_SECTION_HEADER },
+      };
       hCell.alignment = { vertical: 'middle', horizontal: 'left' };
       summarySheet.getRow(currentSumRow).height = 24;
       currentSumRow++;
     } else {
       const lCell = summarySheet.getCell(currentSumRow, 1);
       lCell.value = cr.label;
-      lCell.font = { name: FONT_NAME, size: 9.5, bold: true, color: { argb: EXCEL_COLORS.SLATE_MUTED } };
-      lCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.BG_LIGHT_GRAY } };
+      lCell.font = {
+        name: FONT_NAME,
+        size: 9.5,
+        bold: true,
+        color: { argb: EXCEL_COLORS.SLATE_MUTED },
+      };
+      lCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: EXCEL_COLORS.BG_LIGHT_GRAY },
+      };
       lCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
       summarySheet.getRow(currentSumRow).height = 24;
 
@@ -325,8 +393,17 @@ export function buildSummarySheet(ctx: ExcelContext): void {
           cCell.value = val > 0 ? val : 'No informado';
           if (val > 0) {
             cCell.numFmt = '$#,##0';
-            cCell.font = { name: FONT_NAME, size: 9.5, bold: true, color: { argb: EXCEL_COLORS.EMERALD_TEXT } };
-            cCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.EMERALD_BG } };
+            cCell.font = {
+              name: FONT_NAME,
+              size: 9.5,
+              bold: true,
+              color: { argb: EXCEL_COLORS.EMERALD_TEXT },
+            };
+            cCell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: EXCEL_COLORS.EMERALD_BG },
+            };
           } else {
             cCell.font = { name: FONT_NAME, size: 9.5, color: { argb: EXCEL_COLORS.SLATE_LIGHT } };
           }
@@ -347,8 +424,17 @@ export function buildSummarySheet(ctx: ExcelContext): void {
   summarySheet.mergeCells(currentSumRow, 1, currentSumRow, quotes.length + 1);
   const sumFooterCell = summarySheet.getCell(currentSumRow, 1);
   sumFooterCell.value = `CONTACTO Y ASESORÍA TÉCNICA: ${brokerDetails.name}   |   Asesor: ${brokerDetails.advisor}   |   Tel: ${brokerDetails.phone}   |   Email: ${brokerDetails.email}   |   Web: ${brokerDetails.website}   |   Reg. SFC: ${brokerDetails.reg}`;
-  sumFooterCell.font = { name: FONT_NAME, size: 9, bold: true, color: { argb: EXCEL_COLORS.NAVY_ACCENT } };
-  sumFooterCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORS.BG_SLATE_HEADER } };
+  sumFooterCell.font = {
+    name: FONT_NAME,
+    size: 9,
+    bold: true,
+    color: { argb: EXCEL_COLORS.NAVY_ACCENT },
+  };
+  sumFooterCell.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: EXCEL_COLORS.BG_SLATE_HEADER },
+  };
   sumFooterCell.alignment = { vertical: 'middle', horizontal: 'center' };
   sumFooterCell.border = {
     top: { style: 'thin', color: { argb: EXCEL_COLORS.BORDER_MEDIUM } },
@@ -363,6 +449,11 @@ export function buildSummarySheet(ctx: ExcelContext): void {
   const sumLegalCell = summarySheet.getCell(currentSumRow, 1);
   sumLegalCell.value =
     'Intermediación de seguros regulada por el Estatuto Orgánico del Sistema Financiero. Vigilado por la Superintendencia Financiera de Colombia. Radicación y acompañamiento en reclamación de siniestros.';
-  sumLegalCell.font = { name: FONT_NAME, size: 8, italic: true, color: { argb: EXCEL_COLORS.SLATE_LIGHT } };
+  sumLegalCell.font = {
+    name: FONT_NAME,
+    size: 8,
+    italic: true,
+    color: { argb: EXCEL_COLORS.SLATE_LIGHT },
+  };
   sumLegalCell.alignment = { vertical: 'middle', horizontal: 'center' };
 }

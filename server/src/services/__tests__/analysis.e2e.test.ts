@@ -5,7 +5,6 @@ import { variableComparator } from '../variableComparator';
 import { quoteScorer } from '../quoteScorer';
 import { structuredClauseExtractor } from '../structuredClauseExtractor';
 import { parseDeductible } from '../unifiedComparison/flatTableParser';
-import { getDomainConstants } from '../../config/domainConstants';
 import { CrossReferenceResult } from '../crossReferenceEngine';
 
 const hasGemini = !!process.env.GEMINI_API_KEY;

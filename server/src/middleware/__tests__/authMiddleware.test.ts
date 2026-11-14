@@ -9,7 +9,6 @@ import {
   requireRole,
   authMiddleware,
   optionalAuthMiddleware,
-  verifyToken,
   AuthenticatedRequest,
 } from '../auth';
 import { AuthenticationError } from '../../errors';
@@ -58,7 +57,9 @@ describe('requireUser (AUTH-2)', () => {
 
 describe('getTenantScope', () => {
   it('extracts userId and orgId', () => {
-    const req = { user: { id: 'user-123', orgId: 'org-456', role: 'ally_admin' } } as AuthenticatedRequest;
+    const req = {
+      user: { id: 'user-123', orgId: 'org-456', role: 'ally_admin' },
+    } as AuthenticatedRequest;
     const scope = getTenantScope(req);
     expect(scope).toEqual({
       userId: 'user-123',
@@ -73,14 +74,11 @@ describe('requireRole middleware', () => {
     const guard = requireRole('super_admin');
     const req = {} as AuthenticatedRequest;
     let statusCode = 0;
-    let body: unknown = null;
     const res = {
       status: (code: number) => {
         statusCode = code;
         return {
-          json: (data: unknown) => {
-            body = data;
-          },
+          json: () => undefined,
         };
       },
     } as unknown as Response;
