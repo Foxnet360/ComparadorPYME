@@ -1,0 +1,21 @@
+# ODD Feature: Mejoras de Observaciones de Usuarios
+Rama: `feat/observaciones-usuarios` | Plan aprobado: `implementation_plan.md`
+
+## Specs
+- S1: "Es habitual que no lleguen todas las cotiaciones de de todas las aseguradoras en el mismo momento. Por tanto, el usuario puede realizar la comparación con las cotiaciones que van llegando y luego adicionar las que lleguen tarde (según vayan llegando)."
+- S2: "Algunos clientes son atendidos por 2 o más tecnicos, esto plantea la necesidad de poder 'Compartir Cliente' entre tecnicos." (Opción A: `ally_technical` solo ve clientes asignados o compartidos con él; el directorio de clientes es compartido para la organización).
+- S3: "El administrador vería util poder 'Delegar' clientes (leads) a determinado tecnico(s), para auditar la evolución de sus delegaciones" (Opción A: `ally_admin` / `super_admin` ve todos los clientes de la organización y audita las delegaciones).
+- S4: "Se usa la palabra 'Tecnico' para reeferirse al 'Asesor'" -> Decisión aprobada: estandarizar toda la terminología visible a **"Técnico Analista"** (reemplazando "Asesor", "Asesor Responsable", etc., manteniendo `ally_technical` en DB/RBAC).
+- S5: "Agregar info de la ciudad del intermediario, dado que solo aparece la dirección, pero sin más información."
+- S6: "En el analisis de riesgos, se extraen Deducibles o Sublimites y se presentan como Riesgos Detectados, debes interpretar los conceptos de manera apropiada. Para ello es util una revisión en internet para aclarar las seccciones, categorias y como llaman a estos conceptos."
+
+## Tasks
+- [x] T1 (S4, S5): Estandarizar terminología visible a "Técnico Analista" y agregar ciudad + dirección del intermediario en `AppFooter.tsx`, `ProfileScreen.tsx` y exportaciones | route: inline | commit: 0198d3b
+- [x] T2 (S6): Reestructurar Análisis de Riesgos separando Coberturas, Sublímites, Deducibles (Retención), Exclusiones/Cláusulas y Riesgos Detectados en `promptBuilder.base.ts`, `quoteBasedAuditor.ts`, `AuditSection.tsx`, `RiskHeatmap.tsx` y `riskSheet.ts` | route: inline | commit: 40ba285
+- [x] T3 (S1): Implementar cotizaciones incrementales/tardías (`POST /api/analysis/:id/quotes`, `appendQuotes`, `updateAnalysisHistory`, `AddLateQuoteModal.tsx`, `ReportHeader.tsx`, `AnalysisContext.tsx`) | route: inline | commit: amended
+- [x] T4 (S2, S3): Implementar migración `034_client_delegation_and_sharing.sql`, RLS Opción A, RPC directorio organizacional, endpoints de compartir/delegar/auditar y UI (`ShareClientModal.tsx`, `DelegateLeadModal.tsx`, `DelegationAuditPanel.tsx`, `ClientManager.tsx`) | route: inline | commit: committed
+
+## Log
+- L1 (User): "Quiero que construyas un plan de trabajo para la implementación de un conjunto de cambios orientado en resolver las siguientes observaciones de los usuarios. 1. Es habitual que no lleguen todas las cotiaciones de de todas las aseguradoras en el mismo momento. Por tanto, el usuario puede realizar la comparación con las cotiaciones que van llegando y luego adicionar las que lleguen tarde (según vayan llegando). 2. Algunos clientes son atendidos por 2 o más tecnicos, esto plantea la necesidad de poder 'Compartir Cliente' entre tecnicos. 3. El administrador vería util poder 'Delegar' clientes (leads) a determinado tecnico(s), para auditar la evolución de sus delegaciones 4. Se usa la palabra 'Tecnico' para reeferirse al 'Asesor' 5. Agregar info de la ciudad del intermediario, dado que solo aparece la dirección, pero sin más información. 6. En el analisis de riesgos, se extraen Deducibles o Sublimites y se presentan como Riesgos Detectados, debes interpretar los conceptos de manera apropiada. Para ello es util una revisión en internet para aclarar las seccciones, categorias y como llaman a estos conceptos."
+- L2 (User): "Opción A (Visibilidad restringida por asignación): Cada usuario con rol operativo (ally_technical) solo ve los clientes que tiene asignados o compartidos con él, mientras que el Administrador (ally_admin / super_admin) ve todos los clientes de la organización y audita las delegaciones. Pero el directorio de clientes es compartido para la organización."
+- L3 (User): "He revisado el plan, Todo esta bien, salvo en la tarea del cambio a 'Asesor', lo que quiero es que se use Tecnico Analista" + "[Approved] implementation_plan.md"
