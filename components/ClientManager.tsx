@@ -12,12 +12,18 @@ import {
   X,
   Link2,
   CheckCircle2,
+  Share2,
+  UserCheck,
+  ClipboardList,
 } from 'lucide-react';
-import { Client, HistoryEntry, ComparisonReport } from '../types';
+import { Client, HistoryEntry, ComparisonReport, UserProfile } from '../types';
 import { storageService } from '../services/storageService';
 import { formatCOP } from '../utils/formatCurrency';
 import { ConfirmModal } from './common/ConfirmModal';
 import { ClientFormModal } from './clients/NewClientModal';
+import { ShareClientModal } from './clients/ShareClientModal';
+import { DelegateLeadModal } from './clients/DelegateLeadModal';
+import { DelegationAuditPanel } from './clients/DelegationAuditPanel';
 
 interface ClientManagerProps {
   onSelectClientForAudit?: (client: Client) => void;
@@ -33,6 +39,23 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
   const [clientAudits, setClientAudits] = useState<HistoryEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [shareModalClient, setShareModalClient] = useState<Client | null>(null);
+  const [delegateModalClient, setDelegateModalClient] = useState<Client | null>(null);
+  const [showAuditPanel, setShowAuditPanel] = useState(false);
+
+  useEffect(() => {
+    void storageService.getCurrentUser().then(setCurrentUser);
+  }, []);
+
+  const isAdmin =
+    currentUser?.role === 'ally_admin' ||
+    currentUser?.role === 'super_admin' ||
+    currentUser?.role === 'ADMIN';
+  const currentOrgId =
+    (currentUser as (UserProfile & { orgId?: string; org_id?: string }) | null)?.orgId ||
+    (currentUser as (UserProfile & { org_id?: string }) | null)?.org_id ||
+    '';
 
   // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -168,13 +191,25 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={handleOpenCreateModal}
-          className="inline-flex items-center px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl shadow-md transition-all cursor-pointer"
-        >
-          <Plus size={18} className="mr-2" />
-          Registrar Nuevo Cliente / Copropiedad
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5">
+          {isAdmin && currentOrgId && (
+            <button
+              type="button"
+              onClick={() => setShowAuditPanel(true)}
+              className="inline-flex items-center px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm rounded-xl shadow-md transition-all cursor-pointer"
+            >
+              <ClipboardList size={18} className="mr-2" />
+              Auditar Delegaciones
+            </button>
+          )}
+          <button
+            onClick={handleOpenCreateModal}
+            className="inline-flex items-center px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl shadow-md transition-all cursor-pointer"
+          >
+            <Plus size={18} className="mr-2" />
+            Registrar Nuevo Cliente / Copropiedad
+          </button>
+        </div>
       </div>
 
       {/* Main Grid: Client List (Left) & Client Details + Correlated Audits (Right) */}
@@ -280,7 +315,25 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {currentOrgId && (
+                      <button
+                        type="button"
+                        onClick={() => setShareModalClient(selectedClient)}
+                        className="px-3 py-1.5 border border-indigo-200 hover:bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-lg flex items-center transition-colors cursor-pointer"
+                      >
+                        <Share2 size={14} className="mr-1.5" /> Compartir
+                      </button>
+                    )}
+                    {isAdmin && currentOrgId && (
+                      <button
+                        type="button"
+                        onClick={() => setDelegateModalClient(selectedClient)}
+                        className="px-3 py-1.5 border border-emerald-200 hover:bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-lg flex items-center transition-colors cursor-pointer"
+                      >
+                        <UserCheck size={14} className="mr-1.5" /> Delegar Lead
+                      </button>
+                    )}
                     <button
                       onClick={() => handleOpenEditModal(selectedClient)}
                       className="px-3 py-1.5 border border-slate-200 hover:border-slate-300 text-slate-700 text-xs font-semibold rounded-lg flex items-center transition-colors cursor-pointer"
@@ -561,6 +614,39 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
         onConfirm={confirmDeleteClient}
         onCancel={() => setPendingDeleteClient(null)}
       />
+
+      {shareModalClient && currentOrgId && (
+        <ShareClientModal
+          clientId={shareModalClient.id}
+          clientName={shareModalClient.name}
+          orgId={currentOrgId}
+          currentUserId={currentUser?.id}
+          onClose={() => setShareModalClient(null)}
+          onUpdated={() => {
+            void loadData();
+          }}
+        />
+      )}
+
+      {delegateModalClient && currentOrgId && (
+        <DelegateLeadModal
+          clientId={delegateModalClient.id}
+          clientName={delegateModalClient.name}
+          orgId={currentOrgId}
+          onClose={() => setDelegateModalClient(null)}
+          onDelegated={() => {
+            void loadData();
+          }}
+        />
+      )}
+
+      {showAuditPanel && currentOrgId && (
+        <DelegationAuditPanel
+          orgId={currentOrgId}
+          clients={clients}
+          onClose={() => setShowAuditPanel(false)}
+        />
+      )}
     </div>
   );
 };

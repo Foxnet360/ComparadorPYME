@@ -63,11 +63,11 @@ export function mergeComparisonResults(
   const allQuotes = [...existingQuotes, ...mergedNewQuotes];
 
   // Merge matrix rows if present
-  const existingMatrix = Array.isArray((existing as { matrix?: MatrixEntry[] }).matrix)
-    ? ([...(existing as { matrix: MatrixEntry[] }).matrix] as MatrixEntry[])
+  const existingMatrix = Array.isArray((existing as unknown as { matrix?: MatrixEntry[] }).matrix)
+    ? ([...((existing as unknown as { matrix: MatrixEntry[] }).matrix)] as MatrixEntry[])
     : [];
-  const incomingMatrix = Array.isArray((incoming as { matrix?: MatrixEntry[] }).matrix)
-    ? ((incoming as { matrix: MatrixEntry[] }).matrix as MatrixEntry[])
+  const incomingMatrix = Array.isArray((incoming as unknown as { matrix?: MatrixEntry[] }).matrix)
+    ? ((incoming as unknown as { matrix: MatrixEntry[] }).matrix as MatrixEntry[])
     : [];
 
   if (incomingMatrix.length > 0) {
@@ -132,7 +132,9 @@ export function mergeComparisonResults(
   return {
     ...existing,
     quotes: allQuotes,
-    ...(existingMatrix.length > 0 ? { matrix: existingMatrix } : {}),
+    ...(existingMatrix.length > 0
+      ? { matrix: existingMatrix as unknown as ComparisonResult['matrix'] }
+      : {}),
     recommendation,
     metadata: {
       ...existingMeta,

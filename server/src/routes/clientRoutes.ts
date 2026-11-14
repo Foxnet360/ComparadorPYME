@@ -16,19 +16,27 @@
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
-import { AuthenticatedRequest, requireUser } from '../middleware/auth';
+import { AuthenticatedRequest, requireUser, requireRole } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
 import { validateBody } from '../middleware/validateRequest';
 import { createClientSchema, updateClientSchema } from '../middleware/validationSchemas';
-import { NotFoundError } from '../errors';
+import { NotFoundError, ValidationError } from '../errors';
 import {
   createClient,
   listClients,
   getClientById,
   updateClient,
   deleteClient,
+  listClientShares,
+  shareClientWithUser,
+  unshareClientWithUser,
+  delegateClientToAdvisors,
+  updateClientLeadStatus,
+  listDelegationAudit,
+  searchOrgClientDirectory,
   type CreateClientInput,
   type UpdateClientInput,
+  type LeadStatus,
 } from '../repositories/clientRepository';
 
 const router = Router();
@@ -61,7 +69,7 @@ const rejectSpoofedUserId = (req: Request, res: Response, next: NextFunction): v
   }
 };
 
-/** GET /api/clients — list the session user's clients. */
+/** GET /api/clients — list the session user's clients (Opción A). */
 router.get(
   '/',
   asyncHandler(async (req: AuthenticatedRequest, res) => {
@@ -69,8 +77,41 @@ router.get(
       return;
     }
     const userId = requireUser(req);
-    const clients = await listClients(userId, req.user?.orgId);
+    const clients = await listClients(userId, req.user?.orgId, req.user?.role);
     res.json(clients);
+  })
+);
+
+/** GET /api/clients/directory — shared organization client directory for duplicate checking. */
+router.get(
+  '/directory',
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    requireUser(req);
+    if (!req.user?.orgId) {
+      res.json([]);
+      return;
+    }
+    const search = typeof req.query.search === 'string' ? req.query.search : '';
+    const directory = await searchOrgClientDirectory(req.user.orgId, search);
+    res.json(directory);
+  })
+);
+
+/** GET /api/clients/delegations/audit — admin audit log of lead delegations and status evolution. */
+router.get(
+  '/delegations/audit',
+  requireRole('super_admin', 'ally_admin'),
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    requireUser(req);
+    const orgId = req.user?.orgId;
+    if (!orgId) {
+      res.json([]);
+      return;
+    }
+    const clientId = typeof req.query.clientId === 'string' ? req.query.clientId : undefined;
+    const advisorId = typeof req.query.advisorId === 'string' ? req.query.advisorId : undefined;
+    const audit = await listDelegationAudit({ orgId, clientId, advisorId });
+    res.json(audit);
   })
 );
 
@@ -135,6 +176,135 @@ router.delete(
     }
     await deleteClient(userId, String(req.params.id), req.user?.orgId);
     res.status(204).end();
+  })
+);
+
+/** GET /api/clients/:id/shares — list Técnicos Analistas with shared access. */
+router.get(
+  '/:id/shares',
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const userId = requireUser(req);
+    const client = await getClientById(userId, String(req.params.id), req.user?.orgId);
+    if (!client) {
+      throw new NotFoundError('Client not found');
+    }
+    const shares = await listClientShares(client.id);
+    res.json(shares);
+  })
+);
+
+/** POST /api/clients/:id/share — share client with another Técnico Analista in the org. */
+router.post(
+  '/:id/share',
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const userId = requireUser(req);
+    const orgId = req.user?.orgId;
+    if (!orgId) {
+      throw new ValidationError('El usuario debe pertenecer a una organización para compartir clientes.');
+    }
+    const client = await getClientById(userId, String(req.params.id), orgId);
+    if (!client) {
+      throw new NotFoundError('Client not found');
+    }
+    const { sharedWithUserId, permission } = req.body as {
+      sharedWithUserId?: string;
+      permission?: 'view' | 'edit';
+    };
+    if (!sharedWithUserId) {
+      throw new ValidationError('sharedWithUserId es obligatorio.');
+    }
+    const share = await shareClientWithUser({
+      clientId: client.id,
+      orgId,
+      sharedWithUserId,
+      sharedByUserId: userId,
+      permission: permission === 'view' ? 'view' : 'edit',
+    });
+    res.status(201).json(share);
+  })
+);
+
+/** DELETE /api/clients/:id/share/:targetUserId — revoke shared access. */
+router.delete(
+  '/:id/share/:targetUserId',
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const userId = requireUser(req);
+    const orgId = req.user?.orgId;
+    if (!orgId) {
+      throw new ValidationError('Organización requerida.');
+    }
+    const client = await getClientById(userId, String(req.params.id), orgId);
+    if (!client) {
+      throw new NotFoundError('Client not found');
+    }
+    await unshareClientWithUser({
+      clientId: client.id,
+      orgId,
+      targetUserId: String(req.params.targetUserId),
+      actorUserId: userId,
+    });
+    res.status(204).end();
+  })
+);
+
+/** POST /api/clients/:id/delegate — admin delegates a lead to one or more Técnicos Analistas. */
+router.post(
+  '/:id/delegate',
+  requireRole('super_admin', 'ally_admin'),
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const userId = requireUser(req);
+    const orgId = req.user?.orgId;
+    if (!orgId) {
+      throw new ValidationError('Organización requerida.');
+    }
+    const { primaryAdvisorId, sharedAdvisorIds, notes } = req.body as {
+      primaryAdvisorId?: string;
+      sharedAdvisorIds?: string[];
+      notes?: string;
+    };
+    if (!primaryAdvisorId) {
+      throw new ValidationError('primaryAdvisorId es obligatorio.');
+    }
+    const updated = await delegateClientToAdvisors({
+      clientId: String(req.params.id),
+      orgId,
+      actorUserId: userId,
+      primaryAdvisorId,
+      sharedAdvisorIds,
+      notes,
+    });
+    if (!updated) {
+      throw new NotFoundError('Client not found');
+    }
+    res.json(updated);
+  })
+);
+
+/** PATCH /api/clients/:id/lead-status — update lead lifecycle status with audit log. */
+router.patch(
+  '/:id/lead-status',
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const userId = requireUser(req);
+    const orgId = req.user?.orgId;
+    if (!orgId) {
+      throw new ValidationError('Organización requerida.');
+    }
+    const { leadStatus, notes } = req.body as { leadStatus?: LeadStatus; notes?: string };
+    const allowed: LeadStatus[] = ['nuevo', 'asignado', 'en_gestion', 'cotizado', 'cerrado', 'perdido'];
+    if (!leadStatus || !allowed.includes(leadStatus)) {
+      throw new ValidationError('leadStatus inválido.');
+    }
+    const updated = await updateClientLeadStatus({
+      clientId: String(req.params.id),
+      orgId,
+      actorUserId: userId,
+      leadStatus,
+      notes,
+    });
+    if (!updated) {
+      throw new NotFoundError('Client not found');
+    }
+    res.json(updated);
   })
 );
 
