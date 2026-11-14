@@ -46,6 +46,6 @@ export function applySheetHeaderFooter(
 ): void {
   ws.headerFooter = {
     oddHeader: `&L&B${brokerDetails.name}&C&"${FONT_NAME},Bold"${sheetTitle.toUpperCase()}&R${todayStr}`,
-    oddFooter: `&L&B${brokerDetails.name}&B · Asesor: ${brokerDetails.advisor} · Tel: ${brokerDetails.phone} · ${brokerDetails.email} · Web: ${brokerDetails.website} · Reg. SFC: ${brokerDetails.reg}&R&P de &N`,
+    oddFooter: `&L&B${brokerDetails.name}&B · Técnico Analista: ${brokerDetails.advisor} · Tel: ${brokerDetails.phone} · ${brokerDetails.email} · Web: ${brokerDetails.website} · Reg. SFC: ${brokerDetails.reg}&R&P de &N`,
   };
 }

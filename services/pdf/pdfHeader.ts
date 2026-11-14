@@ -94,7 +94,9 @@ export function renderPageHeader({
     22
   );
 
-  const brokerAdvisor = options?.brokerInfo?.name ? `Asesor: ${options.brokerInfo.name}` : '';
+  const brokerAdvisor = options?.brokerInfo?.name
+    ? `Técnico Analista: ${options.brokerInfo.name}`
+    : '';
   const brokerReg = options?.brokerInfo?.registrationNumber
     ? `Matrícula: ${options.brokerInfo.registrationNumber}`
     : '';
@@ -123,7 +125,7 @@ export function renderEnrichedFooter(doc: jsPDF, options?: PDFOptions): void {
     options?.brokerInfo?.intermediaryName ||
     options?.brokerInfo?.name ||
     'Corredores de Seguros Asociados S.A.';
-  const brokerAdvisorName = options?.brokerInfo?.name || 'Asesor Técnico de Seguros';
+  const brokerAdvisorName = options?.brokerInfo?.name || 'Técnico Analista de Seguros';
   const brokerPhoneStr = options?.brokerInfo?.phone || '+57 (601) 345-6789';
   const brokerEmailStr = options?.brokerInfo?.email || 'soporte@comparadorcsa.com';
   const brokerRegStr = options?.brokerInfo?.registrationNumber || 'Inscripción Vigente SFC';
@@ -140,7 +142,7 @@ export function renderEnrichedFooter(doc: jsPDF, options?: PDFOptions): void {
     doc.setFontSize(6.8);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(30, 58, 138);
-    const row1 = `${brokerDisplayName}  |  Asesor: ${brokerAdvisorName}  |  Tel: ${brokerPhoneStr}  |  Email: ${brokerEmailStr}`;
+    const row1 = `${brokerDisplayName}  |  Técnico Analista: ${brokerAdvisorName}  |  Tel: ${brokerPhoneStr}  |  Email: ${brokerEmailStr}`;
     doc.text(row1.substring(0, 115), 14, 285);
 
     // Row 2 (Secondary line): Web, SFC registration, Claims & Regulatory Supervision

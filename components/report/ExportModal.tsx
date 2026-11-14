@@ -353,7 +353,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               const effectiveReport = getUpdatedReport();
               void storageService.getCurrentUser().then((user) => {
                 const brokerInfo = {
-                  name: user?.name || 'Asesor Técnico de Seguros',
+                  name: user?.name || 'Técnico Analista de Seguros',
                   intermediaryName:
                     user?.intermediaryName ||
                     user?.agencyName ||
