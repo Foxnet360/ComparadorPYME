@@ -21,10 +21,6 @@ vi.mock('../../../components/ExecutiveSummary', () => ({
   ExecutiveSummary: () => <div data-testid="executive-summary">Executive Summary</div>,
 }));
 
-vi.mock('../../../components/DeductiblesComparisonTable', () => ({
-  DeductiblesComparisonTable: () => <div>Deductibles Table</div>,
-}));
-
 vi.mock('../../../components/AuditSection', () => ({
   AuditSection: () => <div>Audit Section</div>,
 }));

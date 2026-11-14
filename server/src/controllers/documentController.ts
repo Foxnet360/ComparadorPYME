@@ -11,7 +11,7 @@ import { insurerNameNormalizer } from '../services/insurerNameNormalizer';
 import { supabase } from '../config/database';
 import { handleSupabaseError } from '../config/database';
 import { AuthenticatedRequest, requireUser } from '../middleware/auth';
-import { AppError } from '../errors';
+import { AppError, ValidationError, NotFoundError } from '../errors';
 import logger from '../config/logger';
 
 interface DocumentListItem {
@@ -311,7 +311,7 @@ export const documentController = {
   /**
    * GET /api/documents - Listar documentos
    */
-  listDocuments: async (req: Request, res: Response): Promise<void> => {
+  listDocuments: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     console.log('📋 [documentController.listDocuments] Request received');
 
     try {
@@ -403,28 +403,20 @@ export const documentController = {
         total: count,
       });
     } catch (error: unknown) {
-      console.error('❌ [documentController] Error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to list documents',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      });
+      logger.error({ err: error }, '❌ [documentController.listDocuments] Error');
+      next(error);
     }
   },
 
   /**
    * GET /api/documents/check-existing - Verificar si existe clausulado asociado
    */
-  checkExistingClause: async (req: Request, res: Response): Promise<void> => {
+  checkExistingClause: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { insurerName, domain, productName } = req.query;
 
       if (!insurerName || typeof insurerName !== 'string') {
-        res.status(400).json({
-          success: false,
-          error: 'insurerName is required',
-        });
-        return;
+        return next(new ValidationError('insurerName is required'));
       }
 
       const normalized = insurerNameNormalizer.normalize(insurerName);
@@ -509,19 +501,15 @@ export const documentController = {
         });
       }
     } catch (error: unknown) {
-      console.error('❌ [documentController.checkExistingClause] Error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to check existing clause',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      });
+      logger.error({ err: error }, '❌ [documentController.checkExistingClause] Error');
+      next(error);
     }
   },
 
   /**
    * GET /api/documents/:id - Obtener documento específico
    */
-  getDocument: async (req: Request, res: Response): Promise<void> => {
+  getDocument: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     console.log(`📄 [documentController.getDocument] ID: ${req.params.id}`);
 
     try {
@@ -548,11 +536,7 @@ export const documentController = {
 
       if (error) {
         if (error.code === 'PGRST116') {
-          res.status(404).json({
-            success: false,
-            error: 'Document not found',
-          });
-          return;
+          return next(new NotFoundError('Document not found'));
         }
         throw handleSupabaseError(error);
       }
@@ -590,19 +574,15 @@ export const documentController = {
         },
       });
     } catch (error: unknown) {
-      console.error('❌ [documentController] Error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to get document',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      });
+      logger.error({ err: error }, '❌ [documentController.getDocument] Error');
+      next(error);
     }
   },
 
   /**
    * DELETE /api/documents/:id - Eliminar documento
    */
-  deleteDocument: async (req: Request, res: Response): Promise<void> => {
+  deleteDocument: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     console.log(`🗑️ [documentController.deleteDocument] ID: ${req.params.id}`);
 
     try {
@@ -611,11 +591,7 @@ export const documentController = {
       const success = await documentIndexingService.deleteDocument(id);
 
       if (!success) {
-        res.status(404).json({
-          success: false,
-          error: 'Document not found or could not be deleted',
-        });
-        return;
+        return next(new NotFoundError('Document not found or could not be deleted'));
       }
 
       res.json({
@@ -623,19 +599,15 @@ export const documentController = {
         message: 'Document deleted successfully',
       });
     } catch (error: unknown) {
-      console.error('❌ [documentController] Error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to delete document',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      });
+      logger.error({ err: error }, '❌ [documentController.deleteDocument] Error');
+      next(error);
     }
   },
 
   /**
    * GET /api/documents/:id/chunks - Obtener chunks de un documento
    */
-  getDocumentChunks: async (req: Request, res: Response): Promise<void> => {
+  getDocumentChunks: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     console.log(`📦 [documentController.getDocumentChunks] ID: ${req.params.id}`);
 
     try {
@@ -675,12 +647,8 @@ export const documentController = {
         total: count,
       });
     } catch (error: unknown) {
-      console.error('❌ [documentController] Error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to get document chunks',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      });
+      logger.error({ err: error }, '❌ [documentController.getDocumentChunks] Error');
+      next(error);
     }
   },
 };

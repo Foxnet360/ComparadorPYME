@@ -8,7 +8,22 @@ import { type NarrativeResult } from '../services/narrativeService';
 import { type ValidationResult } from '../services/quoteValidator';
 import { type ConfidenceResult, type ConfidenceBreakdown } from '../services/confidenceScorer';
 import { type ClauseValidationSummary, checkClauseDocumentExists } from '../services/clauseCoverageValidator';
-import { type DualExtractionResult } from '../services/dualExtractionService';
+export interface DualExtractionResult {
+  coverageName: string;
+  firstExtraction: {
+    value: string;
+    deductible: string;
+    confidence: number;
+  };
+  secondExtraction: {
+    value: string;
+    deductible: string;
+    confidence: number;
+  };
+  discrepancy: number;
+  isDiscrepancy: boolean;
+  recommendation: string;
+}
 import { isMultimodalEnabled } from '../services/quoteProcessingService';
 import { comparisonEngineAdapter } from '../services/unifiedComparison/comparisonEngineAdapter';
 import { AnalysisType } from '../services/unifiedComparison/comparisonSchema';

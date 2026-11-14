@@ -1,7 +1,7 @@
-import { Request, Response } from 'express';
-import { supabase } from '../config/database';
+import { Request, Response, NextFunction } from 'express';
+import { supabase, handleSupabaseError } from '../config/database';
 import { embeddingService } from '../services/vector/embeddingService';
-import { handleSupabaseError } from '../config/database';
+import { ValidationError, NotFoundError } from '../errors';
 
 interface SearchChunkResult {
   id: string;
@@ -34,26 +34,18 @@ export const searchController = {
   /**
    * POST /api/search - Búsqueda semántica
    */
-  search: async (req: Request, res: Response): Promise<void> => {
+  search: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     console.log('🔍 [searchController.search] Request received');
 
     try {
       const { query, insurerId, coverageTag, sectionType, limit = '5' } = req.body;
 
       if (!query || typeof query !== 'string' || query.trim() === '') {
-        res.status(400).json({
-          success: false,
-          error: 'Query is required',
-        });
-        return;
+        return next(new ValidationError('Query is required'));
       }
 
       if (!insurerId) {
-        res.status(400).json({
-          success: false,
-          error: 'insurerId is required',
-        });
-        return;
+        return next(new ValidationError('insurerId is required'));
       }
 
       console.log(`   Query: "${query}"`);
@@ -121,30 +113,21 @@ export const searchController = {
         count: results.length,
       });
     } catch (error: unknown) {
-      console.error('❌ [searchController] Error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Search failed',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      });
+      next(error);
     }
   },
 
   /**
    * POST /api/search/by-coverage - Búsqueda por cobertura específica
    */
-  searchByCoverage: async (req: Request, res: Response): Promise<void> => {
+  searchByCoverage: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     console.log('🔍 [searchController.searchByCoverage] Request received');
 
     try {
       const { coverageTag, insurerId, documentType, limit = '10' } = req.body;
 
       if (!coverageTag) {
-        res.status(400).json({
-          success: false,
-          error: 'coverageTag is required',
-        });
-        return;
+        return next(new ValidationError('coverageTag is required'));
       }
 
       console.log(`   Coverage: ${coverageTag}`);
@@ -203,30 +186,21 @@ export const searchController = {
         count: results.length,
       });
     } catch (error: unknown) {
-      console.error('❌ [searchController] Error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Search failed',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      });
+      next(error);
     }
   },
 
   /**
    * POST /api/search/compare - Comparar cotización vs clausulado
    */
-  compareDocuments: async (req: Request, res: Response): Promise<void> => {
+  compareDocuments: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     console.log('⚖️  [searchController.compareDocuments] Request received');
 
     try {
       const { quoteDocumentId, clauseDocumentId, coverageTag } = req.body;
 
       if (!quoteDocumentId || !clauseDocumentId) {
-        res.status(400).json({
-          success: false,
-          error: 'Both quoteDocumentId and clauseDocumentId are required',
-        });
-        return;
+        return next(new ValidationError('Both quoteDocumentId and clauseDocumentId are required'));
       }
 
       console.log(`   Quote: ${quoteDocumentId}`);
@@ -246,11 +220,7 @@ export const searchController = {
         .single();
 
       if (!quoteDoc || !clauseDoc) {
-        res.status(404).json({
-          success: false,
-          error: 'One or both documents not found',
-        });
-        return;
+        return next(new NotFoundError('One or both documents not found'));
       }
 
       // Usar función SQL para validación
@@ -273,12 +243,7 @@ export const searchController = {
         matches: comparison || [],
       });
     } catch (error: unknown) {
-      console.error('❌ [searchController] Error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Comparison failed',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      });
+      next(error);
     }
   },
 };

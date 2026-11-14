@@ -1,33 +1,13 @@
 import rateLimit from 'express-rate-limit';
 import RedisStore from 'rate-limit-redis';
-import { createClient } from 'redis';
 import { RateLimitError } from '../errors';
 import logger from '../config/logger';
-
-const redisClient = createClient({
-  url: process.env.REDIS_URL || 'redis://localhost:6379',
-});
-
-redisClient.on('error', (err: Error) => {
-  logger.warn('Redis client error: %s', err.message);
-});
-
-// Only connect if Redis URL is configured
-if (process.env.REDIS_URL) {
-  redisClient.connect().catch(() => {
-    logger.warn('Failed to connect to Redis, falling back to memory store');
-  });
-}
+import { redis as redisClient } from '../services/cache/redisCache';
 
 const createStore = () => {
   if (process.env.REDIS_URL) {
     return new RedisStore({
-      sendCommand: async (...args: string[]) => {
-        if (!redisClient.isOpen) {
-          await redisClient.connect().catch(() => {});
-        }
-        return (redisClient as any).sendCommand(args);
-      },
+      sendCommand: (...args: string[]) => (redisClient as any).call(...args),
     });
   }
   return undefined; // Falls back to default memory store
@@ -78,7 +58,7 @@ export const chatRateLimiter = rateLimit({
 // Graceful shutdown handlers
 const cleanup = async () => {
   logger.info('🧹 Cleaning up Redis connection...');
-  if (redisClient.isReady) {
+  if (redisClient.status === 'ready') {
     await redisClient.quit();
   }
 };
