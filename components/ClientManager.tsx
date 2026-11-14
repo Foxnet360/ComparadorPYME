@@ -30,6 +30,7 @@ import {
   SeismicZone,
 } from '../src/data/colombiaGeo';
 import { geocodeClientAddress } from '../src/services/geocodingService';
+import { ConfirmModal } from './common/ConfirmModal';
 
 interface ClientManagerProps {
   onSelectClientForAudit?: (client: Client) => void;
@@ -364,17 +365,24 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
     setIsModalOpen(false);
   };
 
-  const handleDeleteClient = async (client: Client) => {
-    if (window.confirm(`¿Estás seguro de eliminar el cliente "${client.name}"?`)) {
-      const updatedList = await storageService.deleteClient(client.id);
-      setClients(updatedList);
-      if (selectedClient?.id === client.id) {
-        if (updatedList.length > 0) {
-          handleSelectClient(updatedList[0]!);
-        } else {
-          setSelectedClient(null);
-          setClientAudits([]);
-        }
+  const [pendingDeleteClient, setPendingDeleteClient] = useState<Client | null>(null);
+
+  const handleDeleteClient = (client: Client) => {
+    setPendingDeleteClient(client);
+  };
+
+  const confirmDeleteClient = async () => {
+    if (!pendingDeleteClient) return;
+    const client = pendingDeleteClient;
+    setPendingDeleteClient(null);
+    const updatedList = await storageService.deleteClient(client.id);
+    setClients(updatedList);
+    if (selectedClient?.id === client.id) {
+      if (updatedList.length > 0) {
+        handleSelectClient(updatedList[0]!);
+      } else {
+        setSelectedClient(null);
+        setClientAudits([]);
       }
     }
   };
@@ -1090,6 +1098,19 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={pendingDeleteClient !== null}
+        title="Eliminar cliente"
+        message={
+          pendingDeleteClient
+            ? `¿Estás seguro de eliminar el cliente "${pendingDeleteClient.name}"?`
+            : ''
+        }
+        confirmLabel="Eliminar"
+        onConfirm={confirmDeleteClient}
+        onCancel={() => setPendingDeleteClient(null)}
+      />
     </div>
   );
 };

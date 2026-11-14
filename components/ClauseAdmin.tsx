@@ -2,7 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { clauseService } from '../services/clauseService';
 import { SessionExpiredError } from '../services/apiClient';
 import { UserProfile } from '../types';
+import { InsuranceDomain, InsuranceDomainType } from '@shared/insuranceDomain';
 import { InsurerLogo } from './common/InsurerLogo';
+import { ConfirmModal } from './common/ConfirmModal';
 import {
   Search,
   Eye,
@@ -36,19 +38,17 @@ interface Document {
   };
 }
 
-const DOMAIN_OPTIONS = [
-  { value: 'pyme', label: 'PYME Comercial', color: 'bg-blue-50 text-blue-700 ring-blue-700/10' },
-  { value: 'copropiedades', label: 'Copropiedades (Ley 675)', color: 'bg-amber-50 text-amber-700 ring-amber-700/10' },
-  { value: 'autos', label: 'Vehículos y Flotas', color: 'bg-emerald-50 text-emerald-700 ring-emerald-700/10' },
-  { value: 'hogar', label: 'Hogar y Habitación', color: 'bg-indigo-50 text-indigo-700 ring-indigo-700/10' },
-  { value: 'salud', label: 'Salud y Prepagada', color: 'bg-rose-50 text-rose-700 ring-rose-700/10' },
-  { value: 'vida_grupo', label: 'Vida Grupo y Colectivo', color: 'bg-violet-50 text-violet-700 ring-violet-700/10' },
-  { value: 'cumplimiento', label: 'Cumplimiento y Fianzas', color: 'bg-slate-50 text-slate-700 ring-slate-700/10' },
-  { value: 'transporte', label: 'Transporte de Mercancías', color: 'bg-orange-50 text-orange-700 ring-orange-700/10' },
-  { value: 'equipo_maquinaria', label: 'Maquinaria y Equipo', color: 'bg-yellow-50 text-yellow-800 ring-yellow-800/10' },
-  { value: 'casco_embarcacion', label: 'Casco Embarcación', color: 'bg-cyan-50 text-cyan-700 ring-cyan-700/10' },
-  { value: 'rc_medica', label: 'RC Médica y Hospitalaria', color: 'bg-teal-50 text-teal-700 ring-teal-700/10' },
-  { value: 'd_and_o', label: 'Directores y Administradores (D&O)', color: 'bg-purple-50 text-purple-700 ring-purple-700/10' },
+const DOMAIN_OPTIONS: ReadonlyArray<{ value: InsuranceDomainType; label: string; color: string }> = [
+  { value: InsuranceDomain.PYME, label: 'PYME Comercial', color: 'bg-blue-50 text-blue-700 ring-blue-700/10' },
+  { value: InsuranceDomain.COPROPIEDADES, label: 'Copropiedades (Ley 675)', color: 'bg-amber-50 text-amber-700 ring-amber-700/10' },
+  { value: InsuranceDomain.AUTOS, label: 'Vehículos y Flotas', color: 'bg-emerald-50 text-emerald-700 ring-emerald-700/10' },
+  { value: InsuranceDomain.HOGAR, label: 'Hogar y Habitación', color: 'bg-indigo-50 text-indigo-700 ring-indigo-700/10' },
+  { value: InsuranceDomain.SALUD, label: 'Salud y Prepagada', color: 'bg-rose-50 text-rose-700 ring-rose-700/10' },
+  { value: InsuranceDomain.VIDA_GRUPO, label: 'Vida Grupo y Colectivo', color: 'bg-violet-50 text-violet-700 ring-violet-700/10' },
+  { value: InsuranceDomain.CUMPLIMIENTO, label: 'Cumplimiento y Fianzas', color: 'bg-slate-50 text-slate-700 ring-slate-700/10' },
+  { value: InsuranceDomain.TRANSPORTE, label: 'Transporte de Mercancías', color: 'bg-orange-50 text-orange-700 ring-orange-700/10' },
+  { value: InsuranceDomain.EQUIPO_MAQUINARIA, label: 'Maquinaria y Equipo', color: 'bg-yellow-50 text-yellow-800 ring-yellow-800/10' },
+  { value: InsuranceDomain.CASCO_EMBARCACION, label: 'Casco Embarcación', color: 'bg-cyan-50 text-cyan-700 ring-cyan-700/10' },
 ];
 
 export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }) => {
@@ -62,6 +62,7 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
   const [filterDomain, setFilterDomain] = useState('');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'ACTIVE' | 'ARCHIVED'>('ALL');
   const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
+  const [pendingDeleteDoc, setPendingDeleteDoc] = useState<{ id: string; documentName: string } | null>(null);
 
   // Form state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -219,9 +220,14 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
     }
   };
 
-  const handleDelete = async (id: string, documentName: string) => {
-    if (!confirm(`¿Eliminar "${documentName}" de la biblioteca? Esta acción no se puede deshacer.`)) return;
+  const handleDelete = (id: string, documentName: string) => {
+    setPendingDeleteDoc({ id, documentName });
+  };
 
+  const confirmDeleteDoc = async () => {
+    if (!pendingDeleteDoc) return;
+    const { id } = pendingDeleteDoc;
+    setPendingDeleteDoc(null);
     try {
       await clauseService.deleteDocument(id);
       await loadData();
@@ -758,6 +764,19 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={pendingDeleteDoc !== null}
+        title="Eliminar clausulado"
+        message={
+          pendingDeleteDoc
+            ? `¿Eliminar "${pendingDeleteDoc.documentName}" de la biblioteca? Esta acción no se puede deshacer.`
+            : ''
+        }
+        confirmLabel="Eliminar"
+        onConfirm={confirmDeleteDoc}
+        onCancel={() => setPendingDeleteDoc(null)}
+      />
     </div>
   );
 };

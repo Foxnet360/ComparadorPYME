@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { UserEditModal, type ManagedUser } from '../../../components/users/UserEditModal';
 import { UserManagement } from '../../../components/UserManagement';
 import { organizationService } from '../../../services/organizationService';
@@ -203,7 +203,6 @@ describe('UserManagement component', () => {
   });
 
   it('confirms and deletes user when delete button is clicked', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     (organizationService.deleteUser as any).mockResolvedValue({ success: true });
 
     render(
@@ -220,6 +219,9 @@ describe('UserManagement component', () => {
 
     const deleteBtn = screen.getByTitle('Eliminar usuario');
     fireEvent.click(deleteBtn);
+
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Eliminar' }));
 
     await waitFor(() => {
       expect(organizationService.deleteUser).toHaveBeenCalledWith('user-123');

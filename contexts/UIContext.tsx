@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 
 interface UIContextType {
   chatOpen: boolean;
@@ -27,15 +27,25 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     message: string;
     type: 'success' | 'error' | 'info';
   } | null>(null);
-
-  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
-    setToast({ message, type });
-    // Auto-clear after 5 seconds
-    setTimeout(() => setToast(null), 5000);
-  }, []);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearToast = useCallback(() => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = null;
+    }
     setToast(null);
+  }, []);
+
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+    setToast({ message, type });
+    toastTimerRef.current = setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
+    }, 5000);
   }, []);
 
   return (

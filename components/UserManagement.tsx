@@ -6,6 +6,7 @@ import { UserInviteModal } from './users/UserInviteModal';
 import { UserEditModal } from './users/UserEditModal';
 import { AllyCreateModal } from './users/AllyCreateModal';
 import { AllyEditModal } from './users/AllyEditModal';
+import { ConfirmModal } from './common/ConfirmModal';
 import {
   Users,
   Building2,
@@ -249,26 +250,34 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     }
   };
 
-  const handleDeleteUser = async (user: ManagedUser) => {
-    const actionLabel = currentUserRole === 'super_admin' ? 'eliminar del sistema' : 'desvincular de su equipo';
-    if (!window.confirm(`¿Está seguro de ${actionLabel} al usuario "${user.name}" (${user.email})?`)) {
-      return;
-    }
+  const [pendingConfirm, setPendingConfirm] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => Promise<void>;
+  } | null>(null);
 
-    setFeedback(null);
-    try {
-      await organizationService.deleteUser(user.id);
-      setUsersList((prev) => prev.filter((u) => u.id !== user.id));
-      setFeedback({
-        type: 'success',
-        message: `Usuario "${user.name}" eliminado correctamente.`,
-      });
-    } catch (err: unknown) {
-      setFeedback({
-        type: 'error',
-        message: err instanceof Error ? err.message : 'Error al eliminar usuario',
-      });
-    }
+  const handleDeleteUser = (user: ManagedUser) => {
+    const actionLabel = currentUserRole === 'super_admin' ? 'eliminar del sistema' : 'desvincular de su equipo';
+    setPendingConfirm({
+      title: 'Confirmar eliminación de usuario',
+      message: `¿Está seguro de ${actionLabel} al usuario "${user.name}" (${user.email})?`,
+      onConfirm: async () => {
+        setFeedback(null);
+        try {
+          await organizationService.deleteUser(user.id);
+          setUsersList((prev) => prev.filter((u) => u.id !== user.id));
+          setFeedback({
+            type: 'success',
+            message: `Usuario "${user.name}" eliminado correctamente.`,
+          });
+        } catch (err: unknown) {
+          setFeedback({
+            type: 'error',
+            message: err instanceof Error ? err.message : 'Error al eliminar usuario',
+          });
+        }
+      },
+    });
   };
 
   const handleCreateAlly = async (allyData: {
@@ -381,27 +390,29 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     }
   };
 
-  const handleDeleteAlly = async (allyId: string, allyName: string) => {
-    if (!window.confirm(`¿Está seguro de eliminar la correduría "${allyName}"? Esta acción desvinculará sus registros asociados.`)) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await organizationService.deleteOrganization(allyId);
-      setAlliesList(alliesList.filter((a) => a.id !== allyId));
-      setFeedback({
-        type: 'success',
-        message: `Correduría "${allyName}" eliminada correctamente del sistema.`,
-      });
-    } catch (err: unknown) {
-      setFeedback({
-        type: 'error',
-        message: err instanceof Error ? err.message : 'Error eliminando correduría',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleDeleteAlly = (allyId: string, allyName: string) => {
+    setPendingConfirm({
+      title: 'Confirmar eliminación de correduría',
+      message: `¿Está seguro de eliminar la correduría "${allyName}"? Esta acción desvinculará sus registros asociados.`,
+      onConfirm: async () => {
+        setIsSubmitting(true);
+        try {
+          await organizationService.deleteOrganization(allyId);
+          setAlliesList(alliesList.filter((a) => a.id !== allyId));
+          setFeedback({
+            type: 'success',
+            message: `Correduría "${allyName}" eliminada correctamente del sistema.`,
+          });
+        } catch (err: unknown) {
+          setFeedback({
+            type: 'error',
+            message: err instanceof Error ? err.message : 'Error eliminando correduría',
+          });
+        } finally {
+          setIsSubmitting(false);
+        }
+      },
+    });
   };
 
   return (
@@ -767,6 +778,19 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         alliesList={alliesList}
         user={editingUser}
         onUpdate={handleUpdateUser}
+      />
+
+      <ConfirmModal
+        isOpen={pendingConfirm !== null}
+        title={pendingConfirm?.title ?? ''}
+        message={pendingConfirm?.message ?? ''}
+        confirmLabel="Eliminar"
+        onConfirm={() => {
+          const action = pendingConfirm?.onConfirm;
+          setPendingConfirm(null);
+          if (action) void action();
+        }}
+        onCancel={() => setPendingConfirm(null)}
       />
     </div>
   );

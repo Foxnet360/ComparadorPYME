@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { generatePDF } from '../../services/pdfService';
 import { storageService } from '../../services/storageService';
 import { organizationService } from '../../services/organizationService';
-import { apiClient } from '../../services/apiClient';
+import { exportAnalysisToExcel } from '../../services/excelExportService';
 import { FileDown, FileSpreadsheet, Loader2, Briefcase, ChevronDown, ChevronUp } from 'lucide-react';
 import {
   COMMERCIAL_CONDITION_FIELDS,
@@ -45,6 +45,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   onUpdateReport,
 }) => {
   const [exportingExcel, setExportingExcel] = useState<string | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
   const [pdfMode, setPdfMode] = useState<'condensed' | 'extended'>('condensed');
   const [commercialConditions, setCommercialConditions] = useState<Record<string, InsurerCommercialConditions>>(() =>
     extractCommercialConditionsFromReport(report)
@@ -98,60 +99,28 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   };
 
   const handleExportExcel = async (exportMode: 'client' | 'technical') => {
+    setExportError(null);
     const effectiveReport = getUpdatedReport();
     const analysisId = (effectiveReport as any).id || (effectiveReport as any).analysisId;
     if (!analysisId) {
-      alert('ID de análisis no disponible para exportación.');
+      setExportError('ID de análisis no disponible para exportación.');
       return;
     }
 
     try {
       setExportingExcel(exportMode);
-      const currentUser = await storageService.getCurrentUser();
-      const brokerInfo = {
-        name: currentUser?.name || 'Asesor Técnico de Seguros',
-        intermediaryName:
-          currentUser?.intermediaryName || currentUser?.agencyName || 'Corredores de Seguros Asociados S.A.',
-        registrationNumber:
-          currentUser?.registrationNumber ||
-          currentUser?.agentDetails?.registrationNumber ||
-          'Inscripción Vigente SFC',
-        phone: currentUser?.agentDetails?.phone || currentUser?.phone || '+57 (601) 345-6789',
-        email: currentUser?.email || 'soporte@comparadorcsa.com',
-        address: currentUser?.address || currentUser?.agentDetails?.address || 'Bogotá D.C., Colombia',
-        city: currentUser?.city || currentUser?.agentDetails?.city || 'Bogotá D.C.',
-        commercialPolicies: currentUser?.commercialPolicies,
-      };
-
-      const response = await apiClient.fetch(`/analysis/${analysisId}/export`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          domain: effectiveReport.domain || 'pyme',
-          quotes: effectiveReport.quotes,
-          matrix: effectiveReport.matrix,
-          commercialConditions,
-          exportMode,
-          brokerInfo,
-          cellNotes: cellNotes ? (typeof cellNotes === 'object' ? cellNotes : {}) : {},
-        }),
+      await exportAnalysisToExcel({
+        analysisId,
+        domain: effectiveReport.domain || 'pyme',
+        quotes: effectiveReport.quotes,
+        matrix: effectiveReport.matrix,
+        commercialConditions,
+        exportMode,
+        cellNotes: cellNotes ? (typeof cellNotes === 'object' ? cellNotes : {}) : {},
       });
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download =
-        exportMode === 'client'
-          ? `informe_cliente_${effectiveReport.domain || 'seguros'}_${analysisId}.xlsx`
-          : `comparativa_tecnica_${analysisId}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
       onClose();
     } catch (err: any) {
-      alert(`Error al exportar Excel: ${err?.message || 'Error desconocido'}`);
+      setExportError(`Error al exportar Excel: ${err?.message || 'Error desconocido'}`);
     } finally {
       setExportingExcel(null);
     }
@@ -172,6 +141,22 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       </div>
 
       <div className="space-y-3.5">
+        {exportError && (
+          <div
+            role="alert"
+            className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 flex items-center justify-between gap-2"
+          >
+            <span>{exportError}</span>
+            <button
+              type="button"
+              onClick={() => setExportError(null)}
+              className="text-red-500 hover:text-red-700 font-bold"
+              aria-label="Cerrar error"
+            >
+              ×
+            </button>
+          </div>
+        )}
         <div>
           <label className="block text-xs font-semibold text-slate-600 mb-1">
             Título Personalizado
@@ -197,9 +182,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               const file = e.target.files?.[0];
               if (file) {
                 if (file.size > 2 * 1024 * 1024) {
-                  alert('El logo no debe superar los 2MB');
+                  setExportError('El logo no debe superar los 2MB');
                   return;
                 }
+                setExportError(null);
                 const reader = new FileReader();
                 reader.onloadend = () => {
                   onPdfOptionsChange({ ...pdfOptions, logo: reader.result as string });

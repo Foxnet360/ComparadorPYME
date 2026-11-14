@@ -7,6 +7,7 @@
 
 import React, { useState } from 'react';
 import { usePortfolio } from '../contexts/PortfolioContext';
+import { ConfirmModal } from '../components/common/ConfirmModal';
 import type { PortfolioClient, PortfolioRenewal } from '../types';
 
 interface PortfolioProps {
@@ -32,6 +33,11 @@ const Portfolio: React.FC<PortfolioProps> = ({ onOpenRenewal }) => {
     Record<string, { insurer: string; ramo: string; premium: string; endDate: string }>
   >({});
   const [actionError, setActionError] = useState<string | null>(null);
+  const [pendingConfirm, setPendingConfirm] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   const renewalByPolicy = new Map<string, PortfolioRenewal>(
     renewals.map((r) => [r.policy_id, r])
@@ -85,8 +91,11 @@ const Portfolio: React.FC<PortfolioProps> = ({ onOpenRenewal }) => {
   };
 
   const handleDeleteClient = (client: PortfolioClient) => {
-    if (!window.confirm(`¿Eliminar el cliente ${client.name} y sus pólizas?`)) return;
-    void runAction(() => removeClient(client.id));
+    setPendingConfirm({
+      title: 'Eliminar cliente',
+      message: `¿Eliminar el cliente ${client.name} y sus pólizas?`,
+      onConfirm: () => void runAction(() => removeClient(client.id)),
+    });
   };
 
   if (loading) {
@@ -187,8 +196,11 @@ const Portfolio: React.FC<PortfolioProps> = ({ onOpenRenewal }) => {
                         type="button"
                         aria-label={`Eliminar póliza ${policy.policy_number ?? policy.id}`}
                         onClick={() =>
-                          window.confirm('¿Eliminar esta póliza?') &&
-                          void runAction(() => removePolicy(policy.id))
+                          setPendingConfirm({
+                            title: 'Eliminar póliza',
+                            message: '¿Eliminar esta póliza?',
+                            onConfirm: () => void runAction(() => removePolicy(policy.id)),
+                          })
                         }
                         className="text-red-600 hover:text-red-800 text-sm ml-auto"
                       >
@@ -275,6 +287,19 @@ const Portfolio: React.FC<PortfolioProps> = ({ onOpenRenewal }) => {
           </article>
         );
       })}
+
+      <ConfirmModal
+        isOpen={pendingConfirm !== null}
+        title={pendingConfirm?.title ?? ''}
+        message={pendingConfirm?.message ?? ''}
+        confirmLabel="Eliminar"
+        onConfirm={() => {
+          const action = pendingConfirm?.onConfirm;
+          setPendingConfirm(null);
+          if (action) action();
+        }}
+        onCancel={() => setPendingConfirm(null)}
+      />
     </section>
   );
 };

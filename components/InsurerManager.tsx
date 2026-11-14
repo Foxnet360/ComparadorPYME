@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { insurerService, type InsurerEntity } from '../services/insurerService';
 import { InsurerLogo } from './common/InsurerLogo';
+import { ConfirmModal } from './common/ConfirmModal';
 import { InsuranceDomain, type InsuranceDomainType } from '@shared/insuranceDomain';
 
 interface InsurerManagerProps {
@@ -49,6 +50,8 @@ export const InsurerManager: React.FC<InsurerManagerProps> = ({ onBack }) => {
   const [editingInsurer, setEditingInsurer] = useState<InsurerEntity | null>(null);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [listError, setListError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
   // Form state
   const [formData, setFormData] = useState<Partial<InsurerEntity>>({
@@ -126,11 +129,12 @@ export const InsurerManager: React.FC<InsurerManagerProps> = ({ onBack }) => {
   const handleSyncOfficial = async () => {
     try {
       setSyncing(true);
+      setListError(null);
       const updated = await insurerService.seedInsurers();
       setInsurers(updated);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error desconocido';
-      alert(`Error al sincronizar catálogo: ${message}`);
+      setListError(`Error al sincronizar catálogo: ${message}`);
     } finally {
       setSyncing(false);
     }
@@ -165,13 +169,20 @@ export const InsurerManager: React.FC<InsurerManagerProps> = ({ onBack }) => {
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`¿Está seguro de eliminar o desactivar a "${name}"?`)) return;
+  const handleDelete = (id: string, name: string) => {
+    setPendingDelete({ id, name });
+  };
+
+  const confirmDeleteInsurer = async () => {
+    if (!pendingDelete) return;
+    const { id } = pendingDelete;
+    setPendingDelete(null);
+    setListError(null);
     try {
       await insurerService.deleteInsurer(id);
       await loadInsurers();
     } catch (err: unknown) {
-      alert(`Error: ${err instanceof Error ? err.message : 'Error al eliminar'}`);
+      setListError(`Error: ${err instanceof Error ? err.message : 'Error al eliminar'}`);
     }
   };
 
@@ -258,6 +269,22 @@ export const InsurerManager: React.FC<InsurerManagerProps> = ({ onBack }) => {
       </div>
 
       {/* Filters & Search */}
+      {listError && (
+        <div
+          role="alert"
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between"
+        >
+          <span>{listError}</span>
+          <button
+            type="button"
+            onClick={() => setListError(null)}
+            className="text-red-500 hover:text-red-700 font-bold"
+            aria-label="Cerrar error"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
         <div className="md:col-span-5 relative">
           <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
@@ -669,6 +696,19 @@ export const InsurerManager: React.FC<InsurerManagerProps> = ({ onBack }) => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={pendingDelete !== null}
+        title="Eliminar o desactivar aseguradora"
+        message={
+          pendingDelete
+            ? `¿Está seguro de eliminar o desactivar a "${pendingDelete.name}"?`
+            : ''
+        }
+        confirmLabel="Eliminar"
+        onConfirm={confirmDeleteInsurer}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 };

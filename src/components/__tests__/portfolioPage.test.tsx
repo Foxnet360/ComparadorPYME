@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import Portfolio from '../../../pages/Portfolio';
 import { PortfolioProvider } from '../../../contexts/PortfolioContext';
 import * as portfolioService from '../../../services/portfolioService';
@@ -134,6 +134,8 @@ describe('Portfolio page', () => {
     await screen.findByText('Sura');
 
     fireEvent.click(screen.getByRole('button', { name: /eliminar póliza POL-1/i }));
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Eliminar' }));
 
     await waitFor(() => expect(portfolioService.deletePolicy).toHaveBeenCalledWith('p1'));
     await waitFor(() => expect(screen.queryByText('Sura')).toBeNull());
@@ -145,6 +147,8 @@ describe('Portfolio page', () => {
     await screen.findByText('Acme SAS');
 
     fireEvent.click(screen.getByRole('button', { name: /eliminar cliente Acme SAS/i }));
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Eliminar' }));
 
     await waitFor(() => expect(portfolioService.deleteClient).toHaveBeenCalledWith('c1'));
     await waitFor(() => expect(screen.queryByText('Acme SAS')).toBeNull());
