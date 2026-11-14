@@ -645,6 +645,13 @@ export const analysisController = {
         }
       )) as unknown as ComparisonResult & Record<string, unknown>;
       incomingResult.matrix = incomingResult.matrix || (adapterResult.matrix as any);
+      incomingResult.quoteMetadata = Array.isArray(adapterResult.quoteMetadata)
+        ? adapterResult.quoteMetadata.map((m: any) =>
+            m && typeof m.insurer === 'string'
+              ? { ...m, insurer: extractCanonicalInsurerName(m.insurer) }
+              : m
+          )
+        : adapterResult.quoteMetadata;
 
       const merged = mergeComparisonResults(existingResult, incomingResult);
       merged.id = analysisId;

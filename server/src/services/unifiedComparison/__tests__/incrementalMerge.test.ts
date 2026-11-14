@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { mergeComparisonResults } from '../incrementalMerge';
 import type { ComparisonResult } from '../../../controllers/analysisController';
+import type { MatrixRow } from '../../../types';
 
 describe('mergeComparisonResults', () => {
-  it('appends new quotes and merges aligned matrix rows without losing existing insurers', () => {
+  it('appends new quotes, positional MatrixRow.cells, quoteMetadata and deductibleComparison', () => {
     const existing = {
       quotes: [
         {
@@ -11,21 +12,40 @@ describe('mergeComparisonResults', () => {
           policyName: 'PYME SURA',
           priceAnnual: 5000000,
           currency: 'COP',
-          coverages: [],
+          coverages: [{ name: 'Incendio', value: '100000000', deductible: '5%' }],
           alerts: [],
           score: 82,
         },
       ],
       matrix: [
         {
-          categoryName: 'Incendio',
-          canonicalName: 'Incendio',
-          coverages: { SURA: { value: '100000000', deductible: '5%' } },
+          type: 'header',
+          id: 'h-1',
+          label: 'Coberturas',
+          sectionId: 1,
+          cells: [{ value: 'SURA', isExcluded: false, isWinner: false }],
         },
-      ],
+        {
+          type: 'data',
+          id: 'row-incendio',
+          label: 'Incendio',
+          canonicalName: 'Incendio',
+          sectionId: 1,
+          cells: [{ value: '$100.000.000', isExcluded: false, isWinner: false }],
+        },
+        {
+          type: 'data',
+          id: 'row-terremoto',
+          label: 'Terremoto',
+          canonicalName: 'Terremoto',
+          sectionId: 1,
+          cells: [{ value: '$100.000.000', isExcluded: false, isWinner: false }],
+        },
+      ] as MatrixRow[],
+      quoteMetadata: [{ insurer: 'SURA', vigencia: '2026-2027' }],
+      deductibleComparison: [{ insurer: 'SURA', deductibleText: 'Incendio: 5%' }],
       recommendation: 'SURA',
       marketAnalysis: '',
-      deductibleComparison: [],
       timestamp: '2026-11-14T00:00:00Z',
       analysisVersion: '2.0',
     } as unknown as ComparisonResult & Record<string, unknown>;
@@ -37,26 +57,40 @@ describe('mergeComparisonResults', () => {
           policyName: 'PYME ALLIANZ',
           priceAnnual: 4800000,
           currency: 'COP',
-          coverages: [],
+          coverages: [{ name: 'Incendio', value: '120000000', deductible: '1 SMMLV' }],
           alerts: [],
           score: 89,
         },
       ],
       matrix: [
         {
-          categoryName: 'Incendio',
-          canonicalName: 'Incendio',
-          coverages: { ALLIANZ: { value: '120000000', deductible: '1 SMMLV' } },
+          type: 'header',
+          id: 'h-1',
+          label: 'Coberturas',
+          sectionId: 1,
+          cells: [{ value: 'ALLIANZ', isExcluded: false, isWinner: false }],
         },
         {
-          categoryName: 'Lucro Cesante',
-          canonicalName: 'Lucro Cesante',
-          coverages: { ALLIANZ: { value: '50000000', deductible: 'No aplica' } },
+          type: 'data',
+          id: 'row-incendio',
+          label: 'Incendio',
+          canonicalName: 'Incendio',
+          sectionId: 1,
+          cells: [{ value: '$120.000.000', isExcluded: false, isWinner: true }],
         },
-      ],
+        {
+          type: 'data',
+          id: 'row-lucro',
+          label: 'Lucro Cesante',
+          canonicalName: 'Lucro Cesante',
+          sectionId: 2,
+          cells: [{ value: '$50.000.000', isExcluded: false, isWinner: false }],
+        },
+      ] as MatrixRow[],
+      quoteMetadata: [{ insurer: 'ALLIANZ', vigencia: '2026-2027' }],
+      deductibleComparison: [{ insurer: 'ALLIANZ', deductibleText: 'Incendio: 1 SMMLV' }],
       recommendation: 'ALLIANZ',
       marketAnalysis: '',
-      deductibleComparison: [],
       timestamp: '2026-11-14T01:00:00Z',
       analysisVersion: '2.0',
     } as unknown as ComparisonResult & Record<string, unknown>;
@@ -65,13 +99,18 @@ describe('mergeComparisonResults', () => {
     expect(merged.quotes).toHaveLength(2);
     expect(merged.quotes.map((q) => q.insurerName)).toEqual(['SURA', 'ALLIANZ']);
 
-    const matrix = merged.matrix as Array<{
-      canonicalName: string;
-      coverages: Record<string, unknown>;
-    }>;
-    expect(matrix).toHaveLength(2);
-    expect(Object.keys(matrix[0]!.coverages)).toEqual(['SURA', 'ALLIANZ']);
-    expect(matrix[1]!.canonicalName).toBe('Lucro Cesante');
+    const matrix = merged.matrix as MatrixRow[];
+    expect(matrix).toHaveLength(4); // header + Incendio + Terremoto + Lucro Cesante
+    expect(matrix[0]!.cells.map((c) => c.value)).toEqual(['SURA', 'ALLIANZ']);
+    expect(matrix[1]!.cells.map((c) => c.value)).toEqual(['$100.000.000', '$120.000.000']);
+    expect(matrix[2]!.cells.map((c) => c.value)).toEqual(['$100.000.000', 'No cotizada']);
+    expect(matrix[3]!.cells.map((c) => c.value)).toEqual(['No cotizada', '$50.000.000']);
+
+    expect((merged.quoteMetadata as Array<{ insurer: string }>).map((m) => m.insurer)).toEqual([
+      'SURA',
+      'ALLIANZ',
+    ]);
+    expect(merged.deductibleComparison).toHaveLength(2);
     expect(merged.recommendation).toContain('ALLIANZ');
     expect((merged.metadata as Record<string, unknown>).quoteCount).toBe(2);
   });
