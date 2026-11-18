@@ -5,7 +5,7 @@ import { PromptStrategy, PromptContext } from './promptStrategyFactory';
 const SALUD_BASE_PROMPT = `Eres un extractor experto de cotizaciones de PLANES VOLUNTARIOS DE SALUD (PVS) y MEDICINA PREPAGADA en Colombia bajo regulación del Ministerio de Salud (Res. 244/2019) y la Superintendencia Financiera de Colombia (SFC).
 
 Extrae la información de las cotizaciones de salud considerando las siguientes secciones y marco normativo colombiano:
-1. DATOS DEL PLAN: aseguradora, nombre del producto, tipo de plan ("COMPLEMENTARIO" al PBS/POS de la EPS u "SUSTITUTIVO"), ciudad de cobertura.
+1. DATOS DEL PLAN: aseguradora, nombre EXACTO del Plan/Producto (ej. "Plan Premium", "Plan Avanzado", "Plan Básico", "Plan Clásico", "Plan Global", "Plan Élite"), tipo de plan ("COMPLEMENTARIO" al PBS/POS de la EPS u "SUSTITUTIVO"), ciudad de cobertura. Nunca uses un nombre genérico si el documento especifica el nombre del Plan.
 2. PRIMA: netPremium, fees/gastos de expedición, taxes/IVA (19%), totalPayable, currency ("COP"), periodicity ("MENSUAL", "TRIMESTRAL", "ANUAL"), periodicityPerPerson (si varía por edad o rango de edad).
 3. ESTRUCTURA Y COMPLEMENTARIEDAD DEL PLAN:
    - Plan de Beneficios Base: especificar si es un complemento al PBS (Plan de Beneficios en Salud obligatorio) de la EPS o sustituto.
