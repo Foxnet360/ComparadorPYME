@@ -676,6 +676,7 @@ Reglas Generales:
 - Para rawText (evidencia), incluye un snippet breve (máximo 100 caracteres) SOLO cuando exista información o cobertura relevante. En celdas con 'No incluido', 'No informado' o 'No cotizado', omite el rawText o déjalo vacío para economizar tokens y garantizar la integridad de la respuesta.
 - IMPORTANTE: Cierra siempre correctamente toda la estructura JSON generada hasta el último carácter ('}').
 - Además, para cada cotización, extrae los siguientes metadatos de cabecera: Cliente, Tipo de Seguro, Ubicación del Riesgo, Año Construcción, Pisos, Aliado, Actividad/Ocupación, Documento, Vigencia.
+- REGLA MULTI-PRODUCTO (MISMA ASEGURADORA): Si hay 2 o más cotizaciones de la misma aseguradora (por ejemplo, varios planes de Salud de SURA, AXA o Allianz), identifica cada columna con "Aseguradora - Nombre del Producto/Plan" tanto en "insurers" como en "cells[].insurer" (ej. "SURA - Plan Clásico", "SURA - Plan Global") y extrae sus valores por separado sin duplicar la primera cotización.
 - Responde únicamente con JSON válido que cumpla este schema:
 {
   "insurers": ["Aseguradora A", ...],

@@ -194,7 +194,7 @@ app.post(
   analyzeRateLimiter,
   optionalAuthMiddleware,
   upload.fields([
-    { name: 'quotes', maxCount: 10 },
+    { name: 'quotes', maxCount: 15 },
     { name: 'clauses', maxCount: 10 },
   ]),
   asyncHandler(analysisController.uploadAndAnalyze)
@@ -204,7 +204,7 @@ app.post(
   '/api/analysis/:id/quotes',
   analyzeRateLimiter,
   optionalAuthMiddleware,
-  upload.fields([{ name: 'quotes', maxCount: 10 }]),
+  upload.fields([{ name: 'quotes', maxCount: 15 }]),
   asyncHandler(analysisController.appendQuotesToAnalysis)
 );
 

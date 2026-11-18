@@ -63,6 +63,15 @@ export const MatrixTableHeader: React.FC<MatrixTableHeaderProps> = ({
                   </button>
                 )}
               </div>
+              {q.policyName &&
+                q.policyName.trim().toLowerCase() !== q.insurerName.trim().toLowerCase() && (
+                  <div
+                    className="mt-1 text-[11px] font-medium normal-case text-slate-600 truncate max-w-[210px] mx-auto"
+                    title={q.policyName}
+                  >
+                    {q.policyName}
+                  </div>
+                )}
               {/* Regulatory Compliance Scorecard */}
               {(() => {
                 const comp = complianceByInsurer.get(q.insurerName);

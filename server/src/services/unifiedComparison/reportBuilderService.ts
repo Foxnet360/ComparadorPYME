@@ -103,16 +103,31 @@ export async function matrixRowsToComparisonReport(
       ? alignInsurerIndices(rawFileInsurers, matrixInsurers)
       : rawFileInsurers.map((_, idx) => idx);
 
-  const insurerNames = rawFileInsurers.map((fileInsurer, idx) => {
+  const rawNamesWithMatrix = rawFileInsurers.map((fileInsurer, idx) => {
     const cellIdx = indexMap[idx] ?? -1;
     const matrixInsurer = cellIdx >= 0 ? matrixInsurers[cellIdx] : undefined;
-    if (!isKnownCanonicalInsurer(fileInsurer) && matrixInsurer) {
+    if (matrixInsurer) {
+      // Preserve product-qualified matrix label (e.g. "SURA - Plan Global")
+      // when multiple quotes come from the same canonical insurer.
       const canonicalFromMatrix = extractCanonicalInsurerName(matrixInsurer);
-      if (canonicalFromMatrix && canonicalFromMatrix !== 'Desconocido') {
-        return canonicalFromMatrix;
+      if (
+        !isKnownCanonicalInsurer(fileInsurer) ||
+        (canonicalFromMatrix === fileInsurer &&
+          matrixInsurer.toLowerCase() !== fileInsurer.toLowerCase())
+      ) {
+        return matrixInsurer;
       }
     }
     return fileInsurer;
+  });
+
+  // Guarantee unique column labels even when filenames and matrix labels collapse
+  const nameCounts = new Map<string, number>();
+  const insurerNames = rawNamesWithMatrix.map((name) => {
+    const key = name.toLowerCase();
+    const count = (nameCounts.get(key) || 0) + 1;
+    nameCounts.set(key, count);
+    return count === 1 ? name : `${name} (Opción ${count})`;
   });
 
   const matchCoverageCache = new Map<string, ReturnType<typeof semanticMatcher.matchCoverage>>();
