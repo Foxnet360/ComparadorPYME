@@ -404,7 +404,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               ) : (
                 <FileSpreadsheet size={14} />
               )}
-              <span>Excel Cliente (Asesoría)</span>
+              <span>Excel Cliente</span>
             </button>
 
             <button

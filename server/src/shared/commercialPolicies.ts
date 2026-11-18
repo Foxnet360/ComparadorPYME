@@ -102,7 +102,7 @@ export function getStructuredCommercialPolicyEntries(policies: CommercialPolicie
     },
     {
       category: 'Servicio de Intermediación',
-      title: 'Alcance del Asesor / Correduría',
+      title: 'Alcance del Técnico Analista / Correduría',
       detail: policies.intermediationScope,
     },
     ...(policies.customNotes
