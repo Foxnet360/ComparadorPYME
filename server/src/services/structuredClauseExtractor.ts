@@ -153,7 +153,7 @@ export const structuredClauseExtractor = {
       throw new Error('Clause text is required for structured extraction');
     }
 
-    const modelName = env.GEMINI_CLAUSE_MODEL || 'gemini-3.8-flash';
+    const modelName = env.GEMINI_CLAUSE_MODEL || 'gemini-4-hydrogen';
     console.log(
       `📄 [StructuredExtractor] Extracting clauses for ${insurerName} using model ${modelName}...`
     );

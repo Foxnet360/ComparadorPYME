@@ -388,7 +388,7 @@ Instrucciones de clasificación:
 
 Tu respuesta debe ser un JSON válido, sin bloques de código markdown, solo el objeto JSON.`;
 
-    const modelName = env.GEMINI_FAST_MODEL || env.GEMINI_CHAT_MODEL || 'gemini-3.8-flash';
+    const modelName = env.GEMINI_FAST_MODEL || env.GEMINI_CHAT_MODEL || 'gemini-3.5-flash-lite';
     console.log(`🤖 [Consensus] Agent A (Taxonomist) evaluating: "${rawName}" using ${modelName}`);
 
     const TaxonomistResponseSchema = {

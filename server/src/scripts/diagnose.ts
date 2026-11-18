@@ -54,7 +54,7 @@ const testGemini = async () => {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'models/gemini-2.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'models/gemini-4-hydrogen' });
 
     // Intentar una generación simple
     await model.generateContent('Hola');

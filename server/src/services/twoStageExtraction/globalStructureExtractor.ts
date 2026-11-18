@@ -144,7 +144,7 @@ export class GlobalStructureExtractor {
     cachedContent?: string | null
   ): Promise<GlobalStructureExtraction> {
     const ai = getGenAI();
-    const extractionModel = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+    const extractionModel = process.env.GEMINI_MODEL || 'gemini-4-hydrogen';
 
     const domainDesc = getDomainDescription(domain);
     let prompt = `Eres un extractor experto de ${domainDesc}.

@@ -250,7 +250,7 @@ router.get('/status', (req, res) => {
     unifiedEngine: {
       enabled: unifiedComparisonFlag.isEnabled(userId),
       rolloutConfig: unifiedComparisonFlag.getRolloutConfig(),
-      model: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
+      model: process.env.GEMINI_MODEL || 'gemini-4-hydrogen',
     },
   });
 });

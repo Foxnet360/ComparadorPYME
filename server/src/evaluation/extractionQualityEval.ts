@@ -424,7 +424,7 @@ async function uploadFiles(filePaths: string[]): Promise<GeminiFile[]> {
 
 async function callGeminiBaseline(files: GeminiFile[], prompt: string): Promise<string> {
   const ai = getGenAI();
-  const model = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+  const model = process.env.GEMINI_MODEL || 'gemini-4-hydrogen';
 
   const contents = [
     ...files.map((file) => ({
@@ -478,7 +478,7 @@ async function runBaselineComparison(
 
     const parseOptions = {
       pdfCount: pdfPaths.length,
-      model: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
+      model: process.env.GEMINI_MODEL || 'gemini-4-hydrogen',
       confidence: 0.85,
       needsHumanReview: false,
     };

@@ -55,9 +55,9 @@ interface GeminiFile {
   state?: string;
 }
 
-// Default configuration following Gemini 3.8 Flash best practices for JSON schema extraction
+// Default configuration following Gemini 4 Hydrogen best practices for JSON schema extraction
 const DEFAULT_CONFIG: ComparisonEngineConfig = {
-  model: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
+  model: process.env.GEMINI_MODEL || 'gemini-4-hydrogen',
   thinkingLevel: (process.env.GEMINI_THINKING_LEVEL?.toUpperCase() as any) || 'LOW',
   responseMimeType: 'application/json',
   responseSchema: {},
