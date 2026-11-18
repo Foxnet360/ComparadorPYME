@@ -198,6 +198,7 @@ export const storageService = {
           client_id?: string;
           created_at?: string;
           client_name?: string;
+          metadata?: Record<string, unknown>;
           analysis_result?: { quotes?: QuoteAnalysis[] };
         }> = Array.isArray(rawData) ? rawData : Array.isArray(rawData?.data) ? rawData.data : [];
 
@@ -221,7 +222,9 @@ export const storageService = {
             insurers: quotes.map((q) => q.insurerName || 'Desconocido'),
             bestOption: bestQuote?.insurerName || 'N/A',
             premiumValue: bestQuote?.priceAnnual || 0,
-            status: 'SENT', // Default status - could be stored in DB in future
+            status:
+              ((item.metadata as Record<string, unknown> | undefined)?.status as QuoteStatus) ||
+              'SENT',
             fullReport: analysisResult as ComparisonReport,
           };
         });
@@ -303,8 +306,16 @@ export const storageService = {
       await dbService.put('history', updated);
     }
 
-    // Note: Backend doesn't have an endpoint to update status yet
-    // This would need to be implemented in the backend if we want persistence
+    // Persist status in backend analysis_history.metadata
+    try {
+      await apiClient.fetch(`/analysis/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+    } catch (err) {
+      console.warn('Failed to persist analysis status to backend', err);
+    }
   },
 
   assignClientToAnalysis: async (

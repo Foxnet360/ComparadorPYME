@@ -1110,10 +1110,106 @@ function extractCellValue(cell: unknown): string {
   return String(cell);
 }
 
+/**
+ * Pair row `cells` 1:1 with `rawInsurers` / `canonicalInsurers` without ever
+ * reusing the same cell index twice when multiple products share an insurer.
+ */
+function alignRowCellsToInsurers(
+  cells: unknown[],
+  rawInsurers: string[],
+  canonicalInsurers: string[]
+): unknown[] {
+  const matched: Array<unknown> = new Array(rawInsurers.length).fill(undefined);
+  const usedCellIndices = new Set<number>();
+
+  // Pass 1: Exact raw insurer/product label match
+  for (let i = 0; i < rawInsurers.length; i++) {
+    const rawTarget = rawInsurers[i]!.toLowerCase();
+    for (let c = 0; c < cells.length; c++) {
+      if (usedCellIndices.has(c)) continue;
+      const cell = cells[c];
+      if (typeof cell !== 'object' || cell === null) continue;
+      const cellIns = String((cell as { insurer?: unknown }).insurer ?? '').trim().toLowerCase();
+      if (cellIns && cellIns === rawTarget) {
+        matched[i] = cell;
+        usedCellIndices.add(c);
+        break;
+      }
+    }
+  }
+
+  // Pass 2: Canonical insurer match on remaining unconsumed cells
+  for (let i = 0; i < canonicalInsurers.length; i++) {
+    if (matched[i] !== undefined) continue;
+    const canonTarget = canonicalInsurers[i]!;
+    for (let c = 0; c < cells.length; c++) {
+      if (usedCellIndices.has(c)) continue;
+      const cell = cells[c];
+      if (typeof cell !== 'object' || cell === null) continue;
+      const cellRaw = String((cell as { insurer?: unknown }).insurer ?? '').trim();
+      if (cellRaw && extractCanonicalInsurerName(cellRaw) === canonTarget) {
+        matched[i] = cell;
+        usedCellIndices.add(c);
+        break;
+      }
+    }
+  }
+
+  // Pass 3: Positional fallback
+  for (let i = 0; i < rawInsurers.length; i++) {
+    if (matched[i] !== undefined) continue;
+    if (i < cells.length && !usedCellIndices.has(i)) {
+      matched[i] = cells[i];
+      usedCellIndices.add(i);
+    }
+  }
+
+  return matched;
+}
+
+/**
+ * Disambiguate column names when multiple quotes belong to the same canonical
+ * insurer (e.g. 3 SURA Health products), preserving product suffixes when present.
+ */
+function buildUniqueInsurerLabels(
+  rawInsurers: string[],
+  canonicalInsurers: string[],
+  quoteMetadata?: Array<Record<string, unknown>>
+): string[] {
+  const counts = new Map<string, number>();
+  for (const c of canonicalInsurers) {
+    counts.set(c, (counts.get(c) || 0) + 1);
+  }
+
+  const seen = new Map<string, number>();
+  return canonicalInsurers.map((canon, idx) => {
+    if ((counts.get(canon) || 0) <= 1) {
+      return canon;
+    }
+    const raw = rawInsurers[idx] || '';
+    const metaProduct =
+      quoteMetadata && quoteMetadata[idx] && typeof quoteMetadata[idx]?.tipoSeguro === 'string'
+        ? String(quoteMetadata[idx]!.tipoSeguro).trim()
+        : '';
+    let candidate = canon;
+    if (raw && extractCanonicalInsurerName(raw) === canon && raw.toLowerCase() !== canon.toLowerCase()) {
+      candidate = raw;
+    } else if (metaProduct) {
+      candidate = `${canon} - ${metaProduct}`;
+    }
+
+    const prevCount = seen.get(candidate.toLowerCase()) || 0;
+    seen.set(candidate.toLowerCase(), prevCount + 1);
+    return prevCount === 0 ? candidate : `${candidate} (${prevCount + 1})`;
+  });
+}
+
 function parseJsonWithInsurersArray(data: Record<string, unknown>): RawTable {
-  const insurers = (data.insurers as unknown[])
-    .map((item) => extractCanonicalInsurerName(String(item).trim()))
+  const rawInsurers = (data.insurers as unknown[])
+    .map((item) => String(item).trim())
     .filter(Boolean);
+  const canonicalInsurers = rawInsurers.map((item) => extractCanonicalInsurerName(item));
+  const insurers = buildUniqueInsurerLabels(rawInsurers, canonicalInsurers);
   const inputRows = Array.isArray(data.rows) ? (data.rows as unknown[]) : [];
 
   const rows = new Map<string, RowValues>();
@@ -1130,24 +1226,8 @@ function parseJsonWithInsurersArray(data: Record<string, unknown>): RawTable {
     let values: string[] = [];
     if ('cells' in row && Array.isArray((row as { cells: unknown }).cells)) {
       const cells = (row as { cells: unknown[] }).cells;
-      values = insurers.map((insurer) => {
-        // Prefer object cells matched by insurer name.
-        const matched = cells.find(
-          (cell) =>
-            typeof cell === 'object' &&
-            cell !== null &&
-            (String((cell as { insurer?: unknown }).insurer).trim() === insurer ||
-              extractCanonicalInsurerName(
-                String((cell as { insurer?: unknown }).insurer).trim()
-              ) === insurer)
-        );
-        if (matched != null) {
-          return extractCellValue(matched);
-        }
-        // Fall back to positional values.
-        const idx = insurers.indexOf(insurer);
-        return extractCellValue(cells[idx]);
-      });
+      const aligned = alignRowCellsToInsurers(cells, rawInsurers, canonicalInsurers);
+      values = aligned.map((cell) => extractCellValue(cell));
     }
 
     target.set(key, padValues(values, insurers.length));
@@ -1427,11 +1507,16 @@ function parseJsonV2(raw: string): RawTable {
     throw new Error('JSON root must be an object');
   }
 
-  const insurers = Array.isArray((data as Record<string, unknown>).insurers)
+  const rawInsurers = Array.isArray((data as Record<string, unknown>).insurers)
     ? ((data as Record<string, unknown>).insurers as unknown[])
-        .map((item) => extractCanonicalInsurerName(String(item).trim()))
+        .map((item) => String(item).trim())
         .filter(Boolean)
     : [];
+  const canonicalInsurers = rawInsurers.map((item) => extractCanonicalInsurerName(item));
+  const rawQuoteMetadata = Array.isArray((data as Record<string, unknown>).quoteMetadata)
+    ? ((data as Record<string, unknown>).quoteMetadata as Array<Record<string, unknown>>)
+    : undefined;
+  const insurers = buildUniqueInsurerLabels(rawInsurers, canonicalInsurers, rawQuoteMetadata);
   const inputRows = Array.isArray((data as Record<string, unknown>).rows)
     ? ((data as Record<string, unknown>).rows as unknown[])
     : [];
@@ -1450,39 +1535,9 @@ function parseJsonV2(raw: string): RawTable {
     let metaArray: Array<ExtractedCellMeta> = [];
     if ('cells' in row && Array.isArray((row as { cells: unknown }).cells)) {
       const cells = (row as { cells: unknown[] }).cells;
-      values = insurers.map((insurer) => {
-        const matched = cells.find(
-          (cell) =>
-            typeof cell === 'object' &&
-            cell !== null &&
-            (String((cell as { insurer?: unknown }).insurer).trim() === insurer ||
-              extractCanonicalInsurerName(
-                String((cell as { insurer?: unknown }).insurer).trim()
-              ) === insurer)
-        );
-        if (matched != null) {
-          return extractCellValueV2(matched);
-        }
-        const idx = insurers.indexOf(insurer);
-        return extractCellValueV2(cells[idx]);
-      });
-
-      metaArray = insurers.map((insurer) => {
-        const matched = cells.find(
-          (cell) =>
-            typeof cell === 'object' &&
-            cell !== null &&
-            (String((cell as { insurer?: unknown }).insurer).trim() === insurer ||
-              extractCanonicalInsurerName(
-                String((cell as { insurer?: unknown }).insurer).trim()
-              ) === insurer)
-        );
-        if (matched != null) {
-          return extractCellMetaV2(matched);
-        }
-        const idx = insurers.indexOf(insurer);
-        return extractCellMetaV2(cells[idx]);
-      });
+      const aligned = alignRowCellsToInsurers(cells, rawInsurers, canonicalInsurers);
+      values = aligned.map((cell) => extractCellValueV2(cell));
+      metaArray = aligned.map((cell) => extractCellMetaV2(cell));
     }
 
     // Keep the raw label; alias normalization happens in buildV2Result.
@@ -1490,10 +1545,10 @@ function parseJsonV2(raw: string): RawTable {
     cellMeta.set(label, metaArray);
   }
 
-  const quoteMetadata = Array.isArray((data as Record<string, unknown>).quoteMetadata)
-    ? ((data as Record<string, unknown>).quoteMetadata as any[]).map((meta) => ({
+  const quoteMetadata = rawQuoteMetadata
+    ? rawQuoteMetadata.map((meta, idx) => ({
         ...meta,
-        insurer: extractCanonicalInsurerName(String(meta?.insurer || '')),
+        insurer: insurers[idx] || extractCanonicalInsurerName(String(meta?.insurer || '')),
       }))
     : undefined;
 

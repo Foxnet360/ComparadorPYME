@@ -53,6 +53,7 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
     currentUser?.role === 'super_admin' ||
     currentUser?.role === 'ADMIN';
   const currentOrgId =
+    currentUser?.allyId ||
     (currentUser as (UserProfile & { orgId?: string; org_id?: string }) | null)?.orgId ||
     (currentUser as (UserProfile & { org_id?: string }) | null)?.org_id ||
     '';

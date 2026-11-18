@@ -101,14 +101,18 @@ export class ComparisonEngineAdapter {
     );
 
     const preferTwoStage = featureFlags.isEnabled('preferTwoStagePipeline');
-    if (preferTwoStage) {
+    const isLargeMultiProductBatch = pdfPaths.length > 3;
+    if (preferTwoStage || isLargeMultiProductBatch) {
+      const routeReason = preferTwoStage
+        ? 'primary_two_stage_pipeline'
+        : 'multi_quote_batch_isolation';
       console.log(
-        `🚀 [Adapter] Prioritizing Two-Stage per-quote extraction pipeline as PRIMARY engine [${correlationId}] domain=${domain}`
+        `🚀 [Adapter] Prioritizing Two-Stage per-quote extraction pipeline (${routeReason}, files=${pdfPaths.length}) [${correlationId}] domain=${domain}`
       );
       try {
         const matrix = await this.runPerQuoteBatch(
           pdfPaths,
-          'primary_two_stage_pipeline',
+          routeReason,
           correlationId,
           domain
         );

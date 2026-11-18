@@ -18,9 +18,11 @@ import { requireRole } from '../middleware/auth';
 
 const router = Router();
 
-// Protect administrative engine switches and global configs strictly to super_admin
+// Protect administrative engine switches, global configs, and platform metrics
 router.use('/unified-engine/admin', requireRole('super_admin'));
 router.use('/alerts/config', requireRole('super_admin'));
+router.use('/accuracy', requireRole('super_admin'));
+router.use('/performance', requireRole('super_admin'));
 
 /**
  * GET /api/monitoring/accuracy
@@ -394,7 +396,7 @@ router.get(
     res.json({
       enabled: featureFlags.isEnabled('useUnifiedComparisonEngine'),
       rolloutConfig: config,
-      model: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
+      model: process.env.GEMINI_MODEL || 'gemini-4-hydrogen',
       environment: process.env.NODE_ENV || 'development',
     });
   })

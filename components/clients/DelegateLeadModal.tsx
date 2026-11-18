@@ -35,7 +35,7 @@ export const DelegateLeadModal: React.FC<DelegateLeadModalProps> = ({
       setLoading(true);
       try {
         const list = await clientDelegationService.listOrgMembers(orgId);
-        setMembers(list.filter((m) => m.status === 'active'));
+        setMembers(list.filter((m) => !m.status || m.status.toUpperCase() === 'ACTIVE'));
       } catch {
         setError('No se pudieron cargar los Técnicos Analistas.');
       } finally {

@@ -278,7 +278,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   Comparador CSA
                 </span>
                 <p className="text-[11px] text-slate-500 -mt-1 font-semibold tracking-wide">
-                  Plataforma para Corredores & Asesores
+                  Plataforma para Corredores & Técnicos Analistas
                 </p>
               </div>
             </div>

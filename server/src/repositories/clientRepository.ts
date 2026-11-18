@@ -171,10 +171,21 @@ export async function listClients(
   return rows;
 }
 
+async function canTechnicalAccessClient(
+  userId: string,
+  client: ClientRecord
+): Promise<boolean> {
+  if (client.assigned_to === userId) return true;
+  if (!client.assigned_to && client.user_id === userId) return true;
+  const sharedIds = await getSharedClientIds(userId);
+  return sharedIds.includes(client.id);
+}
+
 export async function getClientById(
   userId: string,
   id: string,
-  orgId?: string | null
+  orgId?: string | null,
+  role?: string | null
 ): Promise<ClientRecord | null> {
   let query = supabase.from('clients').select(CLIENT_COLUMNS).eq('id', id);
 
@@ -193,15 +204,27 @@ export async function getClientById(
     handleDbError(error, 'Failed to fetch client by id');
   }
 
-  return data as unknown as ClientRecord | null;
+  const record = data as unknown as ClientRecord | null;
+  if (record && role === 'ally_technical') {
+    const allowed = await canTechnicalAccessClient(userId, record);
+    if (!allowed) return null;
+  }
+
+  return record;
 }
 
 export async function updateClient(
   userId: string,
   id: string,
   input: UpdateClientInput,
-  orgId?: string | null
+  orgId?: string | null,
+  role?: string | null
 ): Promise<ClientRecord | null> {
+  if (role === 'ally_technical') {
+    const existing = await getClientById(userId, id, orgId, role);
+    if (!existing) return null;
+  }
+
   const payload: TablesUpdate<'clients'> = { updated_at: new Date().toISOString() };
   if (input.name !== undefined) payload.name = input.name;
   if (input.tax_id !== undefined) payload.tax_id = input.tax_id;
@@ -330,6 +353,7 @@ export async function unshareClientWithUser(params: {
     .from('client_shares' as never)
     .delete()
     .eq('client_id', params.clientId)
+    .eq('org_id', params.orgId)
     .eq('shared_with_user_id', params.targetUserId);
   if (error) handleDbError(error, 'Failed to unshare client');
 
@@ -354,6 +378,7 @@ export async function delegateClientToAdvisors(params: {
     .from('clients')
     .select('*')
     .eq('id', params.clientId)
+    .eq('org_id', params.orgId)
     .single();
 
   const existingRecord = existing as unknown as ClientRecord | null;
@@ -374,6 +399,7 @@ export async function delegateClientToAdvisors(params: {
       updated_at: new Date().toISOString(),
     } as never)
     .eq('id', params.clientId)
+    .eq('org_id', params.orgId)
     .select(CLIENT_COLUMNS)
     .single();
 
@@ -416,6 +442,7 @@ export async function updateClientLeadStatus(params: {
     .from('clients')
     .select('lead_status')
     .eq('id', params.clientId)
+    .eq('org_id', params.orgId)
     .single();
   if (!existing) return null;
 
@@ -428,6 +455,7 @@ export async function updateClientLeadStatus(params: {
       updated_at: new Date().toISOString(),
     } as never)
     .eq('id', params.clientId)
+    .eq('org_id', params.orgId)
     .select(CLIENT_COLUMNS)
     .single();
 

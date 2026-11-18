@@ -64,7 +64,7 @@ export const MatrixToolbar: React.FC<MatrixToolbarProps> = ({
               ) : (
                 <Download size={16} />
               )}
-              <span>Excel Cliente (Asesoría)</span>
+              <span>Excel Cliente</span>
             </button>
             <button
               type="button"

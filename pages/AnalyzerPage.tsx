@@ -230,7 +230,7 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
               </div>
               <div className="flex items-center space-x-2 text-slate-700">
                 <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
-                <span>2. Normalización Ontológica (Gemini 3.5)</span>
+                <span>2. Normalización Ontológica (Gemini IA)</span>
               </div>
               <div className="flex items-center space-x-2 text-slate-700">
                 <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
@@ -253,7 +253,7 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
 
           <div className="inline-flex items-center px-4 py-2 bg-slate-100 text-slate-700 rounded-full text-xs font-semibold">
             <Sparkles size={14} className="mr-2 text-indigo-600" />
-            Motor IA Gemini 3.5 • Supabase PGVector 3072d • Prevalencia Técnica
+            Motor IA Gemini • Supabase PGVector 3072d • Prevalencia Técnica
           </div>
         </div>
       )}

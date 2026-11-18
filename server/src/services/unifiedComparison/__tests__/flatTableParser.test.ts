@@ -983,5 +983,72 @@ describe('flatTableParser.parseV2 graph canonicalization', () => {
       expect(result.rows).toHaveLength(4);
       expect(result.rows[0].label).toBe('Bienes Asegurados');
     });
+
+    it('preserves distinct coverages, deductibles and premiums for 3 Health products of the same insurer (SURA)', async () => {
+      const input = JSON.stringify({
+        insurers: ['SURA', 'SURA', 'SURA'],
+        quoteMetadata: [
+          { insurer: 'SURA', cliente: 'Acme SAS', tipoSeguro: 'Plan Clásico' },
+          { insurer: 'SURA', cliente: 'Acme SAS', tipoSeguro: 'Plan Global' },
+          { insurer: 'SURA', cliente: 'Acme SAS', tipoSeguro: 'Plan Élite' },
+        ],
+        rows: [
+          {
+            label: 'Hospitalización y Cirugía',
+            section: 'COBERTURAS',
+            cells: [
+              { insurer: 'SURA', value: '$150.000.000' },
+              { insurer: 'SURA', value: '$400.000.000' },
+              { insurer: 'SURA', value: 'Ilimitado' },
+            ],
+          },
+          {
+            label: 'Deducible Hospitalización',
+            section: 'DEDUCIBLES',
+            cells: [
+              { insurer: 'SURA', value: '10%' },
+              { insurer: 'SURA', value: '5%' },
+              { insurer: 'SURA', value: 'No aplica' },
+            ],
+          },
+          {
+            label: 'Total a Pagar',
+            section: 'FINANCIAL',
+            cells: [
+              { insurer: 'SURA', value: '$3.200.000' },
+              { insurer: 'SURA', value: '$5.800.000' },
+              { insurer: 'SURA', value: '$9.100.000' },
+            ],
+          },
+        ],
+      });
+
+      const result = await flatTableParser.parseV2(input, { ...baseOptions, domain: 'salud' });
+
+      expect(result.insurers).toEqual([
+        'SURA - Plan Clásico',
+        'SURA - Plan Global',
+        'SURA - Plan Élite',
+      ]);
+      const hospRow = result.rows.find((r) => r.label.includes('Hospitalización'));
+      expect(hospRow).toBeDefined();
+      expect(hospRow!.cells.map((c) => c.value)).toEqual([
+        '$150.000.000',
+        '$400.000.000',
+        'Ilimitado',
+      ]);
+      const dedRow = [...result.rows, ...result.extraRows].find((r) => r.label.includes('Deducible'));
+      expect(dedRow).toBeDefined();
+      expect(dedRow!.cells.map((c) => c.value)).toEqual(['10%', '5%', 'No aplica']);
+      const totalRow = [...result.rows, ...result.extraRows].find((r) =>
+        r.label.includes('Total a Pagar')
+      );
+      expect(totalRow).toBeDefined();
+      expect(totalRow!.cells.map((c) => c.value)).toEqual([
+        '$3.200.000',
+        '$5.800.000',
+        '$9.100.000',
+      ]);
+    });
   });
 });
