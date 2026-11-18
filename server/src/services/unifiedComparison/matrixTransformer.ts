@@ -20,6 +20,7 @@ import { getCanonicalCoverageNames } from '../../config/domainConstants';
 import { hasDomainSpecificFile, loadDomainJson } from '../domainBundleLoader';
 import { parseColombianCurrency } from '../../utils/currencyParser';
 import { extractCanonicalInsurerName, isKnownCanonicalInsurer } from './insurerSanitizer';
+import { env } from '../../config/env';
 
 export const HEADER_SECTION_ID = 0;
 export const COVERAGE_SECTION_ID = 1;
@@ -1105,7 +1106,7 @@ export function formatCurrency(num: number): string {
   return '$' + num.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
-const SMMLV_2026 = Number(process.env.SMMLV_VALUE) || 1750905;
+const SMMLV_CURRENT = env.SMMLV_VALUE;
 
 export function enrichSmmlvDeductible(text: string | undefined | null): string {
   if (!text) return 'Según amparo principal';
@@ -1116,7 +1117,7 @@ export function enrichSmmlvDeductible(text: string | undefined | null): string {
     (match, numStr) => {
       const num = parseFloat(numStr);
       if (!isNaN(num) && num > 0) {
-        const copVal = Math.round(num * SMMLV_2026);
+        const copVal = Math.round(num * SMMLV_CURRENT);
         const formattedCop = '$' + copVal.toLocaleString('es-CO');
         return `${match} (${formattedCop} COP)`;
       }

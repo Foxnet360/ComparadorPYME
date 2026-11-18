@@ -208,6 +208,12 @@ app.post(
   asyncHandler(analysisController.appendQuotesToAnalysis)
 );
 
+app.patch(
+  '/api/analysis/:id/status',
+  optionalAuthMiddleware,
+  asyncHandler(analysisController.updateAnalysisStatus)
+);
+
 app.get('/api/history', optionalAuthMiddleware, asyncHandler(analysisController.getHistory));
 
 // Document Indexing routes
@@ -352,9 +358,10 @@ async function bootstrap(): Promise<void> {
     console.error('❌ [Startup] campaign scheduler failed to start:', error);
   }
 
-  app.listen(port, '0.0.0.0', () => {
+  const server = app.listen(port, '0.0.0.0', () => {
     console.log(`✅ Server running on port ${port}`);
   });
+  server.setTimeout(Number(process.env.UPLOAD_TIMEOUT) || 300000);
 }
 
 // Start only when run as a server, not when imported by tests (vitest sets VITEST).

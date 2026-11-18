@@ -121,7 +121,7 @@ const AppShell: React.FC = () => {
         {currentView === 'CLIENTS' && (
           <Suspense fallback={<ViewLoadingFallback />}>
             <ClientsPage
-              onSelectClientForAudit={() => startNewAnalysis()}
+              onSelectClientForAudit={() => navigateTo('ANALYZER')}
               onViewReport={(rep) => {
                 viewReport(rep);
                 navigateTo('REPORT');

@@ -181,8 +181,15 @@ export function resolveAnalysisDomain(rawDomain: unknown): AnalysisDomainResolut
     return { domain: 'pyme' };
   }
 
-  if (isInsuranceDomain(rawDomain)) {
-    return { domain: rawDomain };
+  const normalizedDomain =
+    rawDomain === 'casco'
+      ? 'casco_embarcacion'
+      : rawDomain === 'equipo'
+        ? 'equipo_maquinaria'
+        : rawDomain;
+
+  if (isInsuranceDomain(normalizedDomain)) {
+    return { domain: normalizedDomain };
   }
 
   return {
@@ -676,6 +683,62 @@ export const analysisController = {
     } catch (error: unknown) {
       cleanup();
       logger.error({ err: error }, 'Controller Error: appendQuotesToAnalysis failed');
+      next(toHttpError(error));
+    }
+  },
+
+  /**
+   * PATCH /api/analysis/:id/status
+   * Persists workflow status (DRAFT | SENT | ACCEPTED | REJECTED) in metadata.
+   */
+  updateAnalysisStatus: async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const analysisId = Array.isArray(req.params.id)
+        ? req.params.id[0] || ''
+        : String(req.params.id || '');
+      const status = String((req.body as { status?: unknown })?.status || '').toUpperCase();
+      const allowed = new Set(['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED']);
+      if (!analysisId || !allowed.has(status)) {
+        res.status(400).json({ error: 'ID o estado inválido.' });
+        return;
+      }
+
+      const existingRecord = await getAnalysisById(analysisId);
+      if (!existingRecord) {
+        res.status(404).json({ error: 'Análisis no encontrado.' });
+        return;
+      }
+
+      const userId = req.user?.id;
+      const orgId = req.user?.orgId;
+      const role = req.user?.role;
+      const recordOrgId = (existingRecord as { org_id?: string | null }).org_id;
+      const hasAccess =
+        role === 'super_admin' ||
+        (userId && existingRecord.user_id === userId) ||
+        (orgId && recordOrgId === orgId);
+
+      if (!hasAccess) {
+        res.status(403).json({ error: 'No tiene permisos para actualizar este análisis.' });
+        return;
+      }
+
+      const currentMeta = (existingRecord.metadata as Record<string, unknown> | null) || {};
+      const ok = await updateAnalysisHistory(analysisId, {
+        metadata: { ...currentMeta, status, statusUpdatedAt: new Date().toISOString() },
+      });
+
+      if (!ok) {
+        res.status(500).json({ error: 'No se pudo guardar el estado.' });
+        return;
+      }
+
+      res.json({ id: analysisId, status });
+    } catch (error: unknown) {
       next(toHttpError(error));
     }
   },
