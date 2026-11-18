@@ -135,7 +135,7 @@ router.get(
       return;
     }
     const userId = requireUser(req);
-    const client = await getClientById(userId, String(req.params.id), req.user?.orgId);
+    const client = await getClientById(userId, String(req.params.id), req.user?.orgId, req.user?.role);
     if (!client) {
       throw new NotFoundError('Client not found');
     }
@@ -150,7 +150,8 @@ const handleUpdateClient = asyncHandler(async (req: AuthenticatedRequest, res) =
     userId,
     String(req.params.id),
     req.body as UpdateClientInput,
-    req.user?.orgId
+    req.user?.orgId,
+    req.user?.role
   );
   if (!updated) {
     throw new NotFoundError('Client not found');
@@ -184,7 +185,7 @@ router.get(
   '/:id/shares',
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const userId = requireUser(req);
-    const client = await getClientById(userId, String(req.params.id), req.user?.orgId);
+    const client = await getClientById(userId, String(req.params.id), req.user?.orgId, req.user?.role);
     if (!client) {
       throw new NotFoundError('Client not found');
     }

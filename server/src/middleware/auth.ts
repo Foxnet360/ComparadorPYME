@@ -86,15 +86,15 @@ function buildUserFromPayload(decoded: JwtUserPayload): AuthenticatedUser {
   const role = normalizeRole(rawRole);
   const name = decoded.user_metadata?.name || decoded.email?.split('@')[0];
 
+  // Only allow user_metadata.org_id fallback in test environment; production must use app_metadata
+  const fallbackTestOrgId =
+    process.env.NODE_ENV === 'test' ? decoded.user_metadata?.org_id : undefined;
+
   return {
     id: (decoded.sub || decoded.id) as string,
     email: decoded.email,
     role,
-    orgId: orgId
-      ? String(orgId)
-      : decoded.user_metadata?.org_id
-        ? String(decoded.user_metadata.org_id)
-        : undefined,
+    orgId: orgId ? String(orgId) : fallbackTestOrgId ? String(fallbackTestOrgId) : undefined,
     name,
     intermediaryName: decoded.user_metadata?.intermediary_name,
   };

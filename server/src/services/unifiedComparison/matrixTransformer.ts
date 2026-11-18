@@ -1883,14 +1883,22 @@ export function alignMatrixRowsToQuotes(
     return matrixRows;
   }
 
+  const hasBaselineCol =
+    matrixRows.some((r) => r.isBaseline || r.id === 'baseline_column') ||
+    (matrixInsurers[0]?.includes('(Póliza Actual)') ?? false);
+
+  const baselineLabel = hasBaselineCol ? matrixInsurers[0] : undefined;
+  const candidateMatrixInsurers = hasBaselineCol ? matrixInsurers.slice(1) : matrixInsurers;
+
   const quoteInsurers = quotes.map((q) => q.insurerName);
-  const indices = alignInsurerIndices(quoteInsurers, matrixInsurers);
+  const indices = alignInsurerIndices(quoteInsurers, candidateMatrixInsurers);
 
   // If already identically aligned and names match, return unchanged
   const isMisaligned = indices.some((srcIdx, targetIdx) => srcIdx !== targetIdx);
   const isRenamed = quotes.some(
     (q, idx) =>
-      normalizeInsurerName(q.insurerName) !== normalizeInsurerName(matrixInsurers[idx] || '')
+      normalizeInsurerName(q.insurerName) !==
+      normalizeInsurerName(candidateMatrixInsurers[idx] || '')
   );
   if (!isMisaligned && !isRenamed) {
     return matrixRows;
@@ -1901,16 +1909,23 @@ export function alignMatrixRowsToQuotes(
   return matrixRows.map((row) => {
     if (!row.cells || row.cells.length === 0) return row;
 
-    const reorderedCells = indices.map((srcIdx) =>
-      srcIdx >= 0 && row.cells[srcIdx]
-        ? row.cells[srcIdx]!
+    const candidateCells = hasBaselineCol ? row.cells.slice(1) : row.cells;
+    const reorderedCandidates = indices.map((srcIdx) =>
+      srcIdx >= 0 && candidateCells[srcIdx]
+        ? candidateCells[srcIdx]!
         : { value: '', isExcluded: false, isWinner: false }
     );
+    const reorderedCells = hasBaselineCol
+      ? [row.cells[0]!, ...reorderedCandidates]
+      : reorderedCandidates;
 
     if (row.type === 'header' && row.id === 'client_info') {
+      const labelCols = hasBaselineCol && baselineLabel
+        ? [baselineLabel, ...quotes.map((q) => q.insurerName)]
+        : quotes.map((q) => q.insurerName);
       return {
         ...row,
-        label: `${headerPrefix}${quotes.map((q) => q.insurerName).join(', ')}`,
+        label: `${headerPrefix}${labelCols.join(', ')}`,
         cells: reorderedCells,
       };
     }
