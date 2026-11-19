@@ -138,15 +138,14 @@ export function isMultimodalEnabled(): boolean {
 
 /**
  * Decide whether a given PDF should use the V2 multimodal extraction path.
- * V2 is the default for every non-scanned PDF. Legacy is used when V2 is
- * explicitly disabled or the PDF appears to be image-only.
+ * V2 is the default for all PDFs (including scanned/image-only PDFs, which require
+ * multimodal vision). Legacy text-only extraction is used only when V2 is disabled.
  */
 export function shouldUseV2(
   _file: Express.Multer.File,
-  nativeTextResult: NativeTextResult
+  _nativeTextResult: NativeTextResult
 ): boolean {
   if (!isMultimodalEnabled()) return false;
-  if (nativeTextResult.isScanned) return false;
   return true;
 }
 

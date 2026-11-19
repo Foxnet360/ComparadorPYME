@@ -149,7 +149,7 @@ describe('processQuotesBatch', () => {
     expect(result[0].insurerName).toBe('legacy-0');
   });
 
-  it('uses legacy path for scanned PDFs', async () => {
+  it('uses V2 multimodal path for scanned PDFs when multimodal is enabled', async () => {
     extractTextSpy.mockResolvedValue({
       text: '',
       pages: [],
@@ -159,17 +159,18 @@ describe('processQuotesBatch', () => {
       isScanned: true,
     });
 
-    mockLegacy.mockImplementation(async (_quote, index, _total) =>
+    mockMultimodal.mockImplementation(async (_file, index, _total) =>
       makeParsedQuote({ insurerName: `scanned-${index}` })
     );
 
     const result = await processQuotesBatch(['/tmp/quote-a.pdf'], {
       concurrencyLimit: 1,
+      processQuoteMultimodal: mockMultimodal,
       processQuoteLegacy: mockLegacy,
     });
 
-    expect(mockLegacy).toHaveBeenCalled();
-    expect(mockMultimodal).not.toHaveBeenCalled();
+    expect(mockMultimodal).toHaveBeenCalled();
+    expect(mockLegacy).not.toHaveBeenCalled();
     expect(result[0].insurerName).toBe('scanned-0');
   });
 

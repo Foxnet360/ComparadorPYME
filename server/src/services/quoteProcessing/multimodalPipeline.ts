@@ -215,9 +215,10 @@ export async function processQuoteMultimodalInternal(
     }
 
     // Phase 3: Extract using multimodal vision directly on File API.
-    // Fallback ladder: strict validation → retry up to 2× → raw extraction → legacy V1 → failed placeholder.
+    // Fallback ladder: strict validation → retry up to 2× → raw extraction → legacy V1 (if native text exists) → failed placeholder.
     console.log(`   🔍 Phase 3: Extracting with multimodal vision + text reference...`);
     let extracted: QuoteExtractionV2 | null = null;
+    let lastV2Error: unknown = null;
     let repairUsed = false;
     let repairType: string | undefined;
     let repairAttempts = 0;
@@ -291,6 +292,7 @@ export async function processQuoteMultimodalInternal(
         });
       }
     } catch (v2Error: unknown) {
+      lastV2Error = v2Error;
       const message = v2Error instanceof Error ? v2Error.message : String(v2Error);
       console.warn(`   ⚠️ V2 extraction failed after retries/repair: ${message}`);
     }
@@ -327,6 +329,7 @@ export async function processQuoteMultimodalInternal(
           );
           extracted = genericResult.data;
         } catch (genericError: unknown) {
+          lastV2Error = genericError;
           const message =
             genericError instanceof Error ? genericError.message : String(genericError);
           console.warn(`   ⚠️ Generic extraction fallback failed: ${message}`);
@@ -335,8 +338,29 @@ export async function processQuoteMultimodalInternal(
       }
     }
 
-    // Legacy V1 fallback when V2 produced nothing usable.
+    // Legacy V1 fallback when V2 produced nothing usable (only when native text exists).
     if (!extracted || !extracted.rawCoverages || extracted.rawCoverages.length === 0) {
+      if (!nativeText.trim()) {
+        console.warn(
+          `   ⚠️ Multimodal extraction yielded no coverages for scanned PDF; skipping text-only legacy fallback.`
+        );
+        metrics.emit({
+          quoteId,
+          index,
+          total,
+          result: 'failed',
+          path: 'v2',
+          legacyFallback: false,
+          repairAttempts,
+          errorCategory: 'EXTRACTION_FAILED',
+          errorCode: 'NO_COVERAGES_EXTRACTED',
+        });
+        return createFailedPlaceholder(
+          quoteFile,
+          lastV2Error ?? new Error('No coverages extracted from scanned PDF')
+        );
+      }
+
       console.log(`   🔄 Falling back to legacy V1 extraction...`);
       metrics.emit({
         quoteId,

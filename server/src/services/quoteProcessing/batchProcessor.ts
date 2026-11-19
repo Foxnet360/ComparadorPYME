@@ -13,8 +13,9 @@ import { processQuoteMultimodal } from './multimodalPipeline';
 import { processQuoteLegacy } from './legacyPipeline';
 
 /**
- * Process a batch of quote PDFs using the V2 multimodal pipeline by default,
- * falling back to legacy text extraction for scanned PDFs or when V2 is disabled.
+ * Process a batch of quote PDFs using the V2 multimodal pipeline by default
+ * (including scanned/image-only PDFs), falling back to legacy text extraction
+ * only when V2 is disabled.
  *
  * The function preserves the original order of pdfPaths, limits concurrent
  * Gemini calls, and returns error placeholders for individual quote failures
@@ -85,7 +86,9 @@ export async function processQuotesBatch(
         const timeoutMessage = `Quote processing timeout (${fileRef.originalname})`;
 
         if (shouldUseV2(fileRef as Express.Multer.File, nativeTextResult)) {
-          console.log(`   🤖 Quote ${index + 1}: using V2 multimodal path`);
+          console.log(
+            `   🤖 Quote ${index + 1}: using V2 multimodal path${nativeTextResult.isScanned ? ' (scanned PDF)' : ''}`
+          );
           const parsed = await withTimeout(
             processMultimodal(fileRef as Express.Multer.File, index, pdfPaths.length, {
               domain,

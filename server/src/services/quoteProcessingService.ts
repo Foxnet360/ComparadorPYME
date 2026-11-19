@@ -161,8 +161,9 @@ export async function processQuoteLegacy(
 // ============================================================================
 
 /**
- * Process a batch of quote PDFs using the V2 multimodal pipeline by default,
- * falling back to legacy text extraction for scanned PDFs or when V2 is disabled.
+ * Process a batch of quote PDFs using the V2 multimodal pipeline by default
+ * (including scanned/image-only PDFs), falling back to legacy text extraction
+ * only when V2 is disabled.
  * Delegated to `quoteProcessing/batchProcessor`.
  *
  * @param pdfPaths File paths of PDF quotes to process.
@@ -209,8 +210,8 @@ export function isMultimodalEnabled(): boolean {
 
 /**
  * Decide whether a given PDF should use the V2 multimodal extraction path.
- * V2 is the default for every non-scanned PDF. Legacy is used when V2 is
- * explicitly disabled or the PDF appears to be image-only.
+ * V2 is the default for all PDFs (including scanned/image-only PDFs). Legacy
+ * text-only extraction is used only when V2 is explicitly disabled.
  * Delegated to `quoteProcessing/utils`.
  */
 export function shouldUseV2(

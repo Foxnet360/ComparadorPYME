@@ -33,9 +33,9 @@ describe('shouldUseV2 path selection', () => {
     expect(shouldUseV2(makeFile(), makeNativeTextResult())).toBe(true);
   });
 
-  it('returns false for a scanned PDF even when multimodal is enabled', () => {
+  it('returns true for a scanned PDF when multimodal is enabled', () => {
     process.env.ENABLE_MULTIMODAL_EXTRACTION = 'true';
-    expect(shouldUseV2(makeFile(), makeNativeTextResult({ isScanned: true }))).toBe(false);
+    expect(shouldUseV2(makeFile(), makeNativeTextResult({ isScanned: true }))).toBe(true);
   });
 
   beforeEach(() => {
