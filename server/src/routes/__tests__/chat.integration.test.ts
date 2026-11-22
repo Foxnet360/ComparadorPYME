@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import chatRoutes from '../chat';
+import type { ChatThread } from '../../repositories/chatRepository';
 import { chatRateLimiter } from '../../middleware/rateLimiter';
 import { errorHandler } from '../../middleware/errorHandler';
 import type { AuthenticatedRequest } from '../../middleware/auth';

@@ -5,7 +5,6 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import type { FakeSupabase } from './helpers/fakeSupabase';
-import { bearerTokenFor } from './helpers/authTokens';
 
 const holder = vi.hoisted(() => ({
   fake: null as unknown as FakeSupabase,
@@ -173,8 +172,12 @@ describe('T3 Security Hardening (S2b)', () => {
     expect(listPol.status).toBe(200);
     expect(listPol.body.map((p: { id: string }) => p.id)).toEqual(['pol-a']);
 
-    expect((await request(app).get('/api/policies/pol-b').set('Authorization', techAToken)).status).toBe(404);
-    expect((await request(app).delete('/api/policies/pol-b').set('Authorization', techAToken)).status).toBe(404);
+    expect(
+      (await request(app).get('/api/policies/pol-b').set('Authorization', techAToken)).status
+    ).toBe(404);
+    expect(
+      (await request(app).delete('/api/policies/pol-b').set('Authorization', techAToken)).status
+    ).toBe(404);
 
     const listRen = await request(app).get('/api/renewals').set('Authorization', techAToken);
     expect(listRen.status).toBe(200);
@@ -202,7 +205,9 @@ describe('T3 Security Hardening (S2b)', () => {
     const app = buildApiApp();
     const techAToken = tokenFor(TECH_A, 'ally_technical', ORG_1);
 
-    expect((await request(app).delete('/api/clients/client-b').set('Authorization', techAToken)).status).toBe(404);
+    expect(
+      (await request(app).delete('/api/clients/client-b').set('Authorization', techAToken)).status
+    ).toBe(404);
     expect(
       (
         await request(app)

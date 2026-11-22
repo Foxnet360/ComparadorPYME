@@ -72,7 +72,8 @@ vi.mock('../../../components/report/PromoteQuoteModal', () => ({
     isOpen: boolean;
     quoteIndex: number;
     quote: { policyName?: string };
-  }) => (isOpen ? <div data-testid="promote-modal">{`${quoteIndex}:${quote.policyName}`}</div> : null),
+  }) =>
+    isOpen ? <div data-testid="promote-modal">{`${quoteIndex}:${quote.policyName}`}</div> : null,
 }));
 
 describe('ComparisonReport - Advanced Tab Visibility', () => {
