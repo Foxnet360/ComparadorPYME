@@ -63,6 +63,18 @@ vi.mock('../../../components/InverseCoverageAlert', () => ({
   InverseCoverageAlert: () => <div data-testid="inverse-coverage">Inverse Coverage</div>,
 }));
 
+vi.mock('../../../components/report/PromoteQuoteModal', () => ({
+  PromoteQuoteModal: ({
+    isOpen,
+    quoteIndex,
+    quote,
+  }: {
+    isOpen: boolean;
+    quoteIndex: number;
+    quote: { policyName?: string };
+  }) => (isOpen ? <div data-testid="promote-modal">{`${quoteIndex}:${quote.policyName}`}</div> : null),
+}));
+
 describe('ComparisonReport - Advanced Tab Visibility', () => {
   const baseReport: ReportType = {
     quotes: [
@@ -337,5 +349,33 @@ describe('ComparisonReport - Feature Flag Integration', () => {
 
     // But should show basic tabs
     expect(screen.getByText('Dashboard Resumen')).toBeTruthy();
+  });
+
+  it('promotes the exact quote index when multiple quotes share the same insurerName', () => {
+    const multiProductReport: ReportType = {
+      ...reportWithAdvancedData,
+      quotes: [
+        {
+          ...reportWithAdvancedData.quotes[0]!,
+          insurerName: 'Seguros SURA',
+          policyName: 'Plan Básico',
+          score: 88,
+        },
+        {
+          ...reportWithAdvancedData.quotes[0]!,
+          insurerName: 'Seguros SURA',
+          policyName: 'Plan Global',
+          score: 79,
+        },
+      ],
+    };
+
+    renderWithProvider(<ComparisonReport report={multiProductReport} />);
+
+    const promoteButtons = screen.getAllByRole('button', { name: /promocionar a póliza/i });
+    expect(promoteButtons).toHaveLength(2);
+    fireEvent.click(promoteButtons[1]!);
+
+    expect(screen.getByTestId('promote-modal').textContent).toBe('1:Plan Global');
   });
 });

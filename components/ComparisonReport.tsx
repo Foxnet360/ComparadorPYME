@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { BarChart3, ShieldAlert, Scale, Layers, BookOpen } from 'lucide-react';
 import { DISCLAIMER_TEXT } from '../constants';
 import { AuditSection } from './AuditSection';
 import { UnifiedCoverageMatrix } from './UnifiedCoverageMatrix';
@@ -8,6 +7,7 @@ import { AdvancedAnalysisTab } from './report/AdvancedAnalysisTab';
 import ExportModal from './report/ExportModal';
 import { ReportAlerts } from './report/ReportAlerts';
 import { ReportHeader } from './report/ReportHeader';
+import { ReportTabsNav, REPORT_TABS, type ReportTab } from './report/ReportTabsNav';
 import { SummaryTab } from './report/SummaryTab';
 import { useReportCorrections } from '../hooks/useReportCorrections';
 import { usePdfExport } from '../hooks/usePdfExport';
@@ -22,15 +22,6 @@ import type { ComparisonReport as ReportType, QuoteAnalysis } from '../types';
 // Renewal-mode (schemaVersion 3) extras: lazy-loaded so the NEW-mode bundle
 // stays lean; only mounted for v3 reports, keeping v1/v2 output identical (XC-3).
 const RenewalAnalysisSection = React.lazy(() => import('./report/RenewalAnalysisSection'));
-
-type ReportTab = 'resumen' | 'coberturas' | 'deducibles' | 'auditoria' | 'analisis-avanzado';
-const REPORT_TABS: readonly ReportTab[] = [
-  'resumen',
-  'coberturas',
-  'deducibles',
-  'auditoria',
-  'analisis-avanzado',
-];
 
 interface ComparisonReportProps {
   report: ReportType;
@@ -133,45 +124,11 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
       )}
 
       {/* Tabs Navigation */}
-      <div className="flex overflow-x-auto pb-2 border-b border-slate-200 gap-6">
-        <button
-          onClick={() => setActiveTab('resumen')}
-          className={`flex items-center space-x-2 pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'resumen' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-        >
-          <BarChart3 size={18} />
-          <span>Dashboard Resumen</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('coberturas')}
-          className={`flex items-center space-x-2 pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'coberturas' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-        >
-          <Layers size={18} />
-          <span>Matriz de Coberturas</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('deducibles')}
-          className={`flex items-center space-x-2 pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'deducibles' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-        >
-          <Scale size={18} />
-          <span>Deducibles</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('auditoria')}
-          className={`flex items-center space-x-2 pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'auditoria' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-        >
-          <ShieldAlert size={18} />
-          <span>Análisis de Letra Chica y Brechas</span>
-        </button>
-        {hasAdvancedAnalysis && (
-          <button
-            onClick={() => setActiveTab('analisis-avanzado')}
-            className={`flex items-center space-x-2 pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'analisis-avanzado' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-          >
-            <BookOpen size={18} />
-            <span>Análisis Avanzado</span>
-          </button>
-        )}
-      </div>
+      <ReportTabsNav
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        hasAdvancedAnalysis={hasAdvancedAnalysis}
+      />
 
       {activeTab === 'resumen' && (
         <SummaryTab
@@ -184,7 +141,13 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
           onCorrection={(q, correction) => handleApplyCorrection(q.id || q.insurerName, correction)}
           onNavigate={setActiveTab}
           onPromoteQuote={(q) => {
-            const idx = report.quotes.findIndex((quote) => quote.insurerName === q.insurerName);
+            const exactIdx = report.quotes.findIndex(
+              (quote) => quote === q || (q.id && quote.id === q.id)
+            );
+            const idx =
+              exactIdx >= 0
+                ? exactIdx
+                : report.quotes.findIndex((quote) => quote.insurerName === q.insurerName);
             setPromoteQuote(q);
             setPromoteQuoteIndex(idx >= 0 ? idx : 0);
           }}

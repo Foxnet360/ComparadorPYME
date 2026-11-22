@@ -7,18 +7,30 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import chatRoutes from '../chat';
-import type { ChatThread } from '../../repositories/chatRepository';
+import { chatRateLimiter } from '../../middleware/rateLimiter';
+import { errorHandler } from '../../middleware/errorHandler';
+import type { AuthenticatedRequest } from '../../middleware/auth';
 
 // Create test app
 const app = express();
 app.use(express.json());
-app.use('/api/chat', chatRoutes);
+app.use((req, _res, next) => {
+  (req as AuthenticatedRequest).user = { id: 'user-123', role: 'ally_technical' };
+  next();
+});
+app.use('/api/chat', chatRateLimiter, chatRoutes);
+app.use(errorHandler);
 
 // Mock chat repository
 vi.mock('../../repositories/chatRepository', () => ({
   chatRepository: {
     createThread: vi.fn(async (_userId, _reportContext) => 'thread-123'),
     getOrCreateThread: vi.fn(async (_userId, _reportId, _reportContext) => 'thread-123'),
+    getThread: vi.fn(async (threadId) => ({
+      id: threadId,
+      user_id: 'user-123',
+      status: 'active',
+    })),
     getThreadByReport: vi.fn(async (_userId, _reportId) => null),
     saveMessage: vi.fn(async () => {}),
     getHistory: vi.fn(async (threadId, _limit) => [
