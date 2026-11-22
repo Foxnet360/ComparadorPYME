@@ -10,6 +10,7 @@ import path from 'path';
 import fs from 'fs';
 import { comparisonEngineAdapter } from '../services/unifiedComparison/comparisonEngineAdapter';
 import { validatePdfMagicBytes } from '../middleware/upload';
+import { env } from '../config/env';
 
 function cleanupUploadedFiles(files?: Express.Multer.File[]): void {
   if (!files || files.length === 0) return;
@@ -277,7 +278,7 @@ router.get('/status', (req, res) => {
     unifiedEngine: {
       enabled: unifiedComparisonFlag.isEnabled(userId),
       rolloutConfig: unifiedComparisonFlag.getRolloutConfig(),
-      model: process.env.GEMINI_MODEL || 'gemini-4-hydrogen',
+      model: env.GEMINI_MODEL,
     },
   });
 });

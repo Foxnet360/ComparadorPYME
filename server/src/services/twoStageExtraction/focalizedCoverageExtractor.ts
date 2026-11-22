@@ -1,4 +1,5 @@
 import { Type } from '@google/genai';
+import { env } from '../../config/env';
 import { getGenAI, UploadedFile, extractHighSignalReferenceText } from '../gemini';
 import { parseJsonWithRepair } from '../jsonRepair';
 import {
@@ -97,7 +98,7 @@ export class FocalizedCoverageExtractor {
     cachedContent?: string | null
   ): Promise<FocalizedCoverageExtraction> {
     const ai = getGenAI();
-    const extractionModel = process.env.GEMINI_MODEL || 'gemini-4-hydrogen';
+    const extractionModel = env.GEMINI_MODEL;
 
     const domainDesc = getDomainDescription(domain);
     let prompt = `Eres un extractor especialista en clausulado y tablas de coberturas para ${domainDesc}.

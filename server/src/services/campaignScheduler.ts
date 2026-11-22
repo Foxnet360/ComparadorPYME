@@ -123,3 +123,10 @@ export function startCampaignScheduler(
   }
   return scheduler;
 }
+
+export function stopCampaignScheduler(): void {
+  if (activeScheduler) {
+    activeScheduler.stop();
+    activeScheduler = null;
+  }
+}

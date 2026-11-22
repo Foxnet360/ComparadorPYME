@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
-import { GoogleGenAI } from '@google/genai';
 import WebSocket from 'ws';
+import { getGenAI } from './geminiClient';
 
 interface ServiceHealth {
   status: 'ok' | 'error';
@@ -71,7 +71,7 @@ async function checkGemini(): Promise<ServiceHealth> {
       return { status: 'error', latency: 0, message: 'GEMINI_API_KEY not configured' };
     }
 
-    const genAI = new GoogleGenAI({ apiKey });
+    const genAI = getGenAI();
     // Try to list models as a lightweight check
     await genAI.models.list({});
 

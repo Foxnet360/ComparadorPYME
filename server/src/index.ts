@@ -69,7 +69,7 @@ import daasRoutes from './routes/daasRoutes';
 // Graph seeding lifecycle
 import { buildGraphEdgesFromDomain, seedCoverageGraph } from './services/graphSeeder';
 import { supabase } from './config/database';
-import { startCampaignScheduler } from './services/campaignScheduler';
+import { startCampaignScheduler, stopCampaignScheduler } from './services/campaignScheduler';
 
 const app = express();
 const port = parseInt(process.env.PORT || '8080', 10);
@@ -352,6 +352,57 @@ async function seedCoverageGraphOnStartup(): Promise<void> {
   }
 }
 
+export interface GracefulShutdownDeps {
+  server: { close: (cb: (err?: Error) => void) => void };
+  stopScheduler?: () => void;
+  exitFn?: (code: number) => void;
+  timeoutMs?: number;
+}
+
+export function createGracefulShutdown({
+  server,
+  stopScheduler = stopCampaignScheduler,
+  exitFn = (code) => process.exit(code),
+  timeoutMs = 10000,
+}: GracefulShutdownDeps) {
+  let shuttingDown = false;
+
+  return (signal: string): Promise<void> => {
+    if (shuttingDown) {
+      return Promise.resolve();
+    }
+    shuttingDown = true;
+    console.log(`🛑 [Shutdown] Received ${signal}, draining HTTP server...`);
+
+    try {
+      stopScheduler();
+    } catch (err) {
+      console.error('❌ [Shutdown] Error stopping campaign scheduler:', err);
+    }
+
+    return new Promise((resolve) => {
+      const forceTimer = setTimeout(() => {
+        console.error(`⚠️ [Shutdown] Force exiting after ${timeoutMs}ms timeout`);
+        exitFn(1);
+        resolve();
+      }, timeoutMs);
+      forceTimer.unref?.();
+
+      server.close((err) => {
+        clearTimeout(forceTimer);
+        if (err) {
+          console.error('❌ [Shutdown] Error closing HTTP server:', err);
+          exitFn(1);
+        } else {
+          console.log('✅ [Shutdown] HTTP server closed cleanly');
+          exitFn(0);
+        }
+        resolve();
+      });
+    });
+  };
+}
+
 async function bootstrap(): Promise<void> {
   // SEC-2: fail before binding the port when mandatory config is missing
   try {
@@ -376,6 +427,14 @@ async function bootstrap(): Promise<void> {
     console.log(`✅ Server running on port ${port}`);
   });
   server.setTimeout(Number(process.env.UPLOAD_TIMEOUT) || 300000);
+
+  const handleSignal = createGracefulShutdown({ server });
+  process.once('SIGTERM', () => {
+    void handleSignal('SIGTERM');
+  });
+  process.once('SIGINT', () => {
+    void handleSignal('SIGINT');
+  });
 }
 
 // Start only when run as a server, not when imported by tests (vitest sets VITEST).
