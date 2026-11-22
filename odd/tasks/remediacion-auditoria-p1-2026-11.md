@@ -12,7 +12,8 @@ Rama: `feat/audit-remediation-p1` | Plan aprobado: `auditoria_y_plan_de_mejora.m
 - [x] T1 | S1 | route: inline | status: done | commit: 47cff21 — Integridad Tailwind, guard de rutas en `App.tsx`, `useAuditEnrichment`, `PdfViewer`, `ExportModal`/`pdfHeader`, `ClauseSelector`, `FileUploader` y manejo de errores en managers + tests (Medium Risk)
 - [x] T2 | S2 | route: inline | status: done | commit: 2b07754 — Componente `Modal` accesible, responsive móvil en `AppHeader`/`ClauseAdmin`/`ExportModal`, `<button>`/`aria-label`, preview real en `ClauseAdmin`, copy neutro y etiquetas en `RenewalDetail` + tests (Medium Risk)
 - [x] T3 | S3a | route: inline | status: done | commit: c242323 — `SIGTERM`/`SIGINT` en `index.ts`, unificación `getGenAI()` + modelos desde `env` y captura de `usageMetadata` real en Gemini + tests (Medium Risk)
-- [ ] T4 | S3b | route: inline | status: pending — `org_id` en renovaciones, `referenceQuote` en todos los caminos de `comparisonEngineAdapter.ts` y recuperación ante fallo de envío en `campaignService.ts` + tests (High Risk: item 3/4)
+- [x] T4 | S3b | route: inline | status: done | commit: 9d3f32e, e904359 — `org_id` en renovaciones, `referenceQuote` en todos los caminos de `comparisonEngineAdapter.ts` y recuperación ante fallo de envío en `campaignService.ts` + tests + verificador independiente PASS (High Risk: item 3/4)
 
 ## Log
 - L1 (2026-11-22): Merge de `fix/audit-remediation-p0` completado en `main` (`a2e6e16`). Usuario autorizó continuar con Fase 2 (P1) en rama `feat/audit-remediation-p1`.
+- L2 (2026-11-22): T1 (`47cff21`), T2 (`2b07754`), T3 (`c242323`) y T4 (`9d3f32e`, fix V1 `e904359`) completados en `feat/audit-remediation-p1`; verificación independiente de T4 PASS tras gating `baselineRef` en `v2Schema`.
