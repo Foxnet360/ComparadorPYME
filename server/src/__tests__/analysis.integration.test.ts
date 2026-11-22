@@ -22,7 +22,8 @@ vi.mock('../config/database', () => {
       eq: vi.fn(() => chain),
       neq: vi.fn(() => chain),
       or: vi.fn(() => chain),
-      order: vi.fn(() => Promise.resolve({ data: val, error: null })),
+      order: vi.fn(() => chain),
+      range: vi.fn(() => Promise.resolve({ data: val, error: null })),
       single: vi.fn(() => Promise.resolve({ data: val, error: null })),
       then: vi.fn((resolve) => resolve({ data: Array.isArray(val) ? val : [val], error: null })),
     };

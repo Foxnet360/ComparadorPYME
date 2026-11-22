@@ -10,6 +10,7 @@
  */
 
 import { supabase, handleDbError } from './baseRepository';
+import { listClients } from './clientRepository';
 import type { TablesInsert, TablesUpdate, Json } from '../types/database';
 
 /** The 10 ramos supported transversally from day one. */
@@ -124,7 +125,30 @@ export async function createPolicy(
   return data as unknown as PolicyRecord | null;
 }
 
-export async function listPolicies(userId: string, orgId?: string | null): Promise<PolicyRecord[]> {
+async function getTechnicalAccessibleClientIds(
+  userId: string,
+  orgId?: string | null,
+  role?: string | null
+): Promise<Set<string>> {
+  const clients = await listClients(userId, orgId, role);
+  return new Set(clients.map((c) => c.id));
+}
+
+function canTechnicalAccessPolicy(
+  userId: string,
+  policy: PolicyRecord,
+  accessibleClientIds: Set<string>
+): boolean {
+  if (policy.user_id === userId) return true;
+  if (policy.client_id && accessibleClientIds.has(policy.client_id)) return true;
+  return false;
+}
+
+export async function listPolicies(
+  userId: string,
+  orgId?: string | null,
+  role?: string | null
+): Promise<PolicyRecord[]> {
   let query = supabase.from('policies').select(POLICY_COLUMNS);
 
   if (orgId) {
@@ -139,13 +163,19 @@ export async function listPolicies(userId: string, orgId?: string | null): Promi
     handleDbError(error, 'Failed to list policies');
   }
 
-  return (data as unknown as PolicyRecord[]) || [];
+  const rows = (data as unknown as PolicyRecord[]) || [];
+  if (role === 'ally_technical') {
+    const accessibleClientIds = await getTechnicalAccessibleClientIds(userId, orgId, role);
+    return rows.filter((p) => canTechnicalAccessPolicy(userId, p, accessibleClientIds));
+  }
+  return rows;
 }
 
 export async function getPolicyById(
   userId: string,
   id: string,
-  orgId?: string | null
+  orgId?: string | null,
+  role?: string | null
 ): Promise<PolicyRecord | null> {
   let query = supabase.from('policies').select(POLICY_COLUMNS).eq('id', id);
 
@@ -164,15 +194,28 @@ export async function getPolicyById(
     handleDbError(error, 'Failed to fetch policy by id');
   }
 
-  return data as unknown as PolicyRecord | null;
+  const record = data as unknown as PolicyRecord | null;
+  if (record && role === 'ally_technical') {
+    const accessibleClientIds = await getTechnicalAccessibleClientIds(userId, orgId, role);
+    if (!canTechnicalAccessPolicy(userId, record, accessibleClientIds)) {
+      return null;
+    }
+  }
+  return record;
 }
 
 export async function updatePolicy(
   userId: string,
   id: string,
   input: UpdatePolicyInput,
-  orgId?: string | null
+  orgId?: string | null,
+  role?: string | null
 ): Promise<PolicyRecord | null> {
+  if (role === 'ally_technical') {
+    const allowed = await getPolicyById(userId, id, orgId, role);
+    if (!allowed) return null;
+  }
+
   const payload: TablesUpdate<'policies'> = { updated_at: new Date().toISOString() };
   if (input.ramo !== undefined) payload.ramo = input.ramo;
   if (input.insurer !== undefined) payload.insurer = input.insurer;
@@ -210,8 +253,14 @@ export async function updatePolicy(
 export async function deletePolicy(
   userId: string,
   id: string,
-  orgId?: string | null
+  orgId?: string | null,
+  role?: string | null
 ): Promise<boolean> {
+  if (role === 'ally_technical') {
+    const allowed = await getPolicyById(userId, id, orgId, role);
+    if (!allowed) return false;
+  }
+
   let query = supabase.from('policies').delete().eq('id', id);
 
   if (orgId) {

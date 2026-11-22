@@ -11,6 +11,7 @@
  */
 
 import { supabase, handleDbError } from './baseRepository';
+import { listPolicies } from './policyRepository';
 import type { TablesInsert, TablesUpdate, Json } from '../types/database';
 import type { RenewalOutcome, RenewalState, TransitionPlan } from '../services/renewalStateMachine';
 
@@ -47,10 +48,30 @@ export type CreateRenewalResult =
   | { kind: 'created'; renewal: RenewalRecord }
   | { kind: 'conflict' };
 
+async function getTechnicalAccessiblePolicyIds(
+  userId: string,
+  orgId?: string | null,
+  role?: string | null
+): Promise<Set<string>> {
+  const policies = await listPolicies(userId, orgId, role);
+  return new Set(policies.map((p) => p.id));
+}
+
+function canTechnicalAccessRenewal(
+  userId: string,
+  renewal: RenewalRecord,
+  accessiblePolicyIds: Set<string>
+): boolean {
+  if (renewal.user_id === userId) return true;
+  if (renewal.policy_id && accessiblePolicyIds.has(renewal.policy_id)) return true;
+  return false;
+}
+
 export async function listRenewals(
   userId: string,
   state?: RenewalState,
-  orgId?: string | null
+  orgId?: string | null,
+  role?: string | null
 ): Promise<RenewalRecord[]> {
   let query = supabase.from('renewals').select(COLUMNS);
 
@@ -72,13 +93,19 @@ export async function listRenewals(
   if (error) {
     handleDbError(error, 'Failed to list renewals');
   }
-  return (data as unknown as RenewalRecord[]) || [];
+  const rows = (data as unknown as RenewalRecord[]) || [];
+  if (role === 'ally_technical') {
+    const accessiblePolicyIds = await getTechnicalAccessiblePolicyIds(userId, orgId, role);
+    return rows.filter((r) => canTechnicalAccessRenewal(userId, r, accessiblePolicyIds));
+  }
+  return rows;
 }
 
 export async function getRenewalById(
   userId: string,
   id: string,
-  orgId?: string | null
+  orgId?: string | null,
+  role?: string | null
 ): Promise<RenewalRecord | null> {
   let query = supabase.from('renewals').select(COLUMNS).eq('id', id);
 
@@ -96,7 +123,14 @@ export async function getRenewalById(
     }
     handleDbError(error, 'Failed to fetch renewal by id');
   }
-  return data as unknown as RenewalRecord | null;
+  const record = data as unknown as RenewalRecord | null;
+  if (record && role === 'ally_technical') {
+    const accessiblePolicyIds = await getTechnicalAccessiblePolicyIds(userId, orgId, role);
+    if (!canTechnicalAccessRenewal(userId, record, accessiblePolicyIds)) {
+      return null;
+    }
+  }
+  return record;
 }
 
 /**
@@ -138,8 +172,14 @@ export async function applyTransition(
   renewalId: string,
   plan: TransitionPlan,
   actorId: string,
-  orgId?: string
+  orgId?: string | null,
+  role?: string | null
 ): Promise<RenewalRecord | null> {
+  if (role === 'ally_technical') {
+    const allowed = await getRenewalById(userId, renewalId, orgId, role);
+    if (!allowed) return null;
+  }
+
   const patch: TablesUpdate<'renewals'> = {
     state: plan.patch.state,
     updated_at: new Date().toISOString(),

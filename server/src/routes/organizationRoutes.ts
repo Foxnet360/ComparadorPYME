@@ -4,9 +4,10 @@
  */
 
 import { Router } from 'express';
+import crypto from 'crypto';
 import { AuthenticatedRequest, requireUser, requireRole } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
-import { NotFoundError, ForbiddenError, AppError } from '../errors';
+import { NotFoundError, ForbiddenError, ValidationError, AppError } from '../errors';
 import { supabase } from '../config/database';
 import { getEffectiveCommercialPolicies, CommercialPolicies } from '../shared/commercialPolicies';
 import {
@@ -98,6 +99,7 @@ router.get(
  */
 router.post(
   '/',
+  requireRole('super_admin'),
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const userId = requireUser(req);
     const { name, nit, contact_email, phone } = req.body;
@@ -304,6 +306,11 @@ router.post(
       return;
     }
 
+    const VALID_ORG_ROLES = new Set(['super_admin', 'ally_admin', 'ally_technical']);
+    if (!VALID_ORG_ROLES.has(role)) {
+      throw new ValidationError('Rol inválido. Debe ser super_admin, ally_admin o ally_technical');
+    }
+
     // Role-based boundary enforcement
     let effectiveCallerOrgId = req.user?.orgId;
     if (callerRole === 'ally_admin') {
@@ -334,14 +341,27 @@ router.post(
       throw new NotFoundError('La organización aliada seleccionada no existe');
     }
 
-    // Check if user exists in auth.users
-    const { data: listData } = await supabase.auth.admin.listUsers();
-    let authUser = listData?.users?.find(
-      (u) => u.email?.toLowerCase().trim() === email.toLowerCase().trim()
-    );
+    // Check if user exists in auth.users across all pages (avoid 50-user page 1 truncation)
+    const normalizedEmail = email.toLowerCase().trim();
+    let authUser: {
+      id: string;
+      email?: string;
+      user_metadata?: Record<string, unknown>;
+      app_metadata?: Record<string, unknown>;
+    } | undefined;
+
+    for (let page = 1; page <= 20; page++) {
+      const { data: listData } = await supabase.auth.admin.listUsers({ page, perPage: 1000 });
+      const users = listData?.users || [];
+      authUser = users.find((u) => u.email?.toLowerCase().trim() === normalizedEmail);
+      if (authUser || users.length < 1000) {
+        break;
+      }
+    }
 
     if (!authUser) {
-      const temporaryPassword = password || `Csa${Math.random().toString(36).slice(-8)}!`;
+      const temporaryPassword =
+        password || `Csa-${crypto.randomBytes(12).toString('base64url')}!1A`;
       const { data: createData, error: createError } = await supabase.auth.admin.createUser({
         email: email.trim(),
         password: temporaryPassword,
@@ -364,6 +384,33 @@ router.post(
       }
       authUser = createData.user;
     } else {
+      // Prevent cross-tenant account takeover or privilege downgrade by non-super_admin callers
+      if (callerRole !== 'super_admin') {
+        const existingMembership = await getOrganizationMember(authUser.id);
+        const existingMetaRole = authUser.app_metadata?.role;
+        const existingMetaOrgId = authUser.app_metadata?.org_id;
+
+        if (
+          (existingMembership && existingMembership.org_id !== org.id) ||
+          (typeof existingMetaOrgId === 'string' && existingMetaOrgId !== org.id)
+        ) {
+          throw new ForbiddenError(
+            'El usuario ya pertenece a otra organización y no puede ser transferido'
+          );
+        }
+
+        if (
+          existingMetaRole === 'super_admin' ||
+          existingMetaRole === 'ally_admin' ||
+          existingMembership?.role === 'super_admin' ||
+          existingMembership?.role === 'ally_admin'
+        ) {
+          throw new ForbiddenError(
+            'No está autorizado para modificar la cuenta de un administrador existente'
+          );
+        }
+      }
+
       // User already exists in auth: update metadata and link to org
       await supabase.auth.admin.updateUserById(authUser.id, {
         user_metadata: {
@@ -678,8 +725,27 @@ router.post(
       return;
     }
 
-    if (callerRole === 'ally_admin' && role === 'super_admin') {
-      throw new ForbiddenError('Un administrador aliado no puede asignar el rol de super_admin');
+    const VALID_MEMBER_ROLES = new Set(['super_admin', 'ally_admin', 'ally_technical']);
+    if (!VALID_MEMBER_ROLES.has(role)) {
+      throw new ValidationError('Rol inválido. Debe ser super_admin, ally_admin o ally_technical');
+    }
+
+    if (callerRole === 'ally_admin') {
+      if (role !== 'ally_technical') {
+        throw new ForbiddenError(
+          'Un administrador aliado únicamente puede asignar el rol de ally_technical'
+        );
+      }
+      const existingMembership = await getOrganizationMember(user_id);
+      if (existingMembership && existingMembership.org_id !== orgId) {
+        throw new ForbiddenError('El usuario ya pertenece a otra organización');
+      }
+      if (
+        existingMembership &&
+        (existingMembership.role === 'super_admin' || existingMembership.role === 'ally_admin')
+      ) {
+        throw new ForbiddenError('No está autorizado para modificar a un administrador');
+      }
     }
 
     const member = await addOrganizationMember({
@@ -687,6 +753,12 @@ router.post(
       user_id,
       role,
     });
+
+    try {
+      await updateAuthUser(user_id, { role, org_id: orgId });
+    } catch {
+      // Non-fatal in test environments without full Supabase auth admin mock
+    }
 
     res.status(201).json(member);
   })

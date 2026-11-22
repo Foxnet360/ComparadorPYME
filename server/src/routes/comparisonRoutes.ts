@@ -9,6 +9,20 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { comparisonEngineAdapter } from '../services/unifiedComparison/comparisonEngineAdapter';
+import { validatePdfMagicBytes } from '../middleware/upload';
+
+function cleanupUploadedFiles(files?: Express.Multer.File[]): void {
+  if (!files || files.length === 0) return;
+  for (const f of files) {
+    try {
+      if (f.path && fs.existsSync(f.path)) {
+        fs.unlinkSync(f.path);
+      }
+    } catch {
+      // Ignore cleanup errors
+    }
+  }
+}
 import { unifiedComparisonFlag } from '../services/unifiedComparison/featureFlagService';
 import { featureFlags } from '../config/featureFlags';
 import { saveAnalysisHistory } from '../repositories/analysisRepository';
@@ -56,6 +70,7 @@ router.post('/unified', upload.array('quotes', 10), async (req, res) => {
 
     // Validate file count
     if (files.length > 10) {
+      cleanupUploadedFiles(files);
       return res.status(400).json({
         error: 'Too many files',
         message: 'Maximum 10 quote files allowed',
@@ -65,9 +80,20 @@ router.post('/unified', upload.array('quotes', 10), async (req, res) => {
     // Validate file sizes
     const oversizedFiles = files.filter((f) => f.size > 50 * 1024 * 1024);
     if (oversizedFiles.length > 0) {
+      cleanupUploadedFiles(files);
       return res.status(400).json({
         error: 'File too large',
         message: `Files exceed 50MB limit: ${oversizedFiles.map((f) => f.originalname).join(', ')}`,
+      });
+    }
+
+    // Validate PDF magic bytes
+    const invalidPdfs = files.filter((f) => !validatePdfMagicBytes(f.path));
+    if (invalidPdfs.length > 0) {
+      cleanupUploadedFiles(files);
+      return res.status(400).json({
+        error: 'Invalid PDF file',
+        message: `Invalid PDF header: ${invalidPdfs.map((f) => f.originalname).join(', ')}`,
       });
     }
 
@@ -174,6 +200,7 @@ router.post('/:id/deep-mode', upload.array('clauses', 5), async (req, res) => {
 
     // Deep clause validation is disabled by default until fully implemented
     if (!featureFlags.isEnabled('deepClauseValidation')) {
+      cleanupUploadedFiles(req.files as Express.Multer.File[] | undefined);
       return res.status(400).json({
         error: 'Deep mode validation is not enabled',
         message:

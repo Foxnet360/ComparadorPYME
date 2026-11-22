@@ -1,10 +1,24 @@
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+
+const { apiFetchMock } = vi.hoisted(() => ({
+  apiFetchMock: vi.fn(),
+}));
+
+vi.mock('../../services/apiClient', () => ({
+  apiClient: {
+    fetch: apiFetchMock,
+  },
+}));
+
 import DisambiguationCard from '../report/DisambiguationCard';
 import type { QuoteAnalysis } from '../../types';
 
 describe('DisambiguationCard Component', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
   const mockQuotesWithAmbiguity: QuoteAnalysis[] = [
     {
       insurerName: 'Chubb',
@@ -109,5 +123,23 @@ describe('DisambiguationCard Component', () => {
     });
 
     expect(screen.getByText(/preservada como amparo independiente/i)).toBeTruthy();
+  });
+
+  it('uses apiClient.fetch with auth and shows error without fake success when request fails', async () => {
+    apiFetchMock.mockRejectedValueOnce(new Error('HTTP 401'));
+
+    render(<DisambiguationCard quotes={mockQuotesWithAmbiguity} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /confirmar/i }));
+
+    await waitFor(() => {
+      expect(apiFetchMock).toHaveBeenCalledWith(
+        '/analysis/disambiguate-coverage',
+        expect.objectContaining({ method: 'POST' })
+      );
+    });
+
+    expect(screen.getByRole('alert')).toBeTruthy();
+    expect(screen.queryByText(/asociada a/i)).toBeNull();
   });
 });

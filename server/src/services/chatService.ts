@@ -8,6 +8,7 @@ import { getGenAI } from './geminiClient';
 import { ragRetrievalService } from './ragRetrievalService';
 import { structuredClauseExtractor } from './structuredClauseExtractor';
 import { chatRepository } from '../repositories/chatRepository';
+import { ForbiddenError } from '../errors';
 
 const GEMINI_CHAT_MODEL = process.env.GEMINI_CHAT_MODEL || 'gemini-3.8-flash';
 const MAX_PROMPT_TOKENS = 12000;
@@ -133,8 +134,10 @@ class ContextWindowManager {
     history: ChatMessage[],
     currentMessage: string
   ): { prompt: string; tokens: number } {
-    let prompt = systemPrompt;
-    let currentTokens = this.estimateTokens(prompt);
+    // Keep systemPrompt in token budget accounting, but deliver it via Gemini
+    // `systemInstruction` instead of mixing it into the untrusted user prompt.
+    let prompt = '';
+    let currentTokens = this.estimateTokens(systemPrompt);
 
     // Add report summary (high priority)
     if (reportSummary) {
@@ -497,6 +500,14 @@ export const processChatMessage = async (
   const startTime = Date.now();
 
   try {
+    // Verify ownership if caller supplied an existing threadId
+    if (threadId && typeof chatRepository.getThread === 'function') {
+      const existingThread = await chatRepository.getThread(threadId);
+      if (existingThread && (!existingThread.user_id || existingThread.user_id !== userId)) {
+        throw new ForbiddenError('No está autorizado para acceder a este hilo de chat');
+      }
+    }
+
     // Get or create thread using repository
     const activeThreadId =
       threadId || (await getOrCreateThread(userId, reportContext?.id, reportContext));
@@ -548,6 +559,7 @@ export const processChatMessage = async (
         model: GEMINI_CHAT_MODEL,
         contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
         config: {
+          systemInstruction: systemPrompt,
           maxOutputTokens: 2048,
           thinkingConfig: {
             thinkingLevel: 'low' as any,
@@ -630,6 +642,9 @@ export const processChatMessage = async (
           : 'fallback',
     };
   } catch (error) {
+    if (error instanceof ForbiddenError) {
+      throw error;
+    }
     console.error('❌ [chatService] Error processing message:', error);
 
     // Fallback: Always try to answer with quote data

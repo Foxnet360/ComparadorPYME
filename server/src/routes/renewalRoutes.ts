@@ -84,7 +84,8 @@ router.get(
     const renewals = await listRenewals(
       userId,
       stateParam as RenewalState | undefined,
-      req.user?.orgId
+      req.user?.orgId,
+      req.user?.role
     );
     res.json(renewals);
   })
@@ -101,7 +102,12 @@ router.post(
   validateBody(transitionRenewalSchema),
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const userId = requireUser(req);
-    const renewal = await getRenewalById(userId, String(req.params.id), req.user?.orgId);
+    const renewal = await getRenewalById(
+      userId,
+      String(req.params.id),
+      req.user?.orgId,
+      req.user?.role
+    );
     if (!renewal) {
       throw new NotFoundError('Renewal not found');
     }
@@ -119,7 +125,14 @@ router.post(
       throw error;
     }
 
-    const updated = await applyTransition(userId, renewal.id, plan, userId);
+    const updated = await applyTransition(
+      userId,
+      renewal.id,
+      plan,
+      userId,
+      req.user?.orgId,
+      req.user?.role
+    );
     if (!updated) {
       throw new NotFoundError('Renewal not found');
     }
@@ -137,7 +150,12 @@ router.get(
   rejectSpoofedUserId,
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const userId = requireUser(req);
-    const renewal = await getRenewalById(userId, String(req.params.id), req.user?.orgId);
+    const renewal = await getRenewalById(
+      userId,
+      String(req.params.id),
+      req.user?.orgId,
+      req.user?.role
+    );
     if (!renewal) {
       throw new NotFoundError('Renewal not found');
     }
@@ -157,7 +175,12 @@ router.post(
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const userId = requireUser(req);
     const windowKey = parseWindowParam(String(req.params.window));
-    const renewal = await getRenewalById(userId, String(req.params.id), req.user?.orgId);
+    const renewal = await getRenewalById(
+      userId,
+      String(req.params.id),
+      req.user?.orgId,
+      req.user?.role
+    );
     if (!renewal) {
       throw new NotFoundError('Renewal not found');
     }
@@ -186,7 +209,12 @@ router.post(
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const userId = requireUser(req);
     const windowKey = parseWindowParam(String(req.params.window));
-    const renewal = await getRenewalById(userId, String(req.params.id), req.user?.orgId);
+    const renewal = await getRenewalById(
+      userId,
+      String(req.params.id),
+      req.user?.orgId,
+      req.user?.role
+    );
     if (!renewal) {
       throw new NotFoundError('Renewal not found');
     }
@@ -215,7 +243,12 @@ router.post(
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const userId = requireUser(req);
     const windowKey = parseWindowParam(String(req.params.window));
-    const renewal = await getRenewalById(userId, String(req.params.id), req.user?.orgId);
+    const renewal = await getRenewalById(
+      userId,
+      String(req.params.id),
+      req.user?.orgId,
+      req.user?.role
+    );
     if (!renewal) {
       throw new NotFoundError('Renewal not found');
     }

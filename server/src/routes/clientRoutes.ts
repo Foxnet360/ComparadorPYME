@@ -171,11 +171,16 @@ router.delete(
       return;
     }
     const userId = requireUser(req);
-    const existing = await getClientById(userId, String(req.params.id), req.user?.orgId);
+    const existing = await getClientById(
+      userId,
+      String(req.params.id),
+      req.user?.orgId,
+      req.user?.role
+    );
     if (!existing) {
       throw new NotFoundError('Client not found');
     }
-    await deleteClient(userId, String(req.params.id), req.user?.orgId);
+    await deleteClient(userId, String(req.params.id), req.user?.orgId, req.user?.role);
     res.status(204).end();
   })
 );
@@ -203,7 +208,7 @@ router.post(
     if (!orgId) {
       throw new ValidationError('El usuario debe pertenecer a una organización para compartir clientes.');
     }
-    const client = await getClientById(userId, String(req.params.id), orgId);
+    const client = await getClientById(userId, String(req.params.id), orgId, req.user?.role);
     if (!client) {
       throw new NotFoundError('Client not found');
     }
@@ -234,7 +239,7 @@ router.delete(
     if (!orgId) {
       throw new ValidationError('Organización requerida.');
     }
-    const client = await getClientById(userId, String(req.params.id), orgId);
+    const client = await getClientById(userId, String(req.params.id), orgId, req.user?.role);
     if (!client) {
       throw new NotFoundError('Client not found');
     }
@@ -301,6 +306,7 @@ router.patch(
       actorUserId: userId,
       leadStatus,
       notes,
+      role: req.user?.role,
     });
     if (!updated) {
       throw new NotFoundError('Client not found');

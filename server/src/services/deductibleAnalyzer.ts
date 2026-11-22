@@ -7,6 +7,8 @@
 import { hybridDeductibleParser } from './hybridDeductibleParser';
 import { deductibleBenchmarks } from './deductibleBenchmarks';
 import { ParsedQuote } from './quoteParser';
+import { parseColombianCurrency } from '../utils/currencyParser';
+import { getDomainConstants } from '../config/domainConstants';
 
 export interface DeductibleAnalysis {
   coverageName: string;
@@ -178,22 +180,25 @@ function parseInsuredAmount(value: string): number {
     return 0;
   }
 
-  // Extract numeric value
-  const cleaned = value.replace(/[$\s.,]/g, '');
-  const num = parseFloat(cleaned);
-
-  if (!isNaN(num) && num > 0) {
-    // Handle common suffixes
-    if (value.toLowerCase().includes('m')) {
-      return num * 1000000;
+  const trimmed = value.trim();
+  const smmlvMatch = trimmed.match(/(\d+(?:[.,]\d+)?)\s*(?:S\.?M\.?M\.?L\.?V\.?|SMMLV|SM)\b/i);
+  if (smmlvMatch && smmlvMatch[1]) {
+    const qty = parseFloat(smmlvMatch[1].replace(',', '.'));
+    if (Number.isFinite(qty) && qty > 0) {
+      return qty * getDomainConstants().smmlv;
     }
-    if (value.toLowerCase().includes('k')) {
-      return num * 1000;
-    }
-    return num;
   }
 
-  return 0;
+  const uvtMatch = trimmed.match(/(\d+(?:[.,]\d+)?)\s*UVT\b/i);
+  if (uvtMatch && uvtMatch[1]) {
+    const qty = parseFloat(uvtMatch[1].replace(',', '.'));
+    if (Number.isFinite(qty) && qty > 0) {
+      return qty * getDomainConstants().uvt;
+    }
+  }
+
+  const parsed = parseColombianCurrency(trimmed);
+  return parsed !== null && parsed > 0 ? parsed : 0;
 }
 
 function formatCurrency(amount: number): string {

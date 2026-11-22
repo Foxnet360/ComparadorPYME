@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { HelpCircle, Check, CheckCircle2 } from 'lucide-react';
+import { apiClient } from '../../services/apiClient';
 import type { QuoteAnalysis } from '../../types';
 
 interface DisambiguationCandidate {
@@ -62,6 +63,7 @@ export const DisambiguationCard: React.FC<DisambiguationCardProps> = ({
     Record<string, { action: string; label: string }>
   >({});
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   if (candidates.length === 0) {
     return null;
@@ -73,6 +75,7 @@ export const DisambiguationCard: React.FC<DisambiguationCardProps> = ({
   ) => {
     const key = `${candidate.insurerName}::${candidate.rawName}`;
     setLoadingKey(key);
+    setErrorMsg(null);
 
     try {
       if (onDisambiguate) {
@@ -83,8 +86,7 @@ export const DisambiguationCard: React.FC<DisambiguationCardProps> = ({
           action
         );
       } else {
-        // Default API invocation
-        await fetch('/api/analysis/disambiguate-coverage', {
+        await apiClient.fetch('/analysis/disambiguate-coverage', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -108,6 +110,7 @@ export const DisambiguationCard: React.FC<DisambiguationCardProps> = ({
       }));
     } catch (err) {
       console.error('Error disambiguating coverage:', err);
+      setErrorMsg('No se pudo guardar la validación. Intente nuevamente.');
     } finally {
       setLoadingKey(null);
     }
@@ -115,6 +118,14 @@ export const DisambiguationCard: React.FC<DisambiguationCardProps> = ({
 
   return (
     <div className="bg-gradient-to-r from-amber-50/70 via-indigo-50/30 to-white rounded-xl border border-amber-200/90 shadow-sm p-5 space-y-4 mb-6">
+      {errorMsg && (
+        <div
+          role="alert"
+          className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2"
+        >
+          {errorMsg}
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="p-1.5 bg-amber-100 text-amber-800 rounded-lg">

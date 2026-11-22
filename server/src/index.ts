@@ -178,7 +178,21 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
 
-const upload = multer({ dest: uploadDir });
+const upload = multer({
+  dest: uploadDir,
+  limits: {
+    fileSize: parseInt(process.env.MAX_FILE_SIZE || '52428800', 10),
+    files: 25,
+  },
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    if (file.mimetype === 'application/pdf' && ext === '.pdf') {
+      cb(null, true);
+      return;
+    }
+    cb(new Error('Only PDF files are allowed'));
+  },
+});
 
 // Compare V1 vs V2 endpoint
 app.post(

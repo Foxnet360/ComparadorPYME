@@ -8,6 +8,7 @@
  */
 
 import { supabase, handleDbError } from './baseRepository';
+import { ForbiddenError } from '../errors';
 import type { TablesInsert, TablesUpdate, Json } from '../types/database';
 
 export interface ClientContact {
@@ -253,8 +254,14 @@ export async function updateClient(
 export async function deleteClient(
   userId: string,
   id: string,
-  orgId?: string | null
+  orgId?: string | null,
+  role?: string | null
 ): Promise<boolean> {
+  if (role === 'ally_technical') {
+    const existing = await getClientById(userId, id, orgId, role);
+    if (!existing) return false;
+  }
+
   let query = supabase.from('clients').delete().eq('id', id);
 
   if (orgId) {
@@ -270,6 +277,32 @@ export async function deleteClient(
   }
 
   return true;
+}
+
+async function assertUsersBelongToOrg(orgId: string, userIds: string[]): Promise<void> {
+  const uniqueIds = Array.from(new Set(userIds.filter(Boolean)));
+  if (uniqueIds.length === 0) return;
+
+  const { data, error } = await supabase
+    .from('organization_members')
+    .select('user_id, status')
+    .eq('org_id', orgId)
+    .in('user_id', uniqueIds);
+
+  if (error) {
+    handleDbError(error, 'Failed to verify organization membership');
+  }
+
+  const activeSet = new Set(
+    ((data as Array<{ user_id: string; status?: string }>) || [])
+      .filter((m) => !m.status || m.status === 'ACTIVE')
+      .map((m) => m.user_id)
+  );
+
+  const missing = uniqueIds.filter((uid) => !activeSet.has(uid));
+  if (missing.length > 0) {
+    throw new ForbiddenError('El usuario destino no pertenece activamente a la organización');
+  }
 }
 
 export async function listClientShares(clientId: string): Promise<ClientShareRecord[]> {
@@ -316,6 +349,8 @@ export async function shareClientWithUser(params: {
   sharedByUserId: string;
   permission?: 'view' | 'edit';
 }): Promise<ClientShareRecord> {
+  await assertUsersBelongToOrg(params.orgId, [params.sharedWithUserId]);
+
   const { data, error } = await supabase
     .from('client_shares' as never)
     .upsert(
@@ -374,6 +409,11 @@ export async function delegateClientToAdvisors(params: {
   sharedAdvisorIds?: string[];
   notes?: string;
 }): Promise<ClientRecord | null> {
+  await assertUsersBelongToOrg(params.orgId, [
+    params.primaryAdvisorId,
+    ...(params.sharedAdvisorIds || []),
+  ]);
+
   const { data: existing } = await supabase
     .from('clients')
     .select('*')
@@ -437,7 +477,18 @@ export async function updateClientLeadStatus(params: {
   actorUserId: string;
   leadStatus: LeadStatus;
   notes?: string;
+  role?: string | null;
 }): Promise<ClientRecord | null> {
+  if (params.role === 'ally_technical') {
+    const allowed = await getClientById(
+      params.actorUserId,
+      params.clientId,
+      params.orgId,
+      params.role
+    );
+    if (!allowed) return null;
+  }
+
   const { data: existing } = await supabase
     .from('clients')
     .select('lead_status')
@@ -511,8 +562,10 @@ export async function searchOrgClientDirectory(
     .limit(100);
 
   if (search.trim()) {
-    const term = search.trim();
-    query = query.or(`name.ilike.%${term}%,tax_id.ilike.%${term}%`);
+    const sanitizedTerm = search.trim().replace(/[,()*\\]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (sanitizedTerm) {
+      query = query.or(`name.ilike.%${sanitizedTerm}%,tax_id.ilike.%${sanitizedTerm}%`);
+    }
   }
 
   const { data, error } = await query;

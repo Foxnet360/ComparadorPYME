@@ -53,13 +53,17 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
+import { sanitizeUploadFieldname, validatePdfMagicBytes } from '../middleware/upload';
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    const safeField = sanitizeUploadFieldname(file.fieldname);
+    const ext = path.extname(file.originalname || '').toLowerCase() === '.pdf' ? '.pdf' : '';
+    cb(null, `${safeField}-${uniqueSuffix}${ext}`);
   },
 });
 
@@ -69,7 +73,7 @@ const upload = multer({
     fileSize: 50 * 1024 * 1024, // 50MB
   },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/pdf' || file.originalname.toLowerCase().endsWith('.pdf')) {
+    if (file.mimetype === 'application/pdf' && file.originalname.toLowerCase().endsWith('.pdf')) {
       cb(null, true);
     } else {
       cb(new Error('Only PDF files are allowed'));
@@ -133,6 +137,20 @@ export const documentController = {
           success: false,
           error: 'No file uploaded',
           details: 'Please provide a PDF file in the "file" field',
+        });
+        return;
+      }
+
+      if (filePath && fs.existsSync(filePath) && !validatePdfMagicBytes(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch {
+          // Ignore cleanup error
+        }
+        res.status(400).json({
+          success: false,
+          error: 'Invalid PDF file',
+          details: 'File content does not have a valid %PDF- header',
         });
         return;
       }
