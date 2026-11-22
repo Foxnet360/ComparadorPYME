@@ -5,6 +5,7 @@ import { deductibleBenchmarks } from './deductibleBenchmarks';
 import { coverageGraphService } from './coverageGraphService';
 import { featureFlags } from '../config/featureFlags';
 import { getDomainConstants } from '../config/domainConstants';
+import { parseColombianCurrency } from '../utils/currencyParser';
 import type { TemplateExtractionHints } from '../schemas/templateRegistrySchema';
 
 function getDefaultRates(): CurrencyRates {
@@ -124,14 +125,25 @@ interface ParsedDeductibleComponents {
 const PATTERNS = {
   zero: /^(sin\s+deducible(?:\s+alguno)?|no\s+aplica(?:\s+deducible)?|sin\s+aplicaci[oó]n(?:\s+de\s+deducible)?|incluido|0\s*%|0|n\/a|na)$/i,
   percentage: /(\d+(?:[.,]\d+)?)\s*%/,
-  smmlv: /(\d+)\s*(?:S\.?M\.?M\.?L\.?V\.?|SM)\b/i,
-  uvt: /(\d+)\s*(?:UVT)\b/i,
+  smmlv: /(\d+(?:[.,]\d+)?)\s*(?:S\.?M\.?M\.?L\.?V\.?|SM)\b/i,
+  uvt: /(\d+(?:[.,]\d+)?)\s*(?:UVT)\b/i,
   fixed: /(?:\$?\s*)([\d.,]+)\s*(COP|USD)?/i,
   minClause:
     /(?:m[ií]n(?:imo|o|\.|\b)?|con\s+m[ií]nimo(?:\s+de)?)(?:\s+de)?\s*(?:\$?\s*)(\d+(?:[.,]\d+)*)\s*(s\.?m\.?m\.?l\.?v\.?|sm|cop|pesos|uvt)?/i,
   maxClause:
     /(?:m[aá]x(?:imo|o|\.|\b)?|tope|l[ií]mite|con\s+m[aá]ximo(?:\s+de)?)(?:\s+de)?\s*(?:\$?\s*)(\d+(?:[.,]\d+)*)\s*(s\.?m\.?m\.?l\.?v\.?|sm|cop|pesos|uvt)?/i,
 };
+
+function parseUnitOrCurrencyValue(raw: string, unit?: string): number {
+  const upperUnit = (unit || '').toUpperCase().replace(/\./g, '');
+  const isQuantityUnit = upperUnit.includes('SMMLV') || upperUnit === 'SM' || upperUnit.includes('UVT');
+  if (isQuantityUnit) {
+    const qty = parseFloat(raw.replace(',', '.'));
+    return Number.isFinite(qty) ? qty : NaN;
+  }
+  const parsed = parseColombianCurrency(raw);
+  return parsed !== null ? parsed : NaN;
+}
 
 function inferCompoundOperator(
   text: string,
@@ -173,8 +185,8 @@ function inferCompoundOperator(
 function parseNumericSegment(segment: string): { value: number; currency?: string } | null {
   const fixedMatch = segment.match(/(?:\$?\s*)([\d.,]+)\s*(COP|USD)?/i);
   if (fixedMatch) {
-    const val = parseFloat(fixedMatch[1]!.replace(/[.,]/g, ''));
-    if (!isNaN(val) && val >= 0) {
+    const val = parseColombianCurrency(fixedMatch[1]!);
+    if (val !== null && !isNaN(val) && val >= 0) {
       return { value: val, currency: fixedMatch[2] || undefined };
     }
   }
@@ -215,11 +227,11 @@ function parseCompoundJoin(text: string): ParsedDeductibleComponents | null {
   // Second component: SMMLV, UVT, or fixed amount.
   const smmlvMatch = rest.match(PATTERNS.smmlv);
   if (smmlvMatch) {
-    components.push({ type: 'smmlv', value: parseInt(smmlvMatch[1]!, 10) });
+    components.push({ type: 'smmlv', value: parseFloat(smmlvMatch[1]!.replace(',', '.')) });
   } else {
     const uvtMatch = rest.match(PATTERNS.uvt);
     if (uvtMatch) {
-      components.push({ type: 'uvt', value: parseInt(uvtMatch[1]!, 10) });
+      components.push({ type: 'uvt', value: parseFloat(uvtMatch[1]!.replace(',', '.')) });
     } else {
       const fixed = parseNumericSegment(rest);
       if (fixed) {
@@ -288,7 +300,7 @@ function parseSimple(text: string): ParsedDeductibleComponents | null {
   const smmlvMatch = t.match(PATTERNS.smmlv);
   if (smmlvMatch && !PATTERNS.percentage.test(t)) {
     return {
-      components: [{ type: 'smmlv', value: parseInt(smmlvMatch[1]!, 10) }],
+      components: [{ type: 'smmlv', value: parseFloat(smmlvMatch[1]!.replace(',', '.')) }],
       compoundOperator: 'none',
       isZero: false,
       hasMinimum: false,
@@ -301,7 +313,7 @@ function parseSimple(text: string): ParsedDeductibleComponents | null {
   const uvtMatch = t.match(PATTERNS.uvt);
   if (uvtMatch && !PATTERNS.percentage.test(t)) {
     return {
-      components: [{ type: 'uvt', value: parseInt(uvtMatch[1]!, 10) }],
+      components: [{ type: 'uvt', value: parseFloat(uvtMatch[1]!.replace(',', '.')) }],
       compoundOperator: 'none',
       isZero: false,
       hasMinimum: false,
@@ -320,7 +332,7 @@ function parseSimple(text: string): ParsedDeductibleComponents | null {
     !PATTERNS.smmlv.test(t) &&
     !PATTERNS.uvt.test(t)
   ) {
-    const val = parseFloat(simpleFixed[1]!.replace(/[.,]/g, ''));
+    const val = parseColombianCurrency(simpleFixed[1]!) ?? NaN;
     const hasCurrency = !!simpleFixed[2]! || /^\$/.test(t);
     if (!isNaN(val) && val > 0 && (hasCurrency || val >= 10000)) {
       return {
@@ -345,13 +357,13 @@ function parseSimple(text: string): ParsedDeductibleComponents | null {
     let hasMaximum = false;
 
     if (pctCompound) {
-      components.push({ type: 'percentage', value: parseFloat(pctCompound[1]!) });
+      components.push({ type: 'percentage', value: parseFloat(pctCompound[1]!.replace(',', '.')) });
     }
 
     if (minCompound) {
       hasMinimum = true;
-      const val = parseFloat(minCompound[1]!.replace(/[.,]/g, ''));
       const unit = minCompound[2]?.toUpperCase() || '';
+      const val = parseUnitOrCurrencyValue(minCompound[1]!, unit);
       components.push({
         type: 'minimum',
         value: val,
@@ -361,8 +373,8 @@ function parseSimple(text: string): ParsedDeductibleComponents | null {
 
     if (maxCompound) {
       hasMaximum = true;
-      const val = parseFloat(maxCompound[1]!.replace(/[.,]/g, ''));
       const unit = maxCompound[2]?.toUpperCase() || '';
+      const val = parseUnitOrCurrencyValue(maxCompound[1]!, unit);
       components.push({
         type: 'maximum',
         value: val,

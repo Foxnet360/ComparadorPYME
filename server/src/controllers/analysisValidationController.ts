@@ -18,6 +18,7 @@ import { structuredClauseExtractor } from '../services/structuredClauseExtractor
 import { variableComparator } from '../services/variableComparator';
 import { learningEngine } from '../services/learningEngine';
 import { supabase } from '../config/database';
+import { parseColombianCurrency } from '../utils/currencyParser';
 
 export const validateCoverages = async (req: Request, res: Response): Promise<void> => {
   const { quote, insurerName } = req.body;
@@ -44,11 +45,23 @@ export const analyzeDeductibleRisk = async (req: Request, res: Response): Promis
     return;
   }
 
-  const analysis = deductibleAnalyzer.analyze(
+  const parsedInsuredAmount =
+    typeof insuredAmount === 'number'
+      ? insuredAmount
+      : (parseColombianCurrency(String(insuredAmount)) ?? parseFloat(String(insuredAmount)));
+
+  if (!Number.isFinite(parsedInsuredAmount) || parsedInsuredAmount <= 0) {
+    res.status(400).json({
+      error: 'Invalid insuredAmount: must be a positive number',
+    });
+    return;
+  }
+
+  const analysis = await deductibleAnalyzer.analyze(
     coverageName,
     quoteDeductible,
     clauseDeductible || quoteDeductible,
-    parseFloat(insuredAmount)
+    parsedInsuredAmount
   );
 
   res.json(analysis);

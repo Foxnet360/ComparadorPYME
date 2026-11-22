@@ -7,6 +7,7 @@
 import { supabase } from '../config/database';
 import type { Json } from '../types/database';
 import { AuthenticatedUser } from '../middleware/auth';
+import { parseColombianCurrency } from '../utils/currencyParser';
 
 export interface ExecutiveAnalyticsResponse {
   role: string;
@@ -201,8 +202,14 @@ export const analyticsAggregationService = {
 
     for (let i = 0; i < quotes.length; i++) {
       const q = quotes[i];
-      const rawAnnual = String(q.priceAnnual || '0').replace(/[^0-9.]/g, '');
-      const rawMonthly = String(q.priceMonthly || '0').replace(/[^0-9.]/g, '');
+      const parsedAnnual =
+        typeof q.priceAnnual === 'number'
+          ? q.priceAnnual
+          : parseColombianCurrency(q.priceAnnual != null ? String(q.priceAnnual) : null);
+      const parsedMonthly =
+        typeof q.priceMonthly === 'number'
+          ? q.priceMonthly
+          : parseColombianCurrency(q.priceMonthly != null ? String(q.priceMonthly) : null);
 
       // Sanitize coverages by stripping PII from amparo names
       const rawCoverages = Array.isArray(q.coverages) ? q.coverages : [];
@@ -219,8 +226,9 @@ export const analyticsAggregationService = {
           domain,
           insurer_name: q.insurerName || q.insurer || 'Aseguradora Desconocida',
           policy_plan: q.policyName || null,
-          price_annual: rawAnnual ? parseFloat(rawAnnual) : null,
-          price_monthly: rawMonthly ? parseFloat(rawMonthly) : null,
+          price_annual: parsedAnnual !== null && Number.isFinite(parsedAnnual) ? parsedAnnual : null,
+          price_monthly:
+            parsedMonthly !== null && Number.isFinite(parsedMonthly) ? parsedMonthly : null,
           currency: q.currency || 'COP',
           deductibles_raw: q.deductibles ? String(q.deductibles) : null,
           coverages_summary: cleanCoverages as unknown as Json,
