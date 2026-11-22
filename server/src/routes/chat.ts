@@ -40,6 +40,20 @@ router.post(
       });
     }
 
+    if (message.trim().length === 0 || message.length > 10000) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'message must be between 1 and 10000 characters',
+      });
+    }
+
+    if (threadId !== undefined && (typeof threadId !== 'string' || threadId.trim().length === 0)) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'threadId must be a non-empty string',
+      });
+    }
+
     console.log(`💬 [chatRoute] Message: "${message.substring(0, 50)}..."`);
 
     const userId = resolveUserId(req as AuthenticatedRequest);
@@ -102,15 +116,13 @@ router.get(
   asyncHandler(async (req, res) => {
     const threadId = req.params.id as string;
     const authReq = req as AuthenticatedRequest;
-    const userId = authReq.user?.id;
+    const userId = requireUser(authReq);
 
-    if (userId) {
+    if (typeof chatRepository.getThread === 'function') {
       const thread = await chatRepository.getThread(threadId);
       if (
         thread &&
-        thread.user_id &&
-        thread.user_id !== userId &&
-        authReq.user?.role !== 'super_admin'
+        ((!thread.user_id || thread.user_id !== userId) && authReq.user?.role !== 'super_admin')
       ) {
         res.status(403).json({ error: 'Forbidden: thread does not belong to you' });
         return;
@@ -133,15 +145,15 @@ router.delete(
     const authReq = req as AuthenticatedRequest;
     const userId = requireUser(authReq);
 
-    const thread = await chatRepository.getThread(threadId);
-    if (
-      thread &&
-      thread.user_id &&
-      thread.user_id !== userId &&
-      authReq.user?.role !== 'super_admin'
-    ) {
-      res.status(403).json({ error: 'Forbidden: thread does not belong to you' });
-      return;
+    if (typeof chatRepository.getThread === 'function') {
+      const thread = await chatRepository.getThread(threadId);
+      if (
+        thread &&
+        ((!thread.user_id || thread.user_id !== userId) && authReq.user?.role !== 'super_admin')
+      ) {
+        res.status(403).json({ error: 'Forbidden: thread does not belong to you' });
+        return;
+      }
     }
 
     await chatRepository.archiveThread(threadId);

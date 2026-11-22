@@ -63,7 +63,7 @@ router.get(
   '/',
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const userId = requireUser(req);
-    const policies = await listPolicies(userId, req.user?.orgId);
+    const policies = await listPolicies(userId, req.user?.orgId, req.user?.role);
     res.json(policies);
   })
 );
@@ -85,7 +85,12 @@ router.post(
 
     // XC-1: the FK proves the client exists, not that the session user owns
     // it. Verify ownership before persisting the link.
-    const client = await getClientById(userId, input.client_id, req.user?.orgId);
+    const client = await getClientById(
+      userId,
+      input.client_id,
+      req.user?.orgId,
+      req.user?.role
+    );
     if (!client) {
       throw new NotFoundError('Client not found');
     }
@@ -127,7 +132,12 @@ router.post(
       throw new NotFoundError('Analysis not found');
     }
 
-    const client = await getClientById(userId, confirmations.client_id, req.user?.orgId);
+    const client = await getClientById(
+      userId,
+      confirmations.client_id,
+      req.user?.orgId,
+      req.user?.role
+    );
     if (!client) {
       throw new NotFoundError('Client not found');
     }
@@ -143,7 +153,12 @@ router.get(
   '/:id',
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const userId = requireUser(req);
-    const policy = await getPolicyById(userId, String(req.params.id), req.user?.orgId);
+    const policy = await getPolicyById(
+      userId,
+      String(req.params.id),
+      req.user?.orgId,
+      req.user?.role
+    );
     if (!policy) {
       throw new NotFoundError('Policy not found');
     }
@@ -164,7 +179,13 @@ router.patch(
         { field: 'ramo', message: `ramo must be one of: ${POLICY_RAMOS.join(', ')}` },
       ]);
     }
-    const updated = await updatePolicy(userId, String(req.params.id), input, req.user?.orgId);
+    const updated = await updatePolicy(
+      userId,
+      String(req.params.id),
+      input,
+      req.user?.orgId,
+      req.user?.role
+    );
     if (!updated) {
       throw new NotFoundError('Policy not found');
     }
@@ -177,11 +198,16 @@ router.delete(
   '/:id',
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const userId = requireUser(req);
-    const existing = await getPolicyById(userId, String(req.params.id), req.user?.orgId);
+    const existing = await getPolicyById(
+      userId,
+      String(req.params.id),
+      req.user?.orgId,
+      req.user?.role
+    );
     if (!existing) {
       throw new NotFoundError('Policy not found');
     }
-    await deletePolicy(userId, String(req.params.id), req.user?.orgId);
+    await deletePolicy(userId, String(req.params.id), req.user?.orgId, req.user?.role);
     res.status(204).end();
   })
 );
