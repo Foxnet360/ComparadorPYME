@@ -32,6 +32,20 @@ const NEXT_STATE: Record<Exclude<RenewalState, 'closed'>, RenewalState> = {
   quoted: 'closed',
 };
 
+const STATE_LABELS: Record<RenewalState, string> = {
+  detected: 'Detectada',
+  notified: 'Notificada',
+  in_review: 'En revisión',
+  quoted: 'Cotizada',
+  closed: 'Cerrada',
+};
+
+const OUTCOME_LABELS: Record<RenewalOutcome, string> = {
+  renewed_same_insurer: 'Renovada con la misma aseguradora',
+  renewed_competitor: 'Renovada con competidor',
+  lost: 'Perdida',
+};
+
 const RenewalDetail: React.FC<RenewalDetailProps> = ({ renewalId, onBack }) => {
   const [renewal, setRenewal] = useState<PortfolioRenewal | null>(null);
   const [events, setEvents] = useState<RenewalEvent[]>([]);
@@ -135,7 +149,7 @@ const RenewalDetail: React.FC<RenewalDetailProps> = ({ renewalId, onBack }) => {
       <dl className="grid grid-cols-2 gap-4">
         <div>
           <dt className="text-sm text-slate-500">Estado</dt>
-          <dd className="font-medium text-slate-800">{renewal.state}</dd>
+          <dd className="font-medium text-slate-800">{STATE_LABELS[renewal.state] ?? renewal.state}</dd>
         </div>
         <div>
           <dt className="text-sm text-slate-500">Inicio de ciclo</dt>
@@ -144,7 +158,9 @@ const RenewalDetail: React.FC<RenewalDetailProps> = ({ renewalId, onBack }) => {
         {renewal.outcome && (
           <div>
             <dt className="text-sm text-slate-500">Resultado</dt>
-            <dd className="font-medium text-slate-800">{renewal.outcome}</dd>
+            <dd className="font-medium text-slate-800">
+              {OUTCOME_LABELS[renewal.outcome] ?? renewal.outcome}
+            </dd>
           </div>
         )}
         {renewal.final_premium != null && (
@@ -167,7 +183,7 @@ const RenewalDetail: React.FC<RenewalDetailProps> = ({ renewalId, onBack }) => {
           onClick={() => applyTransition({ to: nextState })}
           className="bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700"
         >
-          Avanzar a {nextState}
+          Avanzar a {STATE_LABELS[nextState] ?? nextState}
         </button>
       )}
 
@@ -196,9 +212,9 @@ const RenewalDetail: React.FC<RenewalDetailProps> = ({ renewalId, onBack }) => {
               onChange={(e) => setOutcome(e.target.value as RenewalOutcome)}
               className="border border-slate-300 rounded px-3 py-2"
             >
-              <option value="renewed_same_insurer">renewed_same_insurer</option>
-              <option value="renewed_competitor">renewed_competitor</option>
-              <option value="lost">lost</option>
+              <option value="renewed_same_insurer">{OUTCOME_LABELS.renewed_same_insurer}</option>
+              <option value="renewed_competitor">{OUTCOME_LABELS.renewed_competitor}</option>
+              <option value="lost">{OUTCOME_LABELS.lost}</option>
             </select>
           </div>
 

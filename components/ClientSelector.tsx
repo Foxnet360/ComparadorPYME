@@ -64,11 +64,15 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
       </label>
 
       {/* Selector Trigger */}
-      <div
-        className={`bg-white border rounded-xl p-3 flex items-center justify-between cursor-pointer transition-all ${
+      <button
+        type="button"
+        disabled={disabled}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        className={`w-full text-left bg-white border rounded-xl p-3 flex items-center justify-between transition-all ${
           disabled
             ? 'opacity-60 cursor-not-allowed border-slate-200'
-            : 'border-slate-300 hover:border-indigo-500 hover:shadow-sm'
+            : 'border-slate-300 hover:border-indigo-500 hover:shadow-sm cursor-pointer'
         }`}
         onClick={() => !disabled && setIsOpen(!isOpen)}
       >
@@ -97,7 +101,7 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
           </div>
         </div>
         {!disabled && <Search size={16} className="text-slate-400 ml-2 flex-shrink-0" />}
-      </div>
+      </button>
 
       {/* Selected Copropiedad Georeferenced Badge Card */}
       {selectedClient && (selectedClient.latitude || selectedClient.buildingType) && (
@@ -206,11 +210,14 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
             </div>
           </div>
 
-          <div className="max-h-56 overflow-y-auto scrollbar-thin">
+          <div className="max-h-56 overflow-y-auto scrollbar-thin" role="listbox">
             {filteredClients.map((client) => (
-              <div
+              <button
+                type="button"
+                role="option"
+                aria-selected={client.id === selectedClient?.id}
                 key={client.id}
-                className="px-4 py-3 hover:bg-slate-50 cursor-pointer flex items-center justify-between group border-b border-slate-50 last:border-0"
+                className="w-full text-left px-4 py-3 hover:bg-slate-50 cursor-pointer flex items-center justify-between group border-b border-slate-50 last:border-0"
                 onClick={() => {
                   onSelectClient(client);
                   setIsOpen(false);
@@ -233,7 +240,7 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
                 {client.id === selectedClient?.id && (
                   <div className="w-2 h-2 rounded-full bg-indigo-600"></div>
                 )}
-              </div>
+              </button>
             ))}
             {filteredClients.length === 0 && (
               <div className="p-4 text-center text-xs text-slate-400">
@@ -242,8 +249,9 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
             )}
           </div>
 
-          <div
-            className="p-3 bg-indigo-50 border-t border-indigo-100 text-indigo-700 text-sm font-medium flex items-center justify-center cursor-pointer hover:bg-indigo-100 transition-colors"
+          <button
+            type="button"
+            className="w-full p-3 bg-indigo-50 border-t border-indigo-100 text-indigo-700 text-sm font-medium flex items-center justify-center cursor-pointer hover:bg-indigo-100 transition-colors"
             onClick={() => {
               setIsOpen(false);
               setShowModal(true);
@@ -251,7 +259,7 @@ const ClientSelector: React.FC<ClientSelectorProps> = ({
           >
             <Plus size={16} className="mr-2" />
             {activeDomain === 'copropiedades' ? 'Crear Nueva Copropiedad' : 'Crear Nuevo Cliente'}
-          </div>
+          </button>
         </div>
       )}
 

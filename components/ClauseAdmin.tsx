@@ -5,6 +5,7 @@ import { UserProfile } from '../types';
 import { InsuranceDomain, InsuranceDomainType } from '@shared/insuranceDomain';
 import { InsurerLogo } from './common/InsurerLogo';
 import { ConfirmModal } from './common/ConfirmModal';
+import { Modal } from './common/Modal';
 import {
   Search,
   Eye,
@@ -365,33 +366,43 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 w-full max-w-5xl max-h-[92vh] overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/60">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-600 text-white rounded-xl shadow-xs">
-              <BookOpen size={20} />
-            </div>
-            <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900">
-                Librería de Clausulados y Condiciones
-              </h2>
-              <p className="text-xs text-slate-500">
-                Repositorio documental oficial para verificación técnica de exclusiones y deducibles
-              </p>
-            </div>
+    <Modal
+      isOpen={true}
+      onClose={() => {
+        if (!previewDoc && !pendingDeleteDoc) {
+          onClose();
+        }
+      }}
+      maxWidthClass="max-w-5xl"
+      containerClassName="max-h-[92vh] overflow-hidden flex flex-col border-slate-200/80"
+    >
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/60">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-indigo-600 text-white rounded-xl shadow-xs">
+            <BookOpen size={20} />
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-            title="Cerrar ventana"
-          >
-            <X size={20} />
-          </button>
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-slate-900">
+              Librería de Clausulados y Condiciones
+            </h2>
+            <p className="text-xs text-slate-500">
+              Repositorio documental oficial para verificación técnica de exclusiones y deducibles
+            </p>
+          </div>
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+          title="Cerrar ventana"
+          aria-label="Cerrar ventana"
+        >
+          <X size={20} />
+        </button>
+      </div>
 
-        {/* Content Body */}
+      {/* Content Body */}
         <div className="p-6 overflow-y-auto max-h-[calc(92vh-75px)] flex-1 space-y-6">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs flex items-center gap-2">
@@ -639,8 +650,8 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
               No se encontraron clausulados con los filtros aplicados.
             </div>
           ) : (
-            <div className="overflow-hidden border border-slate-200/80 rounded-2xl shadow-xs">
-              <table className="w-full border-collapse bg-white text-left">
+            <div className="overflow-x-auto overflow-y-hidden border border-slate-200/80 rounded-2xl shadow-xs">
+              <table className="w-full min-w-[760px] border-collapse bg-white text-left">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
                     <th className="px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">
@@ -763,23 +774,29 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
             </div>
           </div>
         </div>
-      </div>
 
       {/* Preview Modal */}
-      {previewDoc && (
-        <div className="fixed inset-0 z-60 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95">
+      <Modal
+        isOpen={previewDoc !== null}
+        onClose={() => setPreviewDoc(null)}
+        zIndexClass="z-[60]"
+        maxWidthClass="max-w-xl"
+        containerClassName="p-6 space-y-4"
+      >
+        {previewDoc && (
+          <>
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
               <div>
                 <h3 className="font-bold text-slate-900 text-sm">{previewDoc.documentName}</h3>
                 <p className="text-xs text-slate-500">
-                  {previewDoc.insurer?.name} • Versión {previewDoc.version || '2026.1'} •{' '}
+                  {previewDoc.insurer?.name} • Versión {previewDoc.version || 'No especificada'} •{' '}
                   {getDomainLabel(previewDoc.domain)}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setPreviewDoc(null)}
+                aria-label="Cerrar previsualización"
                 className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
               >
                 <X size={18} />
@@ -790,22 +807,47 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
               <div className="flex items-center justify-between text-xs bg-indigo-50/80 text-indigo-900 p-3 rounded-xl border border-indigo-100">
                 <span className="font-semibold flex items-center gap-1.5">
                   <Sparkles size={14} className="text-indigo-600" />
-                  Indexado en PGVector (3072 dimensiones)
+                  Metadatos reales del documento indexado
                 </span>
-                <span className="font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md text-[10px]">
-                  100% RAG Ready
-                </span>
+                {getStatusBadge(previewDoc.isActive)}
               </div>
 
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs font-mono text-slate-700 space-y-2 max-h-60 overflow-y-auto">
-                <div className="font-bold text-slate-900 font-sans border-b border-slate-200 pb-1">
-                  Secciones y Coberturas Identificadas:
+              <dl className="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs text-slate-700">
+                <div>
+                  <dt className="text-slate-500 font-medium">Aseguradora</dt>
+                  <dd className="font-semibold text-slate-900">{previewDoc.insurer?.name || 'N/D'}</dd>
                 </div>
-                <p>• Sección 1: Coberturas Básicas y Riesgos Nombrados</p>
-                <p>• Sección 2: Exclusiones Absolutas y Limitaciones Legales</p>
-                <p>• Sección 3: Deducibles, Sublímites y Franquicias</p>
-                <p>• Sección 4: Garantías Obligatorias de Protección</p>
-              </div>
+                <div>
+                  <dt className="text-slate-500 font-medium">Tipo de documento</dt>
+                  <dd className="font-semibold text-slate-900">
+                    {getDocumentTypeLabel(previewDoc.documentType)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500 font-medium">Ramo</dt>
+                  <dd className="font-semibold text-slate-900">{getDomainLabel(previewDoc.domain)}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500 font-medium">Producto</dt>
+                  <dd className="font-semibold text-slate-900">
+                    {previewDoc.productName || 'General'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500 font-medium">Páginas</dt>
+                  <dd className="font-semibold text-slate-900">
+                    {previewDoc.totalPages > 0 ? `${previewDoc.totalPages} págs.` : 'No reportado'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500 font-medium">Fecha de registro</dt>
+                  <dd className="font-semibold text-slate-900">
+                    {previewDoc.createdAt
+                      ? new Date(previewDoc.createdAt).toLocaleDateString('es-CO')
+                      : 'No disponible'}
+                  </dd>
+                </div>
+              </dl>
             </div>
 
             <div className="flex justify-end pt-2">
@@ -817,9 +859,9 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
                 Cerrar Previsualización
               </button>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
 
       <ConfirmModal
         isOpen={pendingDeleteDoc !== null}
@@ -833,7 +875,7 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
         onConfirm={confirmDeleteDoc}
         onCancel={() => setPendingDeleteDoc(null)}
       />
-    </div>
+    </Modal>
   );
 };
 

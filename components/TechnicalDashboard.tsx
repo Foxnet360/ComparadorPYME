@@ -183,7 +183,7 @@ const TechnicalDashboard: React.FC<TechnicalDashboardProps> = ({ onNewAnalysis, 
           <div>
             <h3 className="text-lg font-bold text-slate-900">Historial de Comparaciones</h3>
             <p className="text-xs text-slate-500">
-              Visualizá y gestioná las cotizaciones comparadas para tus clientes
+              Visualiza y gestiona las cotizaciones comparadas para tus clientes
             </p>
           </div>
 
@@ -229,8 +229,8 @@ const TechnicalDashboard: React.FC<TechnicalDashboardProps> = ({ onNewAnalysis, 
             <p className="font-semibold text-slate-700 mb-1">No se encontraron comparaciones</p>
             <p className="text-xs text-slate-400 mb-4">
               {filter || statusFilter !== 'ALL'
-                ? 'Probá ajustando los filtros de búsqueda.'
-                : 'Hacé clic en "Nueva Comparación" para realizar la primera.'}
+                ? 'Prueba ajustando los filtros de búsqueda.'
+                : 'Haz clic en "Nueva Comparación" para realizar la primera.'}
             </p>
             {!filter && statusFilter === 'ALL' && (
               <button

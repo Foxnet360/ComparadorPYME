@@ -232,7 +232,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
                 ¿Estas cotizaciones corresponden al ramo "{suggestion.label}"?
               </span>
               <span className="text-amber-800">
-                Detectamos el patrón <em>"{suggestion.matchedKeyword}"</em> en los archivos. Podés
+                Detectamos el patrón <em>"{suggestion.matchedKeyword}"</em> en los archivos. Puedes
                 cambiar el ramo ahora para aplicar la taxonomía especializada.
               </span>
             </div>

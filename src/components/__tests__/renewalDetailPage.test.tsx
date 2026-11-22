@@ -54,7 +54,7 @@ describe('RenewalDetail page (R3.1/R3.2)', () => {
     mockLoad();
     render(<RenewalDetail renewalId="r1" />);
 
-    expect(await screen.findByText('in_review')).toBeTruthy();
+    expect(await screen.findByText('En revisión')).toBeTruthy();
     expect(screen.getByText(/detected → in_review/)).toBeTruthy();
     expect(portfolioService.listRenewalEvents).toHaveBeenCalledWith('r1');
   });
@@ -74,20 +74,20 @@ describe('RenewalDetail page (R3.1/R3.2)', () => {
       state: 'quoted',
     });
     render(<RenewalDetail renewalId="r1" />);
-    await screen.findByText('in_review');
+    await screen.findByText('En revisión');
 
-    fireEvent.click(screen.getByRole('button', { name: /avanzar a quoted/i }));
+    fireEvent.click(screen.getByRole('button', { name: /avanzar a cotizada/i }));
 
     await waitFor(() =>
       expect(portfolioService.transitionRenewal).toHaveBeenCalledWith('r1', { to: 'quoted' })
     );
-    expect(await screen.findByText('quoted')).toBeTruthy();
+    expect(await screen.findByText('Cotizada')).toBeTruthy();
   });
 
   it('closing as lost requires a loss reason before submitting (R3.2)', async () => {
     mockLoad({ ...renewal, state: 'quoted' });
     render(<RenewalDetail renewalId="r1" />);
-    await screen.findByText('quoted');
+    await screen.findByText('Cotizada');
 
     fireEvent.click(screen.getByRole('button', { name: /cerrar renovación/i }));
     fireEvent.change(screen.getByLabelText(/resultado/i), { target: { value: 'lost' } });
@@ -114,7 +114,7 @@ describe('RenewalDetail page (R3.1/R3.2)', () => {
       loss_reason: 'precio no competitivo',
     });
     render(<RenewalDetail renewalId="r1" />);
-    await screen.findByText('quoted');
+    await screen.findByText('Cotizada');
 
     fireEvent.click(screen.getByRole('button', { name: /cerrar renovación/i }));
     fireEvent.change(screen.getByLabelText(/resultado/i), { target: { value: 'lost' } });
@@ -141,8 +141,8 @@ describe('RenewalDetail page (R3.1/R3.2)', () => {
     });
     render(<RenewalDetail renewalId="r1" />);
 
-    expect(await screen.findByText('closed')).toBeTruthy();
-    expect(screen.getByText('renewed_competitor')).toBeTruthy();
+    expect(await screen.findByText('Cerrada')).toBeTruthy();
+    expect(screen.getByText('Renovada con competidor')).toBeTruthy();
     expect(screen.getByText(/2400000/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: /avanzar/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /cerrar renovación/i })).toBeNull();
@@ -152,7 +152,7 @@ describe('RenewalDetail page (R3.1/R3.2)', () => {
     mockLoad();
     const onBack = vi.fn();
     render(<RenewalDetail renewalId="r1" onBack={onBack} />);
-    await screen.findByText('in_review');
+    await screen.findByText('En revisión');
 
     fireEvent.click(screen.getByRole('button', { name: /volver/i }));
 

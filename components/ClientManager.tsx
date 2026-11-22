@@ -538,7 +538,7 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
                       No hay auditorías registradas para este cliente
                     </div>
                     <p className="text-xs text-slate-500 max-w-md mx-auto">
-                      Iniciá un nuevo análisis comparativo para vincular automáticamente los
+                      Inicia un nuevo análisis comparativo para vincular automáticamente los
                       reportes y recomendaciones a esta copropiedad.
                     </p>
                     {onSelectClientForAudit && (
@@ -615,7 +615,7 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
               ) : (
                 <div className="space-y-3">
                   <label className="text-xs font-semibold text-slate-700 block">
-                    Seleccioná la auditoría a transferir:
+                    Selecciona la auditoría a transferir:
                   </label>
                   <select
                     value={selectedAuditIdToLink}

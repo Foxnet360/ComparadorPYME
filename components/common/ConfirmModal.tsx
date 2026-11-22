@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle, X } from 'lucide-react';
+import { Modal } from './Modal';
 
 export interface ConfirmModalProps {
   isOpen: boolean;
@@ -25,21 +26,14 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   onConfirm,
   onCancel,
 }) => {
-  if (!isOpen) return null;
-
   const confirmBtnClass =
     variant === 'danger'
       ? 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500'
       : 'bg-indigo-600 hover:bg-indigo-700 text-white focus:ring-indigo-500';
 
   return (
-    <div
-      className="fixed inset-0 z-[70] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="confirm-modal-title"
-    >
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150">
+    <Modal isOpen={isOpen} onClose={onCancel} maxWidthClass="max-w-md" zIndexClass="z-[70]">
+      <div className="p-6">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
             <div
@@ -83,6 +77,6 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 };
