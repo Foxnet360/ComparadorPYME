@@ -5,6 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { UnifiedComparisonEngine, UnifiedComparisonError } from '../unifiedComparisonEngine';
+import { resetGenAI } from '../../geminiClient';
 import { featureFlags } from '../../../config/featureFlags';
 import type { FlatComparisonResult } from '../comparisonSchema';
 import type { PageTextItems, TemplateMatchResult } from '../../templateRegistryService';
@@ -136,11 +137,13 @@ let mockGemini: ReturnType<typeof buildMockGemini>;
 describe('UnifiedComparisonEngine (flat table)', () => {
   beforeEach(() => {
     vi.stubEnv('GEMINI_API_KEY', 'test-api-key');
+    resetGenAI();
     mockGemini = buildMockGemini([]);
     featureFlags.updateFlag('granularComparisonSchema', false);
   });
 
   afterEach(() => {
+    resetGenAI();
     vi.unstubAllEnvs();
     vi.clearAllMocks();
     featureFlags.updateFlag('granularComparisonSchema', true);
@@ -370,11 +373,13 @@ function makeMeasurementHarness(
 describe('UnifiedComparisonEngine (template-aware prompts)', () => {
   beforeEach(() => {
     vi.stubEnv('GEMINI_API_KEY', 'test-api-key');
+    resetGenAI();
     mockGemini = buildMockGemini([]);
     featureFlags.updateFlag('granularComparisonSchema', true);
   });
 
   afterEach(() => {
+    resetGenAI();
     vi.unstubAllEnvs();
     vi.clearAllMocks();
   });
