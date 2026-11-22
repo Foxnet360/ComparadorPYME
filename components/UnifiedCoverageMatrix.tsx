@@ -59,6 +59,16 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
   const [isExporting, setIsExporting] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<{ rowId: string; colIdx: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const activeBlobUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (activeBlobUrlRef.current) {
+        URL.revokeObjectURL(activeBlobUrlRef.current);
+        activeBlobUrlRef.current = null;
+      }
+    };
+  }, []);
 
   // Side-by-side comparison pinning (UX Hallazgo 2)
   const [pinnedColumns, setPinnedColumns] = useState<Set<number>>(new Set());
@@ -206,7 +216,11 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
           analysisState.quoteFiles[0];
 
         if (matchingFile) {
+          if (activeBlobUrlRef.current) {
+            URL.revokeObjectURL(activeBlobUrlRef.current);
+          }
           resolvedPdfUrl = URL.createObjectURL(matchingFile);
+          activeBlobUrlRef.current = resolvedPdfUrl;
         }
       }
 

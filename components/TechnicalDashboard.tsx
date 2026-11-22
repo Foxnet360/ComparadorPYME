@@ -23,6 +23,7 @@ const TechnicalDashboard: React.FC<TechnicalDashboardProps> = ({ onNewAnalysis, 
   const [filter, setFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [loading, setLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -30,20 +31,32 @@ const TechnicalDashboard: React.FC<TechnicalDashboardProps> = ({ onNewAnalysis, 
 
   const loadData = async () => {
     setLoading(true);
+    setDashboardError(null);
     try {
       const historyData = await storageService.getHistory();
       setHistory(historyData);
     } catch (error) {
       console.error('Error loading history:', error);
+      setDashboardError(
+        error instanceof Error ? error.message : 'No se pudo cargar el historial técnico.'
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const handleStatusChange = async (id: string, newStatus: QuoteStatus) => {
-    await storageService.updateStatus(id, newStatus);
-    const updatedHistory = await storageService.getHistory();
-    setHistory(updatedHistory);
+    setDashboardError(null);
+    try {
+      await storageService.updateStatus(id, newStatus);
+      const updatedHistory = await storageService.getHistory();
+      setHistory(updatedHistory);
+    } catch (error) {
+      console.error('Error updating status:', error);
+      setDashboardError(
+        error instanceof Error ? error.message : 'No se pudo actualizar el estado de la cotización.'
+      );
+    }
   };
 
   // Metric Computations
@@ -85,6 +98,22 @@ const TechnicalDashboard: React.FC<TechnicalDashboardProps> = ({ onNewAnalysis, 
           <span>Nueva Comparación</span>
         </button>
       </div>
+
+      {dashboardError && (
+        <div
+          role="alert"
+          className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center justify-between"
+        >
+          <span>{dashboardError}</span>
+          <button
+            type="button"
+            onClick={() => setDashboardError(null)}
+            className="text-red-500 hover:text-red-700 text-xs font-semibold ml-4"
+          >
+            Cerrar
+          </button>
+        </div>
+      )}
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

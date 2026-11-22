@@ -374,7 +374,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   effectiveReport,
                   {
                     customTitle: pdfOptions.title,
-                    logoBase64: brokerInfo?.logoUrl || pdfOptions.logo,
+                    logoBase64: pdfOptions.logo || brokerInfo?.logoUrl,
                     primaryColor: pdfOptions.color,
                     brokerInfo,
                     commercialPolicies: user?.commercialPolicies,

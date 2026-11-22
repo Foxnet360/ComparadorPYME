@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useId } from 'react';
 import { Upload, FileText, X, BookOpen } from 'lucide-react';
 import DomainSelector, { InsuranceDomain } from './DomainSelector';
 
@@ -137,8 +137,10 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   showDomainSelector,
   onFocusClientSelection: _onFocusClientSelection,
 }) => {
+  const inputId = useId();
   const [domain, setDomain] = useState<InsuranceDomain>(propDomain || 'pyme');
   const [suggestion, setSuggestion] = useState<DomainSuggestion | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (propDomain !== undefined) {
@@ -165,14 +167,22 @@ const FileUploader: React.FC<FileUploaderProps> = ({
     [domain, onFilesSelected]
   );
 
+  const isSupportedFile = (file: File) =>
+    file.type.startsWith('image/') ||
+    file.type === 'application/pdf' ||
+    file.name.toLowerCase().endsWith('.pdf');
+
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       if (disabled) return;
       const droppedFiles = Array.from(e.dataTransfer.files) as File[];
-      const validFiles = droppedFiles.filter(
-        (f) => f.type.startsWith('image/') || f.type === 'application/pdf'
-      );
+      const validFiles = droppedFiles.filter(isSupportedFile);
+      if (droppedFiles.length > validFiles.length) {
+        setUploadError('Formato no soportado. Sube archivos PDF o imágenes.');
+      } else {
+        setUploadError(null);
+      }
       if (validFiles.length > 0) {
         handleFilesAdded(validFiles);
       }
@@ -183,8 +193,17 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && !disabled) {
       const selectedFiles = Array.from(e.target.files);
-      handleFilesAdded(selectedFiles);
+      const validFiles = selectedFiles.filter(isSupportedFile);
+      if (selectedFiles.length > validFiles.length) {
+        setUploadError('Formato no soportado. Sube archivos PDF o imágenes.');
+      } else {
+        setUploadError(null);
+      }
+      if (validFiles.length > 0) {
+        handleFilesAdded(validFiles);
+      }
     }
+    e.target.value = '';
   };
 
   const isPrimary = variant === 'primary';
@@ -237,7 +256,25 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         </div>
       )}
 
+      {uploadError && (
+        <div
+          role="alert"
+          className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl px-3.5 py-2.5 flex items-center justify-between gap-2"
+        >
+          <span>{uploadError}</span>
+          <button
+            type="button"
+            onClick={() => setUploadError(null)}
+            aria-label="Cerrar error de carga"
+            className="text-red-500 hover:text-red-700 font-bold"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       <div
+        data-testid="file-dropzone"
         onDragOver={(e) => e.preventDefault()}
         onDrop={handleDrop}
         className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors flex-grow flex flex-col items-center justify-center ${
@@ -252,11 +289,11 @@ const FileUploader: React.FC<FileUploaderProps> = ({
           accept="image/*,application/pdf"
           onChange={handleFileInput}
           className="hidden"
-          id={`file-upload-${title}`}
+          id={inputId}
           disabled={disabled}
         />
         <label
-          htmlFor={`file-upload-${title}`}
+          htmlFor={inputId}
           className="cursor-pointer flex flex-col items-center w-full"
         >
           <div className={`${iconBg} p-3 rounded-full mb-3`}>

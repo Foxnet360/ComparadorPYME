@@ -31,7 +31,7 @@ export function renderPageHeader({
   doc.rect(0, 0, 210, 34, 'F');
 
   // Logo Logic (Broker logoUrl or default logoBase64)
-  const logoToUse = options?.brokerInfo?.logoUrl || options?.logoBase64;
+  const logoToUse = options?.logoBase64 || options?.brokerInfo?.logoUrl;
   if (logoToUse) {
     try {
       const format =

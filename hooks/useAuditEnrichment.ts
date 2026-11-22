@@ -17,6 +17,25 @@ export interface AuditEnrichmentState {
   } | null;
 }
 
+export const buildAuditEnrichmentCacheKey = (quotes: QuoteAnalysis[]): string => {
+  const signature = quotes
+    .map((q) =>
+      [
+        q.insurerName || '',
+        q.policyName || '',
+        q.priceAnnual ?? '',
+        q.coverages?.length ?? 0,
+        q.coverages?.[0]?.name || '',
+      ].join(':')
+    )
+    .join('|');
+  let hash = 0;
+  for (let i = 0; i < signature.length; i += 1) {
+    hash = (hash * 31 + signature.charCodeAt(i)) | 0;
+  }
+  return `audit-enrichment-${(hash >>> 0).toString(36)}-${quotes.length}`;
+};
+
 export const useAuditEnrichment = () => {
   const [state, setState] = useState<AuditEnrichmentState>({
     enrichedAlerts: [],
@@ -31,7 +50,7 @@ export const useAuditEnrichment = () => {
 
   const enrich = useCallback(async (quotes: QuoteAnalysis[]) => {
     // Check sessionStorage for cached results
-    const cacheKey = `audit-enrichment-${quotes.map((q) => q.insurerName).join('-')}`;
+    const cacheKey = buildAuditEnrichmentCacheKey(quotes);
     const cached = sessionStorage.getItem(cacheKey);
 
     if (cached) {

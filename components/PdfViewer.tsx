@@ -54,6 +54,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   // Cargar PDF
   useEffect(() => {
     if (!isOpen || !pdfUrl) return;
+    let cancelled = false;
+    let loadedPdf: pdfjsLib.PDFDocumentProxy | null = null;
 
     const loadPdf = async () => {
       setLoading(true);
@@ -62,17 +64,33 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       try {
         const loadingTask = pdfjsLib.getDocument({ url: pdfUrl });
         const pdf = await loadingTask.promise;
+        if (cancelled) {
+          await pdf.destroy();
+          return;
+        }
+        loadedPdf = pdf;
         setPdfDoc(pdf);
         setNumPages(pdf.numPages);
         setCurrentPage(Math.min(targetPage ?? 1, pdf.numPages));
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error cargando PDF');
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Error cargando PDF');
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     loadPdf();
+
+    return () => {
+      cancelled = true;
+      if (loadedPdf) {
+        void loadedPdf.destroy();
+      }
+    };
   }, [pdfUrl, isOpen, targetPage]);
 
   // Renderizar página
@@ -133,8 +151,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           context.save();
           context.fillStyle = 'rgba(255, 255, 0, 0.4)';
           context.fillRect(
-            textItem.transform[4]!,
-            textItem.transform[5]! - fontHeight,
+            tx[4]!,
+            tx[5]! - fontHeight,
             textItem.width * fontWidth,
             fontHeight * 1.2
           );

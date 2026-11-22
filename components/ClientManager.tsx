@@ -39,6 +39,7 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
   const [clientAudits, setClientAudits] = useState<HistoryEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [clientError, setClientError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [shareModalClient, setShareModalClient] = useState<Client | null>(null);
   const [delegateModalClient, setDelegateModalClient] = useState<Client | null>(null);
@@ -70,22 +71,30 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
 
   const handleOpenLinkModal = async () => {
     if (!selectedClient) return;
-    const allHistory = await storageService.getHistory();
-    const unlinked = allHistory.filter(
-      (h) =>
-        h.clientId !== selectedClient.id &&
-        (!h.clientName || h.clientName.toLowerCase() !== selectedClient.name.toLowerCase())
-    );
-    setAvailableAuditsToLink(unlinked);
-    if (unlinked.length > 0) {
-      setSelectedAuditIdToLink(unlinked[0]!.id);
+    setClientError(null);
+    try {
+      const allHistory = await storageService.getHistory();
+      const unlinked = allHistory.filter(
+        (h) =>
+          h.clientId !== selectedClient.id &&
+          (!h.clientName || h.clientName.toLowerCase() !== selectedClient.name.toLowerCase())
+      );
+      setAvailableAuditsToLink(unlinked);
+      if (unlinked.length > 0) {
+        setSelectedAuditIdToLink(unlinked[0]!.id);
+      }
+      setIsLinkModalOpen(true);
+    } catch (err) {
+      setClientError(
+        err instanceof Error ? err.message : 'No se pudo cargar el historial para vincular.'
+      );
     }
-    setIsLinkModalOpen(true);
   };
 
   const handleLinkAudit = async () => {
     if (!selectedClient || !selectedAuditIdToLink) return;
     setLinkingAudit(true);
+    setClientError(null);
     try {
       await storageService.assignClientToAnalysis(
         selectedAuditIdToLink,
@@ -98,6 +107,10 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
       );
       setClientAudits(audits);
       setIsLinkModalOpen(false);
+    } catch (err) {
+      setClientError(
+        err instanceof Error ? err.message : 'No se pudo vincular la auditoría al cliente.'
+      );
     } finally {
       setLinkingAudit(false);
     }
@@ -105,15 +118,23 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
 
   const loadData = async () => {
     setLoading(true);
-    const loadedClients = await storageService.getClients();
-    setClients(loadedClients);
+    setClientError(null);
+    try {
+      const loadedClients = await storageService.getClients();
+      setClients(loadedClients);
 
-    if (loadedClients.length > 0 && !selectedClient) {
-      handleSelectClient(loadedClients[0]!);
-    } else if (selectedClient) {
-      handleSelectClient(selectedClient);
+      if (loadedClients.length > 0 && !selectedClient) {
+        await handleSelectClient(loadedClients[0]!);
+      } else if (selectedClient) {
+        await handleSelectClient(selectedClient);
+      }
+    } catch (err) {
+      setClientError(
+        err instanceof Error ? err.message : 'No se pudieron cargar los clientes.'
+      );
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -122,8 +143,17 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
 
   const handleSelectClient = async (client: Client) => {
     setSelectedClient(client);
-    const audits = await storageService.getHistoryByClient(client.id, client.name);
-    setClientAudits(audits);
+    try {
+      const audits = await storageService.getHistoryByClient(client.id, client.name);
+      setClientAudits(audits);
+    } catch (err) {
+      setClientAudits([]);
+      setClientError(
+        err instanceof Error
+          ? err.message
+          : 'No se pudo cargar el historial del cliente seleccionado.'
+      );
+    }
   };
 
   const handleOpenCreateModal = () => {
@@ -158,15 +188,20 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
     if (!pendingDeleteClient) return;
     const client = pendingDeleteClient;
     setPendingDeleteClient(null);
-    const updatedList = await storageService.deleteClient(client.id);
-    setClients(updatedList);
-    if (selectedClient?.id === client.id) {
-      if (updatedList.length > 0) {
-        handleSelectClient(updatedList[0]!);
-      } else {
-        setSelectedClient(null);
-        setClientAudits([]);
+    setClientError(null);
+    try {
+      const updatedList = await storageService.deleteClient(client.id);
+      setClients(updatedList);
+      if (selectedClient?.id === client.id) {
+        if (updatedList.length > 0) {
+          await handleSelectClient(updatedList[0]!);
+        } else {
+          setSelectedClient(null);
+          setClientAudits([]);
+        }
       }
+    } catch (err) {
+      setClientError(err instanceof Error ? err.message : 'No se pudo eliminar el cliente.');
     }
   };
 
@@ -212,6 +247,22 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
           </button>
         </div>
       </div>
+
+      {clientError && (
+        <div
+          role="alert"
+          className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center justify-between"
+        >
+          <span>{clientError}</span>
+          <button
+            type="button"
+            onClick={() => setClientError(null)}
+            className="text-red-500 hover:text-red-700 text-xs font-semibold ml-4"
+          >
+            Cerrar
+          </button>
+        </div>
+      )}
 
       {/* Main Grid: Client List (Left) & Client Details + Correlated Audits (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
