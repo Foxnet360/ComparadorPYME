@@ -187,6 +187,8 @@ router.post(
 
     const result = await sendManualDelivery({
       userId,
+      orgId: req.user?.orgId,
+      role: req.user?.role,
       renewalId: renewal.id,
       renewalState: renewal.state,
       windowKey,

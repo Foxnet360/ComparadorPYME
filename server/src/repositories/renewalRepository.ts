@@ -245,17 +245,24 @@ export async function listRenewalEvents(renewalId: string): Promise<RenewalEvent
  * the user_id of its policy. Never call these from session-scoped routes.
  */
 export async function listPoliciesWithEndDate(): Promise<
-  Array<{ id: string; user_id: string; end_date: string | null }>
+  Array<{ id: string; user_id: string; org_id: string | null; end_date: string | null }>
 > {
   const { data, error } = await supabase
     .from('policies')
-    .select('id, user_id, end_date')
+    .select('id, user_id, org_id, end_date')
     .not('end_date', 'is', null);
 
   if (error) {
     handleDbError(error, 'Failed to list policies with end_date');
   }
-  return (data as unknown as Array<{ id: string; user_id: string; end_date: string | null }>) || [];
+  return (
+    (data as unknown as Array<{
+      id: string;
+      user_id: string;
+      org_id: string | null;
+      end_date: string | null;
+    }>) || []
+  );
 }
 
 export async function listOpenRenewalsForPolicies(

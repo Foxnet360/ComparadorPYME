@@ -11,7 +11,7 @@ Rama: `feat/audit-remediation-p1` | Plan aprobado: `auditoria_y_plan_de_mejora.m
 ## Tasks
 - [x] T1 | S1 | route: inline | status: done | commit: 47cff21 — Integridad Tailwind, guard de rutas en `App.tsx`, `useAuditEnrichment`, `PdfViewer`, `ExportModal`/`pdfHeader`, `ClauseSelector`, `FileUploader` y manejo de errores en managers + tests (Medium Risk)
 - [x] T2 | S2 | route: inline | status: done | commit: 2b07754 — Componente `Modal` accesible, responsive móvil en `AppHeader`/`ClauseAdmin`/`ExportModal`, `<button>`/`aria-label`, preview real en `ClauseAdmin`, copy neutro y etiquetas en `RenewalDetail` + tests (Medium Risk)
-- [ ] T3 | S3a | route: inline | status: pending — `SIGTERM`/`SIGINT` en `index.ts`, unificación `getGenAI()` + modelos desde `env` y captura de `usageMetadata` real en Gemini + tests (Medium Risk)
+- [x] T3 | S3a | route: inline | status: done | commit: c242323 — `SIGTERM`/`SIGINT` en `index.ts`, unificación `getGenAI()` + modelos desde `env` y captura de `usageMetadata` real en Gemini + tests (Medium Risk)
 - [ ] T4 | S3b | route: inline | status: pending — `org_id` en renovaciones, `referenceQuote` en todos los caminos de `comparisonEngineAdapter.ts` y recuperación ante fallo de envío en `campaignService.ts` + tests (High Risk: item 3/4)
 
 ## Log

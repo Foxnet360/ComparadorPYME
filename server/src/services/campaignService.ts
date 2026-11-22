@@ -17,6 +17,7 @@ import {
   listDeliveriesForRenewals,
   insertDelivery,
   markDeliverySent,
+  deleteDelivery,
   getDelivery,
 } from '../repositories/campaignRepository';
 import { listOpenRenewals, applyTransition } from '../repositories/renewalRepository';
@@ -26,6 +27,7 @@ import { planTransition, type RenewalState } from './renewalStateMachine';
 export interface CampaignRenewalRef {
   id: string;
   user_id: string;
+  org_id?: string | null;
   policy_id: string;
   state: RenewalState;
 }
@@ -157,12 +159,19 @@ export async function runCampaignTick(options: {
         continue;
       }
 
-      await notifier.send({
-        renewalId: item.renewal_id,
-        userId: config.user_id,
-        windowKey: item.window_key,
-        channel: insert.delivery.channel,
-      });
+      try {
+        await notifier.send({
+          renewalId: item.renewal_id,
+          userId: config.user_id,
+          windowKey: item.window_key,
+          channel: insert.delivery.channel,
+        });
+      } catch (sendErr) {
+        // Roll back the unclaimed 'pending' delivery so transient transport
+        // failures never wedge future scheduler retries for this (renewal, window).
+        await deleteDelivery(item.renewal_id, item.window_key).catch(() => {});
+        throw sendErr;
+      }
       await markDeliverySent(insert.delivery.id);
       result.sent += 1;
 
@@ -170,7 +179,13 @@ export async function runCampaignTick(options: {
       const renewal = renewals.find((r) => r.id === item.renewal_id);
       if (renewal && renewal.state === 'detected') {
         const plan = planTransition('detected', { to: 'notified' });
-        const transitioned = await applyTransition(config.user_id, renewal.id, plan, 'system');
+        const transitioned = await applyTransition(
+          config.user_id,
+          renewal.id,
+          plan,
+          'system',
+          renewal.org_id
+        );
         if (transitioned) {
           renewal.state = 'notified';
           result.transitioned += 1;
@@ -205,6 +220,8 @@ export type ManualSendResult =
  */
 export async function sendManualDelivery(options: {
   userId: string;
+  orgId?: string | null;
+  role?: string | null;
   renewalId: string;
   renewalState: RenewalState;
   windowKey: string;
@@ -221,17 +238,29 @@ export async function sendManualDelivery(options: {
     return { kind: 'conflict' };
   }
 
-  await notifier.send({
-    renewalId: options.renewalId,
-    userId: options.userId,
-    windowKey: options.windowKey,
-    channel: insert.delivery.channel,
-  });
+  try {
+    await notifier.send({
+      renewalId: options.renewalId,
+      userId: options.userId,
+      windowKey: options.windowKey,
+      channel: insert.delivery.channel,
+    });
+  } catch (sendErr) {
+    await deleteDelivery(options.renewalId, options.windowKey).catch(() => {});
+    throw sendErr;
+  }
   await markDeliverySent(insert.delivery.id);
 
   if (options.renewalState === 'detected') {
     const plan = planTransition('detected', { to: 'notified' });
-    await applyTransition(options.userId, options.renewalId, plan, options.actorId);
+    await applyTransition(
+      options.userId,
+      options.renewalId,
+      plan,
+      options.actorId,
+      options.orgId,
+      options.role
+    );
   }
 
   const delivery = await getDelivery(options.renewalId, options.windowKey);
