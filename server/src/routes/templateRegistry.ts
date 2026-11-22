@@ -16,11 +16,13 @@ import { coverageGraphService } from '../services/coverageGraphService';
 import { seedGraphFromThesaurus } from '../services/thesaurusMapper';
 import { supabase } from '../config/database';
 
-const ADMIN_ROLES = new Set(['super_admin', 'ally_admin', 'admin', 'operator', 'ops']);
+const READ_ADMIN_ROLES = new Set(['super_admin', 'ally_admin', 'admin', 'operator', 'ops']);
+const WRITE_ADMIN_ROLES = new Set(['super_admin', 'admin', 'operator', 'ops']);
 
 function requireAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
   const role = req.user?.role;
-  if (!role || !ADMIN_ROLES.has(role)) {
+  const allowed = req.method === 'GET' || req.method === 'HEAD' ? READ_ADMIN_ROLES : WRITE_ADMIN_ROLES;
+  if (!role || !allowed.has(role)) {
     res.status(403).json({
       error: 'Forbidden',
       message: 'Admin or operator access required',

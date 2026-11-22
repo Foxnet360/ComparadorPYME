@@ -57,15 +57,16 @@ export const daasApiKeyAuth = async (
 
     // 2. Validate against public.daas_subscribers
     let subscriber: DaasSubscriber | null = null;
+    let rpcRejected = false;
 
     try {
       const { data, error } = await supabase.rpc('verify_daas_api_key', {
         p_key_hash: keyHash,
       });
 
-      if (!error && Array.isArray(data) && data.length > 0 && data[0]?.is_valid) {
+      if (!error && Array.isArray(data) && data.length > 0) {
         const row = data[0];
-        if (row) {
+        if (row?.is_valid) {
           subscriber = {
             id: row.subscriber_id,
             name: row.name,
@@ -75,13 +76,17 @@ export const daasApiKeyAuth = async (
             rateLimitPerMinute: row.rate_limit_per_minute,
             allowedDomains: row.allowed_domains || ['all'],
           };
+        } else {
+          // RPC explicitly returned is_valid = false (unknown, suspended, or expired key).
+          // Do NOT fall back to direct table query.
+          rpcRejected = true;
         }
       }
     } catch {
-      // Direct table query fallback below
+      // Direct table query fallback below only when RPC itself errored/unavailable
     }
 
-    if (!subscriber) {
+    if (!subscriber && !rpcRejected) {
       const { data: rows } = await supabase
         .from('daas_subscribers')
         .select('*')
@@ -89,16 +94,28 @@ export const daasApiKeyAuth = async (
         .eq('status', 'ACTIVE');
 
       const row = rows && rows[0];
-      if (row) {
+      const isExpired =
+        row?.expires_at != null && new Date(row.expires_at).getTime() < Date.now();
+      if (row && !isExpired) {
+        const nextUsage = (row.current_month_usage || 0) + 1;
         subscriber = {
           id: row.id,
           name: row.name,
           tier: row.tier,
           monthlyQuota: row.monthly_quota || 1000,
-          currentMonthUsage: (row.current_month_usage || 0) + 1,
+          currentMonthUsage: nextUsage,
           rateLimitPerMinute: row.rate_limit_per_minute || 60,
           allowedDomains: row.allowed_domains || ['all'],
         };
+
+        try {
+          await supabase
+            .from('daas_subscribers')
+            .update({ current_month_usage: nextUsage })
+            .eq('id', row.id);
+        } catch {
+          // Non-fatal in minimal test mocks without update support
+        }
       }
     }
 

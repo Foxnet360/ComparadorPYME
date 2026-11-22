@@ -18,9 +18,12 @@ import { requireRole } from '../middleware/auth';
 
 const router = Router();
 
-// Protect administrative engine switches, global configs, and platform metrics
-router.use('/unified-engine/admin', requireRole('super_admin'));
-router.use('/alerts/config', requireRole('super_admin'));
+// Protect administrative engine switches, operational telemetry, alerts, and error logs
+router.use('/unified-engine', requireRole('super_admin'));
+router.use('/engine-comparison', requireRole('super_admin'));
+router.use('/alerts', requireRole('super_admin'));
+router.use('/errors', requireRole('super_admin'));
+router.use('/dashboard', requireRole('super_admin'));
 router.use('/accuracy', requireRole('super_admin'));
 router.use('/performance', requireRole('super_admin'));
 

@@ -37,14 +37,34 @@ router.post('/warranty-compliance', asyncHandler(analyzeWarrantyCompliance));
 router.post('/legal-opinion', asyncHandler(generateLegalOpinion));
 router.post('/compare-versions', asyncHandler(compareVersions));
 router.post('/extract-structured-clause', asyncHandler(extractStructuredClause));
-router.post('/store-structured-clause', asyncHandler(storeStructuredClause));
+router.post(
+  '/store-structured-clause',
+  requireRole('super_admin', 'ally_admin'),
+  asyncHandler(storeStructuredClause)
+);
 router.post('/compare-variables', asyncHandler(compareVariables));
-router.post('/correction', asyncHandler(saveCorrection));
-router.post('/disambiguate-coverage', asyncHandler(disambiguateCoverage));
-router.get('/learning-metrics', asyncHandler(getLearningMetrics));
-router.get('/monthly-report', asyncHandler(getMonthlyReport));
+router.post(
+  '/correction',
+  requireRole('super_admin', 'ally_admin', 'ally_technical'),
+  asyncHandler(saveCorrection)
+);
+router.post(
+  '/disambiguate-coverage',
+  requireRole('super_admin', 'ally_admin', 'ally_technical'),
+  asyncHandler(disambiguateCoverage)
+);
+router.get(
+  '/learning-metrics',
+  requireRole('super_admin', 'ally_admin'),
+  asyncHandler(getLearningMetrics)
+);
+router.get('/monthly-report', requireRole('super_admin', 'ally_admin'), asyncHandler(getMonthlyReport));
 router.post('/batch-retrain', requireRole('super_admin'), asyncHandler(batchRetrain));
-router.get('/review-queue/coverages', asyncHandler(getReviewQueueCoverages));
+router.get(
+  '/review-queue/coverages',
+  requireRole('super_admin', 'ally_admin'),
+  asyncHandler(getReviewQueueCoverages)
+);
 router.get('/:id/export', authMiddleware, asyncHandler(exportAnalysisExcel));
 router.post('/:id/export', authMiddleware, asyncHandler(exportAnalysisExcel));
 
