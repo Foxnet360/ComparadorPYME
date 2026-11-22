@@ -169,7 +169,12 @@ export async function runCampaignTick(options: {
       } catch (sendErr) {
         // Roll back the unclaimed 'pending' delivery so transient transport
         // failures never wedge future scheduler retries for this (renewal, window).
-        await deleteDelivery(item.renewal_id, item.window_key).catch(() => {});
+        await deleteDelivery(item.renewal_id, item.window_key).catch((delErr) => {
+          console.warn(
+            `⚠️ [campaignService] Failed to release pending delivery ${item.renewal_id}/${item.window_key}:`,
+            delErr
+          );
+        });
         throw sendErr;
       }
       await markDeliverySent(insert.delivery.id);
@@ -246,7 +251,12 @@ export async function sendManualDelivery(options: {
       channel: insert.delivery.channel,
     });
   } catch (sendErr) {
-    await deleteDelivery(options.renewalId, options.windowKey).catch(() => {});
+    await deleteDelivery(options.renewalId, options.windowKey).catch((delErr) => {
+      console.warn(
+        `⚠️ [campaignService] Failed to release manual pending delivery ${options.renewalId}/${options.windowKey}:`,
+        delErr
+      );
+    });
     throw sendErr;
   }
   await markDeliverySent(insert.delivery.id);

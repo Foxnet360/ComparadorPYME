@@ -101,7 +101,8 @@ export class ComparisonEngineAdapter {
       `🚩 [Adapter] Unified engine ${flagEnabled ? 'ENABLED' : 'DISABLED'} for user ${userId || 'anonymous'} domain=${domain} [${correlationId}]`
     );
 
-    const baselineRef = opts.analysisType === 'renewal' ? opts.referenceQuote : undefined;
+    const baselineRef =
+      v2Schema && opts.analysisType === 'renewal' ? opts.referenceQuote : undefined;
     const preferTwoStage = featureFlags.isEnabled('preferTwoStagePipeline');
     const isLargeMultiProductBatch = pdfPaths.length > 3;
     if (preferTwoStage || isLargeMultiProductBatch) {
@@ -152,7 +153,7 @@ export class ComparisonEngineAdapter {
       return {
         matrix,
         engine: 'fallback',
-        schemaVersion: opts.analysisType === 'renewal' && baselineRef ? 3 : 1,
+        schemaVersion: v2Schema && opts.analysisType === 'renewal' ? 3 : 1,
         fallbackReason: 'unified_disabled_by_flag',
         correlationId,
         graphEnabled: false,
@@ -224,7 +225,7 @@ export class ComparisonEngineAdapter {
       return {
         matrix,
         engine: 'fallback',
-        schemaVersion: opts.analysisType === 'renewal' && baselineRef ? 3 : 1,
+        schemaVersion: v2Schema && opts.analysisType === 'renewal' ? 3 : 1,
         fallbackReason: reason,
         correlationId: fallbackCorrelationId,
         graphEnabled: false,

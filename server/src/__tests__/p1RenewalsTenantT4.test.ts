@@ -285,6 +285,33 @@ describe('P1 Renewals Multi-Tenant, ReferenceQuote & Campaign Resilience (T4 / S
     });
     expect(fallbackRes.matrix.find((r) => r.id === 'baseline_column')).toBeDefined();
     expect(fallbackRes.engine).toBe('fallback');
+    expect(fallbackRes.schemaVersion).toBe(3);
+
+    // V1 invariant: granularComparisonSchema: false never injects baseline_column or emits v3
+    const v1BatchRes = await comparisonEngineAdapter.generateComparison(
+      ['a.pdf', 'b.pdf', 'c.pdf', 'd.pdf'],
+      {
+        userId: 'u1',
+        analysisType: 'renewal',
+        granularComparisonSchema: false,
+        referenceQuote: refQuote,
+      }
+    );
+    expect(v1BatchRes.schemaVersion).toBe(1);
+    expect(v1BatchRes.matrix.find((r) => r.id === 'baseline_column')).toBeUndefined();
+    expect(v1BatchRes.matrix.every((r) => r.isBaseline !== true)).toBe(true);
+
+    vi.mocked(unifiedComparisonEngine.compare).mockRejectedValueOnce(new Error('LLM overloaded'));
+    const v1FallbackRes = await comparisonEngineAdapter.generateComparison(['a.pdf', 'b.pdf'], {
+      userId: 'u1',
+      analysisType: 'renewal',
+      granularComparisonSchema: false,
+      referenceQuote: refQuote,
+    });
+    expect(v1FallbackRes.schemaVersion).toBe(1);
+    expect(v1FallbackRes.engine).toBe('fallback');
+    expect(v1FallbackRes.matrix.find((r) => r.id === 'baseline_column')).toBeUndefined();
+    expect(v1FallbackRes.matrix.every((r) => r.isBaseline !== true)).toBe(true);
   });
 
   it('analysisController passes orgId and role to getPolicyById for renewal referenceQuote', () => {
