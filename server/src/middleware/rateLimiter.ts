@@ -29,8 +29,11 @@ export const globalRateLimiter = rateLimit({
   legacyHeaders: false,
   // B2B DaaS traffic has its own per-subscriber per-minute limiter so
   // ENTERPRISE subscribers (600 req/min) behind shared NAT are not throttled at 100/15min.
+  // Async job status/SSE polling (GET /*/analysis/jobs/*) is already auth-gated and lightweight.
   skip: (req: Request) =>
-    req.path.startsWith('/v1/daas') || req.originalUrl.startsWith('/api/v1/daas'),
+    req.path.startsWith('/v1/daas') ||
+    req.originalUrl.startsWith('/api/v1/daas') ||
+    (req.method === 'GET' && /^\/(?:v1\/)?analysis\/jobs\//.test(req.path)),
   store: createStore('rl:global:'),
   handler: (_req, _res, _next, options) => {
     throw new RateLimitError(
@@ -94,6 +97,9 @@ export const analyzeRateLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  // Async job polling, SSE event streams, and cancellation must not consume the heavy-compute quota
+  skip: (req: Request) =>
+    req.path.startsWith('/jobs/') || /^\/(?:v1\/)?analysis\/jobs\//.test(req.path),
   store: createStore('rl:analyze:'),
   handler: (_req, _res, _next, options) => {
     throw new RateLimitError(

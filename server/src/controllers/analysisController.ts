@@ -23,49 +23,20 @@ import logger from '../config/logger';
 import { InsuranceDomain, isInsuranceDomain } from '../types/domain';
 import { webhookService } from '../services/webhookService';
 import {
-  analysisJobEvents,
   analysisJobQueue,
   AnalysisCancelledError,
   AnalysisJobContext,
-  toPublicSnapshot,
 } from '../services/analysisJobQueue';
-
-interface QuoteMetadataEntry {
-  insurer?: string;
-  cliente?: string;
-  documento?: string;
-  actividadOcupacion?: string;
-  ubicacionRiesgo?: string;
-  vigencia?: string;
-  tipoSeguro?: string;
-  anoConstruccion?: string;
-  pisos?: string;
-  [key: string]: unknown;
-}
-
-interface ClientProfileInput {
-  name?: string;
-  nit?: string;
-  industry?: string;
-  address?: string;
-  city?: string;
-  department?: string;
-  contactPerson?: string;
-  email?: string;
-  phone?: string;
-  constructionYear?: string;
-  floorsCount?: string;
-  seismicZone?: string;
-  buildingType?: string;
-}
 import {
   DualExtractionResult,
   ComparisonResultQuote,
   ComparisonResult,
   AnalysisDomainResolution,
+  QuoteMetadataEntry,
   toHttpError,
   resolveAnalysisUserId,
   resolveAnalysisDomain,
+  resolveClientInfoFromRequest,
   generateComparison,
   matrixRowsToComparisonReport,
   extractMatrixInsurers,
@@ -362,83 +333,13 @@ export const analysisController = {
           );
         });
 
-        // Client Info Resolution (Priority: Client Profile / CRUD > req.body > Quote Metadata > Defaults)
-        let parsedClientProfile: ClientProfileInput | null = null;
-        if (req.body.clientProfile) {
-          try {
-            parsedClientProfile = (
-              typeof req.body.clientProfile === 'string'
-                ? JSON.parse(req.body.clientProfile)
-                : req.body.clientProfile
-            ) as ClientProfileInput;
-          } catch {
-            // ignore json parse error
-          }
-        }
-
-        const quoteMetadataList = (
-          Array.isArray(adapterResult.quoteMetadata) ? adapterResult.quoteMetadata : []
-        ) as QuoteMetadataEntry[];
-        const extractedMetaClient = quoteMetadataList.find((m) => m?.cliente);
-        const extractedClientName = extractedMetaClient?.cliente;
-        const clientName =
-          parsedClientProfile?.name ||
-          (req.body.clientName &&
-          req.body.clientName !== 'Cliente' &&
-          req.body.clientName !== 'Prospecto General'
-            ? req.body.clientName
-            : extractedClientName || req.body.clientName || 'Cliente');
-
-        const clientNit =
-          parsedClientProfile?.nit ||
-          quoteMetadataList.find((m) => m?.documento)?.documento ||
-          req.body.clientNit;
-
-        const clientActivity =
-          parsedClientProfile?.industry ||
-          req.body.clientActivity ||
-          quoteMetadataList.find((m) => m?.actividadOcupacion)?.actividadOcupacion ||
-          (domain === 'copropiedades'
-            ? 'Edificio Residencial / Comercial (Copropiedad)'
-            : domain === 'autos'
-              ? 'Vehículo Particular / Flotas'
-              : domain === 'hogar'
-                ? 'Vivienda Residencial / Hogar'
-                : 'Comercial / PYME');
-
-        const clientLocation =
-          [parsedClientProfile?.address, parsedClientProfile?.city, parsedClientProfile?.department]
-            .filter(Boolean)
-            .join(', ') ||
-          req.body.clientLocation ||
-          quoteMetadataList.find((m) => m?.ubicacionRiesgo)?.ubicacionRiesgo ||
-          (parsedClientProfile?.city ? `${parsedClientProfile.city}, Colombia` : 'Colombia');
-
+        const { clientName, clientInfo } = resolveClientInfoFromRequest(
+          req.body as Record<string, unknown> | undefined,
+          adapterResult.quoteMetadata,
+          domain
+        );
         comparisonResult.domain = domain;
-        comparisonResult.clientInfo = {
-          name: clientName,
-          nit: clientNit || undefined,
-          activity: clientActivity,
-          location: clientLocation,
-          address: parsedClientProfile?.address || undefined,
-          city: parsedClientProfile?.city || undefined,
-          department: parsedClientProfile?.department || undefined,
-          contactPerson: parsedClientProfile?.contactPerson || undefined,
-          email: parsedClientProfile?.email || undefined,
-          phone: parsedClientProfile?.phone || undefined,
-          vigencia: quoteMetadataList.find((m) => m?.vigencia)?.vigencia || undefined,
-          tipoSeguro: quoteMetadataList.find((m) => m?.tipoSeguro)?.tipoSeguro || undefined,
-          anoConstruccion:
-            parsedClientProfile?.constructionYear ||
-            quoteMetadataList.find((m) => m?.anoConstruccion)?.anoConstruccion ||
-            undefined,
-          pisos:
-            parsedClientProfile?.floorsCount ||
-            quoteMetadataList.find((m) => m?.pisos)?.pisos ||
-            undefined,
-          seismicZone: parsedClientProfile?.seismicZone || undefined,
-          buildingType: parsedClientProfile?.buildingType || undefined,
-        };
+        comparisonResult.clientInfo = clientInfo;
 
         try {
           const avgConfidence =
@@ -507,15 +408,15 @@ export const analysisController = {
         return auditEnvelope.result;
       };
 
-      const preferHeader = String(req.headers['prefer'] || '').toLowerCase();
+      const preferHeader = String(req.headers?.['prefer'] || '').toLowerCase();
       const wantsAsync =
         preferHeader.includes('respond-async') ||
-        req.query.async === 'true' ||
+        req.query?.async === 'true' ||
         (req.body as { async?: unknown } | undefined)?.async === 'true' ||
         (req.body as { async?: unknown } | undefined)?.async === true;
 
       if (wantsAsync) {
-        const apiPrefix = req.originalUrl.startsWith('/api/v1') ? '/api/v1' : '/api';
+        const apiPrefix = req.originalUrl?.startsWith('/api/v1') ? '/api/v1' : '/api';
         const job = await analysisJobQueue.enqueueJob(
           {
             userId: userId || 'anonymous',
@@ -550,92 +451,6 @@ export const analysisController = {
       logger.error({ err: error }, 'Controller Error: uploadAndAnalyze failed');
       next(toHttpError(error));
     }
-  },
-
-  /**
-   * GET /api/analysis/jobs/:jobId
-   */
-  getAnalysisJobStatus: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-    const jobId = String(req.params.jobId || '');
-    const userId = resolveAnalysisUserId(req) || 'anonymous';
-    const job = await analysisJobQueue.getJob(jobId, userId, req.user?.role, req.user?.orgId);
-    if (!job) {
-      res.status(404).json({ error: 'Not Found', message: 'Análisis asíncrono no encontrado.' });
-      return;
-    }
-    res.json(toPublicSnapshot(job));
-  },
-
-  /**
-   * GET /api/analysis/jobs/:jobId/events (SSE)
-   */
-  streamAnalysisJobEvents: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-    const jobId = String(req.params.jobId || '');
-    const userId = resolveAnalysisUserId(req) || 'anonymous';
-    const initial = await analysisJobQueue.getJob(jobId, userId, req.user?.role, req.user?.orgId);
-    if (!initial) {
-      res.status(404).json({ error: 'Not Found', message: 'Análisis asíncrono no encontrado.' });
-      return;
-    }
-
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache, no-transform');
-    res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders?.();
-
-    const writeSnapshot = (snapshot: ReturnType<typeof toPublicSnapshot>) => {
-      res.write(`event: progress\ndata: ${JSON.stringify(snapshot)}\n\n`);
-    };
-
-    const initialSnapshot = toPublicSnapshot(initial);
-    writeSnapshot(initialSnapshot);
-
-    if (
-      initial.stage === 'completed' ||
-      initial.stage === 'failed' ||
-      initial.stage === 'cancelled'
-    ) {
-      res.end();
-      return;
-    }
-
-    const onUpdate = (snapshot: ReturnType<typeof toPublicSnapshot>) => {
-      writeSnapshot(snapshot);
-      if (
-        snapshot.stage === 'completed' ||
-        snapshot.stage === 'failed' ||
-        snapshot.stage === 'cancelled'
-      ) {
-        cleanup();
-        res.end();
-      }
-    };
-
-    const cleanup = () => {
-      analysisJobEvents.off(jobId, onUpdate);
-    };
-
-    analysisJobEvents.on(jobId, onUpdate);
-    req.on('close', cleanup);
-  },
-
-  /**
-   * POST /api/analysis/jobs/:jobId/cancel
-   */
-  cancelAnalysisJob: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-    const jobId = String(req.params.jobId || '');
-    const userId = resolveAnalysisUserId(req) || 'anonymous';
-    const cancelled = await analysisJobQueue.cancelJob(
-      jobId,
-      userId,
-      req.user?.role,
-      req.user?.orgId
-    );
-    if (!cancelled) {
-      res.status(404).json({ error: 'Not Found', message: 'Análisis asíncrono no encontrado.' });
-      return;
-    }
-    res.json(toPublicSnapshot(cancelled));
   },
 
   /**

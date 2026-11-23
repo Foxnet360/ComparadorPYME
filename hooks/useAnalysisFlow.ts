@@ -106,7 +106,9 @@ export const useAnalysisFlow = () => {
       return 'REPORT';
     } catch (error: unknown) {
       if (error instanceof AnalysisCancelledError || controller.signal.aborted) {
-        cancelAnalysis();
+        if (abortControllerRef.current === controller) {
+          cancelAnalysis();
+        }
         return null;
       }
       console.error(error);

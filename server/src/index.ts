@@ -107,7 +107,7 @@ app.use(
   cors({
     origin: createCorsOrigin(corsOrigins),
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-API-Key'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-API-Key', 'Prefer'],
   })
 );
 app.use(express.json({ limit: '10mb' }));

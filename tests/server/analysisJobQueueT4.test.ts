@@ -134,4 +134,47 @@ describe('P3-T4: Backend Async PDF Analysis Job Queue, Polling, SSE & Cancellati
     expect(sseRes.text).toContain('event: progress');
     expect(sseRes.text).toContain('"stage":"completed"');
   });
+
+  it('exempts async job status polling and cancel endpoints from analyzeRateLimiter (>10 polls/min)', async () => {
+    const { analysisJobQueue } = await import('../../server/src/services/analysisJobQueue');
+    const { default: analysisRoutes } = await import('../../server/src/routes/analysis');
+    const { analyzeRateLimiter } = await import('../../server/src/middleware/rateLimiter');
+
+    const app = express();
+    app.use((req, _res, next) => {
+      (req as unknown as { user: { id: string; role: string } }).user = {
+        id: 'user-poll-1',
+        role: 'ally_technical',
+      };
+      next();
+    });
+    app.use('/api/v1/analysis', analyzeRateLimiter, analysisRoutes);
+
+    const job = await analysisJobQueue.enqueueJob({ userId: 'user-poll-1' }, async () => ({
+      quotes: [],
+    }));
+
+    for (let i = 0; i < 12; i++) {
+      const pollRes = await request(app).get(`/api/v1/analysis/jobs/${job.jobId}`);
+      expect(pollRes.status).toBe(200);
+    }
+
+    const cancelRes = await request(app).post(`/api/v1/analysis/jobs/${job.jobId}/cancel`);
+    expect(cancelRes.status).toBe(200);
+  });
+
+  it('allows Prefer header on cross-origin CORS preflight OPTIONS /api/analyze', async () => {
+    process.env.SMMLV_VALUE = process.env.SMMLV_VALUE || '1423500';
+    process.env.UVT_VALUE = process.env.UVT_VALUE || '42412';
+    const { app } = (await import('../../server/src/index')) as unknown as { app: express.Express };
+
+    const preflight = await request(app)
+      .options('/api/analyze')
+      .set('Origin', 'http://localhost:3000')
+      .set('Access-Control-Request-Method', 'POST')
+      .set('Access-Control-Request-Headers', 'authorization,prefer');
+
+    expect(preflight.status).toBeLessThan(300);
+    expect(String(preflight.headers['access-control-allow-headers'] || '')).toMatch(/Prefer/i);
+  });
 });

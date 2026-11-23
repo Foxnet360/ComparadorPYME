@@ -334,3 +334,113 @@ export function generateComparison(
     analysisVersion: '2.0-rag',
   };
 }
+
+export interface QuoteMetadataEntry {
+  insurer?: string;
+  cliente?: string;
+  documento?: string;
+  actividadOcupacion?: string;
+  ubicacionRiesgo?: string;
+  vigencia?: string;
+  tipoSeguro?: string;
+  anoConstruccion?: string;
+  pisos?: string;
+  [key: string]: unknown;
+}
+
+export interface ClientProfileInput {
+  name?: string;
+  nit?: string;
+  industry?: string;
+  address?: string;
+  city?: string;
+  department?: string;
+  contactPerson?: string;
+  email?: string;
+  phone?: string;
+  constructionYear?: string;
+  floorsCount?: string;
+  seismicZone?: string;
+  buildingType?: string;
+}
+
+export function resolveClientInfoFromRequest(
+  body: Record<string, unknown> | undefined,
+  quoteMetadata: unknown,
+  domain: InsuranceDomain
+): { clientName: string; clientInfo: NonNullable<ComparisonResult['clientInfo']> } {
+  let parsedClientProfile: ClientProfileInput | null = null;
+  if (body?.clientProfile) {
+    try {
+      parsedClientProfile = (
+        typeof body.clientProfile === 'string' ? JSON.parse(body.clientProfile) : body.clientProfile
+      ) as ClientProfileInput;
+    } catch {
+      // ignore json parse error
+    }
+  }
+
+  const quoteMetadataList = (
+    Array.isArray(quoteMetadata) ? quoteMetadata : []
+  ) as QuoteMetadataEntry[];
+  const extractedClientName = quoteMetadataList.find((m) => m?.cliente)?.cliente;
+  const bodyClientName = typeof body?.clientName === 'string' ? body.clientName : undefined;
+  const clientName =
+    parsedClientProfile?.name ||
+    (bodyClientName && bodyClientName !== 'Cliente' && bodyClientName !== 'Prospecto General'
+      ? bodyClientName
+      : extractedClientName || bodyClientName || 'Cliente');
+
+  const clientNit =
+    parsedClientProfile?.nit ||
+    quoteMetadataList.find((m) => m?.documento)?.documento ||
+    (typeof body?.clientNit === 'string' ? body.clientNit : undefined);
+
+  const clientActivity =
+    parsedClientProfile?.industry ||
+    (typeof body?.clientActivity === 'string' ? body.clientActivity : undefined) ||
+    quoteMetadataList.find((m) => m?.actividadOcupacion)?.actividadOcupacion ||
+    (domain === 'copropiedades'
+      ? 'Edificio Residencial / Comercial (Copropiedad)'
+      : domain === 'autos'
+        ? 'Vehículo Particular / Flotas'
+        : domain === 'hogar'
+          ? 'Vivienda Residencial / Hogar'
+          : 'Comercial / PYME');
+
+  const clientLocation =
+    [parsedClientProfile?.address, parsedClientProfile?.city, parsedClientProfile?.department]
+      .filter(Boolean)
+      .join(', ') ||
+    (typeof body?.clientLocation === 'string' ? body.clientLocation : undefined) ||
+    quoteMetadataList.find((m) => m?.ubicacionRiesgo)?.ubicacionRiesgo ||
+    (parsedClientProfile?.city ? `${parsedClientProfile.city}, Colombia` : 'Colombia');
+
+  return {
+    clientName,
+    clientInfo: {
+      name: clientName,
+      nit: clientNit || undefined,
+      activity: clientActivity,
+      location: clientLocation,
+      address: parsedClientProfile?.address || undefined,
+      city: parsedClientProfile?.city || undefined,
+      department: parsedClientProfile?.department || undefined,
+      contactPerson: parsedClientProfile?.contactPerson || undefined,
+      email: parsedClientProfile?.email || undefined,
+      phone: parsedClientProfile?.phone || undefined,
+      vigencia: quoteMetadataList.find((m) => m?.vigencia)?.vigencia || undefined,
+      tipoSeguro: quoteMetadataList.find((m) => m?.tipoSeguro)?.tipoSeguro || undefined,
+      anoConstruccion:
+        parsedClientProfile?.constructionYear ||
+        quoteMetadataList.find((m) => m?.anoConstruccion)?.anoConstruccion ||
+        undefined,
+      pisos:
+        parsedClientProfile?.floorsCount ||
+        quoteMetadataList.find((m) => m?.pisos)?.pisos ||
+        undefined,
+      seismicZone: parsedClientProfile?.seismicZone || undefined,
+      buildingType: parsedClientProfile?.buildingType || undefined,
+    },
+  };
+}
