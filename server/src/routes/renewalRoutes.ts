@@ -32,6 +32,7 @@ import {
 } from '../repositories/renewalRepository';
 import { insertDelivery, getDelivery, deleteDelivery } from '../repositories/campaignRepository';
 import { sendManualDelivery } from '../services/campaignService';
+import { webhookService } from '../services/webhookService';
 
 const router = Router();
 
@@ -118,6 +119,13 @@ router.post(
     if (!updated) {
       throw new NotFoundError('Renewal not found');
     }
+    void webhookService.emitEvent({
+      userId,
+      orgId: req.user?.orgId,
+      event: 'renewal.status_changed',
+      eventId: `renewal.status_changed:${updated.id}:${updated.state}`,
+      data: { renewalId: updated.id, state: updated.state },
+    });
     res.json(updated);
   })
 );

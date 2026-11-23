@@ -21,6 +21,7 @@ import { auditGroundedComparison } from '../services/groundingAuditor';
 import { AuthenticatedRequest } from '../middleware/auth';
 import logger from '../config/logger';
 import { InsuranceDomain, isInsuranceDomain } from '../types/domain';
+import { webhookService } from '../services/webhookService';
 
 interface QuoteMetadataEntry {
   insurer?: string;
@@ -454,6 +455,20 @@ export const analysisController = {
       logger.info(`✅ Analysis completed in ${duration}ms`);
 
       const auditEnvelope = auditGroundedComparison(comparisonResult);
+      if (userId && userId !== 'anonymous') {
+        void webhookService.emitEvent({
+          userId,
+          orgId: req.user?.orgId,
+          event: 'analysis.completed',
+          eventId: `analysis.completed:${(comparisonResult as ComparisonResult).id || duration}`,
+          data: {
+            analysisId: (comparisonResult as ComparisonResult).id ?? null,
+            domain,
+            quotesCount: comparisonResult.quotes?.length ?? 0,
+            durationMs: duration,
+          },
+        });
+      }
       res.json(auditEnvelope.result);
     } catch (error: unknown) {
       cleanupUploadedFiles();
@@ -626,6 +641,16 @@ export const analysisController = {
       if (!ok) {
         res.status(500).json({ error: 'No se pudo guardar el estado.' });
         return;
+      }
+
+      if (userId && userId !== 'anonymous') {
+        void webhookService.emitEvent({
+          userId,
+          orgId,
+          event: 'analysis.status_changed',
+          eventId: `analysis.status_changed:${analysisId}:${status}`,
+          data: { analysisId, status },
+        });
       }
 
       res.json({ id: analysisId, status });

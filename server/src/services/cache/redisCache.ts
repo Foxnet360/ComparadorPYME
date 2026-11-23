@@ -169,8 +169,8 @@ class MemoryCache {
   zrangebyscore(key: string, min: number | string, max: number | string): string[] {
     this.checkExpired(key);
     const list = this.zsets.get(key) ?? [];
-    const minNum = Number(min);
-    const maxNum = Number(max);
+    const minNum = min === '-inf' ? -Infinity : Number(min);
+    const maxNum = max === '+inf' || max === 'inf' ? Infinity : Number(max);
     return list
       .filter((item) => item.score >= minNum && item.score <= maxNum)
       .map((item) => item.member);

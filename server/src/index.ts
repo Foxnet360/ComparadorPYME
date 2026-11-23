@@ -64,6 +64,7 @@ import campaignRoutes from './routes/campaignRoutes';
 import insurerRoutes from './routes/insurers';
 import organizationRoutes from './routes/organizationRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
+import webhookRoutes from './routes/webhookRoutes';
 import daasRoutes from './routes/daasRoutes';
 
 // Graph seeding lifecycle
@@ -307,6 +308,7 @@ const coreRouterMounts = [
   { suffix: '/insurers', router: insurerRoutes },
   { suffix: '/organizations', router: organizationRoutes },
   { suffix: '/analytics', router: analyticsRoutes },
+  { suffix: '/webhooks', router: webhookRoutes },
 ] as const;
 
 export const apiRouterMounts = [
