@@ -7,9 +7,10 @@ Rama: `refactor/audit-remediation-p2` | Plan aprobado: `auditoria_y_plan_de_mejo
 - S3 (Docker Multi-Stage, Documentación y Smoke Tests): Convertir `Dockerfile` en build multi-stage real sin toolchain de compilación ni copia duplicada de tesauros en la imagen final; alinear `README.md` con scripts, modelos Gemini de `env.ts`, endpoints reales y `docs/DEPLOY.md`; reparar `scripts/smoke-tests.sh` contra rutas reales.
 
 ## Tasks
-- [ ] T1 | S1 | route: inline | status: pending — Poda de dependencias (`package.json`/`vite.config.ts`), eliminación de huérfanos y ramas inalcanzables, unificación `formatCOP`/`brokerInfo`/`rejectSpoofedUserId`, limpieza `optionalAuthMiddleware` y `npm run format:check` en 0 + tests (High Risk: item 5)
-- [ ] T2 | S2 | route: inline | status: pending — Migración `console.*` a Pino en routes/controllers, reducción de `no-explicit-any` en módulos core y modularización de `ClauseAdmin.tsx` y `analysisController.ts` + tests (Medium Risk)
-- [ ] T3 | S3 | route: inline | status: pending — `Dockerfile` multi-stage, alineación `README.md` y reparación de `scripts/smoke-tests.sh` + verificación sintáctica y tests (High Risk: item 5)
+- [x] T1 | S1 | route: inline | status: done | commit: 8ec739d — Poda de dependencias (`package.json`/`vite.config.ts`), eliminación de huérfanos y ramas inalcanzables, unificación `formatCOP`/`brokerInfo`/`rejectSpoofedUserId`, limpieza `optionalAuthMiddleware` y `npm run format:check` en 0 + tests (High Risk: item 5)
+- [x] T2 | S2 | route: inline | status: done | commit: b7655d2 — Migración `console.*` a Pino en routes/controllers, reducción de `no-explicit-any` en módulos core y modularización de `ClauseAdmin.tsx` y `analysisController.ts` + tests (Medium Risk)
+- [x] T3 | S3 | route: inline | status: done | commit: d553cdd — `Dockerfile` multi-stage, alineación `README.md` y reparación de `scripts/smoke-tests.sh` + verificación sintáctica y tests (High Risk: item 5)
 
 ## Log
 - L1 (2026-11-22): Merge local de `feat/audit-remediation-p1` en `main` (`4d8e9c0`). Usuario autorizó continuar con Fase 3 (P2) en rama `refactor/audit-remediation-p2`.
+- L2 (2026-11-22): Fase 3 (P2) completada y verificada en `refactor/audit-remediation-p2` (`8ec739d` T1, `b7655d2` T2, `d553cdd` T3 + `06be689` fix smoke-tests tras blocker de verificador independiente). Recheck T3 PASS. Gate completo PASS: `format:check` (0 warnings), `typecheck:backend`/`frontend` (0 errores), `build` (`✓ built in 2.10s`), `lint` (0 errores, 130 warnings), `test:unit` (244/244 files, 2000 passed | 8 skipped), `test:integration` (24/24 files, 257 passed | 2 skipped), `bash -n scripts/smoke-tests.sh` PASS. Pendiente autorización del usuario para merge local en `main` y avance a Fase 4 (P3).
