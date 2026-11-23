@@ -72,10 +72,33 @@ export function buildPromotedPolicyInput(
     fail(`Analysis domain '${ramo}' is not a supported ramo`, 'ramo');
   }
 
-  const insured = confirmations.insured ?? {};
-  for (const field of RAMO_INSURED_REQUIREMENTS[ramo as PolicyRamo]) {
-    if (insured[field] === undefined || insured[field] === null || insured[field] === '') {
-      fail(`insured.${field} is required for ramo ${ramo}`, `confirmations.insured.${field}`);
+  const rawInsured = confirmations.insured ?? {};
+  const insured: Record<string, unknown> = { ...rawInsured };
+
+  if (ramo === 'autos' && insured.is_fleet === true) {
+    for (const fleetField of ['vehicle_count', 'value'] as const) {
+      if (
+        insured[fleetField] === undefined ||
+        insured[fleetField] === null ||
+        insured[fleetField] === ''
+      ) {
+        fail(
+          `insured.${fleetField} is required for collective autos fleet`,
+          `confirmations.insured.${fleetField}`
+        );
+      }
+    }
+    if (!insured.plate) {
+      insured.plate = 'FLOTA-COLECTIVA';
+    }
+    if (!insured.model) {
+      insured.model = `Flota (${String(insured.vehicle_count)} vehículos)`;
+    }
+  } else {
+    for (const field of RAMO_INSURED_REQUIREMENTS[ramo as PolicyRamo]) {
+      if (insured[field] === undefined || insured[field] === null || insured[field] === '') {
+        fail(`insured.${field} is required for ramo ${ramo}`, `confirmations.insured.${field}`);
+      }
     }
   }
 

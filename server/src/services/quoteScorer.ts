@@ -100,6 +100,10 @@ const AUTOS_RCE_LOW_PENALTY = -15;
 const AUTOS_RCE_MODERATE_PENALTY = -5;
 const AUTOS_CARRO_TALLER_BONUS = 5;
 const AUTOS_ASISTENCIA_BONUS = 5;
+const AUTOS_PATRIMONIAL_BONUS = 5;
+const SALUD_CONTINUIDAD_BONUS = 6;
+const VIDA_FREE_COVER_BONUS = 6;
+const VIDA_PROFIT_SHARING_BONUS = 4;
 
 // Autos deductible modifiers
 const AUTOS_DEDUCTIBLE_CLEAR_BONUS_HIGH = 5;
@@ -392,9 +396,13 @@ function calculateCoverageScore(
     score -= mandatoryMissingCount * 10;
   }
 
-  // Autos-specific modifiers
+  // Domain-specific modifiers (including collective/fleet underwriting bonuses)
   if (domain === 'autos') {
     score += calculateAutosCoverageModifiers(quote);
+  } else if (domain === 'salud') {
+    score += calculateSaludCoverageModifiers(quote);
+  } else if (domain === 'vida_grupo') {
+    score += calculateVidaGrupoCoverageModifiers(quote);
   }
 
   return Math.round(clamp(score, 0, 100));
@@ -440,6 +448,88 @@ function calculateAutosCoverageModifiers(quote: ParsedQuote): number {
     );
   });
   if (hasAsistencia) modifier += AUTOS_ASISTENCIA_BONUS;
+
+  const hasPatrimonial = quote.coverages.some((c) => {
+    const canonical = (c.canonicalName || c.name).toLowerCase();
+    return (
+      canonical.includes('amparo patrimonial') ||
+      canonical.includes('protección patrimonial') ||
+      canonical.includes('proteccion patrimonial') ||
+      canonical.includes('culpa grave')
+    );
+  });
+  if (hasPatrimonial) modifier += AUTOS_PATRIMONIAL_BONUS;
+
+  return modifier;
+}
+
+/**
+ * Salud-specific coverage modifiers (individual and collective PVS).
+ * Rewards continuity of seniority / waiver of waiting periods in collective transfers.
+ */
+function calculateSaludCoverageModifiers(quote: ParsedQuote): number {
+  let modifier = 0;
+
+  const hasContinuidadCoverage = quote.coverages.some((c) => {
+    const canonical = (c.canonicalName || c.name).toLowerCase();
+    return (
+      canonical.includes('continuidad de antigüedad') ||
+      canonical.includes('continuidad de antiguedad') ||
+      canonical.includes('exoneración de carencias') ||
+      canonical.includes('exoneracion de carencias')
+    );
+  });
+  const hasContinuidadDetail = Boolean(
+    quote.collectiveDetails?.continuityAndPreexisting &&
+    /continuidad|sin carencia|exoneraci/i.test(quote.collectiveDetails.continuityAndPreexisting)
+  );
+
+  if (hasContinuidadCoverage || hasContinuidadDetail) {
+    modifier += SALUD_CONTINUIDAD_BONUS;
+  }
+
+  return modifier;
+}
+
+/**
+ * Vida Grupo collective underwriting modifiers.
+ * Rewards explicit Free Cover Limit (automatic acceptance without medical exams)
+ * and Profit Sharing (Participación de Utilidades).
+ */
+function calculateVidaGrupoCoverageModifiers(quote: ParsedQuote): number {
+  let modifier = 0;
+
+  const hasFreeCoverCoverage = quote.coverages.some((c) => {
+    const canonical = (c.canonicalName || c.name).toLowerCase();
+    return (
+      canonical.includes('free cover') ||
+      canonical.includes('asegurabilidad automática') ||
+      canonical.includes('asegurabilidad automatica') ||
+      canonical.includes('sin exámenes médicos')
+    );
+  });
+  const hasFreeCoverDetail =
+    quote.collectiveDetails?.freeCoverLimit != null && quote.collectiveDetails.freeCoverLimit > 0;
+
+  if (hasFreeCoverCoverage || hasFreeCoverDetail) {
+    modifier += VIDA_FREE_COVER_BONUS;
+  }
+
+  const hasProfitSharingCoverage = quote.coverages.some((c) => {
+    const canonical = (c.canonicalName || c.name).toLowerCase();
+    return (
+      canonical.includes('participación de utilidades') ||
+      canonical.includes('participacion de utilidades') ||
+      canonical.includes('buena siniestralidad')
+    );
+  });
+  const hasProfitSharingDetail = Boolean(
+    quote.collectiveDetails?.profitSharing && quote.collectiveDetails.profitSharing.trim() !== ''
+  );
+
+  if (hasProfitSharingCoverage || hasProfitSharingDetail) {
+    modifier += VIDA_PROFIT_SHARING_BONUS;
+  }
 
   return modifier;
 }

@@ -191,4 +191,118 @@ describe('quoteScorer - autos domain', () => {
 
     expect(result.expectedCoverageCount).toBe(17);
   });
+
+  it('applies collective underwriting bonuses for autos (Amparo Patrimonial), salud (Continuidad), and vida_grupo (Free Cover & Profit Sharing)', () => {
+    const baseAutos = makeAutosQuote();
+    const fleetAutos = makeAutosQuote({
+      coverages: [
+        ...baseAutos.coverages,
+        {
+          name: 'Amparo Patrimonial',
+          canonicalName: 'Amparo Patrimonial (Culpa Grave / Infracción de Tránsito)',
+          value: 'Incluido 100%',
+          deductible: 'No aplica',
+          confidence: 0.95,
+        },
+      ],
+    });
+    const baseAutosScore = quoteScorer.calculateScore(
+      baseAutos,
+      [],
+      [],
+      undefined,
+      undefined,
+      'autos'
+    );
+    const fleetAutosScore = quoteScorer.calculateScore(
+      fleetAutos,
+      [],
+      [],
+      undefined,
+      undefined,
+      'autos'
+    );
+    expect(fleetAutosScore.breakdown.coverage).toBeGreaterThan(baseAutosScore.breakdown.coverage);
+
+    const baseVida = makeAutosQuote({
+      insurerName: 'Vida Base',
+      priceAnnual: 450_000,
+      coverages: [
+        {
+          name: 'Amparo Básico por Muerte',
+          canonicalName: 'Amparo Básico por Muerte (Cualquier Causa)',
+          value: '100000000',
+          deductible: 'No aplica',
+          confidence: 0.95,
+        },
+      ],
+    });
+    const collectiveVida = {
+      ...baseVida,
+      collectiveDetails: {
+        isCollective: true,
+        freeCoverLimit: 200_000_000,
+        profitSharing: '20% sobre utilidad técnica',
+      },
+    };
+    const baseVidaScore = quoteScorer.calculateScore(
+      baseVida,
+      [],
+      [],
+      undefined,
+      undefined,
+      'vida_grupo'
+    );
+    const collectiveVidaScore = quoteScorer.calculateScore(
+      collectiveVida,
+      [],
+      [],
+      undefined,
+      undefined,
+      'vida_grupo'
+    );
+    expect(collectiveVidaScore.breakdown.coverage).toBeGreaterThan(
+      baseVidaScore.breakdown.coverage
+    );
+
+    const baseSalud = makeAutosQuote({
+      insurerName: 'Salud Base',
+      priceAnnual: 350_000,
+      coverages: [
+        {
+          name: 'Hospitalización y Cirugía',
+          canonicalName: 'Hospitalización y Cirugía',
+          value: 'Ilimitado',
+          deductible: 'Sin copago',
+          confidence: 0.95,
+        },
+      ],
+    });
+    const collectiveSalud = {
+      ...baseSalud,
+      collectiveDetails: {
+        isCollective: true,
+        continuityAndPreexisting: 'Continuidad de antigüedad y exoneración de carencias',
+      },
+    };
+    const baseSaludScore = quoteScorer.calculateScore(
+      baseSalud,
+      [],
+      [],
+      undefined,
+      undefined,
+      'salud'
+    );
+    const collectiveSaludScore = quoteScorer.calculateScore(
+      collectiveSalud,
+      [],
+      [],
+      undefined,
+      undefined,
+      'salud'
+    );
+    expect(collectiveSaludScore.breakdown.coverage).toBeGreaterThan(
+      baseSaludScore.breakdown.coverage
+    );
+  });
 });

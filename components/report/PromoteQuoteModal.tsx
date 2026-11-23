@@ -66,6 +66,8 @@ export const PromoteQuoteModal: React.FC<PromoteQuoteModalProps> = ({
   const [endDate, setEndDate] = useState(nextYearStr);
 
   // Ramo specific insured fields
+  const [isAutosFleet, setIsAutosFleet] = useState(false);
+  const [vehicleCount, setVehicleCount] = useState<number | ''>('');
   const [plate, setPlate] = useState('');
   const [model, setModel] = useState('');
   const [commercialValue, setCommercialValue] = useState<number | ''>('');
@@ -169,9 +171,18 @@ export const PromoteQuoteModal: React.FC<PromoteQuoteModalProps> = ({
       const normDomain = domain.toLowerCase();
 
       if (normDomain === 'autos') {
-        insured.plate = plate.trim() || 'SIN-PLACA';
-        insured.model = model.trim() || '2025';
-        insured.value = Number(commercialValue) || 50000000;
+        if (isAutosFleet) {
+          const count = Number(vehicleCount) || 5;
+          insured.is_fleet = true;
+          insured.vehicle_count = count;
+          insured.plate = 'FLOTA-COLECTIVA';
+          insured.model = model.trim() || `Flota (${count} vehículos)`;
+          insured.value = Number(commercialValue) || 250000000;
+        } else {
+          insured.plate = plate.trim() || 'SIN-PLACA';
+          insured.model = model.trim() || '2025';
+          insured.value = Number(commercialValue) || 50000000;
+        }
       } else if (normDomain === 'pyme' || normDomain === 'copropiedades') {
         insured.suma_asegurada = Number(sumaAsegurada) || quote.priceAnnual * 100 || 100000000;
       } else if (normDomain === 'salud' || normDomain === 'vida_grupo') {
@@ -477,46 +488,117 @@ export const PromoteQuoteModal: React.FC<PromoteQuoteModalProps> = ({
                 </span>
 
                 {domain.toLowerCase() === 'autos' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="text-[11px] font-semibold text-slate-600 block mb-1">
-                        Placa *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={plate}
-                        onChange={(e) => setPlate(e.target.value.toUpperCase())}
-                        placeholder="ABC-123"
-                        className="w-full text-xs px-3 py-1.5 bg-white border border-slate-300 rounded-lg"
-                      />
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsAutosFleet(false)}
+                        className={`text-xs font-semibold px-3 py-1 rounded-lg border transition-colors cursor-pointer ${
+                          !isAutosFleet
+                            ? 'bg-indigo-600 text-white border-indigo-600'
+                            : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-100'
+                        }`}
+                      >
+                        Vehículo Individual
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsAutosFleet(true)}
+                        className={`text-xs font-semibold px-3 py-1 rounded-lg border transition-colors cursor-pointer ${
+                          isAutosFleet
+                            ? 'bg-indigo-600 text-white border-indigo-600'
+                            : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-100'
+                        }`}
+                      >
+                        Póliza Colectiva / Flota
+                      </button>
                     </div>
-                    <div>
-                      <label className="text-[11px] font-semibold text-slate-600 block mb-1">
-                        Modelo / Año *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={model}
-                        onChange={(e) => setModel(e.target.value)}
-                        placeholder="2025"
-                        className="w-full text-xs px-3 py-1.5 bg-white border border-slate-300 rounded-lg"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-semibold text-slate-600 block mb-1">
-                        Valor Comercial (COP) *
-                      </label>
-                      <input
-                        type="number"
-                        required
-                        value={commercialValue}
-                        onChange={(e) => setCommercialValue(Number(e.target.value) || '')}
-                        placeholder="75000000"
-                        className="w-full text-xs px-3 py-1.5 bg-white border border-slate-300 rounded-lg"
-                      />
-                    </div>
+
+                    {!isAutosFleet ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-600 block mb-1">
+                            Placa *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={plate}
+                            onChange={(e) => setPlate(e.target.value.toUpperCase())}
+                            placeholder="ABC-123"
+                            className="w-full text-xs px-3 py-1.5 bg-white border border-slate-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-600 block mb-1">
+                            Modelo / Año *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={model}
+                            onChange={(e) => setModel(e.target.value)}
+                            placeholder="2025"
+                            className="w-full text-xs px-3 py-1.5 bg-white border border-slate-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-600 block mb-1">
+                            Valor Comercial (COP) *
+                          </label>
+                          <input
+                            type="number"
+                            required
+                            value={commercialValue}
+                            onChange={(e) => setCommercialValue(Number(e.target.value) || '')}
+                            placeholder="75000000"
+                            className="w-full text-xs px-3 py-1.5 bg-white border border-slate-300 rounded-lg"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-600 block mb-1">
+                            N° de Vehículos (Flota) *
+                          </label>
+                          <input
+                            type="number"
+                            min={2}
+                            required
+                            value={vehicleCount}
+                            onChange={(e) => setVehicleCount(Number(e.target.value) || '')}
+                            placeholder="15"
+                            className="w-full text-xs px-3 py-1.5 bg-white border border-slate-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-600 block mb-1">
+                            Composición / Categorías
+                          </label>
+                          <input
+                            type="text"
+                            value={model}
+                            onChange={(e) => setModel(e.target.value)}
+                            placeholder="Ej: Livianos y Utilitarios"
+                            className="w-full text-xs px-3 py-1.5 bg-white border border-slate-300 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-600 block mb-1">
+                            Valor Total Flota (COP) *
+                          </label>
+                          <input
+                            type="number"
+                            required
+                            value={commercialValue}
+                            onChange={(e) => setCommercialValue(Number(e.target.value) || '')}
+                            placeholder="1250000000"
+                            className="w-full text-xs px-3 py-1.5 bg-white border border-slate-300 rounded-lg"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

@@ -125,6 +125,31 @@ describe('buildPromotedPolicyInput (Q4 promotion mapping)', () => {
     expect(() => buildPromotedPolicyInput(makeAnalysis(), 0, confirmations)).toThrow(/model/);
   });
 
+  it('supports promoting a collective autos fleet (is_fleet: true, vehicle_count, value) without requiring a single plate', () => {
+    const confirmations = makeConfirmations({
+      insured: { is_fleet: true, vehicle_count: 18, value: 1_450_000_000 },
+    });
+    const input = buildPromotedPolicyInput(makeAnalysis(), 0, confirmations);
+
+    expect(input.ramo).toBe('autos');
+    expect(input.ramo_details).toEqual({
+      insured: {
+        is_fleet: true,
+        vehicle_count: 18,
+        value: 1_450_000_000,
+        plate: 'FLOTA-COLECTIVA',
+        model: 'Flota (18 vehículos)',
+      },
+    });
+
+    const missingCount = makeConfirmations({
+      insured: { is_fleet: true, value: 1_450_000_000 },
+    });
+    expect(() => buildPromotedPolicyInput(makeAnalysis(), 0, missingCount)).toThrow(
+      /vehicle_count/
+    );
+  });
+
   it('requires headcount and carencias date for salud', () => {
     const analysis = makeAnalysis({ domain: 'salud' });
     const confirmations = makeConfirmations({ insured: { headcount: 12 } });
