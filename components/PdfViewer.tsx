@@ -54,6 +54,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   // Cargar PDF
   useEffect(() => {
     if (!isOpen || !pdfUrl) return;
+    let cancelled = false;
+    let loadedPdf: pdfjsLib.PDFDocumentProxy | null = null;
 
     const loadPdf = async () => {
       setLoading(true);
@@ -62,17 +64,33 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       try {
         const loadingTask = pdfjsLib.getDocument({ url: pdfUrl });
         const pdf = await loadingTask.promise;
+        if (cancelled) {
+          await pdf.destroy();
+          return;
+        }
+        loadedPdf = pdf;
         setPdfDoc(pdf);
         setNumPages(pdf.numPages);
         setCurrentPage(Math.min(targetPage ?? 1, pdf.numPages));
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error cargando PDF');
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Error cargando PDF');
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     loadPdf();
+
+    return () => {
+      cancelled = true;
+      if (loadedPdf) {
+        void loadedPdf.destroy();
+      }
+    };
   }, [pdfUrl, isOpen, targetPage]);
 
   // Renderizar página
@@ -133,8 +151,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           context.save();
           context.fillStyle = 'rgba(255, 255, 0, 0.4)';
           context.fillRect(
-            textItem.transform[4]!,
-            textItem.transform[5]! - fontHeight,
+            tx[4]!,
+            tx[5]! - fontHeight,
             textItem.width * fontWidth,
             fontHeight * 1.2
           );
@@ -155,6 +173,17 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const zoomIn = () => setScale((prev) => Math.min(prev + 0.25, 3));
   const zoomOut = () => setScale((prev) => Math.max(prev - 0.25, 0.5));
 
+  useEffect(() => {
+    if (!isOpen || !onClose) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const containerClasses = {
@@ -170,7 +199,12 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   };
 
   return (
-    <div className={containerClasses[mode]}>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={title || 'Visor PDF'}
+      className={containerClasses[mode]}
+    >
       <div className={contentClasses[mode]}>
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b bg-slate-50">

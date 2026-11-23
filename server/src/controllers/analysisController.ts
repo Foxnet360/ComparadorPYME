@@ -238,6 +238,7 @@ export const analysisController = {
       }
 
       const userId = resolveAnalysisUserId(req);
+      const authUser = (req as AuthenticatedRequest).user;
 
       if (quoteFiles.length === 0) {
         cleanupUploadedFiles();
@@ -306,7 +307,7 @@ export const analysisController = {
       let referenceQuote: ParsedQuote | undefined;
       if (analysisType === 'renewal' && policyId && userId) {
         try {
-          const policy = await getPolicyById(userId, policyId);
+          const policy = await getPolicyById(userId, policyId, authUser?.orgId, authUser?.role);
           if (policy) {
             referenceQuote = {
               insurerName: policy.insurer,

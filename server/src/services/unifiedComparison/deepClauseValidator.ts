@@ -5,7 +5,9 @@
  */
 
 import { UnifiedComparisonResult, DeepModeResult } from '../../types/unifiedComparison';
-import { GoogleGenAI, ThinkingLevel } from '@google/genai';
+import { ThinkingLevel } from '@google/genai';
+import { getGenAI } from '../geminiClient';
+import { env } from '../../config/env';
 
 interface GeminiFile {
   name?: string;
@@ -37,13 +39,6 @@ interface DeepValidationResponse {
   warnings?: string[];
 }
 
-const getGenAI = () => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not set in environment');
-  }
-  return new GoogleGenAI({ apiKey });
-};
 
 export class DeepClauseValidator {
   /**
@@ -224,7 +219,7 @@ Responde ÚNICAMENTE con el JSON. No incluyas explicaciones.`;
     console.log(`🤖 [DeepClauseValidator] Calling Gemini for validation [${correlationId}]`);
 
     const result = await ai.models.generateContent({
-      model: process.env.GEMINI_CLAUSE_MODEL || process.env.GEMINI_MODEL || 'gemini-4-hydrogen',
+      model: env.GEMINI_CLAUSE_MODEL || env.GEMINI_MODEL,
       contents,
       config: {
         thinkingConfig: {

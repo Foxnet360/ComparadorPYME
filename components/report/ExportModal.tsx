@@ -35,12 +35,12 @@ interface ExportModalProps {
   onUpdateReport?: (updatedReport: ReportType) => void;
 }
 
-const COLOR_CHOICES: Array<{ c: string; v: [number, number, number] }> = [
-  { c: '#4f46e5', v: [79, 70, 229] },
-  { c: '#059669', v: [5, 150, 105] },
-  { c: '#0284c7', v: [2, 132, 199] },
-  { c: '#dc2626', v: [220, 38, 38] },
-  { c: '#d97706', v: [217, 119, 6] },
+const COLOR_CHOICES: Array<{ name: string; c: string; v: [number, number, number] }> = [
+  { name: 'Índigo', c: '#4f46e5', v: [79, 70, 229] },
+  { name: 'Esmeralda', c: '#059669', v: [5, 150, 105] },
+  { name: 'Azul', c: '#0284c7', v: [2, 132, 199] },
+  { name: 'Rojo', c: '#dc2626', v: [220, 38, 38] },
+  { name: 'Ámbar', c: '#d97706', v: [217, 119, 6] },
 ];
 
 export const ExportModal: React.FC<ExportModalProps> = ({
@@ -105,6 +105,16 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     return updated;
   };
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const handleExportExcel = async (exportMode: 'client' | 'technical') => {
     setExportError(null);
     const effectiveReport = getUpdatedReport();
@@ -134,13 +144,20 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   };
 
   return (
-    <div className="absolute top-full right-0 mt-2 w-96 sm:w-[440px] max-h-[85vh] overflow-y-auto bg-white rounded-xl shadow-2xl border border-slate-200 z-50 p-4 animate-in fade-in zoom-in-95 duration-200">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Personalizar Reporte"
+      className="absolute top-full right-0 mt-2 w-[calc(100vw-2rem)] sm:w-[440px] max-w-[calc(100vw-2rem)] max-h-[85vh] overflow-y-auto bg-white rounded-xl shadow-2xl border border-slate-200 z-50 p-4 animate-in fade-in zoom-in-95 duration-200"
+    >
       <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-100">
         <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
           <span>Personalizar Reporte</span>
         </h3>
         <button
+          type="button"
           onClick={onClose}
+          aria-label="Cerrar opciones de exportación"
           className="text-slate-400 hover:text-slate-600 rounded-md p-1 hover:bg-slate-100 text-lg leading-none"
         >
           ×
@@ -277,7 +294,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           <div className="flex gap-2">
             {COLOR_CHOICES.map((color, i) => (
               <button
+                type="button"
                 key={i}
+                aria-label={`Color principal ${color.name}`}
                 className={`w-5 h-5 rounded-full border-2 transition-transform ${
                   pdfOptions.color[0] === color.v[0]
                     ? 'scale-110 border-slate-800 ring-1 ring-slate-800'
@@ -374,7 +393,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   effectiveReport,
                   {
                     customTitle: pdfOptions.title,
-                    logoBase64: brokerInfo?.logoUrl || pdfOptions.logo,
+                    logoBase64: pdfOptions.logo || brokerInfo?.logoUrl,
                     primaryColor: pdfOptions.color,
                     brokerInfo,
                     commercialPolicies: user?.commercialPolicies,

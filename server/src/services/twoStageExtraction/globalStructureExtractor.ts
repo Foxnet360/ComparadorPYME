@@ -1,4 +1,5 @@
 import { Type } from '@google/genai';
+import { env } from '../../config/env';
 import { getGenAI, UploadedFile, extractHighSignalReferenceText } from '../gemini';
 import { parseJsonWithRepair } from '../jsonRepair';
 import { GlobalStructureExtraction, GlobalStructureSchema } from '../../types/twoStageExtraction';
@@ -144,7 +145,7 @@ export class GlobalStructureExtractor {
     cachedContent?: string | null
   ): Promise<GlobalStructureExtraction> {
     const ai = getGenAI();
-    const extractionModel = process.env.GEMINI_MODEL || 'gemini-4-hydrogen';
+    const extractionModel = env.GEMINI_MODEL;
 
     const domainDesc = getDomainDescription(domain);
     let prompt = `Eres un extractor experto de ${domainDesc}.

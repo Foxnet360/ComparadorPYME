@@ -115,6 +115,15 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         }
       } catch (err) {
         console.warn('Could not load directory or organizations from server', err);
+        if (isMounted) {
+          setFeedback({
+            type: 'error',
+            message:
+              err instanceof Error
+                ? err.message
+                : 'No se pudo cargar el directorio de usuarios u organizaciones.',
+          });
+        }
       } finally {
         if (isMounted) setIsLoadingData(false);
       }

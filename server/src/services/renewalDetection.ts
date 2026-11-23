@@ -22,6 +22,7 @@ import {
 export interface DetectionPolicy {
   id: string;
   user_id: string;
+  org_id?: string | null;
   end_date: string | null;
 }
 
@@ -33,6 +34,7 @@ export interface OpenRenewalRef {
 export interface PlannedDetection {
   policy_id: string;
   user_id: string;
+  org_id?: string | null;
   cycle_start: string;
 }
 
@@ -76,6 +78,7 @@ export function planRenewalDetections(input: DetectionPlanInput): PlannedDetecti
     planned.push({
       policy_id: policy.id,
       user_id: policy.user_id,
+      ...(policy.org_id !== undefined ? { org_id: policy.org_id } : {}),
       cycle_start: policy.end_date,
     });
   }
@@ -111,10 +114,14 @@ export async function runRenewalDetection(options: {
   let created = 0;
   let conflicts = 0;
   for (const item of planned) {
-    const result = await createRenewal(item.user_id, {
-      policy_id: item.policy_id,
-      cycle_start: item.cycle_start,
-    });
+    const result = await createRenewal(
+      item.user_id,
+      {
+        policy_id: item.policy_id,
+        cycle_start: item.cycle_start,
+      },
+      item.org_id
+    );
     if (result.kind === 'created') {
       created += 1;
     } else {

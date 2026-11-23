@@ -60,10 +60,10 @@ export const SummaryTab: React.FC<SummaryTabProps> = ({
         }`}
       >
         {quotes.map((q, idx) => {
-          const isBest = q.insurerName === bestQuote.insurerName;
+          const isBest = q === bestQuote;
           return (
             <QuoteScoreCard
-              key={idx}
+              key={`${q.insurerName}-${q.policyName || idx}-${idx}`}
               quote={q}
               isBest={isBest}
               viewMode={viewMode}

@@ -885,20 +885,11 @@ function baselineCellForRow(row: MatrixRow, referenceQuote: ParsedQuote): Matrix
   };
 }
 
-/**
- * Build the renewal-mode (schemaVersion 3) matrix: the v2 matrix plus a
- * leading "Póliza Actual" baseline column sourced from the incumbent
- * reference quote. Every row is flagged `isBaseline` and gains a leading
- * baseline cell; a marker header row (`baseline_column`) lets consumers
- * render the baseline badge. Without a reference quote the output is the
- * plain v2 matrix (v1/v2 consumers stay untouched — R5.1/R5.2).
- */
-export function flatResultToMatrixRowsV3(
-  result: FlatComparisonResultV2,
-  domain: InsuranceDomain = 'pyme',
+export function applyBaselineColumnToMatrix(
+  matrix: MatrixRow[],
+  insurerNames: string[],
   referenceQuote?: ParsedQuote | null
 ): MatrixRow[] {
-  const matrix = flatResultToMatrixRowsV2(result, domain);
   if (!referenceQuote) return matrix;
 
   const withBaseline: MatrixRow[] = matrix.map((row) => ({
@@ -907,7 +898,7 @@ export function flatResultToMatrixRowsV3(
     cells: [baselineCellForRow(row, referenceQuote), ...row.cells],
   }));
 
-  const numColumns = result.insurers.length + 1;
+  const numColumns = insurerNames.length + 1;
   const markerIndex = withBaseline.findIndex((row) => row.id === 'client_info');
   const markerRow: MatrixRow = {
     type: 'header',
@@ -923,11 +914,28 @@ export function flatResultToMatrixRowsV3(
 
   const clientHeader = withBaseline[markerIndex];
   if (clientHeader) {
-    clientHeader.label = `${clientHeader.label.split(' - ')[0]} - ${referenceQuote.insurerName} (Póliza Actual), ${result.insurers.join(', ')}`;
+    clientHeader.label = `${clientHeader.label.split(' - ')[0]} - ${referenceQuote.insurerName} (Póliza Actual), ${insurerNames.join(', ')}`;
   }
 
   withBaseline.splice(markerIndex >= 0 ? markerIndex + 1 : 0, 0, markerRow);
   return withBaseline;
+}
+
+/**
+ * Build the renewal-mode (schemaVersion 3) matrix: the v2 matrix plus a
+ * leading "Póliza Actual" baseline column sourced from the incumbent
+ * reference quote. Every row is flagged `isBaseline` and gains a leading
+ * baseline cell; a marker header row (`baseline_column`) lets consumers
+ * render the baseline badge. Without a reference quote the output is the
+ * plain v2 matrix (v1/v2 consumers stay untouched — R5.1/R5.2).
+ */
+export function flatResultToMatrixRowsV3(
+  result: FlatComparisonResultV2,
+  domain: InsuranceDomain = 'pyme',
+  referenceQuote?: ParsedQuote | null
+): MatrixRow[] {
+  const matrix = flatResultToMatrixRowsV2(result, domain);
+  return applyBaselineColumnToMatrix(matrix, result.insurers, referenceQuote);
 }
 
 // ---------------------------------------------------------------------------

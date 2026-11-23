@@ -4,11 +4,13 @@ import { UIProvider, useUI } from './contexts/UIContext';
 import { AnalysisProvider } from './contexts/AnalysisContext';
 import { PortfolioProvider } from './contexts/PortfolioContext';
 import { useAppNavigation } from './hooks/useAppNavigation';
+import LoginScreen from './components/LoginScreen';
 import { AppHeader } from './components/layout/AppHeader';
 import { AppFooter, type LegalTabType } from './components/layout/AppFooter';
 import { AppModals } from './components/layout/AppModals';
 import { renderPublicView } from './components/layout/AppPublicViews';
 import { ViewLoadingFallback } from './components/layout/ViewLoadingFallback';
+import { MissingReportFallback } from './components/layout/MissingReportFallback';
 import { useAnalysisFlow } from './hooks/useAnalysisFlow';
 import { useAuthSession } from './hooks/useAuthSession';
 import AnalyzerPage from './pages/AnalyzerPage';
@@ -94,6 +96,12 @@ const AppShell: React.FC = () => {
     handleLogin,
   });
   if (publicView) return publicView;
+  if (!bootstrapped) return <ViewLoadingFallback />;
+  if (!currentUser) {
+    return (
+      <LoginScreen onLoginSuccess={handleLogin} onRegisterClick={() => navigateTo('REGISTER')} />
+    );
+  }
 
   const extendedUser = currentUser as unknown as ExtendedUserProfile | null;
 
@@ -187,6 +195,12 @@ const AppShell: React.FC = () => {
             onBackToDashboard={() => navigateTo('DASHBOARD')}
             onNewAudit={() => startNewAnalysis()}
             onOpenPortfolio={() => navigateTo('PORTFOLIO')}
+          />
+        )}
+        {currentView === 'REPORT' && !report && (
+          <MissingReportFallback
+            onBackToDashboard={() => navigateTo('DASHBOARD')}
+            onNewAudit={() => startNewAnalysis()}
           />
         )}
       </main>

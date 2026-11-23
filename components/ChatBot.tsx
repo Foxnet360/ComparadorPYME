@@ -73,6 +73,17 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
     }
   }, [reportContext?.id]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   const loadThread = async (reportId: string) => {
     try {
       // ERR-4: no localStorage auth keys — the backend derives the user from
@@ -206,7 +217,12 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8 w-[90vw] md:w-[450px] h-[600px] max-h-[80vh] bg-white rounded-2xl shadow-2xl flex flex-col border border-slate-200 z-50 animate-in slide-in-from-bottom-10 fade-in duration-300">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Chat SeguroBot AI"
+      className="fixed bottom-4 right-4 md:bottom-8 md:right-8 w-[90vw] md:w-[450px] h-[600px] max-h-[80vh] bg-white rounded-2xl shadow-2xl flex flex-col border border-slate-200 z-50 animate-in slide-in-from-bottom-10 fade-in duration-300"
+    >
       {/* Header */}
       <div className="bg-indigo-600 p-4 rounded-t-2xl flex justify-between items-center text-white">
         <div className="flex items-center space-x-2">
@@ -217,7 +233,12 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <button onClick={onClose} className="p-1 hover:bg-white/20 rounded transition-colors">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Minimizar chat"
+            className="p-1 hover:bg-white/20 rounded transition-colors"
+          >
             <Minimize2 size={18} />
           </button>
         </div>

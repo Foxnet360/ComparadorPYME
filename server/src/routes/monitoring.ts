@@ -15,6 +15,7 @@ import { featureFlags } from '../config/featureFlags';
 import { getUnifiedEngineMetrics } from '../repositories/analysisRepository';
 import { asyncHandler } from '../utils/asyncHandler';
 import { requireRole } from '../middleware/auth';
+import { env } from '../config/env';
 
 const router = Router();
 
@@ -399,8 +400,8 @@ router.get(
     res.json({
       enabled: featureFlags.isEnabled('useUnifiedComparisonEngine'),
       rolloutConfig: config,
-      model: process.env.GEMINI_MODEL || 'gemini-4-hydrogen',
-      environment: process.env.NODE_ENV || 'development',
+      model: env.GEMINI_MODEL,
+      environment: env.NODE_ENV,
     });
   })
 );

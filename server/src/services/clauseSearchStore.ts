@@ -3,17 +3,8 @@
  * Manages persistent vector stores for 100+ page policy clause PDFs using gemini-embedding-2
  */
 
-import { GoogleGenAI } from '@google/genai';
-
-let genAIClient: GoogleGenAI | null = null;
-
-function getGenAI(): GoogleGenAI {
-  if (!genAIClient) {
-    const apiKey = process.env.GEMINI_API_KEY || '';
-    genAIClient = new GoogleGenAI({ apiKey });
-  }
-  return genAIClient;
-}
+import { getGenAI } from './geminiClient';
+import { env } from '../config/env';
 
 export interface FileSearchStoreConfig {
   displayName: string;
@@ -38,7 +29,7 @@ export const clauseSearchStoreService = {
    */
   createStore: async (
     displayName: string,
-    embeddingModel = process.env.GEMINI_EMBEDDING_MODEL || 'models/gemini-embedding-2'
+    embeddingModel = env.GEMINI_EMBEDDING_MODEL
   ): Promise<FileSearchStoreRecord> => {
     const ai = getGenAI();
     try {

@@ -3,7 +3,8 @@
  * Main service for comparing multiple insurance quotes in a single LLM call
  */
 
-import { GoogleGenAI, ThinkingLevel } from '@google/genai';
+import { ThinkingLevel } from '@google/genai';
+import { getGenAI } from '../geminiClient';
 import { ComparisonEngineConfig, UnifiedComparisonResult } from '../../types/unifiedComparison';
 import { InsuranceDomain } from '../../types/domain';
 import { comparisonPromptBuilder } from './comparisonPromptBuilder';
@@ -26,7 +27,7 @@ import {
   type TemplateHintMeasurementHarness,
 } from './templateHintMeasurement';
 
-import { CACHE_SCHEMA_VERSION } from '../../config/env';
+import { CACHE_SCHEMA_VERSION, env } from '../../config/env';
 
 export class UnifiedComparisonError extends Error {
   constructor(
@@ -39,15 +40,6 @@ export class UnifiedComparisonError extends Error {
   }
 }
 
-// Initialize Gemini client
-const getGenAI = () => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not set in environment');
-  }
-  return new GoogleGenAI({ apiKey });
-};
-
 interface GeminiFile {
   name?: string;
   displayName?: string;
@@ -55,10 +47,10 @@ interface GeminiFile {
   state?: string;
 }
 
-// Default configuration following Gemini 4 Hydrogen best practices for JSON schema extraction
+// Default configuration following central env defaults for JSON schema extraction
 const DEFAULT_CONFIG: ComparisonEngineConfig = {
-  model: process.env.GEMINI_MODEL || 'gemini-4-hydrogen',
-  thinkingLevel: (process.env.GEMINI_THINKING_LEVEL?.toUpperCase() as any) || 'LOW',
+  model: env.GEMINI_MODEL,
+  thinkingLevel: (env.GEMINI_THINKING_LEVEL?.toUpperCase() as any) || 'LOW',
   responseMimeType: 'application/json',
   responseSchema: {},
   maxRetries: 2,
@@ -229,12 +221,12 @@ export class UnifiedComparisonEngine {
 
       // 4. Call Gemini with structured output
       const geminiStartTime = Date.now();
-      const result = await this.callGemini(uploadedFiles, prompt, correlationId);
+      const geminiResponse = await this.callGemini(uploadedFiles, prompt, correlationId);
       const geminiLatencyMs = Date.now() - geminiStartTime;
 
       // 5. Parse and validate response using the appropriate parser
       const parsedResult = await this.parseAndValidateResult(
-        result,
+        geminiResponse.text,
         pdfPaths.length,
         correlationId,
         granularEnabled,
@@ -252,7 +244,7 @@ export class UnifiedComparisonEngine {
       // Fire-and-forget: the measurement harness is fail-open and must never
       // block the response, even if Redis is slow or unavailable.
       if (templateHintsEnabled && matchedInsurers.length > 0) {
-        const tokenCount = this.estimatePromptTokens(prompt);
+        const tokenCount = geminiResponse.usageTokens ?? this.estimatePromptTokens(prompt);
         for (const insurer of matchedInsurers) {
           this.deps.measurementHarness
             .recordObservation(insurer, tokenCount, geminiLatencyMs)
@@ -422,7 +414,7 @@ export class UnifiedComparisonEngine {
       const result = await this.callGemini(uploadedClauses, prompt, correlationId);
 
       // Parse validation results
-      const validationResult = JSON.parse(result);
+      const validationResult = JSON.parse(result.text);
 
       // Apply validations to original comparison
       const enrichedComparison = this.applyValidations(comparison, validationResult);
@@ -507,7 +499,7 @@ export class UnifiedComparisonEngine {
     files: GeminiFile[],
     prompt: string,
     correlationId: string
-  ): Promise<string> {
+  ): Promise<{ text: string; usageTokens?: number }> {
     const ai = getGenAI();
 
     // Build contents array with PDFs and prompt
@@ -562,8 +554,17 @@ export class UnifiedComparisonEngine {
         throw new Error('Empty response from Gemini');
       }
 
+      const usage = result.usageMetadata;
+      const usageTokens =
+        typeof usage?.totalTokenCount === 'number'
+          ? usage.totalTokenCount
+          : typeof usage?.promptTokenCount === 'number' ||
+              typeof usage?.candidatesTokenCount === 'number'
+            ? (usage?.promptTokenCount ?? 0) + (usage?.candidatesTokenCount ?? 0)
+            : undefined;
+
       console.log(`✅ [UnifiedComparison] Gemini response received [${correlationId}]`);
-      return result.text;
+      return { text: result.text, usageTokens };
     } catch (error) {
       console.error(
         `❌ [UnifiedComparison] Gemini call failed [${correlationId}]:`,

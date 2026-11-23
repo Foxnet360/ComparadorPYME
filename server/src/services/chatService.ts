@@ -5,12 +5,13 @@
  */
 
 import { getGenAI } from './geminiClient';
+import { env } from '../config/env';
 import { ragRetrievalService } from './ragRetrievalService';
 import { structuredClauseExtractor } from './structuredClauseExtractor';
 import { chatRepository } from '../repositories/chatRepository';
 import { ForbiddenError } from '../errors';
 
-const GEMINI_CHAT_MODEL = process.env.GEMINI_CHAT_MODEL || 'gemini-3.8-flash';
+const GEMINI_CHAT_MODEL = env.GEMINI_CHAT_MODEL;
 const MAX_PROMPT_TOKENS = 12000;
 export const MAX_HISTORY_MESSAGES = 8;
 export const MAX_HISTORY_MESSAGE_CHARS = 1500;
@@ -554,6 +555,9 @@ export const processChatMessage = async (
 
     // Call Gemini with graceful fallback
     let responseText = '';
+    let usagePromptTokens: number | undefined;
+    let usageOutputTokens: number | undefined;
+    let usageTotalTokens: number | undefined;
     try {
       const model = await getGenAI().models.generateContent({
         model: GEMINI_CHAT_MODEL,
@@ -567,6 +571,9 @@ export const processChatMessage = async (
         },
       });
       responseText = model.text || 'Lo siento, no pude generar una respuesta.';
+      usagePromptTokens = model.usageMetadata?.promptTokenCount;
+      usageOutputTokens = model.usageMetadata?.candidatesTokenCount;
+      usageTotalTokens = model.usageMetadata?.totalTokenCount;
     } catch (llmError: unknown) {
       console.warn(
         '⚠️ [chatService] Gemini API call failed, falling back to source synthesis:',
@@ -607,7 +614,16 @@ export const processChatMessage = async (
       }
     }
 
-    const outputTokens = Math.ceil(responseText.length / 4);
+    const actualInputTokens =
+      typeof usagePromptTokens === 'number' ? usagePromptTokens : inputTokens;
+    const outputTokens =
+      typeof usageOutputTokens === 'number'
+        ? usageOutputTokens
+        : Math.ceil(responseText.length / 4);
+    const totalTokens =
+      typeof usageTotalTokens === 'number'
+        ? usageTotalTokens
+        : actualInputTokens + outputTokens;
     const latencyMs = Date.now() - startTime;
 
     // Save model response with metadata
@@ -621,7 +637,7 @@ export const processChatMessage = async (
       })),
       citations: citations,
       model_used: GEMINI_CHAT_MODEL,
-      tokens_input: inputTokens,
+      tokens_input: actualInputTokens,
       tokens_output: outputTokens,
       latency_ms: latencyMs,
     });
@@ -633,7 +649,7 @@ export const processChatMessage = async (
     return {
       text: responseText,
       citations,
-      tokensUsed: inputTokens + outputTokens,
+      tokensUsed: totalTokens,
       modelUsed: GEMINI_CHAT_MODEL,
       source: sources.find((s) => s.type === 'quote')
         ? 'direct'

@@ -306,6 +306,7 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
                         ref={(el) => {
                           if (el) el.indeterminate = someSelected;
                         }}
+                        onClick={(e) => e.stopPropagation()}
                         onChange={(e) => {
                           e.stopPropagation();
                           selectAllInInsurer(insurerName, docs);

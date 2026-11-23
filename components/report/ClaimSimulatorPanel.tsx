@@ -201,11 +201,11 @@ export const ClaimSimulatorPanel: React.FC<ClaimSimulatorPanelProps> = ({
 
       {/* Comparative Cards / Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {simulationResults.map((res) => {
+        {simulationResults.map((res, idx) => {
           const isWinner = res.insurerName === bestInsurer;
           return (
             <div
-              key={res.insurerName}
+              key={`${res.insurerName}-${idx}`}
               className={`p-4 rounded-xl border transition-all ${
                 isWinner
                   ? 'bg-gradient-to-b from-emerald-50/50 to-white border-emerald-300 ring-2 ring-emerald-500/20 shadow-sm'

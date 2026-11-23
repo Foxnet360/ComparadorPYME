@@ -22,6 +22,7 @@ import {
 } from '../../config/featureFlags';
 import { processQuotesBatch } from '../quoteProcessingService';
 import {
+  applyBaselineColumnToMatrix,
   flatResultToMatrixRows,
   flatResultToMatrixRowsV2,
   flatResultToMatrixRowsV3,
@@ -100,6 +101,8 @@ export class ComparisonEngineAdapter {
       `🚩 [Adapter] Unified engine ${flagEnabled ? 'ENABLED' : 'DISABLED'} for user ${userId || 'anonymous'} domain=${domain} [${correlationId}]`
     );
 
+    const baselineRef =
+      v2Schema && opts.analysisType === 'renewal' ? opts.referenceQuote : undefined;
     const preferTwoStage = featureFlags.isEnabled('preferTwoStagePipeline');
     const isLargeMultiProductBatch = pdfPaths.length > 3;
     if (preferTwoStage || isLargeMultiProductBatch) {
@@ -114,12 +117,14 @@ export class ComparisonEngineAdapter {
           pdfPaths,
           routeReason,
           correlationId,
-          domain
+          domain,
+          baselineRef
         );
         return {
           matrix,
           engine: 'unified',
-          schemaVersion: v2Schema ? 2 : 1,
+          schemaVersion:
+            opts.analysisType === 'renewal' && v2Schema ? 3 : v2Schema ? 2 : 1,
           correlationId,
           graphEnabled: false,
           templateHintsEnabled: false,
@@ -142,12 +147,13 @@ export class ComparisonEngineAdapter {
         pdfPaths,
         'unified_disabled_by_flag',
         correlationId,
-        domain
+        domain,
+        baselineRef
       );
       return {
         matrix,
         engine: 'fallback',
-        schemaVersion: 1,
+        schemaVersion: v2Schema && opts.analysisType === 'renewal' ? 3 : 1,
         fallbackReason: 'unified_disabled_by_flag',
         correlationId,
         graphEnabled: false,
@@ -208,12 +214,18 @@ export class ComparisonEngineAdapter {
         `🔄 [Adapter] routing=fallback, reason=${reason}, correlationId=${fallbackCorrelationId}`
       );
 
-      const matrix = await this.runLegacyBatch(pdfPaths, reason, fallbackCorrelationId, domain);
+      const matrix = await this.runLegacyBatch(
+        pdfPaths,
+        reason,
+        fallbackCorrelationId,
+        domain,
+        baselineRef
+      );
 
       return {
         matrix,
         engine: 'fallback',
-        schemaVersion: 1,
+        schemaVersion: v2Schema && opts.analysisType === 'renewal' ? 3 : 1,
         fallbackReason: reason,
         correlationId: fallbackCorrelationId,
         graphEnabled: false,
@@ -296,13 +308,21 @@ export class ComparisonEngineAdapter {
     pdfPaths: string[],
     reason: string,
     correlationId: string,
-    domain: InsuranceDomain = 'pyme'
+    domain: InsuranceDomain = 'pyme',
+    referenceQuote?: ParsedQuote | null
   ): Promise<MatrixRow[]> {
     console.log(
       `🔄 [Adapter] Executing per-quote Two-Stage extraction pipeline [${correlationId}], reason=${reason}, domain=${domain}`
     );
     const quotes = await processQuotesBatch(pdfPaths, { concurrencyLimit: 2, domain });
-    return quotesToMatrixRows(quotes, domain);
+    const matrix = quotesToMatrixRows(quotes, domain);
+    return referenceQuote
+      ? applyBaselineColumnToMatrix(
+          matrix,
+          quotes.map((q) => q.insurerName),
+          referenceQuote
+        )
+      : matrix;
   }
 
   /**
@@ -313,9 +333,10 @@ export class ComparisonEngineAdapter {
     pdfPaths: string[],
     reason: string,
     correlationId: string,
-    domain: InsuranceDomain = 'pyme'
+    domain: InsuranceDomain = 'pyme',
+    referenceQuote?: ParsedQuote | null
   ): Promise<MatrixRow[]> {
-    return this.runPerQuoteBatch(pdfPaths, reason, correlationId, domain);
+    return this.runPerQuoteBatch(pdfPaths, reason, correlationId, domain, referenceQuote);
   }
 }
 
