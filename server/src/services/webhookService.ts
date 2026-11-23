@@ -1,7 +1,13 @@
 import crypto from 'crypto';
+import { promises as dns } from 'dns';
 import net from 'net';
 import { supabase } from '../config/database';
 import logger from '../config/logger';
+
+export type WebhookLookupFn = (
+  hostname: string,
+  options: { all: true }
+) => Promise<Array<{ address: string; family: number }>>;
 
 export type WebhookEventType =
   | 'analysis.completed'
@@ -18,6 +24,7 @@ export interface WebhookDispatchInput {
 
 export interface WebhookDispatchOptions {
   fetchFn?: typeof fetch;
+  lookupFn?: WebhookLookupFn;
   maxAttempts?: number;
   baseDelayMs?: number;
 }
@@ -43,16 +50,99 @@ function isPrivateIpv4(ip: string): boolean {
   return false;
 }
 
-function isPrivateIpv6(ip: string): boolean {
-  const normalized = ip.toLowerCase();
-  if (normalized === '::1' || normalized === '::') return true;
-  if (normalized.startsWith('fc') || normalized.startsWith('fd')) return true;
-  if (normalized.startsWith('fe80:')) return true;
-  if (normalized.startsWith('::ffff:')) {
-    const v4 = normalized.slice('::ffff:'.length);
-    if (net.isIPv4(v4)) return isPrivateIpv4(v4);
+function expandIpv6Hextets(ip: string): number[] | null {
+  let addr = ip.toLowerCase();
+  const zoneIdx = addr.indexOf('%');
+  if (zoneIdx !== -1) {
+    addr = addr.slice(0, zoneIdx);
   }
+
+  // Convert trailing dotted-quad IPv4 segment (e.g. ::ffff:127.0.0.1) to 2 hextets
+  const lastColon = addr.lastIndexOf(':');
+  const tail = lastColon >= 0 ? addr.slice(lastColon + 1) : '';
+  if (tail.includes('.') && net.isIPv4(tail)) {
+    const octets = tail.split('.').map((n) => Number(n));
+    const h1 = ((octets[0]! << 8) | octets[1]!).toString(16);
+    const h2 = ((octets[2]! << 8) | octets[3]!).toString(16);
+    addr = `${addr.slice(0, lastColon)}:${h1}:${h2}`;
+  }
+
+  const parts = addr.split('::');
+  if (parts.length > 2) return null;
+
+  const head = parts[0] ? parts[0].split(':').filter(Boolean) : [];
+  const tailParts = parts[1] ? parts[1].split(':').filter(Boolean) : [];
+
+  const totalExplicit = head.length + tailParts.length;
+  if (parts.length === 1 && totalExplicit !== 8) return null;
+  if (parts.length === 2 && totalExplicit >= 8) return null;
+
+  const zeroFillCount = parts.length === 2 ? 8 - totalExplicit : 0;
+  const full = [...head, ...Array(zeroFillCount).fill('0'), ...tailParts];
+  if (full.length !== 8) return null;
+
+  const hextets = full.map((h) => parseInt(h, 16));
+  if (hextets.some((n) => Number.isNaN(n) || n < 0 || n > 0xffff)) return null;
+  return hextets;
+}
+
+function isPrivateIpv6(ip: string): boolean {
+  const hextets = expandIpv6Hextets(ip);
+  if (!hextets) return true; // Fail closed on unparseable IPv6
+
+  const [h0, h1, h2, h3, h4, h5, h6, h7] = hextets as [
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+  ];
+  const allZeroPrefix = h0 === 0 && h1 === 0 && h2 === 0 && h3 === 0 && h4 === 0;
+
+  // :: (unspecified) and ::1 (loopback)
+  if (allZeroPrefix && h5 === 0 && h6 === 0 && (h7 === 0 || h7 === 1)) return true;
+  // IPv4-mapped (::ffff:0:0/96) and IPv4-compatible (::/96)
+  if (allZeroPrefix && (h5 === 0xffff || h5 === 0)) {
+    const v4 = `${h6 >> 8}.${h6 & 0xff}.${h7 >> 8}.${h7 & 0xff}`;
+    return isPrivateIpv4(v4);
+  }
+  // ULA fc00::/7
+  if ((h0 & 0xfe00) === 0xfc00) return true;
+  // Link-local fe80::/10 (fe80 - febf)
+  if ((h0 & 0xffc0) === 0xfe80) return true;
+
   return false;
+}
+
+function assertSafeIpAddress(ip: string): void {
+  const version = net.isIP(ip);
+  if (version === 4 && isPrivateIpv4(ip)) {
+    throw new Error('Private or loopback IPv4 webhook targets are forbidden');
+  }
+  if (version === 6 && isPrivateIpv6(ip)) {
+    throw new Error('Private or loopback IPv6 webhook targets are forbidden');
+  }
+}
+
+async function resolveAndValidateHost(hostname: string, lookupFn: WebhookLookupFn): Promise<void> {
+  const host = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  if (net.isIP(host)) {
+    assertSafeIpAddress(host);
+    return;
+  }
+  const records = await lookupFn(host, { all: true });
+  if (!Array.isArray(records) || records.length === 0) {
+    throw new Error('Webhook hostname resolved to no addresses');
+  }
+  for (const record of records) {
+    if (!record?.address || !net.isIP(record.address)) {
+      throw new Error('Webhook hostname resolved to invalid address');
+    }
+    assertSafeIpAddress(record.address);
+  }
 }
 
 /**
@@ -84,13 +174,7 @@ export function validateWebhookUrl(rawUrl: string): URL {
     throw new Error('Webhook host is not allowed (SSRF guard)');
   }
 
-  const ipVersion = net.isIP(host);
-  if (ipVersion === 4 && isPrivateIpv4(host)) {
-    throw new Error('Private or loopback IPv4 webhook targets are forbidden');
-  }
-  if (ipVersion === 6 && isPrivateIpv6(host)) {
-    throw new Error('Private or loopback IPv6 webhook targets are forbidden');
-  }
+  assertSafeIpAddress(host);
 
   return parsed;
 }
@@ -114,7 +198,9 @@ export async function dispatchWebhookWithRetry(
   input: WebhookDispatchInput,
   options?: WebhookDispatchOptions
 ): Promise<WebhookDispatchResult> {
-  validateWebhookUrl(input.url);
+  const parsed = validateWebhookUrl(input.url);
+  const lookupFn: WebhookLookupFn =
+    options?.lookupFn ?? ((hostname, opts) => dns.lookup(hostname, opts));
 
   const fetchFn = options?.fetchFn ?? fetch;
   const maxAttempts = Math.max(1, options?.maxAttempts ?? 3);
@@ -133,8 +219,11 @@ export async function dispatchWebhookWithRetry(
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
+      await resolveAndValidateHost(parsed.hostname, lookupFn);
+
       const response = await fetchFn(input.url, {
         method: 'POST',
+        redirect: 'error',
         headers: {
           'Content-Type': 'application/json',
           'X-CSA-Event': input.event,

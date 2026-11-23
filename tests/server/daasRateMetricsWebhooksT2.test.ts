@@ -190,6 +190,10 @@ describe('P3-T2: DaaS Subscriber Rate Limit, Real Metrics & Outbound Webhooks (S
     expect(() => validateWebhookUrl('http://localhost:3000/hook')).toThrow();
     expect(() => validateWebhookUrl('http://169.254.169.254/latest/meta-data')).toThrow();
     expect(() => validateWebhookUrl('http://10.0.0.5/internal')).toThrow();
+    expect(() => validateWebhookUrl('http://[::ffff:127.0.0.1]/hook')).toThrow();
+    expect(() => validateWebhookUrl('http://[::ffff:169.254.169.254]/latest/meta-data')).toThrow();
+    expect(() => validateWebhookUrl('http://[::ffff:10.0.0.1]/hook')).toThrow();
+    expect(() => validateWebhookUrl('http://[fe90::1]/hook')).toThrow();
     expect(() => validateWebhookUrl('ftp://hooks.partner.com/csa')).toThrow();
 
     const payload = JSON.stringify({ event: 'analysis.completed', id: 'an-1' });
@@ -197,6 +201,26 @@ describe('P3-T2: DaaS Subscriber Rate Limit, Real Metrics & Outbound Webhooks (S
     const sig = signWebhookPayload(payload, secret);
     const expected = 'sha256=' + crypto.createHmac('sha256', secret).update(payload).digest('hex');
     expect(sig).toBe(expected);
+
+    const blockedFetchMock = vi.fn();
+    await expect(
+      dispatchWebhookWithRetry(
+        {
+          url: 'https://rebind.partner.com/hook',
+          secret,
+          event: 'analysis.completed',
+          eventId: 'evt-ssrf',
+          data: { analysisId: 'an-1' },
+        },
+        {
+          fetchFn: blockedFetchMock as unknown as typeof fetch,
+          lookupFn: async () => [{ address: '127.0.0.1', family: 4 }],
+          maxAttempts: 1,
+          baseDelayMs: 0,
+        }
+      )
+    ).resolves.toMatchObject({ delivered: false });
+    expect(blockedFetchMock).not.toHaveBeenCalled();
 
     const fetchMock = vi
       .fn()
@@ -211,12 +235,21 @@ describe('P3-T2: DaaS Subscriber Rate Limit, Real Metrics & Outbound Webhooks (S
         eventId: 'evt-1',
         data: { analysisId: 'an-1' },
       },
-      { fetchFn: fetchMock as unknown as typeof fetch, maxAttempts: 3, baseDelayMs: 1 }
+      {
+        fetchFn: fetchMock as unknown as typeof fetch,
+        lookupFn: async () => [{ address: '93.184.216.34', family: 4 }],
+        maxAttempts: 3,
+        baseDelayMs: 1,
+      }
     );
 
     expect(delivery.delivered).toBe(true);
     expect(delivery.attempts).toBe(2);
     expect(delivery.statusCode).toBe(200);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://hooks.partner.com/csa',
+      expect.objectContaining({ redirect: 'error' })
+    );
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
