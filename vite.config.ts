@@ -42,12 +42,12 @@ export default defineConfig(({ mode }) => {
       },
     },
     optimizeDeps: {
-      exclude: ['express', 'cors', 'multer', 'ioredis', 'pdf-parse', 'sharp', 'ws', 'server'],
+      exclude: ['express', 'cors', 'multer', 'ioredis', 'sharp', 'ws', 'server'],
     },
     build: {
       chunkSizeWarningLimit: 600,
       rollupOptions: {
-        external: ['express', 'cors', 'multer', 'ioredis', 'pdf-parse', 'sharp', 'ws'],
+        external: ['express', 'cors', 'multer', 'ioredis', 'sharp', 'ws'],
         output: {
           manualChunks(id: string) {
             if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {

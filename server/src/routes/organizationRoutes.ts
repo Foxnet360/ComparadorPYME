@@ -343,12 +343,14 @@ router.post(
 
     // Check if user exists in auth.users across all pages (avoid 50-user page 1 truncation)
     const normalizedEmail = email.toLowerCase().trim();
-    let authUser: {
-      id: string;
-      email?: string;
-      user_metadata?: Record<string, unknown>;
-      app_metadata?: Record<string, unknown>;
-    } | undefined;
+    let authUser:
+      | {
+          id: string;
+          email?: string;
+          user_metadata?: Record<string, unknown>;
+          app_metadata?: Record<string, unknown>;
+        }
+      | undefined;
 
     for (let page = 1; page <= 20; page++) {
       const { data: listData } = await supabase.auth.admin.listUsers({ page, perPage: 1000 });

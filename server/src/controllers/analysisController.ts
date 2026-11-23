@@ -643,15 +643,11 @@ export const analysisController = {
         userId: userId || existingRecord.user_id || undefined,
       });
 
-      const incomingResult = (await matrixRowsToComparisonReport(
-        adapterResult.matrix,
-        quoteFiles,
-        {
-          graphEnabled: adapterResult.graphEnabled,
-          templateHintsEnabled: adapterResult.templateHintsEnabled,
-          domain,
-        }
-      )) as unknown as ComparisonResult & Record<string, unknown>;
+      const incomingResult = (await matrixRowsToComparisonReport(adapterResult.matrix, quoteFiles, {
+        graphEnabled: adapterResult.graphEnabled,
+        templateHintsEnabled: adapterResult.templateHintsEnabled,
+        domain,
+      })) as unknown as ComparisonResult & Record<string, unknown>;
       incomingResult.matrix = incomingResult.matrix || (adapterResult.matrix as any);
       incomingResult.quoteMetadata = Array.isArray(adapterResult.quoteMetadata)
         ? adapterResult.quoteMetadata.map((m: any) =>

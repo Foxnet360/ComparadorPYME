@@ -45,9 +45,7 @@ export function renderExecutiveSummarySection(ctx: PdfRenderContext): void {
 
   const broker = options?.brokerInfo;
   const line1 = [
-    broker?.name
-      ? `Técnico Analista Responsable: ${broker.name}`
-      : 'Técnico Analista de Seguros',
+    broker?.name ? `Técnico Analista Responsable: ${broker.name}` : 'Técnico Analista de Seguros',
     broker?.registrationNumber
       ? `Matrícula SFC: ${broker.registrationNumber}`
       : 'Inscripción Vigente SFC',
@@ -255,7 +253,11 @@ export function renderCuadroChicoSection(ctx: PdfRenderContext): void {
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text(`INFORMACIÓN DEL TÉCNICO ANALISTA (INTERMEDIARIO) · ${brokerName}`, 18, currentY + 5.5);
+    doc.text(
+      `INFORMACIÓN DEL TÉCNICO ANALISTA (INTERMEDIARIO) · ${brokerName}`,
+      18,
+      currentY + 5.5
+    );
 
     doc.setFontSize(7.5);
     doc.setFont('helvetica', 'normal');
@@ -592,7 +594,11 @@ export function renderCommercialPoliciesSection(ctx: PdfRenderContext): void {
     : '';
   const brokerEmail = options?.brokerInfo?.email ? ` | Email: ${options.brokerInfo.email}` : '';
   const brokerPhone = options?.brokerInfo?.phone ? ` | Tel: ${options.brokerInfo.phone}` : '';
-  doc.text(`Contacto Técnico Analista:${brokerEmail}${brokerPhone}${brokerReg}`, 18, afterPolicyY + 13);
+  doc.text(
+    `Contacto Técnico Analista:${brokerEmail}${brokerPhone}${brokerReg}`,
+    18,
+    afterPolicyY + 13
+  );
 
   const legalNotice =
     'Superintendencia Financiera de Colombia: La actividad de intermediación de seguros se ejerce en cumplimiento del Estatuto Orgánico del Sistema Financiero (Decreto 663 de 1993) y la Circular Básica Jurídica. Las pólizas son contratos de seguro regidos por el Libro IV, Título V del Código de Comercio colombiano.';

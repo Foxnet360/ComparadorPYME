@@ -1,5 +1,6 @@
 import { apiClient } from './apiClient';
 import { storageService } from './storageService';
+import { buildBrokerInfo } from '../utils/brokerInfo';
 import {
   extractCommercialConditionsFromReport,
   type InsurerCommercialConditions,
@@ -34,22 +35,7 @@ export async function exportAnalysisToExcel(params: ExportExcelParams): Promise<
   } = params;
 
   const currentUser = await storageService.getCurrentUser();
-  const brokerInfo = {
-    name: currentUser?.name || 'Técnico Analista de Seguros',
-    intermediaryName:
-      currentUser?.intermediaryName ||
-      currentUser?.agencyName ||
-      'Corredores de Seguros Asociados S.A.',
-    registrationNumber:
-      currentUser?.registrationNumber ||
-      currentUser?.agentDetails?.registrationNumber ||
-      'Inscripción Vigente SFC',
-    phone: currentUser?.agentDetails?.phone || currentUser?.phone || '+57 (601) 345-6789',
-    email: currentUser?.email || 'soporte@comparadorcsa.com',
-    address: currentUser?.address || currentUser?.agentDetails?.address || 'Bogotá D.C., Colombia',
-    city: currentUser?.city || currentUser?.agentDetails?.city || 'Bogotá D.C.',
-    commercialPolicies: currentUser?.commercialPolicies,
-  };
+  const brokerInfo = buildBrokerInfo(currentUser);
 
   const resolvedCommercialConditions =
     commercialConditions ?? (report ? extractCommercialConditionsFromReport(report) : {});

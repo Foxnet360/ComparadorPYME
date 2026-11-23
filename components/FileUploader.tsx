@@ -292,10 +292,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
           id={inputId}
           disabled={disabled}
         />
-        <label
-          htmlFor={inputId}
-          className="cursor-pointer flex flex-col items-center w-full"
-        >
+        <label htmlFor={inputId} className="cursor-pointer flex flex-col items-center w-full">
           <div className={`${iconBg} p-3 rounded-full mb-3`}>
             {icon || <Upload className={`w-6 h-6 ${iconColor}`} />}
           </div>

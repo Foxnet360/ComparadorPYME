@@ -1,6 +1,6 @@
 import { MatrixRow } from '../../types';
 import taxonomyData from '../../data/domains/pyme/taxonomy.json';
-import { parseColombianCurrency } from '../../utils/formatCurrency';
+import { formatCOP, parseColombianCurrency } from '../../utils/formatCurrency';
 
 export interface CategoryConfig {
   id: number;
@@ -123,7 +123,7 @@ export function parseNumericValue(val: string | undefined | null): number {
 
 export function formatCurrency(num: number): string {
   if (num === 0) return 'No informado';
-  return '$' + num.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return formatCOP(num);
 }
 
 export function buildExportNotes(

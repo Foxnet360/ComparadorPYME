@@ -1037,7 +1037,9 @@ describe('flatTableParser.parseV2 graph canonicalization', () => {
         '$400.000.000',
         'Ilimitado',
       ]);
-      const dedRow = [...result.rows, ...result.extraRows].find((r) => r.label.includes('Deducible'));
+      const dedRow = [...result.rows, ...result.extraRows].find((r) =>
+        r.label.includes('Deducible')
+      );
       expect(dedRow).toBeDefined();
       expect(dedRow!.cells.map((c) => c.value)).toEqual(['10%', '5%', 'No aplica']);
       const totalRow = [...result.rows, ...result.extraRows].find((r) =>

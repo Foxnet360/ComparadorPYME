@@ -45,7 +45,7 @@ if (activeKey && viteKey && activeKey !== viteKey) {
 // Import controllers after dotenv is loaded (they depend on env vars)
 import { analysisController } from './controllers/analysisController';
 import { compareExtraction } from './controllers/compareController';
-import { optionalAuthMiddleware, assertProductionJwtSecret } from './middleware/auth';
+import { assertProductionJwtSecret } from './middleware/auth';
 import { authGate } from './middleware/authGate';
 import { globalRateLimiter, analyzeRateLimiter, chatRateLimiter } from './middleware/rateLimiter';
 import { createCorsOrigin, getCorsOrigins } from './config/cors';
@@ -206,7 +206,6 @@ app.post(
 app.post(
   '/api/analyze',
   analyzeRateLimiter,
-  optionalAuthMiddleware,
   upload.fields([
     { name: 'quotes', maxCount: 15 },
     { name: 'clauses', maxCount: 10 },
@@ -217,18 +216,13 @@ app.post(
 app.post(
   '/api/analysis/:id/quotes',
   analyzeRateLimiter,
-  optionalAuthMiddleware,
   upload.fields([{ name: 'quotes', maxCount: 15 }]),
   asyncHandler(analysisController.appendQuotesToAnalysis)
 );
 
-app.patch(
-  '/api/analysis/:id/status',
-  optionalAuthMiddleware,
-  asyncHandler(analysisController.updateAnalysisStatus)
-);
+app.patch('/api/analysis/:id/status', asyncHandler(analysisController.updateAnalysisStatus));
 
-app.get('/api/history', optionalAuthMiddleware, asyncHandler(analysisController.getHistory));
+app.get('/api/history', asyncHandler(analysisController.getHistory));
 
 // Document Indexing routes
 import { documentController } from './controllers/documentController';

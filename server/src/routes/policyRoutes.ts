@@ -11,10 +11,10 @@
  *   proves existence but not ownership, so the route verifies it.
  */
 
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
 import { AuthenticatedRequest, requireUser } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
-import { validateBody } from '../middleware/validateRequest';
+import { validateBody, rejectSpoofedUserId } from '../middleware/validateRequest';
 import {
   createPolicySchema,
   updatePolicySchema,
@@ -36,24 +36,6 @@ import {
 } from '../repositories/policyRepository';
 
 const router = Router();
-
-// AUTH-2: a client-supplied userId (body or query) is never trusted.
-const hasClientSuppliedUserId = (req: Request): boolean =>
-  req.query.userId !== undefined ||
-  (req.body !== undefined &&
-    typeof req.body === 'object' &&
-    (req.body as Record<string, unknown>).userId !== undefined);
-
-const rejectSpoofedUserId = (req: Request, res: Response, next: NextFunction): void => {
-  if (hasClientSuppliedUserId(req)) {
-    res.status(400).json({
-      error: 'Bad Request',
-      message: 'userId is derived from the authenticated session; do not send it',
-    });
-    return;
-  }
-  next();
-};
 
 const isSupportedRamo = (ramo: string): boolean =>
   (POLICY_RAMOS as readonly string[]).includes(ramo);
@@ -85,12 +67,7 @@ router.post(
 
     // XC-1: the FK proves the client exists, not that the session user owns
     // it. Verify ownership before persisting the link.
-    const client = await getClientById(
-      userId,
-      input.client_id,
-      req.user?.orgId,
-      req.user?.role
-    );
+    const client = await getClientById(userId, input.client_id, req.user?.orgId, req.user?.role);
     if (!client) {
       throw new NotFoundError('Client not found');
     }

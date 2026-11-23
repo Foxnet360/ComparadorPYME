@@ -38,7 +38,11 @@ function emptyMatrixCell(value = 'No cotizada'): MatrixCell {
   };
 }
 
-function padCells(cells: MatrixCell[], targetCount: number, fallbackValue = 'No cotizada'): MatrixCell[] {
+function padCells(
+  cells: MatrixCell[],
+  targetCount: number,
+  fallbackValue = 'No cotizada'
+): MatrixCell[] {
   if (cells.length >= targetCount) return cells.slice(0, targetCount);
   const padded = [...cells];
   while (padded.length < targetCount) {
@@ -103,7 +107,11 @@ export function mergeComparisonResults(
         const inHeader = incomingHeaders[headerIdx] || incomingHeaders[0];
         headerIdx++;
         const inCells = inHeader
-          ? padCells(inHeader.cells, incomingCount, mergedNewQuotes[0]?.insurerName || 'Aseguradora')
+          ? padCells(
+              inHeader.cells,
+              incomingCount,
+              mergedNewQuotes[0]?.insurerName || 'Aseguradora'
+            )
           : mergedNewQuotes.map((q) => ({
               value: q.insurerName,
               isExcluded: false,

@@ -84,9 +84,7 @@ export const InsurerManager: React.FC<InsurerManagerProps> = ({ onBack }) => {
       setInsurers(list);
     } catch (err) {
       console.error('Error fetching insurers:', err);
-      setListError(
-        err instanceof Error ? err.message : 'No se pudieron cargar las aseguradoras.'
-      );
+      setListError(err instanceof Error ? err.message : 'No se pudieron cargar las aseguradoras.');
     } finally {
       setLoading(false);
     }

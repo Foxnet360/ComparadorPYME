@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { apiClient } from '../services/apiClient';
+import { apiClient, SessionExpiredError } from '../services/apiClient';
 import { EnrichedAlert, CrossInsurerRisk, QuoteAnalysis } from '../types';
 
 export interface AuditEnrichmentState {
@@ -85,21 +85,6 @@ export const useAuditEnrichment = () => {
         body: JSON.stringify({ quotes }),
       });
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('Inicia sesión para enriquecer con clausulados.');
-        }
-        if (response.status === 413) {
-          throw new Error(
-            'El reporte es demasiado grande para enriquecer. Intenta con menos cotizaciones o recarga la página.'
-          );
-        }
-        if (response.status === 429) {
-          throw new Error('Demasiadas solicitudes. Espera un momento e intenta de nuevo.');
-        }
-        throw new Error(`Error del servidor (${response.status}): ${response.statusText}`);
-      }
-
       const result = await response.json();
 
       const newState: AuditEnrichmentState = {
@@ -127,10 +112,19 @@ export const useAuditEnrichment = () => {
       setState(newState);
     } catch (error) {
       console.error('Audit enrichment error:', error);
+      const rawMessage = error instanceof Error ? error.message : 'Failed to enrich audit';
+      const friendlyError =
+        error instanceof SessionExpiredError
+          ? 'Inicia sesión para enriquecer con clausulados.'
+          : rawMessage.includes('413')
+            ? 'El reporte es demasiado grande para enriquecer. Intenta con menos cotizaciones o recarga la página.'
+            : rawMessage.includes('429')
+              ? 'Demasiadas solicitudes. Espera un momento e intenta de nuevo.'
+              : rawMessage;
       setState((prev) => ({
         ...prev,
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Failed to enrich audit',
+        error: friendlyError,
         isEnriched: false,
         progress: null,
       }));

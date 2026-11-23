@@ -122,7 +122,8 @@ router.get(
       const thread = await chatRepository.getThread(threadId);
       if (
         thread &&
-        ((!thread.user_id || thread.user_id !== userId) && authReq.user?.role !== 'super_admin')
+        (!thread.user_id || thread.user_id !== userId) &&
+        authReq.user?.role !== 'super_admin'
       ) {
         res.status(403).json({ error: 'Forbidden: thread does not belong to you' });
         return;
@@ -149,7 +150,8 @@ router.delete(
       const thread = await chatRepository.getThread(threadId);
       if (
         thread &&
-        ((!thread.user_id || thread.user_id !== userId) && authReq.user?.role !== 'super_admin')
+        (!thread.user_id || thread.user_id !== userId) &&
+        authReq.user?.role !== 'super_admin'
       ) {
         res.status(403).json({ error: 'Forbidden: thread does not belong to you' });
         return;

@@ -50,9 +50,7 @@ export const AddLateQuoteModal: React.FC<AddLateQuoteModalProps> = ({
       onQuotesAppended(updatedReport);
       onClose();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Ocurrió un error al adicionar la cotización.'
-      );
+      setError(err instanceof Error ? err.message : 'Ocurrió un error al adicionar la cotización.');
     } finally {
       setIsSubmitting(false);
     }
@@ -71,8 +69,8 @@ export const AddLateQuoteModal: React.FC<AddLateQuoteModalProps> = ({
                 Adicionar cotización a la comparación
               </h3>
               <p className="text-xs text-slate-500">
-                Se integrará con las {existingInsurers.length} aseguradora(s) actuales sin perder
-                tu análisis previo.
+                Se integrará con las {existingInsurers.length} aseguradora(s) actuales sin perder tu
+                análisis previo.
               </p>
             </div>
           </div>

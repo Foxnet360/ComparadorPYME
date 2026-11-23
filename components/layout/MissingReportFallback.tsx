@@ -14,8 +14,8 @@ export const MissingReportFallback: React.FC<MissingReportFallbackProps> = ({
       No hay un informe cargado en esta sesión
     </h2>
     <p className="text-sm text-slate-600 mb-6">
-      Selecciona un análisis desde el dashboard o inicia una nueva auditoría para generar un
-      informe comparativo.
+      Selecciona un análisis desde el dashboard o inicia una nueva auditoría para generar un informe
+      comparativo.
     </p>
     <div className="flex flex-wrap justify-center gap-3">
       <button

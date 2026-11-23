@@ -21,7 +21,8 @@ const WRITE_ADMIN_ROLES = new Set(['super_admin', 'admin', 'operator', 'ops']);
 
 function requireAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
   const role = req.user?.role;
-  const allowed = req.method === 'GET' || req.method === 'HEAD' ? READ_ADMIN_ROLES : WRITE_ADMIN_ROLES;
+  const allowed =
+    req.method === 'GET' || req.method === 'HEAD' ? READ_ADMIN_ROLES : WRITE_ADMIN_ROLES;
   if (!role || !allowed.has(role)) {
     res.status(403).json({
       error: 'Forbidden',

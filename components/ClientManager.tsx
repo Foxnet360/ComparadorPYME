@@ -129,9 +129,7 @@ export const ClientManager: React.FC<ClientManagerProps> = ({
         await handleSelectClient(selectedClient);
       }
     } catch (err) {
-      setClientError(
-        err instanceof Error ? err.message : 'No se pudieron cargar los clientes.'
-      );
+      setClientError(err instanceof Error ? err.message : 'No se pudieron cargar los clientes.');
     } finally {
       setLoading(false);
     }

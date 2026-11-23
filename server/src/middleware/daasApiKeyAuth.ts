@@ -94,8 +94,7 @@ export const daasApiKeyAuth = async (
         .eq('status', 'ACTIVE');
 
       const row = rows && rows[0];
-      const isExpired =
-        row?.expires_at != null && new Date(row.expires_at).getTime() < Date.now();
+      const isExpired = row?.expires_at != null && new Date(row.expires_at).getTime() < Date.now();
       if (row && !isExpired) {
         const nextUsage = (row.current_month_usage || 0) + 1;
         subscriber = {

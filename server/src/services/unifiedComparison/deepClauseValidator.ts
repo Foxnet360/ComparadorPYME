@@ -39,7 +39,6 @@ interface DeepValidationResponse {
   warnings?: string[];
 }
 
-
 export class DeepClauseValidator {
   /**
    * Validate comparison results against clause PDFs

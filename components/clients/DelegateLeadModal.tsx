@@ -171,7 +171,11 @@ export const DelegateLeadModal: React.FC<DelegateLeadModalProps> = ({
               disabled={!primaryAdvisorId || submitting}
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 disabled:opacity-50"
             >
-              {submitting ? <Loader2 size={15} className="animate-spin" /> : <UserCheck size={15} />}
+              {submitting ? (
+                <Loader2 size={15} className="animate-spin" />
+              ) : (
+                <UserCheck size={15} />
+              )}
               Confirmar delegación
             </button>
           </div>

@@ -1929,9 +1929,10 @@ export function alignMatrixRowsToQuotes(
       : reorderedCandidates;
 
     if (row.type === 'header' && row.id === 'client_info') {
-      const labelCols = hasBaselineCol && baselineLabel
-        ? [baselineLabel, ...quotes.map((q) => q.insurerName)]
-        : quotes.map((q) => q.insurerName);
+      const labelCols =
+        hasBaselineCol && baselineLabel
+          ? [baselineLabel, ...quotes.map((q) => q.insurerName)]
+          : quotes.map((q) => q.insurerName);
       return {
         ...row,
         label: `${headerPrefix}${labelCols.join(', ')}`,

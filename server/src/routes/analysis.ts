@@ -58,7 +58,11 @@ router.get(
   requireRole('super_admin', 'ally_admin'),
   asyncHandler(getLearningMetrics)
 );
-router.get('/monthly-report', requireRole('super_admin', 'ally_admin'), asyncHandler(getMonthlyReport));
+router.get(
+  '/monthly-report',
+  requireRole('super_admin', 'ally_admin'),
+  asyncHandler(getMonthlyReport)
+);
 router.post('/batch-retrain', requireRole('super_admin'), asyncHandler(batchRetrain));
 router.get(
   '/review-queue/coverages',

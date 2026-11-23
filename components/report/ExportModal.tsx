@@ -3,6 +3,7 @@ import { generatePDF } from '../../services/pdfService';
 import { storageService } from '../../services/storageService';
 import { organizationService } from '../../services/organizationService';
 import { exportAnalysisToExcel } from '../../services/excelExportService';
+import { buildBrokerInfo } from '../../utils/brokerInfo';
 import {
   FileDown,
   FileSpreadsheet,
@@ -371,23 +372,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             onClick={() => {
               const effectiveReport = getUpdatedReport();
               void storageService.getCurrentUser().then((user) => {
-                const brokerInfo = {
-                  name: user?.name || 'Técnico Analista de Seguros',
-                  intermediaryName:
-                    user?.intermediaryName ||
-                    user?.agencyName ||
-                    'Corredores de Seguros Asociados S.A.',
-                  registrationNumber:
-                    user?.registrationNumber ||
-                    user?.agentDetails?.registrationNumber ||
-                    'Inscripción Vigente SFC',
-                  phone: user?.agentDetails?.phone || user?.phone || '+57 (601) 345-6789',
-                  email: user?.email || 'soporte@comparadorcsa.com',
-                  address: user?.address || user?.agentDetails?.address || 'Bogotá D.C., Colombia',
-                  city: user?.city || user?.agentDetails?.city || 'Bogotá D.C.',
-                  logoUrl: user?.logoUrl || user?.agentDetails?.logoUrl,
-                  commercialPolicies: user?.commercialPolicies,
-                };
+                const brokerInfo = buildBrokerInfo(user);
 
                 generatePDF(
                   effectiveReport,
