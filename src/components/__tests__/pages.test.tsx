@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { AnalysisProvider, useAnalysis } from '../../../contexts/AnalysisContext';
@@ -67,6 +67,14 @@ const SeedReport: React.FC<{ report: ReportType }> = ({ report }) => {
   return null;
 };
 
+const SeedDomain: React.FC<{ domain: 'cumplimiento' | 'pyme' }> = ({ domain }) => {
+  const { dispatch } = useAnalysis();
+  React.useEffect(() => {
+    dispatch({ type: 'SET_DOMAIN', payload: domain });
+  }, [dispatch, domain]);
+  return null;
+};
+
 const baseReport = {
   quotes: [],
   recommendation: 'Recomendación de prueba',
@@ -89,6 +97,28 @@ describe('extracted pages (ARCH-1)', () => {
       </AnalysisProvider>
     );
     expect(screen.getByText('Nueva Comparación de Seguros')).toBeTruthy();
+  });
+
+  it('AnalyzerPage renders the Cumplimiento stage selector (Licitación / Contrato / Otrosí) when domain is cumplimiento', async () => {
+    render(
+      <AnalysisProvider>
+        <UIProvider>
+          <SeedDomain domain="cumplimiento" />
+          <AnalyzerPage onAnalysisComplete={noop} />
+        </UIProvider>
+      </AnalysisProvider>
+    );
+    expect(await screen.findByTestId('cumplimiento-stage-selector')).toBeTruthy();
+    const licitacionBtn = screen.getByRole('button', { name: /1\. Licitación \/ Pliego/i });
+    const contratoBtn = screen.getByRole('button', { name: /2\. Contrato \/ Minuta/i });
+    expect(licitacionBtn).toBeTruthy();
+    expect(contratoBtn).toBeTruthy();
+
+    fireEvent.click(licitacionBtn);
+    expect(screen.getByText(/Compara contra el Pliego de Condiciones y Adendas/i)).toBeTruthy();
+
+    fireEvent.click(contratoBtn);
+    expect(screen.getByText(/Compara contra la Minuta del Contrato/i)).toBeTruthy();
   });
 
   it('DashboardPage renders in isolation', async () => {

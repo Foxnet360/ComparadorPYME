@@ -14,11 +14,14 @@ import {
 import { clauseService } from '../services/clauseService';
 import { InsurerLogo } from './common/InsurerLogo';
 
+export type CumplimientoProcessStage = 'AUTO' | 'LICITACION' | 'CONTRATO' | 'OTROSI';
+
 interface ClauseSelectorProps {
   onClausesSelected: (clauseIds: string[]) => void;
   onModeChange: (mode: 'library' | 'upload') => void;
   mode: 'library' | 'upload';
   domain?: string;
+  cumplimientoStage?: CumplimientoProcessStage;
 }
 
 interface Document {
@@ -40,6 +43,7 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
   onModeChange,
   mode,
   domain,
+  cumplimientoStage,
 }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -181,7 +185,15 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
             )}
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Auditoría cruzada de exclusiones, deducibles y amparos oficiales
+            {domain?.toLowerCase() === 'cumplimiento'
+              ? cumplimientoStage === 'LICITACION'
+                ? 'Documento Rector: Pliego de Condiciones / Adendas y Clausulados de Seriedad'
+                : cumplimientoStage === 'CONTRATO'
+                  ? 'Documento Rector: Minuta del Contrato / Orden de Compra y Clausulados'
+                  : cumplimientoStage === 'OTROSI'
+                    ? 'Documento Rector: Otrosí de Prórroga o Adición y Póliza Matriz'
+                    : 'Cruce contra Pliego de Licitación, Minuta del Contrato y Clausulados Oficiales'
+              : 'Auditoría cruzada de exclusiones, deducibles y amparos oficiales'}
           </p>
         </div>
 
