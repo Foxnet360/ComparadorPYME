@@ -1009,6 +1009,18 @@ async function calculateVariableBasedScores(
     coverageScore = Math.round(
       clamp(coverageScore + calculateAutosCoverageModifiers(quote), 0, 100)
     );
+  } else if (domain === 'salud') {
+    coverageScore = Math.round(
+      clamp(coverageScore + calculateSaludCoverageModifiers(quote), 0, 100)
+    );
+  } else if (domain === 'vida_grupo') {
+    coverageScore = Math.round(
+      clamp(coverageScore + calculateVidaGrupoCoverageModifiers(quote), 0, 100)
+    );
+  } else if (domain === 'cumplimiento') {
+    coverageScore = Math.round(
+      clamp(coverageScore + calculateCumplimientoCoverageModifiers(quote), 0, 100)
+    );
   }
 
   // Deductible score: compare deductibles using semantic parser
