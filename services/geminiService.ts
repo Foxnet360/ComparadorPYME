@@ -7,6 +7,136 @@ import {
   ANALYZE_API_TIMEOUT_MS,
 } from './apiClient';
 
+export class AnalysisCancelledError extends Error {
+  constructor(message = 'Análisis cancelado por el usuario.') {
+    super(message);
+    this.name = 'AnalysisCancelledError';
+  }
+}
+
+export interface AnalyzeStageProgress {
+  stage?: string;
+  progress?: number;
+  message?: string;
+}
+
+export interface AnalyzeQuotesOptions {
+  onStageProgress?: (progress: AnalyzeStageProgress) => void;
+  signal?: AbortSignal;
+  pollIntervalMs?: number;
+  preferAsync?: boolean;
+}
+
+interface AsyncJobAcceptedResponse {
+  jobId: string;
+  status?: string;
+  progress?: number;
+  statusUrl?: string;
+  eventsUrl?: string;
+  cancelUrl?: string;
+}
+
+interface AsyncJobSnapshot {
+  jobId: string;
+  stage: 'queued' | 'parsing' | 'matching' | 'auditing' | 'completed' | 'failed' | 'cancelled';
+  progress: number;
+  message?: string;
+  result?: ComparisonReport;
+  error?: string;
+}
+
+function waitWithSignal(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new AnalysisCancelledError());
+      return;
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new AnalysisCancelledError());
+    };
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
+async function pollAsyncAnalysisJob(
+  accepted: AsyncJobAcceptedResponse,
+  options?: AnalyzeQuotesOptions,
+  onStatusUpdate?: (status: string) => void
+): Promise<ComparisonReport> {
+  const statusUrl = accepted.statusUrl || `/analysis/jobs/${accepted.jobId}`;
+  const cancelUrl = accepted.cancelUrl || `/analysis/jobs/${accepted.jobId}/cancel`;
+  const pollIntervalMs = Math.max(5, options?.pollIntervalMs ?? 1200);
+
+  if (options?.onStageProgress) {
+    options.onStageProgress({
+      stage: accepted.status || 'queued',
+      progress: accepted.progress ?? 5,
+      message: 'Análisis en cola...',
+    });
+  }
+
+  let cancelRequested = false;
+  const triggerCancel = () => {
+    if (cancelRequested) return;
+    cancelRequested = true;
+    void apiClient.fetch(cancelUrl, { method: 'POST' }).catch(() => undefined);
+  };
+
+  if (options?.signal) {
+    if (options.signal.aborted) {
+      triggerCancel();
+      throw new AnalysisCancelledError();
+    }
+    options.signal.addEventListener('abort', triggerCancel, { once: true });
+  }
+
+  try {
+    // Poll job status with bounded intervals; backend cleans up temp files cleanly
+    for (;;) {
+      if (options?.signal?.aborted) {
+        triggerCancel();
+        throw new AnalysisCancelledError();
+      }
+
+      const pollRes = await apiClient.fetch(statusUrl, {
+        method: 'GET',
+        signal: options?.signal,
+      });
+      const snapshot = (await pollRes.json()) as AsyncJobSnapshot;
+
+      if (snapshot.message && onStatusUpdate) {
+        onStatusUpdate(snapshot.message);
+      }
+      if (options?.onStageProgress) {
+        options.onStageProgress({
+          stage: snapshot.stage,
+          progress: snapshot.progress,
+          message: snapshot.message,
+        });
+      }
+
+      if (snapshot.stage === 'completed' && snapshot.result) {
+        return snapshot.result;
+      }
+      if (snapshot.stage === 'cancelled') {
+        throw new AnalysisCancelledError(snapshot.message || 'Análisis cancelado por el usuario.');
+      }
+      if (snapshot.stage === 'failed') {
+        throw new Error(snapshot.error || snapshot.message || 'Error en el análisis.');
+      }
+
+      await waitWithSignal(pollIntervalMs, options?.signal);
+    }
+  } finally {
+    options?.signal?.removeEventListener('abort', triggerCancel);
+  }
+}
+
 export const analyzeQuotesWithGemini = async (
   quoteFiles: File[],
   clauseFiles: File[],
@@ -20,7 +150,8 @@ export const analyzeQuotesWithGemini = async (
   // discriminate the analysis type and link portfolio rows.
   analysisMode: AnalysisMode = 'new',
   renewalContext?: RenewalAnalysisContext | null,
-  selectedClient?: Client | null
+  selectedClient?: Client | null,
+  options?: AnalyzeQuotesOptions
 ): Promise<ComparisonReport> => {
   const formData = new FormData();
   formData.append('clientName', clientName);
@@ -65,17 +196,31 @@ export const analyzeQuotesWithGemini = async (
   try {
     // ERR-3: the analysis call is bounded and cancellable — if the backend
     // stalls beyond the timeout, apiClient aborts the request.
+    const preferAsync = options?.preferAsync !== false;
     const response = await apiClient.fetch('/analyze', {
       method: 'POST',
       body: formData,
       timeoutMs: ANALYZE_API_TIMEOUT_MS,
+      signal: options?.signal,
+      ...(preferAsync ? { headers: { Prefer: 'respond-async' } } : {}),
     });
+
+    if (response.status === 202) {
+      const accepted = (await response.json()) as AsyncJobAcceptedResponse;
+      return await pollAsyncAnalysisJob(accepted, options, onStatusUpdate);
+    }
 
     if (onStatusUpdate) onStatusUpdate('Procesando con Gemini Advanced (RAG)...');
 
     const result = await response.json();
     return result as ComparisonReport;
   } catch (error) {
+    if (error instanceof AnalysisCancelledError) {
+      throw error;
+    }
+    if (options?.signal?.aborted) {
+      throw new AnalysisCancelledError();
+    }
     console.error('API Error:', error);
 
     if (error instanceof ApiTimeoutError) {

@@ -58,6 +58,7 @@ interface AnalysisState {
   selectedClauseIds: string[];
   domain: InsuranceDomainType;
   statusMessage: string;
+  progressPercent: number;
   errorMessage: string;
   // Renewal mode (renovacion-polizas): optional — absent means 'new' (XC-3).
   mode: AnalysisMode;
@@ -83,6 +84,7 @@ type AnalysisAction =
   | { type: 'SET_SELECTED_CLAUSE_IDS'; payload: string[] }
   | { type: 'SET_DOMAIN'; payload: InsuranceDomainType }
   | { type: 'SET_STATUS_MESSAGE'; payload: string }
+  | { type: 'SET_PROGRESS'; payload: number }
   | { type: 'SET_ERROR_MESSAGE'; payload: string }
   | { type: 'SET_ANALYSIS_MODE'; payload: AnalysisMode }
   | { type: 'SET_RENEWAL_CONTEXT'; payload: RenewalAnalysisContext | null }
@@ -110,6 +112,7 @@ const initialState: AnalysisState = {
   selectedClauseIds: [],
   domain: InsuranceDomain.PYME,
   statusMessage: '',
+  progressPercent: 0,
   errorMessage: '',
   mode: 'new',
   renewalContext: null,
@@ -152,6 +155,11 @@ function analysisReducer(state: AnalysisState, action: AnalysisAction): Analysis
       return { ...state, domain: action.payload };
     case 'SET_STATUS_MESSAGE':
       return { ...state, statusMessage: action.payload };
+    case 'SET_PROGRESS':
+      return {
+        ...state,
+        progressPercent: Math.max(0, Math.min(100, Math.round(action.payload))),
+      };
     case 'SET_ERROR_MESSAGE':
       return { ...state, errorMessage: action.payload };
     case 'SET_ANALYSIS_MODE':

@@ -20,6 +20,10 @@ import {
 
 const PdfViewer = lazy(() => import('./PdfViewer'));
 
+const VIRTUALIZATION_THRESHOLD = 150;
+const ESTIMATED_ROW_HEIGHT = 52;
+const VIRTUAL_OVERSCAN = 10;
+
 export {
   CATEGORY_CONFIGS,
   isExcludedValue,
@@ -303,6 +307,69 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
     parentToSublimits.size > 0 &&
     Array.from(parentToSublimits.keys()).every((id) => collapsedParentIds.has(id));
 
+  const visibleRows = useMemo(
+    () =>
+      filteredRows.filter((r) => {
+        if (r.type === 'header' || r.type === 'spacer') return true;
+        const pid = sublimitToParent.get(r.id);
+        return !(pid && collapsedParentIds.has(pid));
+      }),
+    [filteredRows, sublimitToParent, collapsedParentIds]
+  );
+
+  // Matrix virtualization / windowing when visible rows exceed VIRTUALIZATION_THRESHOLD
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(600);
+  const [showAllRows, setShowAllRows] = useState(false);
+
+  useEffect(() => {
+    setScrollTop(0);
+    setShowAllRows(false);
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+  }, [activeTab]);
+
+  const supportsVirtualization = visibleRows.length > VIRTUALIZATION_THRESHOLD;
+  const isVirtualized = supportsVirtualization && !showAllRows;
+
+  const { renderedRows, topSpacerHeight, bottomSpacerHeight, windowStartRow, windowEndRow } =
+    useMemo(() => {
+      if (!isVirtualized) {
+        return {
+          renderedRows: visibleRows,
+          topSpacerHeight: 0,
+          bottomSpacerHeight: 0,
+          windowStartRow: visibleRows.length > 0 ? 1 : 0,
+          windowEndRow: visibleRows.length,
+        };
+      }
+
+      const effectiveHeight = Math.max(viewportHeight, 400);
+      const startIdx = Math.max(0, Math.floor(scrollTop / ESTIMATED_ROW_HEIGHT) - VIRTUAL_OVERSCAN);
+      const endIdx = Math.min(
+        visibleRows.length,
+        Math.ceil((scrollTop + effectiveHeight) / ESTIMATED_ROW_HEIGHT) + VIRTUAL_OVERSCAN
+      );
+
+      return {
+        renderedRows: visibleRows.slice(startIdx, endIdx),
+        topSpacerHeight: startIdx * ESTIMATED_ROW_HEIGHT,
+        bottomSpacerHeight: Math.max(0, (visibleRows.length - endIdx) * ESTIMATED_ROW_HEIGHT),
+        windowStartRow: startIdx + 1,
+        windowEndRow: endIdx,
+      };
+    }, [isVirtualized, visibleRows, scrollTop, viewportHeight]);
+
+  const handleMatrixScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    setScrollTop(el.scrollTop);
+    if (el.clientHeight > 0) {
+      setViewportHeight(el.clientHeight);
+    }
+  }, []);
+
   const toggleAllSublimits = () => {
     if (allSublimitsCollapsed) {
       setCollapsedParentIds(new Set());
@@ -380,169 +447,229 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto overflow-y-auto max-h-[75vh] relative scroll-smooth">
-            <table className="w-full text-sm border-collapse text-left">
-              <MatrixTableHeader
-                quotes={quotes}
-                pinnedColumns={pinnedColumns}
-                complianceByInsurer={complianceByInsurer}
-                onTogglePinnedColumn={togglePinnedColumn}
-              />
-              <tbody className="divide-y divide-slate-100">
-                {filteredRows.map((row) => {
-                  const effectiveColumnCount =
-                    pinnedColumns.size > 0 ? pinnedColumns.size + 1 : quotes.length + 1;
+          <>
+            {supportsVirtualization && (
+              <div
+                data-testid="matrix-virtualization-bar"
+                className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 bg-slate-50 border-b border-slate-200 text-xs text-slate-600"
+              >
+                <span>
+                  {isVirtualized
+                    ? `Mostrando filas ${windowStartRow}–${windowEndRow} de ${visibleRows.length} (vista virtualizada)`
+                    : `Mostrando las ${visibleRows.length} filas completas`}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowAllRows((prev) => !prev)}
+                  className="px-2.5 py-1 rounded-md border border-slate-300 bg-white text-slate-700 font-medium hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  {isVirtualized ? 'Ver todas' : 'Modo virtualizado'}
+                </button>
+              </div>
+            )}
+            <div
+              ref={scrollContainerRef}
+              onScroll={handleMatrixScroll}
+              data-testid="matrix-scroll-container"
+              className="overflow-x-auto overflow-y-auto max-h-[75vh] relative scroll-smooth"
+            >
+              <table className="w-full text-sm border-collapse text-left">
+                <MatrixTableHeader
+                  quotes={quotes}
+                  pinnedColumns={pinnedColumns}
+                  complianceByInsurer={complianceByInsurer}
+                  onTogglePinnedColumn={togglePinnedColumn}
+                />
+                <tbody className="divide-y divide-slate-100">
+                  {isVirtualized && topSpacerHeight > 0 && (
+                    <tr
+                      aria-hidden="true"
+                      data-virtual-spacer="top"
+                      style={{ height: `${topSpacerHeight}px` }}
+                    >
+                      <td
+                        colSpan={
+                          pinnedColumns.size > 0 ? pinnedColumns.size + 1 : quotes.length + 1
+                        }
+                        className="p-0 border-0"
+                      />
+                    </tr>
+                  )}
+                  {renderedRows.map((row) => {
+                    const effectiveColumnCount =
+                      pinnedColumns.size > 0 ? pinnedColumns.size + 1 : quotes.length + 1;
 
-                  if (row.type === 'header') {
-                    const displayLabel =
-                      viewMode === 'client' ? simplifyHeaderLabel(row.label) : row.label;
+                    if (row.type === 'header') {
+                      const displayLabel =
+                        viewMode === 'client' ? simplifyHeaderLabel(row.label) : row.label;
+                      return (
+                        <tr key={row.id} className="bg-[#E6F0FA]/60 font-bold" role="row">
+                          <td
+                            role="gridcell"
+                            colSpan={effectiveColumnCount}
+                            className="px-6 py-3 text-xs md:text-sm text-blue-900 uppercase tracking-wide border-y border-blue-200/50 bg-[#E6F0FA]/95 sticky left-0 z-20 backdrop-blur-xs"
+                          >
+                            <div className="sticky left-6 inline-flex items-center gap-2 font-bold">
+                              <span className="w-1.5 h-3.5 bg-blue-600 rounded-full inline-block"></span>
+                              {displayLabel}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    if (row.type === 'spacer') {
+                      return (
+                        <tr key={row.id} className="bg-white h-4" role="row">
+                          <td role="gridcell" colSpan={effectiveColumnCount} className="py-2"></td>
+                        </tr>
+                      );
+                    }
+
+                    // Check if this row is a folded sublimit
+                    const parentId = sublimitToParent.get(row.id);
+                    if (parentId && collapsedParentIds.has(parentId)) {
+                      return null;
+                    }
+
+                    const childSublimits = parentToSublimits.get(row.id);
+                    const hasSublimits = Boolean(childSublimits && childSublimits.length > 0);
+                    const isCollapsed = collapsedParentIds.has(row.id);
+                    const isSublimit = Boolean(parentId);
+
+                    // Standard Data Row
                     return (
-                      <tr key={row.id} className="bg-[#E6F0FA]/60 font-bold" role="row">
+                      <tr
+                        key={row.id}
+                        className={`hover:bg-slate-50/70 transition-colors group ${
+                          isSublimit ? 'bg-slate-50/30' : ''
+                        }`}
+                        role="row"
+                      >
+                        {/* Concept Label (Column A) */}
                         <td
                           role="gridcell"
-                          colSpan={effectiveColumnCount}
-                          className="px-6 py-3 text-xs md:text-sm text-blue-900 uppercase tracking-wide border-y border-blue-200/50 bg-[#E6F0FA]/95 sticky left-0 z-20 backdrop-blur-xs"
+                          className={`px-6 py-3.5 text-xs md:text-sm font-semibold text-slate-700 bg-[#F8FAFC] sticky left-0 border-r border-slate-200 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.06)] z-20 group-hover:bg-[#F1F5F9] ${
+                            isSublimit ? 'pl-10 text-slate-600 font-normal !bg-slate-50' : ''
+                          }`}
                         >
-                          <div className="sticky left-6 inline-flex items-center gap-2 font-bold">
-                            <span className="w-1.5 h-3.5 bg-blue-600 rounded-full inline-block"></span>
-                            {displayLabel}
+                          <div className="flex items-center gap-2">
+                            {hasSublimits && (
+                              <button
+                                type="button"
+                                onClick={() => toggleParent(row.id)}
+                                className="p-1 -ml-1 rounded hover:bg-slate-200 text-slate-500 transition-colors cursor-pointer"
+                                title={isCollapsed ? 'Desplegar sublímites' : 'Plegar sublímites'}
+                              >
+                                {isCollapsed ? (
+                                  <ChevronRight size={14} />
+                                ) : (
+                                  <ChevronDown size={14} />
+                                )}
+                              </button>
+                            )}
+                            {isSublimit && (
+                              <span className="text-slate-400 font-mono text-xs select-none">
+                                ↳
+                              </span>
+                            )}
+                            <span>{row.label}</span>
+                            <PedagogicalTooltip label={row.label} />
+                            {(() => {
+                              const matchingRule = getMatchingRegulatoryRule(row.label);
+                              if (!matchingRule || isSublimit) return null;
+                              return (
+                                <span
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80 shrink-0 cursor-help"
+                                  title={`Amparo de verificación obligatoria en Colombia:\n${matchingRule.title} (${matchingRule.legalBasis})\n${matchingRule.description}`}
+                                >
+                                  <Scale size={11} className="text-indigo-600" />
+                                  <span className="hidden sm:inline">Obligatorio</span>
+                                </span>
+                              );
+                            })()}
+                            {hasSublimits && (
+                              <button
+                                type="button"
+                                onClick={() => toggleParent(row.id)}
+                                className="ml-auto text-[10px] bg-blue-50 text-blue-600 font-bold px-1.5 py-0.5 rounded-full border border-blue-200/60 hover:bg-blue-100 transition-colors cursor-pointer whitespace-nowrap"
+                              >
+                                {childSublimits?.length ?? 0} sublímites
+                              </button>
+                            )}
                           </div>
                         </td>
+
+                        {/* Insurer Cells */}
+                        {row.cells.map((cell, colIdx) => {
+                          const isPinned = pinnedColumns.has(colIdx);
+                          const isHiddenByPinning = pinnedColumns.size > 0 && !isPinned;
+                          const cellId = `${row.id}-${colIdx}`;
+                          const cellNote = getCellNote(cellId);
+                          const isEditingNote =
+                            editingNote?.rowId === row.id && editingNote?.colIdx === colIdx;
+                          const isHovered =
+                            hoveredCell?.rowId === row.id && hoveredCell?.colIdx === colIdx;
+                          const isDropdownOpen =
+                            openDropdown?.rowId === row.id && openDropdown?.colIdx === colIdx;
+                          const isSaving = savingCorrections.has(cellId);
+
+                          return (
+                            <MatrixDataCell
+                              key={colIdx}
+                              cell={cell}
+                              row={row}
+                              colIdx={colIdx}
+                              quote={quotes[colIdx]}
+                              viewMode={viewMode}
+                              isPinned={isPinned}
+                              isHiddenByPinning={isHiddenByPinning}
+                              isSaving={isSaving}
+                              cellNote={cellNote}
+                              isEditingNote={isEditingNote}
+                              isHovered={isHovered}
+                              isDropdownOpen={isDropdownOpen}
+                              dropdownRef={dropdownRef}
+                              onMouseEnter={() => setHoveredCell({ rowId: row.id, colIdx })}
+                              onMouseLeave={() => setHoveredCell(null)}
+                              onDoubleClick={() => handleCellDoubleClick(row.id, colIdx)}
+                              onSaveNote={(content) => handleSaveNote(row.id, colIdx, content)}
+                              onCancelNote={handleCancelNote}
+                              onOpenPdfEvidence={handleOpenPdfEvidence}
+                              onToggleDropdown={() =>
+                                setOpenDropdown(
+                                  openDropdown?.rowId === row.id && openDropdown?.colIdx === colIdx
+                                    ? null
+                                    : { rowId: row.id, colIdx }
+                                )
+                              }
+                              onResolveDiscrepancy={(selectedCategory) =>
+                                handleDiscrepancyResolution(row.id, colIdx, selectedCategory)
+                              }
+                            />
+                          );
+                        })}
                       </tr>
                     );
-                  }
-
-                  if (row.type === 'spacer') {
-                    return (
-                      <tr key={row.id} className="bg-white h-4" role="row">
-                        <td role="gridcell" colSpan={effectiveColumnCount} className="py-2"></td>
-                      </tr>
-                    );
-                  }
-
-                  // Check if this row is a folded sublimit
-                  const parentId = sublimitToParent.get(row.id);
-                  if (parentId && collapsedParentIds.has(parentId)) {
-                    return null;
-                  }
-
-                  const childSublimits = parentToSublimits.get(row.id);
-                  const hasSublimits = Boolean(childSublimits && childSublimits.length > 0);
-                  const isCollapsed = collapsedParentIds.has(row.id);
-                  const isSublimit = Boolean(parentId);
-
-                  // Standard Data Row
-                  return (
+                  })}
+                  {isVirtualized && bottomSpacerHeight > 0 && (
                     <tr
-                      key={row.id}
-                      className={`hover:bg-slate-50/70 transition-colors group ${
-                        isSublimit ? 'bg-slate-50/30' : ''
-                      }`}
-                      role="row"
+                      aria-hidden="true"
+                      data-virtual-spacer="bottom"
+                      style={{ height: `${bottomSpacerHeight}px` }}
                     >
-                      {/* Concept Label (Column A) */}
                       <td
-                        role="gridcell"
-                        className={`px-6 py-3.5 text-xs md:text-sm font-semibold text-slate-700 bg-[#F8FAFC] sticky left-0 border-r border-slate-200 shadow-[4px_0_10px_-5px_rgba(0,0,0,0.06)] z-20 group-hover:bg-[#F1F5F9] ${
-                          isSublimit ? 'pl-10 text-slate-600 font-normal !bg-slate-50' : ''
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          {hasSublimits && (
-                            <button
-                              type="button"
-                              onClick={() => toggleParent(row.id)}
-                              className="p-1 -ml-1 rounded hover:bg-slate-200 text-slate-500 transition-colors cursor-pointer"
-                              title={isCollapsed ? 'Desplegar sublímites' : 'Plegar sublímites'}
-                            >
-                              {isCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-                            </button>
-                          )}
-                          {isSublimit && (
-                            <span className="text-slate-400 font-mono text-xs select-none">↳</span>
-                          )}
-                          <span>{row.label}</span>
-                          <PedagogicalTooltip label={row.label} />
-                          {(() => {
-                            const matchingRule = getMatchingRegulatoryRule(row.label);
-                            if (!matchingRule || isSublimit) return null;
-                            return (
-                              <span
-                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80 shrink-0 cursor-help"
-                                title={`Amparo de verificación obligatoria en Colombia:\n${matchingRule.title} (${matchingRule.legalBasis})\n${matchingRule.description}`}
-                              >
-                                <Scale size={11} className="text-indigo-600" />
-                                <span className="hidden sm:inline">Obligatorio</span>
-                              </span>
-                            );
-                          })()}
-                          {hasSublimits && (
-                            <button
-                              type="button"
-                              onClick={() => toggleParent(row.id)}
-                              className="ml-auto text-[10px] bg-blue-50 text-blue-600 font-bold px-1.5 py-0.5 rounded-full border border-blue-200/60 hover:bg-blue-100 transition-colors cursor-pointer whitespace-nowrap"
-                            >
-                              {childSublimits?.length ?? 0} sublímites
-                            </button>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Insurer Cells */}
-                      {row.cells.map((cell, colIdx) => {
-                        const isPinned = pinnedColumns.has(colIdx);
-                        const isHiddenByPinning = pinnedColumns.size > 0 && !isPinned;
-                        const cellId = `${row.id}-${colIdx}`;
-                        const cellNote = getCellNote(cellId);
-                        const isEditingNote =
-                          editingNote?.rowId === row.id && editingNote?.colIdx === colIdx;
-                        const isHovered =
-                          hoveredCell?.rowId === row.id && hoveredCell?.colIdx === colIdx;
-                        const isDropdownOpen =
-                          openDropdown?.rowId === row.id && openDropdown?.colIdx === colIdx;
-                        const isSaving = savingCorrections.has(cellId);
-
-                        return (
-                          <MatrixDataCell
-                            key={colIdx}
-                            cell={cell}
-                            row={row}
-                            colIdx={colIdx}
-                            quote={quotes[colIdx]}
-                            viewMode={viewMode}
-                            isPinned={isPinned}
-                            isHiddenByPinning={isHiddenByPinning}
-                            isSaving={isSaving}
-                            cellNote={cellNote}
-                            isEditingNote={isEditingNote}
-                            isHovered={isHovered}
-                            isDropdownOpen={isDropdownOpen}
-                            dropdownRef={dropdownRef}
-                            onMouseEnter={() => setHoveredCell({ rowId: row.id, colIdx })}
-                            onMouseLeave={() => setHoveredCell(null)}
-                            onDoubleClick={() => handleCellDoubleClick(row.id, colIdx)}
-                            onSaveNote={(content) => handleSaveNote(row.id, colIdx, content)}
-                            onCancelNote={handleCancelNote}
-                            onOpenPdfEvidence={handleOpenPdfEvidence}
-                            onToggleDropdown={() =>
-                              setOpenDropdown(
-                                openDropdown?.rowId === row.id && openDropdown?.colIdx === colIdx
-                                  ? null
-                                  : { rowId: row.id, colIdx }
-                              )
-                            }
-                            onResolveDiscrepancy={(selectedCategory) =>
-                              handleDiscrepancyResolution(row.id, colIdx, selectedCategory)
-                            }
-                          />
-                        );
-                      })}
+                        colSpan={
+                          pinnedColumns.size > 0 ? pinnedColumns.size + 1 : quotes.length + 1
+                        }
+                        className="p-0 border-0"
+                      />
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 

@@ -23,6 +23,7 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
     addClauseFiles,
     removeClauseFile,
     analyze,
+    cancelAnalysis,
     resetFlow,
     retry,
   } = useAnalysisFlow();
@@ -37,6 +38,7 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
     selectedClauseIds,
     domain,
     statusMessage,
+    progressPercent,
     errorMessage,
   } = state;
 
@@ -243,17 +245,34 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
             </div>
           </div>
 
-          {/* Progress Bar (Indeterminate) */}
-          <div className="w-full bg-slate-200 rounded-full h-2.5 mb-6 overflow-hidden">
-            <div
-              className="bg-indigo-600 h-2.5 rounded-full animate-progress"
-              style={{ width: '100%' }}
-            ></div>
+          {/* Progress Bar with real percentage */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-600 mb-1.5">
+              <span>Progreso del análisis</span>
+              <span>{progressPercent}%</span>
+            </div>
+            <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+              <div
+                className={`bg-indigo-600 h-2.5 rounded-full transition-all duration-300 ${
+                  progressPercent === 0 ? 'animate-progress' : ''
+                }`}
+                style={{ width: `${progressPercent > 0 ? progressPercent : 100}%` }}
+              ></div>
+            </div>
           </div>
 
-          <div className="inline-flex items-center px-4 py-2 bg-slate-100 text-slate-700 rounded-full text-xs font-semibold">
-            <Sparkles size={14} className="mr-2 text-indigo-600" />
-            Motor IA Gemini • Supabase PGVector 3072d • Prevalencia Técnica
+          <div className="flex flex-col items-center gap-4">
+            <div className="inline-flex items-center px-4 py-2 bg-slate-100 text-slate-700 rounded-full text-xs font-semibold">
+              <Sparkles size={14} className="mr-2 text-indigo-600" />
+              Motor IA Gemini • Supabase PGVector 3072d • Prevalencia Técnica
+            </div>
+            <button
+              type="button"
+              onClick={cancelAnalysis}
+              className="px-4 py-2 rounded-full border border-red-200 bg-white text-red-700 text-xs font-semibold hover:bg-red-50 transition-colors cursor-pointer"
+            >
+              Cancelar análisis
+            </button>
           </div>
         </div>
       )}

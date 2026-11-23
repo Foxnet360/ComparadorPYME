@@ -272,6 +272,56 @@ export const analyticsAggregationService = {
   },
 };
 
+function isConvertedComparison(record: Record<string, unknown>): boolean {
+  const metadata = record.metadata as { status?: unknown } | null | undefined;
+  const status = typeof metadata?.status === 'string' ? metadata.status.toUpperCase() : '';
+  const totalScore = Number(record.total_score ?? 0);
+  return (
+    status === 'SOLD' || status === 'ACCEPTED' || (Number.isFinite(totalScore) && totalScore >= 85)
+  );
+}
+
+function extractConvertedPremium(record: Record<string, unknown>): number {
+  const metadata = record.metadata as
+    | { selectedPremium?: unknown; finalPremium?: unknown; premium?: unknown }
+    | null
+    | undefined;
+  const metaCandidate = Number(
+    metadata?.selectedPremium ?? metadata?.finalPremium ?? metadata?.premium ?? 0
+  );
+  if (Number.isFinite(metaCandidate) && metaCandidate > 0) {
+    return metaCandidate;
+  }
+
+  const analysisResult = record.analysis_result as
+    | { quotes?: Array<Record<string, unknown>> }
+    | null
+    | undefined;
+  const unifiedResult = record.unified_result as
+    | { quotes?: Array<Record<string, unknown>> }
+    | null
+    | undefined;
+  const quotes = Array.isArray(analysisResult?.quotes)
+    ? analysisResult.quotes
+    : Array.isArray(unifiedResult?.quotes)
+      ? unifiedResult.quotes
+      : [];
+
+  if (quotes.length === 0) {
+    return 0;
+  }
+
+  const sorted = [...quotes].sort((a, b) => {
+    const aWin = a.isWinner ? 1 : 0;
+    const bWin = b.isWinner ? 1 : 0;
+    if (aWin !== bWin) return bWin - aWin;
+    return Number(b.score ?? 0) - Number(a.score ?? 0);
+  });
+
+  const bestPrice = Number(sorted[0]?.priceAnnual ?? sorted[0]?.price_annual ?? 0);
+  return Number.isFinite(bestPrice) && bestPrice > 0 ? bestPrice : 0;
+}
+
 /**
  * Resilient in-memory/query fallback guaranteeing strict RBAC boundary if DB RPC fails.
  */
@@ -304,11 +354,14 @@ async function fallbackAggregation(
   const records = rows || [];
 
   const totalComparisons = records.length;
-  const soldCount = records.filter(
-    (r: any) => r.metadata?.status === 'SOLD' || (r.total_score && r.total_score >= 85)
-  ).length;
+  const convertedRecords = records.filter((r: Record<string, unknown>) => isConvertedComparison(r));
+  const soldCount = convertedRecords.length;
   const conversionRate =
     totalComparisons > 0 ? Math.round((soldCount / totalComparisons) * 100) : 0;
+  const totalPremium = convertedRecords.reduce(
+    (sum: number, r: Record<string, unknown>) => sum + extractConvertedPremium(r),
+    0
+  );
 
   // Domain distribution
   const domainCounts: Record<string, number> = {};
@@ -351,7 +404,7 @@ async function fallbackAggregation(
     totalComparisons,
     soldCount,
     conversionRate,
-    totalPremium: 0,
+    totalPremium,
     avgProcessTimeMinutes: 12,
     domainDistribution,
     insurerDistribution,

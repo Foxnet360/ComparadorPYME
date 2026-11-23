@@ -1,0 +1,215 @@
+openapi: 3.0.3
+info:
+  title: Comparador CSA Unified API
+  version: 1.0.0
+  description: >
+    Especificación OpenAPI 3.0.3 unificada para la plataforma Comparador CSA (/api/v1/* con alias
+    retrocompatibles /api/*) y la API B2B DaaS (/api/v1/daas/*).
+servers:
+  - url: /
+    description: Servidor actual de despliegue
+  - url: https://api.comparadorcsa.com
+    description: Servidor de producción
+
+tags:
+  - name: System
+  - name: Analysis
+  - name: Documents
+  - name: Portfolio
+  - name: Analytics
+  - name: Webhooks
+  - name: DaaS
+
+paths:
+  /health:
+    get:
+      tags: [System]
+      summary: Health check extendido de dependencias
+      responses:
+        '200':
+          description: Servicio saludable
+
+  /api/v1:
+    get:
+      tags: [System]
+      summary: Metadatos de versión y endpoints de la API
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Información de versión v1 y catálogo
+
+  /api/v1/openapi.json:
+    get:
+      tags: [System]
+      summary: Especificación OpenAPI 3.0.3 unificada en JSON
+      responses:
+        '200':
+          description: Documento OpenAPI 3.0.3
+
+  /api/v1/features:
+    get:
+      tags: [System]
+      summary: Feature flags activos
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Flags del entorno
+
+  /api/v1/analyze:
+    post:
+      tags: [Analysis]
+      summary: Análisis y comparación de cotizaciones PDF (síncrono o asíncrono con Prefer respond-async)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Resultado síncrono del análisis comparativo
+        '202':
+          description: Trabajo asíncrono encolado con jobId y URLs de seguimiento
+        '401':
+          $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/history:
+    get:
+      tags: [Analysis]
+      summary: Historial de comparaciones del tenant
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de análisis históricos
+
+  /api/v1/documents:
+    get:
+      tags: [Documents]
+      summary: Listar clausulados indexados
+      responses:
+        '200':
+          description: Catálogo público de documentos
+    post:
+      tags: [Documents]
+      summary: Indexar nuevo clausulado PDF
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Documento indexado
+
+  /api/v1/search:
+    post:
+      tags: [Documents]
+      summary: Búsqueda semántica en clausulados
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Resultados de similitud vectorial
+
+  /api/v1/clients:
+    get:
+      tags: [Portfolio]
+      summary: Listar clientes del tenant
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Clientes del portafolio
+
+  /api/v1/policies:
+    get:
+      tags: [Portfolio]
+      summary: Listar pólizas del tenant
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Pólizas activas
+
+  /api/v1/renewals:
+    get:
+      tags: [Portfolio]
+      summary: Listar renovaciones y su ciclo de vida
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Renovaciones registradas
+
+  /api/v1/analytics/summary:
+    get:
+      tags: [Analytics]
+      summary: Métricas ejecutivas de conversión (SOLD/ACCEPTED) y primas totales
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Resumen analítico ejecutivo
+
+  /api/v1/webhooks:
+    get:
+      tags: [Webhooks]
+      summary: Listar suscripciones webhook del tenant
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de webhooks configurados
+    post:
+      tags: [Webhooks]
+      summary: Registrar suscripción webhook firmada con HMAC-SHA256
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Suscripción creada
+
+  /api/v1/daas/benchmarks/pricing:
+    get:
+      tags: [DaaS]
+      summary: Benchmark actuarial de precios por ramo
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Envelope `{ success, data }` con percentiles P25/P50/P75
+
+  /api/v1/daas/benchmarks/market-share:
+    get:
+      tags: [DaaS]
+      summary: Participación de mercado por aseguradora
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Envelope `{ success, data }` con participación por aseguradora
+
+  /api/v1/daas/subscriber/status:
+    get:
+      tags: [DaaS]
+      summary: Estado de cuota mensual y límite por minuto del suscriptor DaaS
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Envelope `{ success, data }` con estado del suscriptor
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string

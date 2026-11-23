@@ -6,14 +6,16 @@
 import { Router } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { daasApiKeyAuth } from '../middleware/daasApiKeyAuth';
+import { daasSubscriberRateLimiter } from '../middleware/rateLimiter';
 import { asyncHandler } from '../utils/asyncHandler';
 import { analyticsAggregationService } from '../services/analyticsAggregationService';
 import { supabase } from '../config/database';
 
 const router = Router();
 
-// Apply DaaS API Key authentication to all routes on this router
+// Apply DaaS API Key authentication and per-subscriber per-minute rate limiting
 router.use(daasApiKeyAuth);
+router.use(daasSubscriberRateLimiter);
 
 /**
  * GET /api/v1/daas/benchmarks/pricing

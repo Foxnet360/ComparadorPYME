@@ -64,6 +64,7 @@ import campaignRoutes from './routes/campaignRoutes';
 import insurerRoutes from './routes/insurers';
 import organizationRoutes from './routes/organizationRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
+import webhookRoutes from './routes/webhookRoutes';
 import daasRoutes from './routes/daasRoutes';
 
 // Graph seeding lifecycle
@@ -106,7 +107,7 @@ app.use(
   cors({
     origin: createCorsOrigin(corsOrigins),
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-API-Key'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-API-Key', 'Prefer'],
   })
 );
 app.use(express.json({ limit: '10mb' }));
@@ -137,39 +138,10 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Root route - API info (only if not serving static files)
-app.get('/api', (req, res) => {
-  res.json({
-    name: 'CSA Comparator API',
-    version: '2.0.0',
-    status: 'running',
-    features: {
-      multimodalExtraction: true,
-      legacyFallback: true,
-    },
-    endpoints: {
-      health: '/health',
-      analyze: '/api/analyze',
-      analyzeRag: '/api/analyze-rag',
-      compareExtraction: '/api/compare-extraction (V1 vs V2)',
-      history: '/api/history',
-      documents: '/api/documents',
-      search: '/api/search',
-      audit: '/api/audit/enrich',
-      chat: '/api/chat',
-    },
-  });
-});
-
-// Feature flags endpoint
 import { featureFlags } from './config/featureFlags';
-app.get('/api/features', (req, res) => {
-  res.json({
-    flags: featureFlags.getFlags(),
-    legacyMode: featureFlags.isLegacyMode(),
-    environment: process.env.NODE_ENV || 'development',
-  });
-});
+import { getUnifiedOpenApiDocument } from './config/openApiSpec';
+import { documentController } from './controllers/documentController';
+import { searchController } from './controllers/searchController';
 
 // Ensure uploads directory exists (Use /tmp for Cloud Run)
 const uploadDir =
@@ -194,85 +166,167 @@ const upload = multer({
   },
 });
 
-// Compare V1 vs V2 endpoint
-app.post(
-  '/api/compare-extraction',
-  analyzeRateLimiter,
-  upload.array('quotes', 10),
-  compareExtraction
-);
+function loadOpenApiYaml(): string {
+  const candidates = [
+    path.resolve(__dirname, '../../docs/openapi.yaml'),
+    path.resolve(process.cwd(), 'docs/openapi.yaml'),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return fs.readFileSync(candidate, 'utf-8');
+    }
+  }
+  return '';
+}
 
-// Analysis routes
-app.post(
-  '/api/analyze',
-  analyzeRateLimiter,
-  upload.fields([
-    { name: 'quotes', maxCount: 15 },
-    { name: 'clauses', maxCount: 10 },
-  ]),
-  asyncHandler(analysisController.uploadAndAnalyze)
-);
+function registerCoreApiRoutes(prefix: '/api' | '/api/v1'): void {
+  // Root route - API metadata and versioning catalog
+  app.get(prefix, (_req, res) => {
+    res.json({
+      name: 'CSA Comparator API',
+      version: '2.0.0',
+      apiVersion: 'v1',
+      currentPrefix: '/api/v1',
+      legacyPrefix: '/api',
+      openapi: '/api/v1/openapi.json',
+      status: 'running',
+      features: {
+        multimodalExtraction: true,
+        legacyFallback: true,
+      },
+      endpoints: {
+        health: '/health',
+        openapiJson: `${prefix}/openapi.json`,
+        openapiYaml: `${prefix}/openapi.yaml`,
+        features: `${prefix}/features`,
+        analyze: `${prefix}/analyze`,
+        compareExtraction: `${prefix}/compare-extraction (V1 vs V2)`,
+        history: `${prefix}/history`,
+        documents: `${prefix}/documents`,
+        search: `${prefix}/search`,
+        audit: `${prefix}/audit/enrich`,
+        chat: `${prefix}/chat`,
+        daas: '/api/v1/daas',
+      },
+    });
+  });
 
-app.post(
-  '/api/analysis/:id/quotes',
-  analyzeRateLimiter,
-  upload.fields([{ name: 'quotes', maxCount: 15 }]),
-  asyncHandler(analysisController.appendQuotesToAnalysis)
-);
+  // Feature flags endpoint
+  app.get(`${prefix}/features`, (_req, res) => {
+    res.json({
+      flags: featureFlags.getFlags(),
+      legacyMode: featureFlags.isLegacyMode(),
+      environment: process.env.NODE_ENV || 'development',
+    });
+  });
 
-app.patch('/api/analysis/:id/status', asyncHandler(analysisController.updateAnalysisStatus));
+  // Unified OpenAPI 3.0.3 documentation endpoints
+  app.get(`${prefix}/openapi.json`, (_req, res) => {
+    res.json(getUnifiedOpenApiDocument());
+  });
 
-app.get('/api/history', asyncHandler(analysisController.getHistory));
+  app.get(`${prefix}/openapi.yaml`, (_req, res) => {
+    const yaml = loadOpenApiYaml();
+    if (!yaml) {
+      res.status(404).json({ error: 'Not Found', message: 'OpenAPI YAML specification not found' });
+      return;
+    }
+    res.type('application/yaml; charset=utf-8').send(yaml);
+  });
 
-// Document Indexing routes
-import { documentController } from './controllers/documentController';
-import { searchController } from './controllers/searchController';
+  // Compare V1 vs V2 endpoint
+  app.post(
+    `${prefix}/compare-extraction`,
+    analyzeRateLimiter,
+    upload.array('quotes', 10),
+    compareExtraction
+  );
 
-// Document management (upload allowed for super_admin, ally_admin, ally_technical; delete restricted to admins)
-app.post(
-  '/api/documents',
-  requireRole('super_admin', 'ally_admin', 'ally_technical'),
-  documentController.uploadMiddleware,
-  documentController.createDocument
-);
-app.get('/api/documents', documentController.listDocuments);
-app.get('/api/documents/check-existing', documentController.checkExistingClause);
-app.get('/api/documents/:id', documentController.getDocument);
-app.delete(
-  '/api/documents/:id',
-  requireRole('super_admin', 'ally_admin'),
-  documentController.deleteDocument
-);
-app.get('/api/documents/:id/chunks', documentController.getDocumentChunks);
+  // Analysis routes
+  app.post(
+    `${prefix}/analyze`,
+    analyzeRateLimiter,
+    upload.fields([
+      { name: 'quotes', maxCount: 15 },
+      { name: 'clauses', maxCount: 10 },
+    ]),
+    asyncHandler(analysisController.uploadAndAnalyze)
+  );
 
-// Search routes
-app.post('/api/search', searchController.search);
-app.post('/api/search/by-coverage', searchController.searchByCoverage);
-app.post('/api/search/compare', searchController.compareDocuments);
+  app.post(
+    `${prefix}/analysis/:id/quotes`,
+    analyzeRateLimiter,
+    upload.fields([{ name: 'quotes', maxCount: 15 }]),
+    asyncHandler(analysisController.appendQuotesToAnalysis)
+  );
+
+  app.patch(`${prefix}/analysis/:id/status`, asyncHandler(analysisController.updateAnalysisStatus));
+
+  app.get(`${prefix}/history`, asyncHandler(analysisController.getHistory));
+
+  // Document management (upload allowed for super_admin, ally_admin, ally_technical; delete restricted to admins)
+  app.post(
+    `${prefix}/documents`,
+    requireRole('super_admin', 'ally_admin', 'ally_technical'),
+    documentController.uploadMiddleware,
+    documentController.createDocument
+  );
+  app.get(`${prefix}/documents`, documentController.listDocuments);
+  app.get(`${prefix}/documents/check-existing`, documentController.checkExistingClause);
+  app.get(`${prefix}/documents/:id`, documentController.getDocument);
+  app.delete(
+    `${prefix}/documents/:id`,
+    requireRole('super_admin', 'ally_admin'),
+    documentController.deleteDocument
+  );
+  app.get(`${prefix}/documents/:id/chunks`, documentController.getDocumentChunks);
+
+  // Search routes
+  app.post(`${prefix}/search`, searchController.search);
+  app.post(`${prefix}/search/by-coverage`, searchController.searchByCoverage);
+  app.post(`${prefix}/search/compare`, searchController.compareDocuments);
+}
+
+registerCoreApiRoutes('/api');
+registerCoreApiRoutes('/api/v1');
 
 // Router mounts: single source of truth consumed by the route-coverage test.
 // The gate already applies optional auth to allowlisted prefixes, so no
 // per-mount auth middleware is needed here. SEC-4: analysis and chat mounts
 // carry their stricter rate limiters.
+const coreRouterMounts = [
+  { suffix: '/audit', router: auditRoutes },
+  { suffix: '/analysis', middleware: [analyzeRateLimiter], router: analysisRoutes },
+  { suffix: '/chat', middleware: [chatRateLimiter], router: chatRoutes },
+  { suffix: '/monitoring', router: monitoringRoutes },
+  { suffix: '/templates/registry', router: templateRegistryRoutes },
+  { suffix: '/comparison', router: comparisonRoutes },
+  { suffix: '/clients', router: clientRoutes },
+  { suffix: '/policies', router: policyRoutes },
+  { suffix: '/renewals', router: renewalRoutes },
+  { suffix: '/campaigns', router: campaignRoutes },
+  { suffix: '/insurers', router: insurerRoutes },
+  { suffix: '/organizations', router: organizationRoutes },
+  { suffix: '/analytics', router: analyticsRoutes },
+  { suffix: '/webhooks', router: webhookRoutes },
+] as const;
+
 export const apiRouterMounts = [
-  { prefix: '/api/audit', router: auditRoutes },
-  { prefix: '/api/analysis', middleware: [analyzeRateLimiter], router: analysisRoutes },
-  { prefix: '/api/chat', middleware: [chatRateLimiter], router: chatRoutes },
-  { prefix: '/api/monitoring', router: monitoringRoutes },
-  { prefix: '/api/templates/registry', router: templateRegistryRoutes },
-  { prefix: '/api/comparison', router: comparisonRoutes },
-  { prefix: '/api/clients', router: clientRoutes },
-  { prefix: '/api/policies', router: policyRoutes },
-  { prefix: '/api/renewals', router: renewalRoutes },
-  { prefix: '/api/campaigns', router: campaignRoutes },
-  { prefix: '/api/insurers', router: insurerRoutes },
-  { prefix: '/api/organizations', router: organizationRoutes },
-  { prefix: '/api/analytics', router: analyticsRoutes },
+  ...coreRouterMounts.map((mount) => ({
+    prefix: `/api${mount.suffix}`,
+    ...('middleware' in mount ? { middleware: mount.middleware } : {}),
+    router: mount.router,
+  })),
+  ...coreRouterMounts.map((mount) => ({
+    prefix: `/api/v1${mount.suffix}`,
+    ...('middleware' in mount ? { middleware: mount.middleware } : {}),
+    router: mount.router,
+  })),
   { prefix: '/api/v1/daas', router: daasRoutes },
 ] as const;
 
 for (const mount of apiRouterMounts) {
-  if ('middleware' in mount) {
+  if ('middleware' in mount && mount.middleware) {
     app.use(mount.prefix, ...mount.middleware, mount.router);
   } else {
     app.use(mount.prefix, mount.router);

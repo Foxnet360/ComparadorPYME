@@ -1,6 +1,7 @@
+import { useRef } from 'react';
 import { useAnalysis } from '../contexts/AnalysisContext';
 import { useUI } from '../contexts/UIContext';
-import { analyzeQuotesWithGemini } from '../services/geminiService';
+import { AnalysisCancelledError, analyzeQuotesWithGemini } from '../services/geminiService';
 import { storageService } from '../services/storageService';
 import { AppStatus } from '../types';
 import type { ComparisonReport as ReportType } from '../types';
@@ -36,11 +37,27 @@ export const useAnalysisFlow = () => {
     reset,
   } = useAnalysis();
   const { setChatOpen } = useUI();
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  /** Cancels an active async/sync analysis cleanly and returns UI to IDLE. */
+  const cancelAnalysis = () => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    dispatch({ type: 'SET_PROGRESS', payload: 0 });
+    dispatch({ type: 'SET_STATUS_MESSAGE', payload: '' });
+    dispatch({ type: 'SET_ERROR_MESSAGE', payload: '' });
+    dispatch({ type: 'SET_STATUS', payload: AppStatus.IDLE });
+  };
 
   /** Runs the comparison pipeline. Resolves to the view the router should
    * navigate to ('REPORT' on success), or null when the view must not change. */
   const analyze = async (): Promise<AppView | null> => {
     if (state.quoteFiles.length === 0) return null;
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    dispatch({ type: 'SET_PROGRESS', payload: 5 });
     dispatch({ type: 'SET_STATUS', payload: AppStatus.ANALYZING });
 
     try {
@@ -57,7 +74,18 @@ export const useAnalysisFlow = () => {
         state.domain,
         state.mode,
         state.renewalContext,
-        state.selectedClient
+        state.selectedClient,
+        {
+          signal: controller.signal,
+          onStageProgress: ({ progress, message }) => {
+            if (typeof progress === 'number') {
+              dispatch({ type: 'SET_PROGRESS', payload: progress });
+            }
+            if (message) {
+              dispatch({ type: 'SET_STATUS_MESSAGE', payload: message });
+            }
+          },
+        }
       );
       // Save to history unconditionally and capture generated ID
       const savedId = await storageService.saveAnalysis(
@@ -73,16 +101,28 @@ export const useAnalysisFlow = () => {
         dispatch({ type: 'SET_REPORT', payload: result });
       }
 
+      dispatch({ type: 'SET_PROGRESS', payload: 100 });
       dispatch({ type: 'SET_STATUS', payload: AppStatus.COMPLETED });
       return 'REPORT';
     } catch (error: unknown) {
+      if (error instanceof AnalysisCancelledError || controller.signal.aborted) {
+        if (abortControllerRef.current === controller) {
+          cancelAnalysis();
+        }
+        return null;
+      }
       console.error(error);
+      dispatch({ type: 'SET_PROGRESS', payload: 0 });
       dispatch({ type: 'SET_STATUS_MESSAGE', payload: '' }); // Clear status
       dispatch({ type: 'SET_STATUS', payload: AppStatus.ERROR });
       // Extract clean message
       const msg = error instanceof Error ? error.message : 'Hubo un problema desconocido.';
       dispatch({ type: 'SET_ERROR_MESSAGE', payload: msg });
       return null;
+    } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
     }
   };
 
@@ -114,6 +154,7 @@ export const useAnalysisFlow = () => {
     setMode,
     setRenewalContext,
     analyze,
+    cancelAnalysis,
     resetFlow,
     retry,
     viewReport,

@@ -26,8 +26,17 @@ import {
   exportAnalysisExcel,
 } from '../controllers/analysisValidationController';
 import { getReviewQueueCoverages } from '../controllers/reviewQueueController';
+import {
+  getAnalysisJobStatus,
+  streamAnalysisJobEvents,
+  cancelAnalysisJob,
+} from '../controllers/analysisJobsController';
 
 const router = Router();
+
+router.get('/jobs/:jobId', asyncHandler(getAnalysisJobStatus));
+router.get('/jobs/:jobId/events', asyncHandler(streamAnalysisJobEvents));
+router.post('/jobs/:jobId/cancel', asyncHandler(cancelAnalysisJob));
 
 router.post('/validate-coverages', asyncHandler(validateCoverages));
 router.post('/deductible-risk', asyncHandler(analyzeDeductibleRisk));
