@@ -175,6 +175,7 @@ describe('autosPromptStrategy', () => {
     expect(schema.properties).toHaveProperty('carroTaller');
     expect(schema.properties).toHaveProperty('asistenciaViaje');
     expect(schema.properties).toHaveProperty('deducibles');
+    expect(schema.properties).toHaveProperty('collectiveDetails');
   });
 
   it('builds a template-aware autos prompt using template metadata', () => {
@@ -265,6 +266,7 @@ describe('vidaGrupoPromptStrategy', () => {
     expect(schema.type).toBe('object');
     expect(schema.properties).toHaveProperty('insurerName');
     expect(schema.properties).toHaveProperty('groupDetails');
+    expect(schema.properties).toHaveProperty('collectiveDetails');
     expect(schema.properties).toHaveProperty('suicideCoverage');
     expect(schema.properties).toHaveProperty('rawCoverages');
   });
@@ -281,6 +283,7 @@ describe('saludPromptStrategy', () => {
     expect(prompt).toContain('Oncolog');
     expect(prompt).toContain('Maternidad');
     expect(prompt).toContain('Portabilidad');
+    expect(prompt).toContain('Art. 468-3 E.T.');
   });
 
   it('returns a structured JSON schema for salud extraction', () => {
@@ -290,6 +293,7 @@ describe('saludPromptStrategy', () => {
     expect(schema.properties).toHaveProperty('regulatoryCompliance');
     expect(schema.properties).toHaveProperty('preexistingConditions');
     expect(schema.properties).toHaveProperty('providerNetwork');
+    expect(schema.properties).toHaveProperty('collectiveDetails');
     expect(schema.properties).toHaveProperty('rawCoverages');
   });
 });

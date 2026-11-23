@@ -6,7 +6,7 @@ const SALUD_BASE_PROMPT = `Eres un extractor experto de cotizaciones de PLANES V
 
 Extrae la información de las cotizaciones de salud considerando las siguientes secciones y marco normativo colombiano:
 1. DATOS DEL PLAN: aseguradora, nombre EXACTO del Plan/Producto (ej. "Plan Premium", "Plan Avanzado", "Plan Básico", "Plan Clásico", "Plan Global", "Plan Élite"), tipo de plan ("COMPLEMENTARIO" al PBS/POS de la EPS u "SUSTITUTIVO"), ciudad de cobertura. Nunca uses un nombre genérico si el documento especifica el nombre del Plan.
-2. PRIMA: netPremium, fees/gastos de expedición, taxes/IVA (19%), totalPayable, currency ("COP"), periodicity ("MENSUAL", "TRIMESTRAL", "ANUAL"), periodicityPerPerson (si varía por edad o rango de edad).
+2. PRIMA: netPremium, fees/gastos de expedición, taxes/IVA (5% tarifa especial para Planes Voluntarios de Salud y Medicina Prepagada según Art. 468-3 E.T., o el valor explícito en la cotización), totalPayable, currency ("COP"), periodicity ("MENSUAL", "TRIMESTRAL", "ANUAL"), periodicityPerPerson (si varía por edad o rango de edad).
 3. ESTRUCTURA Y COMPLEMENTARIEDAD DEL PLAN:
    - Plan de Beneficios Base: especificar si es un complemento al PBS (Plan de Beneficios en Salud obligatorio) de la EPS o sustituto.
 4. COBERTURAS HOSPITALARIAS:
@@ -181,6 +181,20 @@ const SALUD_RESPONSE_SCHEMA: Record<string, unknown> = {
     },
     specialConditions: { type: 'array', items: { type: 'string' }, nullable: true },
     exclusions: { type: 'array', items: { type: 'string' }, nullable: true },
+    collectiveDetails: {
+      type: 'object',
+      additionalProperties: true,
+      nullable: true,
+      properties: {
+        isCollective: { type: 'boolean', nullable: true },
+        modality: { type: 'string', nullable: true },
+        insuredCount: { type: 'number', nullable: true },
+        entryAgeLimit: { type: 'string', nullable: true },
+        permanenceAgeLimit: { type: 'string', nullable: true },
+        continuityAndPreexisting: { type: 'string', nullable: true },
+        categoryBreakdownSummary: { type: 'string', nullable: true },
+      },
+    },
   },
 };
 

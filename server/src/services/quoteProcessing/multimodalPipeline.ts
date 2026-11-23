@@ -495,12 +495,55 @@ export async function processQuoteMultimodalInternal(
       console.warn(`   ⚠️ Reconciliation failed (non-blocking): ${message}`);
     }
 
+    // Coalesce collective/group details from two-stage or domain-specific single-stage outputs
+    const rawAny = extracted as Record<string, any>;
+    const legacyGroup = rawAny.groupDetails as Record<string, any> | undefined;
+    const legacyPreexisting = rawAny.preexistingConditions as Record<string, any> | undefined;
+    const coalescedCollective:
+      | import('../../schemas/extractionSchemas').CollectiveDetails
+      | undefined =
+      extracted.collectiveDetails || legacyGroup || legacyPreexisting || domain === 'vida_grupo'
+        ? {
+            isCollective:
+              extracted.collectiveDetails?.isCollective ??
+              Boolean(
+                domain === 'vida_grupo' ||
+                legacyGroup?.insuredCount ||
+                extracted.collectiveDetails?.insuredCount ||
+                extracted.collectiveDetails?.freeCoverLimit ||
+                extracted.collectiveDetails?.ratePerMil
+              ),
+            modality:
+              extracted.collectiveDetails?.modality ??
+              (domain === 'vida_grupo' ? 'VIDA_GRUPO' : null),
+            insuredCount:
+              extracted.collectiveDetails?.insuredCount ?? legacyGroup?.insuredCount ?? null,
+            totalInsuredCumulus: extracted.collectiveDetails?.totalInsuredCumulus ?? null,
+            ratePerMil: extracted.collectiveDetails?.ratePerMil ?? null,
+            freeCoverLimit: extracted.collectiveDetails?.freeCoverLimit ?? null,
+            entryAgeLimit:
+              extracted.collectiveDetails?.entryAgeLimit ?? legacyGroup?.entryAgeLimit ?? null,
+            permanenceAgeLimit:
+              extracted.collectiveDetails?.permanenceAgeLimit ??
+              legacyGroup?.permanenceAgeLimit ??
+              null,
+            continuityAndPreexisting:
+              extracted.collectiveDetails?.continuityAndPreexisting ??
+              (legacyPreexisting?.handling
+                ? `${legacyPreexisting.handling}${legacyPreexisting.notes ? ` (${legacyPreexisting.notes})` : ''}`
+                : null),
+            profitSharing: extracted.collectiveDetails?.profitSharing ?? null,
+            categoryBreakdownSummary: extracted.collectiveDetails?.categoryBreakdownSummary ?? null,
+          }
+        : undefined;
+
     // Build ParsedQuote from normalized data
     const parsed: ParsedQuote = {
       insurerName: extracted.insurerName || 'NO ESPECIFICADO',
       policyName: extracted.policyName || 'NO ESPECIFICADO',
       priceAnnual: premiumBreakdown.totalPayable || 0,
       currency: normalizeCurrency(premiumBreakdown.currency),
+      collectiveDetails: coalescedCollective,
       coverages: normalizationResult.canonicalCoverages.map((c) => ({
         name: c.name,
         canonicalName: c.name,

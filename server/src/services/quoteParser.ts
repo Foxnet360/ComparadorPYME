@@ -67,6 +67,8 @@ export interface ParsedQuote {
   errorCode?: string;
   // Quote-clause reconciliation results
   reconciliationResults?: import('../schemas/extractionSchemas').ReconciliationResult[];
+  // Collective / Fleet metadata (Autos Flotas, Salud Colectiva, Vida Grupo)
+  collectiveDetails?: import('../schemas/extractionSchemas').CollectiveDetails | null;
 }
 
 export const quoteParser = {

@@ -106,6 +106,70 @@ export const GlobalStructureJsonSchema = {
       items: { type: SchemaType.STRING },
       description: 'Garantías de seguridad exigidas',
     },
+    collectiveDetails: {
+      type: SchemaType.OBJECT,
+      description:
+        'Datos técnicos de póliza colectiva o flota (aplicable en Autos Flotas/Colectivos, Salud Colectiva y Vida Grupo)',
+      nullable: true,
+      properties: {
+        isCollective: {
+          type: SchemaType.BOOLEAN,
+          description: 'True si la cotización corresponde a una póliza colectiva, flota o grupo',
+        },
+        modality: {
+          type: SchemaType.STRING,
+          description:
+            'INDIVIDUAL | FLOTA_EMPRESARIAL | COLECTIVA_EMPLEADOS | SALUD_COLECTIVA | VIDA_GRUPO',
+          nullable: true,
+        },
+        insuredCount: {
+          type: SchemaType.NUMBER,
+          description: 'Número total de vidas aseguradas o vehículos en la flota',
+          nullable: true,
+        },
+        totalInsuredCumulus: {
+          type: SchemaType.NUMBER,
+          description: 'Cúmulo total asegurado del grupo o valor comercial total de la flota (COP)',
+          nullable: true,
+        },
+        ratePerMil: {
+          type: SchemaType.STRING,
+          description: 'Tasa por mil (‰) o tasa media aplicada al colectivo/flota',
+          nullable: true,
+        },
+        freeCoverLimit: {
+          type: SchemaType.NUMBER,
+          description: 'Free Cover Limit: capital máximo sin exámenes médicos (COP)',
+          nullable: true,
+        },
+        entryAgeLimit: {
+          type: SchemaType.STRING,
+          description: 'Edad mínima/máxima de ingreso al colectivo',
+          nullable: true,
+        },
+        permanenceAgeLimit: {
+          type: SchemaType.STRING,
+          description: 'Edad máxima de permanencia en el colectivo',
+          nullable: true,
+        },
+        continuityAndPreexisting: {
+          type: SchemaType.STRING,
+          description: 'Condiciones de continuidad de antigüedad, preexistencias y carencias',
+          nullable: true,
+        },
+        profitSharing: {
+          type: SchemaType.STRING,
+          description: 'Cláusula de participación de utilidades o bonificación por siniestralidad',
+          nullable: true,
+        },
+        categoryBreakdownSummary: {
+          type: SchemaType.STRING,
+          description:
+            'Resumen de tarifas/condiciones por categoría vehicular, sub-plan o franja etaria',
+          nullable: true,
+        },
+      },
+    },
   },
   required: ['insurerName', 'policyName', 'premium', 'formatFamily'],
 };
@@ -155,6 +219,7 @@ Tu objetivo en esta FASE 1 (Estructura Global) es analizar el documento completo
 3. Bienes asegurados (Edificios, Mercancías, Maquinaria, etc.) con sus valores.
 4. Mapeo de Secciones de Cobertura: Identifica los nombres de los capítulos, tablas o secciones de amparos y en qué página(s) están ubicados.
 5. Condiciones especiales, garantías o exclusiones mayores si están resumidas.
+6. Ficha Técnica de Colectivo / Flota (collectiveDetails): Si el documento es una póliza colectiva, flota de vehículos, salud colectiva o vida grupo, extrae isCollective=true, modality, insuredCount (N° de vidas o vehículos), totalInsuredCumulus (cúmulo asegurado), ratePerMil (tasa por mil o tasa media), freeCoverLimit (tope sin requisitos médicos en COP), entryAgeLimit, permanenceAgeLimit, continuityAndPreexisting, profitSharing y categoryBreakdownSummary.
 
 NO extraigas el listado individual y exhaustivo de cada cobertura en esta fase; eso se realizará en la Fase 2. Concéntrate en la precisión de las primas y el mapa general.`;
 

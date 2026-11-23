@@ -92,6 +92,28 @@ export const AssistanceItemSchema = passthrough({
   details: z.string().nullish(),
 });
 
+export const CollectiveDetailsSchema = passthrough({
+  isCollective: z.boolean().default(false),
+  modality: z
+    .enum([
+      'INDIVIDUAL',
+      'FLOTA_EMPRESARIAL',
+      'COLECTIVA_EMPLEADOS',
+      'SALUD_COLECTIVA',
+      'VIDA_GRUPO',
+    ])
+    .nullish(),
+  insuredCount: z.number().int().min(1).nullish(),
+  totalInsuredCumulus: z.number().min(0).nullish(),
+  ratePerMil: z.string().nullish(),
+  freeCoverLimit: z.number().min(0).nullish(),
+  entryAgeLimit: z.string().nullish(),
+  permanenceAgeLimit: z.string().nullish(),
+  continuityAndPreexisting: z.string().nullish(),
+  profitSharing: z.string().nullish(),
+  categoryBreakdownSummary: z.string().nullish(),
+});
+
 // -----------------------------------------------------------------------------
 // Quote extraction schemas
 // -----------------------------------------------------------------------------
@@ -109,6 +131,7 @@ export const QuoteExtractionSchemaV2 = passthrough({
   coinsurance: CoinsuranceSchema.nullish(),
   demeritClause: DemeritClauseSchema.nullish(),
   assistances: z.array(AssistanceItemSchema).nullish(),
+  collectiveDetails: CollectiveDetailsSchema.nullish(),
   specialConditions: z.array(z.string()).nullish(),
   exclusions: z.array(z.string()).nullish(),
   warranties: z.array(z.string()).nullish(),
@@ -222,6 +245,7 @@ export type SubLimit = z.infer<typeof SubLimitSchema>;
 export type GeneralDeductible = z.infer<typeof GeneralDeductibleSchema>;
 export type PremiumBreakdown = z.infer<typeof PremiumSchema>;
 export type InsuredAsset = z.infer<typeof InsuredAssetSchema>;
+export type CollectiveDetails = z.infer<typeof CollectiveDetailsSchema>;
 
 // -----------------------------------------------------------------------------
 // Normalization helpers

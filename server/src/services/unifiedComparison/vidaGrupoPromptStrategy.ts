@@ -144,6 +144,23 @@ const VIDA_GRUPO_RESPONSE_SCHEMA: Record<string, unknown> = {
     },
     specialConditions: { type: 'array', items: { type: 'string' }, nullable: true },
     exclusions: { type: 'array', items: { type: 'string' }, nullable: true },
+    collectiveDetails: {
+      type: 'object',
+      additionalProperties: true,
+      nullable: true,
+      properties: {
+        isCollective: { type: 'boolean', nullable: true },
+        modality: { type: 'string', nullable: true },
+        insuredCount: { type: 'number', nullable: true },
+        totalInsuredCumulus: { type: 'number', nullable: true },
+        ratePerMil: { type: 'string', nullable: true },
+        freeCoverLimit: { type: 'number', nullable: true },
+        entryAgeLimit: { type: 'string', nullable: true },
+        permanenceAgeLimit: { type: 'string', nullable: true },
+        profitSharing: { type: 'string', nullable: true },
+        categoryBreakdownSummary: { type: 'string', nullable: true },
+      },
+    },
   },
 };
 

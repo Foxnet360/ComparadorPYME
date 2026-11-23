@@ -25,6 +25,7 @@ import { env } from '../../config/env';
 export const HEADER_SECTION_ID = 0;
 export const COVERAGE_SECTION_ID = 1;
 export const DEDUCTIBLE_SECTION_ID = 50;
+export const COLLECTIVE_SECTION_ID = 75;
 export const FINANCIAL_SECTION_ID = 100;
 export const ADDITIONAL_SECTION_ID = 101;
 
@@ -760,6 +761,119 @@ export function quotesToMatrixRows(
     });
   });
 
+  // Collective / Fleet Technical Sheet section (when collectiveDetails is present)
+  const hasCollectiveData = quotes.some((q) => {
+    const cd = q.collectiveDetails;
+    if (!cd) return false;
+    return Boolean(
+      cd.isCollective ||
+      cd.modality ||
+      cd.insuredCount ||
+      cd.totalInsuredCumulus ||
+      cd.ratePerMil ||
+      cd.freeCoverLimit ||
+      cd.entryAgeLimit ||
+      cd.permanenceAgeLimit ||
+      cd.continuityAndPreexisting ||
+      cd.profitSharing ||
+      cd.categoryBreakdownSummary
+    );
+  });
+
+  if (hasCollectiveData) {
+    matrix.push({
+      type: 'header',
+      id: 'collective_details',
+      label: 'FICHA TÉCNICA DE COLECTIVO / FLOTA',
+      sectionId: COLLECTIVE_SECTION_ID,
+      cells: emptyCells(numInsurers),
+    });
+
+    const collectiveRowDefs: Array<{
+      id: string;
+      label: string;
+      getter: (q: ParsedQuote) => string | null;
+    }> = [
+      {
+        id: 'collective_modality',
+        label: 'Modalidad de Póliza',
+        getter: (q) => q.collectiveDetails?.modality ?? null,
+      },
+      {
+        id: 'collective_insured_count',
+        label: domain === 'autos' ? 'N° de Vehículos Asegurados' : 'N° de Vidas Aseguradas',
+        getter: (q) =>
+          q.collectiveDetails?.insuredCount != null
+            ? String(q.collectiveDetails.insuredCount)
+            : null,
+      },
+      {
+        id: 'collective_cumulus',
+        label: 'Cúmulo Total Asegurado',
+        getter: (q) =>
+          q.collectiveDetails?.totalInsuredCumulus != null &&
+          q.collectiveDetails.totalInsuredCumulus > 0
+            ? formatCOP(q.collectiveDetails.totalInsuredCumulus)
+            : null,
+      },
+      {
+        id: 'collective_rate_per_mil',
+        label: 'Tasa por Mil (‰) / Tasa Media',
+        getter: (q) => q.collectiveDetails?.ratePerMil ?? null,
+      },
+      {
+        id: 'collective_free_cover',
+        label: 'Free Cover (Límite sin Exámenes Médicos)',
+        getter: (q) =>
+          q.collectiveDetails?.freeCoverLimit != null && q.collectiveDetails.freeCoverLimit > 0
+            ? formatCOP(q.collectiveDetails.freeCoverLimit)
+            : null,
+      },
+      {
+        id: 'collective_entry_age',
+        label: 'Edad Límite de Ingreso',
+        getter: (q) => q.collectiveDetails?.entryAgeLimit ?? null,
+      },
+      {
+        id: 'collective_permanence_age',
+        label: 'Edad Límite de Permanencia',
+        getter: (q) => q.collectiveDetails?.permanenceAgeLimit ?? null,
+      },
+      {
+        id: 'collective_continuity',
+        label: 'Continuidad y Preexistencias',
+        getter: (q) => q.collectiveDetails?.continuityAndPreexisting ?? null,
+      },
+      {
+        id: 'collective_profit_sharing',
+        label: 'Participación de Utilidades / Bonificación',
+        getter: (q) => q.collectiveDetails?.profitSharing ?? null,
+      },
+      {
+        id: 'collective_category_breakdown',
+        label: 'Desglose por Categorías / Franjas Etarias',
+        getter: (q) => q.collectiveDetails?.categoryBreakdownSummary ?? null,
+      },
+    ];
+
+    for (const rowDef of collectiveRowDefs) {
+      const values = quotes.map((q) => rowDef.getter(q));
+      if (values.some((v) => v !== null && v.trim() !== '')) {
+        matrix.push({
+          type: 'data',
+          id: rowDef.id,
+          label: rowDef.label,
+          sectionId: COLLECTIVE_SECTION_ID,
+          cells: values.map((v) => ({
+            value: v && v.trim() !== '' ? v : 'No informado',
+            isExcluded: !v || v.trim() === '',
+            isWinner: false,
+          })),
+        });
+      }
+    }
+  }
+
   matrix.push({
     type: 'header',
     id: 'financials',
@@ -769,6 +883,8 @@ export function quotesToMatrixRows(
   });
 
   const isVida = domain === 'vida_grupo';
+  const isSalud = domain === 'salud';
+  const ivaDivisor = isSalud ? 1.05 : 1.19;
 
   // Row: Prima Neta
   matrix.push({
@@ -780,7 +896,7 @@ export function quotesToMatrixRows(
       const qFin = q as QuoteWithFinancials;
       const net =
         qFin.financialBreakdown?.netPremium ??
-        (isVida ? q.priceAnnual : Math.round((q.priceAnnual || 0) / 1.19));
+        (isVida ? q.priceAnnual : Math.round((q.priceAnnual || 0) / ivaDivisor));
       return {
         value: net > 0 ? formatCOP(net) : 'No informado',
         isExcluded: net <= 0,
@@ -810,14 +926,18 @@ export function quotesToMatrixRows(
   matrix.push({
     type: 'data',
     id: 'premium_iva',
-    label: isVida ? 'IVA (0% Exento Art. 427 E.T.)' : 'IVA (19%)',
+    label: isVida
+      ? 'IVA (0% Exento Art. 427 E.T.)'
+      : isSalud
+        ? 'IVA (5% Tarifa Especial PVS Art. 468-3 E.T.)'
+        : 'IVA (19%)',
     sectionId: FINANCIAL_SECTION_ID,
     cells: quotes.map((q) => {
       if (isVida) return { value: '$ 0', isExcluded: false, isWinner: false };
       const qFin = q as QuoteWithFinancials;
       const iva =
         qFin.financialBreakdown?.iva ??
-        Math.max(0, (q.priceAnnual || 0) - Math.round((q.priceAnnual || 0) / 1.19));
+        Math.max(0, (q.priceAnnual || 0) - Math.round((q.priceAnnual || 0) / ivaDivisor));
       return {
         value: iva > 0 ? formatCOP(iva) : '$ 0',
         isExcluded: false,

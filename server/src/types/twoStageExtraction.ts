@@ -5,6 +5,7 @@ import {
   RawCoverageSchema,
   SubLimitSchema,
   GeneralDeductibleSchema,
+  CollectiveDetailsSchema,
   QuoteExtractionV2,
 } from '../schemas/extractionSchemas';
 
@@ -24,6 +25,7 @@ export const GlobalStructureSchema = z.object({
   premium: PremiumSchema,
   insuredAssets: z.array(InsuredAssetSchema).nullish(),
   coverageSections: z.array(CoverageSectionHintSchema).nullish(),
+  collectiveDetails: CollectiveDetailsSchema.nullish(),
   specialConditions: z.array(z.string()).nullish(),
   exclusions: z.array(z.string()).nullish(),
   warranties: z.array(z.string()).nullish(),

@@ -20,6 +20,7 @@ Extrae la información de las cotizaciones de vehículos considerando las siguie
    - Conductor Adicional / Menores de 25 Años: recargos, deducibles agravados o condiciones de cobertura.
 4. DEDUCIBLES: expresar cada deducible con su unidad original colombiana (% del siniestro, SMMLV - Salario Mínimo Mensual Legal Vigente, días de inmovilización, o valor fijo en COP). NO omitir deducibles.
 5. NOTAS Y CONDICIONES: cláusulas de inspección, accesorios asegurados, exclusiones.
+6. MODALIDAD COLECTIVA / FLOTA DE VEHÍCULOS (collectiveDetails): si la cotización corresponde a una póliza colectiva de automóviles o flota empresarial, registra isCollective=true, modality ("FLOTA_EMPRESARIAL" o "COLECTIVA_EMPLEADOS"), insuredCount (número de vehículos), totalInsuredCumulus (valor comercial total de la flota), ratePerMil (tasa media o descuento por volumen), profitSharing (bonificación por buena siniestralidad) y categoryBreakdownSummary (resumen de tarifas/deducibles por categoría: livianos, pesados, utilitarios, motos).
 
 REGLAS CRÍTICAS DE EXTRACCIÓN:
 - NO inventes coberturas, valores ni deducibles.
@@ -155,6 +156,20 @@ const AUTOS_RESPONSE_SCHEMA: Record<string, unknown> = {
     },
     specialConditions: { type: 'array', items: { type: 'string' }, nullable: true },
     exclusions: { type: 'array', items: { type: 'string' }, nullable: true },
+    collectiveDetails: {
+      type: 'object',
+      additionalProperties: true,
+      nullable: true,
+      properties: {
+        isCollective: { type: 'boolean', nullable: true },
+        modality: { type: 'string', nullable: true },
+        insuredCount: { type: 'number', nullable: true },
+        totalInsuredCumulus: { type: 'number', nullable: true },
+        ratePerMil: { type: 'string', nullable: true },
+        profitSharing: { type: 'string', nullable: true },
+        categoryBreakdownSummary: { type: 'string', nullable: true },
+      },
+    },
   },
 };
 

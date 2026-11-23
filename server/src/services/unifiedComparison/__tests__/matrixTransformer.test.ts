@@ -562,6 +562,100 @@ describe('quotesToMatrixRows', () => {
     expect(warnings).toHaveLength(2);
     expect(warnings.map((r) => r.label)).toEqual(['Condición especial A', 'Condición especial B']);
   });
+
+  it('renders FICHA TÉCNICA DE COLECTIVO / FLOTA rows when collectiveDetails are present', () => {
+    const quotes = [
+      makeParsedQuote({
+        insurerName: 'SURA',
+        priceAnnual: 18_000_000,
+        collectiveDetails: {
+          isCollective: true,
+          modality: 'VIDA_GRUPO',
+          insuredCount: 120,
+          totalInsuredCumulus: 12_000_000_000,
+          ratePerMil: '1.25 ‰ mensual',
+          freeCoverLimit: 250_000_000,
+          entryAgeLimit: '18 a 65 años',
+          permanenceAgeLimit: '75 años',
+          profitSharing: '20% sobre saldo positivo de siniestralidad < 45%',
+        },
+      }),
+      makeParsedQuote({
+        insurerName: 'ALLIANZ',
+        priceAnnual: 19_500_000,
+        collectiveDetails: {
+          isCollective: true,
+          modality: 'VIDA_GRUPO',
+          insuredCount: 120,
+          totalInsuredCumulus: 12_000_000_000,
+          ratePerMil: '1.35 ‰ mensual',
+          freeCoverLimit: 180_000_000,
+          entryAgeLimit: '18 a 64 años',
+          permanenceAgeLimit: '70 años',
+          profitSharing: '15% anual',
+        },
+      }),
+    ];
+
+    const matrix = quotesToMatrixRows(quotes, 'vida_grupo');
+    const header = matrix.find((r) => r.id === 'collective_details');
+    expect(header).toBeDefined();
+    expect(header?.label).toBe('FICHA TÉCNICA DE COLECTIVO / FLOTA');
+
+    const countRow = matrix.find((r) => r.id === 'collective_insured_count')!;
+    expect(countRow.label).toBe('N° de Vidas Aseguradas');
+    expect(countRow.cells.map((c) => c.value)).toEqual(['120', '120']);
+
+    const freeCoverRow = matrix.find((r) => r.id === 'collective_free_cover')!;
+    expect(freeCoverRow.cells.map((c) => c.value)).toEqual(['$250.000.000', '$180.000.000']);
+
+    const rateRow = matrix.find((r) => r.id === 'collective_rate_per_mil')!;
+    expect(rateRow.cells.map((c) => c.value)).toEqual(['1.25 ‰ mensual', '1.35 ‰ mensual']);
+
+    const ivaRow = matrix.find((r) => r.id === 'premium_iva')!;
+    expect(ivaRow.label).toBe('IVA (0% Exento Art. 427 E.T.)');
+    expect(ivaRow.cells.map((c) => c.value)).toEqual(['$ 0', '$ 0']);
+  });
+
+  it('applies 5% PVS IVA label and divisor for salud domain and vehicle count label for autos fleet', () => {
+    const saludQuotes = [
+      makeParsedQuote({
+        insurerName: 'SURA SALUD',
+        priceAnnual: 1_050_000,
+        collectiveDetails: {
+          isCollective: true,
+          modality: 'SALUD_COLECTIVA',
+          insuredCount: 45,
+          continuityAndPreexisting:
+            'Reconoce antigüedad y elimina carencias para grupos > 30 vidas',
+        },
+      }),
+    ];
+    const saludMatrix = quotesToMatrixRows(saludQuotes, 'salud');
+    const saludIva = saludMatrix.find((r) => r.id === 'premium_iva')!;
+    const saludNet = saludMatrix.find((r) => r.id === 'premium_net')!;
+    expect(saludIva.label).toBe('IVA (5% Tarifa Especial PVS Art. 468-3 E.T.)');
+    expect(saludNet.cells[0].value).toBe('$1.000.000');
+    expect(saludIva.cells[0].value).toBe('$50.000');
+
+    const autosFleetQuotes = [
+      makeParsedQuote({
+        insurerName: 'BOLÍVAR FLOTAS',
+        priceAnnual: 45_000_000,
+        collectiveDetails: {
+          isCollective: true,
+          modality: 'FLOTA_EMPRESARIAL',
+          insuredCount: 18,
+          totalInsuredCumulus: 1_450_000_000,
+          categoryBreakdownSummary: '12 Livianos (tasa 2.8%), 6 Utilitarios (tasa 3.4%)',
+        },
+      }),
+    ];
+    const autosMatrix = quotesToMatrixRows(autosFleetQuotes, 'autos');
+    const vehicleCountRow = autosMatrix.find((r) => r.id === 'collective_insured_count')!;
+    expect(vehicleCountRow.label).toBe('N° de Vehículos Asegurados');
+    expect(vehicleCountRow.cells[0].value).toBe('18');
+  });
 });
 
 describe('alignInsurerIndices & parseNumericValue', () => {
