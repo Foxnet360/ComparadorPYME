@@ -45,13 +45,45 @@ const PUBLIC_METHOD_PREFIXES: ReadonlyArray<{
   { prefix: '/insurers', methods: ['GET'] },
 ];
 
+const PUBLIC_METHOD_EXACT: ReadonlyArray<{
+  path: string;
+  methods: readonly string[];
+}> = [
+  { path: '/openapi.json', methods: ['GET'] },
+  { path: '/openapi.yaml', methods: ['GET'] },
+];
+
 const PUBLIC_PATTERNS: readonly RegExp[] = [];
 
+function normalizeVersionedApiPath(path: string): string {
+  if (path === '/v1') {
+    return '/';
+  }
+  if (path.startsWith('/v1/') && !path.startsWith('/v1/daas')) {
+    return path.slice(3);
+  }
+  return path;
+}
+
 export const isPublicPath = (path: string, method?: string): boolean => {
-  if (PUBLIC_EXACT_PATHS.has(path)) {
+  const normalizedPath = normalizeVersionedApiPath(path);
+
+  if (PUBLIC_EXACT_PATHS.has(normalizedPath)) {
     return true;
   }
-  if (PUBLIC_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) {
+  if (
+    PUBLIC_PREFIXES.some(
+      (prefix) => normalizedPath === prefix || normalizedPath.startsWith(`${prefix}/`)
+    )
+  ) {
+    return true;
+  }
+  if (
+    method &&
+    PUBLIC_METHOD_EXACT.some(
+      (entry) => entry.methods.includes(method) && normalizedPath === entry.path
+    )
+  ) {
     return true;
   }
   if (
@@ -59,12 +91,12 @@ export const isPublicPath = (path: string, method?: string): boolean => {
     PUBLIC_METHOD_PREFIXES.some(
       (entry) =>
         entry.methods.includes(method) &&
-        (path === entry.prefix || path.startsWith(`${entry.prefix}/`))
+        (normalizedPath === entry.prefix || normalizedPath.startsWith(`${entry.prefix}/`))
     )
   ) {
     return true;
   }
-  return PUBLIC_PATTERNS.some((pattern) => pattern.test(path));
+  return PUBLIC_PATTERNS.some((pattern) => pattern.test(normalizedPath));
 };
 
 export const authGate = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {

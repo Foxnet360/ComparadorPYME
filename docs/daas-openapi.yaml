@@ -52,14 +52,27 @@ paths:
       responses:
         '200':
           description: Benchmark calculado satisfactoriamente
+          headers:
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+            X-Quota-Monthly:
+              schema:
+                type: integer
+            X-Quota-Remaining:
+              schema:
+                type: integer
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PricingBenchmarkResponse'
+                $ref: '#/components/schemas/PricingBenchmarkEnvelope'
         '401':
           $ref: '#/components/schemas/ErrorResponse'
         '429':
-          description: Cuota o límite de consultas excedido
+          description: Cuota mensual o límite por minuto excedido
 
   /benchmarks/market-share:
     get:
@@ -75,10 +88,57 @@ paths:
       responses:
         '200':
           description: Estadísticas de participación obtenidas exitosamente
+          headers:
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+            X-Quota-Monthly:
+              schema:
+                type: integer
+            X-Quota-Remaining:
+              schema:
+                type: integer
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MarketShareResponse'
+                $ref: '#/components/schemas/MarketShareEnvelope'
+        '401':
+          $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Cuota mensual o límite por minuto excedido
+
+  /subscriber/status:
+    get:
+      summary: Consultar estado de cuota y límite por minuto del suscriptor
+      description: Retorna la identidad del suscriptor autenticado, cuota mensual restante, rateLimitPerMinute y dominios habilitados.
+      operationId: getSubscriberStatus
+      responses:
+        '200':
+          description: Estado del suscriptor obtenido exitosamente
+          headers:
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+            X-Quota-Monthly:
+              schema:
+                type: integer
+            X-Quota-Remaining:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriberStatusEnvelope'
+        '401':
+          $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Cuota mensual o límite por minuto excedido
 
 components:
   securitySchemes:
@@ -88,6 +148,57 @@ components:
       name: X-API-Key
 
   schemas:
+    PricingBenchmarkEnvelope:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/PricingBenchmarkResponse'
+
+    MarketShareEnvelope:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/MarketShareResponse'
+
+    SubscriberStatusEnvelope:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/SubscriberStatusResponse'
+
+    SubscriberStatusResponse:
+      type: object
+      properties:
+        subscriberId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        tier:
+          type: string
+          enum: [TIER_1, TIER_2, ENTERPRISE]
+        monthlyQuota:
+          type: integer
+        currentMonthUsage:
+          type: integer
+        remainingQuota:
+          type: integer
+        rateLimitPerMinute:
+          type: integer
+        allowedDomains:
+          type: array
+          items:
+            type: string
+
     PricingBenchmarkResponse:
       type: object
       properties:
