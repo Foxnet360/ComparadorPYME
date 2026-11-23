@@ -293,6 +293,37 @@
         "control médico anual",
         "vacunas adultos"
       ]
+    },
+    {
+      "id": "salud_18",
+      "name": "Continuidad de Antigüedad y Exoneración de Carencias (Traslado Colectivo)",
+      "section": "CONDICIONES COLECTIVAS Y SUSCRIPCIÓN",
+      "isRequired": false,
+      "synonyms": [
+        "continuidad de antigüedad",
+        "reconocimiento de antigüedad",
+        "exoneración de carencias",
+        "eliminación de períodos de carencia",
+        "traslado colectivo sin carencias",
+        "continuidad sin preexistencias",
+        "amparo de continuidad"
+      ]
+    },
+    {
+      "id": "salud_19",
+      "name": "Estructura Tarifaria por Censo / Rangos Etarios y Parentesco",
+      "section": "CONDICIONES COLECTIVAS Y SUSCRIPCIÓN",
+      "isRequired": false,
+      "synonyms": [
+        "tarifa por rango de edad",
+        "tabla etaria",
+        "franjas etarias",
+        "censo poblacional",
+        "tarifa por parentesco",
+        "colectivo contributivo",
+        "colectivo no contributivo",
+        "mínimo de asegurados"
+      ]
     }
   ]
 }

@@ -310,6 +310,62 @@
         "renta mensual desempleo",
         "protección ante desempleo"
       ]
+    },
+    {
+      "id": "vg_17",
+      "name": "Free Cover (Límite de Asegurabilidad Automática sin Exámenes Médicos)",
+      "section": "SUSCRIPCIÓN COLECTIVA Y TARIFACIÓN",
+      "isRequired": false,
+      "synonyms": [
+        "free cover",
+        "free cover limit",
+        "FCL",
+        "límite de aceptación automática",
+        "suma asegurada sin exámenes médicos",
+        "capital sin requisitos de asegurabilidad",
+        "exención de pruebas médicas"
+      ],
+      "aliases": [
+        "free cover",
+        "free cover limit",
+        "límite de aceptación automática",
+        "suma asegurada sin exámenes médicos"
+      ]
+    },
+    {
+      "id": "vg_18",
+      "name": "Tasa por Mil (‰) y Cúmulo Total Asegurado",
+      "section": "SUSCRIPCIÓN COLECTIVA Y TARIFACIÓN",
+      "isRequired": false,
+      "synonyms": [
+        "tasa por mil",
+        "tarifa por mil",
+        "factor por mil",
+        "cúmulo asegurado",
+        "valor asegurado total del grupo",
+        "múltiplos de salario",
+        "facturación por cabeza fluctuante"
+      ],
+      "aliases": ["tasa por mil", "tarifa por mil", "cúmulo asegurado", "múltiplos de salario"]
+    },
+    {
+      "id": "vg_19",
+      "name": "Participación de Utilidades por Buena Siniestralidad",
+      "section": "SUSCRIPCIÓN COLECTIVA Y TARIFACIÓN",
+      "isRequired": false,
+      "synonyms": [
+        "participación de utilidades",
+        "retorno por buena siniestralidad",
+        "devolución de primas por baja siniestralidad",
+        "cláusula de experiencia favorable",
+        "profit sharing",
+        "bono de siniestralidad"
+      ],
+      "aliases": [
+        "participación de utilidades",
+        "retorno por buena siniestralidad",
+        "cláusula de experiencia favorable"
+      ]
     }
   ]
 }

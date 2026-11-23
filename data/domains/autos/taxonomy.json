@@ -306,6 +306,69 @@
         "equipo de seguimiento GPS",
         "modificaciones al vehículo"
       ]
+    },
+    {
+      "id": "auto_15",
+      "name": "Amparo Patrimonial (Culpa Grave / Infracción de Tránsito)",
+      "section": "COBERTURAS DE FLOTA Y COLECTIVAS",
+      "isRequired": false,
+      "synonyms": [
+        "amparo patrimonial",
+        "protección patrimonial",
+        "culpa grave del conductor",
+        "infracción de tránsito",
+        "desatención de señales de tránsito",
+        "embriaguez del conductor",
+        "cobertura patrimonial"
+      ],
+      "aliases": [
+        "amparo patrimonial",
+        "protección patrimonial",
+        "culpa grave del conductor",
+        "infracción de tránsito",
+        "cobertura patrimonial"
+      ]
+    },
+    {
+      "id": "auto_16",
+      "name": "Responsabilidad Civil en Exceso / Segundo Límite de Flota",
+      "section": "COBERTURAS DE FLOTA Y COLECTIVAS",
+      "isRequired": false,
+      "synonyms": [
+        "RCE en exceso",
+        "responsabilidad civil en exceso",
+        "segundo límite RCE",
+        "cúmulo RCE flota",
+        "exceso de responsabilidad civil",
+        "límite agregado anual RCE"
+      ],
+      "aliases": [
+        "RCE en exceso",
+        "responsabilidad civil en exceso",
+        "segundo límite RCE",
+        "cúmulo RCE flota"
+      ]
+    },
+    {
+      "id": "auto_17",
+      "name": "Condiciones de Flota y Bonificación por Siniestralidad",
+      "section": "COBERTURAS DE FLOTA Y COLECTIVAS",
+      "isRequired": false,
+      "synonyms": [
+        "descuento por volumen",
+        "bonificación por buena siniestralidad",
+        "participación de utilidades flota",
+        "tarifa por categoría vehicular",
+        "cédula de flota",
+        "mínimo de vehículos asegurados",
+        "inclusiones y exclusiones automáticas de vehículos"
+      ],
+      "aliases": [
+        "descuento por volumen",
+        "bonificación por buena siniestralidad",
+        "tarifa por categoría vehicular",
+        "cédula de flota"
+      ]
     }
   ]
 }

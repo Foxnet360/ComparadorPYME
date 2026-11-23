@@ -21,10 +21,10 @@ describe('domainTaxonomyRegistry', () => {
     expect(names).toContain('Daños por Agua, Anegación e Inundación');
   });
 
-  it('loads the autos taxonomy (v2) with 14 categories including SOAT', () => {
+  it('loads the autos taxonomy (v2) with 17 categories including SOAT and collective fleet coverages', () => {
     const taxonomy = domainTaxonomyRegistry.getTaxonomy('autos');
     expect(taxonomy.domain).toBe('autos');
-    expect(taxonomy.categories).toHaveLength(14);
+    expect(taxonomy.categories).toHaveLength(17);
 
     const names = taxonomy.categories.map((category) => category.name);
     expect(names).toContain('Responsabilidad Civil Extracontractual Vehicular');
@@ -32,6 +32,9 @@ describe('domainTaxonomyRegistry', () => {
     expect(names).toContain('Deducibles (SMMLV / días de inmovilización / %)');
     expect(names).toContain('SOAT / Seguro Obligatorio de Accidentes de Tránsito');
     expect(names).toContain('Accesorios, Lujos y Blindaje');
+    expect(names).toContain('Amparo Patrimonial (Culpa Grave / Infracción de Tránsito)');
+    expect(names).toContain('Responsabilidad Civil en Exceso / Segundo Límite de Flota');
+    expect(names).toContain('Condiciones de Flota y Bonificación por Siniestralidad');
   });
 
   it('loads the copropiedades taxonomy (v2) with 16 categories including Ley 675 obligations', () => {
@@ -47,10 +50,10 @@ describe('domainTaxonomyRegistry', () => {
     expect(names).toContain('Responsabilidad Civil Patronal (Empleados de Zonas Comunes)');
   });
 
-  it('loads the vida_grupo taxonomy (v2) with 16 categories including IPP and Desempleo', () => {
+  it('loads the vida_grupo taxonomy (v2) with 19 categories including IPP, Desempleo, and collective underwriting', () => {
     const taxonomy = domainTaxonomyRegistry.getTaxonomy('vida_grupo');
     expect(taxonomy.domain).toBe('vida_grupo');
-    expect(taxonomy.categories).toHaveLength(16);
+    expect(taxonomy.categories).toHaveLength(19);
 
     const names = taxonomy.categories.map((category) => category.name);
     expect(names).toContain('Amparo Básico por Muerte (Cualquier Causa)');
@@ -58,12 +61,17 @@ describe('domainTaxonomyRegistry', () => {
     expect(names).toContain('Cobertura de Suicidio (Carencia / Día 1)');
     expect(names).toContain('Incapacidad Parcial Permanente (IPP)');
     expect(names).toContain('Renta por Desempleo Involuntario');
+    expect(names).toContain(
+      'Free Cover (Límite de Asegurabilidad Automática sin Exámenes Médicos)'
+    );
+    expect(names).toContain('Tasa por Mil (‰) y Cúmulo Total Asegurado');
+    expect(names).toContain('Participación de Utilidades por Buena Siniestralidad');
   });
 
-  it('loads the salud taxonomy (v2) with 17 categories including preventive care', () => {
+  it('loads the salud taxonomy (v2) with 19 categories including preventive care and collective census terms', () => {
     const taxonomy = domainTaxonomyRegistry.getTaxonomy('salud');
     expect(taxonomy.domain).toBe('salud');
-    expect(taxonomy.categories).toHaveLength(17);
+    expect(taxonomy.categories).toHaveLength(19);
 
     const names = taxonomy.categories.map((category) => category.name);
     expect(names).toContain('Plan de Beneficios Base (Complemento o Sustitución del PBS)');
@@ -71,6 +79,10 @@ describe('domainTaxonomyRegistry', () => {
     expect(names).toContain('Portabilidad y Carencias Regulatorias (Res. 244/2019 · Ley 1438)');
     expect(names).toContain('Hospitalización Domiciliaria y Atención en Casa');
     expect(names).toContain('Medicina Preventiva, Vacunación y Programas de Bienestar');
+    expect(names).toContain(
+      'Continuidad de Antigüedad y Exoneración de Carencias (Traslado Colectivo)'
+    );
+    expect(names).toContain('Estructura Tarifaria por Censo / Rangos Etarios y Parentesco');
   });
 
   it('loads the cumplimiento taxonomy (v2) with 15 categories including Garantía de Mantenimiento', () => {
