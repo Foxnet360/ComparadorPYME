@@ -136,7 +136,8 @@ const PATTERNS = {
 
 function parseUnitOrCurrencyValue(raw: string, unit?: string): number {
   const upperUnit = (unit || '').toUpperCase().replace(/\./g, '');
-  const isQuantityUnit = upperUnit.includes('SMMLV') || upperUnit === 'SM' || upperUnit.includes('UVT');
+  const isQuantityUnit =
+    upperUnit.includes('SMMLV') || upperUnit === 'SM' || upperUnit.includes('UVT');
   if (isQuantityUnit) {
     const qty = parseFloat(raw.replace(',', '.'));
     return Number.isFinite(qty) ? qty : NaN;

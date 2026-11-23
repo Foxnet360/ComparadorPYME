@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Calculator, CheckCircle2, TrendingDown } from 'lucide-react';
+import { formatCOP as formatCOPBase } from '../../utils/formatCurrency';
 import type { QuoteAnalysis, CoverageItem } from '../../types';
 
 interface ClaimSimulatorPanelProps {
@@ -109,7 +110,7 @@ export const ClaimSimulatorPanel: React.FC<ClaimSimulatorPanelProps> = ({
   const bestDeductible = sorted[0]?.payableDeductible || 0;
   const savings = Math.max(0, worstDeductible - bestDeductible);
 
-  const formatCOP = (val: number) => `$${Math.round(val).toLocaleString('es-CO')} COP`;
+  const formatCOP = (val: number) => `${formatCOPBase(Math.round(val))} COP`;
 
   return (
     <div

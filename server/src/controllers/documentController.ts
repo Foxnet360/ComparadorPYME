@@ -333,7 +333,7 @@ export const documentController = {
    * GET /api/documents - Listar documentos
    */
   listDocuments: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    console.log('📋 [documentController.listDocuments] Request received');
+    logger.info('documentController.listDocuments request received');
 
     try {
       const {
@@ -542,7 +542,7 @@ export const documentController = {
    * GET /api/documents/:id - Obtener documento específico
    */
   getDocument: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    console.log(`📄 [documentController.getDocument] ID: ${req.params.id}`);
+    logger.info({ id: req.params.id }, 'documentController.getDocument request received');
 
     try {
       const { id } = req.params as { id: string };
@@ -615,7 +615,7 @@ export const documentController = {
    * DELETE /api/documents/:id - Eliminar documento
    */
   deleteDocument: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    console.log(`🗑️ [documentController.deleteDocument] ID: ${req.params.id}`);
+    logger.info({ id: req.params.id }, 'documentController.deleteDocument request received');
 
     try {
       const id = req.params.id as string;
@@ -640,7 +640,7 @@ export const documentController = {
    * GET /api/documents/:id/chunks - Obtener chunks de un documento
    */
   getDocumentChunks: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    console.log(`📦 [documentController.getDocumentChunks] ID: ${req.params.id}`);
+    logger.info({ id: req.params.id }, 'documentController.getDocumentChunks request received');
 
     try {
       const { id } = req.params;

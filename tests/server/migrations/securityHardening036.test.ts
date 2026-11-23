@@ -33,11 +33,13 @@ describe('Migration 036: Security, RLS & RPC Hardening', () => {
     expect(sql).toContain('REVOKE EXECUTE ON FUNCTION public.verify_daas_api_key');
     expect(sql).toContain('FROM PUBLIC, anon, authenticated');
 
-    const fnStart = sql.indexOf('CREATE OR REPLACE FUNCTION public.get_executive_analytics_summary(');
+    const fnStart = sql.indexOf(
+      'CREATE OR REPLACE FUNCTION public.get_executive_analytics_summary('
+    );
     const fnEnd = sql.indexOf('-- 5. Revoke PUBLIC', fnStart);
     const fnSection = sql.slice(fnStart, fnEnd);
-    expect(fnSection).toContain("v_is_service_role");
-    expect(fnSection).toContain("IF v_is_service_role THEN");
+    expect(fnSection).toContain('v_is_service_role');
+    expect(fnSection).toContain('IF v_is_service_role THEN');
   });
 
   it('fixes is_org_admin active status case and clients Opción A share predicates', () => {

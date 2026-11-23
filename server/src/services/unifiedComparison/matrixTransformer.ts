@@ -235,7 +235,48 @@ export function isFinancialRowLabel(label: string): boolean {
   ].some((keyword) => normalized.includes(keyword));
 }
 
-function formatDeductible(deductible: StructuredDeductible | any | undefined): string | undefined {
+type DeductibleInput =
+  | StructuredDeductible
+  | string
+  | {
+      description?: string;
+      rawText?: string;
+      text?: string;
+      type?: string;
+      percentage?: number;
+      minimum?: number;
+      currency?: string;
+    };
+
+interface FinancialExtras {
+  expenses?: number;
+  fees?: number;
+  financialBreakdown?: {
+    netPremium?: number;
+    expenses?: number;
+    iva?: number;
+    totalPayable?: number;
+  };
+  quoteDate?: string;
+  date?: string;
+  metadata?: {
+    quoteDate?: string;
+  };
+}
+
+type QuoteWithFinancials = (ParsedQuote | QuoteAnalysis) & FinancialExtras;
+
+interface DynamicTaxonomyCategory {
+  id: number;
+  name: string;
+  section?: string;
+}
+
+interface DynamicTaxonomyJson {
+  categories?: DynamicTaxonomyCategory[];
+}
+
+function formatDeductible(deductible: DeductibleInput | undefined): string | undefined {
   if (!deductible) return undefined;
   if (typeof deductible === 'string') return deductible.trim();
   if (typeof deductible.description === 'string' && deductible.description.trim()) {
@@ -474,7 +515,7 @@ function cellFromFlatValueV2(
   if (notes !== undefined) cell.notes = notes;
   if (rawTextSnippet !== undefined) cell.rawTextSnippet = rawTextSnippet;
   if (typeof pageNumber === 'number' && Number.isFinite(pageNumber)) cell.pageNumber = pageNumber;
-  return cell as any;
+  return cell as unknown as MatrixCell;
 }
 
 /**
@@ -543,7 +584,7 @@ export function flatResultToMatrixRowsV2(
           confidence: cell.confidence,
           notes: cellNotes,
           rawTextSnippet: cell.rawText,
-          pageNumber: (cell as any).pageNumber,
+          pageNumber: (cell as { pageNumber?: number }).pageNumber,
         };
       }),
     });
@@ -576,7 +617,7 @@ export function flatResultToMatrixRowsV2(
           confidence: cell.confidence,
           notes: cellNotes,
           rawTextSnippet: cell.rawText,
-          pageNumber: (cell as any).pageNumber,
+          pageNumber: (cell as { pageNumber?: number }).pageNumber,
         };
       }),
     });
@@ -736,8 +777,9 @@ export function quotesToMatrixRows(
     label: 'Prima Neta',
     sectionId: FINANCIAL_SECTION_ID,
     cells: quotes.map((q) => {
+      const qFin = q as QuoteWithFinancials;
       const net =
-        (q as any).financialBreakdown?.netPremium ??
+        qFin.financialBreakdown?.netPremium ??
         (isVida ? q.priceAnnual : Math.round((q.priceAnnual || 0) / 1.19));
       return {
         value: net > 0 ? formatCOP(net) : 'No informado',
@@ -754,8 +796,8 @@ export function quotesToMatrixRows(
     label: 'Gastos de Expedición',
     sectionId: FINANCIAL_SECTION_ID,
     cells: quotes.map((q) => {
-      const exp =
-        (q as any).financialBreakdown?.expenses ?? (q as any).expenses ?? (q as any).fees ?? 0;
+      const qFin = q as QuoteWithFinancials;
+      const exp = qFin.financialBreakdown?.expenses ?? qFin.expenses ?? qFin.fees ?? 0;
       return {
         value: exp > 0 ? formatCOP(exp) : '$ 0',
         isExcluded: false,
@@ -772,8 +814,9 @@ export function quotesToMatrixRows(
     sectionId: FINANCIAL_SECTION_ID,
     cells: quotes.map((q) => {
       if (isVida) return { value: '$ 0', isExcluded: false, isWinner: false };
+      const qFin = q as QuoteWithFinancials;
       const iva =
-        (q as any).financialBreakdown?.iva ??
+        qFin.financialBreakdown?.iva ??
         Math.max(0, (q.priceAnnual || 0) - Math.round((q.priceAnnual || 0) / 1.19));
       return {
         value: iva > 0 ? formatCOP(iva) : '$ 0',
@@ -784,7 +827,9 @@ export function quotesToMatrixRows(
   });
 
   // Row: TOTAL A PAGAR
-  const totals = quotes.map((q) => (q as any).financialBreakdown?.totalPayable ?? q.priceAnnual);
+  const totals = quotes.map(
+    (q) => (q as QuoteWithFinancials).financialBreakdown?.totalPayable ?? q.priceAnnual
+  );
   const positiveTotals = totals.filter((t) => t > 0);
   const minTotal = positiveTotals.length > 0 ? Math.min(...positiveTotals) : 0;
 
@@ -1155,10 +1200,10 @@ export function getCategoryConfigsForDomain(domain: string = 'pyme'): CategoryCo
 
   try {
     if (hasDomainSpecificFile(d, 'taxonomy.json')) {
-      const taxonomy: any = loadDomainJson(d, 'taxonomy.json');
+      const taxonomy = loadDomainJson(d, 'taxonomy.json') as DynamicTaxonomyJson | null;
 
       if (taxonomy && Array.isArray(taxonomy.categories) && taxonomy.categories.length > 0) {
-        return taxonomy.categories.map((cat: any) => ({
+        return taxonomy.categories.map((cat: DynamicTaxonomyCategory) => ({
           id: cat.id,
           canonicalName: cat.name,
           headerLabel: String(cat.section || cat.name).toUpperCase(),
@@ -1638,8 +1683,8 @@ export function transformQuotesToMatrix(
     label: 'Fecha cotización:',
     sectionId: 101,
     cells: quotes.map((q) => {
-      const dateStr =
-        (q as any).quoteDate || (q as any).metadata?.quoteDate || (q as any).date || 'No informada';
+      const qFin = q as QuoteWithFinancials;
+      const dateStr = qFin.quoteDate || qFin.metadata?.quoteDate || qFin.date || 'No informada';
       return { value: dateStr, isExcluded: dateStr === 'No informada', isWinner: false };
     }),
   });
@@ -1929,9 +1974,10 @@ export function alignMatrixRowsToQuotes(
       : reorderedCandidates;
 
     if (row.type === 'header' && row.id === 'client_info') {
-      const labelCols = hasBaselineCol && baselineLabel
-        ? [baselineLabel, ...quotes.map((q) => q.insurerName)]
-        : quotes.map((q) => q.insurerName);
+      const labelCols =
+        hasBaselineCol && baselineLabel
+          ? [baselineLabel, ...quotes.map((q) => q.insurerName)]
+          : quotes.map((q) => q.insurerName);
       return {
         ...row,
         label: `${headerPrefix}${labelCols.join(', ')}`,

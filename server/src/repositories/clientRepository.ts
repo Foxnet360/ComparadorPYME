@@ -164,18 +164,13 @@ export async function listClients(
     const sharedSet = new Set(sharedIds);
     return rows.filter(
       (c) =>
-        c.assigned_to === userId ||
-        sharedSet.has(c.id) ||
-        (!c.assigned_to && c.user_id === userId)
+        c.assigned_to === userId || sharedSet.has(c.id) || (!c.assigned_to && c.user_id === userId)
     );
   }
   return rows;
 }
 
-async function canTechnicalAccessClient(
-  userId: string,
-  client: ClientRecord
-): Promise<boolean> {
+async function canTechnicalAccessClient(userId: string, client: ClientRecord): Promise<boolean> {
   if (client.assigned_to === userId) return true;
   if (!client.assigned_to && client.user_id === userId) return true;
   const sharedIds = await getSharedClientIds(userId);
@@ -553,7 +548,15 @@ export async function listDelegationAudit(params: {
 export async function searchOrgClientDirectory(
   orgId: string,
   search: string = ''
-): Promise<Array<{ id: string; name: string; tax_id: string | null; lead_status: string; assigned_to: string | null }>> {
+): Promise<
+  Array<{
+    id: string;
+    name: string;
+    tax_id: string | null;
+    lead_status: string;
+    assigned_to: string | null;
+  }>
+> {
   let query = supabase
     .from('clients')
     .select('id, name, tax_id, lead_status, assigned_to')
@@ -562,7 +565,11 @@ export async function searchOrgClientDirectory(
     .limit(100);
 
   if (search.trim()) {
-    const sanitizedTerm = search.trim().replace(/[,()*\\]/g, ' ').replace(/\s+/g, ' ').trim();
+    const sanitizedTerm = search
+      .trim()
+      .replace(/[,()*\\]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
     if (sanitizedTerm) {
       query = query.or(`name.ilike.%${sanitizedTerm}%,tax_id.ilike.%${sanitizedTerm}%`);
     }
@@ -570,11 +577,13 @@ export async function searchOrgClientDirectory(
 
   const { data, error } = await query;
   if (error) handleDbError(error, 'Failed to search organization client directory');
-  return (data as unknown as Array<{
-    id: string;
-    name: string;
-    tax_id: string | null;
-    lead_status: string;
-    assigned_to: string | null;
-  }>) || [];
+  return (
+    (data as unknown as Array<{
+      id: string;
+      name: string;
+      tax_id: string | null;
+      lead_status: string;
+      assigned_to: string | null;
+    }>) || []
+  );
 }

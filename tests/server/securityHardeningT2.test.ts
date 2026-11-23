@@ -10,7 +10,10 @@ const mockState = vi.hoisted(() => ({
   subscriberRows: [] as Array<Record<string, unknown>>,
   listUsersPages: [] as Array<Array<Record<string, unknown>>>,
   updateUserById: vi.fn(async () => ({ data: { user: {} }, error: null })),
-  createUser: vi.fn(async () => ({ data: { user: { id: 'new-user-id', email: 'new@test.com' } }, error: null })),
+  createUser: vi.fn(async () => ({
+    data: { user: { id: 'new-user-id', email: 'new@test.com' } },
+    error: null,
+  })),
   orgMemberByUser: new Map<string, Record<string, unknown>>(),
   orgs: new Map<string, Record<string, unknown>>([
     ['org-1', { id: 'org-1', name: 'Org 1' }],
@@ -60,14 +63,26 @@ vi.mock('../../server/src/config/database', () => ({
 }));
 
 vi.mock('../../server/src/repositories/organizationRepository', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../server/src/repositories/organizationRepository')>();
+  const actual =
+    await importOriginal<typeof import('../../server/src/repositories/organizationRepository')>();
   return {
     ...actual,
     getOrganizationById: vi.fn(async (id: string) => mockState.orgs.get(id) || null),
-    getUserOrganization: vi.fn(async () => ({ organization: { id: 'org-1', name: 'Org 1' }, role: 'ally_admin' })),
-    getOrganizationMember: vi.fn(async (userId: string) => mockState.orgMemberByUser.get(userId) || null),
-    addOrganizationMember: vi.fn(async (input: Record<string, unknown>) => ({ id: 'm-1', ...input })),
-    createOrganization: vi.fn(async (input: Record<string, unknown>) => ({ id: 'org-new', ...input })),
+    getUserOrganization: vi.fn(async () => ({
+      organization: { id: 'org-1', name: 'Org 1' },
+      role: 'ally_admin',
+    })),
+    getOrganizationMember: vi.fn(
+      async (userId: string) => mockState.orgMemberByUser.get(userId) || null
+    ),
+    addOrganizationMember: vi.fn(async (input: Record<string, unknown>) => ({
+      id: 'm-1',
+      ...input,
+    })),
+    createOrganization: vi.fn(async (input: Record<string, unknown>) => ({
+      id: 'org-new',
+      ...input,
+    })),
   };
 });
 
@@ -81,7 +96,11 @@ vi.mock('../../server/src/middleware/auth', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../server/src/middleware/auth')>();
   return {
     ...actual,
-    authMiddleware: (req: AuthenticatedRequest, res: express.Response, next: express.NextFunction) => {
+    authMiddleware: (
+      req: AuthenticatedRequest,
+      res: express.Response,
+      next: express.NextFunction
+    ) => {
       if (req.user) {
         next();
         return;
@@ -91,7 +110,14 @@ vi.mock('../../server/src/middleware/auth', async (importOriginal) => {
   };
 });
 
-function makeApp(role: AuthenticatedRequest['user'] extends infer U ? (U extends { role?: infer R } ? R : string) : string, orgId = 'org-1') {
+function makeApp(
+  role: AuthenticatedRequest['user'] extends infer U
+    ? U extends { role?: infer R }
+      ? R
+      : string
+    : string,
+  orgId = 'org-1'
+) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {

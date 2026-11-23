@@ -28,6 +28,7 @@ import { unifiedComparisonFlag } from '../services/unifiedComparison/featureFlag
 import { featureFlags } from '../config/featureFlags';
 import { saveAnalysisHistory } from '../repositories/analysisRepository';
 import { matrixRowsToComparisonReport } from '../controllers/analysisController';
+import logger from '../config/logger';
 
 const router = express.Router();
 
@@ -57,7 +58,7 @@ router.post('/unified', upload.array('quotes', 10), async (req, res) => {
   const userId = (req as AuthenticatedRequest).user?.id;
 
   try {
-    console.log(`🌐 [API] POST /api/comparison/unified [${correlationId}]`);
+    logger.info({ correlationId }, 'POST /api/comparison/unified received');
 
     // Validate request
     if (!req.files || (req.files as Express.Multer.File[]).length === 0) {
@@ -98,15 +99,19 @@ router.post('/unified', upload.array('quotes', 10), async (req, res) => {
       });
     }
 
-    console.log(`📄 [API] Processing ${files.length} quote files [${correlationId}]`);
+    logger.info(
+      { correlationId, fileCount: files.length },
+      'Processing unified comparison quote files'
+    );
 
     // Get file paths
     const filePaths = files.map((f) => f.path);
 
     // Check if unified engine is enabled for this user
     const isUnifiedEnabled = unifiedComparisonFlag.isEnabled(userId);
-    console.log(
-      `🚩 [API] Unified engine ${isUnifiedEnabled ? 'enabled' : 'disabled'} for user ${userId || 'anonymous'} [${correlationId}]`
+    logger.info(
+      { correlationId, isUnifiedEnabled, userId: userId || 'anonymous' },
+      'Unified comparison engine status'
     );
 
     // Generate comparison
@@ -141,9 +146,9 @@ router.post('/unified', upload.array('quotes', 10), async (req, res) => {
         };
 
         savedId = await saveAnalysisHistory(insertData);
-        console.log(`💾 [API] Unified comparison persisted to database with ID: ${savedId}`);
+        logger.info({ correlationId, savedId }, 'Unified comparison persisted to database');
       } catch (saveError) {
-        console.error('❌ [API] Failed to persist unified comparison:', saveError);
+        logger.error({ err: saveError, correlationId }, 'Failed to persist unified comparison');
       }
     }
 
@@ -152,7 +157,7 @@ router.post('/unified', upload.array('quotes', 10), async (req, res) => {
       try {
         fs.unlinkSync(f.path);
       } catch (_e) {
-        console.warn(`⚠️ [API] Failed to clean up temp file ${f.path}`);
+        logger.warn({ filePath: f.path, correlationId }, 'Failed to clean up temp file');
       }
     });
 
@@ -167,7 +172,7 @@ router.post('/unified', upload.array('quotes', 10), async (req, res) => {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Comparison failed';
-    console.error(`❌ [API] POST /api/comparison/unified failed [${correlationId}]:`, message);
+    logger.error({ correlationId, message }, 'POST /api/comparison/unified failed');
 
     // Clean up temp files on error
     if (req.files) {
@@ -197,7 +202,7 @@ router.post('/:id/deep-mode', upload.array('clauses', 5), async (req, res) => {
   const { id } = req.params;
 
   try {
-    console.log(`🌐 [API] POST /api/comparison/${id}/deep-mode [${correlationId}]`);
+    logger.info({ correlationId, comparisonId: id }, 'POST /api/comparison/:id/deep-mode received');
 
     // Deep clause validation is disabled by default until fully implemented
     if (!featureFlags.isEnabled('deepClauseValidation')) {
@@ -220,7 +225,10 @@ router.post('/:id/deep-mode', upload.array('clauses', 5), async (req, res) => {
     const files = req.files as Express.Multer.File[];
     const filePaths = files.map((f) => f.path);
 
-    console.log(`📄 [API] Validating with ${files.length} clause files [${correlationId}]`);
+    logger.info(
+      { correlationId, clauseCount: files.length },
+      'Validating deep mode with clause files'
+    );
 
     // Validate with clauses
     const comparisonId = (Array.isArray(id) ? id[0] : id) as string;
@@ -231,7 +239,7 @@ router.post('/:id/deep-mode', upload.array('clauses', 5), async (req, res) => {
       try {
         fs.unlinkSync(f.path);
       } catch (_e) {
-        console.warn(`⚠️ [API] Failed to clean up temp file ${f.path}`);
+        logger.warn({ filePath: f.path, correlationId }, 'Failed to clean up temp file');
       }
     });
 
@@ -243,9 +251,9 @@ router.post('/:id/deep-mode', upload.array('clauses', 5), async (req, res) => {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Deep mode validation failed';
-    console.error(
-      `❌ [API] POST /api/comparison/${id}/deep-mode failed [${correlationId}]:`,
-      message
+    logger.error(
+      { correlationId, comparisonId: id, message },
+      'POST /api/comparison/:id/deep-mode failed'
     );
 
     // Clean up temp files on error

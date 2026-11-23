@@ -52,7 +52,9 @@ vi.mock('../services/quoteProcessingService', () => ({
       policyName: 'PYME Gold',
       priceAnnual: 1200000,
       currency: 'COP',
-      coverages: [{ name: 'Incendio', canonicalName: 'Incendio', value: '500M', deductible: '10%' }],
+      coverages: [
+        { name: 'Incendio', canonicalName: 'Incendio', value: '500M', deductible: '10%' },
+      ],
       specialConditions: [],
       rawText: '',
       parseConfidence: 95,
@@ -260,7 +262,9 @@ describe('P1 Renewals Multi-Tenant, ReferenceQuote & Campaign Resilience (T4 / S
       policyName: 'Póliza 123',
       priceAnnual: 1000000,
       currency: 'COP',
-      coverages: [{ name: 'Incendio', canonicalName: 'Incendio', value: '450M', deductible: '10%' }],
+      coverages: [
+        { name: 'Incendio', canonicalName: 'Incendio', value: '450M', deductible: '10%' },
+      ],
       specialConditions: [],
       rawText: '',
       parseConfidence: 90,
@@ -319,6 +323,8 @@ describe('P1 Renewals Multi-Tenant, ReferenceQuote & Campaign Resilience (T4 / S
       join(__dirname, '../controllers/analysisController.ts'),
       'utf8'
     );
-    expect(controllerText).toMatch(/getPolicyById\(\s*userId,\s*policyId,\s*authUser\?\.orgId,\s*authUser\?\.role/);
+    expect(controllerText).toMatch(
+      /getPolicyById\(\s*userId,\s*policyId,\s*authUser\?\.orgId,\s*authUser\?\.role/
+    );
   });
 });

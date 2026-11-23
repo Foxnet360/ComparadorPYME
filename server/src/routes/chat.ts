@@ -12,6 +12,7 @@ import {
 import { chatRepository, ChatMessageDB } from '../repositories/chatRepository';
 import { AuthenticatedRequest, requireUser } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
+import logger from '../config/logger';
 
 const router = Router();
 
@@ -54,14 +55,15 @@ router.post(
       });
     }
 
-    console.log(`💬 [chatRoute] Message: "${message.substring(0, 50)}..."`);
+    logger.info({ preview: message.substring(0, 50) }, 'chatRoute processing message');
 
     const userId = resolveUserId(req as AuthenticatedRequest);
 
     const result = await processChatMessage(message, reportContext, userId, threadId);
 
-    console.log(
-      `✅ [chatRoute] Response generated | Tokens: ${result.tokensUsed || 'unknown'} | Model: ${result.modelUsed}`
+    logger.info(
+      { tokensUsed: result.tokensUsed || 'unknown', modelUsed: result.modelUsed },
+      'chatRoute response generated'
     );
 
     return res.json(result);
@@ -78,7 +80,7 @@ router.get(
     const reportId = req.params.reportId as string;
     const userId = resolveUserId(req as AuthenticatedRequest);
 
-    console.log(`🔍 [chatRoute] Getting thread for report: ${reportId}, user: ${userId}`);
+    logger.info({ reportId, userId }, 'chatRoute fetching thread for report');
 
     // Get or create thread
     const thread = await chatRepository.getThreadByReport(userId, reportId);
@@ -122,7 +124,8 @@ router.get(
       const thread = await chatRepository.getThread(threadId);
       if (
         thread &&
-        ((!thread.user_id || thread.user_id !== userId) && authReq.user?.role !== 'super_admin')
+        (!thread.user_id || thread.user_id !== userId) &&
+        authReq.user?.role !== 'super_admin'
       ) {
         res.status(403).json({ error: 'Forbidden: thread does not belong to you' });
         return;
@@ -149,7 +152,8 @@ router.delete(
       const thread = await chatRepository.getThread(threadId);
       if (
         thread &&
-        ((!thread.user_id || thread.user_id !== userId) && authReq.user?.role !== 'super_admin')
+        (!thread.user_id || thread.user_id !== userId) &&
+        authReq.user?.role !== 'super_admin'
       ) {
         res.status(403).json({ error: 'Forbidden: thread does not belong to you' });
         return;

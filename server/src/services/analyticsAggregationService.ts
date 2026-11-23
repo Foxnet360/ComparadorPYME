@@ -226,7 +226,8 @@ export const analyticsAggregationService = {
           domain,
           insurer_name: q.insurerName || q.insurer || 'Aseguradora Desconocida',
           policy_plan: q.policyName || null,
-          price_annual: parsedAnnual !== null && Number.isFinite(parsedAnnual) ? parsedAnnual : null,
+          price_annual:
+            parsedAnnual !== null && Number.isFinite(parsedAnnual) ? parsedAnnual : null,
           price_monthly:
             parsedMonthly !== null && Number.isFinite(parsedMonthly) ? parsedMonthly : null,
           currency: q.currency || 'COP',

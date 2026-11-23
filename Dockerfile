@@ -1,53 +1,52 @@
-FROM node:20-alpine
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install build dependencies for native modules
-RUN apk add --no-cache python3 make g++
+# Build toolchain only needed during native dependency compilation
+RUN apk add --no-cache python3 make g++ cairo-dev pango-dev pixman-dev
 
-# Install canvas dependencies (optional, suppresses pdfjs-dist warnings)
-RUN apk add --no-cache cairo-dev pango-dev pixman-dev
-
-# Install GraphicsMagick and Ghostscript for pdf2pic to render PDF pages to images
-RUN apk add --no-cache graphicsmagick ghostscript
-
-# Copy package files
 COPY package*.json ./
-
-# Install all dependencies
 RUN npm ci
 
-# Copy application code
 COPY . .
-
-# Copy tesauro files explicitly to ensure they're available at /app/ and /app/docs/
-COPY docs/tesauro(pyme).md /app/
-COPY docs/tesauro-extensiones.md /app/
 
 # Build-time client config for frontend bundle (Supabase anon credentials are
 # public by design; RLS enforces authorization). Declaring ARGs allows Docker to
 # receive Railway service variables during build.
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
+ARG VITE_ENABLE_ADVANCED_ANALYSIS
+ARG VITE_ENABLE_MULTIMODAL_EXTRACTION
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
 ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+ENV VITE_ENABLE_ADVANCED_ANALYSIS=$VITE_ENABLE_ADVANCED_ANALYSIS
+ENV VITE_ENABLE_MULTIMODAL_EXTRACTION=$VITE_ENABLE_MULTIMODAL_EXTRACTION
 
-# Build the application (frontend + backend).
-RUN npm run build
+# Build frontend + backend, then strip devDependencies before copying to runtime
+RUN npm run build && npm prune --omit=dev
 
-# Create uploads directory
+FROM node:20-alpine AS runtime
+
+WORKDIR /app
+
+# Runtime binaries required by pdf2pic for rendering PDF pages to images
+RUN apk add --no-cache graphicsmagick ghostscript
+
+COPY package*.json index.js ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/server/dist ./server/dist
+COPY --from=builder /app/docs ./docs
+COPY --from=builder /app/data ./data
+
 RUN mkdir -p /tmp/uploads
 
-# Set environment
 ENV NODE_ENV=production
 ENV PORT=8080
 
-# Expose port
 EXPOSE 8080
 
-# Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:8080/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start the application
 CMD ["npm", "start"]

@@ -123,8 +123,7 @@ export class ComparisonEngineAdapter {
         return {
           matrix,
           engine: 'unified',
-          schemaVersion:
-            opts.analysisType === 'renewal' && v2Schema ? 3 : v2Schema ? 2 : 1,
+          schemaVersion: opts.analysisType === 'renewal' && v2Schema ? 3 : v2Schema ? 2 : 1,
           correlationId,
           graphEnabled: false,
           templateHintsEnabled: false,

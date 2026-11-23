@@ -9,6 +9,7 @@ import { AuthenticatedRequest, requireUser, requireRole } from '../middleware/au
 import { asyncHandler } from '../utils/asyncHandler';
 import { NotFoundError, ForbiddenError, ValidationError, AppError } from '../errors';
 import { supabase } from '../config/database';
+import logger from '../config/logger';
 import { getEffectiveCommercialPolicies, CommercialPolicies } from '../shared/commercialPolicies';
 import {
   createOrganization,
@@ -343,12 +344,14 @@ router.post(
 
     // Check if user exists in auth.users across all pages (avoid 50-user page 1 truncation)
     const normalizedEmail = email.toLowerCase().trim();
-    let authUser: {
-      id: string;
-      email?: string;
-      user_metadata?: Record<string, unknown>;
-      app_metadata?: Record<string, unknown>;
-    } | undefined;
+    let authUser:
+      | {
+          id: string;
+          email?: string;
+          user_metadata?: Record<string, unknown>;
+          app_metadata?: Record<string, unknown>;
+        }
+      | undefined;
 
     for (let page = 1; page <= 20; page++) {
       const { data: listData } = await supabase.auth.admin.listUsers({ page, perPage: 1000 });
@@ -668,7 +671,7 @@ router.delete(
     try {
       await deleteUserFromAuth(targetUserId);
     } catch (authErr) {
-      console.warn(`Could not delete user ${targetUserId} from auth:`, authErr);
+      logger.warn({ err: authErr, targetUserId }, 'Could not delete user from auth');
     }
 
     res.status(204).end();

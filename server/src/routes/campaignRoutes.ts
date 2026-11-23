@@ -8,10 +8,10 @@
  * rejected with 400.
  */
 
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
 import { AuthenticatedRequest, requireUser } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
-import { validateBody } from '../middleware/validateRequest';
+import { validateBody, rejectSpoofedUserId } from '../middleware/validateRequest';
 import { updateCampaignConfigSchema } from '../middleware/validationSchemas';
 import {
   getCampaignConfig,
@@ -20,24 +20,6 @@ import {
 } from '../repositories/campaignRepository';
 
 const router = Router();
-
-// AUTH-2: a client-supplied userId (body or query) is never trusted.
-const hasClientSuppliedUserId = (req: Request): boolean =>
-  req.query.userId !== undefined ||
-  (req.body !== undefined &&
-    typeof req.body === 'object' &&
-    (req.body as Record<string, unknown>).userId !== undefined);
-
-const rejectSpoofedUserId = (req: Request, res: Response, next: NextFunction): void => {
-  if (hasClientSuppliedUserId(req)) {
-    res.status(400).json({
-      error: 'Bad Request',
-      message: 'userId is derived from the authenticated session; do not send it',
-    });
-    return;
-  }
-  next();
-};
 
 /** GET /api/campaigns/config — persisted config or defaults (R4.1). */
 router.get(

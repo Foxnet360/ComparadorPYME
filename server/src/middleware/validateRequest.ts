@@ -1,7 +1,31 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodSchema, ZodError } from 'zod';
-import type { ParsedQs } from 'qs';
 import { ValidationError } from '../errors';
+
+// AUTH-2: a client-supplied userId (body or query) is never trusted; the
+// backend derives ownership from the authenticated session instead.
+export const hasClientSuppliedUserId = (req: Request): boolean =>
+  req.query.userId !== undefined ||
+  (req.body !== undefined &&
+    typeof req.body === 'object' &&
+    (req.body as Record<string, unknown>).userId !== undefined);
+
+export const rejectClientSuppliedUserId = (req: Request, res: Response): boolean => {
+  if (!hasClientSuppliedUserId(req)) {
+    return false;
+  }
+  res.status(400).json({
+    error: 'Bad Request',
+    message: 'userId is derived from the authenticated session; do not send it',
+  });
+  return true;
+};
+
+export const rejectSpoofedUserId = (req: Request, res: Response, next: NextFunction): void => {
+  if (!rejectClientSuppliedUserId(req, res)) {
+    next();
+  }
+};
 
 /**
  * Validate request body against a Zod schema

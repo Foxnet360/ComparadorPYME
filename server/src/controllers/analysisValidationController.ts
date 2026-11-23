@@ -19,6 +19,25 @@ import { variableComparator } from '../services/variableComparator';
 import { learningEngine } from '../services/learningEngine';
 import { supabase } from '../config/database';
 import { parseColombianCurrency } from '../utils/currencyParser';
+import logger from '../config/logger';
+
+interface ExportAnalysisResultPayload {
+  domain?: string;
+  quotes?: unknown[];
+  clientInfo?: Record<string, unknown>;
+  matrix?: unknown;
+  rows?: unknown;
+}
+
+interface ExportAnalysisRecordView {
+  id?: string;
+  user_id?: string | null;
+  org_id?: string | null;
+  domain?: string;
+  client_name?: string;
+  analysis_result?: ExportAnalysisResultPayload | null;
+  metadata?: { domain?: string } | null;
+}
 
 export const validateCoverages = async (req: Request, res: Response): Promise<void> => {
   const { quote, insurerName } = req.body;
@@ -277,7 +296,7 @@ export const saveCorrection = async (req: Request, res: Response): Promise<void>
 
     res.json({ id, success: true });
   } catch (error) {
-    console.error('❌ [saveCorrection] Error:', error);
+    logger.error({ err: error }, 'Error saving correction');
     res.status(500).json({
       error: 'Internal server error while saving correction',
       details: error instanceof Error ? error.message : 'Unknown error',
@@ -318,7 +337,7 @@ export const disambiguateCoverage = async (req: Request, res: Response): Promise
 
       // Update coverage_mappings in Supabase to mark human review as satisfied
       try {
-        await (supabase.from('coverage_mappings') as any).upsert(
+        await supabase.from('coverage_mappings' as never).upsert(
           {
             raw_name: rawName,
             insurer_name: insurerName || '',
@@ -326,11 +345,11 @@ export const disambiguateCoverage = async (req: Request, res: Response): Promise
             confidence: 0.98,
             needs_human_review: false,
             user_corrected: true,
-          },
+          } as never,
           { onConflict: 'raw_name,insurer_name' }
         );
       } catch (dbErr) {
-        console.warn('⚠️ [disambiguateCoverage] DB upsert warning:', dbErr);
+        logger.warn({ err: dbErr }, 'disambiguateCoverage DB upsert warning');
       }
 
       res.json({
@@ -345,7 +364,7 @@ export const disambiguateCoverage = async (req: Request, res: Response): Promise
 
     if (action === 'keep_autonomous') {
       try {
-        await (supabase.from('coverage_mappings') as any).upsert(
+        await supabase.from('coverage_mappings' as never).upsert(
           {
             raw_name: rawName,
             insurer_name: insurerName || '',
@@ -353,11 +372,11 @@ export const disambiguateCoverage = async (req: Request, res: Response): Promise
             confidence: 0.2,
             needs_human_review: false,
             user_corrected: true,
-          },
+          } as never,
           { onConflict: 'raw_name,insurer_name' }
         );
       } catch (dbErr) {
-        console.warn('⚠️ [disambiguateCoverage] DB upsert warning:', dbErr);
+        logger.warn({ err: dbErr }, 'disambiguateCoverage DB upsert warning');
       }
 
       res.json({
@@ -371,7 +390,7 @@ export const disambiguateCoverage = async (req: Request, res: Response): Promise
 
     res.status(400).json({ error: `Invalid action: ${action}` });
   } catch (error) {
-    console.error('❌ [disambiguateCoverage] Error:', error);
+    logger.error({ err: error }, 'Error disambiguating coverage');
     res.status(500).json({
       error: 'Internal server error while disambiguating coverage',
       details: error instanceof Error ? error.message : 'Unknown error',
@@ -410,7 +429,7 @@ export const exportAnalysisExcel = async (
   }
 
   try {
-    const analysis = await getAnalysisById(id);
+    const analysis = (await getAnalysisById(id)) as ExportAnalysisRecordView | null;
 
     const user = req.user;
     if (!user) {
@@ -424,8 +443,8 @@ export const exportAnalysisExcel = async (
     }
 
     const isSuper = user.role === 'super_admin';
-    const isOwner = analysis && analysis.user_id === user.id;
-    const isSameOrg = Boolean(user.orgId && analysis && (analysis as any).org_id === user.orgId);
+    const isOwner = Boolean(analysis && analysis.user_id === user.id);
+    const isSameOrg = Boolean(user.orgId && analysis && analysis.org_id === user.orgId);
 
     if (!isSuper && !isOwner && !isSameOrg) {
       res
@@ -443,19 +462,20 @@ export const exportAnalysisExcel = async (
       return;
     }
 
-    const domain = (
+    const domain = String(
       (req.query?.domain as string) ||
-      req.body?.domain ||
-      (analysis as any)?.domain ||
-      ((analysis as any)?.analysis_result as any)?.domain ||
-      ((analysis as any)?.metadata as any)?.domain ||
-      'pyme'
+        req.body?.domain ||
+        analysis?.domain ||
+        analysis?.analysis_result?.domain ||
+        analysis?.metadata?.domain ||
+        'pyme'
     )
       .toLowerCase()
       .trim();
 
-    const rawClientInfo =
-      req.body?.clientInfo || (analysis as any)?.analysis_result?.clientInfo || {};
+    const rawClientInfo = (req.body?.clientInfo ||
+      analysis?.analysis_result?.clientInfo ||
+      {}) as Record<string, unknown>;
 
     const rawClientName =
       (req.query?.clientName as string) ||
@@ -519,9 +539,7 @@ export const exportAnalysisExcel = async (
         : {}),
       ...(typeof req.body?.report === 'object' && req.body?.report ? req.body.report : {}),
       matrix:
-        req.body?.matrix ||
-        (analysis?.analysis_result as any)?.matrix ||
-        (analysis?.analysis_result as any)?.rows,
+        req.body?.matrix || analysis?.analysis_result?.matrix || analysis?.analysis_result?.rows,
     };
     const exportMode =
       (req.query?.mode as string) ||
@@ -530,12 +548,12 @@ export const exportAnalysisExcel = async (
       'technical';
 
     const buffer = await generateExcelBuffer(
-      quotes,
-      clientInfo,
+      quotes as never,
+      clientInfo as never,
       cellNotes,
       brokerInfo,
       domain,
-      reportData,
+      reportData as never,
       exportMode as 'technical' | 'client'
     );
 
@@ -547,7 +565,7 @@ export const exportAnalysisExcel = async (
     res.setHeader('Content-Disposition', `attachment; filename=${filenamePrefix}_${id}.xlsx`);
     res.send(buffer);
   } catch (err: unknown) {
-    console.error('❌ [exportAnalysisExcel] Error exporting to Excel:', err);
+    logger.error({ err }, 'Error exporting analysis to Excel');
     res.status(500).json({
       error: 'Internal server error while exporting to Excel',
       details: err instanceof Error ? err.message : 'Unknown error',

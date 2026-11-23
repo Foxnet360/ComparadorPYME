@@ -94,11 +94,7 @@ describe('P1 Stability & UX Integrity (T1 / S1)', () => {
   it('ClauseSelector checkbox click does not toggle insurer accordion', async () => {
     const onClausesSelected = vi.fn();
     render(
-      <ClauseSelector
-        mode="library"
-        onModeChange={vi.fn()}
-        onClausesSelected={onClausesSelected}
-      />
+      <ClauseSelector mode="library" onModeChange={vi.fn()} onClausesSelected={onClausesSelected} />
     );
 
     await waitFor(() => {
@@ -115,8 +111,20 @@ describe('P1 Stability & UX Integrity (T1 / S1)', () => {
   it('FileUploader generates unique ids when title is empty and shows error on unsupported drop', () => {
     const { container } = render(
       <>
-        <FileUploader title="" description="A" files={[]} onFilesSelected={vi.fn()} onRemoveFile={vi.fn()} />
-        <FileUploader title="" description="B" files={[]} onFilesSelected={vi.fn()} onRemoveFile={vi.fn()} />
+        <FileUploader
+          title=""
+          description="A"
+          files={[]}
+          onFilesSelected={vi.fn()}
+          onRemoveFile={vi.fn()}
+        />
+        <FileUploader
+          title=""
+          description="B"
+          files={[]}
+          onFilesSelected={vi.fn()}
+          onRemoveFile={vi.fn()}
+        />
       </>
     );
 

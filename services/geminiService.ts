@@ -121,11 +121,6 @@ export const appendQuotesToComparison = async (
     timeoutMs: ANALYZE_API_TIMEOUT_MS,
   });
 
-  if (!response.ok) {
-    const errBody = (await response.json().catch(() => ({}))) as { error?: string };
-    throw new Error(errBody.error || 'No se pudieron adicionar las cotizaciones.');
-  }
-
   return (await response.json()) as ComparisonReport;
 };
 

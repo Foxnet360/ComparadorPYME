@@ -149,7 +149,9 @@ const RenewalDetail: React.FC<RenewalDetailProps> = ({ renewalId, onBack }) => {
       <dl className="grid grid-cols-2 gap-4">
         <div>
           <dt className="text-sm text-slate-500">Estado</dt>
-          <dd className="font-medium text-slate-800">{STATE_LABELS[renewal.state] ?? renewal.state}</dd>
+          <dd className="font-medium text-slate-800">
+            {STATE_LABELS[renewal.state] ?? renewal.state}
+          </dd>
         </div>
         <div>
           <dt className="text-sm text-slate-500">Inicio de ciclo</dt>

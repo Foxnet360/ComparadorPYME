@@ -621,9 +621,7 @@ export const processChatMessage = async (
         ? usageOutputTokens
         : Math.ceil(responseText.length / 4);
     const totalTokens =
-      typeof usageTotalTokens === 'number'
-        ? usageTotalTokens
-        : actualInputTokens + outputTokens;
+      typeof usageTotalTokens === 'number' ? usageTotalTokens : actualInputTokens + outputTokens;
     const latencyMs = Date.now() - startTime;
 
     // Save model response with metadata

@@ -102,11 +102,7 @@ export const clientDelegationService = {
     }
   },
 
-  async updateLeadStatus(
-    clientId: string,
-    leadStatus: LeadStatus,
-    notes?: string
-  ): Promise<void> {
+  async updateLeadStatus(clientId: string, leadStatus: LeadStatus, notes?: string): Promise<void> {
     const res = await apiClient.fetch(`/clients/${clientId}/lead-status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -131,9 +127,7 @@ export const clientDelegationService = {
   },
 
   async searchOrgDirectory(search: string): Promise<OrgDirectoryEntry[]> {
-    const res = await apiClient.fetch(
-      `/clients/directory?search=${encodeURIComponent(search)}`
-    );
+    const res = await apiClient.fetch(`/clients/directory?search=${encodeURIComponent(search)}`);
     if (!res.ok) return [];
     return (await res.json()) as OrgDirectoryEntry[];
   },

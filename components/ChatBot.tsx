@@ -168,10 +168,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ reportContext, isOpen, onClose }) => 
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`Chat error: ${response.statusText}`);
-      }
-
       const result = await response.json();
 
       // Update threadId if returned

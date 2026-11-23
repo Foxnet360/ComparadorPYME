@@ -1129,7 +1129,9 @@ function alignRowCellsToInsurers(
       if (usedCellIndices.has(c)) continue;
       const cell = cells[c];
       if (typeof cell !== 'object' || cell === null) continue;
-      const cellIns = String((cell as { insurer?: unknown }).insurer ?? '').trim().toLowerCase();
+      const cellIns = String((cell as { insurer?: unknown }).insurer ?? '')
+        .trim()
+        .toLowerCase();
       if (cellIns && cellIns === rawTarget) {
         matched[i] = cell;
         usedCellIndices.add(c);
@@ -1192,7 +1194,11 @@ function buildUniqueInsurerLabels(
         ? String(quoteMetadata[idx]!.tipoSeguro).trim()
         : '';
     let candidate = canon;
-    if (raw && extractCanonicalInsurerName(raw) === canon && raw.toLowerCase() !== canon.toLowerCase()) {
+    if (
+      raw &&
+      extractCanonicalInsurerName(raw) === canon &&
+      raw.toLowerCase() !== canon.toLowerCase()
+    ) {
       candidate = raw;
     } else if (metaProduct) {
       candidate = `${canon} - ${metaProduct}`;

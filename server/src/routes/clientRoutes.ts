@@ -15,10 +15,14 @@
  *   persisted columns, so extraneous fields never reach the database.
  */
 
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
 import { AuthenticatedRequest, requireUser, requireRole } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
-import { validateBody } from '../middleware/validateRequest';
+import {
+  validateBody,
+  rejectClientSuppliedUserId,
+  rejectSpoofedUserId,
+} from '../middleware/validateRequest';
 import { createClientSchema, updateClientSchema } from '../middleware/validationSchemas';
 import { NotFoundError, ValidationError } from '../errors';
 import {
@@ -40,34 +44,6 @@ import {
 } from '../repositories/clientRepository';
 
 const router = Router();
-
-// AUTH-2: a client-supplied userId (body or query) is never trusted; the
-// backend derives ownership from the authenticated session instead.
-const hasClientSuppliedUserId = (req: Request): boolean =>
-  req.query.userId !== undefined ||
-  (req.body !== undefined &&
-    typeof req.body === 'object' &&
-    (req.body as Record<string, unknown>).userId !== undefined);
-
-const rejectClientSuppliedUserId = (req: Request, res: Response): boolean => {
-  if (!hasClientSuppliedUserId(req)) {
-    return false;
-  }
-  res.status(400).json({
-    error: 'Bad Request',
-    message: 'userId is derived from the authenticated session; do not send it',
-  });
-  return true;
-};
-
-// Middleware form for routes with body validation: the spoofing check MUST
-// run before validateBody, because zod strips unknown keys and would erase
-// the evidence of a forged userId.
-const rejectSpoofedUserId = (req: Request, res: Response, next: NextFunction): void => {
-  if (!rejectClientSuppliedUserId(req, res)) {
-    next();
-  }
-};
 
 /** GET /api/clients — list the session user's clients (Opción A). */
 router.get(
@@ -135,7 +111,12 @@ router.get(
       return;
     }
     const userId = requireUser(req);
-    const client = await getClientById(userId, String(req.params.id), req.user?.orgId, req.user?.role);
+    const client = await getClientById(
+      userId,
+      String(req.params.id),
+      req.user?.orgId,
+      req.user?.role
+    );
     if (!client) {
       throw new NotFoundError('Client not found');
     }
@@ -190,7 +171,12 @@ router.get(
   '/:id/shares',
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const userId = requireUser(req);
-    const client = await getClientById(userId, String(req.params.id), req.user?.orgId, req.user?.role);
+    const client = await getClientById(
+      userId,
+      String(req.params.id),
+      req.user?.orgId,
+      req.user?.role
+    );
     if (!client) {
       throw new NotFoundError('Client not found');
     }
@@ -206,7 +192,9 @@ router.post(
     const userId = requireUser(req);
     const orgId = req.user?.orgId;
     if (!orgId) {
-      throw new ValidationError('El usuario debe pertenecer a una organización para compartir clientes.');
+      throw new ValidationError(
+        'El usuario debe pertenecer a una organización para compartir clientes.'
+      );
     }
     const client = await getClientById(userId, String(req.params.id), orgId, req.user?.role);
     if (!client) {
@@ -296,7 +284,14 @@ router.patch(
       throw new ValidationError('Organización requerida.');
     }
     const { leadStatus, notes } = req.body as { leadStatus?: LeadStatus; notes?: string };
-    const allowed: LeadStatus[] = ['nuevo', 'asignado', 'en_gestion', 'cotizado', 'cerrado', 'perdido'];
+    const allowed: LeadStatus[] = [
+      'nuevo',
+      'asignado',
+      'en_gestion',
+      'cotizado',
+      'cerrado',
+      'perdido',
+    ];
     if (!leadStatus || !allowed.includes(leadStatus)) {
       throw new ValidationError('leadStatus inválido.');
     }
