@@ -34,7 +34,7 @@ Sistema de análisis y comparación de cotizaciones de seguros usando IA (Gemini
 
 #### Notas Consultivas
 - **Editor inline**: Doble-clic en cualquier celda para agregar notas
-- **Markdown soportado**: Formato básico con sanitización DOMPurify
+- **Markdown soportado**: Formato básico renderizado de forma segura con React
 - **Persistencia**: Notas se guardan en el estado del reporte
 - **Exportación**: Incluidas en exportaciones PDF y Excel
 
@@ -108,9 +108,13 @@ SUPABASE_URL=https://nubiecwypgfekhvaffxm.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key
 SUPABASE_ANON_KEY=tu_anon_key
 
-# Gemini
+# Gemini (defaults en server/src/config/env.ts)
 GEMINI_API_KEY=tu_gemini_api_key
-GEMINI_EMBEDDING_MODEL=gemini-embedding-001
+GEMINI_MODEL=gemini-4-hydrogen
+GEMINI_CHAT_MODEL=gemini-3.8-flash
+GEMINI_FAST_MODEL=gemini-3.5-flash-lite
+GEMINI_CLAUSE_MODEL=gemini-4-hydrogen
+GEMINI_EMBEDDING_MODEL=gemini-embedding-2
 
 # Configuración Colombia
 REGION=CO
@@ -136,8 +140,7 @@ REDIS_URL=redis://localhost:6379
 
 **Terminal 1 - Backend:**
 ```bash
-cd server
-npm run dev
+npm run server:dev
 ```
 
 **Terminal 2 - Frontend:**
@@ -189,17 +192,17 @@ Este proyecto usa Docker multi-stage build en Railway. El proceso es completamen
 
 1. Crear nuevo proyecto en Railway
 2. Conectar repositorio GitHub
-3. Configurar variables de entorno en el dashboard (ver lista completa en `DEPLOY.md`)
+3. Configurar variables de entorno en el dashboard (ver lista completa en `docs/DEPLOY.md`)
 4. Railway usará automáticamente el `Dockerfile` de la raíz
 
 #### Variables de entorno requeridas
 
-- `GEMINI_API_KEY` / `VITE_GEMINI_API_KEY`
+- `GEMINI_API_KEY` (runtime backend)
 - `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`
-- `GROQ_API_KEY` (opcional)
+- `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (build-time frontend)
 - `REGION`, `SMMLV_VALUE`, `UVT_VALUE`, `CURRENCY`
 
-Ver `DEPLOY.md` para la guía completa de despliegue y troubleshooting.
+Ver `docs/DEPLOY.md` para la guía completa de despliegue y troubleshooting.
 
 ### Activar Análisis Avanzado
 
@@ -211,14 +214,15 @@ Ver `DEPLOY.md` para la guía completa de despliegue y troubleshooting.
 
 ## API Endpoints
 
-- `GET /` - Información de la API
+- `GET /api` - Información de la API
 - `GET /health` - Health check extendido (ver abajo)
+- `GET /api/features` - Estado de feature flags activos
 - `POST /api/analyze` - Análisis de documentos
 - `POST /api/documents` - Indexar documentos
 - `GET /api/documents` - Listar documentos
 - `POST /api/search` - Búsqueda semántica
-- `POST /api/rag/clauses` - Indexar cláusulas (RAG)
-- `POST /api/rag/search` - Búsqueda RAG
+- `POST /api/analysis/extract-structured-clause` - Extracción estructurada de cláusulas
+- `POST /api/chat` - Chat RAG sobre cotizaciones y clausulados
 
 ### Health Check Endpoint
 
@@ -287,7 +291,7 @@ Todas las respuestas de error ahora incluyen un formato estandarizado:
 El sistema utiliza un pipeline de extracción de dos capas para máxima confiabilidad:
 
 ### 1. Extracción Estructurada (JSON Mode)
-- **Tecnología**: Gemini 2.5 Flash con `responseMimeType: application/json`
+- **Tecnología**: Gemini (`GEMINI_MODEL`, default `gemini-4-hydrogen`) con `responseMimeType: application/json`
 - **Schema**: Tipado estricto con los 14 nombres canónicos de coberturas PYME
 - **Confianza**: > 90% para extracciones exitosas
 - **Fallback**: Automático a extracción de texto si JSON mode falla
@@ -496,7 +500,7 @@ interface CoverageItem {
 
 ```bash
 # Backend en modo debug
-DEBUG=extractor:* npm run dev
+DEBUG=extractor:* npm run server:dev
 
 # O ver logs específicos
 grep -E "(extractor|preprocessor|thesaurus|repair)" server/logs/app.log
@@ -582,7 +586,7 @@ Cuando el sistema encuentra `"Remoción de Escombros"` en una cotización:
 
 ### Pipeline de Extracción con Visión de PDF
 
-El sistema ahora soporta extracción multimodal usando Gemini 2.5 Pro con visión de documentos:
+El sistema ahora soporta extracción multimodal usando Gemini (`GEMINI_MODEL`, default `gemini-4-hydrogen`) con visión de documentos:
 
 ```
 PDF → Gemini File API → Visión Multimodal → Schema V2 → Normalización → 14 Coberturas Canónicas
