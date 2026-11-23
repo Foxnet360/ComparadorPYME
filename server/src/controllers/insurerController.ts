@@ -9,6 +9,7 @@ import {
 } from '../shared/colombianInsurersCatalog';
 import { InsuranceDomain, type InsuranceDomainType } from '../shared/insuranceDomain';
 import { insurerNameNormalizer } from '../services/insurerNameNormalizer';
+import logger from '../config/logger';
 
 export interface InsurerRecord extends ColombianInsurerProfile {
   svgBadgeUri: string;
@@ -165,10 +166,7 @@ async function syncWithSupabase(): Promise<InsurerRecord[]> {
       }
     }
   } catch (err) {
-    console.warn(
-      '⚠️ [insurerController] Could not sync insurers from Supabase, using catalog:',
-      err
-    );
+    logger.warn({ err }, 'Could not sync insurers from Supabase, using catalog');
   }
 
   return Array.from(memoryCatalogStore.values())
@@ -355,7 +353,7 @@ export const insurerController = {
           }
         }
       } catch (dbErr) {
-        console.warn('⚠️ [insurerController.createInsurer] Supabase fallback to memory:', dbErr);
+        logger.warn({ err: dbErr }, 'insurerController.createInsurer Supabase fallback to memory');
       }
 
       const newProfile: ColombianInsurerProfile = {
@@ -543,7 +541,7 @@ export const insurerController = {
           );
         }
       } catch (dbErr) {
-        console.warn('⚠️ [insurerController.updateInsurer] DB update skipped:', dbErr);
+        logger.warn({ err: dbErr }, 'insurerController.updateInsurer DB update skipped');
       }
 
       res.json({

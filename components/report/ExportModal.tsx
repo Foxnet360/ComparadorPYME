@@ -72,10 +72,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           if (!logo && user?.allyId) {
             try {
               const currentOrg = await organizationService.getCurrentOrganization();
+              const orgSettings = currentOrg.organization?.settings as
+                | { logo_url?: string; logoUrl?: string }
+                | undefined;
               logo =
-                currentOrg.organization?.logoUrl ||
-                (currentOrg.organization?.settings as any)?.logo_url ||
-                (currentOrg.organization?.settings as any)?.logoUrl;
+                currentOrg.organization?.logoUrl || orgSettings?.logo_url || orgSettings?.logoUrl;
             } catch (err) {
               void err;
             }
@@ -119,7 +120,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const handleExportExcel = async (exportMode: 'client' | 'technical') => {
     setExportError(null);
     const effectiveReport = getUpdatedReport();
-    const analysisId = (effectiveReport as any).id || (effectiveReport as any).analysisId;
+    const reportWithIds = effectiveReport as ReportType & { id?: string; analysisId?: string };
+    const analysisId = reportWithIds.id || reportWithIds.analysisId;
     if (!analysisId) {
       setExportError('ID de análisis no disponible para exportación.');
       return;
@@ -137,8 +139,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         cellNotes: cellNotes ? (typeof cellNotes === 'object' ? cellNotes : {}) : {},
       });
       onClose();
-    } catch (err: any) {
-      setExportError(`Error al exportar Excel: ${err?.message || 'Error desconocido'}`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error desconocido';
+      setExportError(`Error al exportar Excel: ${msg}`);
     } finally {
       setExportingExcel(null);
     }

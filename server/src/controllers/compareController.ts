@@ -12,6 +12,7 @@ import {
   normalizeCurrency,
 } from '../services/premiumExtractor';
 import fs from 'fs';
+import logger from '../config/logger';
 
 /**
  * Compare V1 (legacy) vs V2 (multimodal) extraction
@@ -27,7 +28,7 @@ export async function compareExtraction(req: Request, res: Response): Promise<Re
     const results = [];
 
     for (const file of files) {
-      console.log(`🔍 Comparing extraction for: ${file.originalname}`);
+      logger.info({ filename: file.originalname }, 'Comparing V1 vs V2 extraction');
 
       // V1: Legacy text extraction
       const v1Start = Date.now();
@@ -167,7 +168,7 @@ export async function compareExtraction(req: Request, res: Response): Promise<Re
       recommendation: summary.v2Success >= summary.v1Success ? 'V2 recommended' : 'V1 more stable',
     });
   } catch (error: unknown) {
-    console.error('Compare extraction error:', error);
+    logger.error({ err: error }, 'Compare extraction error');
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',

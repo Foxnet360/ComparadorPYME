@@ -2,36 +2,9 @@ import { Response, NextFunction } from 'express';
 import fs from 'fs';
 
 import { ParsedQuote } from '../services/quoteParser';
-import { type CrossReferenceResult } from '../services/crossReferenceEngine';
-import { type ScoringResult, type ScoreBreakdown } from '../services/quoteScorer';
-import { type NarrativeResult } from '../services/narrativeService';
-import { type ValidationResult } from '../services/quoteValidator';
-import { type ConfidenceResult, type ConfidenceBreakdown } from '../services/confidenceScorer';
-import { type ClauseValidationSummary } from '../services/clauseCoverageValidator';
-export interface DualExtractionResult {
-  coverageName: string;
-  firstExtraction: {
-    value: string;
-    deductible: string;
-    confidence: number;
-  };
-  secondExtraction: {
-    value: string;
-    deductible: string;
-    confidence: number;
-  };
-  discrepancy: number;
-  isDiscrepancy: boolean;
-  recommendation: string;
-}
 import { isMultimodalEnabled } from '../services/quoteProcessingService';
 import { comparisonEngineAdapter } from '../services/unifiedComparison/comparisonEngineAdapter';
 import { AnalysisType } from '../services/unifiedComparison/comparisonSchema';
-import {
-  extractMatrixInsurers,
-  alignInsurerIndices,
-  normalizeInsurerName,
-} from '../services/unifiedComparison/matrixTransformer';
 import { extractCanonicalInsurerName } from '../services/unifiedComparison/insurerSanitizer';
 
 import {
@@ -44,159 +17,72 @@ import { mergeComparisonResults } from '../services/unifiedComparison/incrementa
 import { getPolicyById } from '../repositories/policyRepository';
 import { supabase } from '../config/database';
 import { ensureClausePersistedInLibrary } from '../services/documentIndexingService';
-import { formatCOP } from '../utils/formatCurrency';
 import { auditGroundedComparison } from '../services/groundingAuditor';
-import quoteBasedAuditor from '../services/quoteBasedAuditor';
-
-import { AlertItem, AlertLevel, MatrixRow, QuoteAnalysis } from '../types';
 import { AuthenticatedRequest } from '../middleware/auth';
-import { InsuranceDomain, isInsuranceDomain } from '../types/domain';
-import { AppError } from '../errors';
 import logger from '../config/logger';
+import { InsuranceDomain, isInsuranceDomain } from '../types/domain';
 
-/**
- * ERR-1: map legacy upstream failures onto operational AppErrors so the
- * central errorHandler can answer with the right status code and traceId.
- */
-function toHttpError(error: unknown): Error {
-  if (error instanceof Error && error.message?.includes('No response received')) {
-    return new AppError('Upstream Error: No response from Gemini AI.', 502);
-  }
-  if (error instanceof Error && error.message?.includes('429')) {
-    return new AppError('Rate Limit Exceeded: Please try again later.', 429);
-  }
-  return error instanceof Error ? error : new Error(String(error));
+interface QuoteMetadataEntry {
+  insurer?: string;
+  cliente?: string;
+  documento?: string;
+  actividadOcupacion?: string;
+  ubicacionRiesgo?: string;
+  vigencia?: string;
+  tipoSeguro?: string;
+  anoConstruccion?: string;
+  pisos?: string;
+  [key: string]: unknown;
 }
 
-export interface ComparisonResultQuote {
-  insurerName: string;
-  policyName: string;
-  priceAnnual: number;
-  currency: string;
-  deductibles: string;
-  coverages: Array<{
-    name: string;
-    value: string;
-    deductible: string;
-    canonicalName?: string;
-    categoryId?: number | string | null;
-    matchConfidence?: number;
-    matchMethod?: string | null;
-  }>;
-  score: number;
-  dataQualityScore: number;
-  verificationConfidence: number;
-  isRagAvailable: boolean;
-  parseConfidence: number;
-  dualExtractionValidation: DualExtractionResult[];
-  specialConditions?: string[];
-  scoringBreakdown: ScoreBreakdown;
-  clientAnalysis: string;
-  technicalAnalysis: string;
-  keyFindings: string[];
-  alerts: AlertItem[];
-  crossReferenceSummary: Record<string, number>;
-  extractionConfidence: number;
-  confidenceBreakdown: ConfidenceBreakdown | null;
-  needsReview: boolean;
-  isCritical: boolean;
-  validationFlags: unknown[];
-  validationSummary: string;
-  clauseValidation?: Record<string, unknown>;
-  deductibleAnalysis?: unknown;
-  contextualRisk?: unknown;
-  warrantyCompliance?: unknown;
-  legalOpinion?: unknown;
-  quoteAudit?: Record<string, unknown>;
+interface ClientProfileInput {
+  name?: string;
+  nit?: string;
+  industry?: string;
+  address?: string;
+  city?: string;
+  department?: string;
+  contactPerson?: string;
+  email?: string;
+  phone?: string;
+  constructionYear?: string;
+  floorsCount?: string;
+  seismicZone?: string;
+  buildingType?: string;
 }
-
-export interface ComparisonResult {
-  quotes: ComparisonResultQuote[];
-  recommendation: string;
-  marketAnalysis: string;
-  deductibleComparison: { insurer: string; deductibleText: string }[];
-  timestamp: string;
-  analysisVersion: string;
-  id?: string;
-  matrix?: MatrixRow[];
-  quoteMetadata?: any[];
-  schemaVersion?: 1 | 2 | 3;
-  domain?: InsuranceDomain;
-  analysisType?: AnalysisType;
-  policyId?: string;
-  renewalId?: string;
-  clientInfo?: {
-    name: string;
-    nit?: string;
-    activity: string;
-    location: string;
-    address?: string;
-    city?: string;
-    department?: string;
-    contactPerson?: string;
-    email?: string;
-    phone?: string;
-    vigencia?: string;
-    tipoSeguro?: string;
-    anoConstruccion?: string | number;
-    pisos?: string | number;
-    seismicZone?: string;
-    buildingType?: string;
-  };
-}
-
 import {
+  DualExtractionResult,
+  ComparisonResultQuote,
+  ComparisonResult,
+  AnalysisDomainResolution,
+  toHttpError,
+  resolveAnalysisUserId,
+  resolveAnalysisDomain,
+  generateComparison,
   matrixRowsToComparisonReport,
+  extractMatrixInsurers,
+  normalizeInsurerName,
+  alignInsurerIndices,
   type UnifiedQuote,
   type UnifiedComparisonReport,
-} from '../services/unifiedComparison/reportBuilderService';
-export { matrixRowsToComparisonReport, type UnifiedQuote, type UnifiedComparisonReport };
+} from './analysisHelpers';
 
-/**
- * Resolve the effective user id for /api/analyze.
- *
- * The endpoint uses optional authentication. Only an authenticated user's id
- * is trusted for per-user feature-rollout bucketing; a client-supplied
- * body userId is NEVER trusted (spoofing vector — callers sending one get a
- * 400 from uploadAndAnalyze). Anonymous traffic is bucketed as 'anonymous'.
- */
-export function resolveAnalysisUserId(req: AuthenticatedRequest): string {
-  return req.user?.id ?? 'anonymous';
-}
-
-export interface AnalysisDomainResolution {
-  domain: InsuranceDomain;
-  error?: string;
-}
-
-/**
- * Resolve and validate the `domain` parameter for /api/analyze.
- *
- * - Missing/empty/undefined → `pyme` (default, backward compatible).
- * - `pyme` or `autos` → accepted as-is.
- * - Anything else → validation error (HTTP 400).
- */
-export function resolveAnalysisDomain(rawDomain: unknown): AnalysisDomainResolution {
-  if (rawDomain === undefined || rawDomain === null || rawDomain === '') {
-    return { domain: 'pyme' };
-  }
-
-  const normalizedDomain =
-    rawDomain === 'casco'
-      ? 'casco_embarcacion'
-      : rawDomain === 'equipo'
-        ? 'equipo_maquinaria'
-        : rawDomain;
-
-  if (isInsuranceDomain(normalizedDomain)) {
-    return { domain: normalizedDomain };
-  }
-
-  return {
-    domain: 'pyme',
-    error: `Invalid domain "${rawDomain}". Allowed values: pyme, autos, copropiedades, vida_grupo, salud, cumplimiento, transporte, hogar, equipo_maquinaria, casco_embarcacion.`,
-  };
-}
+export {
+  toHttpError,
+  resolveAnalysisUserId,
+  resolveAnalysisDomain,
+  generateComparison,
+  matrixRowsToComparisonReport,
+  extractMatrixInsurers,
+  normalizeInsurerName,
+  alignInsurerIndices,
+  type DualExtractionResult,
+  type ComparisonResultQuote,
+  type ComparisonResult,
+  type AnalysisDomainResolution,
+  type UnifiedQuote,
+  type UnifiedComparisonReport,
+};
 
 export const analysisController = {
   uploadAndAnalyze: async (
@@ -314,7 +200,9 @@ export const analysisController = {
               policyName: policy.policy_number ? `Póliza ${policy.policy_number}` : 'Póliza Actual',
               priceAnnual: Number(policy.premium) || 0,
               currency: 'COP',
-              coverages: Array.isArray(policy.coverages) ? (policy.coverages as any) : [],
+              coverages: Array.isArray(policy.coverages)
+                ? (policy.coverages as ParsedQuote['coverages'])
+                : [],
               specialConditions: [],
               rawText: '',
               parseConfidence: 100,
@@ -359,7 +247,7 @@ export const analysisController = {
 
       comparisonResult.matrix = comparisonResult.matrix || matrixRows;
       comparisonResult.quoteMetadata = Array.isArray(adapterResult.quoteMetadata)
-        ? adapterResult.quoteMetadata.map((m: any) =>
+        ? (adapterResult.quoteMetadata as QuoteMetadataEntry[]).map((m) =>
             m && typeof m.insurer === 'string'
               ? { ...m, insurer: extractCanonicalInsurerName(m.insurer) }
               : m
@@ -386,7 +274,9 @@ export const analysisController = {
             .in('id', selectedClauseIds);
           const activeInsurers = new Set(
             (clauseDocs || [])
-              .map((d: any) => (d.insurer_name || '').toUpperCase().trim())
+              .map((d: { insurer_name?: string | null }) =>
+                (d.insurer_name || '').toUpperCase().trim()
+              )
               .filter(Boolean)
           );
           comparisonResult.quotes?.forEach((q: ComparisonResultQuote) => {
@@ -431,19 +321,23 @@ export const analysisController = {
       });
 
       // Client Info Resolution (Priority: Client Profile / CRUD > req.body > Quote Metadata > Defaults)
-      let parsedClientProfile: any = null;
+      let parsedClientProfile: ClientProfileInput | null = null;
       if (req.body.clientProfile) {
         try {
-          parsedClientProfile =
+          parsedClientProfile = (
             typeof req.body.clientProfile === 'string'
               ? JSON.parse(req.body.clientProfile)
-              : req.body.clientProfile;
+              : req.body.clientProfile
+          ) as ClientProfileInput;
         } catch {
           // ignore json parse error
         }
       }
 
-      const extractedMetaClient = adapterResult.quoteMetadata?.find((m: any) => m?.cliente);
+      const quoteMetadataList = (
+        Array.isArray(adapterResult.quoteMetadata) ? adapterResult.quoteMetadata : []
+      ) as QuoteMetadataEntry[];
+      const extractedMetaClient = quoteMetadataList.find((m) => m?.cliente);
       const extractedClientName = extractedMetaClient?.cliente;
       const clientName =
         parsedClientProfile?.name ||
@@ -455,13 +349,13 @@ export const analysisController = {
 
       const clientNit =
         parsedClientProfile?.nit ||
-        adapterResult.quoteMetadata?.find((m: any) => m?.documento)?.documento ||
+        quoteMetadataList.find((m) => m?.documento)?.documento ||
         req.body.clientNit;
 
       const clientActivity =
         parsedClientProfile?.industry ||
         req.body.clientActivity ||
-        adapterResult.quoteMetadata?.find((m: any) => m?.actividadOcupacion)?.actividadOcupacion ||
+        quoteMetadataList.find((m) => m?.actividadOcupacion)?.actividadOcupacion ||
         (domain === 'copropiedades'
           ? 'Edificio Residencial / Comercial (Copropiedad)'
           : domain === 'autos'
@@ -475,7 +369,7 @@ export const analysisController = {
           .filter(Boolean)
           .join(', ') ||
         req.body.clientLocation ||
-        adapterResult.quoteMetadata?.find((m: any) => m?.ubicacionRiesgo)?.ubicacionRiesgo ||
+        quoteMetadataList.find((m) => m?.ubicacionRiesgo)?.ubicacionRiesgo ||
         (parsedClientProfile?.city ? `${parsedClientProfile.city}, Colombia` : 'Colombia');
 
       comparisonResult.domain = domain;
@@ -490,16 +384,15 @@ export const analysisController = {
         contactPerson: parsedClientProfile?.contactPerson || undefined,
         email: parsedClientProfile?.email || undefined,
         phone: parsedClientProfile?.phone || undefined,
-        vigencia: adapterResult.quoteMetadata?.find((m: any) => m?.vigencia)?.vigencia || undefined,
-        tipoSeguro:
-          adapterResult.quoteMetadata?.find((m: any) => m?.tipoSeguro)?.tipoSeguro || undefined,
+        vigencia: quoteMetadataList.find((m) => m?.vigencia)?.vigencia || undefined,
+        tipoSeguro: quoteMetadataList.find((m) => m?.tipoSeguro)?.tipoSeguro || undefined,
         anoConstruccion:
           parsedClientProfile?.constructionYear ||
-          adapterResult.quoteMetadata?.find((m: any) => m?.anoConstruccion)?.anoConstruccion ||
+          quoteMetadataList.find((m) => m?.anoConstruccion)?.anoConstruccion ||
           undefined,
         pisos:
           parsedClientProfile?.floorsCount ||
-          adapterResult.quoteMetadata?.find((m: any) => m?.pisos)?.pisos ||
+          quoteMetadataList.find((m) => m?.pisos)?.pisos ||
           undefined,
         seismicZone: parsedClientProfile?.seismicZone || undefined,
         buildingType: parsedClientProfile?.buildingType || undefined,
@@ -635,7 +528,8 @@ export const analysisController = {
         existingRecord.unified_result ||
         {}) as ComparisonResult & Record<string, unknown>;
 
-      const domain = (req.body?.domain || existingRecord.domain || 'pyme') as any;
+      const rawDomain = req.body?.domain || existingRecord.domain || 'pyme';
+      const domain: InsuranceDomain = isInsuranceDomain(rawDomain) ? rawDomain : 'pyme';
       const quotePaths = quoteFiles.map((f) => f.path);
 
       const adapterResult = await comparisonEngineAdapter.generateComparison(quotePaths, {
@@ -648,9 +542,9 @@ export const analysisController = {
         templateHintsEnabled: adapterResult.templateHintsEnabled,
         domain,
       })) as unknown as ComparisonResult & Record<string, unknown>;
-      incomingResult.matrix = incomingResult.matrix || (adapterResult.matrix as any);
+      incomingResult.matrix = incomingResult.matrix || adapterResult.matrix;
       incomingResult.quoteMetadata = Array.isArray(adapterResult.quoteMetadata)
-        ? adapterResult.quoteMetadata.map((m: any) =>
+        ? (adapterResult.quoteMetadata as QuoteMetadataEntry[]).map((m) =>
             m && typeof m.insurer === 'string'
               ? { ...m, insurer: extractCanonicalInsurerName(m.insurer) }
               : m
@@ -782,172 +676,3 @@ export const analysisController = {
     }
   },
 };
-
-export function generateComparison(
-  quotes: ParsedQuote[],
-  scoringResults: Map<number, ScoringResult>,
-  narrativeResults: Map<number, NarrativeResult>,
-  crossRefResults: Map<number, CrossReferenceResult[]>,
-  validationResults: Map<number, ValidationResult>,
-  confidenceResults: Map<number, ConfidenceResult>,
-  clauseValidationResults?: Map<number, ClauseValidationSummary | null>,
-  advancedAnalysisResults?: Map<number, Record<string, unknown> | null>,
-  dualExtractionResults?: Map<number, DualExtractionResult[]>,
-  insurersWithClauses?: Map<string, boolean>,
-  domain?: InsuranceDomain | string
-) {
-  const quotesWithScores = quotes.map((quote, index) => {
-    const scoring = scoringResults.get(index);
-    const narrative = narrativeResults.get(index);
-    const crossRefs = crossRefResults.get(index) || [];
-
-    // Collect all alerts
-    const allAlerts = crossRefs.flatMap((r) =>
-      r.alerts.map((a) => ({
-        level: a.level as AlertLevel,
-        title: a.title,
-        description: a.description,
-      }))
-    );
-
-    const validation = validationResults.get(index);
-    const confidence = confidenceResults.get(index);
-    const clauseValidation = clauseValidationResults?.get(index);
-    const advancedAnalysis = advancedAnalysisResults?.get(index);
-
-    return {
-      insurerName: quote.insurerName,
-      policyName: quote.policyName,
-      priceAnnual: quote.priceAnnual,
-      currency: quote.currency,
-      deductibles:
-        quote.coverages.length > 0
-          ? quote.coverages.map((c) => `${c.canonicalName || c.name}: ${c.deductible}`).join('; ')
-          : 'No especificado',
-      coverages: quote.coverages.map((c) => ({
-        name: c.canonicalName || c.name,
-        value: c.value,
-        deductible: c.deductible,
-        canonicalName: c.canonicalName,
-        categoryId: c.categoryId,
-        matchConfidence: c.matchConfidence,
-        matchMethod: c.matchMethod,
-      })),
-      score: scoring?.totalScore || 0,
-      dataQualityScore: scoring?.dataQualityScore || 0,
-      verificationConfidence: scoring?.verificationConfidence || 0,
-      isRagAvailable: insurersWithClauses?.get(quote.insurerName) || false,
-      parseConfidence: quote.parseConfidence,
-      dualExtractionValidation: dualExtractionResults?.get(index) || [],
-      specialConditions: quote.specialConditions,
-      scoringBreakdown: scoring?.breakdown || {
-        coverage: 0,
-        deductibles: 0,
-        exclusions: 0,
-        priceRatio: 0,
-        sublimits: 0,
-        warranties: 0,
-      },
-      clientAnalysis: narrative?.clientAnalysis || '',
-      technicalAnalysis: narrative?.technicalAnalysis || '',
-      keyFindings: narrative?.keyFindings || [],
-      alerts: allAlerts,
-      crossReferenceSummary: {
-        verifiedCoverages: crossRefs.filter((r) => r.isVerified).length,
-        totalCoverages: crossRefs.length,
-        criticalAlerts: allAlerts.filter((a) => a.level === 'CRITICAL').length,
-        warningAlerts: allAlerts.filter((a) => a.level === 'WARNING').length,
-      },
-      extractionConfidence: confidence?.score || 0,
-      confidenceBreakdown: confidence?.breakdown || null,
-      needsReview: confidence?.needsReview || false,
-      isCritical: confidence?.isCritical || false,
-      validationFlags: validation?.flags || [],
-      validationSummary: validation
-        ? `${validation.coverageCount}/${validation.expectedCoverageCount} coberturas`
-        : '',
-      clauseValidation: clauseValidation
-        ? {
-            hasClauseDocument: clauseValidation.hasClauseDocument,
-            verifiedCount: clauseValidation.verifiedCount,
-            phantomCount: clauseValidation.phantomCount,
-            mandatoryMissingCount: clauseValidation.mandatoryMissingCount,
-            optionalMissingCount: clauseValidation.optionalMissingCount,
-            scoreImpact: clauseValidation.scoreImpact,
-          }
-        : undefined,
-      deductibleAnalysis: advancedAnalysis?.deductibleAnalysis,
-      contextualRisk: advancedAnalysis?.contextualRisk,
-      warrantyCompliance: advancedAnalysis?.warrantyCompliance,
-      legalOpinion: advancedAnalysis?.legalOpinion,
-      // Quote-based audit (independent of RAG)
-      quoteAudit: (() => {
-        const audit = quoteBasedAuditor.auditQuote(
-          {
-            insurerName: quote.insurerName,
-            policyName: quote.policyName,
-            priceAnnual: quote.priceAnnual,
-            currency: quote.currency,
-            coverages: quote.coverages,
-            alerts: [],
-            scoringBreakdown: scoring?.breakdown,
-            clientAnalysis: narrative?.clientAnalysis || '',
-            technicalAnalysis: narrative?.technicalAnalysis || '',
-            score: scoring?.totalScore || 0,
-            deductibles: quote.coverages.map((c) => c.deductible).join('; '),
-            rawText: quote.rawText,
-          } as unknown as QuoteAnalysis,
-          quotes as unknown as QuoteAnalysis[],
-          domain
-        );
-        return {
-          deductibleRisks: audit.deductibleRisks,
-          missingCoverages: audit.missingCoverages,
-          specialConditions: audit.specialConditions,
-          negotiationPoints: audit.negotiationPoints,
-          competitiveAdvantages: audit.competitiveAdvantages,
-          overallRiskScore: audit.overallRiskScore,
-          summary: audit.summary,
-        };
-      })(),
-    };
-  });
-
-  // Sort by score (descending)
-  quotesWithScores.sort((a, b) => b.score - a.score);
-
-  const bestQuote = quotesWithScores[0];
-
-  // Check if any quote has critical confidence
-  const hasCriticalExtraction = quotesWithScores.some((q) => q.isCritical);
-  const reviewPrefix = hasCriticalExtraction ? '[REVISIÓN REQUERIDA] ' : '';
-
-  return {
-    quotes: quotesWithScores,
-    recommendation: bestQuote
-      ? `${reviewPrefix}Mejor opción: ${bestQuote.insurerName} con score de ${bestQuote.score}/100. ${bestQuote.clientAnalysis.substring(0, 200)}`
-      : `${reviewPrefix}No se pudieron analizar las cotizaciones`,
-    marketAnalysis: `Se analizaron ${quotes.length} cotizaciones de seguros PYME. ${
-      bestQuote
-        ? `El rango de precios es de ${formatCOP(Math.min(...quotesWithScores.map((q) => q.priceAnnual || Infinity)))} a ${formatCOP(Math.max(...quotesWithScores.map((q) => q.priceAnnual || 0)))} ${bestQuote.currency}.`
-        : ''
-    }${hasCriticalExtraction ? ' ATENCIÓN: Algunas extracciones tienen baja confianza y requieren verificación manual.' : ''}`,
-    deductibleComparison: quotesWithScores.map((q) => ({
-      insurer: q.insurerName,
-      deductibleText:
-        q.coverages.length > 0
-          ? q.coverages.map((c) => `${c.name}: ${c.deductible}`).join('; ')
-          : 'No especificado',
-    })),
-    timestamp: new Date().toISOString(),
-    analysisVersion: '2.0-rag',
-  };
-}
-
-// Note: matrixRowsToComparisonReport has been extracted to reportBuilderService.ts
-// and is re-exported at the top of this file for backward compatibility.
-
-// ---------------------------------------------------------------------------
-// Insurer alignment helpers (re-exported from matrixTransformer for backward compatibility)
-// ---------------------------------------------------------------------------
-export { extractMatrixInsurers, normalizeInsurerName, alignInsurerIndices };

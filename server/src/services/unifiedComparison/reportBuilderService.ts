@@ -441,7 +441,12 @@ export async function matrixRowsToComparisonReport(
           ? 'Cotización PYME'
           : `Cotización ${domain.charAt(0).toUpperCase() + domain.slice(1).replace('_', ' ')}`;
 
-      const parsedQuote: ParsedQuote = {
+      const parsedQuote: ParsedQuote & {
+        priceMonthly?: number;
+        expenses?: number;
+        fees?: number;
+        financialBreakdown?: FinancialBreakdown;
+      } = {
         insurerName,
         policyName: defaultPolicyName,
         priceAnnual,
@@ -473,6 +478,9 @@ export async function matrixRowsToComparisonReport(
         alerts,
         avgCellConfidence,
         parsedQuote,
+        expenses: undefined as number | undefined,
+        fees: undefined as number | undefined,
+        financialBreakdown: undefined as FinancialBreakdown | undefined,
       };
     })
   );
@@ -718,15 +726,15 @@ export async function matrixRowsToComparisonReport(
 
     intermediateQuotes[i]!.priceAnnual = total;
     intermediateQuotes[i]!.priceMonthly = Math.round(total / 12);
-    (intermediateQuotes[i] as any).expenses = exp;
-    (intermediateQuotes[i] as any).fees = exp;
-    (intermediateQuotes[i] as any).financialBreakdown = breakdown;
+    intermediateQuotes[i]!.expenses = exp;
+    intermediateQuotes[i]!.fees = exp;
+    intermediateQuotes[i]!.financialBreakdown = breakdown;
 
     intermediateQuotes[i]!.parsedQuote.priceAnnual = total;
-    (intermediateQuotes[i]!.parsedQuote as any).priceMonthly = Math.round(total / 12);
-    (intermediateQuotes[i]!.parsedQuote as any).expenses = exp;
-    (intermediateQuotes[i]!.parsedQuote as any).fees = exp;
-    (intermediateQuotes[i]!.parsedQuote as any).financialBreakdown = breakdown;
+    intermediateQuotes[i]!.parsedQuote.priceMonthly = Math.round(total / 12);
+    intermediateQuotes[i]!.parsedQuote.expenses = exp;
+    intermediateQuotes[i]!.parsedQuote.fees = exp;
+    intermediateQuotes[i]!.parsedQuote.financialBreakdown = breakdown;
   }
 
   const quotes: UnifiedQuote[] = await Promise.all(
@@ -784,9 +792,9 @@ export async function matrixRowsToComparisonReport(
         priceAnnual: iq.priceAnnual,
         currency: iq.currency,
         deductibles: iq.deductibles,
-        expenses: (iq as any).expenses,
-        fees: (iq as any).fees,
-        financialBreakdown: (iq as any).financialBreakdown,
+        expenses: iq.expenses,
+        fees: iq.fees,
+        financialBreakdown: iq.financialBreakdown,
         coverages: iq.coverages,
         alerts: combinedAlerts,
         scoringBreakdown: scoringResult.breakdown as unknown as Record<string, number>,

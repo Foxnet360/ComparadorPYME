@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import { enrichAuditAlerts } from '../services/auditEnrichmentService';
 import { asyncHandler } from '../utils/asyncHandler';
+import logger from '../config/logger';
 
 const router = Router();
 
@@ -25,12 +26,16 @@ router.post(
       });
     }
 
-    console.log(`🔍 [auditRoute] Enriching ${quotes.length} quotes`);
+    logger.info({ quoteCount: quotes.length }, 'auditRoute enriching quotes');
 
     const result = await enrichAuditAlerts(quotes);
 
-    console.log(
-      `✅ [auditRoute] Enrichment complete: ${result.enrichedAlerts.length} alerts, ${result.crossInsurerRisks.length} cross-insurer risks`
+    logger.info(
+      {
+        enrichedAlerts: result.enrichedAlerts.length,
+        crossInsurerRisks: result.crossInsurerRisks.length,
+      },
+      'auditRoute enrichment complete'
     );
 
     return res.json(result);

@@ -2,96 +2,25 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { clauseService } from '../services/clauseService';
 import { SessionExpiredError } from '../services/apiClient';
 import { UserProfile } from '../types';
-import { InsuranceDomain, InsuranceDomainType } from '@shared/insuranceDomain';
 import { InsurerLogo } from './common/InsurerLogo';
 import { ConfirmModal } from './common/ConfirmModal';
 import { Modal } from './common/Modal';
+import { ClauseUploadForm } from './clauses/ClauseUploadForm';
+import { ClausePreviewModal } from './clauses/ClausePreviewModal';
 import {
-  Search,
-  Eye,
-  Trash2,
-  ShieldCheck,
-  Sparkles,
-  BookOpen,
-  X,
-  Filter,
-  Upload,
-} from 'lucide-react';
+  CLAUSE_DOMAIN_OPTIONS,
+  getDocumentTypeBadge,
+  getDocumentTypeLabel,
+  getDomainLabel,
+  getDomainBadgeClass,
+  type ClauseDocumentItem as Document,
+} from './clauses/clauseMetadata';
+import { Search, Eye, Trash2, Sparkles, BookOpen, X, Filter } from 'lucide-react';
 
 interface ClauseAdminProps {
   onClose: () => void;
   currentUser?: UserProfile | null;
 }
-
-interface Document {
-  id: string;
-  documentName: string;
-  documentType: string;
-  version?: string;
-  productName?: string;
-  totalPages: number;
-  isActive: boolean;
-  createdAt: string;
-  domain?: string;
-  insurer: {
-    id: string;
-    name: string;
-  };
-}
-
-const DOMAIN_OPTIONS: ReadonlyArray<{ value: InsuranceDomainType; label: string; color: string }> =
-  [
-    {
-      value: InsuranceDomain.PYME,
-      label: 'PYME Comercial',
-      color: 'bg-blue-50 text-blue-700 ring-blue-700/10',
-    },
-    {
-      value: InsuranceDomain.COPROPIEDADES,
-      label: 'Copropiedades (Ley 675)',
-      color: 'bg-amber-50 text-amber-700 ring-amber-700/10',
-    },
-    {
-      value: InsuranceDomain.AUTOS,
-      label: 'Vehículos y Flotas',
-      color: 'bg-emerald-50 text-emerald-700 ring-emerald-700/10',
-    },
-    {
-      value: InsuranceDomain.HOGAR,
-      label: 'Hogar y Habitación',
-      color: 'bg-indigo-50 text-indigo-700 ring-indigo-700/10',
-    },
-    {
-      value: InsuranceDomain.SALUD,
-      label: 'Salud y Prepagada',
-      color: 'bg-rose-50 text-rose-700 ring-rose-700/10',
-    },
-    {
-      value: InsuranceDomain.VIDA_GRUPO,
-      label: 'Vida Grupo y Colectivo',
-      color: 'bg-violet-50 text-violet-700 ring-violet-700/10',
-    },
-    {
-      value: InsuranceDomain.CUMPLIMIENTO,
-      label: 'Cumplimiento y Fianzas',
-      color: 'bg-slate-50 text-slate-700 ring-slate-700/10',
-    },
-    {
-      value: InsuranceDomain.TRANSPORTE,
-      label: 'Transporte de Mercancías',
-      color: 'bg-orange-50 text-orange-700 ring-orange-700/10',
-    },
-    {
-      value: InsuranceDomain.EQUIPO_MAQUINARIA,
-      label: 'Maquinaria y Equipo',
-      color: 'bg-yellow-50 text-yellow-800 ring-yellow-800/10',
-    },
-    {
-      value: InsuranceDomain.CASCO_EMBARCACION,
-      label: 'Casco Embarcación',
-      color: 'bg-cyan-50 text-cyan-700 ring-cyan-700/10',
-    },
-  ];
 
 export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -325,46 +254,6 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
     );
   };
 
-  const getDocumentTypeBadge = (type: string) => {
-    switch (type) {
-      case 'CLAUSULADO_GENERAL':
-        return 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-700/10';
-      case 'CLAUSULADO_PARTICULAR':
-        return 'bg-purple-50 text-purple-700 ring-1 ring-inset ring-purple-700/10';
-      case 'ANEXO':
-        return 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-700/10';
-      case 'COTIZACION':
-        return 'bg-slate-50 text-slate-700 ring-1 ring-inset ring-slate-600/10';
-      default:
-        return 'bg-slate-50 text-slate-700 ring-1 ring-inset ring-slate-600/10';
-    }
-  };
-
-  const getDocumentTypeLabel = (type: string) => {
-    switch (type) {
-      case 'CLAUSULADO_GENERAL':
-        return 'General';
-      case 'CLAUSULADO_PARTICULAR':
-        return 'Particular';
-      case 'ANEXO':
-        return 'Anexo';
-      case 'COTIZACION':
-        return 'Cotización';
-      default:
-        return type;
-    }
-  };
-
-  const getDomainLabel = (dom?: string) => {
-    const found = DOMAIN_OPTIONS.find((d) => d.value === dom);
-    return found ? found.label : dom ? dom.toUpperCase() : 'General';
-  };
-
-  const getDomainBadgeClass = (dom?: string) => {
-    const found = DOMAIN_OPTIONS.find((d) => d.value === dom);
-    return found ? found.color : 'bg-slate-50 text-slate-700 ring-slate-700/10';
-  };
-
   return (
     <Modal
       isOpen={true}
@@ -433,155 +322,15 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
           </div>
         )}
 
-        {/* Upload Form Card */}
-        <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-5 shadow-xs">
-          <div className="flex items-center gap-2 mb-4">
-            <Sparkles size={16} className="text-indigo-600" />
-            <h3 className="font-bold text-sm text-slate-800">
-              Subir Nuevo Clausulado al Repositorio
-            </h3>
-          </div>
-
-          {currentUser ? (
-            <form
-              onSubmit={handleSubmit}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-            >
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Aseguradora
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ej: AXA COLPATRIA, SURA, HDI"
-                  value={formData.insurerName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, insurerName: e.target.value.toUpperCase() })
-                  }
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Nombre del Documento
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ej: Clausulado PYME Todo Riesgo"
-                  value={formData.documentName}
-                  onChange={(e) => setFormData({ ...formData, documentName: e.target.value })}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Ramo de Seguros
-                </label>
-                <select
-                  value={formData.domain}
-                  onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors cursor-pointer"
-                >
-                  {DOMAIN_OPTIONS.map((d) => (
-                    <option key={d.value} value={d.value}>
-                      {d.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Tipo de Documento
-                </label>
-                <select
-                  value={formData.documentType}
-                  onChange={(e) => setFormData({ ...formData, documentType: e.target.value })}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors cursor-pointer"
-                >
-                  <option value="CLAUSULADO_GENERAL">Clausulado General</option>
-                  <option value="CLAUSULADO_PARTICULAR">Clausulado Particular</option>
-                  <option value="ANEXO">Anexo de Coberturas</option>
-                  <option value="COTIZACION">Cotización / Resumen</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Versión / Año
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ej: 2026.1"
-                  value={formData.version}
-                  onChange={(e) => setFormData({ ...formData, version: e.target.value })}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
-                />
-              </div>
-
-              <div className="flex gap-2 items-end">
-                <div className="flex-1">
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Archivo (PDF)
-                  </label>
-                  <label className="border border-slate-200 rounded-xl px-3 py-2 bg-white cursor-pointer flex items-center justify-center hover:bg-slate-50 transition-colors h-[38px] text-xs text-slate-600">
-                    <span className="truncate">
-                      {selectedFile ? selectedFile.name : '📄 Seleccionar PDF'}
-                    </span>
-                    <input
-                      type="file"
-                      accept=".pdf"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0] || null;
-                        setSelectedFile(file);
-                        if (file && !formData.documentName) {
-                          setFormData({
-                            ...formData,
-                            documentName: file.name.replace(/\.pdf$/i, ''),
-                          });
-                        }
-                      }}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={
-                    uploading || !formData.insurerName || !formData.documentName || !selectedFile
-                  }
-                  className="bg-indigo-600 text-white font-semibold rounded-xl px-4 py-2 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors h-[38px] text-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  {uploading ? (
-                    <>
-                      <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
-                      <span>Subiendo...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Upload size={14} />
-                      <span>Subir</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          ) : (
-            <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl text-xs flex items-start gap-2">
-              <ShieldCheck size={16} className="mt-0.5 flex-shrink-0 text-amber-600" />
-              <span>
-                La carga y gestión de clausulados requiere inicio de sesión. Inicia sesión con tu
-                cuenta para agregar o modificar documentos del repositorio; la consulta es de acceso
-                libre.
-              </span>
-            </div>
-          )}
-        </div>
+        <ClauseUploadForm
+          hasUser={Boolean(currentUser)}
+          formData={formData}
+          selectedFile={selectedFile}
+          uploading={uploading}
+          onFormDataChange={setFormData}
+          onFileSelect={setSelectedFile}
+          onSubmit={handleSubmit}
+        />
 
         {/* Filters Toolbar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
@@ -609,7 +358,7 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
               className="border border-slate-200 rounded-xl px-2.5 py-1.5 bg-white text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer"
             >
               <option value="">Todos los Ramos</option>
-              {DOMAIN_OPTIONS.map((d) => (
+              {CLAUSE_DOMAIN_OPTIONS.map((d) => (
                 <option key={d.value} value={d.value}>
                   {d.label}
                 </option>
@@ -775,97 +524,7 @@ export const ClauseAdmin: React.FC<ClauseAdminProps> = ({ onClose, currentUser }
         </div>
       </div>
 
-      {/* Preview Modal */}
-      <Modal
-        isOpen={previewDoc !== null}
-        onClose={() => setPreviewDoc(null)}
-        zIndexClass="z-[60]"
-        maxWidthClass="max-w-xl"
-        containerClassName="p-6 space-y-4"
-      >
-        {previewDoc && (
-          <>
-            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <div>
-                <h3 className="font-bold text-slate-900 text-sm">{previewDoc.documentName}</h3>
-                <p className="text-xs text-slate-500">
-                  {previewDoc.insurer?.name} • Versión {previewDoc.version || 'No especificada'} •{' '}
-                  {getDomainLabel(previewDoc.domain)}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPreviewDoc(null)}
-                aria-label="Cerrar previsualización"
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs bg-indigo-50/80 text-indigo-900 p-3 rounded-xl border border-indigo-100">
-                <span className="font-semibold flex items-center gap-1.5">
-                  <Sparkles size={14} className="text-indigo-600" />
-                  Metadatos reales del documento indexado
-                </span>
-                {getStatusBadge(previewDoc.isActive)}
-              </div>
-
-              <dl className="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs text-slate-700">
-                <div>
-                  <dt className="text-slate-500 font-medium">Aseguradora</dt>
-                  <dd className="font-semibold text-slate-900">
-                    {previewDoc.insurer?.name || 'N/D'}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-slate-500 font-medium">Tipo de documento</dt>
-                  <dd className="font-semibold text-slate-900">
-                    {getDocumentTypeLabel(previewDoc.documentType)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-slate-500 font-medium">Ramo</dt>
-                  <dd className="font-semibold text-slate-900">
-                    {getDomainLabel(previewDoc.domain)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-slate-500 font-medium">Producto</dt>
-                  <dd className="font-semibold text-slate-900">
-                    {previewDoc.productName || 'General'}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-slate-500 font-medium">Páginas</dt>
-                  <dd className="font-semibold text-slate-900">
-                    {previewDoc.totalPages > 0 ? `${previewDoc.totalPages} págs.` : 'No reportado'}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-slate-500 font-medium">Fecha de registro</dt>
-                  <dd className="font-semibold text-slate-900">
-                    {previewDoc.createdAt
-                      ? new Date(previewDoc.createdAt).toLocaleDateString('es-CO')
-                      : 'No disponible'}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <button
-                type="button"
-                onClick={() => setPreviewDoc(null)}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 transition-colors cursor-pointer"
-              >
-                Cerrar Previsualización
-              </button>
-            </div>
-          </>
-        )}
-      </Modal>
+      <ClausePreviewModal doc={previewDoc} onClose={() => setPreviewDoc(null)} />
 
       <ConfirmModal
         isOpen={pendingDeleteDoc !== null}

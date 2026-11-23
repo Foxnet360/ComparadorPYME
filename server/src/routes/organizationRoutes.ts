@@ -9,6 +9,7 @@ import { AuthenticatedRequest, requireUser, requireRole } from '../middleware/au
 import { asyncHandler } from '../utils/asyncHandler';
 import { NotFoundError, ForbiddenError, ValidationError, AppError } from '../errors';
 import { supabase } from '../config/database';
+import logger from '../config/logger';
 import { getEffectiveCommercialPolicies, CommercialPolicies } from '../shared/commercialPolicies';
 import {
   createOrganization,
@@ -670,7 +671,7 @@ router.delete(
     try {
       await deleteUserFromAuth(targetUserId);
     } catch (authErr) {
-      console.warn(`Could not delete user ${targetUserId} from auth:`, authErr);
+      logger.warn({ err: authErr, targetUserId }, 'Could not delete user from auth');
     }
 
     res.status(204).end();

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { supabase, handleSupabaseError } from '../config/database';
 import { embeddingService } from '../services/vector/embeddingService';
 import { ValidationError, NotFoundError } from '../errors';
+import logger from '../config/logger';
 
 interface SearchChunkResult {
   id: string;
@@ -35,7 +36,7 @@ export const searchController = {
    * POST /api/search - Búsqueda semántica
    */
   search: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    console.log('🔍 [searchController.search] Request received');
+    logger.info('searchController.search request received');
 
     try {
       const { query, insurerId, coverageTag, sectionType, limit = '5' } = req.body;
@@ -48,9 +49,10 @@ export const searchController = {
         return next(new ValidationError('insurerId is required'));
       }
 
-      console.log(`   Query: "${query}"`);
-      console.log(`   Insurer: ${insurerId}`);
-      console.log(`   Coverage: ${coverageTag || 'any'}`);
+      logger.info(
+        { query, insurerId, coverageTag: coverageTag || 'any' },
+        'Executing semantic search'
+      );
 
       // Generar embedding para la query
       const queryEmbedding = await embeddingService.generateQueryEmbedding(query);
@@ -121,7 +123,7 @@ export const searchController = {
    * POST /api/search/by-coverage - Búsqueda por cobertura específica
    */
   searchByCoverage: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    console.log('🔍 [searchController.searchByCoverage] Request received');
+    logger.info('searchController.searchByCoverage request received');
 
     try {
       const { coverageTag, insurerId, documentType, limit = '10' } = req.body;
@@ -130,8 +132,10 @@ export const searchController = {
         return next(new ValidationError('coverageTag is required'));
       }
 
-      console.log(`   Coverage: ${coverageTag}`);
-      console.log(`   Insurer: ${insurerId || 'any'}`);
+      logger.info(
+        { coverageTag, insurerId: insurerId || 'any' },
+        'Searching chunks by coverage tag'
+      );
 
       let query = supabase
         .from('chunks')
@@ -194,7 +198,7 @@ export const searchController = {
    * POST /api/search/compare - Comparar cotización vs clausulado
    */
   compareDocuments: async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    console.log('⚖️  [searchController.compareDocuments] Request received');
+    logger.info('searchController.compareDocuments request received');
 
     try {
       const { quoteDocumentId, clauseDocumentId, coverageTag } = req.body;
@@ -203,8 +207,7 @@ export const searchController = {
         return next(new ValidationError('Both quoteDocumentId and clauseDocumentId are required'));
       }
 
-      console.log(`   Quote: ${quoteDocumentId}`);
-      console.log(`   Clause: ${clauseDocumentId}`);
+      logger.info({ quoteDocumentId, clauseDocumentId }, 'Comparing quote vs clause documents');
 
       // Validar que ambos documentos existen
       const { data: quoteDoc } = await supabase

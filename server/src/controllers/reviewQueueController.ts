@@ -5,6 +5,7 @@
 
 import { Request, Response } from 'express';
 import { supabase } from '../config/database';
+import logger from '../config/logger';
 
 interface ReviewQueueFilters {
   insurer?: string;
@@ -61,7 +62,7 @@ export const getReviewQueueCoverages = async (req: Request, res: Response): Prom
       .range(fromIdx, toIdx);
 
     if (error) {
-      console.error('❌ [ReviewQueue] Database error:', error);
+      logger.error({ err: error }, 'ReviewQueue database error');
       res.status(500).json({
         success: false,
         error: 'Failed to query review queue',
@@ -89,7 +90,7 @@ export const getReviewQueueCoverages = async (req: Request, res: Response): Prom
       },
     });
   } catch (err: unknown) {
-    console.error('❌ [ReviewQueue] Unexpected error:', err);
+    logger.error({ err }, 'ReviewQueue unexpected error');
     res.status(500).json({
       success: false,
       error: 'Internal server error while querying review queue',
