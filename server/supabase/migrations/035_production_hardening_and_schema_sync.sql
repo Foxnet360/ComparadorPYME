@@ -11,14 +11,26 @@ REVOKE EXECUTE ON FUNCTION public.is_org_member(uuid) FROM PUBLIC, anon;
 REVOKE EXECUTE ON FUNCTION public.is_super_admin() FROM PUBLIC, anon;
 
 -- 3. Search Path Immutability on Functions Flagged by Security Linter
-ALTER FUNCTION public.update_updated_at_column() SET search_path = public;
-ALTER FUNCTION public.match_clauses_vector(vector, double precision, integer, text, text) SET search_path = public;
-ALTER FUNCTION public.get_clauses_by_coverage(text, text, integer) SET search_path = public;
-ALTER FUNCTION public.normalize_clause_content(text) SET search_path = public;
-ALTER FUNCTION public.match_clauses(text, double precision, integer, text, text) SET search_path = public;
-ALTER FUNCTION public.update_chat_threads_updated_at() SET search_path = public;
-ALTER FUNCTION public.try_acquire_campaign_lock(text, integer) SET search_path = public;
-ALTER FUNCTION public.release_campaign_lock(text) SET search_path = public;
+DO $$
+DECLARE
+  v_sig TEXT;
+BEGIN
+  FOREACH v_sig IN ARRAY ARRAY[
+    'public.update_updated_at_column()',
+    'public.match_clauses_vector(vector, text, text[], integer)',
+    'public.get_clauses_by_coverage(text, text, text, integer)',
+    'public.normalize_clause_content()',
+    'public.match_clauses(vector, text, text, text[], text, integer)',
+    'public.update_chat_threads_updated_at()',
+    'public.try_acquire_campaign_lock(bigint)',
+    'public.release_campaign_lock(bigint)'
+  ]
+  LOOP
+    IF to_regprocedure(v_sig) IS NOT NULL THEN
+      EXECUTE format('ALTER FUNCTION %s SET search_path = public', v_sig);
+    END IF;
+  END LOOP;
+END $$;
 
 -- 4. Enable RLS and Policies for Tables Flagged with rls_enabled_no_policy
 ALTER TABLE IF EXISTS public.analysis_logs ENABLE ROW LEVEL SECURITY;
