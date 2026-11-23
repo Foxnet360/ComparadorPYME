@@ -170,6 +170,69 @@ export const GlobalStructureJsonSchema = {
         },
       },
     },
+    cumplimientoDetails: {
+      type: SchemaType.OBJECT,
+      description:
+        'Ficha técnica de Cumplimiento y Fianzas (Etapa Licitación vs Contrato vs Otrosí, Régimen Ley 80/Particular, Contragarantías y RCE Derivada)',
+      nullable: true,
+      properties: {
+        contractStage: {
+          type: SchemaType.STRING,
+          description:
+            'PRECONTRACTUAL_LICITACION (Seriedad de Oferta) | CONTRACTUAL_EJECUCION (Garantía Única de Contrato) | MODIFICACION_OTROSI',
+          nullable: true,
+        },
+        legalRegime: {
+          type: SchemaType.STRING,
+          description:
+            'ESTATAL_LEY_80 (Decreto 1082/2015) | PARTICULAR | REGIMEN_ESPECIAL (Ecopetrol, ESP, Grandes Beneficiarios)',
+          nullable: true,
+        },
+        processOrContractNumber: {
+          type: SchemaType.STRING,
+          description: 'Número de Proceso SECOP II / Licitación o Número de Contrato',
+          nullable: true,
+        },
+        afianzadoName: {
+          type: SchemaType.STRING,
+          description:
+            'Nombre y NIT del Tomador / Contratista / Proponente (incluyendo Consorcio o Unión Temporal y % participación)',
+          nullable: true,
+        },
+        beneficiaryName: {
+          type: SchemaType.STRING,
+          description: 'Nombre y NIT de la Entidad Estatal o Contratante Beneficiario',
+          nullable: true,
+        },
+        contractOrBudgetValue: {
+          type: SchemaType.NUMBER,
+          description: 'Valor total del Contrato o Presupuesto Oficial de la Licitación en COP',
+          nullable: true,
+        },
+        contractDuration: {
+          type: SchemaType.STRING,
+          description: 'Plazo de ejecución del contrato o vigencia base de la licitación',
+          nullable: true,
+        },
+        counterGuarantee: {
+          type: SchemaType.STRING,
+          description:
+            'Contragarantía exigida (Pagaré en blanco, Codeudor, Colateral/Prenda, Cupo de Cumplimiento aprobado)',
+          nullable: true,
+        },
+        appliedRateSummary: {
+          type: SchemaType.STRING,
+          description: 'Resumen de tasas aplicadas por amparo (% o ‰) o prima mínima',
+          nullable: true,
+        },
+        rceDerivativeSummary: {
+          type: SchemaType.STRING,
+          description:
+            'Condiciones de RCE Derivada (Suma en COP/SMMLV, modalidad Ocurrencia, amparos Patronal/Cruzada/Lucro Cesante y deducible)',
+          nullable: true,
+        },
+      },
+    },
   },
   required: ['insurerName', 'policyName', 'premium', 'formatFamily'],
 };
@@ -220,6 +283,7 @@ Tu objetivo en esta FASE 1 (Estructura Global) es analizar el documento completo
 4. Mapeo de Secciones de Cobertura: Identifica los nombres de los capítulos, tablas o secciones de amparos y en qué página(s) están ubicados.
 5. Condiciones especiales, garantías o exclusiones mayores si están resumidas.
 6. Ficha Técnica de Colectivo / Flota (collectiveDetails): Si el documento es una póliza colectiva, flota de vehículos, salud colectiva o vida grupo, extrae isCollective=true, modality, insuredCount (N° de vidas o vehículos), totalInsuredCumulus (cúmulo asegurado), ratePerMil (tasa por mil o tasa media), freeCoverLimit (tope sin requisitos médicos en COP), entryAgeLimit, permanenceAgeLimit, continuityAndPreexisting, profitSharing y categoryBreakdownSummary.
+7. Ficha Técnica de Cumplimiento y Fianzas (cumplimientoDetails): Si el documento es de Cumplimiento/Fianzas, identifica la etapa (PRECONTRACTUAL_LICITACION si es Seriedad de Oferta para pliego; CONTRACTUAL_EJECUCION si es Garantía Única de Contrato; MODIFICACION_OTROSI si es prórroga/adición), legalRegime (ESTATAL_LEY_80, PARTICULAR o REGIMEN_ESPECIAL), processOrContractNumber, afianzadoName (incluyendo Consorcio/UT), beneficiaryName, contractOrBudgetValue, contractDuration, counterGuarantee (Pagaré, Cupo, Colateral), appliedRateSummary y rceDerivativeSummary.
 
 NO extraigas el listado individual y exhaustivo de cada cobertura en esta fase; eso se realizará en la Fase 2. Concéntrate en la precisión de las primas y el mapa general.`;
 

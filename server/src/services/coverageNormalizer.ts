@@ -42,6 +42,8 @@ export interface CanonicalCoverage {
   categoryId?: number | string | null;
   rawTextSnippet?: string;
   pageNumber?: number | null;
+  percentageOfContract?: string | null;
+  coverageValidity?: string | null;
   // Step 1 Multinivel Additions:
   level?: 1 | 2 | 3;
   parentName?: string;
@@ -58,6 +60,10 @@ export interface RawCoverage {
   rawName: string;
   insuredAmount?: number | null;
   deductible?: string | null;
+  percentageOfContract?: string | null;
+  coverageValidity?: string | null;
+  validityStart?: string | null;
+  validityEnd?: string | null;
   premium?: number | null;
   notes?: string | null;
   rawTextSnippet?: string;
@@ -818,6 +824,12 @@ export async function buildCanonicalCoverages(
         status: 'present',
         insuredAmount: best.coverage.insuredAmount || null,
         deductible: best.coverage.deductible || null,
+        percentageOfContract: best.coverage.percentageOfContract || null,
+        coverageValidity:
+          best.coverage.coverageValidity ||
+          (best.coverage.validityStart && best.coverage.validityEnd
+            ? `${best.coverage.validityStart} a ${best.coverage.validityEnd}`
+            : null),
         premium: best.coverage.premium || null,
         confidence: best.confidence,
         graphConfidence: best.graphConfidence,
@@ -1075,6 +1087,12 @@ async function buildOntologyBasedCoverages(
         status: 'present',
         insuredAmount: best.rawCoverage.insuredAmount || null,
         deductible: best.rawCoverage.deductible || null,
+        percentageOfContract: best.rawCoverage.percentageOfContract || null,
+        coverageValidity:
+          best.rawCoverage.coverageValidity ||
+          (best.rawCoverage.validityStart && best.rawCoverage.validityEnd
+            ? `${best.rawCoverage.validityStart} a ${best.rawCoverage.validityEnd}`
+            : null),
         premium: best.rawCoverage.premium || null,
         confidence: Math.round(avgConfidence * 100),
         graphConfidence: null,

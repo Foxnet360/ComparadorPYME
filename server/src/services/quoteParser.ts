@@ -38,6 +38,9 @@ export interface ParsedCoverage {
   // Text evidence tracking for reverse page anchoring
   rawTextSnippet?: string;
   calculatedPage?: number;
+  // Cumplimiento / Fianzas specific attributes
+  percentageOfContract?: string | null;
+  coverageValidity?: string | null;
 }
 
 export interface ExpectedCoverage {
@@ -69,6 +72,8 @@ export interface ParsedQuote {
   reconciliationResults?: import('../schemas/extractionSchemas').ReconciliationResult[];
   // Collective / Fleet metadata (Autos Flotas, Salud Colectiva, Vida Grupo)
   collectiveDetails?: import('../schemas/extractionSchemas').CollectiveDetails | null;
+  // Cumplimiento y Fianzas metadata (Licitación vs Contrato vs Otrosí)
+  cumplimientoDetails?: import('../schemas/extractionSchemas').CumplimientoDetails | null;
 }
 
 export const quoteParser = {

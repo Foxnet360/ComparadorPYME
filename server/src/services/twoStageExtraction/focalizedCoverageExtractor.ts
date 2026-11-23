@@ -37,6 +37,18 @@ export const FocalizedCoverageJsonSchema = {
             description: 'Deductible text verbatim as it appears in document. If none, null.',
             nullable: true,
           },
+          percentageOfContract: {
+            type: SchemaType.STRING,
+            description:
+              'En Cumplimiento/Fianzas: porcentaje exigido sobre el contrato, presupuesto o anticipo (ej. "10%", "100% del anticipo", "5%").',
+            nullable: true,
+          },
+          coverageValidity: {
+            type: SchemaType.STRING,
+            description:
+              'En Cumplimiento/Fianzas: vigencia específica de este amparo (fechas inicio-fin o término como "Plazo + 3 años", "5 años desde acta de recibo").',
+            nullable: true,
+          },
           rawTextSnippet: {
             type: SchemaType.STRING,
             description:

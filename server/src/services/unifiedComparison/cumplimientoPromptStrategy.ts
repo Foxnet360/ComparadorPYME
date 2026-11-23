@@ -172,6 +172,23 @@ const CUMPLIMIENTO_RESPONSE_SCHEMA: Record<string, unknown> = {
     },
     specialConditions: { type: 'array', items: { type: 'string' }, nullable: true },
     exclusions: { type: 'array', items: { type: 'string' }, nullable: true },
+    cumplimientoDetails: {
+      type: 'object',
+      additionalProperties: true,
+      nullable: true,
+      properties: {
+        contractStage: { type: 'string', nullable: true },
+        legalRegime: { type: 'string', nullable: true },
+        processOrContractNumber: { type: 'string', nullable: true },
+        afianzadoName: { type: 'string', nullable: true },
+        beneficiaryName: { type: 'string', nullable: true },
+        contractOrBudgetValue: { type: 'number', nullable: true },
+        contractDuration: { type: 'string', nullable: true },
+        counterGuarantee: { type: 'string', nullable: true },
+        appliedRateSummary: { type: 'string', nullable: true },
+        rceDerivativeSummary: { type: 'string', nullable: true },
+      },
+    },
   },
 };
 

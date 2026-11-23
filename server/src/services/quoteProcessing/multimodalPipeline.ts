@@ -537,6 +537,42 @@ export async function processQuoteMultimodalInternal(
           }
         : undefined;
 
+    // Coalesce cumplimiento details from two-stage or single-stage contractDetails/estatutoryCompliance
+    const legacyContract = rawAny.contractDetails as Record<string, any> | undefined;
+    const legacyStatutory = rawAny.estatutoryCompliance as Record<string, any> | undefined;
+    const coalescedCumplimiento:
+      | import('../../schemas/extractionSchemas').CumplimientoDetails
+      | undefined =
+      extracted.cumplimientoDetails ||
+      legacyContract ||
+      legacyStatutory ||
+      domain === 'cumplimiento'
+        ? {
+            contractStage: extracted.cumplimientoDetails?.contractStage ?? null,
+            legalRegime:
+              extracted.cumplimientoDetails?.legalRegime ??
+              (legacyStatutory?.ley80_1993 || legacyStatutory?.decreto1082_2015
+                ? 'ESTATAL_LEY_80 (Decreto 1082/2015)'
+                : null),
+            processOrContractNumber:
+              extracted.cumplimientoDetails?.processOrContractNumber ??
+              legacyContract?.contractDescription ??
+              null,
+            afianzadoName:
+              extracted.cumplimientoDetails?.afianzadoName ?? legacyContract?.afianzado ?? null,
+            beneficiaryName:
+              extracted.cumplimientoDetails?.beneficiaryName ?? legacyContract?.beneficiary ?? null,
+            contractOrBudgetValue:
+              extracted.cumplimientoDetails?.contractOrBudgetValue ??
+              legacyContract?.contractValue ??
+              null,
+            contractDuration: extracted.cumplimientoDetails?.contractDuration ?? null,
+            counterGuarantee: extracted.cumplimientoDetails?.counterGuarantee ?? null,
+            appliedRateSummary: extracted.cumplimientoDetails?.appliedRateSummary ?? null,
+            rceDerivativeSummary: extracted.cumplimientoDetails?.rceDerivativeSummary ?? null,
+          }
+        : undefined;
+
     // Build ParsedQuote from normalized data
     const parsed: ParsedQuote = {
       insurerName: extracted.insurerName || 'NO ESPECIFICADO',
@@ -544,12 +580,15 @@ export async function processQuoteMultimodalInternal(
       priceAnnual: premiumBreakdown.totalPayable || 0,
       currency: normalizeCurrency(premiumBreakdown.currency),
       collectiveDetails: coalescedCollective,
+      cumplimientoDetails: coalescedCumplimiento,
       coverages: normalizationResult.canonicalCoverages.map((c) => ({
         name: c.name,
         canonicalName: c.name,
         value: c.insuredAmount ? c.insuredAmount.toString() : 'NO ESPECIFICADO',
         deductible:
           c.deductible || getDeductibleFallback(c.name, normalizationResult.generalDeductibles),
+        percentageOfContract: c.percentageOfContract ?? null,
+        coverageValidity: c.coverageValidity ?? null,
         confidence: c.confidence,
         rawTextSnippet: c.rawTextSnippet,
         calculatedPage: c.pageNumber || undefined,

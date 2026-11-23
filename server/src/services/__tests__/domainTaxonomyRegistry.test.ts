@@ -85,15 +85,24 @@ describe('domainTaxonomyRegistry', () => {
     expect(names).toContain('Estructura Tarifaria por Censo / Rangos Etarios y Parentesco');
   });
 
-  it('loads the cumplimiento taxonomy (v2) with 15 categories including Garantía de Mantenimiento', () => {
+  it('loads the cumplimiento taxonomy (v2) with 18 categories including Garantía de Mantenimiento, RCE Derivada sub-coverages, and Contragarantías', () => {
     const taxonomy = domainTaxonomyRegistry.getTaxonomy('cumplimiento');
     expect(taxonomy.domain).toBe('cumplimiento');
-    expect(taxonomy.categories).toHaveLength(15);
+    expect(taxonomy.categories).toHaveLength(18);
 
     const names = taxonomy.categories.map((category) => category.name);
     expect(names).toContain('Seriedad de Oferta');
     expect(names).toContain('Cumplimiento de Contrato');
     expect(names).toContain('Salarios, Prestaciones e Indemnizaciones Laborales');
+    expect(names).toContain(
+      'Subamparos de RCE Derivada (Patronal, Cruzada, Contratistas, Vehículos y Lucro Cesante)'
+    );
+    expect(names).toContain(
+      'Contragarantías Exigidas y Cupo de Afianzamiento (Pagaré, Codeudor, Colateral)'
+    );
+    expect(names).toContain(
+      'Régimen Jurídico y Cláusula de Irrevocabilidad (Ley 80 / Decreto 1082 / Particular / Régimen Especial)'
+    );
     expect(names).toContain(
       'Garantía Única de Cumplimiento (Contratación Estatal — Ley 80/1993 · Decreto 1082/2015)'
     );

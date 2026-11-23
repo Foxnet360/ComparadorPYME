@@ -52,6 +52,8 @@ export const RawCoverageSchema = passthrough({
   rawName: z.string().min(1),
   insuredAmount: z.number().min(0).nullish(),
   deductible: z.string().nullish(),
+  percentageOfContract: z.string().nullish(),
+  coverageValidity: z.string().nullish(),
   rawTextSnippet: z.string().min(10).max(500),
   pageNumber: z.number().int().min(1),
   premium: z.number().min(0).nullish(),
@@ -109,6 +111,19 @@ export const CollectiveDetailsSchema = passthrough({
   categoryBreakdownSummary: z.string().nullish(),
 });
 
+export const CumplimientoDetailsSchema = passthrough({
+  contractStage: z.string().nullish(),
+  legalRegime: z.string().nullish(),
+  processOrContractNumber: z.string().nullish(),
+  afianzadoName: z.string().nullish(),
+  beneficiaryName: z.string().nullish(),
+  contractOrBudgetValue: z.number().min(0).nullish(),
+  contractDuration: z.string().nullish(),
+  counterGuarantee: z.string().nullish(),
+  appliedRateSummary: z.string().nullish(),
+  rceDerivativeSummary: z.string().nullish(),
+});
+
 // -----------------------------------------------------------------------------
 // Quote extraction schemas
 // -----------------------------------------------------------------------------
@@ -127,6 +142,7 @@ export const QuoteExtractionSchemaV2 = passthrough({
   demeritClause: DemeritClauseSchema.nullish(),
   assistances: z.array(AssistanceItemSchema).nullish(),
   collectiveDetails: CollectiveDetailsSchema.nullish(),
+  cumplimientoDetails: CumplimientoDetailsSchema.nullish(),
   specialConditions: z.array(z.string()).nullish(),
   exclusions: z.array(z.string()).nullish(),
   warranties: z.array(z.string()).nullish(),
@@ -241,6 +257,7 @@ export type GeneralDeductible = z.infer<typeof GeneralDeductibleSchema>;
 export type PremiumBreakdown = z.infer<typeof PremiumSchema>;
 export type InsuredAsset = z.infer<typeof InsuredAssetSchema>;
 export type CollectiveDetails = z.infer<typeof CollectiveDetailsSchema>;
+export type CumplimientoDetails = z.infer<typeof CumplimientoDetailsSchema>;
 
 // -----------------------------------------------------------------------------
 // Normalization helpers

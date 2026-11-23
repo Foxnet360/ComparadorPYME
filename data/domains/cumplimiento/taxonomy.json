@@ -252,6 +252,53 @@
         "garantía de servicio post-contrato",
         "maintenance bond"
       ]
+    },
+    {
+      "id": "cum_16",
+      "name": "Subamparos de RCE Derivada (Patronal, Cruzada, Contratistas, Vehículos y Lucro Cesante)",
+      "section": "GARANTÍAS DE RESPONSABILIDAD",
+      "isRequired": false,
+      "synonyms": [
+        "RCE derivada de cumplimiento",
+        "amparo patronal",
+        "responsabilidad civil cruzada",
+        "contratistas y subcontratistas",
+        "vehículos propios y no propios",
+        "lucro cesante y daño moral",
+        "gastos médicos RCE",
+        "modalidad ocurrencia Decreto 1082"
+      ]
+    },
+    {
+      "id": "cum_17",
+      "name": "Contragarantías Exigidas y Cupo de Afianzamiento (Pagaré, Codeudor, Colateral)",
+      "section": "SUSCRIPCIÓN Y CONTRAGARANTÍAS",
+      "isRequired": false,
+      "synonyms": [
+        "contragarantía",
+        "pagaré en blanco",
+        "carta de instrucciones",
+        "cupo de cumplimiento",
+        "codeudor solidario",
+        "avalista",
+        "garantía real",
+        "colateral CDT o prenda"
+      ]
+    },
+    {
+      "id": "cum_18",
+      "name": "Régimen Jurídico y Cláusula de Irrevocabilidad (Ley 80 / Decreto 1082 / Particular / Régimen Especial)",
+      "section": "CUMPLIMIENTO NORMATIVO ESTATAL",
+      "isRequired": false,
+      "synonyms": [
+        "no revocabilidad por falta de pago",
+        "irrevocabilidad de la garantía",
+        "régimen particular",
+        "régimen especial",
+        "grandes beneficiarios",
+        "empresas de servicios públicos ESP",
+        "certificado de pago de prima"
+      ]
     }
   ]
 }

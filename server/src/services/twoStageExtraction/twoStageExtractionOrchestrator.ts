@@ -118,6 +118,7 @@ export class TwoStageExtractionOrchestrator {
         subLimits: stage2.subLimits ?? null,
         generalDeductibles: stage2.generalDeductibles ?? null,
         collectiveDetails: stage1.collectiveDetails ?? null,
+        cumplimientoDetails: stage1.cumplimientoDetails ?? null,
         specialConditions: stage1.specialConditions ?? null,
         exclusions: stage1.exclusions ?? null,
         warranties: stage1.warranties ?? null,

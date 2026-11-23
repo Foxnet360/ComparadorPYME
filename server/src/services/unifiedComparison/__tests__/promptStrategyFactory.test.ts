@@ -318,6 +318,7 @@ describe('cumplimientoPromptStrategy', () => {
     expect(schema.properties).toHaveProperty('contractDetails');
     expect(schema.properties).toHaveProperty('estatutoryCompliance');
     expect(schema.properties).toHaveProperty('generalConditions');
+    expect(schema.properties).toHaveProperty('cumplimientoDetails');
     expect(schema.properties).toHaveProperty('rawCoverages');
   });
 });
