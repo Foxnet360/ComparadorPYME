@@ -93,17 +93,12 @@ export const AssistanceItemSchema = passthrough({
 });
 
 export const CollectiveDetailsSchema = passthrough({
-  isCollective: z.boolean().default(false),
-  modality: z
-    .enum([
-      'INDIVIDUAL',
-      'FLOTA_EMPRESARIAL',
-      'COLECTIVA_EMPLEADOS',
-      'SALUD_COLECTIVA',
-      'VIDA_GRUPO',
-    ])
-    .nullish(),
-  insuredCount: z.number().int().min(1).nullish(),
+  isCollective: z
+    .boolean()
+    .nullish()
+    .transform((v) => Boolean(v)),
+  modality: z.string().nullish(),
+  insuredCount: z.number().int().min(0).nullish(),
   totalInsuredCumulus: z.number().min(0).nullish(),
   ratePerMil: z.string().nullish(),
   freeCoverLimit: z.number().min(0).nullish(),
