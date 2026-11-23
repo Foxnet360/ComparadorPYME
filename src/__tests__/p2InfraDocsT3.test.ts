@@ -52,11 +52,14 @@ describe('P2-T3: Multi-stage Dockerfile, README alignment & Smoke Tests (S3)', (
     expect(smokeScript).not.toContain('fluidArchitecture');
 
     expect(smokeScript).toContain('/health');
+    expect(smokeScript).toContain('/api/documents');
+    expect(smokeScript).toContain('/api/insurers');
     expect(smokeScript).toContain('/api/features');
     expect(smokeScript).toContain('/api/analysis/extract-structured-clause');
     expect(smokeScript).toContain('/api/chat');
     expect(smokeScript).toContain('supabase');
     expect(smokeScript).toContain('AUTH_TOKEN');
+    expect(smokeScript).toContain('401');
 
     execFileSync('bash', ['-n', smokePath]);
   });
