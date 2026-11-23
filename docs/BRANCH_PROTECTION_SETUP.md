@@ -125,4 +125,4 @@ remote: error: You're not authorized to push to this branch...
 
 Si tienes problemas con la configuración, revisar:
 - [GitHub Docs: Managing a branch protection rule](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule)
-- [CONTRIBUTING.md](CONTRIBUTING.md)
+- [CONTRIBUTING.md](../CONTRIBUTING.md)

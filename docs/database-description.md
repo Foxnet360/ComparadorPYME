@@ -1,8 +1,6 @@
 # Database Description — Comparador CSA
 
-> **Scope note:** This description is derived from the Supabase migration history in `server/supabase/migrations/`. Migrations `001` through `028` exist in the repository's last committed state; migrations `029`, `030`, and `031` are not present in git history or the current working tree. The current working tree only retains a rewritten `001_initial_schema.sql`; files `002`–`028` are deleted from the working tree but remain readable from git history.
->
-> Migration `001` was rewritten into a single consolidated baseline that already contains the tables, indexes, functions, triggers, and policies that older individual migrations (`008`–`015`, `019`, `027`) originally introduced. Where the consolidated schema and the older per-migration DDL differ, this document describes the **final consolidated state** represented by migration `001` plus the incremental changes in `015b` and `016`–`028`.
+> **Scope note:** The base inventory below is derived from the consolidated baseline and migrations `001` through `028`. Active migrations `029` through `037` in `supabase/migrations/` (`20261020000029`–`20261123000037`) are documented in the **Migrations 029–037 (Current Additions)** section at the end of this file.
 
 ---
 
@@ -997,3 +995,23 @@ No materialized views were found.
 | `029_fix_rls_and_cleanup_indexes.sql` | **Not found** in git history or working tree | |
 | `030_enable_rls_remaining_and_optimize.sql` | **Not found** | |
 | `031_drop_legacy_rpcs.sql` | **Not found** | |
+
+---
+
+## Migrations 029–037 (Current Additions)
+
+Active migration files in `supabase/migrations/` (`20261020000029` through `20261123000037`) extend the schema with multi-tenant organizations, client sharing, DaaS B2B analytics, and outbound webhooks:
+
+| Table | Migration | Purpose |
+|---|---|---|
+| `public.organizations` | `029` | Multi-tenant brokerage/organization entities |
+| `public.organization_members` | `029` | Organization membership, roles, and RLS scoping |
+| `public.daas_market_snapshots` | `033` | Anonymized market benchmark snapshots for DaaS analytics |
+| `public.daas_api_usage` | `033` | Per-subscriber DaaS API request metering and rate metrics |
+| `public.daas_subscribers` | `034` | B2B DaaS subscriber accounts and hashed API keys |
+| `public.client_shares` | `034` (Nov 14) | Cross-advisor client portfolio delegation and sharing |
+| `public.client_delegation_audit` | `034` (Nov 14) | Immutable audit trail for client delegation actions |
+| `public.webhook_subscriptions` | `037` | Outbound HMAC-signed webhook endpoints and subscribed events |
+| `public.webhook_deliveries` | `037` | Webhook delivery attempts, status codes, and retry state |
+
+Additional hardening in `035`, `036`, and `037` synchronizes production RLS policies across tenant/portfolio tables and locks `search_path` / parameter validation on RPCs such as `get_daas_market_index` and `match_coverage_ontology`.

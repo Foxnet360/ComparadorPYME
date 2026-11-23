@@ -136,7 +136,7 @@ npm run seed:clauses -- --manifest=manifest.json --resume
 2. **Versionado Automático**: No más re-indexación manual
 3. **Múltiples Documentos por Aseguradora**: General, Particular, Anexos simultáneos
 4. **Transacciones Atómicas**: Documento + imágenes + chunks se guardan juntos
-5. **Embeddings Correctos**: 3072 dimensiones con gemini-embedding-001
+5. **Embeddings Correctos**: 3072 dimensiones con gemini-embedding-2
 6. **Renderizado Visual**: Páginas renderizadas a imágenes para evidencia
 7. **Reducción de Costos**: ~55% menos re-indexaciones repetidas
 

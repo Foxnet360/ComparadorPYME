@@ -194,8 +194,8 @@ git commit -m "fix: regenerar package-lock"
 ## Recursos
 
 - [README.md](README.md) - Información general
-- [DEPLOY.md](DEPLOY.md) - Guía de despliegue
-- [Skill: Modificación](.opencode/skills/modificacion/SKILL.md) - Skill interactivo
+- [docs/DEPLOY.md](docs/DEPLOY.md) - Guía de despliegue
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Arquitectura del sistema
 
 ## Contacto
 

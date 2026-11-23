@@ -29,7 +29,7 @@
 
 ### ✅ 2. Guard de Dimensión Vectorial en Supabase (pgvector 3072)
 - **Archivo:** `server/src/services/coverageOntology.ts`
-- **Solución:** Se implementó una verificación estricta de dimensionalidad (`embedding.length === 3072`). Si un vector no cumple la dimensión del modelo text-embedding-3-large, se omite de forma defensiva la columna vectorial en vez de provocar el rechazo transaccional de PostgreSQL (`code 22000`). Todas las coberturas no mapeadas se persisten con éxito en la cola de revisión humana (`review_queue`).
+- **Solución:** Se implementó una verificación estricta de dimensionalidad (`embedding.length === 3072`). Si un vector no cumple la dimensión del modelo `gemini-embedding-2`, se omite de forma defensiva la columna vectorial en vez de provocar el rechazo transaccional de PostgreSQL (`code 22000`). Todas las coberturas no mapeadas se persisten con éxito en la cola de revisión humana (`review_queue`).
 
 ### ✅ 3. Retrocompatibilidad de Contrato en `parseDeductible`
 - **Archivo:** `server/src/services/unifiedComparison/flatTableParser.ts`

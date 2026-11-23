@@ -36,7 +36,9 @@ SUPABASE_SERVICE_ROLE_KEY=tu-key-staging
 
 # Gemini (puedes usar la misma API key)
 GEMINI_API_KEY=tu-api-key
-GEMINI_MODEL=gemini-2.5-pro
+GEMINI_MODEL=gemini-4-hydrogen
+GEMINI_CHAT_MODEL=gemini-3.8-flash
+GEMINI_EMBEDDING_MODEL=gemini-embedding-2
 
 # Feature Flags (Staging = testing)
 ENABLE_MULTIMODAL_EXTRACTION=true

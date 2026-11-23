@@ -64,16 +64,18 @@ Configura estas variables en el [dashboard de Railway](https://railway.app):
 
 ### Sin Docker (recomendado para desarrollo)
 
+**Instalar dependencias (raíz):**
+```bash
+npm install
+```
+
 **Terminal 1 - Backend:**
 ```bash
-cd server
-npm install
-npm run dev
+npm run server:dev
 ```
 
 **Terminal 2 - Frontend:**
 ```bash
-npm install
 npm run dev
 ```
 
@@ -98,8 +100,8 @@ docker run -p 8080:8080 --env-file .env comparador-csa
 - Verifica que `.dockerignore` no excluya archivos fuente necesarios
 
 ### "Cannot find module"
-- Verifica que `server/package.json` tenga todas las dependencias del backend
-- Verifica que `package.json` raíz tenga las dependencias del frontend
+- Verifica que `package.json` raíz tenga todas las dependencias del frontend y backend instaladas (`npm install`)
+- En producción Docker, verifica que `npm run build` compile `dist/` y `server/dist/` correctamente
 
 ### Variables de entorno no disponibles
 - Verifica que estén configuradas en Railway Dashboard
@@ -122,9 +124,9 @@ Solo necesitas agregar la variable de entorno `REDIS_URL` a tu servicio.
 1. Ir a tu servicio principal (`comparador-csa`)
 2. Tab **"Variables"** → **"New Variable"**
 3. Nombre: `REDIS_URL`
-4. Valor (copia y pega):
+4. Valor (reemplaza con tu credencial real desde Railway Redis):
    ```
-   redis://default:YymaPFEKzRuNdHsyCnElykqZXmuaCkHC@redis.railway.internal:6379
+   redis://default:<PASSWORD>@<HOST>:<PORT>
    ```
 5. Click **"Add"** y luego **"Deploy"**
 
@@ -293,9 +295,9 @@ Los clausulados subidos se indexaban en `documents` + `chunks` pero NO en `claus
    - Los errores en clauseIndexer se loguean pero NO afectan la respuesta al usuario
 
 2. **Compatibilidad de embeddings** (`clauseIndexer.ts`):
-   - `DocumentIndexingService` genera embeddings de 3072 dims (Gemini)
-   - `clause_chunks` usa 768 dims (límite HNSW)
-   - **Solución**: Truncar embeddings a 768 dims antes de insertar en `clause_chunks`
+   - `DocumentIndexingService` genera embeddings de 3072 dims (`gemini-embedding-2`)
+   - `chunks` / `coverage_ontology` almacenan vectores `vector(3072)` en PostgreSQL (`pgvector`)
+   - **Solución**: Validar `embedding.length === 3072` antes de insertar en Supabase para evitar rechazos transaccionales (`code 22000`)
 
 3. **Corrección de referencias** (`auditEnrichmentService.ts`):
    - Cambiada referencia a tabla inexistente `clause_documents` → `documents`
@@ -364,7 +366,7 @@ Almacena chunks vectorizados de clausulados para búsqueda semántica (RAG).
 | `id` | uuid | Primary key |
 | `document_id` | uuid | FK a documents |
 | `content` | text | Texto del chunk |
-| `embedding` | vector(768) | Embedding del chunk |
+| `embedding` | vector(3072) | Embedding del chunk (`gemini-embedding-2`) |
 | `metadata` | jsonb | Metadatos adicionales |
 | `created_at` | timestamp | Fecha de creación |
 

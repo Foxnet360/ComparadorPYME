@@ -314,7 +314,10 @@ FEATURE_FLAGS='{"tripleSourceChat": true, "queryExpansion": true}'
 
 # Gemini
 GEMINI_API_KEY=your_key_here
-GEMINI_CHAT_MODEL=gemini-2.5-flash-lite
+GEMINI_MODEL=gemini-4-hydrogen
+GEMINI_CHAT_MODEL=gemini-3.8-flash
+GEMINI_FAST_MODEL=gemini-3.5-flash-lite
+GEMINI_EMBEDDING_MODEL=gemini-embedding-2
 ```
 
 ## Troubleshooting
