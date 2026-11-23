@@ -9,6 +9,10 @@ import type { RegulatoryCheckResult } from '../types';
 
 export interface RegulatoryAuditableQuote {
   insurerName: string;
+  cumplimientoDetails?: {
+    contractStage?: string | null;
+    legalRegime?: string | null;
+  } | null;
   coverages?: Array<{
     name: string;
     canonicalName?: string;
@@ -17,12 +21,81 @@ export interface RegulatoryAuditableQuote {
   }>;
 }
 
+export type CumplimientoContractStage =
+  | 'PRECONTRACTUAL_LICITACION'
+  | 'CONTRACTUAL_EJECUCION'
+  | 'GENERAL';
+
 function normalizeText(value: string): string {
   return (value || '')
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim();
+}
+
+/**
+ * Detect whether a Cumplimiento quote corresponds to the Pre-contractual Bid stage
+ * (Licitación / Pliego — Seriedad de la Oferta) or the Contractual Execution stage
+ * (Minuta del Contrato / Otrosí — Cumplimiento, Salarios, Anticipo, Estabilidad, RCE).
+ */
+export function detectCumplimientoStage(
+  quote: RegulatoryAuditableQuote
+): CumplimientoContractStage {
+  const explicitStage = normalizeText(quote.cumplimientoDetails?.contractStage || '');
+  if (
+    explicitStage.includes('precontract') ||
+    explicitStage.includes('licitac') ||
+    explicitStage.includes('pliego') ||
+    explicitStage.includes('seriedad')
+  ) {
+    return 'PRECONTRACTUAL_LICITACION';
+  }
+  if (
+    explicitStage.includes('contractual') ||
+    explicitStage.includes('ejecuc') ||
+    explicitStage.includes('contrato') ||
+    explicitStage.includes('minuta') ||
+    explicitStage.includes('otrosi')
+  ) {
+    return 'CONTRACTUAL_EJECUCION';
+  }
+
+  const activeCoverages = (quote.coverages || []).filter((cov) => {
+    const val = normalizeText(String(cov.value || ''));
+    return (
+      cov.isPositive !== false &&
+      val.length > 0 &&
+      !['no incluido', 'no incluida', 'no informado', 'excluido', 'no cubre', 'n.c.'].includes(val)
+    );
+  });
+
+  const hasSeriedad = activeCoverages.some((cov) => {
+    const label = normalizeText(`${cov.name || ''} ${cov.canonicalName || ''}`);
+    return label.includes('seriedad') || label.includes('oferta') || label.includes('bid bond');
+  });
+
+  const hasExecution = activeCoverages.some((cov) => {
+    const label = normalizeText(`${cov.name || ''} ${cov.canonicalName || ''}`);
+    return (
+      label.includes('cumplimiento de contrato') ||
+      label.includes('ejecucion del contrato') ||
+      label.includes('salarios') ||
+      label.includes('prestaciones') ||
+      label.includes('estabilidad') ||
+      label.includes('anticipo') ||
+      label.includes('calidad del bien') ||
+      label.includes('calidad del servicio')
+    );
+  });
+
+  if (hasSeriedad && !hasExecution) {
+    return 'PRECONTRACTUAL_LICITACION';
+  }
+  if (hasExecution && !hasSeriedad) {
+    return 'CONTRACTUAL_EJECUCION';
+  }
+  return 'GENERAL';
 }
 
 /**
@@ -34,6 +107,7 @@ export function auditQuoteCompliance(
 ): RegulatoryCheckResult[] {
   const profile = getDomainRegulatoryProfile(domain);
   const coverages = quote.coverages || [];
+  const cumplimientoStage = domain === 'cumplimiento' ? detectCumplimientoStage(quote) : 'GENERAL';
 
   return profile.mandatoryVerificationRules.map((rule) => {
     const matchedCov = coverages.find((cov) => {
@@ -56,6 +130,43 @@ export function auditQuoteCompliance(
         status: 'COMPLIANT' as const,
         details: `Verificado en cotización: ${matchedCov.name} (${matchedCov.value})`,
       };
+    }
+
+    // Stage-aware compliance rules for Cumplimiento y Fianzas (Licitación vs Contrato)
+    if (domain === 'cumplimiento') {
+      if (cumplimientoStage === 'PRECONTRACTUAL_LICITACION' && rule.id !== 'cum_seriedad') {
+        return {
+          ruleId: rule.id,
+          title: rule.title,
+          legalBasis: rule.legalBasis,
+          status: 'COMPLIANT' as const,
+          details:
+            'Etapa Precontractual (Licitación / Pliego): amparo de ejecución exigible únicamente tras adjudicación del contrato.',
+        };
+      }
+
+      if (cumplimientoStage === 'CONTRACTUAL_EJECUCION') {
+        if (rule.id === 'cum_seriedad') {
+          return {
+            ruleId: rule.id,
+            title: rule.title,
+            legalBasis: rule.legalBasis,
+            status: 'COMPLIANT' as const,
+            details:
+              'Etapa Contractual (Minuta / Ejecución): amparo precontractual de seriedad ya superado en fase licitatoria.',
+          };
+        }
+        if (rule.id === 'cum_anticipo') {
+          return {
+            ruleId: rule.id,
+            title: rule.title,
+            legalBasis: rule.legalBasis,
+            status: 'WARNING' as const,
+            details:
+              'Verificar en Minuta del Contrato si se pactó Anticipo o Pago Anticipado (100% Art. 2.2.1.2.3.1.10 Decreto 1082/2015).',
+          };
+        }
+      }
     }
 
     return {
@@ -129,6 +240,7 @@ ${rulesSummary}
 }
 
 export const regulatoryAuditService = {
+  detectCumplimientoStage,
   auditQuoteCompliance,
   auditReportCompliance,
   buildRegulatoryBackingPayload,

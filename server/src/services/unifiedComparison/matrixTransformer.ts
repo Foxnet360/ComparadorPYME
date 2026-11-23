@@ -26,6 +26,7 @@ export const HEADER_SECTION_ID = 0;
 export const COVERAGE_SECTION_ID = 1;
 export const DEDUCTIBLE_SECTION_ID = 50;
 export const COLLECTIVE_SECTION_ID = 75;
+export const CUMPLIMIENTO_SECTION_ID = 76;
 export const FINANCIAL_SECTION_ID = 100;
 export const ADDITIONAL_SECTION_ID = 101;
 
@@ -710,11 +711,27 @@ function cellFromQuoteCoverage(coverage: ParsedQuote['coverages'][number] | unde
     formattedValue === 'No informado' ||
     formattedValue === 'NO ESPECIFICADO' ||
     formattedValue === '';
+
+  const pct = coverage.percentageOfContract?.trim();
+  const displayValue =
+    !isExcluded && pct && !formattedValue.includes(pct)
+      ? `${formattedValue} (${pct})`
+      : formattedValue;
+
+  const validity = coverage.coverageValidity?.trim();
+  const noteParts: string[] = [];
+  if (coverage.deductible && coverage.deductible.trim() !== '') {
+    noteParts.push(coverage.deductible.trim());
+  }
+  if (validity) {
+    noteParts.push(`Vigencia: ${validity}`);
+  }
+
   return {
-    value: formattedValue,
+    value: displayValue,
     isExcluded,
     isWinner: false,
-    notes: coverage.deductible,
+    notes: noteParts.length > 0 ? noteParts.join(' · ') : coverage.deductible,
     confidence: coverage.confidence,
   };
 }
@@ -864,6 +881,112 @@ export function quotesToMatrixRows(
           id: rowDef.id,
           label: rowDef.label,
           sectionId: COLLECTIVE_SECTION_ID,
+          cells: values.map((v) => ({
+            value: v && v.trim() !== '' ? v : 'No informado',
+            isExcluded: !v || v.trim() === '',
+            isWinner: false,
+          })),
+        });
+      }
+    }
+  }
+
+  // Cumplimiento y Fianzas Technical Sheet section (Licitación / Pliego vs Contrato / Minuta vs Otrosí)
+  const hasCumplimientoData = quotes.some((q) => {
+    const cd = q.cumplimientoDetails;
+    if (!cd) return false;
+    return Boolean(
+      cd.contractStage ||
+      cd.legalRegime ||
+      cd.processOrContractNumber ||
+      cd.afianzadoName ||
+      cd.beneficiaryName ||
+      cd.contractOrBudgetValue ||
+      cd.contractDuration ||
+      cd.counterGuarantee ||
+      cd.appliedRateSummary ||
+      cd.rceDerivativeSummary
+    );
+  });
+
+  if (hasCumplimientoData) {
+    matrix.push({
+      type: 'header',
+      id: 'cumplimiento_details',
+      label: 'FICHA TÉCNICA DE LICITACIÓN / CONTRATO Y SUSCRIPCIÓN',
+      sectionId: CUMPLIMIENTO_SECTION_ID,
+      cells: emptyCells(numInsurers),
+    });
+
+    const cumplimientoRowDefs: Array<{
+      id: string;
+      label: string;
+      getter: (q: ParsedQuote) => string | null;
+    }> = [
+      {
+        id: 'cumplimiento_stage',
+        label: 'Etapa del Proceso Contractual',
+        getter: (q) => q.cumplimientoDetails?.contractStage ?? null,
+      },
+      {
+        id: 'cumplimiento_regime',
+        label: 'Régimen Jurídico / Clausulado',
+        getter: (q) => q.cumplimientoDetails?.legalRegime ?? null,
+      },
+      {
+        id: 'cumplimiento_process_number',
+        label: 'N° de Proceso SECOP / Contrato',
+        getter: (q) => q.cumplimientoDetails?.processOrContractNumber ?? null,
+      },
+      {
+        id: 'cumplimiento_afianzado',
+        label: 'Tomador / Afianzado (Consorcio / UT)',
+        getter: (q) => q.cumplimientoDetails?.afianzadoName ?? null,
+      },
+      {
+        id: 'cumplimiento_beneficiary',
+        label: 'Entidad Contratante / Beneficiario',
+        getter: (q) => q.cumplimientoDetails?.beneficiaryName ?? null,
+      },
+      {
+        id: 'cumplimiento_contract_value',
+        label: 'Valor del Contrato / Presupuesto Oficial',
+        getter: (q) =>
+          q.cumplimientoDetails?.contractOrBudgetValue != null &&
+          q.cumplimientoDetails.contractOrBudgetValue > 0
+            ? formatCOP(q.cumplimientoDetails.contractOrBudgetValue)
+            : null,
+      },
+      {
+        id: 'cumplimiento_duration',
+        label: 'Plazo / Vigencia Base Reconocida',
+        getter: (q) => q.cumplimientoDetails?.contractDuration ?? null,
+      },
+      {
+        id: 'cumplimiento_rates',
+        label: 'Tasas por Amparo / Prima Mínima',
+        getter: (q) => q.cumplimientoDetails?.appliedRateSummary ?? null,
+      },
+      {
+        id: 'cumplimiento_counter_guarantee',
+        label: 'Contragarantía Exigida y Cupo',
+        getter: (q) => q.cumplimientoDetails?.counterGuarantee ?? null,
+      },
+      {
+        id: 'cumplimiento_rce_derivative',
+        label: 'RCE Derivada (SMMLV, Modalidad y Subamparos)',
+        getter: (q) => q.cumplimientoDetails?.rceDerivativeSummary ?? null,
+      },
+    ];
+
+    for (const rowDef of cumplimientoRowDefs) {
+      const values = quotes.map((q) => rowDef.getter(q));
+      if (values.some((v) => v !== null && v.trim() !== '')) {
+        matrix.push({
+          type: 'data',
+          id: rowDef.id,
+          label: rowDef.label,
+          sectionId: CUMPLIMIENTO_SECTION_ID,
           cells: values.map((v) => ({
             value: v && v.trim() !== '' ? v : 'No informado',
             isExcluded: !v || v.trim() === '',

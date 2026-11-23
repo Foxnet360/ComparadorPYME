@@ -656,6 +656,69 @@ describe('quotesToMatrixRows', () => {
     expect(vehicleCountRow.label).toBe('N° de Vehículos Asegurados');
     expect(vehicleCountRow.cells[0].value).toBe('18');
   });
+
+  it('renders percentageOfContract, coverageValidity, and FICHA TÉCNICA DE LICITACIÓN / CONTRATO Y SUSCRIPCIÓN for cumplimiento', () => {
+    const cumplimientoQuotes = [
+      makeParsedQuote({
+        insurerName: 'SEGUROS DEL ESTADO',
+        priceAnnual: 4_800_000,
+        coverages: [
+          {
+            name: 'Cumplimiento de Contrato',
+            canonicalName: 'Cumplimiento de Contrato',
+            value: '200000000',
+            deductible: 'Sin deducible (Ley 80)',
+            percentageOfContract: '20%',
+            coverageValidity: '2026-02-01 a 2027-08-01 (Ejecución + 6 meses liquidación)',
+            confidence: 95,
+          },
+          {
+            name: 'Salarios, Prestaciones e Indemnizaciones Laborales',
+            canonicalName: 'Salarios, Prestaciones e Indemnizaciones Laborales',
+            value: '50000000',
+            deductible: 'Sin deducible (Ley 80)',
+            percentageOfContract: '5%',
+            coverageValidity: '2026-02-01 a 2030-02-01 (Ejecución + 3 años)',
+            confidence: 95,
+          },
+        ],
+        cumplimientoDetails: {
+          contractStage: 'CONTRACTUAL_EJECUCION (Minuta del Contrato)',
+          legalRegime: 'ESTATAL_LEY_80 (Decreto 1082/2015)',
+          processOrContractNumber: 'LP-INVIAS-042-2026 / CTO-118-2026',
+          afianzadoName: 'Consorcio Vial Andino (60% Ing. SAS / 40% Vías Ltda.)',
+          beneficiaryName: 'INVIAS - NIT 800.215.807-2',
+          contractOrBudgetValue: 1_000_000_000,
+          contractDuration: '12 meses de ejecución + 6 meses liquidación',
+          counterGuarantee: 'Pagaré en blanco con carta de instrucciones (Cupo aprobado)',
+          appliedRateSummary: 'Cumplimiento 0.22%, Salarios 0.18%, RCE 0.35%',
+          rceDerivativeSummary: '200 SMMLV · Modalidad Ocurrencia · Incluye Patronal y Cruzada',
+        },
+      }),
+    ];
+
+    const matrix = quotesToMatrixRows(cumplimientoQuotes, 'cumplimiento');
+
+    const cumpRow = matrix.find((r) => r.label === 'Cumplimiento de Contrato')!;
+    expect(cumpRow.cells[0].value).toBe('$200.000.000 (20%)');
+    expect(cumpRow.cells[0].notes).toContain('Vigencia: 2026-02-01 a 2027-08-01');
+
+    const header = matrix.find((r) => r.id === 'cumplimiento_details');
+    expect(header).toBeDefined();
+    expect(header?.label).toBe('FICHA TÉCNICA DE LICITACIÓN / CONTRATO Y SUSCRIPCIÓN');
+
+    const stageRow = matrix.find((r) => r.id === 'cumplimiento_stage')!;
+    expect(stageRow.cells[0].value).toContain('CONTRACTUAL_EJECUCION');
+
+    const regimeRow = matrix.find((r) => r.id === 'cumplimiento_regime')!;
+    expect(regimeRow.cells[0].value).toContain('ESTATAL_LEY_80');
+
+    const valueRow = matrix.find((r) => r.id === 'cumplimiento_contract_value')!;
+    expect(valueRow.cells[0].value).toBe('$1.000.000.000');
+
+    const guaranteeRow = matrix.find((r) => r.id === 'cumplimiento_counter_guarantee')!;
+    expect(guaranteeRow.cells[0].value).toContain('Pagaré en blanco');
+  });
 });
 
 describe('alignInsurerIndices & parseNumericValue', () => {

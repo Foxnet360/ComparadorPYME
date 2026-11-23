@@ -104,6 +104,10 @@ const AUTOS_PATRIMONIAL_BONUS = 5;
 const SALUD_CONTINUIDAD_BONUS = 6;
 const VIDA_FREE_COVER_BONUS = 6;
 const VIDA_PROFIT_SHARING_BONUS = 4;
+const CUMPLIMIENTO_PRECONTRACTUAL_BASE_BOOST = 45;
+const CUMPLIMIENTO_PERCENTAGE_CLARITY_BONUS = 5;
+const CUMPLIMIENTO_VALIDITY_CLARITY_BONUS = 5;
+const CUMPLIMIENTO_COUNTER_GUARANTEE_BONUS = 4;
 
 // Autos deductible modifiers
 const AUTOS_DEDUCTIBLE_CLEAR_BONUS_HIGH = 5;
@@ -396,13 +400,15 @@ function calculateCoverageScore(
     score -= mandatoryMissingCount * 10;
   }
 
-  // Domain-specific modifiers (including collective/fleet underwriting bonuses)
+  // Domain-specific modifiers (including collective/fleet and cumplimiento stage bonuses)
   if (domain === 'autos') {
     score += calculateAutosCoverageModifiers(quote);
   } else if (domain === 'salud') {
     score += calculateSaludCoverageModifiers(quote);
   } else if (domain === 'vida_grupo') {
     score += calculateVidaGrupoCoverageModifiers(quote);
+  } else if (domain === 'cumplimiento') {
+    score += calculateCumplimientoCoverageModifiers(quote);
   }
 
   return Math.round(clamp(score, 0, 100));
@@ -529,6 +535,65 @@ function calculateVidaGrupoCoverageModifiers(quote: ParsedQuote): number {
 
   if (hasProfitSharingCoverage || hasProfitSharingDetail) {
     modifier += VIDA_PROFIT_SHARING_BONUS;
+  }
+
+  return modifier;
+}
+
+/**
+ * Cumplimiento y Fianzas coverage modifiers (Licitación / Pliego vs Contrato / Minuta).
+ * - Normalizes single-amparo Pre-contractual (Seriedad de la Oferta) quotes so they are not
+ *   penalized for omitting execution-stage coverages.
+ * - Rewards explicit % of contract, per-coverage staggered vigencias (+3/+5 years),
+ *   and clear counter-guarantee / legal regime terms.
+ */
+function calculateCumplimientoCoverageModifiers(quote: ParsedQuote): number {
+  let modifier = 0;
+
+  const hasSeriedad = quote.coverages.some((c) => {
+    const canonical = (c.canonicalName || c.name).toLowerCase();
+    return canonical.includes('seriedad') || canonical.includes('oferta');
+  });
+  const hasExecution = quote.coverages.some((c) => {
+    const canonical = (c.canonicalName || c.name).toLowerCase();
+    return (
+      canonical.includes('cumplimiento de contrato') ||
+      canonical.includes('salarios') ||
+      canonical.includes('estabilidad') ||
+      canonical.includes('anticipo')
+    );
+  });
+  const isPrecontractualStage =
+    (hasSeriedad && !hasExecution) ||
+    /precontract|licitac|pliego/i.test(quote.cumplimientoDetails?.contractStage || '');
+
+  if (isPrecontractualStage && hasSeriedad) {
+    modifier += CUMPLIMIENTO_PRECONTRACTUAL_BASE_BOOST;
+  }
+
+  const hasPercentageSpec = quote.coverages.some(
+    (c) =>
+      Boolean(c.percentageOfContract && c.percentageOfContract.trim() !== '') ||
+      /%/.test(c.value || '')
+  );
+  if (hasPercentageSpec) {
+    modifier += CUMPLIMIENTO_PERCENTAGE_CLARITY_BONUS;
+  }
+
+  const hasValiditySpec = quote.coverages.some(
+    (c) =>
+      Boolean(c.coverageValidity && c.coverageValidity.trim() !== '') ||
+      Boolean(quote.cumplimientoDetails?.contractDuration)
+  );
+  if (hasValiditySpec) {
+    modifier += CUMPLIMIENTO_VALIDITY_CLARITY_BONUS;
+  }
+
+  const hasCounterGuaranteeOrRegime = Boolean(
+    quote.cumplimientoDetails?.counterGuarantee || quote.cumplimientoDetails?.legalRegime
+  );
+  if (hasCounterGuaranteeOrRegime) {
+    modifier += CUMPLIMIENTO_COUNTER_GUARANTEE_BONUS;
   }
 
   return modifier;

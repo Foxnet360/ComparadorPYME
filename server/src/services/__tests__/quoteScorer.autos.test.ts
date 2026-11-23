@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { quoteScorer } from '../quoteScorer';
+import { auditQuoteCompliance, detectCumplimientoStage } from '../regulatoryAuditService';
 import { ParsedQuote } from '../quoteParser';
 
 function makeAutosQuote(overrides: Partial<ParsedQuote> = {}): ParsedQuote {
@@ -304,5 +305,80 @@ describe('quoteScorer - autos domain', () => {
     expect(collectiveSaludScore.breakdown.coverage).toBeGreaterThan(
       baseSaludScore.breakdown.coverage
     );
+  });
+
+  it('evaluates cumplimiento quotes stage-aware (Licitación vs Contrato) without false NON_COMPLIANT alerts', () => {
+    const licitacionQuote: ParsedQuote = makeAutosQuote({
+      insurerName: 'Seguros del Estado - Licitación',
+      priceAnnual: 250_000,
+      coverages: [
+        {
+          name: 'Seriedad de la Oferta',
+          canonicalName: 'Seriedad de Oferta',
+          value: '100000000',
+          deductible: 'No aplica',
+          percentageOfContract: '10%',
+          coverageValidity: '2026-03-01 a 2026-07-01 (120 días desde cierre)',
+          confidence: 0.98,
+        },
+      ],
+      cumplimientoDetails: {
+        contractStage: 'PRECONTRACTUAL_LICITACION',
+        legalRegime: 'ESTATAL_LEY_80',
+        counterGuarantee: 'Pagaré en blanco',
+      },
+    });
+
+    expect(detectCumplimientoStage(licitacionQuote)).toBe('PRECONTRACTUAL_LICITACION');
+    const licitacionAudit = auditQuoteCompliance(licitacionQuote, 'cumplimiento');
+    expect(licitacionAudit.every((r) => r.status === 'COMPLIANT')).toBe(true);
+
+    const contratoQuote: ParsedQuote = makeAutosQuote({
+      insurerName: 'La Previsora - Contrato',
+      priceAnnual: 4_500_000,
+      coverages: [
+        {
+          name: 'Cumplimiento de Contrato',
+          canonicalName: 'Cumplimiento de Contrato',
+          value: '200000000',
+          deductible: 'Sin deducible',
+          percentageOfContract: '20%',
+          coverageValidity: 'Plazo + 6 meses liquidación',
+          confidence: 0.96,
+        },
+        {
+          name: 'Salarios y Prestaciones Sociales',
+          canonicalName: 'Salarios, Prestaciones e Indemnizaciones Laborales',
+          value: '50000000',
+          deductible: 'Sin deducible',
+          percentageOfContract: '5%',
+          coverageValidity: 'Plazo + 3 años',
+          confidence: 0.96,
+        },
+      ],
+      cumplimientoDetails: {
+        contractStage: 'CONTRACTUAL_EJECUCION',
+        legalRegime: 'ESTATAL_LEY_80',
+        counterGuarantee: 'Pagaré en blanco',
+      },
+    });
+
+    expect(detectCumplimientoStage(contratoQuote)).toBe('CONTRACTUAL_EJECUCION');
+    const contratoAudit = auditQuoteCompliance(contratoQuote, 'cumplimiento');
+    const seriedadCheck = contratoAudit.find((r) => r.ruleId === 'cum_seriedad')!;
+    const anticipoCheck = contratoAudit.find((r) => r.ruleId === 'cum_anticipo')!;
+    expect(seriedadCheck.status).toBe('COMPLIANT');
+    expect(anticipoCheck.status).toBe('WARNING');
+    expect(contratoAudit.some((r) => r.status === 'NON_COMPLIANT')).toBe(false);
+
+    const licitacionScore = quoteScorer.calculateScore(
+      licitacionQuote,
+      [],
+      [],
+      undefined,
+      undefined,
+      'cumplimiento'
+    );
+    expect(licitacionScore.breakdown.coverage).toBeGreaterThanOrEqual(60);
   });
 });
