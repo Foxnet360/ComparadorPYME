@@ -22,6 +22,13 @@ import { AuthenticatedRequest } from '../middleware/auth';
 import logger from '../config/logger';
 import { InsuranceDomain, isInsuranceDomain } from '../types/domain';
 import { webhookService } from '../services/webhookService';
+import {
+  analysisJobEvents,
+  analysisJobQueue,
+  AnalysisCancelledError,
+  AnalysisJobContext,
+  toPublicSnapshot,
+} from '../services/analysisJobQueue';
 
 interface QuoteMetadataEntry {
   insurer?: string;
@@ -141,335 +148,401 @@ export const analysisController = {
       }
       const domain = domainResolution.domain;
 
-      // Permanent Clause Library (Issue 8): persist and deduplicate any uploaded clauses
-      if (clauseFiles.length > 0) {
-        for (const cf of clauseFiles) {
-          try {
-            if (cf.path && fs.existsSync(cf.path)) {
-              const buffer = fs.readFileSync(cf.path);
-              await ensureClausePersistedInLibrary(
-                buffer,
-                cf.originalname,
-                req.body?.insurerName || 'Aseguradora',
-                domain
+      const runPipeline = async (jobHooks?: {
+        reportProgress?: AnalysisJobContext['reportProgress'];
+        signal?: AbortSignal;
+      }): Promise<ComparisonResult> => {
+        const assertNotCancelled = () => {
+          if (jobHooks?.signal?.aborted) {
+            throw new AnalysisCancelledError();
+          }
+        };
+
+        assertNotCancelled();
+        await jobHooks?.reportProgress?.(
+          'parsing',
+          20,
+          'Extrayendo contenido y clausulados de PDF...'
+        );
+
+        // Permanent Clause Library (Issue 8): persist and deduplicate any uploaded clauses
+        if (clauseFiles.length > 0) {
+          for (const cf of clauseFiles) {
+            try {
+              if (cf.path && fs.existsSync(cf.path)) {
+                const buffer = fs.readFileSync(cf.path);
+                await ensureClausePersistedInLibrary(
+                  buffer,
+                  cf.originalname,
+                  req.body?.insurerName || 'Aseguradora',
+                  domain
+                );
+              }
+            } catch (clauseErr) {
+              logger.warn(
+                { err: clauseErr, file: cf.originalname },
+                'Failed to auto-persist clause in permanent library'
               );
             }
-          } catch (clauseErr) {
+          }
+        }
+
+        // Parse clauseIds selected from persistent library
+        let selectedClauseIds: string[] = [];
+        if (req.body?.clauseIds) {
+          try {
+            selectedClauseIds =
+              typeof req.body.clauseIds === 'string'
+                ? JSON.parse(req.body.clauseIds)
+                : req.body.clauseIds;
+            if (!Array.isArray(selectedClauseIds)) {
+              selectedClauseIds = [];
+            }
+          } catch (e) {
+            logger.warn({ err: e }, 'Failed to parse clauseIds from req.body');
+          }
+        }
+
+        const rawAnalysisType = req.body?.analysisType ?? req.body?.analysis_type;
+        const analysisType: AnalysisType | undefined =
+          rawAnalysisType === 'renewal' ? 'renewal' : undefined;
+        const policyId =
+          typeof (req.body?.policyId ?? req.body?.policy_id) === 'string'
+            ? (req.body.policyId ?? req.body.policy_id).trim()
+            : undefined;
+        const renewalId =
+          typeof (req.body?.renewalId ?? req.body?.renewal_id) === 'string'
+            ? (req.body.renewalId ?? req.body.renewal_id).trim()
+            : undefined;
+
+        let referenceQuote: ParsedQuote | undefined;
+        if (analysisType === 'renewal' && policyId && userId) {
+          try {
+            const policy = await getPolicyById(userId, policyId, authUser?.orgId, authUser?.role);
+            if (policy) {
+              referenceQuote = {
+                insurerName: policy.insurer,
+                policyName: policy.policy_number
+                  ? `Póliza ${policy.policy_number}`
+                  : 'Póliza Actual',
+                priceAnnual: Number(policy.premium) || 0,
+                currency: 'COP',
+                coverages: Array.isArray(policy.coverages)
+                  ? (policy.coverages as ParsedQuote['coverages'])
+                  : [],
+                specialConditions: [],
+                rawText: '',
+                parseConfidence: 100,
+              };
+            }
+          } catch (e) {
             logger.warn(
-              { err: clauseErr, file: cf.originalname },
-              'Failed to auto-persist clause in permanent library'
+              { err: e },
+              `Failed to fetch policy ${policyId} for renewal reference quote`
             );
           }
         }
-      }
 
-      // Parse clauseIds selected from persistent library
-      let selectedClauseIds: string[] = [];
-      if (req.body?.clauseIds) {
-        try {
-          selectedClauseIds =
-            typeof req.body.clauseIds === 'string'
-              ? JSON.parse(req.body.clauseIds)
-              : req.body.clauseIds;
-          if (!Array.isArray(selectedClauseIds)) {
-            selectedClauseIds = [];
-          }
-        } catch (e) {
-          logger.warn({ err: e }, 'Failed to parse clauseIds from req.body');
-        }
-      }
-
-      const rawAnalysisType = req.body?.analysisType ?? req.body?.analysis_type;
-      const analysisType: AnalysisType | undefined =
-        rawAnalysisType === 'renewal' ? 'renewal' : undefined;
-      const policyId =
-        typeof (req.body?.policyId ?? req.body?.policy_id) === 'string'
-          ? (req.body.policyId ?? req.body.policy_id).trim()
-          : undefined;
-      const renewalId =
-        typeof (req.body?.renewalId ?? req.body?.renewal_id) === 'string'
-          ? (req.body.renewalId ?? req.body.renewal_id).trim()
-          : undefined;
-
-      let referenceQuote: ParsedQuote | undefined;
-      if (analysisType === 'renewal' && policyId && userId) {
-        try {
-          const policy = await getPolicyById(userId, policyId, authUser?.orgId, authUser?.role);
-          if (policy) {
-            referenceQuote = {
-              insurerName: policy.insurer,
-              policyName: policy.policy_number ? `Póliza ${policy.policy_number}` : 'Póliza Actual',
-              priceAnnual: Number(policy.premium) || 0,
-              currency: 'COP',
-              coverages: Array.isArray(policy.coverages)
-                ? (policy.coverages as ParsedQuote['coverages'])
-                : [],
-              specialConditions: [],
-              rawText: '',
-              parseConfidence: 100,
-            };
-          }
-        } catch (e) {
-          logger.warn({ err: e }, `Failed to fetch policy ${policyId} for renewal reference quote`);
-        }
-      }
-
-      logger.info(`📄 Processing ${quoteFiles.length} quotes...`);
-      logger.info(`🔧 Pipeline: ${isMultimodalEnabled() ? 'Multimodal (V2)' : 'Legacy (V1)'}`);
-      logger.info(`🌐 Domain: ${domain}`);
-
-      const pdfPaths = quoteFiles.map((f) => f.path);
-      const adapterResult = await comparisonEngineAdapter.generateComparison(pdfPaths, {
-        userId,
-        domain,
-        ...(analysisType ? { analysisType } : {}),
-        ...(referenceQuote ? { referenceQuote } : {}),
-        ...(policyId ? { policyId } : {}),
-        ...(renewalId ? { renewalId } : {}),
-      });
-      const matrixRows = adapterResult.matrix;
-
-      // Debug: Log matrix structure
-      logger.info(
-        `📊 [Adapter Debug] engine=${adapterResult.engine}, correlationId=${adapterResult.correlationId}, matrix rows: ${matrixRows.length}`
-      );
-      const dataRows = matrixRows.filter((r) => r.type === 'data');
-      logger.info(`📊 [Adapter Debug] Data rows: ${dataRows.length}`);
-      if (dataRows.length > 0) {
-        logger.info(`📊 [Adapter Debug] First data row: ${JSON.stringify(dataRows[0], null, 2)}`);
-      }
-
-      // Convert MatrixRow[] to ComparisonReport format
-      const comparisonResult = (await matrixRowsToComparisonReport(matrixRows, quoteFiles, {
-        graphEnabled: adapterResult.graphEnabled,
-        templateHintsEnabled: adapterResult.templateHintsEnabled,
-        domain,
-      })) as unknown as ComparisonResult;
-
-      comparisonResult.matrix = comparisonResult.matrix || matrixRows;
-      comparisonResult.quoteMetadata = Array.isArray(adapterResult.quoteMetadata)
-        ? (adapterResult.quoteMetadata as QuoteMetadataEntry[]).map((m) =>
-            m && typeof m.insurer === 'string'
-              ? { ...m, insurer: extractCanonicalInsurerName(m.insurer) }
-              : m
-          )
-        : adapterResult.quoteMetadata;
-      comparisonResult.schemaVersion = adapterResult.schemaVersion;
-      comparisonResult.domain = domain;
-      if (analysisType) {
-        comparisonResult.analysisType = analysisType;
-      }
-      if (policyId) {
-        comparisonResult.policyId = policyId;
-      }
-      if (renewalId) {
-        comparisonResult.renewalId = renewalId;
-      }
-
-      // Propagate clause availability when clauseIds are selected from library
-      if (selectedClauseIds.length > 0) {
-        try {
-          const { data: clauseDocs } = await supabase
-            .from('document_insurer_view')
-            .select('insurer_name, id')
-            .in('id', selectedClauseIds);
-          const activeInsurers = new Set(
-            (clauseDocs || [])
-              .map((d: { insurer_name?: string | null }) =>
-                (d.insurer_name || '').toUpperCase().trim()
-              )
-              .filter(Boolean)
-          );
-          comparisonResult.quotes?.forEach((q: ComparisonResultQuote) => {
-            const insNorm = (q.insurerName || '').toUpperCase().trim();
-            if (
-              activeInsurers.size === 0 ||
-              activeInsurers.has(insNorm) ||
-              Array.from(activeInsurers).some(
-                (ai: string) => insNorm.includes(ai) || ai.includes(insNorm)
-              )
-            ) {
-              q.isRagAvailable = true;
-            }
-          });
-        } catch (e) {
-          logger.warn({ err: e }, 'Failed to map selected clauseIds to insurers');
-          comparisonResult.quotes?.forEach((q: ComparisonResultQuote) => {
-            q.isRagAvailable = true;
-          });
-        }
-      }
-
-      // Also propagate clause availability for supplemental uploaded clauses
-      if (clauseFiles.length > 0) {
-        clauseFiles.forEach((cf) => {
-          const fname = (cf.originalname || '').toUpperCase();
-          comparisonResult.quotes?.forEach((q: ComparisonResultQuote) => {
-            const insNorm = (q.insurerName || '').toUpperCase().trim();
-            if (insNorm && (fname.includes(insNorm) || insNorm.includes(fname))) {
-              q.isRagAvailable = true;
-            }
-          });
-        });
-      }
-
-      // Debug: Log result structure
-      logger.info(`📊 [Adapter Debug] Quotes generated: ${comparisonResult.quotes?.length || 0}`);
-      comparisonResult.quotes?.forEach((q: ComparisonResultQuote, i: number) => {
-        logger.info(
-          `📊 [Adapter Debug] Quote ${i} (${q.insurerName}): ${q.coverages?.length || 0} coverages, price: ${q.priceAnnual}`
+        assertNotCancelled();
+        await jobHooks?.reportProgress?.(
+          'parsing',
+          35,
+          'Ejecutando motor de extracción comparativa...'
         );
-      });
+        logger.info(`📄 Processing ${quoteFiles.length} quotes...`);
+        logger.info(`🔧 Pipeline: ${isMultimodalEnabled() ? 'Multimodal (V2)' : 'Legacy (V1)'}`);
+        logger.info(`🌐 Domain: ${domain}`);
 
-      // Client Info Resolution (Priority: Client Profile / CRUD > req.body > Quote Metadata > Defaults)
-      let parsedClientProfile: ClientProfileInput | null = null;
-      if (req.body.clientProfile) {
-        try {
-          parsedClientProfile = (
-            typeof req.body.clientProfile === 'string'
-              ? JSON.parse(req.body.clientProfile)
-              : req.body.clientProfile
-          ) as ClientProfileInput;
-        } catch {
-          // ignore json parse error
+        const pdfPaths = quoteFiles.map((f) => f.path);
+        const adapterResult = await comparisonEngineAdapter.generateComparison(pdfPaths, {
+          userId,
+          domain,
+          ...(analysisType ? { analysisType } : {}),
+          ...(referenceQuote ? { referenceQuote } : {}),
+          ...(policyId ? { policyId } : {}),
+          ...(renewalId ? { renewalId } : {}),
+        });
+        assertNotCancelled();
+        await jobHooks?.reportProgress?.(
+          'matching',
+          65,
+          'Construyendo matriz y normalizando coberturas...'
+        );
+        const matrixRows = adapterResult.matrix;
+
+        // Debug: Log matrix structure
+        logger.info(
+          `📊 [Adapter Debug] engine=${adapterResult.engine}, correlationId=${adapterResult.correlationId}, matrix rows: ${matrixRows.length}`
+        );
+        const dataRows = matrixRows.filter((r) => r.type === 'data');
+        logger.info(`📊 [Adapter Debug] Data rows: ${dataRows.length}`);
+        if (dataRows.length > 0) {
+          logger.info(`📊 [Adapter Debug] First data row: ${JSON.stringify(dataRows[0], null, 2)}`);
         }
-      }
 
-      const quoteMetadataList = (
-        Array.isArray(adapterResult.quoteMetadata) ? adapterResult.quoteMetadata : []
-      ) as QuoteMetadataEntry[];
-      const extractedMetaClient = quoteMetadataList.find((m) => m?.cliente);
-      const extractedClientName = extractedMetaClient?.cliente;
-      const clientName =
-        parsedClientProfile?.name ||
-        (req.body.clientName &&
-        req.body.clientName !== 'Cliente' &&
-        req.body.clientName !== 'Prospecto General'
-          ? req.body.clientName
-          : extractedClientName || req.body.clientName || 'Cliente');
+        // Convert MatrixRow[] to ComparisonReport format
+        const comparisonResult = (await matrixRowsToComparisonReport(matrixRows, quoteFiles, {
+          graphEnabled: adapterResult.graphEnabled,
+          templateHintsEnabled: adapterResult.templateHintsEnabled,
+          domain,
+        })) as unknown as ComparisonResult;
 
-      const clientNit =
-        parsedClientProfile?.nit ||
-        quoteMetadataList.find((m) => m?.documento)?.documento ||
-        req.body.clientNit;
+        comparisonResult.matrix = comparisonResult.matrix || matrixRows;
+        comparisonResult.quoteMetadata = Array.isArray(adapterResult.quoteMetadata)
+          ? (adapterResult.quoteMetadata as QuoteMetadataEntry[]).map((m) =>
+              m && typeof m.insurer === 'string'
+                ? { ...m, insurer: extractCanonicalInsurerName(m.insurer) }
+                : m
+            )
+          : adapterResult.quoteMetadata;
+        comparisonResult.schemaVersion = adapterResult.schemaVersion;
+        comparisonResult.domain = domain;
+        if (analysisType) {
+          comparisonResult.analysisType = analysisType;
+        }
+        if (policyId) {
+          comparisonResult.policyId = policyId;
+        }
+        if (renewalId) {
+          comparisonResult.renewalId = renewalId;
+        }
 
-      const clientActivity =
-        parsedClientProfile?.industry ||
-        req.body.clientActivity ||
-        quoteMetadataList.find((m) => m?.actividadOcupacion)?.actividadOcupacion ||
-        (domain === 'copropiedades'
-          ? 'Edificio Residencial / Comercial (Copropiedad)'
-          : domain === 'autos'
-            ? 'Vehículo Particular / Flotas'
-            : domain === 'hogar'
-              ? 'Vivienda Residencial / Hogar'
-              : 'Comercial / PYME');
+        // Propagate clause availability when clauseIds are selected from library
+        if (selectedClauseIds.length > 0) {
+          try {
+            const { data: clauseDocs } = await supabase
+              .from('document_insurer_view')
+              .select('insurer_name, id')
+              .in('id', selectedClauseIds);
+            const activeInsurers = new Set(
+              (clauseDocs || [])
+                .map((d: { insurer_name?: string | null }) =>
+                  (d.insurer_name || '').toUpperCase().trim()
+                )
+                .filter(Boolean)
+            );
+            comparisonResult.quotes?.forEach((q: ComparisonResultQuote) => {
+              const insNorm = (q.insurerName || '').toUpperCase().trim();
+              if (
+                activeInsurers.size === 0 ||
+                activeInsurers.has(insNorm) ||
+                Array.from(activeInsurers).some(
+                  (ai: string) => insNorm.includes(ai) || ai.includes(insNorm)
+                )
+              ) {
+                q.isRagAvailable = true;
+              }
+            });
+          } catch (e) {
+            logger.warn({ err: e }, 'Failed to map selected clauseIds to insurers');
+            comparisonResult.quotes?.forEach((q: ComparisonResultQuote) => {
+              q.isRagAvailable = true;
+            });
+          }
+        }
 
-      const clientLocation =
-        [parsedClientProfile?.address, parsedClientProfile?.city, parsedClientProfile?.department]
-          .filter(Boolean)
-          .join(', ') ||
-        req.body.clientLocation ||
-        quoteMetadataList.find((m) => m?.ubicacionRiesgo)?.ubicacionRiesgo ||
-        (parsedClientProfile?.city ? `${parsedClientProfile.city}, Colombia` : 'Colombia');
+        // Also propagate clause availability for supplemental uploaded clauses
+        if (clauseFiles.length > 0) {
+          clauseFiles.forEach((cf) => {
+            const fname = (cf.originalname || '').toUpperCase();
+            comparisonResult.quotes?.forEach((q: ComparisonResultQuote) => {
+              const insNorm = (q.insurerName || '').toUpperCase().trim();
+              if (insNorm && (fname.includes(insNorm) || insNorm.includes(fname))) {
+                q.isRagAvailable = true;
+              }
+            });
+          });
+        }
 
-      comparisonResult.domain = domain;
-      comparisonResult.clientInfo = {
-        name: clientName,
-        nit: clientNit || undefined,
-        activity: clientActivity,
-        location: clientLocation,
-        address: parsedClientProfile?.address || undefined,
-        city: parsedClientProfile?.city || undefined,
-        department: parsedClientProfile?.department || undefined,
-        contactPerson: parsedClientProfile?.contactPerson || undefined,
-        email: parsedClientProfile?.email || undefined,
-        phone: parsedClientProfile?.phone || undefined,
-        vigencia: quoteMetadataList.find((m) => m?.vigencia)?.vigencia || undefined,
-        tipoSeguro: quoteMetadataList.find((m) => m?.tipoSeguro)?.tipoSeguro || undefined,
-        anoConstruccion:
-          parsedClientProfile?.constructionYear ||
-          quoteMetadataList.find((m) => m?.anoConstruccion)?.anoConstruccion ||
-          undefined,
-        pisos:
-          parsedClientProfile?.floorsCount ||
-          quoteMetadataList.find((m) => m?.pisos)?.pisos ||
-          undefined,
-        seismicZone: parsedClientProfile?.seismicZone || undefined,
-        buildingType: parsedClientProfile?.buildingType || undefined,
-      };
+        // Debug: Log result structure
+        logger.info(`📊 [Adapter Debug] Quotes generated: ${comparisonResult.quotes?.length || 0}`);
+        comparisonResult.quotes?.forEach((q: ComparisonResultQuote, i: number) => {
+          logger.info(
+            `📊 [Adapter Debug] Quote ${i} (${q.insurerName}): ${q.coverages?.length || 0} coverages, price: ${q.priceAnnual}`
+          );
+        });
 
-      try {
-        const avgConfidence =
-          comparisonResult.quotes.reduce(
-            (sum: number, q: ComparisonResultQuote) => sum + (q.extractionConfidence || 0),
-            0
-          ) / (comparisonResult.quotes.length || 1);
+        // Client Info Resolution (Priority: Client Profile / CRUD > req.body > Quote Metadata > Defaults)
+        let parsedClientProfile: ClientProfileInput | null = null;
+        if (req.body.clientProfile) {
+          try {
+            parsedClientProfile = (
+              typeof req.body.clientProfile === 'string'
+                ? JSON.parse(req.body.clientProfile)
+                : req.body.clientProfile
+            ) as ClientProfileInput;
+          } catch {
+            // ignore json parse error
+          }
+        }
 
-        const duration = Date.now() - startTime;
+        const quoteMetadataList = (
+          Array.isArray(adapterResult.quoteMetadata) ? adapterResult.quoteMetadata : []
+        ) as QuoteMetadataEntry[];
+        const extractedMetaClient = quoteMetadataList.find((m) => m?.cliente);
+        const extractedClientName = extractedMetaClient?.cliente;
+        const clientName =
+          parsedClientProfile?.name ||
+          (req.body.clientName &&
+          req.body.clientName !== 'Cliente' &&
+          req.body.clientName !== 'Prospecto General'
+            ? req.body.clientName
+            : extractedClientName || req.body.clientName || 'Cliente');
 
-        const insertData = {
-          user_id: userId,
-          org_id: req.user?.orgId || null,
-          client_name: clientName,
-          domain: domain,
-          analysis_result: comparisonResult,
-          recommendation: comparisonResult.recommendation || null,
-          total_score: comparisonResult.quotes?.[0]?.score || null,
-          extraction_confidence: Math.round(avgConfidence),
-          needs_review: comparisonResult.quotes.some((q: ComparisonResultQuote) => q.needsReview),
-          validation_flags_count: comparisonResult.quotes.reduce(
-            (sum: number, q: ComparisonResultQuote) => sum + (q.validationFlags?.length || 0),
-            0
-          ),
-          engine_type: adapterResult.engine,
-          processing_time_ms: duration,
-          confidence_score: Math.round(avgConfidence),
-          unified_result: comparisonResult,
-          fallback_reason: adapterResult.fallbackReason || null,
-          correlation_id: adapterResult.correlationId,
-          analysis_type: analysisType || null,
-          policy_id: policyId || null,
-          renewal_id: renewalId || null,
+        const clientNit =
+          parsedClientProfile?.nit ||
+          quoteMetadataList.find((m) => m?.documento)?.documento ||
+          req.body.clientNit;
+
+        const clientActivity =
+          parsedClientProfile?.industry ||
+          req.body.clientActivity ||
+          quoteMetadataList.find((m) => m?.actividadOcupacion)?.actividadOcupacion ||
+          (domain === 'copropiedades'
+            ? 'Edificio Residencial / Comercial (Copropiedad)'
+            : domain === 'autos'
+              ? 'Vehículo Particular / Flotas'
+              : domain === 'hogar'
+                ? 'Vivienda Residencial / Hogar'
+                : 'Comercial / PYME');
+
+        const clientLocation =
+          [parsedClientProfile?.address, parsedClientProfile?.city, parsedClientProfile?.department]
+            .filter(Boolean)
+            .join(', ') ||
+          req.body.clientLocation ||
+          quoteMetadataList.find((m) => m?.ubicacionRiesgo)?.ubicacionRiesgo ||
+          (parsedClientProfile?.city ? `${parsedClientProfile.city}, Colombia` : 'Colombia');
+
+        comparisonResult.domain = domain;
+        comparisonResult.clientInfo = {
+          name: clientName,
+          nit: clientNit || undefined,
+          activity: clientActivity,
+          location: clientLocation,
+          address: parsedClientProfile?.address || undefined,
+          city: parsedClientProfile?.city || undefined,
+          department: parsedClientProfile?.department || undefined,
+          contactPerson: parsedClientProfile?.contactPerson || undefined,
+          email: parsedClientProfile?.email || undefined,
+          phone: parsedClientProfile?.phone || undefined,
+          vigencia: quoteMetadataList.find((m) => m?.vigencia)?.vigencia || undefined,
+          tipoSeguro: quoteMetadataList.find((m) => m?.tipoSeguro)?.tipoSeguro || undefined,
+          anoConstruccion:
+            parsedClientProfile?.constructionYear ||
+            quoteMetadataList.find((m) => m?.anoConstruccion)?.anoConstruccion ||
+            undefined,
+          pisos:
+            parsedClientProfile?.floorsCount ||
+            quoteMetadataList.find((m) => m?.pisos)?.pisos ||
+            undefined,
+          seismicZone: parsedClientProfile?.seismicZone || undefined,
+          buildingType: parsedClientProfile?.buildingType || undefined,
         };
 
-        const savedId = await saveAnalysisHistory(insertData);
-        if (savedId) {
-          (comparisonResult as ComparisonResult).id = savedId;
+        try {
+          const avgConfidence =
+            comparisonResult.quotes.reduce(
+              (sum: number, q: ComparisonResultQuote) => sum + (q.extractionConfidence || 0),
+              0
+            ) / (comparisonResult.quotes.length || 1);
+
+          const duration = Date.now() - startTime;
+
+          const insertData = {
+            user_id: userId,
+            org_id: req.user?.orgId || null,
+            client_name: clientName,
+            domain: domain,
+            analysis_result: comparisonResult,
+            recommendation: comparisonResult.recommendation || null,
+            total_score: comparisonResult.quotes?.[0]?.score || null,
+            extraction_confidence: Math.round(avgConfidence),
+            needs_review: comparisonResult.quotes.some((q: ComparisonResultQuote) => q.needsReview),
+            validation_flags_count: comparisonResult.quotes.reduce(
+              (sum: number, q: ComparisonResultQuote) => sum + (q.validationFlags?.length || 0),
+              0
+            ),
+            engine_type: adapterResult.engine,
+            processing_time_ms: duration,
+            confidence_score: Math.round(avgConfidence),
+            unified_result: comparisonResult,
+            fallback_reason: adapterResult.fallbackReason || null,
+            correlation_id: adapterResult.correlationId,
+            analysis_type: analysisType || null,
+            policy_id: policyId || null,
+            renewal_id: renewalId || null,
+          };
+
+          const savedId = await saveAnalysisHistory(insertData);
+          if (savedId) {
+            (comparisonResult as ComparisonResult).id = savedId;
+          }
+        } catch (saveError: unknown) {
+          logger.error({ err: saveError }, '❌ [Supabase] Exception saving analysis');
+          throw saveError;
         }
-      } catch (saveError: unknown) {
-        // ERR-1: a failed save must be logged and reach the central error
-        // handler via next(error) — temp files are cleaned up either way.
-        logger.error({ err: saveError }, '❌ [Supabase] Exception saving analysis');
 
-        cleanupUploadedFiles();
+        assertNotCancelled();
+        await jobHooks?.reportProgress?.('auditing', 90, 'Auditando evidencia y trazabilidad...');
 
-        next(toHttpError(saveError));
+        const duration = Date.now() - startTime;
+        logger.info(`✅ Analysis completed in ${duration}ms`);
+
+        const auditEnvelope = auditGroundedComparison(comparisonResult);
+        if (userId && userId !== 'anonymous') {
+          void webhookService.emitEvent({
+            userId,
+            orgId: req.user?.orgId,
+            event: 'analysis.completed',
+            eventId: `analysis.completed:${(comparisonResult as ComparisonResult).id || duration}`,
+            data: {
+              analysisId: (comparisonResult as ComparisonResult).id ?? null,
+              domain,
+              quotesCount: comparisonResult.quotes?.length ?? 0,
+              durationMs: duration,
+            },
+          });
+        }
+        return auditEnvelope.result;
+      };
+
+      const preferHeader = String(req.headers['prefer'] || '').toLowerCase();
+      const wantsAsync =
+        preferHeader.includes('respond-async') ||
+        req.query.async === 'true' ||
+        (req.body as { async?: unknown } | undefined)?.async === 'true' ||
+        (req.body as { async?: unknown } | undefined)?.async === true;
+
+      if (wantsAsync) {
+        const apiPrefix = req.originalUrl.startsWith('/api/v1') ? '/api/v1' : '/api';
+        const job = await analysisJobQueue.enqueueJob(
+          {
+            userId: userId || 'anonymous',
+            orgId: authUser?.orgId ?? null,
+          },
+          (ctx) =>
+            runPipeline({
+              reportProgress: ctx.reportProgress,
+              signal: ctx.signal,
+            }),
+          cleanupUploadedFiles
+        );
+
+        res.status(202).json({
+          jobId: job.jobId,
+          status: job.stage,
+          progress: job.progress,
+          statusUrl: `${apiPrefix}/analysis/jobs/${job.jobId}`,
+          eventsUrl: `${apiPrefix}/analysis/jobs/${job.jobId}/events`,
+          cancelUrl: `${apiPrefix}/analysis/jobs/${job.jobId}/cancel`,
+        });
         return;
       }
 
-      // Cleanup temp files
+      const finalResult = await runPipeline();
       cleanupUploadedFiles();
-
-      const duration = Date.now() - startTime;
-      logger.info(`✅ Analysis completed in ${duration}ms`);
-
-      const auditEnvelope = auditGroundedComparison(comparisonResult);
-      if (userId && userId !== 'anonymous') {
-        void webhookService.emitEvent({
-          userId,
-          orgId: req.user?.orgId,
-          event: 'analysis.completed',
-          eventId: `analysis.completed:${(comparisonResult as ComparisonResult).id || duration}`,
-          data: {
-            analysisId: (comparisonResult as ComparisonResult).id ?? null,
-            domain,
-            quotesCount: comparisonResult.quotes?.length ?? 0,
-            durationMs: duration,
-          },
-        });
-      }
-      res.json(auditEnvelope.result);
+      res.json(finalResult);
     } catch (error: unknown) {
       cleanupUploadedFiles();
       // ERR-1: forward to the central error handler instead of sending a raw
@@ -477,6 +550,92 @@ export const analysisController = {
       logger.error({ err: error }, 'Controller Error: uploadAndAnalyze failed');
       next(toHttpError(error));
     }
+  },
+
+  /**
+   * GET /api/analysis/jobs/:jobId
+   */
+  getAnalysisJobStatus: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const jobId = String(req.params.jobId || '');
+    const userId = resolveAnalysisUserId(req) || 'anonymous';
+    const job = await analysisJobQueue.getJob(jobId, userId, req.user?.role, req.user?.orgId);
+    if (!job) {
+      res.status(404).json({ error: 'Not Found', message: 'Análisis asíncrono no encontrado.' });
+      return;
+    }
+    res.json(toPublicSnapshot(job));
+  },
+
+  /**
+   * GET /api/analysis/jobs/:jobId/events (SSE)
+   */
+  streamAnalysisJobEvents: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const jobId = String(req.params.jobId || '');
+    const userId = resolveAnalysisUserId(req) || 'anonymous';
+    const initial = await analysisJobQueue.getJob(jobId, userId, req.user?.role, req.user?.orgId);
+    if (!initial) {
+      res.status(404).json({ error: 'Not Found', message: 'Análisis asíncrono no encontrado.' });
+      return;
+    }
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders?.();
+
+    const writeSnapshot = (snapshot: ReturnType<typeof toPublicSnapshot>) => {
+      res.write(`event: progress\ndata: ${JSON.stringify(snapshot)}\n\n`);
+    };
+
+    const initialSnapshot = toPublicSnapshot(initial);
+    writeSnapshot(initialSnapshot);
+
+    if (
+      initial.stage === 'completed' ||
+      initial.stage === 'failed' ||
+      initial.stage === 'cancelled'
+    ) {
+      res.end();
+      return;
+    }
+
+    const onUpdate = (snapshot: ReturnType<typeof toPublicSnapshot>) => {
+      writeSnapshot(snapshot);
+      if (
+        snapshot.stage === 'completed' ||
+        snapshot.stage === 'failed' ||
+        snapshot.stage === 'cancelled'
+      ) {
+        cleanup();
+        res.end();
+      }
+    };
+
+    const cleanup = () => {
+      analysisJobEvents.off(jobId, onUpdate);
+    };
+
+    analysisJobEvents.on(jobId, onUpdate);
+    req.on('close', cleanup);
+  },
+
+  /**
+   * POST /api/analysis/jobs/:jobId/cancel
+   */
+  cancelAnalysisJob: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const jobId = String(req.params.jobId || '');
+    const userId = resolveAnalysisUserId(req) || 'anonymous';
+    const cancelled = await analysisJobQueue.cancelJob(
+      jobId,
+      userId,
+      req.user?.role,
+      req.user?.orgId
+    );
+    if (!cancelled) {
+      res.status(404).json({ error: 'Not Found', message: 'Análisis asíncrono no encontrado.' });
+      return;
+    }
+    res.json(toPublicSnapshot(cancelled));
   },
 
   /**
