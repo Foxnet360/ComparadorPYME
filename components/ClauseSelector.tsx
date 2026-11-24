@@ -13,8 +13,9 @@ import {
 } from 'lucide-react';
 import { clauseService } from '../services/clauseService';
 import { InsurerLogo } from './common/InsurerLogo';
+import type { CumplimientoProcessStage } from '../types';
 
-export type CumplimientoProcessStage = 'AUTO' | 'LICITACION' | 'CONTRATO' | 'OTROSI';
+export type { CumplimientoProcessStage };
 
 interface ClauseSelectorProps {
   onClausesSelected: (clauseIds: string[]) => void;
@@ -177,7 +178,11 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
             <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600">
               <BookOpen size={18} />
             </div>
-            <h3 className="text-sm font-bold text-slate-800">Clausulados y Condiciones</h3>
+            <h3 className="text-sm font-bold text-slate-800">
+              {domain?.toLowerCase() === 'cumplimiento'
+                ? 'Clausulados Generales del Producto'
+                : 'Clausulados y Condiciones'}
+            </h3>
             {domain && (
               <span className="text-[11px] font-semibold uppercase px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
                 {domain}
@@ -186,13 +191,7 @@ export const ClauseSelector: React.FC<ClauseSelectorProps> = ({
           </div>
           <p className="text-xs text-slate-500 mt-1">
             {domain?.toLowerCase() === 'cumplimiento'
-              ? cumplimientoStage === 'LICITACION'
-                ? 'Documento Rector: Pliego de Condiciones / Adendas y Clausulados de Seriedad'
-                : cumplimientoStage === 'CONTRATO'
-                  ? 'Documento Rector: Minuta del Contrato / Orden de Compra y Clausulados'
-                  : cumplimientoStage === 'OTROSI'
-                    ? 'Documento Rector: Otrosí de Prórroga o Adición y Póliza Matriz'
-                    : 'Cruce contra Pliego de Licitación, Minuta del Contrato y Clausulados Oficiales'
+              ? 'Auditoría de letra chica de cada aseguradora (multas, cláusula penal, exclusiones y sublímites RCE Derivada)'
               : 'Auditoría cruzada de exclusiones, deducibles y amparos oficiales'}
           </p>
         </div>

@@ -385,6 +385,8 @@ export interface MatrixCell {
   confidence?: number;
   /** Renewal mode (schemaVersion 3): this cell belongs to the baseline column. */
   isBaseline?: boolean;
+  /** Cumplimiento mode: this cell belongs to the governing document reference column (Pliego / Contrato). */
+  isGoverningReference?: boolean;
 }
 
 export interface MatrixRow {
@@ -399,4 +401,43 @@ export interface MatrixRow {
   matchMethod?: string | null;
   /** Renewal mode (schemaVersion 3): row includes a leading baseline column cell. */
   isBaseline?: boolean;
+  /** Cumplimiento mode: row includes a leading governing document reference cell. */
+  isGoverningReference?: boolean;
+}
+
+export type CumplimientoProcessStage = 'AUTO' | 'LICITACION' | 'CONTRATO' | 'OTROSI';
+
+export interface CumplimientoGoverningGap {
+  coverageName: string;
+  requiredPercentage?: string | null;
+  requiredAmount?: string | null;
+  requiredValidity?: string | null;
+  status: 'COMPLIANT' | 'PARTIAL_GAP' | 'MISSING';
+  quotedValue?: string | null;
+  notes: string;
+}
+
+export interface GoverningDocumentAudit {
+  documentName: string;
+  stage: CumplimientoProcessStage;
+  legalRegime?: string | null;
+  processOrContractNumber?: string | null;
+  entityName?: string | null;
+  contractorName?: string | null;
+  contractOrBudgetValue?: number | null;
+  contractDuration?: string | null;
+  requiredCoverages: Array<{
+    name: string;
+    percentageOfContract?: string | null;
+    minimumAmount?: number | null;
+    validityRule?: string | null;
+  }>;
+  perInsurerStatus: Record<
+    string,
+    {
+      compliantCount: number;
+      totalRequired: number;
+      gaps: CumplimientoGoverningGap[];
+    }
+  >;
 }

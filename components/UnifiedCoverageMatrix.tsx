@@ -1,5 +1,11 @@
 import React, { useState, useRef, useEffect, lazy, Suspense, useMemo, useCallback } from 'react';
-import { QuoteAnalysis, MatrixRow, MatrixCell, QuoteMetadata } from '../types';
+import {
+  QuoteAnalysis,
+  MatrixRow,
+  MatrixCell,
+  QuoteMetadata,
+  RegulatoryCheckResult,
+} from '../types';
 import { ChevronDown, ChevronRight, Scale, ListChecks } from 'lucide-react';
 import { getDomainRegulatoryProfile } from '@shared/domainRegulatoryKnowledge';
 import { PedagogicalTooltip } from './common/PedagogicalTooltip';
@@ -45,6 +51,7 @@ export interface UnifiedCoverageMatrixProps {
   analysisId?: string; // Optional ID for direct exports
   schemaVersion?: 1 | 2 | 3; // 3 = renewal (v2 + leading baseline column); rendered like v2 here — the baseline badge/delta panels live in RenewalAnalysisSection
   domain?: string;
+  perQuoteCompliance?: Record<string, RegulatoryCheckResult[]>;
 }
 
 export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
@@ -55,6 +62,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
   analysisId,
   schemaVersion: _schemaVersion,
   domain,
+  perQuoteCompliance,
 }) => {
   const [activeTab, setActiveTab] = useState<'coverages' | 'financials' | 'additional'>(
     'coverages'
@@ -96,7 +104,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
   // Regulatory Profile and Mandatory Verification Rules for active domain
   const regulatoryProfile = useMemo(() => getDomainRegulatoryProfile(domain), [domain]);
 
-  // Compute compliance scorecard per insurer for column headers
+  // Compute compliance scorecard per insurer for column headers (preferring backend stage-aware audit)
   const complianceByInsurer = useMemo(() => {
     const map = new Map<
       string,
@@ -105,6 +113,18 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
     const total = regulatoryProfile.mandatoryVerificationRules.length;
 
     for (const quote of quotes) {
+      const serverChecks = perQuoteCompliance?.[quote.insurerName];
+      if (serverChecks && serverChecks.length > 0) {
+        const compliant = serverChecks.filter((c) => c.status === 'COMPLIANT').length;
+        map.set(quote.insurerName, {
+          compliantCount: compliant,
+          totalCount: serverChecks.length,
+          isFullyCompliant: serverChecks.every((c) => c.status !== 'NON_COMPLIANT'),
+          details: `${compliant}/${serverChecks.length} reglas legales verificadas (${regulatoryProfile.displayName})`,
+        });
+        continue;
+      }
+
       const coverages = quote.coverages || [];
       let compliant = 0;
       for (const rule of regulatoryProfile.mandatoryVerificationRules) {
@@ -134,7 +154,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
       });
     }
     return map;
-  }, [quotes, regulatoryProfile]);
+  }, [quotes, regulatoryProfile, perQuoteCompliance]);
 
   // Match row label to mandatory regulatory rule
   const getMatchingRegulatoryRule = useCallback(
@@ -252,9 +272,16 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
   };
 
   const fullMatrix = rows ?? [];
+  const governingMarkerRow = fullMatrix.find((r) => r.id === 'governing_document_column');
+  const hasGoverningColumn =
+    Boolean(governingMarkerRow) || fullMatrix.some((r) => r.isGoverningReference === true);
+  const governingColumnLabel = hasGoverningColumn
+    ? governingMarkerRow?.cells?.[0]?.value || 'Pliego / Contrato'
+    : null;
 
-  // Partition matrix rows according to active tabs
+  // Partition matrix rows according to active tabs (hide marker metadata row from body)
   const filteredRows = fullMatrix.filter((row) => {
+    if (row.id === 'governing_document_column') return false;
     if (activeTab === 'coverages') return row.sectionId < 100 && row.sectionId !== 50;
     if (activeTab === 'financials') return row.sectionId === 100;
     return row.sectionId === 101;
@@ -479,6 +506,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                   pinnedColumns={pinnedColumns}
                   complianceByInsurer={complianceByInsurer}
                   onTogglePinnedColumn={togglePinnedColumn}
+                  governingColumnLabel={governingColumnLabel}
                 />
                 <tbody className="divide-y divide-slate-100">
                   {isVirtualized && topSpacerHeight > 0 && (
@@ -489,7 +517,8 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                     >
                       <td
                         colSpan={
-                          pinnedColumns.size > 0 ? pinnedColumns.size + 1 : quotes.length + 1
+                          (pinnedColumns.size > 0 ? pinnedColumns.size + 1 : quotes.length + 1) +
+                          (hasGoverningColumn ? 1 : 0)
                         }
                         className="p-0 border-0"
                       />
@@ -497,7 +526,8 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                   )}
                   {renderedRows.map((row) => {
                     const effectiveColumnCount =
-                      pinnedColumns.size > 0 ? pinnedColumns.size + 1 : quotes.length + 1;
+                      (pinnedColumns.size > 0 ? pinnedColumns.size + 1 : quotes.length + 1) +
+                      (hasGoverningColumn ? 1 : 0);
 
                     if (row.type === 'header') {
                       const displayLabel =
@@ -600,9 +630,29 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                           </div>
                         </td>
 
-                        {/* Insurer Cells */}
+                        {/* Governing Document Reference Cell + Insurer Cells */}
                         {row.cells.map((cell, colIdx) => {
-                          const isPinned = pinnedColumns.has(colIdx);
+                          const isGoverningCell =
+                            hasGoverningColumn && (colIdx === 0 || cell.isGoverningReference);
+                          if (isGoverningCell) {
+                            return (
+                              <td
+                                key={`gov-${colIdx}`}
+                                role="gridcell"
+                                className="px-5 py-3.5 text-center bg-indigo-50/40 border-r-2 border-indigo-200 text-xs font-semibold text-indigo-950 align-top"
+                              >
+                                <div>{cell.value || '—'}</div>
+                                {cell.notes && (
+                                  <div className="mt-1 text-[11px] font-normal text-indigo-700">
+                                    {cell.notes}
+                                  </div>
+                                )}
+                              </td>
+                            );
+                          }
+
+                          const quoteIdx = hasGoverningColumn ? colIdx - 1 : colIdx;
+                          const isPinned = pinnedColumns.has(quoteIdx);
                           const isHiddenByPinning = pinnedColumns.size > 0 && !isPinned;
                           const cellId = `${row.id}-${colIdx}`;
                           const cellNote = getCellNote(cellId);
@@ -620,7 +670,7 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                               cell={cell}
                               row={row}
                               colIdx={colIdx}
-                              quote={quotes[colIdx]}
+                              quote={quotes[quoteIdx]}
                               viewMode={viewMode}
                               isPinned={isPinned}
                               isHiddenByPinning={isHiddenByPinning}

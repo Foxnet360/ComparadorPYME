@@ -9,6 +9,7 @@ import {
   flatResultToMatrixRows,
   flatResultToMatrixRowsV2,
   quotesToMatrixRows,
+  applyGoverningDocumentColumnToMatrix,
   alignInsurerIndices,
   parseNumericValue,
   FINANCIAL_SECTION_ID,
@@ -718,6 +719,55 @@ describe('quotesToMatrixRows', () => {
 
     const guaranteeRow = matrix.find((r) => r.id === 'cumplimiento_counter_guarantee')!;
     expect(guaranteeRow.cells[0].value).toContain('Pagaré en blanco');
+  });
+
+  it('prepends a governing document reference column without emitting renewal isBaseline flags', () => {
+    const baseMatrix = quotesToMatrixRows(
+      [
+        makeParsedQuote({
+          insurerName: 'SURA',
+          priceAnnual: 500_000,
+          coverages: [
+            {
+              name: 'Seriedad de Oferta',
+              canonicalName: 'Seriedad de Oferta',
+              value: '100000000',
+              deductible: 'No aplica',
+              percentageOfContract: '10%',
+              confidence: 95,
+            },
+          ],
+        }),
+      ],
+      'cumplimiento'
+    );
+
+    const governingRef = makeParsedQuote({
+      insurerName: 'Pliego de Licitación',
+      priceAnnual: 1_000_000_000,
+      coverages: [
+        {
+          name: 'Seriedad de Oferta',
+          canonicalName: 'Seriedad de Oferta',
+          value: '100000000',
+          deductible: 'Vigencia exigida: 120 días desde cierre',
+          percentageOfContract: '10%',
+          confidence: 100,
+        },
+      ],
+    });
+
+    const withGoverning = applyGoverningDocumentColumnToMatrix(baseMatrix, ['SURA'], governingRef);
+    const marker = withGoverning.find((r) => r.id === 'governing_document_column');
+    expect(marker).toBeDefined();
+    expect(marker?.isGoverningReference).toBe(true);
+    expect(withGoverning.find((r) => r.id === 'baseline_column')).toBeUndefined();
+    expect(withGoverning.every((r) => r.isBaseline !== true)).toBe(true);
+
+    const seriedadRow = withGoverning.find((r) => r.label === 'Seriedad de Oferta')!;
+    expect(seriedadRow.cells).toHaveLength(2);
+    expect(seriedadRow.cells[0]?.isGoverningReference).toBe(true);
+    expect(seriedadRow.cells[0]?.value).toBe('$100.000.000 (10%)');
   });
 });
 

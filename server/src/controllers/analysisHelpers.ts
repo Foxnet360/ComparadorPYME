@@ -7,7 +7,15 @@ import { type ConfidenceResult, type ConfidenceBreakdown } from '../services/con
 import { type ClauseValidationSummary } from '../services/clauseCoverageValidator';
 import quoteBasedAuditor from '../services/quoteBasedAuditor';
 import { formatCOP } from '../utils/formatCurrency';
-import { AlertItem, AlertLevel, MatrixRow, QuoteAnalysis } from '../types';
+import {
+  AlertItem,
+  AlertLevel,
+  CumplimientoProcessStage,
+  GoverningDocumentAudit,
+  MatrixRow,
+  QuoteAnalysis,
+  RegulatoryCheckResult,
+} from '../types';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { InsuranceDomain, isInsuranceDomain } from '../types/domain';
 import { AppError } from '../errors';
@@ -117,6 +125,17 @@ export interface ComparisonResult {
   quoteMetadata?: unknown[];
   schemaVersion?: 1 | 2 | 3;
   domain?: InsuranceDomain;
+  cumplimientoStage?: CumplimientoProcessStage;
+  governingAudit?: GoverningDocumentAudit;
+  regulatoryBacking?: {
+    domain: string;
+    displayName: string;
+    tagline: string;
+    primaryLaws: Array<{ code: string; title: string; summary: string }>;
+    thesaurusHighlights: string[];
+    advisoryIntroForClient: string;
+    perQuoteCompliance: Record<string, RegulatoryCheckResult[]>;
+  };
   analysisType?: AnalysisType;
   policyId?: string;
   renewalId?: string;

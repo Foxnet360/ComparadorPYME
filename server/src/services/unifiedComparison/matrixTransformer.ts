@@ -1173,6 +1173,80 @@ function baselineCellForRow(row: MatrixRow, referenceQuote: ParsedQuote): Matrix
   };
 }
 
+function governingCellForRow(row: MatrixRow, governingQuote: ParsedQuote): MatrixCell {
+  if (row.type !== 'data' || row.id.startsWith('warning_')) {
+    return { value: '', isExcluded: false, isWinner: false, isGoverningReference: true };
+  }
+
+  if (row.sectionId === FINANCIAL_SECTION_ID) {
+    if (row.id === 'premium_total' && governingQuote.priceAnnual > 0) {
+      return {
+        value: `Contrato: ${formatCOP(governingQuote.priceAnnual)}`,
+        isExcluded: false,
+        isWinner: false,
+        isGoverningReference: true,
+      };
+    }
+    return { value: 'N/A (Ref.)', isExcluded: false, isWinner: false, isGoverningReference: true };
+  }
+
+  const coverage = findBaselineCoverage(governingQuote, row.label);
+  if (!coverage) {
+    return {
+      value: 'No exigido',
+      isExcluded: true,
+      isWinner: false,
+      isGoverningReference: true,
+    };
+  }
+  const formatted = cellFromQuoteCoverage(coverage);
+  return {
+    ...formatted,
+    isGoverningReference: true,
+  };
+}
+
+export function applyGoverningDocumentColumnToMatrix(
+  matrix: MatrixRow[],
+  insurerNames: string[],
+  governingQuote?: ParsedQuote | null
+): MatrixRow[] {
+  if (!governingQuote) return matrix;
+
+  const withGoverning: MatrixRow[] = matrix.map((row) => ({
+    ...row,
+    isGoverningReference: true,
+    cells: [governingCellForRow(row, governingQuote), ...row.cells],
+  }));
+
+  const numColumns = insurerNames.length + 1;
+  const markerIndex = withGoverning.findIndex((row) => row.id === 'client_info');
+  const markerRow: MatrixRow = {
+    type: 'header',
+    id: 'governing_document_column',
+    label: `Documento Rector - ${governingQuote.insurerName}`,
+    sectionId: HEADER_SECTION_ID,
+    isGoverningReference: true,
+    cells: [
+      {
+        value: governingQuote.insurerName,
+        isExcluded: false,
+        isWinner: false,
+        isGoverningReference: true,
+      },
+      ...emptyCells(numColumns - 1),
+    ],
+  };
+
+  const clientHeader = withGoverning[markerIndex];
+  if (clientHeader) {
+    clientHeader.label = `${clientHeader.label.split(' - ')[0]} - ${governingQuote.insurerName} (Referencia), ${insurerNames.join(', ')}`;
+  }
+
+  withGoverning.splice(markerIndex >= 0 ? markerIndex + 1 : 0, 0, markerRow);
+  return withGoverning;
+}
+
 export function applyBaselineColumnToMatrix(
   matrix: MatrixRow[],
   insurerNames: string[],
@@ -2183,9 +2257,13 @@ export function alignMatrixRowsToQuotes(
   const hasBaselineCol =
     matrixRows.some((r) => r.isBaseline || r.id === 'baseline_column') ||
     (matrixInsurers[0]?.includes('(Póliza Actual)') ?? false);
+  const hasGoverningCol =
+    matrixRows.some((r) => r.isGoverningReference || r.id === 'governing_document_column') ||
+    (matrixInsurers[0]?.includes('(Referencia)') ?? false);
+  const hasLeadingRefCol = hasBaselineCol || hasGoverningCol;
 
-  const baselineLabel = hasBaselineCol ? matrixInsurers[0] : undefined;
-  const candidateMatrixInsurers = hasBaselineCol ? matrixInsurers.slice(1) : matrixInsurers;
+  const baselineLabel = hasLeadingRefCol ? matrixInsurers[0] : undefined;
+  const candidateMatrixInsurers = hasLeadingRefCol ? matrixInsurers.slice(1) : matrixInsurers;
 
   const quoteInsurers = quotes.map((q) => q.insurerName);
   const indices = alignInsurerIndices(quoteInsurers, candidateMatrixInsurers);
@@ -2206,19 +2284,19 @@ export function alignMatrixRowsToQuotes(
   return matrixRows.map((row) => {
     if (!row.cells || row.cells.length === 0) return row;
 
-    const candidateCells = hasBaselineCol ? row.cells.slice(1) : row.cells;
+    const candidateCells = hasLeadingRefCol ? row.cells.slice(1) : row.cells;
     const reorderedCandidates = indices.map((srcIdx) =>
       srcIdx >= 0 && candidateCells[srcIdx]
         ? candidateCells[srcIdx]!
         : { value: '', isExcluded: false, isWinner: false }
     );
-    const reorderedCells = hasBaselineCol
+    const reorderedCells = hasLeadingRefCol
       ? [row.cells[0]!, ...reorderedCandidates]
       : reorderedCandidates;
 
     if (row.type === 'header' && row.id === 'client_info') {
       const labelCols =
-        hasBaselineCol && baselineLabel
+        hasLeadingRefCol && baselineLabel
           ? [baselineLabel, ...quotes.map((q) => q.insurerName)]
           : quotes.map((q) => q.insurerName);
       return {

@@ -23,6 +23,7 @@ import {
 import { processQuotesBatch } from '../quoteProcessingService';
 import {
   applyBaselineColumnToMatrix,
+  applyGoverningDocumentColumnToMatrix,
   flatResultToMatrixRows,
   flatResultToMatrixRowsV2,
   flatResultToMatrixRowsV3,
@@ -67,6 +68,11 @@ export interface ComparisonAdapterOptions {
    * engine as a candidate; only used to prepend the baseline column.
    */
   referenceQuote?: ParsedQuote | null;
+  /**
+   * Governing document reference quote for Cumplimiento (Pliego / Contrato / Otrosí).
+   * Prepended as a dedicated reference column without mutating schemaVersion 3 renewal flags.
+   */
+  governingReferenceQuote?: ParsedQuote | null;
   policyId?: string | null;
   renewalId?: string | null;
 }
@@ -113,13 +119,27 @@ export class ComparisonEngineAdapter {
         `🚀 [Adapter] Prioritizing Two-Stage per-quote extraction pipeline (${routeReason}, files=${pdfPaths.length}) [${correlationId}] domain=${domain}`
       );
       try {
-        const matrix = await this.runPerQuoteBatch(
+        const rawMatrix = await this.runPerQuoteBatch(
           pdfPaths,
           routeReason,
           correlationId,
           domain,
           baselineRef
         );
+        const matrix =
+          !baselineRef && opts.governingReferenceQuote
+            ? applyGoverningDocumentColumnToMatrix(
+                rawMatrix,
+                rawMatrix
+                  .find((r) => r.id === 'client_info')
+                  ?.label.split(' - ')
+                  .slice(1)
+                  .join(' - ')
+                  .split(', ')
+                  .filter(Boolean) || [],
+                opts.governingReferenceQuote
+              )
+            : rawMatrix;
         return {
           matrix,
           engine: 'unified',
@@ -177,12 +197,20 @@ export class ComparisonEngineAdapter {
         granularOverride ?? unifiedComparisonFlag.isGranularComparisonSchemaEnabled(),
         opts.analysisType
       );
-      const matrix =
+      const rawMatrix =
         schemaVersion === 3
           ? flatResultToMatrixRowsV3(result as FlatComparisonResultV2, domain, opts.referenceQuote)
           : schemaVersion === 2
             ? flatResultToMatrixRowsV2(result, domain)
             : flatResultToMatrixRows(result, domain);
+      const matrix =
+        schemaVersion !== 3 && opts.governingReferenceQuote
+          ? applyGoverningDocumentColumnToMatrix(
+              rawMatrix,
+              result.insurers || [],
+              opts.governingReferenceQuote
+            )
+          : rawMatrix;
 
       console.log(
         `✅ [Adapter] Unified engine succeeded [${correlationId}] schemaVersion=${schemaVersion}`
@@ -213,13 +241,27 @@ export class ComparisonEngineAdapter {
         `🔄 [Adapter] routing=fallback, reason=${reason}, correlationId=${fallbackCorrelationId}`
       );
 
-      const matrix = await this.runLegacyBatch(
+      const rawMatrix = await this.runLegacyBatch(
         pdfPaths,
         reason,
         fallbackCorrelationId,
         domain,
         baselineRef
       );
+      const matrix =
+        !baselineRef && opts.governingReferenceQuote
+          ? applyGoverningDocumentColumnToMatrix(
+              rawMatrix,
+              rawMatrix
+                .find((r) => r.id === 'client_info')
+                ?.label.split(' - ')
+                .slice(1)
+                .join(' - ')
+                .split(', ')
+                .filter(Boolean) || [],
+              opts.governingReferenceQuote
+            )
+          : rawMatrix;
 
       return {
         matrix,

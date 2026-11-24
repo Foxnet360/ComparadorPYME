@@ -1,6 +1,11 @@
 import React, { createContext, useContext, useReducer, useCallback } from 'react';
 import { ComparisonReport, AppStatus, Client, InsuranceDomain } from '../types';
-import type { AnalysisMode, InsuranceDomainType, RenewalAnalysisContext } from '../types';
+import type {
+  AnalysisMode,
+  CumplimientoProcessStage,
+  InsuranceDomainType,
+  RenewalAnalysisContext,
+} from '../types';
 import { CorrectionQueue } from '../services/correctionQueue';
 import { DEMO_REPORT, DEMO_CLIENTS } from '../src/demoData';
 
@@ -54,9 +59,11 @@ interface AnalysisState {
   selectedClient: Client | null;
   quoteFiles: File[];
   clauseFiles: File[];
+  governingFiles: File[];
   clauseMode: 'library' | 'upload';
   selectedClauseIds: string[];
   domain: InsuranceDomainType;
+  cumplimientoStage: CumplimientoProcessStage;
   statusMessage: string;
   progressPercent: number;
   errorMessage: string;
@@ -80,6 +87,9 @@ type AnalysisAction =
   | { type: 'REMOVE_QUOTE_FILE'; payload: number }
   | { type: 'ADD_CLAUSE_FILES'; payload: File[] }
   | { type: 'REMOVE_CLAUSE_FILE'; payload: number }
+  | { type: 'ADD_GOVERNING_FILES'; payload: File[] }
+  | { type: 'REMOVE_GOVERNING_FILE'; payload: number }
+  | { type: 'SET_CUMPLIMIENTO_STAGE'; payload: CumplimientoProcessStage }
   | { type: 'SET_CLAUSE_MODE'; payload: 'library' | 'upload' }
   | { type: 'SET_SELECTED_CLAUSE_IDS'; payload: string[] }
   | { type: 'SET_DOMAIN'; payload: InsuranceDomainType }
@@ -108,9 +118,11 @@ const initialState: AnalysisState = {
   selectedClient: null,
   quoteFiles: [],
   clauseFiles: [],
+  governingFiles: [],
   clauseMode: 'library',
   selectedClauseIds: [],
   domain: InsuranceDomain.PYME,
+  cumplimientoStage: 'AUTO',
   statusMessage: '',
   progressPercent: 0,
   errorMessage: '',
@@ -147,6 +159,15 @@ function analysisReducer(state: AnalysisState, action: AnalysisAction): Analysis
       return { ...state, clauseFiles: [...state.clauseFiles, ...action.payload] };
     case 'REMOVE_CLAUSE_FILE':
       return { ...state, clauseFiles: state.clauseFiles.filter((_, i) => i !== action.payload) };
+    case 'ADD_GOVERNING_FILES':
+      return { ...state, governingFiles: [...state.governingFiles, ...action.payload] };
+    case 'REMOVE_GOVERNING_FILE':
+      return {
+        ...state,
+        governingFiles: state.governingFiles.filter((_, i) => i !== action.payload),
+      };
+    case 'SET_CUMPLIMIENTO_STAGE':
+      return { ...state, cumplimientoStage: action.payload };
     case 'SET_CLAUSE_MODE':
       return { ...state, clauseMode: action.payload };
     case 'SET_SELECTED_CLAUSE_IDS':
@@ -209,6 +230,9 @@ interface AnalysisContextType {
   removeQuoteFile: (index: number) => void;
   addClauseFiles: (files: File[]) => void;
   removeClauseFile: (index: number) => void;
+  addGoverningFiles: (files: File[]) => void;
+  removeGoverningFile: (index: number) => void;
+  setCumplimientoStage: (stage: CumplimientoProcessStage) => void;
   setMode: (mode: AnalysisMode) => void;
   setRenewalContext: (context: RenewalAnalysisContext | null) => void;
   reset: () => void;
@@ -249,6 +273,18 @@ export const AnalysisProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const removeClauseFile = useCallback((index: number) => {
     dispatch({ type: 'REMOVE_CLAUSE_FILE', payload: index });
+  }, []);
+
+  const addGoverningFiles = useCallback((files: File[]) => {
+    dispatch({ type: 'ADD_GOVERNING_FILES', payload: files });
+  }, []);
+
+  const removeGoverningFile = useCallback((index: number) => {
+    dispatch({ type: 'REMOVE_GOVERNING_FILE', payload: index });
+  }, []);
+
+  const setCumplimientoStage = useCallback((stage: CumplimientoProcessStage) => {
+    dispatch({ type: 'SET_CUMPLIMIENTO_STAGE', payload: stage });
   }, []);
 
   const setMode = useCallback((mode: AnalysisMode) => {
@@ -300,6 +336,9 @@ export const AnalysisProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         removeQuoteFile,
         addClauseFiles,
         removeClauseFile,
+        addGoverningFiles,
+        removeGoverningFile,
+        setCumplimientoStage,
         setMode,
         setRenewalContext,
         reset,

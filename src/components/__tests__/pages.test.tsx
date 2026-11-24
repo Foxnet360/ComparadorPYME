@@ -109,6 +109,8 @@ describe('extracted pages (ARCH-1)', () => {
       </AnalysisProvider>
     );
     expect(await screen.findByTestId('cumplimiento-stage-selector')).toBeTruthy();
+    expect(screen.getByTestId('cumplimiento-governing-uploader')).toBeTruthy();
+    expect(screen.getByText(/Pilar 1 · Documento Rector/i)).toBeTruthy();
     const licitacionBtn = screen.getByRole('button', { name: /1\. Licitación \/ Pliego/i });
     const contratoBtn = screen.getByRole('button', { name: /2\. Contrato \/ Minuta/i });
     expect(licitacionBtn).toBeTruthy();

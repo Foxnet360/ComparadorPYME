@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pin, Scale } from 'lucide-react';
+import { Pin, Scale, FileCheck2 } from 'lucide-react';
 import { QuoteAnalysis } from '../../types';
 import { InsurerLogo } from '../common/InsurerLogo';
 
@@ -11,6 +11,7 @@ export interface MatrixTableHeaderProps {
     { compliantCount: number; totalCount: number; isFullyCompliant: boolean; details: string }
   >;
   onTogglePinnedColumn: (idx: number) => void;
+  governingColumnLabel?: string | null;
 }
 
 export const MatrixTableHeader: React.FC<MatrixTableHeaderProps> = ({
@@ -18,6 +19,7 @@ export const MatrixTableHeader: React.FC<MatrixTableHeaderProps> = ({
   pinnedColumns,
   complianceByInsurer,
   onTogglePinnedColumn,
+  governingColumnLabel,
 }) => {
   return (
     <thead className="bg-[#E6F0FA] text-[#0066CC] font-bold text-xs uppercase border-b border-blue-200 sticky top-0 z-30 shadow-xs">
@@ -28,6 +30,22 @@ export const MatrixTableHeader: React.FC<MatrixTableHeaderProps> = ({
         >
           Concepto / Variable
         </th>
+        {governingColumnLabel && (
+          <th
+            role="columnheader"
+            className="px-6 py-4 min-w-[210px] whitespace-nowrap text-center text-indigo-900 bg-indigo-50/90 border-r-2 border-indigo-200 border-b border-indigo-200"
+          >
+            <div className="flex items-center justify-center gap-1.5">
+              <FileCheck2 size={14} className="text-indigo-600" />
+              <span>{governingColumnLabel}</span>
+            </div>
+            <div className="mt-1 flex items-center justify-center">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-300/70">
+                Exigido (Documento Rector)
+              </span>
+            </div>
+          </th>
+        )}
         {quotes.map((q, i) => {
           const isPinned = pinnedColumns.has(i);
           const isHiddenByPinning = pinnedColumns.size > 0 && !isPinned;

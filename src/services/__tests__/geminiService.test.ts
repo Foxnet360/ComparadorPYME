@@ -74,6 +74,39 @@ describe('analyzeQuotesWithGemini', () => {
     expect(body.get('clauses')).toBeNull();
   });
 
+  it('sends governingDocument and cumplimientoStage in FormData when provided', async () => {
+    const quoteFiles = [createFile('cotizacion.pdf')];
+    const governingFiles = [createFile('pliego_licitacion.pdf')];
+
+    vi.mocked(apiClient.fetch).mockResolvedValue({
+      json: vi.fn().mockResolvedValue({ quotes: [] }),
+    } as unknown as Response);
+
+    await analyzeQuotesWithGemini(
+      quoteFiles,
+      [],
+      'Consorcio Vial',
+      undefined,
+      ['clause-cum-1'],
+      'cumplimiento',
+      'new',
+      null,
+      null,
+      {
+        governingFiles,
+        cumplimientoStage: 'LICITACION',
+      }
+    );
+
+    const callArgs = vi.mocked(apiClient.fetch).mock.calls[0];
+    const body = callArgs[1].body as FormData;
+
+    expect(body.get('domain')).toBe('cumplimiento');
+    expect(body.get('cumplimientoStage')).toBe('LICITACION');
+    expect(body.get('governingDocument')).toBeTruthy();
+    expect(body.get('clauseIds')).toBe(JSON.stringify(['clause-cum-1']));
+  });
+
   it('returns parsed ComparisonReport', async () => {
     const report = { quotes: [{ insurerName: 'MAPFRE' }] };
     vi.mocked(apiClient.fetch).mockResolvedValue({

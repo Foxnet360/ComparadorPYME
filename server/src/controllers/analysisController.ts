@@ -17,6 +17,10 @@ import { mergeComparisonResults } from '../services/unifiedComparison/incrementa
 import { getPolicyById } from '../repositories/policyRepository';
 import { supabase } from '../config/database';
 import { ensureClausePersistedInLibrary } from '../services/documentIndexingService';
+import {
+  buildCumplimientoContext,
+  applyCumplimientoPostProcessing,
+} from '../services/governingDocumentExtractor';
 import { auditGroundedComparison } from '../services/groundingAuditor';
 import { AuthenticatedRequest } from '../middleware/auth';
 import logger from '../config/logger';
@@ -74,7 +78,8 @@ export const analysisController = {
     const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
     const quoteFiles = files?.['quotes'] || [];
     const clauseFiles = files?.['clauses'] || [];
-    const allUploadedFiles = [...quoteFiles, ...clauseFiles];
+    const governingFiles = files?.['governingDocument'] || [];
+    const allUploadedFiles = [...quoteFiles, ...clauseFiles, ...governingFiles];
     let filesCleanedUp = false;
     const cleanupUploadedFiles = () => {
       if (filesCleanedUp) return;
@@ -214,6 +219,9 @@ export const analysisController = {
           }
         }
 
+        const { cumplimientoStage, governingSpec, governingReferenceQuote } =
+          await buildCumplimientoContext(domain, governingFiles, req.body?.cumplimientoStage);
+
         assertNotCancelled();
         await jobHooks?.reportProgress?.(
           'parsing',
@@ -230,6 +238,7 @@ export const analysisController = {
           domain,
           ...(analysisType ? { analysisType } : {}),
           ...(referenceQuote ? { referenceQuote } : {}),
+          ...(governingReferenceQuote ? { governingReferenceQuote } : {}),
           ...(policyId ? { policyId } : {}),
           ...(renewalId ? { renewalId } : {}),
         });
@@ -268,6 +277,9 @@ export const analysisController = {
           : adapterResult.quoteMetadata;
         comparisonResult.schemaVersion = adapterResult.schemaVersion;
         comparisonResult.domain = domain;
+        if (domain === 'cumplimiento') {
+          applyCumplimientoPostProcessing(comparisonResult, cumplimientoStage, governingSpec);
+        }
         if (analysisType) {
           comparisonResult.analysisType = analysisType;
         }

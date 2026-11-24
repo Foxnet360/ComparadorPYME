@@ -3,7 +3,7 @@ import { useAnalysis } from '../contexts/AnalysisContext';
 import { useUI } from '../contexts/UIContext';
 import { AnalysisCancelledError, analyzeQuotesWithGemini } from '../services/geminiService';
 import { storageService } from '../services/storageService';
-import { AppStatus } from '../types';
+import { AppStatus, InsuranceDomain } from '../types';
 import type { ComparisonReport as ReportType } from '../types';
 
 export type AppView =
@@ -32,6 +32,9 @@ export const useAnalysisFlow = () => {
     removeQuoteFile,
     addClauseFiles,
     removeClauseFile,
+    addGoverningFiles,
+    removeGoverningFile,
+    setCumplimientoStage,
     setMode,
     setRenewalContext,
     reset,
@@ -77,6 +80,12 @@ export const useAnalysisFlow = () => {
         state.selectedClient,
         {
           signal: controller.signal,
+          ...(state.domain === InsuranceDomain.CUMPLIMIENTO
+            ? {
+                governingFiles: state.governingFiles,
+                cumplimientoStage: state.cumplimientoStage,
+              }
+            : {}),
           onStageProgress: ({ progress, message }) => {
             if (typeof progress === 'number') {
               dispatch({ type: 'SET_PROGRESS', payload: progress });
@@ -151,6 +160,9 @@ export const useAnalysisFlow = () => {
     removeQuoteFile,
     addClauseFiles,
     removeClauseFile,
+    addGoverningFiles,
+    removeGoverningFile,
+    setCumplimientoStage,
     setMode,
     setRenewalContext,
     analyze,

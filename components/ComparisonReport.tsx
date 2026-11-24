@@ -14,6 +14,7 @@ import { usePdfExport } from '../hooks/usePdfExport';
 import { isAdvancedAnalysisEnabled } from '../config/features';
 import { useCellNotes } from '../contexts/AnalysisContext';
 import { ClaimSimulatorPanel } from './report/ClaimSimulatorPanel';
+import { GoverningAuditPanel } from './report/GoverningAuditPanel';
 import { PromoteQuoteModal } from './report/PromoteQuoteModal';
 import { AddLateQuoteModal } from './report/AddLateQuoteModal';
 import { storageService } from '../services/storageService';
@@ -123,6 +124,9 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
         </React.Suspense>
       )}
 
+      {/* Cumplimiento mode: Governing Document (Pliego / Contrato / Otrosí) Audit Panel */}
+      {report.governingAudit && <GoverningAuditPanel audit={report.governingAudit} />}
+
       {/* Tabs Navigation */}
       <ReportTabsNav
         activeTab={activeTab}
@@ -164,6 +168,7 @@ const ComparisonReport: React.FC<ComparisonReportProps> = ({
             analysisId={report.id}
             schemaVersion={report.schemaVersion}
             domain={report.domain}
+            perQuoteCompliance={report.regulatoryBacking?.perQuoteCompliance}
           />
         </div>
       )}

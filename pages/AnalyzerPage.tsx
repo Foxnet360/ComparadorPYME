@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, BookOpen, Activity } from 'lucide-react';
+import { Sparkles, BookOpen, Activity, FileCheck2 } from 'lucide-react';
 import FileUploader from '../components/FileUploader';
 import DomainSelector from '../components/DomainSelector';
 import ClientSelector from '../components/ClientSelector';
@@ -51,8 +51,6 @@ const CUMPLIMIENTO_STAGES: Array<{
 ];
 
 const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
-  const [cumplimientoStage, setCumplimientoStage] =
-    React.useState<CumplimientoProcessStage>('AUTO');
   const {
     state,
     dispatch,
@@ -60,6 +58,9 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
     removeQuoteFile,
     addClauseFiles,
     removeClauseFile,
+    addGoverningFiles,
+    removeGoverningFile,
+    setCumplimientoStage,
     analyze,
     cancelAnalysis,
     resetFlow,
@@ -72,9 +73,11 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
     selectedClient,
     quoteFiles,
     clauseFiles,
+    governingFiles,
     clauseMode,
     selectedClauseIds,
     domain,
+    cumplimientoStage,
     statusMessage,
     progressPercent,
     errorMessage,
@@ -115,20 +118,21 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
             {/* Inyección de Tesauro y Respaldo Normativo Colombiano por Ramo */}
             <RegulatoryBackingPanel domain={domain} compact={true} />
 
-            {/* Selector de Momento Contractual exclusivo para Cumplimiento y Fianzas */}
+            {/* Pilar 1 exclusivo para Cumplimiento y Fianzas: Etapa Contractual + Documento Rector (Pliego / Contrato / Otrosí) */}
             {domain === InsuranceDomain.CUMPLIMIENTO && (
               <div
-                className="bg-white p-5 rounded-2xl border border-indigo-200 shadow-sm space-y-3"
+                className="bg-white p-5 rounded-2xl border-2 border-indigo-200/80 shadow-sm space-y-4"
                 data-testid="cumplimiento-stage-selector"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
                     <span className="text-xs font-bold uppercase tracking-wider text-indigo-700">
-                      Momento del Proceso Contractual y Documento Rector (Cumplimiento y Fianzas)
+                      Pilar 1 · Documento Rector (Pliego de Licitación, Minuta de Contrato u Otrosí)
                     </span>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Selecciona contra qué documento rector estás auditando las cotizaciones para
-                      ajustar las reglas de suficiencia (%) y vigencias
+                      Selecciona el momento del proceso contractual y adjunta el PDF del Pliego o
+                      Contrato para cruzar porcentajes (%), cuantías y vigencias contra las
+                      cotizaciones.
                     </p>
                   </div>
                   <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 self-start sm:self-auto">
@@ -159,6 +163,30 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
 
                 <div className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-100 text-xs text-indigo-950">
                   {CUMPLIMIENTO_STAGES.find((s) => s.id === cumplimientoStage)?.description}
+                </div>
+
+                <div
+                  className="pt-2 border-t border-indigo-100"
+                  data-testid="cumplimiento-governing-uploader"
+                >
+                  <FileUploader
+                    title={
+                      cumplimientoStage === 'LICITACION'
+                        ? 'Adjuntar Pliego de Condiciones / Adendas (PDF)'
+                        : cumplimientoStage === 'CONTRATO'
+                          ? 'Adjuntar Minuta del Contrato / Orden de Compra (PDF)'
+                          : cumplimientoStage === 'OTROSI'
+                            ? 'Adjuntar Otrosí o Acta Modificatoria (PDF)'
+                            : 'Adjuntar Pliego de Licitación, Minuta de Contrato u Otrosí (PDF)'
+                    }
+                    description="Opcional pero recomendado: las exigencias de garantías de este documento aparecerán como primera columna de auditoría en la matriz."
+                    files={governingFiles}
+                    onFilesSelected={addGoverningFiles}
+                    onRemoveFile={removeGoverningFile}
+                    variant="secondary"
+                    icon={<FileCheck2 className="w-6 h-6 text-indigo-600" />}
+                    disabled={false}
+                  />
                 </div>
               </div>
             )}
@@ -217,23 +245,15 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
                   <div className="mt-4 pt-3 border-t border-slate-200/60">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[11px] font-semibold text-slate-700">
-                        {domain === InsuranceDomain.CUMPLIMIENTO
-                          ? '¿Deseas anexar el Pliego, la Minuta del Contrato o un clausulado?'
-                          : '¿Falta alguna aseguradora en la biblioteca?'}
+                        ¿Falta alguna aseguradora en la biblioteca?
                       </span>
                       <span className="text-[10px] text-slate-500">
-                        {domain === InsuranceDomain.CUMPLIMIENTO
-                          ? 'Documento Rector / Clausulado PDF'
-                          : 'Carga el PDF complementario'}
+                        Carga el PDF complementario
                       </span>
                     </div>
                     <FileUploader
                       title=""
-                      description={
-                        domain === InsuranceDomain.CUMPLIMIENTO
-                          ? 'Arrastra aquí el Pliego de Condiciones, Minuta del Contrato, Otrosí o Clausulado PDF'
-                          : 'Arrastra aquí el clausulado PDF faltante'
-                      }
+                      description="Arrastra aquí el clausulado general PDF faltante"
                       files={clauseFiles}
                       onFilesSelected={addClauseFiles}
                       onRemoveFile={removeClauseFile}
@@ -249,11 +269,7 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
                   <div className="mt-4">
                     <FileUploader
                       title=""
-                      description={
-                        domain === InsuranceDomain.CUMPLIMIENTO
-                          ? 'Arrastra aquí el Pliego de Condiciones, Minuta del Contrato, Otrosí o Clausulados PDF'
-                          : 'Arrastra PDFs de clausulados aquí'
-                      }
+                      description="Arrastra PDFs de clausulados generales aquí"
                       files={clauseFiles}
                       onFilesSelected={addClauseFiles}
                       onRemoveFile={removeClauseFile}
@@ -286,13 +302,15 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                 <Sparkles size={20} className="relative z-10" />
                 <span className="relative z-10">
-                  {selectedClauseIds.length > 0 && clauseFiles.length > 0
-                    ? `Comparar (${selectedClauseIds.length} biblioteca + ${clauseFiles.length} subido${clauseFiles.length > 1 ? 's' : ''})`
-                    : selectedClauseIds.length > 0
-                      ? `Comparar (${selectedClauseIds.length} clausulados biblioteca)`
-                      : clauseFiles.length > 0
-                        ? `Comparar con ${clauseFiles.length} referencias`
-                        : 'Comparar Cotizaciones'}
+                  {domain === InsuranceDomain.CUMPLIMIENTO && governingFiles.length > 0
+                    ? `Auditar vs. Documento Rector${selectedClauseIds.length + clauseFiles.length > 0 ? ` (+${selectedClauseIds.length + clauseFiles.length} clausulados)` : ''}`
+                    : selectedClauseIds.length > 0 && clauseFiles.length > 0
+                      ? `Comparar (${selectedClauseIds.length} biblioteca + ${clauseFiles.length} subido${clauseFiles.length > 1 ? 's' : ''})`
+                      : selectedClauseIds.length > 0
+                        ? `Comparar (${selectedClauseIds.length} clausulados biblioteca)`
+                        : clauseFiles.length > 0
+                          ? `Comparar con ${clauseFiles.length} referencias`
+                          : 'Comparar Cotizaciones'}
                 </span>
               </button>
             </div>

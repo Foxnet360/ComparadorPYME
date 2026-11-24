@@ -312,6 +312,43 @@ export interface InsurerCommercialConditions {
   [key: string]: string | undefined;
 }
 
+export type CumplimientoProcessStage = 'AUTO' | 'LICITACION' | 'CONTRATO' | 'OTROSI';
+
+export interface CumplimientoGoverningGap {
+  coverageName: string;
+  requiredPercentage?: string | null;
+  requiredAmount?: string | null;
+  requiredValidity?: string | null;
+  status: 'COMPLIANT' | 'PARTIAL_GAP' | 'MISSING';
+  quotedValue?: string | null;
+  notes: string;
+}
+
+export interface GoverningDocumentAudit {
+  documentName: string;
+  stage: CumplimientoProcessStage;
+  legalRegime?: string | null;
+  processOrContractNumber?: string | null;
+  entityName?: string | null;
+  contractorName?: string | null;
+  contractOrBudgetValue?: number | null;
+  contractDuration?: string | null;
+  requiredCoverages: Array<{
+    name: string;
+    percentageOfContract?: string | null;
+    minimumAmount?: number | null;
+    validityRule?: string | null;
+  }>;
+  perInsurerStatus: Record<
+    string,
+    {
+      compliantCount: number;
+      totalRequired: number;
+      gaps: CumplimientoGoverningGap[];
+    }
+  >;
+}
+
 export interface ComparisonReport {
   id?: string;
   quotes: QuoteAnalysis[];
@@ -329,6 +366,8 @@ export interface ComparisonReport {
   baseline?: RenewalBaseline;
   renewalAnalytics?: CandidateRenewalAnalytics[];
   domain?: string;
+  cumplimientoStage?: CumplimientoProcessStage;
+  governingAudit?: GoverningDocumentAudit;
   clientInfo?: ClientInfoSummary;
   regulatoryBacking?: {
     domain: string;
@@ -540,6 +579,8 @@ export interface MatrixCell {
   rawName?: string;
   /** Renewal mode (schemaVersion 3): this cell belongs to the baseline column. */
   isBaseline?: boolean;
+  /** Cumplimiento mode: this cell belongs to the governing document reference column (Pliego / Contrato). */
+  isGoverningReference?: boolean;
 }
 
 export interface MatrixRow {
@@ -548,6 +589,8 @@ export interface MatrixRow {
   label: string;
   sectionId: number;
   cells: MatrixCell[];
+  /** Cumplimiento mode: row includes a leading governing document reference cell. */
+  isGoverningReference?: boolean;
 }
 
 // --- RBAC & EXECUTIVE ANALYTICS TYPES ---

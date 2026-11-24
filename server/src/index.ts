@@ -249,6 +249,7 @@ function registerCoreApiRoutes(prefix: '/api' | '/api/v1'): void {
     upload.fields([
       { name: 'quotes', maxCount: 15 },
       { name: 'clauses', maxCount: 10 },
+      { name: 'governingDocument', maxCount: 3 },
     ]),
     asyncHandler(analysisController.uploadAndAnalyze)
   );

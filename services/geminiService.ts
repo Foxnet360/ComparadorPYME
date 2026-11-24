@@ -1,5 +1,10 @@
 import { ComparisonReport } from '../types';
-import type { AnalysisMode, Client, RenewalAnalysisContext } from '../types';
+import type {
+  AnalysisMode,
+  Client,
+  CumplimientoProcessStage,
+  RenewalAnalysisContext,
+} from '../types';
 import {
   apiClient,
   ApiTimeoutError,
@@ -25,6 +30,8 @@ export interface AnalyzeQuotesOptions {
   signal?: AbortSignal;
   pollIntervalMs?: number;
   preferAsync?: boolean;
+  governingFiles?: File[];
+  cumplimientoStage?: CumplimientoProcessStage;
 }
 
 interface AsyncJobAcceptedResponse {
@@ -189,6 +196,15 @@ export const analyzeQuotesWithGemini = async (
   if (clauseFiles && clauseFiles.length > 0) {
     clauseFiles.forEach((file) => formData.append('clauses', file));
     if (onStatusUpdate) onStatusUpdate('Adjuntando clausulados adicionales subidos...');
+  }
+  if (options?.cumplimientoStage) {
+    formData.append('cumplimientoStage', options.cumplimientoStage);
+  }
+  if (options?.governingFiles && options.governingFiles.length > 0) {
+    options.governingFiles.forEach((file) => formData.append('governingDocument', file));
+    if (onStatusUpdate) {
+      onStatusUpdate('Adjuntando Documento Rector (Pliego / Contrato / Otrosí)...');
+    }
   }
 
   if (onStatusUpdate) onStatusUpdate('Subiendo archivos al servidor seguro (Cloud Run)...');
