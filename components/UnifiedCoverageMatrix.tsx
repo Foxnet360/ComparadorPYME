@@ -710,7 +710,8 @@ export const UnifiedCoverageMatrix: React.FC<UnifiedCoverageMatrixProps> = ({
                     >
                       <td
                         colSpan={
-                          pinnedColumns.size > 0 ? pinnedColumns.size + 1 : quotes.length + 1
+                          (pinnedColumns.size > 0 ? pinnedColumns.size + 1 : quotes.length + 1) +
+                          (hasGoverningColumn ? 1 : 0)
                         }
                         className="p-0 border-0"
                       />

@@ -2,8 +2,15 @@ import { describe, it, expect } from 'vitest';
 import {
   buildGoverningReferenceQuote,
   auditQuotesAgainstGoverningSpec,
+  applyCumplimientoPostProcessing,
   type GoverningDocumentSpec,
 } from '../governingDocumentExtractor';
+import {
+  applyGoverningDocumentColumnToMatrix,
+  quotesToMatrixRows,
+} from '../unifiedComparison/matrixTransformer';
+import { matrixRowsToComparisonReport } from '../unifiedComparison/reportBuilderService';
+import type { ParsedQuote } from '../quoteParser';
 
 const sampleSpec: GoverningDocumentSpec = {
   documentName: 'Minuta_Contrato_INVIAS_042.pdf',
@@ -114,5 +121,67 @@ describe('governingDocumentExtractor', () => {
     expect(previsoraStatus.gaps[1]?.status).toBe('PARTIAL_GAP');
     expect(previsoraStatus.gaps[1]?.notes).toContain('Vigencia cotizada');
     expect(previsoraStatus.gaps[2]?.status).toBe('MISSING');
+  });
+
+  it('keeps governing document column separated from candidate quotes in matrixRowsToComparisonReport even with generic filenames', async () => {
+    const candidateQuote: ParsedQuote = {
+      insurerName: 'SURA',
+      policyName: 'Seriedad Licitación',
+      priceAnnual: 350_000,
+      currency: 'COP',
+      coverages: [
+        {
+          name: 'Seriedad de Oferta',
+          canonicalName: 'Seriedad de Oferta',
+          value: '100000000',
+          deductible: 'No aplica',
+          percentageOfContract: '10%',
+          confidence: 95,
+        },
+      ],
+      specialConditions: [],
+      rawText: '',
+      parseConfidence: 95,
+    };
+
+    const licitacionSpec: GoverningDocumentSpec = {
+      documentName: 'Pliego_SECOP.pdf',
+      stage: 'LICITACION',
+      legalRegime: 'ESTATAL_LEY_80',
+      contractOrBudgetValue: 1_000_000_000,
+      requiredCoverages: [
+        {
+          name: 'Seriedad de Oferta',
+          percentageOfContract: '10%',
+          minimumAmount: 100_000_000,
+          validityRule: '120 días desde cierre',
+        },
+      ],
+    };
+
+    const baseMatrix = quotesToMatrixRows([candidateQuote], 'cumplimiento');
+    const refQuote = buildGoverningReferenceQuote(licitacionSpec);
+    const matrixWithGov = applyGoverningDocumentColumnToMatrix(baseMatrix, ['SURA'], refQuote);
+
+    // Generic filename like "cotizacion_licitacion.pdf" must still map to SURA (index 1), not to Pliego de Licitación (index 0)
+    const fakeFiles = [{ originalname: 'cotizacion_licitacion.pdf' } as Express.Multer.File];
+    const report = await matrixRowsToComparisonReport(matrixWithGov, fakeFiles, {
+      domain: 'cumplimiento',
+    });
+
+    expect(report.quotes).toHaveLength(1);
+    expect(report.quotes[0]?.insurerName).toBe('SURA');
+    expect(report.quotes[0]?.priceAnnual).toBe(350_000);
+    expect(report.matrix.find((r) => r.id === 'governing_document_column')).toBeDefined();
+
+    // Also verify applyCumplimientoPostProcessing uses the resolved stage from governingSpec when requestedStage is AUTO
+    const resultEnvelope: Parameters<typeof applyCumplimientoPostProcessing>[0] = {
+      quotes: report.quotes,
+      regulatoryBacking: report.regulatoryBacking,
+    };
+    applyCumplimientoPostProcessing(resultEnvelope, 'AUTO', licitacionSpec);
+    expect(resultEnvelope.cumplimientoStage).toBe('LICITACION');
+    const suraChecks = resultEnvelope.regulatoryBacking?.perQuoteCompliance['SURA'] ?? [];
+    expect(suraChecks.some((c) => c.status === 'NON_COMPLIANT')).toBe(false);
   });
 });

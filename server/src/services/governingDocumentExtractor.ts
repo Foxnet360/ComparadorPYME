@@ -494,9 +494,10 @@ export function applyCumplimientoPostProcessing(
       governingSpec
     );
   }
-  if (requestedStage !== 'AUTO' && comparisonResult.quotes && comparisonResult.regulatoryBacking) {
+  const resolvedStage = comparisonResult.cumplimientoStage || requestedStage;
+  if (resolvedStage !== 'AUTO' && comparisonResult.quotes && comparisonResult.regulatoryBacking) {
     const stageHint =
-      requestedStage === 'LICITACION' ? 'PRECONTRACTUAL_LICITACION' : 'CONTRACTUAL_EJECUCION';
+      resolvedStage === 'LICITACION' ? 'PRECONTRACTUAL_LICITACION' : 'CONTRACTUAL_EJECUCION';
     const stageQuotes = comparisonResult.quotes.map((q) => ({
       ...q,
       cumplimientoDetails: { contractStage: stageHint },

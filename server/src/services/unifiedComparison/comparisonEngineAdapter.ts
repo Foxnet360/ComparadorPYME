@@ -126,20 +126,9 @@ export class ComparisonEngineAdapter {
           domain,
           baselineRef
         );
-        const matrix =
-          !baselineRef && opts.governingReferenceQuote
-            ? applyGoverningDocumentColumnToMatrix(
-                rawMatrix,
-                rawMatrix
-                  .find((r) => r.id === 'client_info')
-                  ?.label.split(' - ')
-                  .slice(1)
-                  .join(' - ')
-                  .split(', ')
-                  .filter(Boolean) || [],
-                opts.governingReferenceQuote
-              )
-            : rawMatrix;
+        const matrix = !baselineRef
+          ? this.maybePrependGoverningColumn(rawMatrix, opts.governingReferenceQuote)
+          : rawMatrix;
         return {
           matrix,
           engine: 'unified',
@@ -162,13 +151,16 @@ export class ComparisonEngineAdapter {
       console.log(
         `📦 [Adapter] Routing to legacy batch service (flag disabled) [${correlationId}]`
       );
-      const matrix = await this.runLegacyBatch(
+      const rawMatrix = await this.runLegacyBatch(
         pdfPaths,
         'unified_disabled_by_flag',
         correlationId,
         domain,
         baselineRef
       );
+      const matrix = !baselineRef
+        ? this.maybePrependGoverningColumn(rawMatrix, opts.governingReferenceQuote)
+        : rawMatrix;
       return {
         matrix,
         engine: 'fallback',
@@ -204,11 +196,11 @@ export class ComparisonEngineAdapter {
             ? flatResultToMatrixRowsV2(result, domain)
             : flatResultToMatrixRows(result, domain);
       const matrix =
-        schemaVersion !== 3 && opts.governingReferenceQuote
-          ? applyGoverningDocumentColumnToMatrix(
+        schemaVersion !== 3
+          ? this.maybePrependGoverningColumn(
               rawMatrix,
-              result.insurers || [],
-              opts.governingReferenceQuote
+              opts.governingReferenceQuote,
+              result.insurers
             )
           : rawMatrix;
 
@@ -248,20 +240,9 @@ export class ComparisonEngineAdapter {
         domain,
         baselineRef
       );
-      const matrix =
-        !baselineRef && opts.governingReferenceQuote
-          ? applyGoverningDocumentColumnToMatrix(
-              rawMatrix,
-              rawMatrix
-                .find((r) => r.id === 'client_info')
-                ?.label.split(' - ')
-                .slice(1)
-                .join(' - ')
-                .split(', ')
-                .filter(Boolean) || [],
-              opts.governingReferenceQuote
-            )
-          : rawMatrix;
+      const matrix = !baselineRef
+        ? this.maybePrependGoverningColumn(rawMatrix, opts.governingReferenceQuote)
+        : rawMatrix;
 
       return {
         matrix,
@@ -282,6 +263,25 @@ export class ComparisonEngineAdapter {
    * falls inside the request-time rollout percentage. Anonymous users only
    * enter fully rolled-out slices.
    */
+  private maybePrependGoverningColumn(
+    matrix: MatrixRow[],
+    governingQuote?: ParsedQuote | null,
+    explicitInsurers?: string[]
+  ): MatrixRow[] {
+    if (!governingQuote) return matrix;
+    const insurerNames =
+      explicitInsurers && explicitInsurers.length > 0
+        ? explicitInsurers
+        : matrix
+            .find((r) => r.id === 'client_info')
+            ?.label.split(' - ')
+            .slice(1)
+            .join(' - ')
+            .split(', ')
+            .filter(Boolean) || [];
+    return applyGoverningDocumentColumnToMatrix(matrix, insurerNames, governingQuote);
+  }
+
   private isSliceEnabled(
     flag: keyof FeatureFlags,
     rollout: UnifiedSliceRolloutKey,

@@ -98,14 +98,22 @@ export async function matrixRowsToComparisonReport(
   const rawFileInsurers = quoteFiles.map((f) => extractCanonicalInsurerName(f.originalname));
 
   const matrixInsurers = extractMatrixInsurers(matrixRows);
-  const indexMap =
-    matrixInsurers.length > 0
-      ? alignInsurerIndices(rawFileInsurers, matrixInsurers)
+  const hasGoverningRefCol =
+    matrixRows.some((r) => r.isGoverningReference || r.id === 'governing_document_column') ||
+    (matrixInsurers[0]?.includes('(Referencia)') ?? false);
+  const governingOffset = hasGoverningRefCol ? 1 : 0;
+  const candidateMatrixInsurers = hasGoverningRefCol ? matrixInsurers.slice(1) : matrixInsurers;
+
+  const rawIndexMap =
+    candidateMatrixInsurers.length > 0
+      ? alignInsurerIndices(rawFileInsurers, candidateMatrixInsurers)
       : rawFileInsurers.map((_, idx) => idx);
+  const indexMap = rawIndexMap.map((mIdx) => (mIdx >= 0 ? mIdx + governingOffset : -1));
 
   const rawNamesWithMatrix = rawFileInsurers.map((fileInsurer, idx) => {
-    const cellIdx = indexMap[idx] ?? -1;
-    const matrixInsurer = cellIdx >= 0 ? matrixInsurers[cellIdx] : undefined;
+    const rawCandidateIdx = rawIndexMap[idx] ?? -1;
+    const matrixInsurer =
+      rawCandidateIdx >= 0 ? candidateMatrixInsurers[rawCandidateIdx] : undefined;
     if (matrixInsurer) {
       // Preserve product-qualified matrix label (e.g. "SURA - Plan Global")
       // when multiple quotes come from the same canonical insurer.
