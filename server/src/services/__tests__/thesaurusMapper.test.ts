@@ -24,6 +24,19 @@ describe('thesaurusMapper', () => {
       expect(coverageNames).toContain('Responsabilidad Civil (RCE)');
       expect(coverageNames).toContain('Lucro Cesante');
     });
+
+    it('loads domain-specific JSON thesaurus for vida_grupo and salud instead of falling back to PYME', () => {
+      const vida = loadThesaurus('vida_grupo');
+      const salud = loadThesaurus('salud');
+
+      expect(
+        vida.some((t) => t.canonicalName === 'Amparo Básico por Muerte (Cualquier Causa)')
+      ).toBe(true);
+      expect(vida.some((t) => t.canonicalName === 'Incendio (Edificio y Contenidos)')).toBe(false);
+
+      expect(salud.length).toBeGreaterThan(0);
+      expect(salud.some((t) => t.canonicalName === 'Incendio (Edificio y Contenidos)')).toBe(false);
+    });
   });
 
   describe('mapCoverageName', () => {

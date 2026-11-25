@@ -11,6 +11,7 @@ import { featureFlags } from '../config/featureFlags';
 import { structuredClauseExtractor } from './structuredClauseExtractor';
 import { InsuranceDomain } from '../types/domain';
 import { insurerNameNormalizer } from './insurerNameNormalizer';
+import { sanitizeForPostgres, sanitizeJsonStrings } from '../utils/stringUtils';
 
 export interface DocumentMetadata {
   insurerName: string;
@@ -390,14 +391,14 @@ export class DocumentIndexingService {
 
       const chunksPayload = chunksWithEmbeddings.map((chunk) => ({
         page_number: chunk.metadata.pageStart,
-        content: chunk.content,
-        content_normalized: chunk.contentNormalized,
+        content: sanitizeForPostgres(chunk.content),
+        content_normalized: sanitizeForPostgres(chunk.contentNormalized),
         embedding: `[${chunk.embedding.join(',')}]`,
-        metadata: {
+        metadata: sanitizeJsonStrings({
           ...chunk.metadata,
           ...(metadata.domain ? { domain: metadata.domain } : {}),
-        },
-        coverage_tags: chunk.coverageTags,
+        }),
+        coverage_tags: sanitizeJsonStrings(chunk.coverageTags),
         section_type: chunk.sectionType,
       }));
 
@@ -410,15 +411,15 @@ export class DocumentIndexingService {
 
       const { data: rawDocId, error: rpcError } = await supabase.rpc('index_document_transaction', {
         p_insurer_id: insurerId,
-        p_document_name: metadata.documentName,
+        p_document_name: sanitizeForPostgres(metadata.documentName),
         p_document_type: metadata.documentType,
-        p_version: metadata.version || null,
+        p_version: metadata.version ? sanitizeForPostgres(metadata.version) : null,
         p_total_pages: extractionResult.metadata.pageCount,
         p_storage_path: `${insurerId}`,
-        p_uploaded_by: metadata.uploadedBy || 'anonymous',
+        p_uploaded_by: sanitizeForPostgres(metadata.uploadedBy || 'anonymous'),
         p_images: imagesPayload,
         p_chunks: chunksPayload,
-        p_product_name: metadata.productName || metadata.documentName,
+        p_product_name: sanitizeForPostgres(metadata.productName || metadata.documentName),
       } as unknown as never);
 
       const documentId = rawDocId ? String(rawDocId) : undefined;

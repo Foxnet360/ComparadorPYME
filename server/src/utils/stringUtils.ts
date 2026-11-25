@@ -57,3 +57,35 @@ export function calculateSimilarity(str1: string, str2: string): number {
   const distance = levenshteinDistance(normalized1, normalized2);
   return 1 - distance / maxLength;
 }
+
+/**
+ * Strip NUL bytes, non-printable ASCII control characters (preserving \t, \n, \r),
+ * and unpaired UTF-16 surrogates so PostgreSQL TEXT/JSONB never rejects the string
+ * with "unsupported Unicode escape sequence".
+ */
+export function sanitizeForPostgres(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+    .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '');
+}
+
+/**
+ * Recursively sanitize all string values inside a JSON-serializable payload for PostgreSQL JSONB.
+ */
+export function sanitizeJsonStrings<T>(value: T): T {
+  if (typeof value === 'string') {
+    return sanitizeForPostgres(value) as unknown as T;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeJsonStrings(item)) as unknown as T;
+  }
+  if (value !== null && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      out[sanitizeForPostgres(k)] = sanitizeJsonStrings(v);
+    }
+    return out as T;
+  }
+  return value;
+}

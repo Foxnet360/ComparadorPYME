@@ -3,6 +3,7 @@ import { getDocument } from 'pdfjs-dist/legacy/build/pdf.js';
 import type { PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
 import { featureFlags } from '../config/featureFlags';
 import { PageTextItems, TextItem } from './templateRegistryService';
+import { sanitizeForPostgres } from '../utils/stringUtils';
 
 export type DocumentType = 'COTIZACIÓN' | 'CLAUSULADO_GENERAL' | 'CLAUSULADO_PARTICULAR';
 
@@ -314,7 +315,7 @@ export const pdfExtractor = {
    * Limpia el texto extraído removiendo artefactos comunes de PDF
    */
   cleanText: (text: string): string => {
-    let cleaned = text;
+    let cleaned = sanitizeForPostgres(text);
 
     // Normalizar espacios
     cleaned = cleaned.replace(/[ \t]+/g, ' ');

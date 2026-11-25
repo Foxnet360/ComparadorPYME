@@ -244,4 +244,40 @@ describe('DocumentIndexingService — auto-extraction hook', () => {
       expect(mockStoreStructuredClause).not.toHaveBeenCalled();
     }, 35_000);
   });
+
+  describe('PostgreSQL Unicode sanitization before index_document_transaction', () => {
+    it('strips NUL bytes, control chars, and unpaired UTF-16 surrogates from chunks and metadata', async () => {
+      mockIsEnabled.mockReturnValue(false);
+      mockCreateChunksFromPages.mockReturnValue([
+        {
+          content: 'Cláusula\u0000 Salud\x07 Integral \uD800 texto',
+          contentNormalized: 'clausula\u0000 salud\uDC00 integral',
+          metadata: {
+            pageStart: 1,
+            pageEnd: 1,
+            sourceNote: 'nota\u0000pdf',
+          },
+          coverageTags: ['hospitalizacion\u0000'],
+          sectionType: 'COBERTURA',
+        },
+      ]);
+
+      const result = await service.indexDocument('/fake/salud-integral.pdf', {
+        ...makeMetadata(),
+        documentName: 'Clausulado\u0000 Salud Integral',
+        productName: 'Salud\uD800 Integral',
+        domain: 'salud' as DocumentMetadata['domain'],
+      });
+
+      expect(result.success).toBe(true);
+      expect(mockRpc).toHaveBeenCalledTimes(1);
+      const [, rpcParams] = mockRpc.mock.calls[0]!;
+      expect(rpcParams.p_document_name).toBe('Clausulado Salud Integral');
+      expect(rpcParams.p_product_name).toBe('Salud Integral');
+      expect(rpcParams.p_chunks[0].content).toBe('Cláusula Salud Integral  texto');
+      expect(rpcParams.p_chunks[0].content_normalized).toBe('clausula salud integral');
+      expect(rpcParams.p_chunks[0].coverage_tags).toEqual(['hospitalizacion']);
+      expect(rpcParams.p_chunks[0].metadata.sourceNote).toBe('notapdf');
+    });
+  });
 });

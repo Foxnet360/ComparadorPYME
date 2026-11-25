@@ -29,6 +29,22 @@ export interface MappingResult {
 // In-memory cache por dominio
 const thesaurusCache = new Map<string, ThesaurusEntry[]>();
 
+function findDomainThesaurusJsonPath(domain: string = 'pyme'): string | null {
+  const candidateRoots = [
+    process.cwd(),
+    path.resolve(process.cwd(), '..'),
+    path.resolve(__dirname, '..', '..', '..'),
+    path.resolve(__dirname, '..', '..'),
+  ];
+  for (const root of candidateRoots) {
+    const candidate = path.join(root, 'data', 'domains', domain, 'thesaurus.json');
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
 /**
  * Find thesaurus files by checking multiple possible paths
  * Supports per-domain markdown files (e.g. tesauro(pyme).md)
@@ -80,21 +96,37 @@ function findThesaurusPaths(domain: string = 'pyme'): {
 export function loadThesaurus(domain: string = 'pyme'): ThesaurusEntry[] {
   if (thesaurusCache.has(domain)) return thesaurusCache.get(domain)!;
 
+  const jsonPath = findDomainThesaurusJsonPath(domain);
   const paths = findThesaurusPaths(domain);
   let entries: ThesaurusEntry[] = [];
 
-  // Load main thesaurus
-  if (!paths.main) {
-    console.warn(`Thesaurus file not found for domain "${domain}", using built-in thesaurus`);
-    entries = getBuiltInThesaurus(domain);
-  } else {
+  // Load main thesaurus: prefer domain JSON under data/domains/<domain>/thesaurus.json
+  if (jsonPath) {
     try {
-      const content = fs.readFileSync(paths.main, 'utf-8');
-      entries = parseThesaurusMarkdown(content);
-      console.log(`📚 [Thesaurus] Loaded ${entries.length} entries from ${paths.main}`);
+      const raw = fs.readFileSync(jsonPath, 'utf-8');
+      const parsed = JSON.parse(raw) as { entries?: ThesaurusEntry[] };
+      if (Array.isArray(parsed.entries) && parsed.entries.length > 0) {
+        entries = parsed.entries;
+        console.log(`📚 [Thesaurus] Loaded ${entries.length} entries from ${jsonPath}`);
+      }
     } catch (error) {
-      console.warn(`Failed to load thesaurus for domain "${domain}", using built-in:`, error);
+      console.warn(`Failed to parse JSON thesaurus for domain "${domain}":`, error);
+    }
+  }
+
+  if (entries.length === 0) {
+    if (!paths.main) {
+      console.warn(`Thesaurus file not found for domain "${domain}", using built-in thesaurus`);
       entries = getBuiltInThesaurus(domain);
+    } else {
+      try {
+        const content = fs.readFileSync(paths.main, 'utf-8');
+        entries = parseThesaurusMarkdown(content);
+        console.log(`📚 [Thesaurus] Loaded ${entries.length} entries from ${paths.main}`);
+      } catch (error) {
+        console.warn(`Failed to load thesaurus for domain "${domain}", using built-in:`, error);
+        entries = getBuiltInThesaurus(domain);
+      }
     }
   }
 
