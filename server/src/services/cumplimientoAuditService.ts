@@ -5,6 +5,7 @@ import { getGenAI } from './geminiClient';
 import { parseJsonWithRepair } from './jsonRepair';
 import { pdfExtractor } from './pdfExtractor';
 import { sanitizeForPostgres } from '../utils/stringUtils';
+import { COLOMBIA_SMMLV_2026 } from '../utils/colombianCalendar';
 import type {
   CumplimientoChecklistItem,
   CumplimientoDecreto1082Alert,
@@ -105,6 +106,28 @@ function formatCop(value?: number | null): string {
     currency: 'COP',
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+/**
+ * Calculates minimum RCE insured amount in SMMLV per Decree 1082 of 2015 Art. 2.2.1.2.3.1.17.
+ */
+export function calculateDecreto1082RceMinSmmlv(
+  contractValueCop: number | null | undefined,
+  smmlv: number = COLOMBIA_SMMLV_2026
+): number | null {
+  if (
+    typeof contractValueCop !== 'number' ||
+    !Number.isFinite(contractValueCop) ||
+    contractValueCop <= 0
+  ) {
+    return null;
+  }
+  const valueInSmmlv = contractValueCop / smmlv;
+  if (valueInSmmlv <= 1500) return 200;
+  if (valueInSmmlv <= 2500) return 300;
+  if (valueInSmmlv <= 5000) return 400;
+  if (valueInSmmlv <= 10000) return 500;
+  return Math.min(75000, Math.ceil((contractValueCop * 0.05) / smmlv));
 }
 
 /**
@@ -267,6 +290,27 @@ export function evaluateDecreto1082Rules(
           'En contratos de OBRA pública suele ser obligatoria la póliza de RCE Derivada (Art. 2.2.1.2.3.1.17).',
         recommendation:
           'Verificar cuantía en SMMLV (mínimo 200 SMMLV hasta 1.500 SMMLV) y deducible máximo del 10%.',
+      });
+    }
+  }
+
+  if (prepolicy.rceRequirement?.required) {
+    const minSmmlv = calculateDecreto1082RceMinSmmlv(
+      prepolicy.contractValue,
+      prepolicy.smmlvValue || COLOMBIA_SMMLV_2026
+    );
+    if (
+      minSmmlv !== null &&
+      typeof prepolicy.rceRequirement.amountSmmlv === 'number' &&
+      prepolicy.rceRequirement.amountSmmlv < minSmmlv
+    ) {
+      alerts.push({
+        id: 'd1082-rce-min-smmlv',
+        ruleCode: 'DEC_1082_RCE_MIN_SMMLV',
+        severity: 'WARNING',
+        coverageName: 'RCE Derivada',
+        message: `Cuantía RCE (${prepolicy.rceRequirement.amountSmmlv} SMMLV) es inferior al piso del Art. 2.2.1.2.3.1.17 (${minSmmlv} SMMLV).`,
+        recommendation: `Ajustar RCE al mínimo legal de ${minSmmlv} SMMLV.`,
       });
     }
   }

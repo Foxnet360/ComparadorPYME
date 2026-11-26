@@ -8,7 +8,17 @@ import { pdfExtractor } from './pdfExtractor';
 import { ParsedQuote } from './quoteParser';
 import { auditReportCompliance, type RegulatoryAuditableQuote } from './regulatoryAuditService';
 import { sanitizeForPostgres } from '../utils/stringUtils';
-import { evaluateDecreto1082Rules } from './cumplimientoAuditService';
+import {
+  COLOMBIA_SMMLV_2026,
+  addContractTerm,
+  computeCoverageValidityDates,
+  resolveContractStartDate,
+  type ContractDurationUnit,
+} from '../utils/colombianCalendar';
+import {
+  calculateDecreto1082RceMinSmmlv,
+  evaluateDecreto1082Rules,
+} from './cumplimientoAuditService';
 import type {
   CumplimientoGoverningGap,
   CumplimientoProcessStage,
@@ -18,9 +28,12 @@ import type {
 import type {
   CumplimientoCaseType,
   CumplimientoContractType,
+  CumplimientoCoveragePhase,
   CumplimientoLegalRegime,
   CumplimientoPersonType,
   CumplimientoPrepolicyData,
+  CumplimientoRceAdditionalCoverage,
+  CumplimientoRequiredCoverageItem,
 } from '../types/cumplimientoCase';
 
 export interface GoverningRequiredCoverage {
@@ -518,6 +531,22 @@ export function applyCumplimientoPostProcessing(
   }
 }
 
+export const DEFAULT_RCE_ADDITIONAL_COVERAGES: ReadonlyArray<{
+  code: string;
+  label: string;
+}> = [
+  { code: 'CONTRATISTAS_SUBCONTRATISTAS', label: 'Contratistas y Subcontratistas' },
+  { code: 'VEHICULOS_PROPIOS_NO_PROPIOS', label: 'Vehículos Propios y No Propios' },
+  { code: 'RC_CRUZADA', label: 'RC Cruzada' },
+  { code: 'RC_PATRONAL', label: 'RC Patronal' },
+  { code: 'GASTOS_MEDICOS', label: 'Gastos Médicos' },
+  {
+    code: 'EXTRAPATRIMONIALES',
+    label: 'Amparos Extrapatrimoniales (Daño Moral / Fisiológico)',
+  },
+  { code: 'LUCRO_CESANTE', label: 'Lucro Cesante (Perjuicios Patrimoniales)' },
+];
+
 const PREPOLICY_SCHEMA = {
   type: Type.OBJECT,
   properties: {
@@ -539,8 +568,19 @@ const PREPOLICY_SCHEMA = {
     advancePaymentPercent: { type: Type.NUMBER, nullable: true },
     advancePaymentAmount: { type: Type.NUMBER, nullable: true },
     contractDuration: { type: Type.STRING, nullable: true },
-    contractStartDate: { type: Type.STRING, nullable: true },
-    contractEndDate: { type: Type.STRING, nullable: true },
+    durationValue: { type: Type.NUMBER, nullable: true },
+    durationUnit: {
+      type: Type.STRING,
+      description: 'DIAS_HABILES | DIAS_CALENDARIO | MESES | ANIOS',
+      nullable: true,
+    },
+    contractSignatureDate: {
+      type: Type.STRING,
+      description: 'Fecha de firma YYYY-MM-DD si aparece en el documento',
+      nullable: true,
+    },
+    contractStartDate: { type: Type.STRING, description: 'YYYY-MM-DD', nullable: true },
+    contractEndDate: { type: Type.STRING, description: 'YYYY-MM-DD', nullable: true },
     liquidationTerm: { type: Type.STRING, nullable: true },
     paymentTerms: { type: Type.STRING, nullable: true },
     penalClause: { type: Type.STRING, nullable: true },
@@ -552,6 +592,7 @@ const PREPOLICY_SCHEMA = {
         nit: { type: Type.STRING, nullable: true },
         personType: { type: Type.STRING, nullable: true },
         address: { type: Type.STRING, nullable: true },
+        phone: { type: Type.STRING, nullable: true },
         city: { type: Type.STRING, nullable: true },
         contactName: { type: Type.STRING, nullable: true },
         contactEmail: { type: Type.STRING, nullable: true },
@@ -571,6 +612,7 @@ const PREPOLICY_SCHEMA = {
           },
         },
       },
+      required: ['name', 'nit', 'personType'],
     },
     beneficiary: {
       type: Type.OBJECT,
@@ -578,8 +620,10 @@ const PREPOLICY_SCHEMA = {
         name: { type: Type.STRING, nullable: true },
         nit: { type: Type.STRING, nullable: true },
         address: { type: Type.STRING, nullable: true },
+        phone: { type: Type.STRING, nullable: true },
         city: { type: Type.STRING, nullable: true },
       },
+      required: ['name', 'nit'],
     },
     requiredCoverages: {
       type: Type.ARRAY,
@@ -588,10 +632,21 @@ const PREPOLICY_SCHEMA = {
         properties: {
           name: { type: Type.STRING },
           canonicalName: { type: Type.STRING, nullable: true },
+          phase: {
+            type: Type.STRING,
+            description: 'PRECONTRACTUAL | CONTRACTUAL | POST_CONTRACTUAL',
+            nullable: true,
+          },
           percentageOfContract: { type: Type.STRING, nullable: true },
           minimumAmount: { type: Type.NUMBER, nullable: true },
           baseValidity: { type: Type.STRING, nullable: true },
           additionalValidity: { type: Type.STRING, nullable: true },
+          additionalTermValue: { type: Type.NUMBER, nullable: true },
+          additionalTermUnit: {
+            type: Type.STRING,
+            description: 'DIAS_HABILES | DIAS_CALENDARIO | MESES | ANIOS',
+            nullable: true,
+          },
           validityRule: { type: Type.STRING, nullable: true },
           estimatedStartDate: { type: Type.STRING, nullable: true },
           estimatedEndDate: { type: Type.STRING, nullable: true },
@@ -608,10 +663,26 @@ const PREPOLICY_SCHEMA = {
       nullable: true,
       properties: {
         required: { type: Type.BOOLEAN },
+        basicPloIncluded: { type: Type.BOOLEAN, nullable: true },
         amountDescription: { type: Type.STRING, nullable: true },
         amountCop: { type: Type.NUMBER, nullable: true },
         amountSmmlv: { type: Type.NUMBER, nullable: true },
         subcoverages: { type: Type.ARRAY, items: { type: Type.STRING }, nullable: true },
+        additionalCoverages: {
+          type: Type.ARRAY,
+          nullable: true,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              code: { type: Type.STRING },
+              label: { type: Type.STRING },
+              included: { type: Type.BOOLEAN },
+              sublimitSmmlv: { type: Type.NUMBER, nullable: true },
+              notes: { type: Type.STRING, nullable: true },
+            },
+            required: ['code', 'included'],
+          },
+        },
         maxDeductibleRule: { type: Type.STRING, nullable: true },
         validityRule: { type: Type.STRING, nullable: true },
       },
@@ -631,7 +702,18 @@ const PREPOLICY_SCHEMA = {
     },
     specialObservations: { type: Type.STRING, nullable: true },
   },
-  required: ['requiredCoverages'],
+  required: [
+    'caseType',
+    'legalRegime',
+    'contractType',
+    'contractNumber',
+    'objectDescription',
+    'contractValue',
+    'contractDuration',
+    'contractor',
+    'beneficiary',
+    'requiredCoverages',
+  ],
 };
 
 function normalizeCaseType(
@@ -679,6 +761,208 @@ function normalizePersonType(
   return 'JURIDICA';
 }
 
+function normalizeDurationUnit(raw?: unknown, textHint?: string): ContractDurationUnit | null {
+  const s = String(raw || textHint || '').toUpperCase();
+  if (!s) return null;
+  if (s.includes('HABIL') || s.includes('HÁBIL')) return 'DIAS_HABILES';
+  if (s.includes('CALEND') || s.includes('CORRID') || s.includes('DIA') || s.includes('DÍA')) {
+    return 'DIAS_CALENDARIO';
+  }
+  if (s.includes('MES')) return 'MESES';
+  if (s.includes('ANO') || s.includes('AÑO') || s.includes('ANIO')) return 'ANIOS';
+  return null;
+}
+
+function inferCoveragePhase(name: string, rawPhase?: unknown): CumplimientoCoveragePhase {
+  const explicit = String(rawPhase || '').toUpperCase();
+  if (explicit === 'PRECONTRACTUAL') return 'PRECONTRACTUAL';
+  if (explicit === 'POST_CONTRACTUAL') return 'POST_CONTRACTUAL';
+  if (explicit === 'CONTRACTUAL') return 'CONTRACTUAL';
+  const norm = normalizeLabel(name);
+  if (norm.includes('seriedad')) return 'PRECONTRACTUAL';
+  if (norm.includes('estabilidad') || norm.includes('post')) return 'POST_CONTRACTUAL';
+  return 'CONTRACTUAL';
+}
+
+function ensureQualityContractualAndPostSplit(
+  coverages: CumplimientoRequiredCoverageItem[],
+  contractStartIso: string,
+  contractEndIso: string,
+  includeSaturdays: boolean
+): CumplimientoRequiredCoverageItem[] {
+  const hasContractualQuality = coverages.some((c) => {
+    const n = normalizeLabel(c.name);
+    return n.includes('calidad') && c.phase === 'CONTRACTUAL';
+  });
+  const hasPostQuality = coverages.some((c) => {
+    const n = normalizeLabel(c.name);
+    return n.includes('calidad') && c.phase === 'POST_CONTRACTUAL';
+  });
+
+  const hasBothQualityPhases = hasContractualQuality && hasPostQuality;
+
+  const out: CumplimientoRequiredCoverageItem[] = [];
+  for (const cov of coverages) {
+    const norm = normalizeLabel(cov.name);
+    const isQuality =
+      norm.includes('calidad del bien') ||
+      norm.includes('calidad del servicio') ||
+      norm.includes('calidad y correcto funcionamiento');
+
+    if (isQuality && !hasBothQualityPhases) {
+      const contractualDates = computeCoverageValidityDates(
+        contractStartIso,
+        contractEndIso,
+        { phase: 'CONTRACTUAL' },
+        includeSaturdays
+      );
+      const postDates = computeCoverageValidityDates(
+        contractStartIso,
+        contractEndIso,
+        {
+          phase: 'POST_CONTRACTUAL',
+          additionalTermValue: cov.additionalTermValue,
+          additionalTermUnit: cov.additionalTermUnit,
+          validityRule: cov.validityRule,
+        },
+        includeSaturdays
+      );
+      out.push({
+        ...cov,
+        id: `${cov.id}-contractual`,
+        name: `${cov.name} (Contractual)`,
+        phase: 'CONTRACTUAL',
+        estimatedStartDate: contractualDates.startDate,
+        estimatedEndDate: contractualDates.endDate,
+      });
+      out.push({
+        ...cov,
+        id: `${cov.id}-post`,
+        name: `${cov.name} (Post-contractual)`,
+        phase: 'POST_CONTRACTUAL',
+        estimatedStartDate: postDates.startDate,
+        estimatedEndDate: postDates.endDate,
+      });
+      continue;
+    }
+
+    const dates = computeCoverageValidityDates(
+      contractStartIso,
+      contractEndIso,
+      cov,
+      includeSaturdays
+    );
+    out.push({
+      ...cov,
+      estimatedStartDate: cov.estimatedStartDate || dates.startDate,
+      estimatedEndDate: cov.estimatedEndDate || dates.endDate,
+    });
+  }
+  return out;
+}
+
+function buildNormalizedRce(
+  rawRce: Record<string, unknown> | undefined,
+  contractValueCop: number | null,
+  contractStartIso: string,
+  contractEndIso: string
+) {
+  const smmlv = COLOMBIA_SMMLV_2026;
+  const suggestedMinSmmlv = calculateDecreto1082RceMinSmmlv(contractValueCop, smmlv);
+  if (!rawRce) {
+    return {
+      required: false,
+      basicPloIncluded: false,
+      suggestedMinSmmlv,
+      subcoverages: [],
+      additionalCoverages: DEFAULT_RCE_ADDITIONAL_COVERAGES.map((d) => ({
+        code: d.code,
+        label: d.label,
+        included: false,
+      })),
+    };
+  }
+
+  const rawAdds = Array.isArray(rawRce.additionalCoverages)
+    ? (rawRce.additionalCoverages as Array<Record<string, unknown>>)
+    : [];
+  const rawSubStrings = Array.isArray(rawRce.subcoverages)
+    ? (rawRce.subcoverages as unknown[]).map((s) => sanitizeForPostgres(String(s)))
+    : [];
+
+  const additionalCoverages: CumplimientoRceAdditionalCoverage[] =
+    DEFAULT_RCE_ADDITIONAL_COVERAGES.map((def) => {
+      const found = rawAdds.find(
+        (a) =>
+          String(a.code || '').toUpperCase() === def.code ||
+          normalizeLabel(String(a.label || '')).includes(normalizeLabel(def.label.split(' ')[0]!))
+      );
+      const matchedText = rawSubStrings.some((s) =>
+        normalizeLabel(s).includes(normalizeLabel(def.label.split(' ')[0]!))
+      );
+      const sublimitSmmlv = typeof found?.sublimitSmmlv === 'number' ? found.sublimitSmmlv : null;
+      return {
+        code: def.code,
+        label: def.label,
+        included: Boolean(found?.included ?? matchedText),
+        sublimitSmmlv,
+        sublimitCop: sublimitSmmlv !== null ? Math.round(sublimitSmmlv * smmlv) : null,
+        notes: typeof found?.notes === 'string' ? sanitizeForPostgres(found.notes) : null,
+      };
+    });
+
+  let amountSmmlv = typeof rawRce.amountSmmlv === 'number' ? rawRce.amountSmmlv : null;
+  let amountCop = parseCopField(rawRce.amountCop);
+  if (amountSmmlv === null && amountCop !== null && amountCop > 0) {
+    amountSmmlv = Math.round((amountCop / smmlv) * 100) / 100;
+  } else if (amountCop === null && amountSmmlv !== null && amountSmmlv > 0) {
+    amountCop = Math.round(amountSmmlv * smmlv);
+  }
+
+  return {
+    required: Boolean(rawRce.required),
+    basicPloIncluded: rawRce.basicPloIncluded !== false,
+    amountDescription:
+      typeof rawRce.amountDescription === 'string'
+        ? sanitizeForPostgres(rawRce.amountDescription)
+        : null,
+    amountCop,
+    amountSmmlv,
+    suggestedMinSmmlv,
+    subcoverages: rawSubStrings,
+    additionalCoverages,
+    maxDeductibleRule:
+      typeof rawRce.maxDeductibleRule === 'string'
+        ? sanitizeForPostgres(rawRce.maxDeductibleRule)
+        : null,
+    validityRule:
+      typeof rawRce.validityRule === 'string' ? sanitizeForPostgres(rawRce.validityRule) : null,
+    startDate: contractStartIso,
+    endDate: contractEndIso,
+  };
+}
+
+const MAX_PREPOLICY_TEXT_CHARS = 220000;
+
+function boundDocumentText(fullText: string, maxChars = MAX_PREPOLICY_TEXT_CHARS): string {
+  if (fullText.length <= maxChars) return fullText;
+  const headChars = Math.floor(maxChars * 0.6);
+  const tailChars = maxChars - headChars;
+  return `${fullText.slice(0, headChars)}\n\n[... SECCIÓN INTERMEDIA OMITIDA POR LONGITUD ...]\n\n${fullText.slice(-tailChars)}`;
+}
+
+function parseCopField(raw: unknown): number | null {
+  if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
+  if (typeof raw === 'string') return extractNumericCOP(raw);
+  return null;
+}
+
+function extractCopFromSnippet(snippet?: string | null): number | null {
+  if (!snippet) return null;
+  const match = snippet.match(/(?:\$|COP)\s*([\d.,]{4,})/i);
+  return match ? extractNumericCOP(match[1]) : null;
+}
+
 /**
  * Extracts a full editable Pre-policy (Slip) structure from one or more Governing Documents
  * (Contrato, Pliego de Condiciones, Minuta, Orden de Compra/Servicio, or Otrosí).
@@ -700,7 +984,7 @@ export async function extractPrepolicyFromDocuments(
     }
   }
 
-  const combinedText = texts.join('\n\n').slice(0, 65000);
+  const combinedText = boundDocumentText(texts.join('\n\n'));
   let extracted: Record<string, unknown> = {};
 
   if (combinedText && env.GEMINI_API_KEY) {
@@ -711,13 +995,14 @@ export async function extractPrepolicyFromDocuments(
         : '';
 
       const prompt = `Eres un suscriptor técnico senior de Cumplimiento y Fianzas en Colombia (Ley 80 / Decreto 1082 de 2015 y régimen privado).
-Extrae TODOS los datos necesarios del documento rector para generar una Pre-póliza / Slip de solicitud de cotización ante aseguradoras:
-1. Tomador / Contratista: razón social, NIT/CC, tipo (NATURAL, JURIDICA, CONSORCIO, UNION_TEMPORAL), dirección, ciudad, contacto y miembros del consorcio/UT con % de participación si aplica.
-2. Asegurado / Beneficiario (Contratante): nombre exacto de la entidad/empresa, NIT, dirección, ciudad, y régimen (ESTATAL_LEY_80 si es entidad pública/SECOP/Ley 80/Decreto 1082, REGIMEN_ESPECIAL, o PARTICULAR).
-3. Contrato / Proceso: tipo (PRESTACION_SERVICIOS, OBRA, SUMINISTRO, ORDEN_DE_COMPRA, ORDEN_DE_SERVICIO, CONVENIO, LICITACION, OTRO), número de contrato y proceso SECOP, objeto contractual completo, valor del contrato (COP numérico), si incluye IVA, anticipo (% y valor), duración, fechas inicio/fin, plazo de liquidación, forma de pago, cláusula penal y multas.
-4. Garantías y Amparos: todos los amparos exigidos (Seriedad, Cumplimiento, Anticipo, Salarios y Prestaciones, Calidad del Servicio, Calidad de Bienes, Estabilidad de Obra, etc.) con porcentajeOfContract, minimumAmount calculado en COP, baseValidity, additionalValidity (ej: "+ 3 años", "+ 4 meses liquidación", "5 años desde recibo final") y validityRule completa.
-5. RCE Derivada: si se exige póliza de Responsabilidad Civil Extracontractual derivada, cuantía en COP y/o SMMLV, subamparos (PLO, Contratistas y Subcontratistas, Vehículos, Patronal, Cruzada) y deducible máximo.
+Lee COMPLETAMENTE el documento rector (encabezado, comparecencia de las partes, cláusulas de objeto, valor, forma de pago, plazo/vigencia y la tabla COMPLETA de garantías/pólizas) y extrae TODOS los datos para generar la Pre-póliza / Slip de solicitud de cotización:
+1. Tomador / Contratista: razón social o nombre completo, NIT/CC exacto, tipo (NATURAL, JURIDICA, CONSORCIO, UNION_TEMPORAL), dirección, teléfono, ciudad, contacto y miembros del consorcio/UT con % de participación si aplica.
+2. Asegurado / Beneficiario (Contratante): nombre exacto de la entidad/empresa que contrata, NIT exacto, dirección, teléfono, ciudad, y régimen (ESTATAL_LEY_80 si es entidad pública/SECOP/Ley 80/Decreto 1082, REGIMEN_ESPECIAL, o PARTICULAR).
+3. Contrato / Proceso: tipo (PRESTACION_SERVICIOS, OBRA, SUMINISTRO, ORDEN_DE_COMPRA, ORDEN_DE_SERVICIO, CONVENIO, LICITACION, OTRO), número exacto del contrato (ej. OC-001-2026) y proceso SECOP, objeto contractual completo, valor total del contrato como NÚMERO entero en COP (sin puntos ni $), si incluye IVA, anticipo (% y valor numérico), duración textual, durationValue numérico, durationUnit (DIAS_HABILES si dice días hábiles, DIAS_CALENDARIO si dice días calendario/corridos, MESES o ANIOS), contractSignatureDate (YYYY-MM-DD si aparece fecha de firma), contractStartDate y contractEndDate (YYYY-MM-DD si son expresas).
+4. Garantías de Cumplimiento: extrae CADA UNO de los amparos de la tabla de garantías (Seriedad de la Oferta, Buen Manejo del Anticipo, Pago Anticipado, Cumplimiento, Pago de Salarios y Prestaciones Sociales, Calidad del Bien, Calidad del Servicio, Estabilidad de la Obra) indicando phase (CONTRACTUAL o POST_CONTRACTUAL), percentageOfContract, minimumAmount como NÚMERO entero en COP (sin puntos ni $), additionalTermValue, additionalTermUnit y validityRule completa.
+5. RCE Derivada (LEER DE MANERA INDEPENDIENTE): si el documento exige póliza de Responsabilidad Civil Extracontractual derivada, extrae amountSmmlv (en SMMLV de 2026: $1.750.905 COP), amountCop, basicPloIncluded (Predios, Labores y Operaciones - PLO), maxDeductibleRule, validityRule, y marca en additionalCoverages cuáles de estos 7 amparos adicionales exige el contrato: CONTRATISTAS_SUBCONTRATISTAS, VEHICULOS_PROPIOS_NO_PROPIOS, RC_CRUZADA, RC_PATRONAL, GASTOS_MEDICOS, EXTRAPATRIMONIALES, LUCRO_CESANTE.
 6. Otrosí / Modificación (si aplica): tipo (ADICION, PRORROGA, ACLARACION, SUSPENSION, CESION), valor adicionado, nuevo valor total, nueva fecha fin.
+No dejes campos vacíos si la información aparece en cualquier página del documento.
 ${parentHint}
 DOCUMENTO(S):
 ${combinedText}`;
@@ -726,9 +1011,10 @@ ${combinedText}`;
         model: env.GEMINI_MODEL,
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         config: {
+          temperature: 0.05,
+          maxOutputTokens: 8192,
           responseMimeType: 'application/json',
           responseSchema: PREPOLICY_SCHEMA,
-          temperature: 0.05,
         },
       });
       const repairResult = parseJsonWithRepair(response.text || '{}');
@@ -743,49 +1029,98 @@ ${combinedText}`;
   const rawContractor = (extracted.contractor as Record<string, unknown> | undefined) || {};
   const rawBeneficiary = (extracted.beneficiary as Record<string, unknown> | undefined) || {};
   const contractValue =
-    typeof extracted.contractValue === 'number'
-      ? extracted.contractValue
-      : (parentPrepolicy?.contractValue ?? null);
+    parseCopField(extracted.contractValue) ?? parentPrepolicy?.contractValue ?? null;
 
   const rawCoverages = Array.isArray(extracted.requiredCoverages)
     ? (extracted.requiredCoverages as Array<Record<string, unknown>>)
     : [];
 
-  const requiredCoverages = rawCoverages.map((c, idx) => {
+  const contractDuration = sanitizeForPostgres(
+    String(extracted.contractDuration || parentPrepolicy?.contractDuration || '')
+  );
+  const durationValue =
+    typeof extracted.durationValue === 'number'
+      ? extracted.durationValue
+      : (parentPrepolicy?.durationValue ?? null);
+  const durationUnit =
+    normalizeDurationUnit(extracted.durationUnit, contractDuration) ??
+    parentPrepolicy?.durationUnit ??
+    null;
+  const contractSignatureDate =
+    typeof extracted.contractSignatureDate === 'string'
+      ? sanitizeForPostgres(extracted.contractSignatureDate)
+      : (parentPrepolicy?.contractSignatureDate ?? null);
+  const resolvedStart = resolveContractStartDate(
+    typeof extracted.contractStartDate === 'string'
+      ? sanitizeForPostgres(extracted.contractStartDate)
+      : parentPrepolicy?.contractStartDate,
+    contractSignatureDate
+  );
+  const explicitEndDate =
+    typeof extracted.contractEndDate === 'string'
+      ? sanitizeForPostgres(extracted.contractEndDate)
+      : (parentPrepolicy?.contractEndDate ?? null);
+  const computedEndDate =
+    explicitEndDate ||
+    (durationValue && durationUnit
+      ? addContractTerm(resolvedStart.date, durationValue, durationUnit, false)
+      : resolvedStart.date);
+
+  const mappedCoverages: CumplimientoRequiredCoverageItem[] = rawCoverages.map((c, idx) => {
+    const name = sanitizeForPostgres(String(c.name || `Amparo ${idx + 1}`));
     const pctStr =
       typeof c.percentageOfContract === 'string'
         ? sanitizeForPostgres(c.percentageOfContract)
         : null;
     const pctNum = extractNumericPercentage(pctStr);
+    const snippet =
+      typeof c.rawTextSnippet === 'string' ? sanitizeForPostgres(c.rawTextSnippet) : null;
     const minAmt =
-      typeof c.minimumAmount === 'number'
-        ? c.minimumAmount
-        : pctNum !== null && contractValue !== null
-          ? Math.round((contractValue * pctNum) / 100)
-          : null;
+      parseCopField(c.minimumAmount) ??
+      extractCopFromSnippet(snippet) ??
+      (pctNum !== null && contractValue !== null
+        ? Math.round((contractValue * pctNum) / 100)
+        : null);
+    const validityRule =
+      typeof c.validityRule === 'string' ? sanitizeForPostgres(c.validityRule) : null;
+    const additionalTermValue =
+      typeof c.additionalTermValue === 'number' ? c.additionalTermValue : null;
+    const additionalTermUnit = normalizeDurationUnit(
+      c.additionalTermUnit,
+      typeof c.additionalValidity === 'string' ? c.additionalValidity : validityRule || ''
+    );
     return {
       id: `cov-${idx + 1}`,
-      name: sanitizeForPostgres(String(c.name || `Amparo ${idx + 1}`)),
+      name,
       canonicalName:
         typeof c.canonicalName === 'string' ? sanitizeForPostgres(c.canonicalName) : null,
+      phase: inferCoveragePhase(name, c.phase),
       percentageOfContract: pctStr,
       percentageNumeric: pctNum,
       minimumAmount: minAmt,
       baseValidity: typeof c.baseValidity === 'string' ? sanitizeForPostgres(c.baseValidity) : null,
       additionalValidity:
         typeof c.additionalValidity === 'string' ? sanitizeForPostgres(c.additionalValidity) : null,
-      validityRule: typeof c.validityRule === 'string' ? sanitizeForPostgres(c.validityRule) : null,
+      additionalTermValue,
+      additionalTermUnit,
+      validityRule,
       estimatedStartDate:
         typeof c.estimatedStartDate === 'string' ? sanitizeForPostgres(c.estimatedStartDate) : null,
       estimatedEndDate:
         typeof c.estimatedEndDate === 'string' ? sanitizeForPostgres(c.estimatedEndDate) : null,
       isMandatory: c.isMandatory !== false,
       notes: typeof c.notes === 'string' ? sanitizeForPostgres(c.notes) : null,
-      rawTextSnippet:
-        typeof c.rawTextSnippet === 'string' ? sanitizeForPostgres(c.rawTextSnippet) : null,
+      rawTextSnippet: snippet,
       pageNumber: typeof c.pageNumber === 'number' ? c.pageNumber : null,
     };
   });
+
+  const requiredCoverages = ensureQualityContractualAndPostSplit(
+    mappedCoverages,
+    resolvedStart.date,
+    computedEndDate,
+    false
+  );
 
   const contractorName = sanitizeForPostgres(
     String(rawContractor.name || parentPrepolicy?.contractor.name || '')
@@ -820,19 +1155,17 @@ ${combinedText}`;
     includesIva: typeof extracted.includesIva === 'boolean' ? extracted.includesIva : null,
     advancePaymentPercent:
       typeof extracted.advancePaymentPercent === 'number' ? extracted.advancePaymentPercent : null,
-    advancePaymentAmount:
-      typeof extracted.advancePaymentAmount === 'number' ? extracted.advancePaymentAmount : null,
-    contractDuration: sanitizeForPostgres(
-      String(extracted.contractDuration || parentPrepolicy?.contractDuration || '')
-    ),
-    contractStartDate:
-      typeof extracted.contractStartDate === 'string'
-        ? sanitizeForPostgres(extracted.contractStartDate)
-        : (parentPrepolicy?.contractStartDate ?? null),
-    contractEndDate:
-      typeof extracted.contractEndDate === 'string'
-        ? sanitizeForPostgres(extracted.contractEndDate)
-        : (parentPrepolicy?.contractEndDate ?? null),
+    advancePaymentAmount: parseCopField(extracted.advancePaymentAmount),
+    contractDuration,
+    durationValue,
+    durationUnit,
+    includeSaturdays: false,
+    contractSignatureDate,
+    contractStartDate: resolvedStart.date,
+    contractStartDateSource: resolvedStart.source,
+    contractEndDate: computedEndDate,
+    displayCurrency: 'COP',
+    smmlvValue: COLOMBIA_SMMLV_2026,
     liquidationTerm:
       typeof extracted.liquidationTerm === 'string'
         ? sanitizeForPostgres(extracted.liquidationTerm)
@@ -856,6 +1189,12 @@ ${combinedText}`;
         typeof rawContractor.address === 'string'
           ? sanitizeForPostgres(rawContractor.address)
           : (parentPrepolicy?.contractor.address ?? null),
+      phone:
+        typeof rawContractor.phone === 'string'
+          ? sanitizeForPostgres(rawContractor.phone)
+          : typeof rawContractor.contactPhone === 'string'
+            ? sanitizeForPostgres(rawContractor.contactPhone)
+            : (parentPrepolicy?.contractor.phone ?? null),
       city:
         typeof rawContractor.city === 'string'
           ? sanitizeForPostgres(rawContractor.city)
@@ -896,52 +1235,22 @@ ${combinedText}`;
         typeof rawBeneficiary.address === 'string'
           ? sanitizeForPostgres(rawBeneficiary.address)
           : (parentPrepolicy?.beneficiary.address ?? null),
+      phone:
+        typeof rawBeneficiary.phone === 'string'
+          ? sanitizeForPostgres(rawBeneficiary.phone)
+          : (parentPrepolicy?.beneficiary.phone ?? null),
       city:
         typeof rawBeneficiary.city === 'string'
           ? sanitizeForPostgres(rawBeneficiary.city)
           : (parentPrepolicy?.beneficiary.city ?? null),
     },
     requiredCoverages,
-    rceRequirement: extracted.rceRequirement
-      ? {
-          required: Boolean((extracted.rceRequirement as Record<string, unknown>).required),
-          amountDescription:
-            typeof (extracted.rceRequirement as Record<string, unknown>).amountDescription ===
-            'string'
-              ? sanitizeForPostgres(
-                  String((extracted.rceRequirement as Record<string, unknown>).amountDescription)
-                )
-              : null,
-          amountCop:
-            typeof (extracted.rceRequirement as Record<string, unknown>).amountCop === 'number'
-              ? ((extracted.rceRequirement as Record<string, unknown>).amountCop as number)
-              : null,
-          amountSmmlv:
-            typeof (extracted.rceRequirement as Record<string, unknown>).amountSmmlv === 'number'
-              ? ((extracted.rceRequirement as Record<string, unknown>).amountSmmlv as number)
-              : null,
-          subcoverages: Array.isArray(
-            (extracted.rceRequirement as Record<string, unknown>).subcoverages
-          )
-            ? ((extracted.rceRequirement as Record<string, unknown>).subcoverages as unknown[]).map(
-                (s) => sanitizeForPostgres(String(s))
-              )
-            : [],
-          maxDeductibleRule:
-            typeof (extracted.rceRequirement as Record<string, unknown>).maxDeductibleRule ===
-            'string'
-              ? sanitizeForPostgres(
-                  String((extracted.rceRequirement as Record<string, unknown>).maxDeductibleRule)
-                )
-              : null,
-          validityRule:
-            typeof (extracted.rceRequirement as Record<string, unknown>).validityRule === 'string'
-              ? sanitizeForPostgres(
-                  String((extracted.rceRequirement as Record<string, unknown>).validityRule)
-                )
-              : null,
-        }
-      : { required: false, subcoverages: [] },
+    rceRequirement: buildNormalizedRce(
+      extracted.rceRequirement as Record<string, unknown> | undefined,
+      contractValue,
+      resolvedStart.date,
+      computedEndDate
+    ),
     modificationDetails: extracted.modificationDetails
       ? {
           modificationType: (['ADICION', 'PRORROGA', 'ACLARACION', 'SUSPENSION', 'CESION'].includes(
@@ -1004,5 +1313,8 @@ ${combinedText}`;
   };
 
   prepolicy.decreto1082Alerts = evaluateDecreto1082Rules(prepolicy);
+  console.log(
+    `📋 [PrepolicyExtractor] chars=${combinedText.length}, contract=${prepolicy.contractNumber || 'N/A'}, contractor=${prepolicy.contractor.name || 'N/A'}, beneficiary=${prepolicy.beneficiary.name || 'N/A'}, value=${prepolicy.contractValue ?? 'null'}, coverages=${prepolicy.requiredCoverages.length}`
+  );
   return prepolicy;
 }

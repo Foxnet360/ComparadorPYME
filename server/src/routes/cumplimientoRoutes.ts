@@ -7,6 +7,8 @@ import { rejectClientSuppliedUserId } from '../middleware/validateRequest';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ValidationError } from '../errors';
 import { extractPrepolicyFromDocuments } from '../services/governingDocumentExtractor';
+import { getOfficialTrm } from '../services/trmService';
+import { COLOMBIA_SMMLV_2026 } from '../utils/colombianCalendar';
 import {
   buildDefaultComplianceChecklist,
   evaluateDecreto1082Rules,
@@ -72,6 +74,17 @@ function getUserContext(req: AuthenticatedRequest) {
 }
 
 const router = Router();
+
+/** GET /api/cumplimiento/trm — Official daily COP/USD TRM + 2026 SMMLV reference */
+router.get(
+  '/trm',
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    if (rejectClientSuppliedUserId(req, res)) return;
+    requireUser(req);
+    const trm = await getOfficialTrm();
+    res.json({ ...trm, smmlv2026: COLOMBIA_SMMLV_2026 });
+  })
+);
 
 /** GET /api/cumplimiento/cases */
 router.get(
