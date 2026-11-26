@@ -55,26 +55,50 @@ const sampleCase: CumplimientoCase = {
     objectDescription: 'Construcción cubierta escolar',
     contractValue: 200_000_000,
     contractDuration: '6 meses',
+    contractStartDate: '2026-04-01',
+    contractEndDate: '2026-10-01',
+    displayCurrency: 'BOTH',
+    trmValue: 4000,
+    smmlvValue: 1_750_905,
     contractor: {
       name: 'CONSTRUCTORA ANDINA SAS',
       nit: '900123456-1',
       personType: 'JURIDICA',
+      address: 'Calle 10 # 5-20',
+      phone: '3001112233',
     },
     beneficiary: {
       name: 'ALCALDIA MUNICIPAL',
       nit: '890980123-4',
+      address: 'Plaza Principal',
+      phone: '6012223344',
     },
     requiredCoverages: [
       {
         id: 'cov-1',
         name: 'Cumplimiento',
+        phase: 'CONTRACTUAL',
         percentageOfContract: '10%',
         percentageNumeric: 10,
         minimumAmount: 20_000_000,
+        estimatedStartDate: '2026-04-01',
+        estimatedEndDate: '2026-10-01',
         validityRule: 'Plazo + 4 meses',
         isMandatory: true,
       },
     ],
+    rceRequirement: {
+      required: true,
+      basicPloIncluded: true,
+      amountSmmlv: 200,
+      amountCop: 350_181_000,
+      subcoverages: [],
+      additionalCoverages: [
+        { code: 'RC_PATRONAL', label: 'RC Patronal', included: true, sublimitSmmlv: 50 },
+      ],
+      startDate: '2026-04-01',
+      endDate: '2026-10-01',
+    },
     decreto1082Alerts: [],
   },
   checklist_data: [
@@ -109,6 +133,12 @@ describe('cumplimientoSlipExport', () => {
     expect(text).toContain('ALCALDIA MUNICIPAL');
     expect(text).toContain('045-2026');
     expect(text).toContain('Cumplimiento');
+    expect(text).toContain('2026-04-01 al 2026-10-01');
+    expect(text).toContain('Calle 10 # 5-20');
+    expect(text).toContain('6012223344');
+    expect(text).toContain('$5,000.00');
+    expect(text).toContain('200 SMMLV');
+    expect(text).toContain('RC Patronal (50 SMMLV)');
     expect(text).toContain('[Pendiente] RUT actualizado');
   });
 
