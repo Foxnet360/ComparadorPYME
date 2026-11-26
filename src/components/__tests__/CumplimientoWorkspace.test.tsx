@@ -15,6 +15,13 @@ vi.mock('../../../services/cumplimientoService', () => ({
   validateCumplimientoQuotes: vi.fn(),
   createCumplimientoModification: vi.fn(),
   deleteCumplimientoCase: vi.fn(),
+  fetchOfficialTrm: vi.fn().mockResolvedValue({
+    value: 4150,
+    validFrom: '2026-11-26',
+    validTo: '2026-11-26',
+    source: 'BANREP_DATOS_GOV',
+    smmlv2026: 1_750_905,
+  }),
 }));
 
 vi.mock('../../../components/ClauseSelector', () => ({
@@ -110,6 +117,8 @@ describe('CumplimientoWorkspace', () => {
     expect(screen.getByText('PDF Slip')).toBeTruthy();
     expect(screen.getByText('Word (.docx)')).toBeTruthy();
     expect(screen.getByText('Correo / WhatsApp')).toBeTruthy();
+    expect(screen.getByTestId('cumplimiento-rce-section')).toBeTruthy();
+    expect(screen.getByText(/SMMLV 2026:/i)).toBeTruthy();
 
     fireEvent.click(screen.getByText('2. Checklist Cupo y SARLAFT'));
     expect(screen.getByText('Cámara de Comercio <= 30 días')).toBeTruthy();

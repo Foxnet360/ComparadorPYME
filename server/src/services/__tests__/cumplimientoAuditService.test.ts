@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildDefaultComplianceChecklist,
+  calculateDecreto1082RceMinSmmlv,
   evaluateDecreto1082Rules,
   validateQuotesAgainstPrepolicy,
 } from '../cumplimientoAuditService';
@@ -107,6 +108,15 @@ describe('cumplimientoAuditService', () => {
     it('returns no Decreto 1082 alerts for PARTICULAR regime', () => {
       const alerts = evaluateDecreto1082Rules(makeBasePrepolicy({ legalRegime: 'PARTICULAR' }));
       expect(alerts).toEqual([]);
+    });
+
+    it('computes Decreto 1082 Art. 2.2.1.2.3.1.17 RCE SMMLV floor using 2026 SMMLV', () => {
+      const smmlv = 1_750_905;
+      expect(calculateDecreto1082RceMinSmmlv(1000 * smmlv, smmlv)).toBe(200);
+      expect(calculateDecreto1082RceMinSmmlv(2000 * smmlv, smmlv)).toBe(300);
+      expect(calculateDecreto1082RceMinSmmlv(4000 * smmlv, smmlv)).toBe(400);
+      expect(calculateDecreto1082RceMinSmmlv(8000 * smmlv, smmlv)).toBe(500);
+      expect(calculateDecreto1082RceMinSmmlv(20_000 * smmlv, smmlv)).toBe(1000);
     });
   });
 

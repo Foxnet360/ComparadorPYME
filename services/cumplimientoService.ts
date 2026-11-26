@@ -121,3 +121,15 @@ export async function deleteCumplimientoCase(id: string): Promise<void> {
     throw new Error(`No se pudo eliminar el caso (${res.status})`);
   }
 }
+
+export interface CumplimientoTrmInfo {
+  value: number;
+  validFrom: string;
+  validTo: string;
+  source: 'BANREP_DATOS_GOV' | 'FALLBACK';
+  smmlv2026: number;
+}
+
+export async function fetchOfficialTrm(): Promise<CumplimientoTrmInfo> {
+  return parseOrThrow(await apiClient.fetch('/cumplimiento/trm', { method: 'GET' }));
+}

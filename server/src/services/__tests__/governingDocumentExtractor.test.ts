@@ -1,10 +1,14 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   buildGoverningReferenceQuote,
   auditQuotesAgainstGoverningSpec,
   applyCumplimientoPostProcessing,
+  extractPrepolicyFromDocuments,
   type GoverningDocumentSpec,
 } from '../governingDocumentExtractor';
+import { pdfExtractor } from '../pdfExtractor';
+import * as geminiClient from '../geminiClient';
+import { env } from '../../config/env';
 import {
   applyGoverningDocumentColumnToMatrix,
   quotesToMatrixRows,
@@ -183,5 +187,185 @@ describe('governingDocumentExtractor', () => {
     expect(resultEnvelope.cumplimientoStage).toBe('LICITACION');
     const suraChecks = resultEnvelope.regulatoryBacking?.perQuoteCompliance['SURA'] ?? [];
     expect(suraChecks.some((c) => c.status === 'NON_COMPLIANT')).toBe(false);
+  });
+
+  describe('extractPrepolicyFromDocuments', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('sends text beyond 65,000 chars and parses formatted COP amounts and snippets', async () => {
+      const longClauseTail = 'CLAUSULA GARANTIAS FINAL: Cumplimiento 20% y Estabilidad 10%';
+      const longText = `${'A'.repeat(70_000)}\n${longClauseTail}`;
+
+      vi.spyOn(pdfExtractor, 'extractTextFromPdf').mockResolvedValue({
+        text: longText,
+        pages: [],
+        metadata: { pageCount: 25 },
+      } as never);
+
+      const originalKey = env.GEMINI_API_KEY;
+      (env as { GEMINI_API_KEY: string }).GEMINI_API_KEY = 'test-key';
+
+      const generateContentMock = vi.fn().mockResolvedValue({
+        text: JSON.stringify({
+          caseType: 'CONTRATO',
+          legalRegime: 'PARTICULAR',
+          contractType: 'OBRA',
+          contractNumber: 'OC-001-2026',
+          objectDescription: 'Construcción proyecto Papiro',
+          contractValue: '$ 467.852.976',
+          contractDuration: '8 meses',
+          contractor: {
+            name: 'MESA MEJIA CONSTRUCTORES SAS',
+            nit: '900111222-3',
+            personType: 'JURIDICA',
+          },
+          beneficiary: {
+            name: 'PAPIRO SAS',
+            nit: '800333444-5',
+          },
+          requiredCoverages: [
+            {
+              name: 'Buen manejo y correcta inversión del anticipo',
+              percentageOfContract: '50%',
+              minimumAmount: null,
+              validityRule: 'Desde expedición hasta liquidación',
+              rawTextSnippet:
+                'Buen manejo y correcta inversión del anticipo 50% $ 233.926.488 Desde expedición',
+            },
+            {
+              name: 'Cumplimiento',
+              percentageOfContract: '20%',
+              minimumAmount: null,
+              validityRule: 'Plazo + 4 meses',
+            },
+          ],
+        }),
+      });
+
+      vi.spyOn(geminiClient, 'getGenAI').mockReturnValue({
+        models: { generateContent: generateContentMock },
+      } as never);
+
+      try {
+        const result = await extractPrepolicyFromDocuments(
+          [{ path: '/tmp/contrato.pdf', originalname: 'CONTRATO.pdf' }],
+          'CONTRATO'
+        );
+
+        const sentPrompt = String(
+          generateContentMock.mock.calls[0]?.[0]?.contents?.[0]?.parts?.[0]?.text || ''
+        );
+        expect(sentPrompt).toContain(longClauseTail);
+        expect(result.contractNumber).toBe('OC-001-2026');
+        expect(result.contractValue).toBe(467_852_976);
+        expect(result.contractor.name).toBe('MESA MEJIA CONSTRUCTORES SAS');
+        expect(result.contractor.nit).toBe('900111222-3');
+        expect(result.beneficiary.name).toBe('PAPIRO SAS');
+        expect(result.requiredCoverages).toHaveLength(2);
+        expect(result.requiredCoverages[0]?.minimumAmount).toBe(233_926_488);
+        expect(result.requiredCoverages[1]?.minimumAmount).toBe(93_570_595);
+      } finally {
+        (env as { GEMINI_API_KEY: string }).GEMINI_API_KEY = originalKey;
+      }
+    });
+
+    it('splits Calidad del Servicio into Contractual and Post-contractual, calculates business-day dates from signature, and builds independent RCE SMMLV', async () => {
+      vi.spyOn(pdfExtractor, 'extractTextFromPdf').mockResolvedValue({
+        text: 'CONTRATO DE SERVICIOS',
+        pages: [],
+        metadata: { pageCount: 5 },
+      } as never);
+
+      const originalKey = env.GEMINI_API_KEY;
+      (env as { GEMINI_API_KEY: string }).GEMINI_API_KEY = 'test-key';
+
+      vi.spyOn(geminiClient, 'getGenAI').mockReturnValue({
+        models: {
+          generateContent: vi.fn().mockResolvedValue({
+            text: JSON.stringify({
+              caseType: 'CONTRATO',
+              legalRegime: 'ESTATAL_LEY_80',
+              contractType: 'PRESTACION_SERVICIOS',
+              contractNumber: 'PS-2026-10',
+              objectDescription: 'Servicios TI',
+              contractValue: 100_000_000,
+              contractDuration: '3 días hábiles',
+              durationValue: 3,
+              durationUnit: 'DIAS_HABILES',
+              contractSignatureDate: '2026-04-01',
+              contractor: {
+                name: 'TECH SAS',
+                nit: '900111222-3',
+                personType: 'JURIDICA',
+                address: 'Calle 10 # 20-30',
+                phone: '3001234567',
+              },
+              beneficiary: {
+                name: 'ENTIDAD PUBLICA',
+                nit: '899999001-1',
+                address: 'Cra 7 # 1-2',
+                phone: '6015550000',
+              },
+              requiredCoverages: [
+                {
+                  name: 'Calidad del Servicio',
+                  percentageOfContract: '20%',
+                  additionalTermValue: 1,
+                  additionalTermUnit: 'ANIOS',
+                  validityRule: 'Plazo + 1 año',
+                },
+              ],
+              rceRequirement: {
+                required: true,
+                basicPloIncluded: true,
+                amountSmmlv: 200,
+                additionalCoverages: [
+                  { code: 'RC_PATRONAL', label: 'RC Patronal', included: true, sublimitSmmlv: 50 },
+                  { code: 'RC_CRUZADA', label: 'RC Cruzada', included: true },
+                ],
+              },
+            }),
+          }),
+        },
+      } as never);
+
+      try {
+        const res = await extractPrepolicyFromDocuments(
+          [{ path: '/tmp/ps.pdf', originalname: 'ps.pdf' }],
+          'CONTRATO'
+        );
+
+        expect(res.contractStartDate).toBe('2026-04-01');
+        expect(res.contractStartDateSource).toBe('FIRMA');
+        expect(res.contractEndDate).toBe('2026-04-08'); // skips Apr 2,3,4,5
+        expect(res.contractor.phone).toBe('3001234567');
+        expect(res.beneficiary.phone).toBe('6015550000');
+
+        expect(res.requiredCoverages).toHaveLength(2);
+        expect(res.requiredCoverages[0]).toMatchObject({
+          phase: 'CONTRACTUAL',
+          estimatedStartDate: '2026-04-01',
+          estimatedEndDate: '2026-04-08',
+        });
+        expect(res.requiredCoverages[1]).toMatchObject({
+          phase: 'POST_CONTRACTUAL',
+          estimatedStartDate: '2026-04-08',
+          estimatedEndDate: '2027-04-08',
+        });
+
+        expect(res.rceRequirement?.required).toBe(true);
+        expect(res.rceRequirement?.basicPloIncluded).toBe(true);
+        expect(res.rceRequirement?.amountSmmlv).toBe(200);
+        expect(res.rceRequirement?.amountCop).toBe(200 * 1_750_905);
+        expect(res.rceRequirement?.additionalCoverages).toHaveLength(7);
+        expect(
+          res.rceRequirement?.additionalCoverages?.find((a) => a.code === 'RC_PATRONAL')?.included
+        ).toBe(true);
+      } finally {
+        (env as { GEMINI_API_KEY: string }).GEMINI_API_KEY = originalKey;
+      }
+    });
   });
 });
