@@ -32,6 +32,10 @@ vi.mock('../../../components/ClauseSelector', () => ({
   ClauseSelector: () => <div data-testid="clause-selector" />,
 }));
 
+vi.mock('../../../components/cumplimiento/CumplimientoWorkspace', () => ({
+  CumplimientoWorkspace: () => <div data-testid="cumplimiento-workspace" />,
+}));
+
 vi.mock('../../../components/TechnicalDashboard', () => ({
   __esModule: true,
   default: () => <div data-testid="technical-dashboard" />,
@@ -99,7 +103,7 @@ describe('extracted pages (ARCH-1)', () => {
     expect(screen.getByText('Nueva Comparación de Seguros')).toBeTruthy();
   });
 
-  it('AnalyzerPage renders the Cumplimiento stage selector (Licitación / Contrato / Otrosí) when domain is cumplimiento', async () => {
+  it('AnalyzerPage renders CumplimientoWorkspace when domain is cumplimiento', async () => {
     render(
       <AnalysisProvider>
         <UIProvider>
@@ -108,19 +112,8 @@ describe('extracted pages (ARCH-1)', () => {
         </UIProvider>
       </AnalysisProvider>
     );
-    expect(await screen.findByTestId('cumplimiento-stage-selector')).toBeTruthy();
-    expect(screen.getByTestId('cumplimiento-governing-uploader')).toBeTruthy();
-    expect(screen.getByText(/Pilar 1 · Documento Rector/i)).toBeTruthy();
-    const licitacionBtn = screen.getByRole('button', { name: /1\. Licitación \/ Pliego/i });
-    const contratoBtn = screen.getByRole('button', { name: /2\. Contrato \/ Minuta/i });
-    expect(licitacionBtn).toBeTruthy();
-    expect(contratoBtn).toBeTruthy();
-
-    fireEvent.click(licitacionBtn);
-    expect(screen.getByText(/Compara contra el Pliego de Condiciones y Adendas/i)).toBeTruthy();
-
-    fireEvent.click(contratoBtn);
-    expect(screen.getByText(/Compara contra la Minuta del Contrato/i)).toBeTruthy();
+    expect(await screen.findByTestId('cumplimiento-workspace')).toBeTruthy();
+    expect(screen.queryByTestId('file-uploader')).toBeNull();
   });
 
   it('DashboardPage renders in isolation', async () => {

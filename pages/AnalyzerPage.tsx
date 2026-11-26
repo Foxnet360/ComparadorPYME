@@ -1,10 +1,11 @@
 import React from 'react';
-import { Sparkles, BookOpen, Activity, FileCheck2 } from 'lucide-react';
+import { Sparkles, BookOpen, Activity } from 'lucide-react';
 import FileUploader from '../components/FileUploader';
 import DomainSelector from '../components/DomainSelector';
 import ClientSelector from '../components/ClientSelector';
-import { ClauseSelector, type CumplimientoProcessStage } from '../components/ClauseSelector';
+import { ClauseSelector } from '../components/ClauseSelector';
 import { RegulatoryBackingPanel } from '../components/report/RegulatoryBackingPanel';
+import { CumplimientoWorkspace } from '../components/cumplimiento/CumplimientoWorkspace';
 import { useAnalysisFlow } from '../hooks/useAnalysisFlow';
 import { useUI } from '../contexts/UIContext';
 import { AppStatus, InsuranceDomain } from '../types';
@@ -14,42 +15,6 @@ interface AnalyzerPageProps {
   onAnalysisComplete: () => void;
 }
 
-const CUMPLIMIENTO_STAGES: Array<{
-  id: CumplimientoProcessStage;
-  label: string;
-  badge: string;
-  description: string;
-}> = [
-  {
-    id: 'AUTO',
-    label: 'Automático (IA)',
-    badge: 'Detección Inteligente',
-    description:
-      'El motor identifica automáticamente si las cotizaciones corresponden a Seriedad de la Oferta (Licitación) o a Garantía Única de Ejecución (Contrato / Otrosí), evitando falsos incumplimientos entre etapas.',
-  },
-  {
-    id: 'LICITACION',
-    label: '1. Licitación / Pliego',
-    badge: 'Precontractual · Seriedad',
-    description:
-      'Compara contra el Pliego de Condiciones y Adendas: verifica Seriedad de la Oferta (mín. 10% Decreto 1082 Art. 2.2.1.2.3.1.9 o 1.000 SMMLV), vigencia exacta desde la fecha de cierre, NIT del Consorcio/UT y cupo/pagaré.',
-  },
-  {
-    id: 'CONTRATO',
-    label: '2. Contrato / Minuta',
-    badge: 'Contractual · Ejecución + RCE',
-    description:
-      'Compara contra la Minuta del Contrato: verifica suficiencia % (Cumplimiento 10-20%, Anticipo 100%, Salarios >=5% + 3 años, Estabilidad + 5 años), RCE Derivada en SMMLV (Ocurrencia/Patronal/Cruzada), régimen Ley 80 vs. Particular, tasas y contragarantía.',
-  },
-  {
-    id: 'OTROSI',
-    label: '3. Otrosí / Modificación',
-    badge: 'Adición · Prórroga · Suspensión',
-    description:
-      'Compara contra el Otrosí o Acta Modificatoria: audita el ajuste proporcional de sumas aseguradas por Adición en valor y el desplazamiento cronológico de vigencias post-contractuales (+3 años Salarios, +5 años Estabilidad).',
-  },
-];
-
 const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
   const {
     state,
@@ -58,9 +23,6 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
     removeQuoteFile,
     addClauseFiles,
     removeClauseFile,
-    addGoverningFiles,
-    removeGoverningFile,
-    setCumplimientoStage,
     analyze,
     cancelAnalysis,
     resetFlow,
@@ -73,11 +35,9 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
     selectedClient,
     quoteFiles,
     clauseFiles,
-    governingFiles,
     clauseMode,
     selectedClauseIds,
     domain,
-    cumplimientoStage,
     statusMessage,
     progressPercent,
     errorMessage,
@@ -117,204 +77,133 @@ const AnalyzerPage: React.FC<AnalyzerPageProps> = ({ onAnalysisComplete }) => {
 
             {/* Inyección de Tesauro y Respaldo Normativo Colombiano por Ramo */}
             <RegulatoryBackingPanel domain={domain} compact={true} />
-
-            {/* Pilar 1 exclusivo para Cumplimiento y Fianzas: Etapa Contractual + Documento Rector (Pliego / Contrato / Otrosí) */}
-            {domain === InsuranceDomain.CUMPLIMIENTO && (
-              <div
-                className="bg-white p-5 rounded-2xl border-2 border-indigo-200/80 shadow-sm space-y-4"
-                data-testid="cumplimiento-stage-selector"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-indigo-700">
-                      Pilar 1 · Documento Rector (Pliego de Licitación, Minuta de Contrato u Otrosí)
-                    </span>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Selecciona el momento del proceso contractual y adjunta el PDF del Pliego o
-                      Contrato para cruzar porcentajes (%), cuantías y vigencias contra las
-                      cotizaciones.
-                    </p>
-                  </div>
-                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 self-start sm:self-auto">
-                    {CUMPLIMIENTO_STAGES.find((s) => s.id === cumplimientoStage)?.badge}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                  {CUMPLIMIENTO_STAGES.map((stage) => {
-                    const isSelected = cumplimientoStage === stage.id;
-                    return (
-                      <button
-                        key={stage.id}
-                        type="button"
-                        onClick={() => setCumplimientoStage(stage.id)}
-                        aria-pressed={isSelected}
-                        className={`text-left px-3 py-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-indigo-50/60 hover:border-indigo-200'
-                        }`}
-                      >
-                        {stage.label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-100 text-xs text-indigo-950">
-                  {CUMPLIMIENTO_STAGES.find((s) => s.id === cumplimientoStage)?.description}
-                </div>
-
-                <div
-                  className="pt-2 border-t border-indigo-100"
-                  data-testid="cumplimiento-governing-uploader"
-                >
-                  <FileUploader
-                    title={
-                      cumplimientoStage === 'LICITACION'
-                        ? 'Adjuntar Pliego de Condiciones / Adendas (PDF)'
-                        : cumplimientoStage === 'CONTRATO'
-                          ? 'Adjuntar Minuta del Contrato / Orden de Compra (PDF)'
-                          : cumplimientoStage === 'OTROSI'
-                            ? 'Adjuntar Otrosí o Acta Modificatoria (PDF)'
-                            : 'Adjuntar Pliego de Licitación, Minuta de Contrato u Otrosí (PDF)'
-                    }
-                    description="Opcional pero recomendado: las exigencias de garantías de este documento aparecerán como primera columna de auditoría en la matriz."
-                    files={governingFiles}
-                    onFilesSelected={addGoverningFiles}
-                    onRemoveFile={removeGoverningFile}
-                    variant="secondary"
-                    icon={<FileCheck2 className="w-6 h-6 text-indigo-600" />}
-                    disabled={false}
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-              <ClientSelector
-                selectedClient={selectedClient}
-                onSelectClient={(client) => {
-                  dispatch({ type: 'SET_SELECTED_CLIENT', payload: client });
-                  setClientSelectorOpen(false);
-                }}
-                isOpen={clientSelectorOpen}
-                onOpenChange={setClientSelectorOpen}
-                activeDomain={domain}
-              />
-            </div>
           </div>
 
-          {/* 2. File Uploaders */}
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden transition-all duration-300 opacity-100">
-            <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
-              {/* Left: Quotes */}
-              <div className="p-8">
-                <FileUploader
-                  title="1. Cotizaciones de Aseguradoras"
-                  description="Carga aquí las ofertas y proposiciones (PDF)."
-                  files={quoteFiles}
-                  onFilesSelected={addQuoteFiles}
-                  onRemoveFile={removeQuoteFile}
-                  variant="primary"
-                  disabled={false}
-                  domain={domain}
-                  onDomainChange={(newDomain) =>
-                    dispatch({ type: 'SET_DOMAIN', payload: newDomain })
-                  }
-                  onFocusClientSelection={() => setClientSelectorOpen(true)}
+          {/* Flujo especializado para Cumplimiento y Fianzas: Casos de Pre-póliza (Slip) + Auditoría */}
+          {domain === InsuranceDomain.CUMPLIMIENTO ? (
+            <CumplimientoWorkspace />
+          ) : (
+            <>
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <ClientSelector
+                  selectedClient={selectedClient}
+                  onSelectClient={(client) => {
+                    dispatch({ type: 'SET_SELECTED_CLIENT', payload: client });
+                    setClientSelectorOpen(false);
+                  }}
+                  isOpen={clientSelectorOpen}
+                  onOpenChange={setClientSelectorOpen}
+                  activeDomain={domain}
                 />
               </div>
 
-              {/* Right: Clauses / Governing Document */}
-              <div className="p-8 bg-slate-50/50">
-                <ClauseSelector
-                  mode={clauseMode}
-                  domain={domain}
-                  cumplimientoStage={
-                    domain === InsuranceDomain.CUMPLIMIENTO ? cumplimientoStage : undefined
-                  }
-                  onModeChange={(mode) => dispatch({ type: 'SET_CLAUSE_MODE', payload: mode })}
-                  onClausesSelected={(ids) =>
-                    dispatch({ type: 'SET_SELECTED_CLAUSE_IDS', payload: ids })
-                  }
-                />
+              {/* 2. File Uploaders */}
+              <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden transition-all duration-300 opacity-100">
+                <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+                  {/* Left: Quotes */}
+                  <div className="p-8">
+                    <FileUploader
+                      title="1. Cotizaciones de Aseguradoras"
+                      description="Carga aquí las ofertas y proposiciones (PDF)."
+                      files={quoteFiles}
+                      onFilesSelected={addQuoteFiles}
+                      onRemoveFile={removeQuoteFile}
+                      variant="primary"
+                      disabled={false}
+                      domain={domain}
+                      onDomainChange={(newDomain) =>
+                        dispatch({ type: 'SET_DOMAIN', payload: newDomain })
+                      }
+                      onFocusClientSelection={() => setClientSelectorOpen(true)}
+                    />
+                  </div>
 
-                {/* Supplemental uploader: Available in both library and upload mode */}
-                {clauseMode === 'library' && (
-                  <div className="mt-4 pt-3 border-t border-slate-200/60">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[11px] font-semibold text-slate-700">
-                        ¿Falta alguna aseguradora en la biblioteca?
-                      </span>
-                      <span className="text-[10px] text-slate-500">
-                        Carga el PDF complementario
-                      </span>
+                  {/* Right: Clauses / Governing Document */}
+                  <div className="p-8 bg-slate-50/50">
+                    <ClauseSelector
+                      mode={clauseMode}
+                      domain={domain}
+                      onModeChange={(mode) => dispatch({ type: 'SET_CLAUSE_MODE', payload: mode })}
+                      onClausesSelected={(ids) =>
+                        dispatch({ type: 'SET_SELECTED_CLAUSE_IDS', payload: ids })
+                      }
+                    />
+
+                    {/* Supplemental uploader: Available in both library and upload mode */}
+                    {clauseMode === 'library' && (
+                      <div className="mt-4 pt-3 border-t border-slate-200/60">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[11px] font-semibold text-slate-700">
+                            ¿Falta alguna aseguradora en la biblioteca?
+                          </span>
+                          <span className="text-[10px] text-slate-500">
+                            Carga el PDF complementario
+                          </span>
+                        </div>
+                        <FileUploader
+                          title=""
+                          description="Arrastra aquí el clausulado general PDF faltante"
+                          files={clauseFiles}
+                          onFilesSelected={addClauseFiles}
+                          onRemoveFile={removeClauseFile}
+                          variant="secondary"
+                          icon={<BookOpen className="w-5 h-5 text-indigo-600" />}
+                          disabled={false}
+                        />
+                      </div>
+                    )}
+
+                    {/* Show file uploader in upload mode */}
+                    {clauseMode === 'upload' && (
+                      <div className="mt-4">
+                        <FileUploader
+                          title=""
+                          description="Arrastra PDFs de clausulados generales aquí"
+                          files={clauseFiles}
+                          onFilesSelected={addClauseFiles}
+                          onRemoveFile={removeClauseFile}
+                          variant="secondary"
+                          icon={<BookOpen className="w-6 h-6 text-slate-600" />}
+                          disabled={false}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-6 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  {!selectedClient ? (
+                    <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                      <span className="font-semibold">Modo Rápido:</span>
+                      <span>Sin cliente asignado (se registrará como cotización de mercado)</span>
                     </div>
-                    <FileUploader
-                      title=""
-                      description="Arrastra aquí el clausulado general PDF faltante"
-                      files={clauseFiles}
-                      onFilesSelected={addClauseFiles}
-                      onRemoveFile={removeClauseFile}
-                      variant="secondary"
-                      icon={<BookOpen className="w-5 h-5 text-indigo-600" />}
-                      disabled={false}
-                    />
-                  </div>
-                )}
-
-                {/* Show file uploader in upload mode */}
-                {clauseMode === 'upload' && (
-                  <div className="mt-4">
-                    <FileUploader
-                      title=""
-                      description="Arrastra PDFs de clausulados generales aquí"
-                      files={clauseFiles}
-                      onFilesSelected={addClauseFiles}
-                      onRemoveFile={removeClauseFile}
-                      variant="secondary"
-                      icon={<BookOpen className="w-6 h-6 text-slate-600" />}
-                      disabled={false}
-                    />
-                  </div>
-                )}
+                  ) : (
+                    <div className="text-xs text-slate-500">
+                      Cliente asignado:{' '}
+                      <span className="font-semibold text-slate-700">{selectedClient.name}</span>
+                    </div>
+                  )}
+                  <button
+                    onClick={handleAnalyze}
+                    disabled={quoteFiles.length === 0}
+                    className="group relative flex items-center justify-center space-x-2 bg-indigo-600 text-white px-8 py-3 rounded-full font-semibold shadow-lg shadow-indigo-200 hover:bg-indigo-700 disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed transition-all w-full sm:w-auto overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                    <Sparkles size={20} className="relative z-10" />
+                    <span className="relative z-10">
+                      {selectedClauseIds.length > 0 && clauseFiles.length > 0
+                        ? `Comparar (${selectedClauseIds.length} biblioteca + ${clauseFiles.length} subido${clauseFiles.length > 1 ? 's' : ''})`
+                        : selectedClauseIds.length > 0
+                          ? `Comparar (${selectedClauseIds.length} clausulados biblioteca)`
+                          : clauseFiles.length > 0
+                            ? `Comparar con ${clauseFiles.length} referencias`
+                            : 'Comparar Cotizaciones'}
+                    </span>
+                  </button>
+                </div>
               </div>
-            </div>
-
-            <div className="p-6 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-              {!selectedClient ? (
-                <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full flex items-center gap-1.5">
-                  <span className="font-semibold">Modo Rápido:</span>
-                  <span>Sin cliente asignado (se registrará como cotización de mercado)</span>
-                </div>
-              ) : (
-                <div className="text-xs text-slate-500">
-                  Cliente asignado:{' '}
-                  <span className="font-semibold text-slate-700">{selectedClient.name}</span>
-                </div>
-              )}
-              <button
-                onClick={handleAnalyze}
-                disabled={quoteFiles.length === 0}
-                className="group relative flex items-center justify-center space-x-2 bg-indigo-600 text-white px-8 py-3 rounded-full font-semibold shadow-lg shadow-indigo-200 hover:bg-indigo-700 disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed transition-all w-full sm:w-auto overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-                <Sparkles size={20} className="relative z-10" />
-                <span className="relative z-10">
-                  {domain === InsuranceDomain.CUMPLIMIENTO && governingFiles.length > 0
-                    ? `Auditar vs. Documento Rector${selectedClauseIds.length + clauseFiles.length > 0 ? ` (+${selectedClauseIds.length + clauseFiles.length} clausulados)` : ''}`
-                    : selectedClauseIds.length > 0 && clauseFiles.length > 0
-                      ? `Comparar (${selectedClauseIds.length} biblioteca + ${clauseFiles.length} subido${clauseFiles.length > 1 ? 's' : ''})`
-                      : selectedClauseIds.length > 0
-                        ? `Comparar (${selectedClauseIds.length} clausulados biblioteca)`
-                        : clauseFiles.length > 0
-                          ? `Comparar con ${clauseFiles.length} referencias`
-                          : 'Comparar Cotizaciones'}
-                </span>
-              </button>
-            </div>
-          </div>
+            </>
+          )}
         </div>
       )}
 
