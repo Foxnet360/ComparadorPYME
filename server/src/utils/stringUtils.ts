@@ -65,9 +65,18 @@ export function calculateSimilarity(str1: string, str2: string): number {
  */
 export function sanitizeForPostgres(text: string): string {
   if (!text) return '';
-  return text
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
-    .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '');
+  let filtered = '';
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    if ((code <= 0x1f && code !== 0x09 && code !== 0x0a && code !== 0x0d) || code === 0x7f) {
+      continue;
+    }
+    filtered += text[i];
+  }
+  return filtered.replace(
+    /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g,
+    ''
+  );
 }
 
 /**
