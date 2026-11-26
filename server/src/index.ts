@@ -55,6 +55,7 @@ import auditRoutes from './routes/audit';
 import chatRoutes from './routes/chat';
 import analysisRoutes from './routes/analysis';
 import comparisonRoutes from './routes/comparisonRoutes';
+import cumplimientoRoutes from './routes/cumplimientoRoutes';
 import monitoringRoutes from './routes/monitoring';
 import templateRegistryRoutes from './routes/templateRegistry';
 import clientRoutes from './routes/clientRoutes';
@@ -302,6 +303,7 @@ const coreRouterMounts = [
   { suffix: '/monitoring', router: monitoringRoutes },
   { suffix: '/templates/registry', router: templateRegistryRoutes },
   { suffix: '/comparison', router: comparisonRoutes },
+  { suffix: '/cumplimiento', router: cumplimientoRoutes },
   { suffix: '/clients', router: clientRoutes },
   { suffix: '/policies', router: policyRoutes },
   { suffix: '/renewals', router: renewalRoutes },
