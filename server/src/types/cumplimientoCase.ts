@@ -23,6 +23,12 @@ export type CumplimientoContractType =
 
 export type CumplimientoPersonType = 'NATURAL' | 'JURIDICA' | 'CONSORCIO' | 'UNION_TEMPORAL';
 
+export type CumplimientoDurationUnit = 'DIAS_HABILES' | 'DIAS_CALENDARIO' | 'MESES' | 'ANIOS';
+
+export type CumplimientoDisplayCurrency = 'COP' | 'USD' | 'BOTH';
+
+export type CumplimientoCoveragePhase = 'PRECONTRACTUAL' | 'CONTRACTUAL' | 'POST_CONTRACTUAL';
+
 export interface CumplimientoConsortiumMember {
   name: string;
   nit: string;
@@ -33,11 +39,14 @@ export interface CumplimientoRequiredCoverageItem {
   id: string;
   name: string;
   canonicalName?: string | null;
+  phase?: CumplimientoCoveragePhase | null;
   percentageOfContract?: string | null;
   percentageNumeric?: number | null;
   minimumAmount?: number | null;
   baseValidity?: string | null;
   additionalValidity?: string | null;
+  additionalTermValue?: number | null;
+  additionalTermUnit?: CumplimientoDurationUnit | null;
   validityRule?: string | null;
   estimatedStartDate?: string | null;
   estimatedEndDate?: string | null;
@@ -47,14 +56,28 @@ export interface CumplimientoRequiredCoverageItem {
   pageNumber?: number | null;
 }
 
+export interface CumplimientoRceAdditionalCoverage {
+  code: string;
+  label: string;
+  included: boolean;
+  sublimitSmmlv?: number | null;
+  sublimitCop?: number | null;
+  notes?: string | null;
+}
+
 export interface CumplimientoRceRequirement {
   required: boolean;
+  basicPloIncluded?: boolean;
   amountDescription?: string | null;
   amountCop?: number | null;
   amountSmmlv?: number | null;
+  suggestedMinSmmlv?: number | null;
   subcoverages: string[];
+  additionalCoverages?: CumplimientoRceAdditionalCoverage[];
   maxDeductibleRule?: string | null;
   validityRule?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
 }
 
 export interface CumplimientoModificationDetails {
@@ -88,8 +111,17 @@ export interface CumplimientoPrepolicyData {
   advancePaymentPercent?: number | null;
   advancePaymentAmount?: number | null;
   contractDuration: string;
+  durationValue?: number | null;
+  durationUnit?: CumplimientoDurationUnit | null;
+  includeSaturdays?: boolean;
+  contractSignatureDate?: string | null;
   contractStartDate?: string | null;
+  contractStartDateSource?: 'CONTRATO' | 'FIRMA' | 'HOY';
   contractEndDate?: string | null;
+  displayCurrency?: CumplimientoDisplayCurrency;
+  trmValue?: number | null;
+  trmDate?: string | null;
+  smmlvValue?: number;
   liquidationTerm?: string | null;
   paymentTerms?: string | null;
   penalClause?: string | null;
@@ -99,6 +131,7 @@ export interface CumplimientoPrepolicyData {
     nit: string;
     personType: CumplimientoPersonType;
     address?: string | null;
+    phone?: string | null;
     city?: string | null;
     contactName?: string | null;
     contactEmail?: string | null;
@@ -110,6 +143,7 @@ export interface CumplimientoPrepolicyData {
     name: string;
     nit: string;
     address?: string | null;
+    phone?: string | null;
     city?: string | null;
   };
   requiredCoverages: CumplimientoRequiredCoverageItem[];
