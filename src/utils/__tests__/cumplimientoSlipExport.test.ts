@@ -1,3 +1,4 @@
+/* global document, HTMLAnchorElement */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { CumplimientoCase } from '../../../types';
 
