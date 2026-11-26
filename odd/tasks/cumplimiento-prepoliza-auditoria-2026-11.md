@@ -1,0 +1,24 @@
+# ODD Feature: Flujo de Pre-póliza (Slip), Checklist de Cupo y Auditoría de Cumplimiento y Fianzas
+
+Rama: `feat/cumplimiento-prepoliza-auditoria` | Estrategia de entrega: `single-pr` | Runner: `npm run format:check && npm run typecheck:backend && npm run typecheck:frontend && npm run test:unit`
+
+## Specs
+
+- S0 (Higiene CI ESLint): Corregir el error `no-control-regex` en `server/src/utils/stringUtils.ts` (`sanitizeForPostgres`) reemplazando la regex de caracteres de control por un filtro por código de carácter para dejar ESLint/CI en verde sin perder cobertura.
+- S1 (Migración `038` + RLS + Tipos): Crear `server/supabase/migrations/038_cumplimiento_prepolicies.sql` y su espejo `supabase/migrations/20261126000038_cumplimiento_prepolicies.sql` con tabla `public.cumplimiento_cases` (`id`, `user_id`, `org_id`, `client_id`, `parent_case_id`, `policy_id`, `case_type`, `status`, `title`, `legal_regime`, `contract_type`, `contract_number`, `contractor_name`, `contractor_nit`, `entity_name`, `entity_nit`, `contract_value`, `governing_document_names`, `prepolicy_data`, `checklist_data`, `validation_history`, `created_at`, `updated_at`), trigger `update_updated_at_column`, índices y RLS multi-tenant endurecido (`is_super_admin() OR (org_id IS NOT NULL AND is_org_member(org_id)) OR user_id = auth.uid()::text`). Definir tipos compartidos en `server/src/types/cumplimientoCase.ts` y `types.ts`.
+- S2 (Backend Pre-póliza, Decreto 1082, Checklist y Auditoría Campo a Campo): Ampliar `server/src/services/governingDocumentExtractor.ts` para extraer todos los campos de Pre-póliza (Tomador/NIT/Tipo persona/Consorcio-UT, Beneficiario/NIT/Régimen, Tipo de contrato, `#` contrato/SECOP, Valor, Anticipo, Vigencia, Objeto, Amparos con `%` y vigencias adicionales, RCE Derivada y Otrosí). Crear `server/src/services/cumplimientoAuditService.ts` (`evaluateDecreto1082Rules`, `buildDefaultComplianceChecklist` con requisitos de `proceso.docx` y contratación pública, y `validateQuotesAgainstPrepolicy` con auditoría campo a campo + cuadro económico si hay 2+ cotizaciones + texto de correcciones). Crear `server/src/services/cumplimientoCaseService.ts` y `server/src/routes/cumplimientoRoutes.ts` montado en `/api/cumplimiento` sin engordar `analysisController.ts` (< 700 LOC).
+- S3 (Exportación PDF/Word/Clipboard + Workspace Frontend): Instalar `docx`, crear `utils/cumplimientoSlipExport.ts` (PDF con `jspdf`/`jspdf-autotable`, Word `.docx` con `docx`, texto Correo/WhatsApp), `services/cumplimientoService.ts`, y el workspace `components/cumplimiento/` (`CumplimientoWorkspace`, `CumplimientoCaseList`, `CumplimientoCaseDetail`, `CumplimientoChecklistTab`, `CumplimientoValidationTab`) montado en `pages/AnalyzerPage.tsx` cuando `domain === InsuranceDomain.CUMPLIMIENTO` (sin literales `'cumplimiento'`).
+- S4 (Verificación Integral): `npm run format:check`, `npm run lint` (0 errores), `npm run typecheck:backend`, `npm run typecheck:frontend`, `npm run test:unit` y verificación independiente de migración RLS y contratos compartidos.
+
+## Tasks
+
+- [x] T0 | S0 | route: inline | status: completed | commit: 81a0828 — Corregir `no-control-regex` en `server/src/utils/stringUtils.ts` y verificar ESLint + tests
+- [x] T1 | S1 | route: inline | status: completed | commit: 56c7fa0 — Migración `038_cumplimiento_prepolicies.sql` (sincronizada) + RLS multi-tenant + tipos en `server/src/types/cumplimientoCase.ts` y `types.ts` + test de esquema/RLS (Risk: items 1, 2)
+- [x] T2 | S2 | route: inline | status: completed | commit: bea53ea — Extender `governingDocumentExtractor.ts` + crear `cumplimientoAuditService.ts`, `cumplimientoCaseService.ts` y `cumplimientoRoutes.ts` + tests unitarios (Risk: item 3)
+- [x] T3 | S3 | route: inline | status: completed | commit: 078feca (+ lint fix b439b4c) — Instalar `docx`, crear `cumplimientoSlipExport.ts`, `cumplimientoService.ts` y `components/cumplimiento/*` integrados en `AnalyzerPage.tsx` + tests (Risk: item 3)
+- [x] T4 | S4 | route: inline | status: completed | commit: HEAD — Verificación integral (`format:check`, `lint`, `typecheck:backend`, `typecheck:frontend`, `test:unit` 255/255 archivos, 2048 passed | 8 skipped) + verificador independiente `S0-S3 PASS`
+
+## Log
+
+- L1 (2026-11-25): Usuario aprobó `plan_flujo_prepoliza_y_auditoria_cumplimiento.md` para rediseñar Cumplimiento y Fianzas en flujo de Casos persistentes de Pre-póliza (PDF/Word/Clipboard + Checklist vinculación/cupo + Contratación Pública Decreto 1082) → Validación campo a campo de Cotización/Borrador → Otrosí/Modificaciones.
+- L2 (2026-11-25): T0–T4 completados (`81a0828`, `56c7fa0`, `bea53ea`, `078feca`, `b439b4c`); `npm run format:check`, `npm run lint` (0 errores), `npm run typecheck:backend`, `npm run typecheck:frontend` y `npm run test:unit` (255/255 archivos, 2048 passed | 8 skipped) en verde; verificador independiente `S0-S3 PASS` sin blockers.
